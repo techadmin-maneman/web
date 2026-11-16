@@ -29,7 +29,7 @@ export async function deleteErasedFiles(env: ErasureEnv, personId: string, now: 
   await deleteVisitPhotos(env, personId);
   // Books keeps its own for the tax record.
   await deleteUnder(env.DB, env.CLIENT_PHOTOS, [documentsOf(personId)]);
-  // The photographs sent with their reports (docs/decisions/0258-the-issue-log.md), then the rows that named them.
+  // The photographs sent with their reports (docs/decisions/0259-the-issue-log.md), then the rows that named them.
   await deleteUnder(env.DB, env.CLIENT_PHOTOS, [reportPhotosOf(personId)]);
   await env.DB.prepare(
     "DELETE FROM client_report_photos WHERE report_id IN (SELECT id FROM client_reports WHERE person_id = ?1)",

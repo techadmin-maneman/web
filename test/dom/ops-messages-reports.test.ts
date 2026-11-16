@@ -1,4 +1,4 @@
-// Customer Care · Messages and the issue log (apps/ops/src/care/; docs/decisions/0258-the-issue-log.md): the photographs
+// Customer Care · Messages and the issue log (apps/ops/src/care/; docs/decisions/0259-the-issue-log.md): the photographs
 // a client sent with their reports beside their chat, fetched only once Care ask, and the chat a task's link names
 // opened and brought into view. Every name and number is made up.
 

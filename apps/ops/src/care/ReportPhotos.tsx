@@ -1,4 +1,4 @@
-// The photographs a client sent with their reports (docs/decisions/0258-the-issue-log.md), beside their chat and in a fit
+// The photographs a client sent with their reports (docs/decisions/0259-the-issue-log.md), beside their chat and in a fit
 // guarantee claim's drawer: a button saying how many, and each photograph once it is pressed, since a viewing is logged
 // as a client photograph's is. Nothing shows for a client who sent none.
 

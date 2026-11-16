@@ -1,5 +1,5 @@
 // The photographs a client sent with their reports (src/domain/care/report-photos.ts;
-// docs/decisions/0258-the-issue-log.md), as Care read them beside the client's chat: the list, and each one, never
+// docs/decisions/0259-the-issue-log.md), as Care read them beside the client's chat: the list, and each one, never
 // cached, its viewing logged as a client photograph's is.
 
 import { z } from "@hono/zod-openapi";

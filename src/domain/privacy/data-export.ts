@@ -76,7 +76,7 @@ export const EXPORT_QUERIES = {
     JOIN no_show_cases n ON n.id = d.case_id JOIN appointments a ON a.id = n.appointment_id
     WHERE d.person_id = ?1 ORDER BY d.created_at`,
   // Their fits' sign-offs: their own answer and words; the technician's why they did not sign is for Care alone.
-  // The issues they reported from the app (docs/decisions/0258-the-issue-log.md).
+  // The issues they reported from the app (docs/decisions/0259-the-issue-log.md).
   client_reports: `SELECT number, category, text, created_at, closed_at, sorted_at, reopened_at
     FROM client_reports WHERE person_id = ?1 ORDER BY created_at`,
   fit_sign_offs: `SELECT a.window_start AS visit, s.state, json_extract(s.checks, '$.hairline') AS hairline,

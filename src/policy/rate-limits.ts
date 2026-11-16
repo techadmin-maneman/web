@@ -47,7 +47,7 @@ export const RATE_LIMITS = {
   "number_change:person": { per: "day", limit: 3 },
   // Something wrong with their hair system or a visit, told to Care from the app.
   "problem:person": { per: "day", limit: PROBLEMS_PER_DAY },
-  // What they add to their reports: an update, a reopening, a photograph (docs/decisions/0258-the-issue-log.md).
+  // What they add to their reports: an update, a reopening, a photograph (docs/decisions/0259-the-issue-log.md).
   "problem_add:person": { per: "day", limit: PROBLEM_ADDS_PER_DAY },
   // Their own try-on's photograph and look, counted apart from the site's result links so the site's traffic never
   // turns them away (ADR 0014's R2 budget is held by the number of clients).

@@ -1,5 +1,5 @@
 // A client's report from the app that something is wrong (docs/decisions/0129-the-care-inbox.md,
-// docs/decisions/0258-the-issue-log.md): recorded with its number for their issue log, and filed in their Care thread
+// docs/decisions/0259-the-issue-log.md): recorded with its number for their issue log, and filed in their Care thread
 // as though written on WhatsApp, under its reference and category, with a note for Care alone beside it of their piece,
 // when it was fitted and falls due, and its supplier's warranty. Filing it sends nothing.
 

@@ -167,7 +167,7 @@ beforeEach(() => {
         return Promise.resolve(
           Response.json({
             conversation: ARJUN,
-            // The chat's open report is about a payment (docs/decisions/0258-the-issue-log.md).
+            // The chat's open report is about a payment (docs/decisions/0259-the-issue-log.md).
             close_reason: "billing",
             items: [
               {

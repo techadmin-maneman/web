@@ -1,4 +1,4 @@
-// Something wrong, told to Care from the app (src/domain/care/app-reports.ts; docs/decisions/0258-the-issue-log.md):
+// Something wrong, told to Care from the app (src/domain/care/app-reports.ts; docs/decisions/0259-the-issue-log.md):
 // recorded with its reference for the client's issue log, and filed in their Care thread. It sends nothing; Care answer
 // in the app and on WhatsApp.
 

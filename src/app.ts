@@ -143,7 +143,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // The client's alerts and pushes (docs/decisions/0255-client-alerts-and-push.md).
     registerClientAppAlerts,
     registerClientProblems,
-    // The issue log (docs/decisions/0258-the-issue-log.md).
+    // The issue log (docs/decisions/0259-the-issue-log.md).
     registerClientProblemLog,
     registerClientPayments,
     // The packages a client compares in the app (docs/decisions/0211-packages.md).

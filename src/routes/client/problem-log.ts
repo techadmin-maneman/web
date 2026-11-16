@@ -1,4 +1,4 @@
-// The client's issue log (src/domain/care/issue-log.ts; docs/decisions/0258-the-issue-log.md): every report with its
+// The client's issue log (src/domain/care/issue-log.ts; docs/decisions/0259-the-issue-log.md): every report with its
 // state and its thread, beside their grievances and missed-visit disputes; and, on a report of theirs, an update, a
 // reopening, or their word that it is sorted.
 

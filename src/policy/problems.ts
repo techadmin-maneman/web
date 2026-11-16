@@ -1,4 +1,4 @@
-// What a client may tell Care from the app (src/domain/care/app-reports.ts; docs/decisions/0258-the-issue-log.md): the
+// What a client may tell Care from the app (src/domain/care/app-reports.ts; docs/decisions/0259-the-issue-log.md): the
 // issue's category, and the limits on what they send.
 
 /** The prototype's categories, in its order. */

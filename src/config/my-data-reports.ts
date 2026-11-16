@@ -1,5 +1,5 @@
 // The readable copy's part for the issues a client reported from the app (./my-data.ts;
-// docs/decisions/0258-the-issue-log.md): their own words, and when each was settled.
+// docs/decisions/0259-the-issue-log.md): their own words, and when each was settled.
 
 import { named, text, time, type Part } from "./my-data-fields.ts";
 

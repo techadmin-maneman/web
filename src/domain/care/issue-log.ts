@@ -1,4 +1,4 @@
-// The client's issue log (docs/decisions/0258-the-issue-log.md): each report with its state and its thread, read from
+// The client's issue log (docs/decisions/0259-the-issue-log.md): each report with its state and its thread, read from
 // the rows that exist; and their grievances and missed-visit disputes beside them, each with its own state.
 //
 // A report's thread is its own words, then what the client's Care chats hold from it until their next report: Care's

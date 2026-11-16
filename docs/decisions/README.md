@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0259. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0260. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -215,7 +215,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0197](0197-one-inbound-port.md) One inbound port
 - [0203](0203-a-vendor-down-is-held-off.md) A vendor that is down is held off, and a contact change waits in D1
 - [0255](0255-client-alerts-and-push.md) Client alerts and push, and the live visit
-- [0258](0258-the-issue-log.md) The issue log
+- [0259](0259-the-issue-log.md) The issue log
 
 ### Referrals
 
@@ -552,5 +552,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0255](0255-client-alerts-and-push.md) | Client alerts and push, and the live visit | 2026-11-12 | accepted |  |
 | [0256](0256-fit-guarantee-setting.md) | The fit guarantee's days as a setting, and a claim as a Tasks row | 2026-11-12 | accepted |  |
 | [0257](0257-razorpay-only.md) | Razorpay is the only way to pay | 2026-11-12 | accepted |  |
-| [0258](0258-the-issue-log.md) | The issue log | 2026-11-16 | accepted |  |
 | [0258](0258-the-technician-design-pass.md) | The technician app's design pass | 2026-11-12 | accepted |  |
+| [0259](0259-the-issue-log.md) | The issue log | 2026-11-16 | accepted |  |

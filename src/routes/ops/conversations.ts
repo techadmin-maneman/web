@@ -85,7 +85,7 @@ const ThreadSchema = z
     items: z.array(ItemSchema),
     close_reason: z.union([z.enum(CLOSE_REASONS), z.null()]).openapi({
       description:
-        "The reason the close opens on: the latest report still open in the chat's (ADR 0258); null for none.",
+        "The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none.",
     }),
   })
   .strict()

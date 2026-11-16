@@ -1,4 +1,4 @@
-# 0258. The issue log
+# 0259. The issue log
 
 - Status: accepted
 - Date: 2026-11-16

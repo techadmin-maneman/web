@@ -75,8 +75,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [client_alerts](#client_alerts): What every technician reads in red before they start on a client, raised by staff or by a technician at a close; one taken off is marked so, never deleted, until an erasure (ADR 0242).
 - [client_app_alerts](#client_app_alerts): A client's alerts in their app, over the last 30 days: one beside each message written to them but WhatsApp's own, and one each time a technician asks for their sign-off; when each was pushed and read (ADR 0255).
 - [client_push_subscriptions](#client_push_subscriptions): The session that takes a client's pushes, one subscription a session, by the push service's address; a session signed out, revoked or ended takes none (ADR 0255).
-- [client_report_photos](#client_report_photos): Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0258).
-- [client_reports](#client_reports): Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0258).
+- [client_report_photos](#client_report_photos): Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0259).
+- [client_reports](#client_reports): Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0259).
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 - [consumable_shortfalls](#consumable_shortfalls): A job that used less than its service expects, or nothing where a visit always uses something, with the technician's reason; one row a visit, open until ops close its task (ADR 0222).
@@ -689,7 +689,7 @@ Indexes:
 
 ## client_report_photos
 
-Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0258).
+Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0259).
 
 Made by `0212_client_reports.sql`.
 
@@ -703,7 +703,7 @@ Made by `0212_client_reports.sql`.
 
 ## client_reports
 
-Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0258).
+Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0259).
 
 Made by `0212_client_reports.sql`.
 

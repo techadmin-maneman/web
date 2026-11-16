@@ -27953,7 +27953,7 @@ export interface components {
         ConversationThread: {
             conversation: components["schemas"]["Conversation"];
             items: components["schemas"]["ThreadItem"][];
-            /** @description The reason the close opens on: the latest report still open in the chat's (ADR 0258); null for none. */
+            /** @description The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none. */
             close_reason: ("booking" | "move_or_cancel" | "fit_problem" | "aftercare" | "billing" | "sign_in" | "try_on" | "data_request" | "other") | null;
         };
         Conversation: {
