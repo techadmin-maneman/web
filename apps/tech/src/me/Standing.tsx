@@ -1,5 +1,6 @@
 // Me's two figures sections (docs/prompts/tech-redesign.md, "Me"): the technician's quality over the last 30 days, the
-// hairline redo rate and visits on time, and their clients' rating over 90 (src/routes/tech/quality.ts); and this month's incentives, a line a kind of
+// hairline redo rate and visits on time, and their clients' rating once enough have rated them
+// (src/routes/tech/quality.ts); and this month's incentives, a line a kind of
 // visit, its count and the rate a visit, with the total (src/routes/tech/month.ts). Incentives a visit, not pay. The
 // client rating follows once ratings exist. Each says when it is loading, and when it would not load, with Try again.
 

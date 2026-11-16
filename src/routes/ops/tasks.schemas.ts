@@ -93,7 +93,7 @@ export const TaskFactsSchema = z
     }),
     facts("low_rating", {
       kind,
-      stars: z.number().int().openapi({ description: "The client's stars, under four." }),
+      stars: z.number().int().openapi({ description: "The client's stars, low under ops' setting when given." }),
       technician: z.string(),
       visited_on: z.iso.date().openapi({ description: "India's day of the visit." }),
     }),

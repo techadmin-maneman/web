@@ -79,6 +79,10 @@ export const EXPORT_QUERIES = {
   // The issues they reported from the app (docs/decisions/0259-the-issue-log.md).
   client_reports: `SELECT number, category, text, created_at, closed_at, sorted_at, reopened_at
     FROM client_reports WHERE person_id = ?1 ORDER BY created_at`,
+  // Their stars for their visits (docs/decisions/0260-ratings.md).
+  visit_ratings: `SELECT a.window_start AS visit, r.stars, r.created_at
+    FROM visit_ratings r JOIN appointments a ON a.id = r.appointment_id
+    WHERE r.person_id = ?1 ORDER BY r.created_at`,
   fit_sign_offs: `SELECT a.window_start AS visit, s.state, json_extract(s.checks, '$.hairline') AS hairline,
       json_extract(s.checks, '$.blend') AS blend, json_extract(s.checks, '$.secure') AS secure, s.flag_text,
       s.signed_at

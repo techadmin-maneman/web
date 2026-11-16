@@ -1,5 +1,6 @@
-// The star rating (packages/ui/StarRating.tsx): five radios named "n of 5" in a group named for what is rated, filled up
-// to the stars given; once given and left without onRate, the stars are shown as one image, and nothing can be chosen.
+// The star rating (packages/ui/StarRating.tsx): five buttons named "n of 5" in a group named for what is rated, a tap
+// giving that many, never an arrow key; once given and left without onRate, the stars are shown as one image, and
+// nothing can be chosen.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -33,12 +34,16 @@ describe("the star rating", () => {
         createElement(StarRating, { label: "Rate this visit", starLabel, value: null, onRate: (n) => chosen.push(n) }),
       );
     });
-    const group = page.querySelector('[role="radiogroup"]');
+    const group = page.querySelector('[role="group"]');
     expect(group?.getAttribute("aria-label")).toBe("Rate this visit");
-    const radios = [...page.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
-    expect(radios.map((radio) => radio.getAttribute("aria-label"))).toEqual([1, 2, 3, 4, 5].map(starLabel));
+    const stars = [...page.querySelectorAll<HTMLButtonElement>("button")];
+    expect(stars.map((star) => star.getAttribute("aria-label"))).toEqual([1, 2, 3, 4, 5].map(starLabel));
     act(() => {
-      radios[2]?.click();
+      stars[0]?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    });
+    expect(chosen).toEqual([]);
+    act(() => {
+      stars[2]?.click();
     });
     expect(chosen).toEqual([3]);
   });
@@ -48,6 +53,6 @@ describe("the star rating", () => {
       root.render(createElement(StarRating, { label: "Rate this visit", starLabel, value: 4 }));
     });
     expect(page.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("4 of 5");
-    expect(page.querySelectorAll("input")).toHaveLength(0);
+    expect(page.querySelectorAll("button")).toHaveLength(0);
   });
 });

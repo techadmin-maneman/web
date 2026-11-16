@@ -135,8 +135,8 @@ export const me = localised({
     onTime: "On time",
     /** "94% of visits" */
     onTimeShare: (onTime: number, visits: number) => `${String(Math.round((onTime / visits) * 100))}% of visits`,
-    /** Clients' stars over the last 90 days. */
-    rating: "Client rating, 90 days",
+    /** Clients' stars over the days ops set. */
+    rating: "Client rating",
     /** "4.6 of 5 · 23 ratings" */
     rated: (average: number, ratings: number) =>
       `${average.toFixed(1)} of 5 · ${counted(ratings, "rating", "ratings")}`,

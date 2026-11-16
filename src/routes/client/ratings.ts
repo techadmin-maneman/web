@@ -1,5 +1,5 @@
 // The client rates a visit done (docs/decisions/0260-ratings.md): one to five stars, once, on a visit of theirs that
-// closed with something done. Under four opens a Care task on Tasks.
+// ended with something done, within the days ops set after it. A low one opens a Care task on Tasks.
 
 import { z } from "@hono/zod-openapi";
 import { rateVisit, type RatingRefusal } from "../../domain/visits/ratings.ts";
@@ -7,6 +7,7 @@ import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientRoute } from "../../http/session-routes.ts";
 import { STARS_MAX, STARS_MIN } from "../../policy/ratings.ts";
 import { RatingSchema } from "../schemas/ratings.ts";
@@ -32,13 +33,19 @@ const rateRoute = clientRoute({
     400: errorResponse("invalid_request: see error.fields"),
     401: errorResponse("session_required"),
     404: errorResponse("not_found: no such visit of this client's"),
-    409: errorResponse("already_rated: the visit has its rating; visit_not_done: not closed, or nothing was done"),
+    409: errorResponse(
+      "already_rated: the visit has its rating; visit_not_done: not ended, or nothing was done; rating_closed: past " +
+        "the days ops set to rate it",
+    ),
   },
 });
 
-const REFUSALS: Readonly<Record<Exclude<RatingRefusal, "not_found">, "already_rated" | "visit_not_done">> = {
+const REFUSALS: Readonly<
+  Record<Exclude<RatingRefusal, "not_found">, "already_rated" | "visit_not_done" | "rating_closed">
+> = {
   rated: "already_rated",
   not_done: "visit_not_done",
+  closed: "rating_closed",
 };
 
 export function registerClientRatings(app: App): void {
@@ -47,6 +54,7 @@ export function registerClientRatings(app: App): void {
       personId: clientOf(c).subjectId,
       visitId: c.req.valid("param").id,
       stars: c.req.valid("json").stars,
+      ratings: (await opsInputs(c)).ratings,
       now: c.var.deps.now(),
     });
     if (rated === "not_found") return refuse(c, "not_found");

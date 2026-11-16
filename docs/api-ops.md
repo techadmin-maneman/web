@@ -35296,6 +35296,7 @@ Request body:
             "sign_off_checks_open",
             "already_rated",
             "visit_not_done",
+            "rating_closed",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -39598,6 +39599,7 @@ Request body:
             "sign_off_checks_open",
             "already_rated",
             "visit_not_done",
+            "rating_closed",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -50948,7 +50950,7 @@ Request body:
         },
         "stars": {
           "type": "integer",
-          "description": "The client's stars, under four."
+          "description": "The client's stars, low under ops' setting when given."
         },
         "technician": {
           "type": "string"
@@ -52754,6 +52756,7 @@ Request body:
         "arrival_notice_min",
         "move_proposal_hours",
         "guarantee_days",
+        "ratings",
         "credit_reminder_days",
         "check_in_days",
         "referral_monthly_cap",
@@ -52952,6 +52955,7 @@ Request body:
         "arrival_notice_min",
         "move_proposal_hours",
         "guarantee_days",
+        "ratings",
         "credit_reminder_days",
         "check_in_days",
         "referral_monthly_cap",

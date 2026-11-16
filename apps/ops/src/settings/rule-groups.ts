@@ -20,6 +20,7 @@ export const RULE_GROUPS = [
       "no_show_waiver",
       "dispute_window_days",
       "guarantee_days",
+      "ratings",
     ],
   },
   {

@@ -6,7 +6,7 @@
 import { z } from "@hono/zod-openapi";
 import { clientHistory } from "../../domain/visits/client-history.ts";
 import { listVisits, visitDetail } from "../../domain/visits/client-visits.ts";
-import { ratingOf } from "../../domain/visits/ratings.ts";
+import { rateable, ratingOf } from "../../domain/visits/ratings.ts";
 import { VISIT_OUTCOMES } from "../../domain/visits/visit-status.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
@@ -64,6 +64,10 @@ const VisitDetailSchema = VisitSummarySchema.extend({
   }),
   rating: z.union([RatingSchema, z.null()]).openapi({
     description: "The client's stars for this visit (ADR 0260); null until they give them.",
+  }),
+  rateable: z.boolean().openapi({
+    description:
+      "Whether the client may rate it now: ended done or partly done, not yet rated, within the days ops set.",
   }),
 }).openapi("VisitDetail");
 
@@ -145,6 +149,13 @@ export function registerClientVisits(app: App): void {
     // The days in force when the fit was signed off or declined: a change ops make since moves no promise made.
     const days = visit.sign_off?.guarantee_days ?? inputs.guaranteeDays;
     const guarantee = fitted ? guaranteeUntil(visit.date, days) : null;
-    return c.json({ ...visit, guarantee_until: guarantee, rating }, 200);
+    const open =
+      rating === null &&
+      rateable(
+        { status: visit.status, outcome: visit.outcome, startsAt: visit.starts_at },
+        inputs.ratings,
+        c.var.deps.now(),
+      ) === null;
+    return c.json({ ...visit, guarantee_until: guarantee, rating, rateable: open }, 200);
   });
 }

@@ -2,13 +2,13 @@
 // checked in by the booked start; and the hairline redo rate, their first fits done or left partly done, and of them
 // those whose free refit was booked within 30 days (docs/decisions/0192-free-remakes.md), the partly done visit's Tasks
 // row closed as it was. A no-show is no fit, nor is one closed "Can't fit today", which fitted no hairline; payroll
-// counts that one a consultation too. And the clients' ratings of their visits over the last 90 days, averaged
-// (docs/decisions/0260-ratings.md).
+// counts that one a consultation too. And the clients' ratings of their visits over the days ops set, averaged once
+// there are enough that one client's stars cannot be read off the figure (docs/decisions/0260-ratings.md).
 
 import { statusIn, VISIT_ENDED } from "../../config/statuses.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { QUALITY_DAYS, REDO_DAYS } from "../../policy/quality.ts";
-import { RATING_DAYS } from "../../policy/ratings.ts";
+import type { Ratings } from "../../policy/ratings.ts";
 import { REMAKE_BOOKED } from "../booking/remakes.ts";
 
 export interface Quality {
@@ -18,7 +18,7 @@ export interface Quality {
   /** First fits done or left partly done, and how many had their free refit booked within 30 days. */
   readonly fits: number;
   readonly redone: number;
-  /** Clients' ratings over the last 90 days, and their average to one place; null with none. */
+  /** Clients' ratings over the days ops set, and their average to one place; null with fewer than ops' fewest. */
   readonly ratings: number;
   readonly rating: number | null;
 }
@@ -27,9 +27,9 @@ export interface Quality {
 export const averageOf = (stars: number, count: number): number | null =>
   count === 0 ? null : Math.round((stars / count) * 10) / 10;
 
-export async function qualityOf(db: D1Database, technicianId: string, now: Date): Promise<Quality> {
+export async function qualityOf(db: D1Database, technicianId: string, now: Date, ratings: Ratings): Promise<Quality> {
   const since = new Date(now.getTime() - QUALITY_DAYS * DAY_MS).toISOString();
-  const ratedSince = new Date(now.getTime() - RATING_DAYS * DAY_MS).toISOString();
+  const ratedSince = new Date(now.getTime() - ratings.average_days * DAY_MS).toISOString();
   const until = now.toISOString();
   const [checkIns, fits, rated] = await db.batch<{ total: number; counted: number }>([
     db
@@ -65,13 +65,14 @@ export async function qualityOf(db: D1Database, technicianId: string, now: Date)
   ]);
   const visits = checkIns?.results[0];
   const fitted = fits?.results[0];
-  const ratings = rated?.results[0];
+  const given = rated?.results[0];
+  const count = given?.total ?? 0;
   return {
     visits: visits?.total ?? 0,
     on_time: visits?.counted ?? 0,
     fits: fitted?.total ?? 0,
     redone: fitted?.counted ?? 0,
-    ratings: ratings?.total ?? 0,
-    rating: averageOf(ratings?.counted ?? 0, ratings?.total ?? 0),
+    ratings: count,
+    rating: count < ratings.shown_from ? null : averageOf(given?.counted ?? 0, count),
   };
 }

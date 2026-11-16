@@ -8,6 +8,7 @@ export const RatingSchema = z
   .object({
     stars: z.number().int().min(STARS_MIN).max(STARS_MAX),
     at: z.iso.datetime().openapi({ description: "When the client gave it." }),
+    low: z.boolean().openapi({ description: "Under the stars Care call about (ratings.low_below) when given." }),
   })
   .strict()
   .openapi("Rating");

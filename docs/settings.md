@@ -159,6 +159,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `arrival_notice_min` | Arrival message | minutes | `10` |
 | `move_proposal_hours` | Move proposals | hours | `48` |
 | `guarantee_days` | Fit guarantee | days | `14` |
+| `ratings` | Ratings | days | `{"low_below":4,"average_days":90,"shown_from":5,"rate_within_days":30}` |
 | `credit_reminder_days` | Free visit reminders | days | `{"first":30,"last":7}` |
 | `check_in_days` | Follow-ups after a fit | days | `{"first":2,"second":21}` |
 | `referral_monthly_cap` | Hold referral rewards above | fits a month | `5` |

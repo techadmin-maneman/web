@@ -170,7 +170,7 @@ export const TASK_SLA_HOURS: Slas = {
   // A client's claim under the fit guarantee, as the terms promise a refit or a refund: Care call them within the two
   // days (docs/decisions/0256-fit-guarantee-setting.md).
   fit_guarantee_claim: 48,
-  // A visit the client rated under four stars: Care call them within the two days (docs/decisions/0260-ratings.md).
+  // A visit the client rated low: Care call them within the two days (docs/decisions/0260-ratings.md).
   low_rating: 48,
   // A kit short of what its week's visits need: in its next transfer, within the day.
   kit_request: 24,

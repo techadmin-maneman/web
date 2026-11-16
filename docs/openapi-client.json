@@ -115,6 +115,7 @@
                   "sign_off_checks_open",
                   "already_rated",
                   "visit_not_done",
+                  "rating_closed",
                   "move_gone",
                   "ask_the_client",
                   "code_not_applicable",
@@ -3118,6 +3119,10 @@
               }
             ],
             "description": "The client's stars for this visit (ADR 0260); null until they give them."
+          },
+          "rateable": {
+            "type": "boolean",
+            "description": "Whether the client may rate it now: ended done or partly done, not yet rated, within the days ops set."
           }
         },
         "required": [
@@ -3155,7 +3160,8 @@
           "no_show",
           "paid",
           "guarantee_until",
-          "rating"
+          "rating",
+          "rateable"
         ],
         "additionalProperties": false
       },
@@ -3350,11 +3356,16 @@
             "type": "string",
             "format": "date-time",
             "description": "When the client gave it."
+          },
+          "low": {
+            "type": "boolean",
+            "description": "Under the stars Care call about (ratings.low_below) when given."
           }
         },
         "required": [
           "stars",
-          "at"
+          "at",
+          "low"
         ],
         "additionalProperties": false
       },
@@ -10031,7 +10042,7 @@
             }
           },
           "409": {
-            "description": "already_rated: the visit has its rating; visit_not_done: not closed, or nothing was done",
+            "description": "already_rated: the visit has its rating; visit_not_done: not ended, or nothing was done; rating_closed: past the days ops set to rate it",
             "content": {
               "application/json": {
                 "schema": {
@@ -10049,7 +10060,8 @@
                               "type": "string",
                               "enum": [
                                 "already_rated",
-                                "visit_not_done"
+                                "visit_not_done",
+                                "rating_closed"
                               ]
                             }
                           },

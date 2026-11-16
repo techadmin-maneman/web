@@ -1,4 +1,4 @@
-// The technician's own quality over the last 30 days, and their clients' ratings over the last 90, for Me
+// The technician's own quality over the last 30 days, and their clients' ratings over the days ops set, for Me
 // (src/domain/field/quality.ts). Their own counts alone.
 
 import { z } from "@hono/zod-openapi";
@@ -6,6 +6,7 @@ import { qualityOf } from "../../domain/field/quality.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { techRoute } from "../../http/session-routes.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 
@@ -20,9 +21,11 @@ const QualitySchema = z
         'First fits done or left partly done in the last 30 days; a no-show or one closed "Can\'t fit today" is none.',
     }),
     redone: count.openapi({ description: "Of them, those whose free refit was booked within 30 days." }),
-    ratings: count.openapi({ description: "Clients' ratings of their visits in the last 90 days (ADR 0260)." }),
+    ratings: count.openapi({
+      description: "Clients' ratings of their visits over the days ops set (ratings.average_days; ADR 0260).",
+    }),
     rating: z.union([z.number(), z.null()]).openapi({
-      description: "Those ratings' average, one to five stars to one place; null with none.",
+      description: "Those ratings' average, one to five stars to one place; null with fewer than ratings.shown_from.",
     }),
   })
   .strict()
@@ -40,6 +43,9 @@ const qualityRoute = techRoute({
 
 export function registerTechQuality(app: App): void {
   app.openapi(qualityRoute, async (c) =>
-    c.json(await qualityOf(c.env.DB, technicianOf(c).technicianId, c.var.deps.now()), 200),
+    c.json(
+      await qualityOf(c.env.DB, technicianOf(c).technicianId, c.var.deps.now(), (await opsInputs(c)).ratings),
+      200,
+    ),
   );
 }

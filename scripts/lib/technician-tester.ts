@@ -35,6 +35,8 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM visit_outcomes WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     // The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md).
     `DELETE FROM fit_sign_offs WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
+    // A client's rating of the visit (docs/decisions/0260-ratings.md).
+    `DELETE FROM visit_ratings WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     // Where they were on a visit, and any SOS they tried (docs/decisions/0248-safety.md).
     `DELETE FROM visit_positions WHERE technician_id IN (${ids});`,
     `DELETE FROM sos_alerts WHERE technician_id IN (${ids});`,

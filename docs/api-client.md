@@ -3279,7 +3279,7 @@ Request body:
 }
 ```
 
-**409**: already_rated: the visit has its rating; visit_not_done: not closed, or nothing was done
+**409**: already_rated: the visit has its rating; visit_not_done: not ended, or nothing was done; rating_closed: past the days ops set to rate it
 
 ```json
 {
@@ -3297,7 +3297,8 @@ Request body:
               "type": "string",
               "enum": [
                 "already_rated",
-                "visit_not_done"
+                "visit_not_done",
+                "rating_closed"
               ]
             }
           },
@@ -7587,6 +7588,7 @@ Request body:
             "sign_off_checks_open",
             "already_rated",
             "visit_not_done",
+            "rating_closed",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -10770,6 +10772,10 @@ Request body:
         }
       ],
       "description": "The client's stars for this visit (ADR 0260); null until they give them."
+    },
+    "rateable": {
+      "type": "boolean",
+      "description": "Whether the client may rate it now: ended done or partly done, not yet rated, within the days ops set."
     }
   },
   "required": [
@@ -10807,7 +10813,8 @@ Request body:
     "no_show",
     "paid",
     "guarantee_until",
-    "rating"
+    "rating",
+    "rateable"
   ],
   "additionalProperties": false
 }
@@ -11022,11 +11029,16 @@ Request body:
       "type": "string",
       "format": "date-time",
       "description": "When the client gave it."
+    },
+    "low": {
+      "type": "boolean",
+      "description": "Under the stars Care call about (ratings.low_below) when given."
     }
   },
   "required": [
     "stars",
-    "at"
+    "at",
+    "low"
   ],
   "additionalProperties": false
 }

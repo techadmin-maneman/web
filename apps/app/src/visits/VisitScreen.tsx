@@ -218,9 +218,7 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
           </div>
         )}
       </dl>
-      {visit.status === "completed" && (visit.outcome === "done" || visit.outcome === "partial") && (
-        <RateVisit visit={visit} onRefused={onChanged} />
-      )}
+      {(visit.rateable || visit.rating !== null) && <RateVisit visit={visit} onRefused={onChanged} />}
       <Receipt paid={visit.paid} />
       <Invoice visit={visit} />
       {visit.status === "completed" && (

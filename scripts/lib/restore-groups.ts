@@ -69,6 +69,14 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "Nothing to redo for a fit already closed: its job's outcome stands. Ask ops to note on the visit any sign-off since `<T>` the client remembers",
   },
   {
+    what: "A client's rating of a visit",
+    tables: ["visit_ratings"],
+    leftAtT:
+      "A rating given since is lost: the visit asks for one again, and a low one since is gone from the Tasks board",
+    putBackBy:
+      "Nothing to redo: a client who rated since may rate again; ask Care to call any client whose low rating they saw since `<T>`",
+  },
+  {
     what: "A technician's asks of ops: kit, and a visit to move",
     tables: ["kit_requests", "reschedule_requests"],
     leftAtT: "An ask made since is lost, and one ops settled since is open again on the Tasks board",

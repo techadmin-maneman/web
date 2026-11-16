@@ -1895,6 +1895,7 @@ export interface Rows {
     readonly person_id: string;
     readonly technician_id: string | null;
     readonly stars: number;
+    readonly low: number;
     readonly created_at: string;
   };
   readonly waitlist_entries: {

@@ -94,7 +94,7 @@ export type TaskFacts =
   | {
       readonly group: "low_rating";
       readonly kind: VisitType;
-      /** The client's stars, under four. */
+      /** The client's stars, low under ops' setting when given. */
       readonly stars: number;
       readonly technician: string;
       /** India's day of the visit. */

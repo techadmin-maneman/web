@@ -1,5 +1,7 @@
-// A rating of one to five stars (design/client-redesign, a past visit's "How was this visit?"): five radios drawn as
-// stars, each a 44 px target, filled up to the one chosen; once given, the stars are shown and not chosen again.
+// A rating of one to five stars (design/client-redesign, a past visit's "How was this visit?"): five buttons drawn as
+// stars, each a 44 px target, filled up to the one chosen, and a tap gives that many. Buttons, not radios: the arrow
+// keys move between radios and choose as they go, which here would give a rating no one meant. Once given, the stars
+// are shown and not chosen again.
 
 import { CLIENT_ICONS } from "@maneman/brand/icons";
 import { classes } from "./classes.ts";
@@ -34,22 +36,20 @@ export function StarRating(props: {
     );
   }
   return (
-    <div className={classes(styles.stars, props.className)} role="radiogroup" aria-label={props.label}>
+    <div className={classes(styles.stars, props.className)} role="group" aria-label={props.label}>
       {STARS.map((stars) => (
-        <label key={stars} className={classes(styles.star, stars <= given && styles.on)}>
-          <input
-            className={styles.radio}
-            type="radio"
-            name="stars"
-            checked={stars === props.value}
-            disabled={props.disabled}
-            aria-label={props.starLabel(stars)}
-            onChange={() => {
-              onRate(stars);
-            }}
-          />
+        <button
+          key={stars}
+          type="button"
+          className={classes(styles.star, styles.choose)}
+          disabled={props.disabled}
+          aria-label={props.starLabel(stars)}
+          onClick={() => {
+            onRate(stars);
+          }}
+        >
           <Icon d={CLIENT_ICONS.star} size="md" />
-        </label>
+        </button>
       ))}
     </div>
   );

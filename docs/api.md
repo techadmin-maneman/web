@@ -4349,6 +4349,7 @@ Razorpay's webhook: payments and refunds
             "sign_off_checks_open",
             "already_rated",
             "visit_not_done",
+            "rating_closed",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",

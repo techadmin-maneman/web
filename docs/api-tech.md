@@ -6919,6 +6919,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "sign_off_checks_open",
             "already_rated",
             "visit_not_done",
+            "rating_closed",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -12436,7 +12437,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "ratings": {
       "type": "integer",
       "minimum": 0,
-      "description": "Clients' ratings of their visits in the last 90 days (ADR 0260)."
+      "description": "Clients' ratings of their visits over the days ops set (ratings.average_days; ADR 0260)."
     },
     "rating": {
       "anyOf": [
@@ -12447,7 +12448,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "null"
         }
       ],
-      "description": "Those ratings' average, one to five stars to one place; null with none."
+      "description": "Those ratings' average, one to five stars to one place; null with fewer than ratings.shown_from."
     }
   },
   "required": [
