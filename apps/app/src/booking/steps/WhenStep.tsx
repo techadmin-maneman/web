@@ -197,6 +197,8 @@ export function WhenStep(props: {
   availability: Availability;
   /** What moving the visit costs, for a move; `charged`: the move costs the client. */
   moveNotice: { readonly line: ReactNode; readonly charged: boolean } | null;
+  /** Why the days open later than the visit's own first day: its hair system not in stock in the client's size. */
+  stockNote: string | null;
   /** The day the visit is offered on. */
   offered: string | null;
   date: string | null;
@@ -232,6 +234,12 @@ export function WhenStep(props: {
       }
     >
       {props.moveNotice !== null && <MoveNotice {...props.moveNotice} />}
+      {props.stockNote !== null && (
+        <div className={styles.notice}>
+          <Icon className={styles.noticeIcon} d={CLIENT_ICONS.layers} size="md" />
+          <p>{props.stockNote}</p>
+        </div>
+      )}
       {fullLine !== null && <p className={styles.why}>{fullLine}</p>}
       <Earliest days={days} onChoose={props.onEarliest} />
       <DayAndTimes

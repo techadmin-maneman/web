@@ -47,7 +47,7 @@ describe("choosing a service", () => {
   const availabilityOf = async (who: { cookie: string }, query: string) =>
     (await request(app, `/api/availability?${query}`, { headers: { Cookie: who.cookie } })).json<Days>();
 
-  it("lists on Home the service visit and replacement of the client's package, else the standard ones", async () => {
+  it("lists on Home the service visit of the client's package, else the standard one, and every replacement on sale", async () => {
     const rohit = await client();
     // Their hair system falls due this month, so its replacement may be booked from tomorrow.
     await wornPiece(rohit.id, "2026-09-30");
@@ -60,17 +60,19 @@ describe("choosing a service", () => {
     }>();
 
     // A fitted client books service visits and replacements, not the first fit, which is not theirs to book. They are
-    // on no package, so they are offered the standard service visit and replacement.
+    // on no package, so they are offered the standard service visit; a replacement is every one on sale, which they
+    // choose among as they book it (ADR 0253).
     expect(me.booking.types).toEqual(["service", "replacement"]);
     expect(me.booking.services).toEqual([
       expect.objectContaining({ type: "service", tier: "standard", name: "Service visit", minutes: 90 }),
       expect.objectContaining({ type: "replacement", tier: "standard", name: "Replacement", minutes: 135 }),
+      expect.objectContaining({ type: "replacement", tier: "premium" }),
     ]);
   });
 
-  // A replacement is their package's, with its service visit, once ops sell the package their consultation
-  // recommended; before then it is the standard one.
-  it("offers and holds the replacement of the client's package, priced with its service visit", async () => {
+  // Every replacement on sale is offered; one booked naming none is their package's, with its service visit, once ops
+  // sell the package their consultation recommended; before then it is the standard one.
+  it("offers every replacement on sale, and holds the client's package's where the booking names none", async () => {
     const rohit = await client();
     await wornPiece(rohit.id, "2026-09-30");
     await env.DB.prepare(
@@ -91,7 +93,10 @@ describe("choosing a service", () => {
     expect(await homeReplacements()).toEqual([expect.objectContaining({ tier: "standard" })]);
 
     await aPackage({ code: "premium", name: "Premium", firstFit: 4_000_000, replacement: 3_000_000 });
-    expect(await homeReplacements()).toEqual([expect.objectContaining({ tier: "premium" })]);
+    expect(await homeReplacements()).toEqual([
+      expect.objectContaining({ tier: "standard" }),
+      expect.objectContaining({ tier: "premium" }),
+    ]);
     const held = await hold(rohit, { type: "replacement", date: "2026-09-22", window: "morning" });
     expect(await held.json()).toMatchObject({ service: { tier: "premium" }, price: { amount_ex_gst: 3_000_000 } });
   });

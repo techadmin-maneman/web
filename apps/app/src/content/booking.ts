@@ -32,6 +32,10 @@ export const booking = {
     title: "Choose your next hair system",
     /** "Your Mane Man Active hair system is due on 6 Dec. Keep it or change the base." */
     due: (worn: string, date: string) => `Your ${worn} hair system is due on ${date}. Keep it or change the base.`,
+    /** Once its day has passed: a replacement may still be booked. */
+    wasDue: (worn: string, date: string) => `Your ${worn} hair system was due on ${date}. Keep it or change the base.`,
+    /** Under Choose a date, until one is chosen. */
+    missing: "Choose a hair system first.",
     keep: "Keep it",
     upgrade: "Upgrade",
     downgrade: "Downgrade",
@@ -127,6 +131,9 @@ export const booking = {
     // The day offered being full, and the days past the first fortnight.
     offeredFull: (day: string) => `${day} is full. We’ve picked the next open day.`,
     offeredFullPickAnother: (day: string) => `${day} is full. Pick another day.`,
+    /** A replacement's hair system not held in the client's size: its days open once one can be there. */
+    notInStock: (name: string, date: string) =>
+      `${name} isn’t in stock in your size yet. The earliest fitting is ${date}.`,
     later: "Later dates",
     laterFailed: "Those dates didn’t load. Try again.",
   },

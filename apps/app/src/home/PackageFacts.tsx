@@ -15,11 +15,14 @@ export function PackageFacts(props: {
   months: number;
   service: Price | null;
   everyDays: number;
+  /** Inside a choice card's label, which holds words alone. */
+  inLabel?: boolean;
 }) {
   const copy = hairSystems;
   return (
     <DescriptionList
       layout="row"
+      inLabel={props.inLabel}
       className={styles.facts}
       items={[
         ...(props.price === null ? [] : [{ term: props.priceTerm, details: rupees(props.price.amount) }]),

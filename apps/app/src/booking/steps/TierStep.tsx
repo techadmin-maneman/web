@@ -5,14 +5,15 @@
 
 import { Badge } from "@maneman/ui/Badge";
 import { Button } from "@maneman/ui/Button";
-import { ChoiceGroup, Radio } from "@maneman/ui/Field";
+import { ChoiceCard, TickBox } from "@maneman/ui/ChoiceCard";
+import { ChoiceGroup } from "@maneman/ui/Field";
 import { describedBy, Missing } from "@maneman/ui/Missing";
 import { TextLink } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
-import { shortDate } from "@maneman/web-kit/dates";
+import { shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type OfferedService } from "../../api.ts";
-import { booking, hairSystems, missing } from "../../content.ts";
+import { booking, hairSystems } from "../../content.ts";
 import { PackageFacts, type OfferedPackage as Package } from "../../home/index.ts";
 import { whatsappWith } from "../../lib/whatsapp.ts";
 import { useSession } from "../../session.ts";
@@ -22,12 +23,30 @@ import { Frame, type StepAt } from "./shared.tsx";
 
 const copy = booking.tier;
 
+/** The hair system worn, as the choice weighs the others against it: its package, name and replacement's price. */
+export interface Worn {
+  readonly tier: string;
+  readonly name: string;
+  /** Null where neither the replacements on sale nor the packages' figures say it. */
+  readonly price: number | null;
+}
+
+/** The hair system worn, priced by its replacement on sale, else by its package's figures. */
+export function wornOf(
+  worn: NonNullable<Me["hair_system"]>,
+  services: readonly OfferedService[],
+  packages: readonly Package[] | null,
+): Worn {
+  const onSale = services.find((service) => service.tier === worn.package)?.price.amount;
+  const listed = packages?.find((each) => each.code === worn.package)?.replacement?.amount;
+  return { tier: worn.package, name: worn.name, price: onSale ?? listed ?? null };
+}
+
 /** How a hair system on sale compares with the one worn: kept, or a change up, down or across, by its price. */
-export function howItCompares(offered: OfferedService, worn: OfferedService | undefined): string {
-  if (worn === undefined) return copy.change;
+export function howItCompares(offered: OfferedService, worn: Worn): string {
   if (offered.tier === worn.tier) return copy.keep;
-  if (offered.price.amount > worn.price.amount) return copy.upgrade;
-  return offered.price.amount < worn.price.amount ? copy.downgrade : copy.change;
+  if (worn.price === null || offered.price.amount === worn.price) return copy.change;
+  return offered.price.amount > worn.price ? copy.upgrade : copy.downgrade;
 }
 
 /** The service after a change of hair system: the same as the one worn's, or what it changes from and to. */
@@ -42,7 +61,7 @@ function serviceLine(was: Package | undefined, now: Package | undefined): string
 }
 
 /** A change of hair system, in words: what it costs and lasts, its service against the one worn's, and the old one's fate. */
-export function changeLine(chosen: OfferedService, worn: OfferedService, packages: readonly Package[]): string {
+export function changeLine(chosen: OfferedService, worn: Worn, packages: readonly Package[]): string {
   const [was, now] = [
     packages.find((each) => each.code === worn.tier),
     packages.find((each) => each.code === chosen.tier),
@@ -51,34 +70,34 @@ export function changeLine(chosen: OfferedService, worn: OfferedService, package
   return [costs, serviceLine(was, now), copy.oldBack(worn.name)].filter((part) => part !== null).join(" ");
 }
 
-/** One hair system on sale: its name and how it compares, what it is, and its three facts once they are read. */
+/** One hair system on sale, the whole card a choice: its name and how it compares, what it is, and its facts. */
 function TierChoice(props: {
   offered: OfferedService;
-  worn: OfferedService | undefined;
+  worn: Worn | null;
   packages: readonly Package[] | null;
   checked: boolean;
   onChoose: () => void;
 }) {
-  const { offered } = props;
-  const how = howItCompares(offered, props.worn);
+  const { offered, worn } = props;
+  const how = worn === null ? null : howItCompares(offered, worn);
   const facts = props.packages?.find((each) => each.code === offered.tier);
   return (
-    <div className={styles.tier}>
-      <Radio
-        name="replacement-tier"
-        checked={props.checked}
-        onChange={props.onChoose}
-        label={
-          <span className={styles.tierHead}>
-            <span className={styles.tierName}>{offered.name}</span>
-            <Badge tone={how === copy.keep ? "neutral" : "attention"}>{how}</Badge>
-          </span>
-        }
-        detail={offered.description ?? undefined}
-      />
-      {/* Beside the choice rather than in its label, which holds words alone. */}
+    <ChoiceCard
+      name="replacement-tier"
+      look="ticked"
+      className={styles.tier}
+      checked={props.checked}
+      onChange={props.onChoose}
+    >
+      <span className={styles.tierHead}>
+        <TickBox checked={props.checked} />
+        <span className={styles.tierName}>{offered.name}</span>
+        {how !== null && <Badge tone={how === copy.keep ? "neutral" : "attention"}>{how}</Badge>}
+      </span>
+      {offered.description !== null && <span className={styles.tierWords}>{offered.description}</span>}
       {facts !== undefined && (
         <PackageFacts
+          inLabel
           priceTerm={hairSystems.replacementPrice}
           price={offered.price}
           months={facts.replace_after_months}
@@ -86,8 +105,14 @@ function TierChoice(props: {
           everyDays={facts.service_every_days}
         />
       )}
-    </div>
+    </ChoiceCard>
   );
+}
+
+/** When the hair system worn is due, or was, where the replacement is booked after its day. */
+function dueLine(worn: NonNullable<Me["hair_system"]>, today: string): string {
+  const said = worn.due_on < today ? copy.wasDue : copy.due;
+  return said(worn.name, shortDate(worn.due_on));
 }
 
 /** The choice itself, given the hair system worn and the packages' facts, null until they are read. */
@@ -96,21 +121,21 @@ export function TierChoices(props: {
   worn: Me["hair_system"];
   packages: readonly Package[] | null;
   chosen: OfferedService | null;
+  today: string;
   onChoose: (service: OfferedService) => void;
 }) {
-  const { worn, chosen, packages } = props;
-  const wornOffered = props.services.find((service) => service.tier === worn?.package);
-  const changing = chosen !== null && wornOffered !== undefined && chosen.tier !== wornOffered.tier;
+  const { chosen, packages } = props;
+  const worn = props.worn === null ? null : wornOf(props.worn, props.services, packages);
   return (
     <>
       <ChoiceGroup legend={copy.title} legendLook="title">
         {/* Under the title, as the design draws it: the hair system worn and when it is due. */}
-        {worn !== null && <p className={styles.tierDue}>{copy.due(worn.name, shortDate(worn.due_on))}</p>}
+        {props.worn !== null && <p className={styles.tierDue}>{dueLine(props.worn, props.today)}</p>}
         {props.services.map((service) => (
           <TierChoice
             key={service.tier}
             offered={service}
-            worn={wornOffered}
+            worn={worn}
             packages={packages}
             checked={service.tier === chosen?.tier}
             onChoose={() => {
@@ -119,12 +144,12 @@ export function TierChoices(props: {
           />
         ))}
       </ChoiceGroup>
-      {changing && (
+      {chosen !== null && worn !== null && chosen.tier !== worn.tier && (
         <p className={styles.tierChange} role="status">
           <strong className={styles.tierChangeTitle}>
-            {copy.from(howItCompares(chosen, wornOffered), wornOffered.name, chosen.name)}
+            {copy.from(howItCompares(chosen, worn), worn.name, chosen.name)}
           </strong>
-          {changeLine(chosen, wornOffered, packages ?? [])}
+          {changeLine(chosen, worn, packages ?? [])}
         </p>
       )}
       <p className={styles.tierNote}>
@@ -167,7 +192,7 @@ export function TierStep(props: {
           >
             {copy.next}
           </Button>
-          <Missing id="pick-tier" what={props.chosen === null ? missing.pickService : null} />
+          <Missing id="pick-tier" what={props.chosen === null ? copy.missing : null} />
         </>
       }
     >
@@ -176,6 +201,7 @@ export function TierStep(props: {
         worn={me.hair_system}
         packages={packages}
         chosen={props.chosen}
+        today={todayInIndia(Date.now())}
         onChoose={props.onChoose}
       />
     </Frame>

@@ -53,12 +53,13 @@
   border-top: var(--hairline) solid var(--line-200);
 }
 
-.facts dt {
+/* Each fact's name over its figure, in a list or in a choice card's label (./PackageFacts.tsx). */
+.facts > * > :first-child {
   color: var(--ink-500);
   font-size: var(--fs-13);
 }
 
-.facts dd {
+.facts > * > :last-child {
   font-size: var(--fs-14);
   font-weight: var(--weight-semibold);
   font-variant-numeric: tabular-nums;

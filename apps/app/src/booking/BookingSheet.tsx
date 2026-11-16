@@ -6,20 +6,23 @@
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { classes } from "@maneman/ui/classes";
 import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
-import { addDays } from "@maneman/web-kit/dates";
+import { addDays, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
   api,
   type Address,
+  type Availability,
   type BookableType,
   type BookingWindow,
   type Hold,
+  type Me,
   type MoveTerms,
   type OfferedService,
   type Wanted,
 } from "../api.ts";
 import { booking } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
+import { useSession } from "../session.ts";
 import { nextStep, type Step } from "./flow.ts";
 import { hasLaterDays } from "./days.ts";
 import type { Days } from "./useDays.ts";
@@ -78,6 +81,18 @@ function whenTitle(type: BookableType, moving: MoveTerms | undefined): string {
   return type === "first_fit" || type === "replacement" ? booking.when.titleDate : booking.when.title;
 }
 
+/**
+ * Why a replacement's days open later than its own first day, the later of tomorrow and the day it opens: its hair
+ * system not in stock in the client's size, the days opening once one can be there (ADR 0253, decision 6).
+ */
+export function stockNoteOf(availability: Availability, worn: Me["hair_system"]): string | null {
+  if (availability.type !== "replacement") return null;
+  const tomorrow = addDays(todayInIndia(Date.now()), 1);
+  const opens = worn === null || worn.replacement_opens_on < tomorrow ? tomorrow : worn.replacement_opens_on;
+  if (availability.opens <= opens) return null;
+  return booking.when.notInStock(availability.service.name, shortDate(availability.opens));
+}
+
 /** The day, and the start on it, which is held as the client goes on. */
 function DayAndTime(props: {
   days: Days;
@@ -92,6 +107,7 @@ function DayAndTime(props: {
   onHold: () => void;
 }) {
   const { days, moving } = props;
+  const { me } = useSession();
   const { availability } = days;
   if (availability === null) return null;
   const later = hasLaterDays(availability)
@@ -109,6 +125,7 @@ function DayAndTime(props: {
       onClose={props.onClose}
       availability={availability}
       moveNotice={moving === undefined ? null : { line: moveLine(moving), charged: moving.cost !== "free" }}
+      stockNote={moving === undefined ? stockNoteOf(availability, me.hair_system) : null}
       offered={props.offered}
       date={days.date}
       chosenStart={days.chosenStart}
@@ -257,7 +274,7 @@ function BeforeTheDays(props: {
     case "broken":
       return <WaitStep title={booking.failedToStart} onClose={props.onClose} />;
     case "service":
-      // A replacement's choice is of its hair system, kept or changed (ADR 0253); any other kind's, of its visit.
+      // A replacement's choice is of its hair system, kept or changed; any other kind's, of its visit.
       if (props.services.every((service) => service.type === "replacement")) {
         return (
           <TierStep

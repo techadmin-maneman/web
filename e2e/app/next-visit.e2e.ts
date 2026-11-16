@@ -182,6 +182,10 @@ test("Home offers the replacement where the piece falls due first, and a page sa
   await accessible(page);
 
   await page.getByRole("button", { name: appCopy.home.prompt.bookReplacement }).click();
+  // Every replacement on sale is offered first, to keep or change (ADR 0253), opening on the one Home offers.
+  const tiers = page.getByRole("dialog", { name: appCopy.booking.tier.head });
+  await expect(tiers.getByRole("radio", { checked: true })).toHaveCount(1);
+  await tiers.getByRole("button", { name: appCopy.booking.tier.next }).click();
   const when = page.getByRole("dialog", { name: appCopy.booking.when.titleDate });
   await expect(when.locator(CHOSEN_DAY)).toHaveAccessibleName(dayNamed(weekdayDate(replacement.date)));
   expect(asked.at(-1)?.searchParams.get("type")).toBe("replacement");
