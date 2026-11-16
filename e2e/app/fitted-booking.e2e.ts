@@ -74,8 +74,8 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
 
   await tab(page, "Visits").click();
   const card = page.getByRole("main").getByRole("listitem").first();
-  await expect(card).toContainText(shortDate("2027-09-25"));
-  await expect(card).toContainText("Consultation and fit · 9 am–12 noon");
+  await expect(card).toContainText("Consultation and fit");
+  await expect(card).toContainText("Saturday · 9 am–12 noon");
   await expect(card).not.toContainText(appCopy.home.beingBooked.free);
   await expect(page.getByText(appCopy.home.next.none)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
@@ -110,7 +110,9 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   expect(await axeViolations(page)).toEqual([]);
 
   await tab(page, "Visits").click();
-  await expect(page.getByRole("main").getByRole("link").first()).toContainText("Consultation and fit · 12–12:30 pm");
+  const row = page.getByRole("main").getByRole("link").first();
+  await expect(row).toContainText("Consultation and fit");
+  await expect(row).toContainText(/day · 12–12:30\spm/);
 });
 
 // Once fitted, the link to pay by lived only in Razorpay's SMS.

@@ -4,7 +4,9 @@
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { capsLook } from "@maneman/ui/Caps";
 import { GRIEVANCE_MAX_CHARS } from "@rules/policy/grievances.ts";
-import { Button, ButtonLink } from "@maneman/ui/Button";
+import { CLIENT_ICONS, ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState, type ReactNode } from "react";
@@ -114,20 +116,7 @@ export function DataCard({ grievances, answerDays, onRaised }: DataCardProps) {
         </p>
       );
     }
-    if (!writing) {
-      return (
-        <Button
-          variant="quiet"
-          size="control"
-          className={styles.secondary}
-          onClick={() => {
-            setWriting(true);
-          }}
-        >
-          {copy.raise}
-        </Button>
-      );
-    }
+    if (!writing) return null;
     return (
       <form
         className={styles.confirm}
@@ -159,10 +148,19 @@ export function DataCard({ grievances, answerDays, onRaised }: DataCardProps) {
       <h2 className={capsLook(styles.cardLabel)} id="data">
         {copy.label}
       </h2>
-      <p className={styles.cardBody}>{copy.body}</p>
-      <ButtonLink variant="quiet" size="control" className={styles.secondary} href={EXPORT_URL} download>
-        {copy.download}
-      </ButtonLink>
+      <ListRows className={styles.rows}>
+        <ListRow icon={ICONS.download} title={copy.download} href={EXPORT_URL} chevron />
+        {state !== "sent" && !writing && (
+          <ListRow
+            icon={CLIENT_ICONS.alert}
+            title={copy.raise}
+            onClick={() => {
+              setWriting(true);
+            }}
+            chevron
+          />
+        )}
+      </ListRows>
       {concern()}
       {grievances.length > 0 && (
         <ul className={styles.concerns} aria-label={copy.concerns}>

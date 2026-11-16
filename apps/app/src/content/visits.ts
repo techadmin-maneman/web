@@ -7,11 +7,11 @@ export const visits = {
   upcoming: "Upcoming",
   past: "Past",
   issues: "Issues",
-  issuesCounted: (open: number) => `Issues · ${String(open)}`,
   none: "Nothing booked yet.",
   noneYet: "No visits yet. After your consultation, every visit shows here with its photos and invoice.",
-  /** Visits: a visit paid for ahead, or covered by a credit. */
-  prepaid: "Prepaid",
+  /** Visits: a visit paid for ahead, or covered by a credit; a consultation, which costs nothing. */
+  paid: "Paid",
+  free: "Free",
   /** A visit paid by UPI at the visit while online payment is off (ADR 0209): "Pay Rs. 2,200 by UPI at the visit". */
   payAtVisit: (amount: string) => `Pay ${amount} by UPI at the visit`,
   /** A consultation asked for on the site, which ops have yet to confirm. */
@@ -49,11 +49,12 @@ export const visits = {
     back: "Back to visits",
     cancelled: "This visit was cancelled.",
     photographs: "Photos from this visit",
+    /** Beneath a visit's photos. */
+    private: "Only you and your technician see these photos.",
     technician: "Technician",
-    duration: "Duration",
+    duration: "Time taken",
     paid: "Paid",
     receipt: "Receipt",
-    type: "Type",
     /** A fit the client signed off in their app, and when. */
     signedOff: "Signed off",
     signedBy: (when: string) => `By you, ${when}`,
@@ -72,9 +73,6 @@ export const visits = {
       failed: "That didn’t go through. Try again.",
     },
     done: "What was done",
-    /** The checklist the technician ticked, as one sentence: "Hair system removed, scalp cleaned, cut and styled." */
-    doneLine: (items: readonly string[]) =>
-      `${items.map((item, index) => (index === 0 ? item : item.charAt(0).toLowerCase() + item.slice(1))).join(", ")}.`,
     /** The things a finished visit can say about its invoice (ADR 0056). */
     invoice: {
       open: "Tax invoice",
@@ -94,16 +92,20 @@ export const visits = {
     // A visit the client missed, and the dispute of its charge (ADR 0096). The reason ops gave stays with them.
     noShow: {
       label: "Missed visit",
-      line: (minutes: number) => `We came and waited ${String(minutes)} minutes, but no one was home.`,
+      line: (minutes: number) =>
+        `Nobody answered while the technician waited ${String(minutes)} minutes at your door. No work was done.`,
+      charge: "Missed-visit charge",
+      yourDispute: "Your dispute",
       decision: {
         undecided: "We are looking at it. Nothing is charged until we have.",
-        charged: "Charged.",
-        waived: "Not charged.",
+        charged: "Charged",
+        waived: "Not charged",
       },
       /** What the charge took, as the booking was sold to cost a no-show. */
-      kept: (amount: string) => `Charged: we kept ${amount} of what you paid.`,
-      creditSpent: "Charged: the free service visit it used is spent.",
+      kept: (amount: string) => `We kept ${amount}`,
+      creditSpent: "The free service visit it used is spent",
       dispute: "Dispute this charge",
+      disputeUntil: (day: string) => `Were you home? You can dispute the charge until ${day}.`,
       /** Where the button stood, once the days to dispute have passed. */
       disputeClosed: (day: string) => `The days to dispute this charge ended on ${day}.`,
       disputed: {

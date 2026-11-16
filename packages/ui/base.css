@@ -124,8 +124,31 @@
     --nav-label: var(--ink-muted);
     --nav-rule: var(--ink-rule);
     --nav-mark: var(--gilt);
-    /* The tab bar's mark on its current tab (./TabBar.tsx): none, unless the app draws one. */
+    /* The tab bar's mark on its current tab (./TabBar.tsx): none, unless the app draws one. Its counts in the label's
+       tone on the bar's ground, unless the app boxes them. */
     --tab-mark: transparent;
+    --nav-count-ground: var(--nav-ground);
+    --nav-count-text: var(--nav-label);
+    --nav-count-weight: var(--weight-regular);
+    /* A choice of views (./Segmented.tsx): a quiet track as wide as its words, the chosen one raised on the paper,
+       unless the app's look edges the track and fills the chosen one. */
+    --segmented-display: inline-flex;
+    --segmented-grow: 0 1 auto;
+    --segmented-edge: transparent;
+    --segmented-track: var(--ui-tint);
+    --segmented-weight: inherit;
+    --segmented-on: var(--ui-raised);
+    --segmented-on-edge: var(--ui-line);
+    --segmented-on-text: var(--ui-text);
+    --segmented-count: var(--ui-tint);
+    --segmented-count-text: var(--ui-text);
+    --segmented-on-count: var(--segmented-count);
+    /* A document's row (./DocumentLink.tsx): a tinted box, unless the app's look draws it between hairlines. */
+    --document-pad: var(--sp-16);
+    --document-edge: var(--hairline) solid var(--paper-line);
+    --document-rule: var(--paper-line);
+    --document-ground: var(--paper-light);
+    --document-hover: var(--paper-shade);
     /* A list of rows on a phone (./ListRow.tsx): its edge, and its rows' lead column, title and second line. */
     --list-edge: var(--hairline) solid var(--ui-line);
     /* How far a row's words sit from the list's sides: none where the list runs the column's width, as the client's. */
@@ -146,6 +169,7 @@
     --compare-knob: var(--ink-deep);
     --compare-knob-edge: var(--gilt);
     --compare-knob-text: var(--gilt);
+    --compare-knob-radius: 0;
     /* A sheet's panel (./Sheet.tsx): the paper, unless the app's look sets its own. */
     --sheet-ground: var(--paper);
     --sheet-text: var(--text);

@@ -108,13 +108,13 @@ export const profile = {
     cancel: "Keep it off",
   },
   change: {
-    label: "Change mobile number",
-    body: "We’ll send a code to both numbers, then confirm with you.",
+    label: "Mobile number",
+    body: "We send a code to both numbers, then confirm with you.",
     prefix: "+91",
     placeholder: "New number",
     /** The box's name to a screen reader, which shows none. */
     newNumber: "New mobile number",
-    start: "Start the change",
+    start: "Change number",
     invalid: "Enter a 10-digit mobile number, not the one you use now.",
     codes: "Enter the code sent to each number.",
     oldCode: "Code sent to your current number",
@@ -166,9 +166,8 @@ export const profile = {
   // The client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {
     label: "Your data",
-    body: "Download your data, or raise a concern about how we use it.",
     download: "Download my data",
-    raise: "Raise a concern",
+    raise: "Raise a concern about my data",
     field: "Your concern",
     send: "Send",
     cancel: "Not now",
@@ -188,7 +187,7 @@ export const profile = {
     answer: (response: string) => `Our answer: ${response}`,
   },
   deletion: {
-    label: "Delete your account",
+    label: "Delete account",
     /** The law's days to act and years invoices are kept, from the API; none in a Home kept from before it said. */
     body: (law: { readonly days: number; readonly years: number } | null) =>
       law === null

@@ -1,4 +1,4 @@
-/* A document's row (./DocumentLink.tsx). */
+/* A document's row (./DocumentLink.tsx): a tinted box, or, in an app's look that says so, a row between hairlines. */
 
 @layer base, ui;
 
@@ -10,9 +10,10 @@
     gap: var(--sp-12);
     width: 100%;
     min-height: var(--btn-lg);
-    padding: 0 var(--sp-16);
-    border: var(--hairline) solid var(--paper-line);
-    background: var(--paper-light);
+    padding: 0 var(--document-pad);
+    border: var(--document-edge);
+    border-bottom: var(--hairline) solid var(--document-rule);
+    background: var(--document-ground);
     font: inherit;
     font-size: var(--fs-16);
     color: var(--text);
@@ -23,7 +24,7 @@
 
   @media (hover: hover) {
     .document:hover {
-      background: var(--paper-shade);
+      background: var(--document-hover);
     }
   }
 }

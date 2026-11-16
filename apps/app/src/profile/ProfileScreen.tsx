@@ -89,7 +89,7 @@ function ProfileRows({ now }: { now: Profile | null }) {
         chevron
       />
       <ListRow
-        icon={CLIENT_ICONS.lock}
+        icon={GLYPHS.shield}
         title={profileMenu.privacy}
         meta={profileMenu.privacyMeta}
         to="/profile/privacy"

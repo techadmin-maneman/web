@@ -106,6 +106,18 @@
   scroll-padding-block: var(--sp-8);
 }
 
+/* The page's action, in the gutter under a hairline, clear of the phone's home bar where no tabs are beneath it. */
+.footer {
+  flex-shrink: 0;
+  padding: var(--sp-12) var(--screen-gutter);
+  border-top: var(--hairline) solid var(--line-200);
+  background: var(--white-000);
+}
+
+.noTabs .footer {
+  padding-bottom: calc(var(--sp-12) + env(safe-area-inset-bottom));
+}
+
 /* The shared tab bar (@maneman/ui/TabBar), in the column under the page rather than over it. */
 .tabs {
   position: static;
@@ -152,6 +164,10 @@
 
   .withTabs .page {
     grid-area: page;
+  }
+
+  .withTabs .footer {
+    grid-area: footer;
   }
 
   /* The shared bar stood on end: its tabs one under another, each icon with its name beside it, the mark at the left. */

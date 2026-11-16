@@ -2,7 +2,7 @@
 // does not know opens Home, and a path the app had before moves to its new place.
 
 import { describe, expect, it } from "vitest";
-import { movedTo, routeOf, tabOf } from "../../../apps/app/src/route.ts";
+import { backOf, movedTo, routeOf, tabOf } from "../../../apps/app/src/route.ts";
 
 const VISIT = "a0000000-0000-4000-8000-000000000001";
 
@@ -23,6 +23,17 @@ describe("the client app’s routes", () => {
     expect(routeOf("/profile/privacy")).toEqual({ page: "privacy" });
     expect(routeOf("/profile/account")).toEqual({ page: "account" });
     expect(tabOf({ page: "account" })).toBeNull();
+  });
+
+  it("gives every page under a tab a way back to the page it sits under, and no tab bar", () => {
+    expect(backOf({ page: "payments" })).toBe("/profile");
+    expect(backOf({ page: "entry", id: VISIT })).toBe("/profile/payments");
+    expect(backOf({ page: "visit", id: VISIT })).toBe("/visits");
+    expect(backOf({ page: "issue", id: VISIT })).toBe("/visits/issues");
+    expect(backOf({ page: "hairSystems" })).toBe("/hair-system");
+    expect(backOf({ page: "profile" })).toBe("/");
+    expect(tabOf({ page: "visit", id: VISIT })).toBeNull();
+    expect(tabOf({ page: "payments" })).toBeNull();
   });
 
   it("opens one visit, one issue, raising one, the alerts and the hair system pages", () => {

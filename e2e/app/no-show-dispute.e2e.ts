@@ -48,7 +48,9 @@ async function charged(page: Page, dispute: Dispute, closedAt: string | null = n
 
 test("says what the charge kept, and offers its dispute", async ({ page }) => {
   await charged(page, null);
-  await expect(page.getByText("We came and waited 16 minutes, but no one was home.")).toBeVisible();
+  await expect(
+    page.getByText("Nobody answered while the technician waited 16 minutes at your door. No work was done."),
+  ).toBeVisible();
   await expect(page.getByText(appCopy.visits.detail.noShow.kept(PRICE.lateFeeFirstFit))).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.dispute.title })).toBeVisible();
 });

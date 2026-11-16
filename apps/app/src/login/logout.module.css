@@ -6,3 +6,21 @@
   line-height: var(--lh-145);
   color: var(--error-on-paper);
 }
+
+/* A row as the profile's list draws its rows: the icon, then the words, between hairlines. */
+.row {
+  justify-content: flex-start;
+  gap: var(--sp-12);
+  width: 100%;
+  min-height: var(--tap-row);
+  padding: 0;
+  border-width: var(--hairline) 0;
+  border-color: var(--line-200);
+  font-size: var(--fs-16);
+  font-weight: var(--weight-medium);
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--navy-900);
+}

@@ -10,10 +10,10 @@ import { Compare, COMPARE_BEFORE } from "@maneman/ui/Compare";
 import { CLIENT_ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { ARRIVE } from "@maneman/ui/motion";
-import { fullDate } from "@maneman/web-kit/dates";
+import { fullDate, shortDate } from "@maneman/web-kit/dates";
 import { useEffect, useState } from "react";
 import type { Angle, PhotoTimeline } from "../api.ts";
-import { photos } from "../content.ts";
+import { photos, VISIT_TYPES } from "../content.ts";
 import { ANGLES, shownPhase } from "./PhotoRow.tsx";
 import type { Relink } from "./relink.ts";
 import styles from "./compare.module.css";
@@ -40,6 +40,9 @@ function Picker(props: { label: string; visits: readonly Visit[]; chosen: Visit;
   );
 }
 
+/** A side's tag: a first fit by that name, which is where a client's story starts; any other visit by its day. */
+const tagOf = (visit: Visit) => (visit.type === "first_fit" ? VISIT_TYPES.first_fit : shortDate(visit.date));
+
 /** Both sides of one angle; the earlier is cut at the divider. */
 function Sides(props: { from: Visit; to: Visit; angle: Angle; className?: string; onFailed: () => void }) {
   const { from, to, angle, className } = props;
@@ -55,7 +58,7 @@ function Sides(props: { from: Visit; to: Visit; angle: Angle; className?: string
             onError={props.onFailed}
           />
         )}
-        <span className={styles.date}>{date}</span>
+        <span className={styles.date}>{tagOf(visit)}</span>
       </div>
     );
   };
@@ -151,6 +154,7 @@ function Both(props: { visits: readonly Visit[]; earliest: Visit; latest: Visit;
       <div className={styles.angles} role="group" aria-label={photos.angle}>
         {ANGLES.map((each) => (
           <ToggleButton
+            filled
             pressed={each === angle}
             key={each}
             className={styles.angle}

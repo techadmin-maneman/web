@@ -20,103 +20,52 @@
   color: var(--ink-500);
 }
 
+/* The lists run the gutter's width between hairlines. */
 .upcoming,
 .past {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.upcoming {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
-  margin: 0 var(--sp-20);
-}
-
-/* Each upcoming visit's card opens its own page, as Home's next one does. */
-.card {
-  display: block;
-  padding: var(--sp-20);
-  background: var(--navy-900);
-  color: var(--white-000);
-  text-decoration: none;
-}
-
-.cardHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-12);
-}
-
-.cardDate {
-  font-size: var(--fs-22);
-  font-weight: var(--weight-semibold);
-}
-
-.prepaid {
-  font-size: var(--fs-14);
-  letter-spacing: var(--tracking-12);
-  color: var(--gilt);
-}
-
-.cardWhat {
-  display: block;
-  margin-top: var(--sp-8);
-  font-size: var(--fs-16);
-  color: var(--grid-100);
-}
-
-/* A visit being booked: Home's line that it is, beneath what and when. */
-.cardNote {
-  display: block;
-  margin-top: var(--sp-8);
-  font-size: var(--fs-15);
-  color: var(--grid-100);
+  margin: 0 var(--screen-gutter);
+  border-top: var(--hairline) solid var(--line-200);
+  border-bottom: var(--hairline) solid var(--line-200);
 }
 
 .past {
-  padding-bottom: var(--sp-24);
+  margin-bottom: var(--sp-24);
 }
 
-.row {
+/* An upcoming visit's date: its month over its day, white on navy. */
+.square {
   display: flex;
+  flex: none;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  min-height: var(--tap-row);
-  margin: 0 var(--sp-20);
-  padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--line-200);
-  color: var(--ink-900);
-  text-decoration: none;
+  justify-content: center;
+  width: var(--btn-client);
+  height: var(--btn-lg);
+  background: var(--navy-900);
+  color: var(--white-000);
+  line-height: var(--lh-115);
 }
 
-.rowDate,
-.rowWhat {
-  display: block;
-}
-
-.rowDate {
-  font-size: var(--fs-16);
+.squareMonth {
+  font-size: var(--fs-13);
   font-weight: var(--weight-medium);
+  color: var(--mist-300);
 }
 
-.rowWhat {
-  margin-top: var(--sp-4);
-  font-size: var(--fs-14);
-  color: var(--ink-500);
+.squareDay {
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
 }
 
-.chevron {
-  flex-shrink: 0;
-  color: var(--ink-500);
+.missed {
+  color: var(--red-700);
 }
 
-/* Visits' "Book your next visit" (packages/ui/Button.tsx), the width of the page. */
+/* The action at Visits' foot (packages/ui/Button.tsx), the width of the gutter. */
 .book {
   width: 100%;
+  gap: var(--sp-8);
 }
 
 /* The other kind of visit a fitted client may book, quietly beneath it (ADR 0086); the board draws one button. */

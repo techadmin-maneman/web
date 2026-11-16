@@ -113,7 +113,7 @@ test("the tabs reach Visits, the empty Photos and Rewards, and Payments sits und
   const tabs = page.getByRole("navigation");
 
   await tabs.getByRole("link", { name: appCopy.titles.visits }).click();
-  await expect(page.getByText("Consultation · 9 am–12 noon")).toBeVisible();
+  await expect(page.getByText(/day · 9\sam–12\snoon$/)).toBeVisible();
   await expect(tabs.getByRole("link", { name: appCopy.titles.visits })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: appCopy.empty.photos.title }).click();
   await expect(page.getByText(appCopy.empty.photos.lines[0])).toBeVisible();

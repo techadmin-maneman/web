@@ -94,6 +94,7 @@ export function RaiseScreen() {
               <ToggleButton
                 key={key}
                 asRadio
+                filled
                 pressed={about === key}
                 onClick={() => {
                   setAbout(key);

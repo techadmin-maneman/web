@@ -118,3 +118,19 @@ const TABS: ReadonlyMap<Route["page"], Tab> = new Map<Route["page"], Tab>([
 ]);
 
 export const tabOf = (route: Route): Tab | null => TABS.get(route.page) ?? null;
+
+/** Where a page's way back goes: the page it sits under. */
+const BACK: ReadonlyMap<Route["page"], string> = new Map<Route["page"], string>([
+  ["visit", "/visits"],
+  ["issue", "/visits/issues"],
+  ["raise", "/visits/issues"],
+  ["invited", "/rewards"],
+  ["payments", "/profile"],
+  ["entry", "/profile/payments"],
+  ["address", "/profile"],
+  ["privacy", "/profile"],
+  ["account", "/profile"],
+  ["hairSystems", "/hair-system"],
+]);
+
+export const backOf = (route: Route): string => BACK.get(route.page) ?? "/";

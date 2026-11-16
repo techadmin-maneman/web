@@ -168,7 +168,6 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
   await expect(entries.nth(0)).toContainText(appCopy.payments.refund);
   await expect(entries.nth(0)).toContainText(appCopy.VISIT_TYPES.service);
   await expect(entries.nth(0)).toContainText("+ Rs. 1,000");
-  await expect(entries.nth(0)).toContainText("back to your UPI");
   await expect(entries.nth(0)).toContainText(appCopy.payments.status.created);
   await expect(entries.nth(1)).toContainText(appCopy.VISIT_TYPES.service);
   await expect(entries.nth(1)).toContainText(PRICE.service);
@@ -240,7 +239,7 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await expect(page.getByRole("heading", { name: appCopy.home.next.label })).toBeVisible();
   await scan();
   await tab(page, "Visits").click();
-  await expect(page.getByText("Service visit · 12–12:30 pm · Imran")).toBeVisible();
+  await expect(page.getByText(/day · 12–12:30\spm · Imran$/)).toBeVisible();
   await scan();
   await page.goto(`/visits/${client.service.id}`);
   await expect(page.getByRole("button", { name: "Tax invoice PDF, opens in a new tab", exact: true })).toBeVisible();
@@ -253,7 +252,8 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await page.goto(`/visits/${client.next.id}`);
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();
   await scan();
-  await tab(page, "Photos").click();
+  // A visit's page sits under Visits, with a way back and no tabs.
+  await page.goto("/photos");
   await page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await scan();

@@ -8,8 +8,12 @@
 export const REFUND_TAKES = "5 to 7 working days";
 
 export const payments = {
-  title: "Payments",
+  title: "Payments and invoices",
   back: "Back to payments",
+  /** A method as the list names it: "UPI via Razorpay". */
+  viaRazorpay: (method: string) => `${method} via Razorpay`,
+  /** Beneath the list. */
+  note: "Prices include GST. Every payment goes through Razorpay: in the app when you book, or by a Razorpay link we text you. Technicians never take cash or UPI.",
   // An entry that paid for no visit we know of.
   payment: "Payment",
   refund: "Refund",

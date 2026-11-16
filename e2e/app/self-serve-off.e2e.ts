@@ -55,7 +55,17 @@ test("a fitted client reschedules through WhatsApp, and asks ops for a time to b
   );
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
 
-  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.visits }).click();
+  // With nothing booked, Visits offers the next visit at its foot: asked for on WhatsApp.
+  await page.unroute("**/api/me");
+  await selfServeOff(page, { next_visit: null });
+  await page.route("**/api/visits", async (route) => {
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}/api/visits`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
+    await route.fulfill({ response: answer, json: { ...((await answer.json()) as object), upcoming: [] } });
+  });
+  await page.goto("/visits");
   await page.getByRole("button", { name: appCopy.home.next.book }).click();
   const request = appCopy.booking.request;
   const sheet = page.getByRole("dialog", { name: request.title });
