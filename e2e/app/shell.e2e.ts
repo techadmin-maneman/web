@@ -166,7 +166,7 @@ test("offers a way on, not a blank page, when a page fails to draw", async ({ pa
   // An answer the page cannot draw.
   outsideContract("GET /api/payments 200");
   await page.route("**/api/payments", (route) => route.fulfill({ json: { entries: null } }));
-  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.payments }).click();
+  await page.goto("/profile/payments");
   await expect(page.getByRole("alert")).toContainText(appCopy.broken.message);
   await expect(page.getByRole("button", { name: appCopy.broken.reload })).toBeVisible();
 });

@@ -10,7 +10,7 @@ import { holdOpen } from "./one-tap.ts";
 test("Home shows a fitted client’s next visit, with the technician, and Reschedule", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   await expect(page.getByText(shortDate(client.next.date))).toBeVisible();
   await expect(page.getByText("12–12:30 pm", { exact: true })).toBeVisible();
   await expect(page.getByText("Imran", { exact: true })).toBeVisible();
@@ -128,7 +128,7 @@ test("an open note sheet keeps its words through a dropped signal, and Back clos
 // A visit that is not this client's, or a payment, says so rather than offering to try again for ever.
 test("a visit or a payment that is not the client’s says it could not be found", async ({ page }) => {
   await logIn(page, fittedClient().mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   const nobody = "00000000-0000-4000-8000-000000000000";
   await page.goto(`/visits/${nobody}`);
   await expect(page.getByRole("alert")).toContainText(appCopy.visits.notFound);
@@ -147,7 +147,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
 }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   // Read by the page, whose app.localhost only the browser resolves.
   const read = (path: string) =>
     page.evaluate(async (url) => (await fetch(url)).json() as Promise<Record<string, unknown>>, path);

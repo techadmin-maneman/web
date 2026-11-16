@@ -21,7 +21,7 @@ type Dispute = "open" | "refunded" | "upheld" | null;
 async function charged(page: Page, dispute: Dispute, closedAt: string | null = null): Promise<string> {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   const path = `/api/visits/${client.firstFit.id}`;
   // Read by the page, whose app.localhost only the browser resolves.
   const visit = await page.evaluate(async (url) => (await fetch(url)).json() as Promise<object>, path);

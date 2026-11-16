@@ -6,7 +6,7 @@ import * as appCopy from "../../apps/app/src/content.ts";
 import { CLIENT_WORDS } from "../../packages/web-kit/client-words.ts";
 
 test("lists the four consents off, and switches one on with its date and off again", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "privacy");
   const switches = page.getByRole("switch");
   await expect(switches).toHaveCount(4);
   // Every visit is photographed for the client's record: a line, not a switch.
@@ -48,7 +48,7 @@ test("lists the four consents off, and switches one on with its date and off aga
 test("shows the referral card’s line, which names the referrer, before that consent can be switched on", async ({
   page,
 }) => {
-  await loggedIn(page);
+  await loggedIn(page, "privacy");
   const cards = page.getByRole("switch", { name: appCopy.profile.purposes.photos_referral_cards });
   await cards.click();
   await expect(page.getByText(appCopy.profile.referralCards.line)).toBeVisible();
@@ -65,7 +65,7 @@ test("shows the referral card’s line, which names the referrer, before that co
 });
 
 test("changes the number: a code to each, then it waits for us", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "account");
   await page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).fill(randomMobile());
   await page.getByRole("button", { name: appCopy.profile.change.start }).click();
   await expect(page.getByText(appCopy.profile.change.codes)).toBeVisible();
@@ -85,7 +85,7 @@ test("changes the number: a code to each, then it waits for us", async ({ page }
 // A switch the API did not answer stays as it was, and says so: a switch that looks off while the consent stands
 // would tell the client something untrue about their data.
 test("a consent that did not go through says so, and the switch stays as it was", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "privacy");
   await page.route("**/api/consents/*", (route) =>
     route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "test" } } }),
   );
@@ -96,7 +96,7 @@ test("a consent that did not go through says so, and the switch stays as it was"
 });
 
 test("a deletion request that did not go through says so, and asks again", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "account");
   await page.route("**/api/deletion-request", (route) =>
     route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "test" } } }),
   );
@@ -108,7 +108,7 @@ test("a deletion request that did not go through says so, and asks again", async
 });
 
 test("starts one number change, and checks the codes once, however often each is tapped", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "account");
   await page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).fill(randomMobile());
 
   // Starting again withdraws the request just made and sends a fresh pair: four codes for one intent.
@@ -140,7 +140,7 @@ test("starts one number change, and checks the codes once, however often each is
 });
 
 test("saves the address once when Save is tapped twice", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "address");
   await page.getByRole("button", { name: appCopy.profile.addAddress }).click();
   const search = page.getByRole("combobox", { name: appCopy.profile.form.building.label });
   await search.fill("Sunrise");
@@ -163,7 +163,7 @@ test("saves the address once when Save is tapped twice", async ({ page }) => {
 });
 
 test("raises one grievance when Send is tapped twice", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "account");
   await page.getByRole("button", { name: appCopy.profile.data.raise }).click();
   await page.getByRole("textbox", { name: appCopy.profile.data.field }).fill("Please explain who sees my photographs.");
 
@@ -180,7 +180,7 @@ test("raises one grievance when Send is tapped twice", async ({ page }) => {
 });
 
 test("refuses the client’s own number as the new one", async ({ page }) => {
-  const mobile = await loggedIn(page);
+  const mobile = await loggedIn(page, "account");
   await page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).fill(mobile);
   await page.getByRole("button", { name: appCopy.profile.change.start }).click();
   await expect(page.getByRole("alert")).toHaveText(appCopy.profile.change.invalid);

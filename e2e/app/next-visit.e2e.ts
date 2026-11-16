@@ -85,7 +85,7 @@ test("Home offers the next service on the day it falls due, and the sheet opens 
   const { due } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, due.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   // Nothing is booked, so the prompt is the next service's, not the address or the invoice.
   await expect(
     page.getByText(`Your next service visit is due on ${shortDate(due.date)}, in the morning.`),
@@ -190,7 +190,7 @@ test("Home offers the replacement where the piece falls due first, and a page sa
   await page.getByRole("dialog").getByRole("button", { name: appCopy.booking.close }).click();
 
   await page.getByRole("link", { name: appCopy.replacement.back }).click();
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
 });
 
 // A client holding free service visits was offered only the paid replacement on Home.
@@ -217,7 +217,7 @@ test("Home recaps the consultation, and offers the first fit as the hair system 
   const { firstFit } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, firstFit.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.consultation.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.consultation.label })).toBeVisible();
   await expect(page.getByText(`${shortDate(firstFit.consulted)} · Imran`)).toBeVisible();
   await expect(page.getByText("Imran recommends Mane Man Essential.")).toBeVisible();
   // The first fit is Home's card, and never a prompt beneath it.

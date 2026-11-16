@@ -34,7 +34,7 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByText(`If +91 ${mobile.slice(0, 2)}xxx x${mobile.slice(-4)} has a booking`)).toBeVisible();
   await enter(page, CODE);
 
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.consultation.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.consultation.label })).toBeVisible();
   await expect(page.getByText("Morning, 9 am–12 noon")).toBeVisible();
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
   await expect(page.getByText(appCopy.home.consultation.free, { exact: true })).toBeVisible();
@@ -73,11 +73,11 @@ test("a session that ends mid-use goes back to the login, says why, and returns 
 
   // The session ends while the app is open: it ran out, or was ended on another phone.
   await page.context().clearCookies();
-  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.payments }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.photos }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
   await expect(page.getByText(appCopy.login.mobile.ended)).toBeVisible();
   expect(await page.evaluate(() => caches.has("mm-app-home"))).toBe(false);
-  await expect(page).toHaveURL(/\/payments$/);
+  await expect(page).toHaveURL(/\/photos$/);
 
   await page.getByRole("textbox", { name: appCopy.login.mobile.label }).fill(mobile);
   await page.getByRole("button", { name: appCopy.login.mobile.send }).click();
@@ -107,7 +107,7 @@ test("logging out takes the API’s word for it: offline it waits, and a refusal
   await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
 });
 
-test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ page }) => {
+test("the tabs reach Visits, the empty Photos and Rewards, and Payments sits under the profile", async ({ page }) => {
   await sendCode(page, bookedNumber());
   await enter(page, CODE);
   const tabs = page.getByRole("navigation");
@@ -116,19 +116,20 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await expect(page.getByText("Consultation · 9 am–12 noon")).toBeVisible();
   await expect(tabs.getByRole("link", { name: appCopy.titles.visits })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: appCopy.empty.photos.title }).click();
-  await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
+  await expect(page.getByText(appCopy.empty.photos.lines[0])).toBeVisible();
   // Nothing to show yet, so the site's try-on, whose look comes back here.
   await expect(page.getByRole("link", { name: appCopy.empty.photos.tryOn })).toHaveAttribute(
     "href",
     "http://127.0.0.1:4321/try",
   );
-  await tabs.getByRole("link", { name: appCopy.titles.payments }).click();
-  await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
   await tabs.getByRole("link", { name: appCopy.titles.rewards }).click();
-  // Refer is the invite itself now; who has been fitted is a page of its own.
+  // Rewards is the invite itself; who has been fitted is a page of its own.
   await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
-  await page.goBack();
+  // A lead's profile lists no payments yet; the page is there all the same.
+  await page.goto("/profile/payments");
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
 });
 
 test("a wrong code says so, in the design’s words, and the fifth voids it", async ({ page }) => {

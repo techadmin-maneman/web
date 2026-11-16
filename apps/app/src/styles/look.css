@@ -110,6 +110,19 @@ body {
   line-height: var(--lh-145);
 }
 
+/*
+ * A sheet's dark ground is painted on its frame, which fills the phone's screen, not on the dialog's backdrop: what reads
+ * the page for contrast, as axe does, cannot see a backdrop, and would judge the Close above the sheet against the
+ * screen beneath it rather than the dark it stands on. The ground rises with the sheet.
+ */
+dialog[open] {
+  background: var(--sheet-scrim);
+}
+
+dialog::backdrop {
+  background: transparent;
+}
+
 /* Plex is loaded at 400, 500 and 600, so the strong words of a line are its semibold. */
 :is(strong, b) {
   font-weight: var(--weight-semibold);

@@ -14,7 +14,7 @@ test("offers support on WhatsApp, with the design’s line", async ({ page }) =>
 });
 
 test("Your data: a download of everything held, and a concern sent to ops", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "account");
   await expect(page.getByRole("link", { name: appCopy.profile.data.download })).toHaveAttribute(
     "href",
     "/api/me/export.html",
@@ -66,7 +66,7 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
 });
 
 test("asks before requesting deletion, then says it is requested", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "account");
   await expect(page.getByText(appCopy.profile.deletion.body)).toBeVisible();
   await page.getByRole("button", { name: appCopy.profile.deletion.request }).click();
   await page.getByRole("button", { name: appCopy.profile.deletion.no }).click();
@@ -135,7 +135,7 @@ test("lists where the client is signed in, and signs another browser out", async
 });
 
 test("meets WCAG 2.2 AA, with the address form and the card’s lines open", async ({ page }) => {
-  await loggedIn(page);
+  await loggedIn(page, "address");
   const scan = async () => {
     expect(await axeViolations(page)).toEqual([]);
   };

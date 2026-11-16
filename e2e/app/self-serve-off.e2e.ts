@@ -37,7 +37,7 @@ const WHATSAPP = "^https://wa\\.me/\\d+\\?text=";
 test("a fitted client reschedules and books through WhatsApp, and no booking sheet opens", async ({ page }) => {
   await selfServeOff(page);
   await logIn(page, fittedClient().mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
 
   await expect(page.getByRole("link", { name: appCopy.home.reschedule })).toHaveAttribute(
     "href",

@@ -27,7 +27,7 @@ async function opensTheFile(page: Page, document: Locator): Promise<string> {
 test("a past visit carries its own invoice, or says why there is none", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
 
   await page.goto(`/visits/${client.service.id}`);
   // The whole accessible name, so a screen reader is told the document leaves the app.
@@ -54,7 +54,7 @@ test("a past visit carries its own invoice, or says why there is none", async ({
 test("a visit to come offers itself to the client’s calendar, at its time; one done does not", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   await page.goto(`/visits/${client.next.id}`);
   const google = new URL((await page.getByRole("link", { name: appCopy.calendar.google }).getAttribute("href")) ?? "");
   // Noon, for its ninety minutes.
@@ -160,7 +160,7 @@ test("a photograph whose link has run out is shown again through a fresh one", a
 test("Payments: one list of payments and refunds, an entry’s documents, and a document not ready", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await tab(page, "Payments").click();
+  await page.goto("/profile/payments");
   const entries = page.getByRole("main").getByRole("link");
   await expect(entries).toHaveCount(3);
   // A refund is titled a refund and reads as money coming back, never as a second charge.
@@ -218,7 +218,7 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
 test("a payment made with a discount code names the code, and what it took off", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   const path = `/api/payments/${client.servicePayment}`;
   // Read by the page, whose app.localhost only the browser resolves.
   const entry = await page.evaluate(async (url) => (await fetch(url)).json() as Promise<object>, path);
