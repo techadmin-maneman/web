@@ -26,7 +26,7 @@ export interface Quality {
 }
 
 /** The average of `count` ratings adding up to `stars`, to one place; null with none. */
-export const averageOf = (stars: number, count: number): number | null =>
+const averageOf = (stars: number, count: number): number | null =>
   count === 0 ? null : Math.round((stars / count) * 10) / 10;
 
 export async function qualityOf(db: D1Database, technicianId: string, now: Date, ratings: Ratings): Promise<Quality> {
