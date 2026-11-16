@@ -12743,6 +12743,11 @@ Request body:
       "type": "integer",
       "description": "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it."
     },
+    "opens": {
+      "type": "string",
+      "format": "date",
+      "description": "The first day this visit may be booked on: a replacement's no sooner than its hair system can be fitted, where none is in stock."
+    },
     "last": {
       "type": "string",
       "format": "date",
@@ -12830,6 +12835,7 @@ Request body:
     "service",
     "price",
     "change_notice_hours",
+    "opens",
     "last",
     "days"
   ],

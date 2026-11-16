@@ -195,7 +195,7 @@ All in PR A unless marked B. Each step is a commit series with its tests.
 | 2   | Shell: four tabs, top bar (initials, bell), Profile and its pages, redirects                                                                                                        | Route tests for every old path; e2e on the shell                                                                                                                  |
 | 3   | Home and the next-visit card, no live states; Your hair system; Compare the four hair systems                                                                                       | e2e per Home state                                                                                                                                                |
 | 4   | Booking and Razorpay Checkout; change and cancel; request mode; staging on test keys                                                                                                | e2e through Checkout success, failure, pending, expiry                                                                                                            |
-| 5   | W1 replacement only when due; W2 change of hair system at booking, with the tier step                                                                                               | Worker tests: before the window, its first day, remake owed, recall owed; demand by booked tier; task closes and stock returns; starts gated by the promised date |
+| 5   | W1 replacement only when due; W2 change of hair system at booking, with the tier step                                                                                               | Worker tests: before the window, its first day, remake owed, recall owed; stock follows the package booked; the days open once the hair system sold can be fitted |
 | 6   | W9 values on the API; the custom-order and one-visit paths                                                                                                                          | Route tests per field; e2e on both paths                                                                                                                          |
 | 7   | W3 live fields; the live card                                                                                                                                                       | Route tests; e2e on each live state                                                                                                                               |
 | 8   | W4 sign-off: table, three routes, signed in the client's own app only (ADR 0254); the technician's Sign-off step (offline, Hindi); console story and Tasks queue; the client's card | Done refused without sign-off; each state; offline replay                                                                                                         |
@@ -212,7 +212,8 @@ Migrations, from 0210:
 - `0210_fit_sign_offs`
 - `0211_client_app_alerts` (`client_app_alerts`, `client_push_subscriptions`; `client_alerts` is ops' alerts about a client)
 - `0212_client_reports` (`client_reports`, `client_report_photos`: the issue log, ADR 0258)
-- `0213_visit_ratings`
+- `0213_replacement_booked_from_its_month` (W2: booked from the due month's first day)
+- `0214_visit_ratings`
 
 ADRs, from 0252:
 

@@ -12,7 +12,7 @@ import { type PricedService, bookableService, offeredProducts, serviceOf } from 
 import { type Price, lateFeeOn } from "../domain/money/price-book.ts";
 import type { OpsInputs } from "../domain/platform/ops-settings.ts";
 import { bookableDays } from "../domain/visits/next-visit.ts";
-import { stockArrivesOn } from "../domain/inventory/stock-gap.ts";
+import { stockFitsFrom } from "../domain/inventory/stock-gap.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import {
   type ChangeableVisit,
@@ -85,16 +85,24 @@ export async function startCheckout(c: Context<AppEnv>, holdId: string, personId
   };
 }
 
+/** The days this client may book a visit of this type on, by the figures ops set (src/domain/visits/next-visit.ts). */
+export const rangeFor = async (c: Context<AppEnv>, personId: string, type: VisitType) =>
+  bookableDays({ db: c.env.DB, personId, type, now: c.var.deps.now(), days: (await opsInputs(c)).nextVisitDays });
+
 /**
- * The days this client may book a visit of this type on, by the figures ops set (src/domain/visits/next-visit.ts): a
- * replacement, from when the hair system of the package asked for can reach them too, where none is in stock.
+ * The days a visit sold as `sold` may be booked on: a replacement's open no sooner than a fit may use the hair system
+ * of the package it is sold as, where none is in stock or on its way.
  */
-export async function rangeFor(c: Context<AppEnv>, personId: string, type: VisitType, tier: string | undefined) {
-  const now = c.var.deps.now();
-  const range = await bookableDays({ db: c.env.DB, personId, type, now, days: (await opsInputs(c)).nextVisitDays });
-  if (type !== "replacement") return range;
-  const arrives = await stockArrivesOn(c.env.DB, { personId, product: tier ?? null, today: indiaDate(now) });
-  return arrives === null || arrives <= range.opens ? range : { ...range, opens: arrives };
+export async function stockedRange(
+  c: Context<AppEnv>,
+  personId: string,
+  sold: { readonly type: VisitType; readonly tier: string | null },
+  range: { readonly opens: string; readonly last: string },
+): Promise<{ readonly opens: string; readonly last: string }> {
+  if (sold.type !== "replacement") return range;
+  const today = indiaDate(c.var.deps.now());
+  const fits = await stockFitsFrom(c.env.DB, { personId, product: sold.tier, today });
+  return fits === null || fits <= range.opens ? range : { ...range, opens: fits };
 }
 /**
  * The service a client may book, offered that day with its price then: of a kind they may book now, the tier named,

@@ -6702,6 +6702,11 @@ export interface components {
             change_notice_hours: number;
             /**
              * Format: date
+             * @description The first day this visit may be booked on: a replacement's no sooner than its hair system can be fitted, where none is in stock.
+             */
+            opens: string;
+            /**
+             * Format: date
              * @description The last day this visit may be booked on: later days are asked for up to it.
              */
             last: string;

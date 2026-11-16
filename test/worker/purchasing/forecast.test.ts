@@ -128,6 +128,34 @@ describe("the demand forecast", () => {
     expect(lineOf(book, "solvent", 3)).toMatchObject({ baseline: 2, expected: 2 });
   });
 
+  it("counts a replacement booked as another package as that package's hair system", async () => {
+    await env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('first_fit', 'natural', 'Mane Man Natural', 120, 2, 'test', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const added = await job.opsPost("/api/hair-systems", {
+      product: "natural",
+      base_width_in: 8,
+      base_length_in: 10,
+      colour: "1B",
+      grey_percent: 20,
+      density_percent: 100,
+      unit_cost: 1_400_000,
+    });
+    const natural = (await added.json<{ code: string }>()).code;
+    // The client fitted with Essential books their replacement as Natural, in the first period.
+    await env.DB.batch([
+      visit("rep-1", DUE, "replacement", 4),
+      env.DB.prepare("UPDATE appointments SET tier = 'natural' WHERE id = 'rep-1'"),
+    ]);
+    expect(await runForecastIfDue(env.DB, NOW, SETTINGS)).not.toBeNull();
+    const book = await forecast();
+    expect(lineOf(book, natural, 0)).toMatchObject({ booked: 1 });
+    expect(lineOf(book, code, 0)).toMatchObject({ booked: 1 });
+  });
+
   it("lifts the baseline by an event ops keep, and runs once a planning period", async () => {
     await env.DB.prepare(
       `INSERT INTO demand_events (id, name, city, starts_on, ends_on, uplift_percent, created_by, created_at)

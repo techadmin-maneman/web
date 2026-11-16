@@ -36,11 +36,14 @@ replacement_opens_on}`, from the piece in wear and the package it was fitted und
    fit and the stock gap told at booking all read it.
 5. **The old package's hair system returns to stock.** Nothing holds a hair system for a client, so one ordered for
    the package they wear is ordinary stock already, for any client it fits. Its `replacement_order` task leaves Tasks
-   once the replacement is booked, whichever package, and comes back if that booking is cancelled. Nothing is charged
-   to anyone, and nothing more is written.
-6. **Not in stock in the client's size.** Where no place holds the stock code made to the client as the package asked
-   for, the app's days open from today and the quickest supplier's lead time for it (`stockArrivesOn`, through
-   `rangeFor`), and a hold before then is refused; `stock_at_risk` tells ops to order it once the replacement is booked.
-   A code some place holds opens as usual, ops moving it. A size no stock code matches is made to order, which ADR
-   0174's custom order takes payment for first: how that goes at a replacement, at no cost beyond the package's price,
-   waits on the owner. The booking step says when the days open.
+   once the replacement is booked, whichever package, and comes back if that booking is cancelled. A replacement
+   counts as booked from the first day of the month its hair system falls due, when one may first be booked
+   (migration 0213; the booking's upkeep and the piece's triggers read it so). Nothing is charged to anyone.
+6. **Not in stock in the client's size.** Of the package the replacement is sold as (the one named, else the
+   client's; a move's, its own visit's), where no place holds the stock code made to the client and none is on its
+   way, the app's days open the day after the quickest supplier still in use can deliver it, as a fit's stock gap
+   reads delivery in time (`stockFitsFrom`, through `stockedRange`), and a hold before then is refused. The days'
+   answer says when they open (`opens`). `stock_at_risk` tells ops to order it once the replacement is booked. A code
+   some place holds opens as usual, ops moving it. A size no stock code matches is made to order, which ADR 0174's
+   custom order takes payment for first: how that goes at a replacement, at no cost beyond the package's price,
+   waits on the owner.

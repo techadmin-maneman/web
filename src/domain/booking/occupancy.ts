@@ -81,7 +81,7 @@ const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technician
                                            WHERE r.kind = 'stockroom' AND r.city = t.city AND r.active = 1)))))))
   ORDER BY t.id = ?3 DESC, t.name`;
 
-/** A fit to place: the product a first fit was paid for, which its piece is of; null on a replacement. */
+/** A fit to place: the package booked, which its piece is of; null where none is, the client's own then. */
 export interface Fitting {
   readonly product: string | null;
 }

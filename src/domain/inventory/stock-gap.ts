@@ -10,8 +10,8 @@ import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /**
- * The stock code a fit of the client's takes: their latest profile matched exactly, of `product` where a first fit
- * names the product paid for, else the profile's own; null with no profile, an incomplete one, or none made to it.
+ * The stock code a fit of the client's takes: their latest profile matched exactly, of `product` where the fit names
+ * the package booked, else the profile's own; null with no profile, an incomplete one, or none made to it.
  */
 export async function fitCode(db: D1Database, personId: string, product: string | null): Promise<string | null> {
   const fit = (await latestFits(db, [personId])).get(personId);
@@ -20,12 +20,12 @@ export async function fitCode(db: D1Database, personId: string, product: string 
 }
 
 /**
- * The first day the hair system a client is made as `product` can reach them, where no place holds one: today and
- * the quickest supplier's lead time for it (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md).
- * Null where a place holds one, which ops move as a fit at risk tells them, or no supplier sells it, or the client has
- * no profile to match one by.
+ * The first day a fit may use the hair system a client is made as `product`, where no place holds one and none is on
+ * its way: the day after the quickest supplier still in use can deliver it, as a fit's stock gap reads delivery in
+ * time (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md). Null where one is held or on its way,
+ * which ops move as a fit at risk tells them, or no supplier still in use sells it, or the client has no profile.
  */
-export async function stockArrivesOn(
+export async function stockFitsFrom(
   db: D1Database,
   asked: { readonly personId: string; readonly product: string | null; readonly today: string },
 ): Promise<string | null> {
@@ -33,13 +33,16 @@ export async function stockArrivesOn(
   if (code === null) return null;
   const row = await db
     .prepare(
-      `SELECT EXISTS (SELECT 1 FROM stock_balances WHERE consumable_code = ?1 AND quantity > 0) AS held,
-         (SELECT MIN(lead_time_days) FROM supplier_items WHERE consumable_code = ?1) AS lead`,
+      `SELECT EXISTS (SELECT 1 FROM stock_balances WHERE consumable_code = ?1 AND quantity > 0)
+           OR EXISTS (SELECT 1 FROM stock_transfers INDEXED BY stock_transfers_in_transit
+                       WHERE state = 'in_transit' AND consumable_code = ?1) AS held,
+         (SELECT MIN(i.lead_time_days) FROM supplier_items i JOIN suppliers s ON s.id = i.supplier_id
+           WHERE i.consumable_code = ?1 AND s.retired_at IS NULL) AS lead`,
     )
     .bind(code)
     .first<{ held: number; lead: number | null }>();
   if (row === null || row.held === 1 || row.lead === null) return null;
-  return addDays(asked.today, row.lead);
+  return addDays(asked.today, row.lead + 1);
 }
 
 /** The places a technician's fit draws on: their kit, and their city's stockroom. `?2` is the technician. */

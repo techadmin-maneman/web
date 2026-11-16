@@ -42,6 +42,7 @@ const availability = (days: Day[], last: string): Availability => ({
   service: { tier: "standard", name: "Service visit", minutes: 90 },
   price: PRICE,
   change_notice_hours: 24,
+  opens: days[0]?.date ?? last,
   last,
   days,
 });
