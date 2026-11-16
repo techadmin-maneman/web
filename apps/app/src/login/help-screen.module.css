@@ -4,7 +4,7 @@
   margin: 0;
   font-size: var(--fs-app-title-long);
   line-height: var(--lh-115);
-  color: var(--white-000);
+  color: var(--navy-900);
   font-weight: var(--weight-semibold);
 }
 
@@ -12,7 +12,7 @@
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-16);
   line-height: var(--lh-160);
-  color: var(--grid-100);
+  color: var(--ink-500);
 }
 
 /* The design's box keeps 30 px above its line and 20 below. */
@@ -22,7 +22,7 @@
   border: var(--hairline) solid var(--ink-line);
   font-size: var(--fs-15);
   line-height: var(--lh-160);
-  color: var(--grid-100);
+  color: var(--ink-500);
 }
 
 .buttons {

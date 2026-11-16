@@ -80,7 +80,7 @@ function Another(props: {
   const copy = login.code;
   if (props.closed) {
     return (
-      <TextButton tone="ink" className={styles.link} onClick={props.onFresh} disabled={props.busy}>
+      <TextButton tone="plain" className={styles.link} onClick={props.onFresh} disabled={props.busy}>
         <span>{copy.fresh}</span>
       </TextButton>
     );
@@ -94,7 +94,7 @@ function Another(props: {
     );
   }
   return (
-    <TextButton tone="ink" className={styles.link} onClick={props.onResend} disabled={props.busy}>
+    <TextButton tone="plain" className={styles.link} onClick={props.onResend} disabled={props.busy}>
       <span>{copy.resend}</span>
     </TextButton>
   );
@@ -105,7 +105,7 @@ function Links(props: Props & { offerSms: boolean; closed: boolean; resendIn: nu
   return (
     <div className={styles.links}>
       {props.offerSms && (
-        <TextButton tone="ink" className={styles.link} onClick={props.onSms} disabled={props.busy}>
+        <TextButton tone="plain" className={styles.link} onClick={props.onSms} disabled={props.busy}>
           <span>{login.code.sms}</span>
         </TextButton>
       )}
@@ -116,7 +116,7 @@ function Links(props: Props & { offerSms: boolean; closed: boolean; resendIn: nu
         onFresh={props.onFresh}
         onResend={props.onResend}
       />
-      <TextButton tone="ink" className={styles.link} onClick={props.onHelp}>
+      <TextButton tone="plain" className={styles.link} onClick={props.onHelp}>
         <span>{login.code.noBooking}</span>
       </TextButton>
     </div>
@@ -207,7 +207,7 @@ export function CodeScreen(props: Props) {
         </VisuallyHidden>
         <div className={styles.foot}>
           <Button
-            variant="light"
+            variant="primary"
             size="action"
             className={styles.primary}
             type="submit"

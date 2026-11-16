@@ -6,7 +6,7 @@ export const login = {
   /** Under a limit on codes, on the number and the code screens. */
   messageUs: "Message us on WhatsApp",
   mobile: {
-    title: "Your mobile number",
+    title: "Sign in",
     prefix: "+91",
     label: "Mobile number",
     send: "Send code on WhatsApp",

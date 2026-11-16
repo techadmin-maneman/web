@@ -191,10 +191,6 @@ export function App({ linked }: { linked: LinkedLogin }) {
 
   useConnection(setSession, refreshSoon);
 
-  // The page's ground follows the screen: ink for the login, paper for everything the states screen draws and once in.
-  useEffect(() => {
-    document.body.dataset.ground = session.kind === "out" ? "ink" : "paper";
-  }, [session.kind]);
 
   // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind. The
   // login names its own steps.
