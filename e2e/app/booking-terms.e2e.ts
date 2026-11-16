@@ -2,6 +2,7 @@ import { expect, test } from "../support.ts";
 import { noRealCheckout } from "./checkout-fakes.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
+import { continueToPayment, OPEN_TIMES } from "./picking.ts";
 import {
   toPayment,
   toWindows,
@@ -58,7 +59,7 @@ test("says a free service visit is not returned for a visit it covers that is so
 }) => {
   await holdAs(page, { credit: { remaining: 2 }, free_until: PASSED() });
   await toPayment(page);
-  const confirm = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
+  const confirm = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(
     confirm.getByText(
       "This visit is less than 24 hours away: if you move or cancel it, the free service visit isn’t returned.",
@@ -67,8 +68,8 @@ test("says a free service visit is not returned for a visit it covers that is so
   await expect(confirm.getByText(/the free service visit is gone/)).toHaveCount(0);
 });
 
-// The times inside the notice are still sold, and marked on the date step and once a time is chosen.
-test("marks the days and times inside the notice, which are still sold", async ({ page }) => {
+// The times inside the notice are still sold, and marked once one is chosen.
+test("marks a time inside the notice, which is still sold, once it is chosen", async ({ page }) => {
   await passedThrough(page, /\/api\/availability\?/, (days: { days: { windows: object[]; starts: object[] }[] }) => ({
     ...days,
     days: days.days.map((day, index) => ({
@@ -78,15 +79,10 @@ test("marks the days and times inside the notice, which are still sold", async (
     })),
   }));
   await openSheet(page);
-  const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
-  const marked = dates.getByRole("radio", { name: /, Within 24 hours: changes are charged$/ });
-  await expect(marked).toHaveCount(1);
-  await expect(dates.getByText("Within 24 hours: changes are charged")).toBeVisible();
-  await marked.click();
-  await dates.getByRole("button", { name: appCopy.booking.window.continueFree }).click();
-  const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  await windows.getByRole("radio").first().click();
-  await expect(windows.getByText("Within 24 hours: changes are charged")).toBeVisible();
+  // The first day, whose times are inside the notice, is chosen as the step opens.
+  const when = page.getByRole("dialog", { name: appCopy.booking.when.title });
+  await when.locator(OPEN_TIMES).first().click();
+  await expect(when.getByText(appCopy.booking.when.within(24))).toBeVisible();
   await scanOf(page);
 });
 
@@ -100,14 +96,12 @@ test("takes a visit that costs nothing to Confirm, never to a payment", async ({
   }));
   await holdAs(page, { type: "consultation", price: free, late_change_charge: "nothing" });
   await toWindows(page);
-  const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toHaveCount(0);
-  await windows.getByRole("button", { name: appCopy.booking.window.continueFree, exact: true }).click();
-  const confirm = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
-  await expect(confirm.getByText(appCopy.booking.pay.credit.zero, { exact: true })).toBeVisible();
+  await continueToPayment(page);
+  const confirm = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await expect(confirm.getByText(appCopy.booking.pay.free, { exact: true })).toBeVisible();
   await expect(confirm.getByRole("button", { name: appCopy.booking.pay.confirm })).toBeVisible();
-  await expect(page.getByRole("dialog", { name: appCopy.booking.pay.title })).toHaveCount(0);
+  await expect(confirm.getByRole("button", { name: new RegExp(`^${appCopy.booking.pay.pay("")}`) })).toHaveCount(0);
+  await expect(confirm.getByText(appCopy.booking.pay.razorpay)).toHaveCount(0);
 });
 
 test("says a visit moves or cancels free at any time where the booking is sold so", async ({ page }) => {
@@ -121,7 +115,7 @@ test("says a visit moves or cancels free at any time where the booking is sold s
 test("says a credit is gone after a late cancel only where the booking is sold so", async ({ page }) => {
   await holdAs(page, { credit: { remaining: 2 }, late_change_charge: "nothing" });
   await toPayment(page);
-  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(appCopy.booking.pay.credit.used)).toBeVisible();
   await expect(pay.getByText(/the free service visit is gone/)).toHaveCount(0);
   await expect(pay.getByText(appCopy.booking.pay.freeAnyTime)).toBeVisible();
@@ -132,12 +126,12 @@ test("says a credit is gone after a cancel inside the notice the booking is sold
   await toPayment(page);
   await expect(
     page
-      .getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true })
+      .getByRole("dialog", { name: appCopy.booking.pay.title })
       .getByText("Cancel inside 48 hours and the free service visit is gone."),
   ).toBeVisible();
 });
 
-test("writes the late fee to move a visit as the pay step does, and C7's way to C8 is a full target", async ({
+test("writes the late fee to move a visit as the review does, and C7's way to C8 is a full target", async ({
   page,
 }) => {
   await page.route(/\/api\/appointments\/[0-9a-f-]{36}\/reschedule$/, (route) =>

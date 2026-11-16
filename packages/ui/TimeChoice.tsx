@@ -21,6 +21,29 @@ export interface TimePeriod {
   readonly times: readonly TimeOption[];
 }
 
+/** A period's name, and beneath it, or beside it where the caller counts them, what is left open in it. */
+function OpenCount(props: {
+  readonly period: TimePeriod;
+  readonly fullWord: string;
+  readonly openWord: ((open: number) => string) | undefined;
+}) {
+  const open = props.period.times.filter((time) => time.open).length;
+  if (props.openWord === undefined) {
+    return (
+      <>
+        <p className={styles.name}>{props.period.name}</p>
+        {open === 0 && <p className={styles.full}>{props.fullWord}</p>}
+      </>
+    );
+  }
+  return (
+    <p className={classes(styles.name, styles.counted)}>
+      {props.period.name}
+      <span className={styles.count}>{open === 0 ? props.fullWord : props.openWord(open)}</span>
+    </p>
+  );
+}
+
 export function TimeChoice(props: {
   /** The radios' name, one per form. */
   readonly name: string;
@@ -28,6 +51,8 @@ export function TimeChoice(props: {
   readonly chosen: string | null;
   /** Said under a period with nothing open. */
   readonly fullWord: string;
+  /** How many of a period's times are open, said beside its name ("3 open"), with `fullWord` for none. */
+  readonly openWord?: (open: number) => string;
   /** Read after a taken time, which is struck through on the screen. */
   readonly takenWord: string;
   /** The heading above it, which names the choice; left out inside a fieldset, whose legend names it. */
@@ -41,8 +66,7 @@ export function TimeChoice(props: {
         .filter((period) => period.times.length > 0)
         .map((period) => (
           <div key={period.name} className={styles.period}>
-            <p className={styles.name}>{period.name}</p>
-            {period.times.every((time) => !time.open) && <p className={styles.full}>{props.fullWord}</p>}
+            <OpenCount period={period} fullWord={props.fullWord} openWord={props.openWord} />
             <div className={styles.times}>
               {period.times.map((time) => (
                 <label

@@ -24,12 +24,13 @@ export function useSheetData(asking: Asking) {
   const { dispatch, movingId, firstDay, offeredDate, offeredWindow, wanted } = asking;
   /** Whether reminders are on: null when the profile could not say, and the sheet asks. */
   const [reminders, setReminders] = useState<boolean | null>(null);
-  // True once the sheet knows it asks for the address before the date, which adds a step to the boards' three.
+  // True once the sheet knows it asks for the address before the day and time, which adds a step to their two.
   const [addressFirst, setAddressFirst] = useState(false);
   // The profile had no address when it was last read, so the address comes before the date.
   const addressMissing = useRef(false);
-  // The address the profile had when it was last read.
+  // The address the profile had when it was last read: read by the answer that it is not served, and shown on the review.
   const savedAddress = useRef<Address | null>(null);
+  const [address, setAddress] = useState<Address | null>(null);
   const days = useDays({ dispatch, movingId, offeredDate, offeredWindow, addressMissing });
   const { showDays } = days;
 
@@ -55,6 +56,7 @@ export function useSheetData(asking: Asking) {
     ]);
     setReminders(profile.ok ? remindersOn(profile.body) : null);
     savedAddress.current = profile.ok ? profile.body.address : null;
+    setAddress(savedAddress.current);
     if (answer !== null && !answer.ok) {
       if (answer.code === "not_served") showNotServed();
       else dispatch({ kind: "failed" });
@@ -86,5 +88,5 @@ export function useSheetData(asking: Asking) {
     else dispatch({ kind: "failed" });
   };
 
-  return { days, reminders, setReminders, addressFirst, askForAddress, showNotServed, load, pick };
+  return { days, reminders, setReminders, address, addressFirst, askForAddress, showNotServed, load, pick };
 }

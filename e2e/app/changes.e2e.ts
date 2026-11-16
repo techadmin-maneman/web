@@ -8,7 +8,7 @@ import { axeViolations } from "../a11y.ts";
 import { changingClients } from "./changing.ts";
 import { holdOpen } from "./one-tap.ts";
 import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
-import { continueToPayment } from "./picking.ts";
+import { continueToPayment, OPEN_DAYS } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 import { PRICE } from "../prices.ts";
@@ -33,14 +33,10 @@ async function reschedule(page: Page, mobile: string) {
   return page.getByRole("dialog", { name: /^.+ on \w{3} \d{1,2} \w{3}$/ });
 }
 
-/** Through the date and window steps, to the pay step. */
+/** A day and a time on it, to the review. */
 async function pickAnother(page: Page, which: "first" | "last"): Promise<void> {
-  const dates = page
-    .getByRole("dialog", { name: appCopy.booking.date.title })
-    .getByRole("radio")
-    .and(page.locator(":enabled"));
+  const dates = page.getByRole("dialog", { name: appCopy.booking.when.titleMove }).locator(OPEN_DAYS);
   await (which === "first" ? dates.first() : dates.last()).click();
-  await page.getByRole("button", { name: appCopy.booking.date.continue }).click();
   await continueToPayment(page);
 }
 
@@ -64,15 +60,15 @@ test("C7: a visit more than 24 hours out moves for free, its payment carried ove
   await sheet.getByRole("button", { name: appCopy.change.move.pick }).click();
   // The furthest day, so the visit stays more than 24 hours out for the cancel below.
   await pickAnother(page, "last");
-  // Nothing to pay for a free move, so nothing calls it a payment.
-  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
+  // Nothing to pay for a free move: what was paid carries over, and nothing asks to pay.
+  const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText("Service visit · moved")).toBeVisible();
-  await expect(pay.getByText(appCopy.booking.pay.free, { exact: true })).toBeVisible();
   await expect(pay.getByText(appCopy.change.move.carriesOver(PRICE.service))).toBeVisible();
+  await expect(pay.getByText(appCopy.booking.pay.razorpay)).toHaveCount(0);
   // This client has decided neither photograph consent, and a move agrees to nothing (ADR 0080).
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
   await pay.getByRole("button", { name: appCopy.change.confirmMove }).click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.change.moved)).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.moved)).toBeVisible();
 });
 
 test("C8: cancelling more than 24 hours out, from the visit’s own page, gives the payment back in full", async ({
@@ -133,5 +129,5 @@ test("C7 inside 24 hours: a service visit’s move is charged, and the new visit
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(appCopy.VISIT_TYPES.service, { exact: true })).toBeVisible();
   await pay.getByRole("button", { name: PAY_SERVICE }).click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.change.moved)).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.moved)).toBeVisible();
 });

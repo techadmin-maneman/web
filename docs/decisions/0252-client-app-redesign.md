@@ -89,3 +89,22 @@ Recorded as they are found while building; `docs/client-redesign/REPORT.md` list
   row, Add a note, is the card's own button beside Change. The rows carry no second line: what moving costs is the line
   above them, and what cancelling gives back is the cancel step's, which reads the API's terms before anything is
   cancelled. A consultation's rows read as any visit's.
+- **Booking** is the design's full screen: a head with the way back and out, a step bar, and the step's button in a
+  footer. The day and the time are one step, as drawn. The days come a fortnight at a time, as the API gives them, and
+  "Later dates" beside the month adds the next; the prototype draws every day at once. A day with a time inside the
+  notice is no longer marked on the strip: the time chosen says so above Continue.
+- **The review** keeps the I-agree tick (ruling of 25 October) and the WhatsApp reminder's tick, and the photographs'
+  line in the notice's own words. It has no switch to use a free service visit, since the API applies one to the hold
+  itself and the review says it is used, and no note box, since a note is kept on a visit, which exists once booked:
+  the booked screen's "Add a note" writes it. Change beside the address lets the time held go and opens the address
+  form; a move shows no address, since it keeps its visit's own. Back and Change are offered only until Checkout has
+  an order for the time held: the API keeps an ordered hold until its grace ends and hands it back for the next time
+  picked, so from then on Pay is the way on. Once GST applies its split sits under the total, and a first fit's length
+  under its name. A failed payment, and Checkout closed unpaid, are said at the review's head, and Pay tries again, as
+  drawn.
+- **Booked** names the technician the API holds rather than "Confirmed the day before", and leaves out "If yours
+  changes, we tell you on WhatsApp": a swap tells the client nothing (the brief's ruling 5; ADR 0115). The reminder the
+  day before is promised only to a client who has switched on WhatsApp about their visits.
+- **The waits**: the design's "Waiting for your bank" is said as "This is taking longer than usual", with what happens
+  next: the app cannot tell a bank's wait from the booking's own. A wait that ended without a booking (that one, or a
+  refund) has Close at its foot.

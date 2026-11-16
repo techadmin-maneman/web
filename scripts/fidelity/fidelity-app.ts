@@ -894,8 +894,8 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
         design: await frame(design, "Booking · date"),
         built: await shot(app),
       });
-    await app.getByRole("button", { name: "Continue" }).click();
-    // The day's starts every half hour (docs/decisions/0210-booking-by-start-time.md): the first open one, at noon.
+    // The day's starts every half hour beneath its days (docs/decisions/0210-booking-by-start-time.md): the first open
+    // one, at noon.
     await app.getByRole("radio", { name: "12 pm", exact: true }).click();
     if (shots)
       await pair({
@@ -905,9 +905,8 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
         design: await frame(design, "Booking · window"),
         built: await shot(app),
       });
-    await app.getByRole("button", { name: "Continue to payment" }).click();
-    // A visit a credit covers is confirmed, not paid for.
-    await app.getByRole("heading", { name: /^(Pay and confirm|Confirm)$/ }).waitFor();
+    await app.getByRole("button", { name: "Continue", exact: true }).click();
+    await app.getByRole("heading", { name: "Review" }).waitFor();
   }
 
   /**

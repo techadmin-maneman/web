@@ -81,6 +81,7 @@
     "./SkipLink": "./SkipLink.tsx",
     "./States": "./States.tsx",
     "./StatTile": "./StatTile.tsx",
+    "./Spinner": "./Spinner.tsx",
     "./Stepper": "./Stepper.tsx",
     "./Switch": "./Switch.tsx",
     "./TabBar": "./TabBar.tsx",
