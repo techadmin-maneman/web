@@ -45,6 +45,7 @@ test("shows the loading shape while the profile comes", async ({ page }) => {
 test("takes an address and its access notes, and shows them", async ({ page }) => {
   await loggedIn(page, "address");
   // With none yet, the page is the form, with nothing to cancel back to.
+  await expect(page.getByLabel(appCopy.profile.form.flat)).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.profile.form.cancel })).toHaveCount(0);
   await page.getByLabel(appCopy.profile.form.flat).fill("House 4417");
   await page.getByLabel(appCopy.profile.form.line1).fill("Tower C");

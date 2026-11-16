@@ -75,6 +75,9 @@ describe("how an invite works", () => {
     );
     expect(last({ referrer_visits: 2, friend_visits: 0 })).toBe("Once they’re fitted, you get 2 free service visits.");
     expect(last({ referrer_visits: 0, friend_visits: 1 })).toBe("Once they’re fitted, they get 1 free service visit.");
+    expect(last({ referrer_visits: 3, friend_visits: 1 })).toBe(
+      "Once they’re fitted, you get 3 free service visits, and your friend gets 1.",
+    );
     expect(last({ referrer_visits: 0, friend_visits: 0 })).toBe("Once they’re fitted, we tell you.");
     expect(last(null)).toBe("Once they’re fitted, we tell you.");
   });
