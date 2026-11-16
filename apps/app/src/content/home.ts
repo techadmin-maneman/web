@@ -233,7 +233,6 @@ export const home = {
  */
 export const replacement = {
   title: "What a replacement involves",
-  back: "Back to Home",
   lines: [
     "Your technician removes your current hair system and fits a new one, at home.",
     "It’s cut in and styled to match, just like your first fit.",

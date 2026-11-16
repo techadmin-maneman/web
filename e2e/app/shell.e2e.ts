@@ -249,11 +249,6 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
   const off = page.getByRole("switch", { checked: false }).first();
   await expect(off).toBeVisible();
   expect(contrast(rgbOf(await style(off, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
-  const field = page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).locator("..");
-  expect(contrast(rgbOf(await style(field, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
-  expect(contrast(rgbOf(await style(field, "border-top-color")), rgbOf("rgb(255, 255, 255)"))).toBeGreaterThanOrEqual(
-    3,
-  );
 
   // A switch is drawn small, as the design draws it, and answers a tap 44 px tall.
   const box = await off.boundingBox();
@@ -263,6 +258,15 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
     middle,
   );
   expect(hit).toEqual(["switch", "switch"]);
+
+  // A field on the Account page, against the white and against pure white.
+  await page.getByRole("link", { name: appCopy.profile.back }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.account }).click();
+  const field = page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).locator("..");
+  expect(contrast(rgbOf(await style(field, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
+  expect(contrast(rgbOf(await style(field, "border-top-color")), rgbOf("rgb(255, 255, 255)"))).toBeGreaterThanOrEqual(
+    3,
+  );
 });
 
 test("moves nothing under reduced motion, the share sheet included", async ({ page }) => {

@@ -2,4 +2,6 @@
 
 import type { Page } from "@playwright/test";
 
-export const tab = (page: Page, name: string) => page.getByRole("navigation").getByRole("link", { name });
+/** A tab by its name, which a count may follow ("Visits, 2 open issues"), and never another tab whose count says it. */
+export const tab = (page: Page, name: string) =>
+  page.getByRole("navigation").getByRole("link", { name: new RegExp(`^${name}(,|$)`) });
