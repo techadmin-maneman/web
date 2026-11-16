@@ -11,7 +11,7 @@ import { openSheet } from "./booking-fixtures.ts";
 import { fittedClient } from "./fitted.ts";
 import { continueToPayment, WHEN_STEP } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
-import { booking, home, login } from "../../apps/app/src/content.ts";
+import { booking, change, home, login } from "../../apps/app/src/content.ts";
 
 const PAGES = [
   "/",
@@ -120,7 +120,8 @@ for (const size of SIZES) {
   test(`changing a visit holds at ${named(size)}`, async ({ page }) => {
     await logIn(page, fittedClient().mobile);
     await page.getByRole("button", { name: home.reschedule }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
+    // The sheet opens loading what moving costs; it is measured once it says, its move row there.
+    await expect(page.getByRole("dialog").getByRole("button", { name: change.move.pick })).toBeVisible();
     await sized(page, size);
     expect(await spills(page), "change").toEqual({ spilled: [], sideways: false });
   });
