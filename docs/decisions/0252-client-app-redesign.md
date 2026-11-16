@@ -40,6 +40,9 @@ PR, and production's move to Razorpay alone is a second (ADR 0257).
 8. **The client app's JavaScript budget is 200 KB**, gzipped, as the technician app's is (ADR 0247), not the brief's
    150 KB (owner, 16 November 2026). The redesign's screens, the live visit, the sign-off, the alerts and request mode
    take the first load past 150 KB, and the budget counts every chunk the service worker keeps. The console keeps 150 KB.
+   Its first screen's largest paint on Lighthouse's slowed mobile profile is held under 2.75 s, not 2.5 s (owner, 16
+   November 2026): the design's IBM Plex comes in three weights the sign-in screen draws, about 300 ms on a first visit;
+   the service worker keeps them after it.
 
 ## Departures
 
