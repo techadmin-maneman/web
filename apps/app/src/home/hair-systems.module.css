@@ -44,13 +44,21 @@
   font-size: var(--fs-14);
 }
 
-/* The three facts side by side, each figure in semibold over its name, a service's interval beneath its price. */
+/*
+ * The three facts side by side, each figure in semibold over its name, a service's interval beneath its price; where
+ * larger text leaves no room for all three, the last goes beneath rather than one name running into the next.
+ */
 .facts {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-8);
   padding-top: var(--sp-8);
   border-top: var(--hairline) solid var(--line-200);
+}
+
+.facts > div {
+  flex: 1 1 0;
+  min-width: max-content;
 }
 
 .facts dt {
