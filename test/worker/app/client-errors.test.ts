@@ -78,10 +78,22 @@ describe("POST /api/client-errors", () => {
     expect(line?.message).toBe("No visit for [redacted] ([redacted])");
   });
 
-  it("names an invite's landing without its code, which is a person's own", async () => {
-    expect((await report("public", { ...CRASH, path: "/r/RM4417" })).status).toBe(204);
+  it("names an invite's landing without its code, which is a person's own, wherever the report names the page", async () => {
+    const landing = "https://maneman.in/r/RM4417";
+    const sent = {
+      ...CRASH,
+      path: "/r/RM4417",
+      message: `Error: props did not parse on ${landing}`,
+      stack: `SyntaxError: Unexpected token\n    at hydrate (${landing}:1:2048)\n    at ${landing}?from=wa:2:10`,
+      source: landing,
+    };
+    expect((await report("public", sent)).status).toBe(204);
     const [line] = reported();
-    expect(line).toMatchObject({ path: "/r/" });
+    expect(line).toMatchObject({
+      path: "/r/",
+      source: "https://maneman.in/r/",
+      stack: expect.stringContaining("https://maneman.in/r/:1:2048") as unknown,
+    });
     expect(JSON.stringify(line)).not.toContain("RM4417");
   });
 
