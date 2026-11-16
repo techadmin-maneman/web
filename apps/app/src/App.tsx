@@ -28,7 +28,7 @@ import { VisitScreen } from "./visits/VisitScreen.tsx";
 import { VisitsScreen } from "./visits/VisitsScreen.tsx";
 import { Login } from "./login/Login.tsx";
 import type { LinkedLogin } from "./login/linked-mobile.ts";
-import { go, routeOf, usePath, type Route } from "./route.ts";
+import { go, movedTo, redirect, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext } from "./session.ts";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
 import { LoadFailed } from "./frame/LoadFailed.tsx";
@@ -38,8 +38,11 @@ import styles from "./app.module.css";
 // The pages opened least, and the heaviest, load when first opened; the service worker keeps them, so they open
 // offline too. Every other page comes with Home: split, they would cost more to fetch than they save.
 const ReferScreen = lazyScreen(() => import("./refer/ReferScreen.tsx").then((module) => module.ReferScreen));
-const CompareScreen = lazyScreen(() => import("./photos/CompareScreen.tsx").then((module) => module.CompareScreen));
+const ComingScreen = lazyScreen(() => import("./frame/ComingScreen.tsx").then((module) => module.ComingScreen));
 const ProfileScreen = lazyScreen(() => import("./profile/ProfileScreen.tsx").then((module) => module.ProfileScreen));
+const AddressScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.AddressScreen));
+const PrivacyScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.PrivacyScreen));
+const AccountScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.AccountScreen));
 
 type Session =
   | { readonly kind: "checking" }
@@ -48,7 +51,7 @@ type Session =
   | { readonly kind: "failed"; readonly booked: boolean }
   | { readonly kind: "in"; readonly me: Me; readonly offline: boolean };
 
-function pageFor(route: Route, onChanged: () => void) {
+function pageFor(route: Route) {
   switch (route.page) {
     case "home":
       return <HomeScreen />;
@@ -58,20 +61,29 @@ function pageFor(route: Route, onChanged: () => void) {
       return <VisitScreen id={route.id} />;
     case "photos":
       return <PhotosScreen />;
-    case "compare":
-      return <CompareScreen />;
     case "payments":
       return <PaymentsScreen />;
     case "entry":
       return <EntryScreen id={route.id} />;
-    case "refer":
+    case "rewards":
       return <ReferScreen />;
-    case "fitted":
+    case "invited":
       return <TrackerScreen />;
     case "profile":
-      return <ProfileScreen onChanged={onChanged} />;
-    case "replacement":
+      return <ProfileScreen />;
+    case "hairSystem":
       return <ReplacementScreen />;
+    case "address":
+      return <AddressScreen />;
+    case "privacy":
+      return <PrivacyScreen />;
+    case "account":
+      return <AccountScreen />;
+    case "issue":
+    case "raise":
+    case "alerts":
+    case "hairSystems":
+      return <ComingScreen page={route.page} />;
   }
 }
 
@@ -103,9 +115,19 @@ function useConnection(setSession: Dispatch<SetStateAction<Session>>, refreshSoo
   }, [setSession, refreshSoon]);
 }
 
+/** The path shown, where a path the app had before, from a message already sent, gives way to the page's new one. */
+function useAppPath(): string {
+  const path = usePath();
+  const moved = movedTo(path);
+  useEffect(() => {
+    if (moved !== null) redirect(moved);
+  }, [moved]);
+  return path;
+}
+
 export function App({ linked }: { linked: LinkedLogin }) {
   const [session, setSession] = useState<Session>({ kind: "checking" });
-  const path = usePath();
+  const path = useAppPath();
 
   /**
    * Home fetched again without the blank wait: after the profile changes it, or when the connection is
@@ -201,7 +223,7 @@ export function App({ linked }: { linked: LinkedLogin }) {
           <UpdateReady copy={update} resting={routeOf(path).page === "home"} />
           {/* Keyed by the path, so each page opens at its top with its own data, and one that failed stays behind. */}
           <ErrorBoundary key={path}>
-            <Suspense fallback={<Loading />}>{pageFor(routeOf(path), () => void refresh())}</Suspense>
+            <Suspense fallback={<Loading />}>{pageFor(routeOf(path))}</Suspense>
           </ErrorBoundary>
         </SessionContext>
       );

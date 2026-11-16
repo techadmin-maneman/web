@@ -1,24 +1,22 @@
-// Photos (board D): the client's own record, and the compare.
+// Photos (design/client-redesign, the photos screen): the client's own record, before and after at its top.
 
 export const photos = {
   title: "Photos",
-  /** Why the visits' photographs are kept, said above them. */
-  basis: "Taken for your visit record.",
-  compare: "Compare",
-  angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
-  /** The compare's three angles, as the compare names them. */
-  compareAngles: { front: "Front", top: "Top", hair: "Hairline" },
+  /** The before and after, as a screen reader names it, and its angles. */
+  compare: "Before and after",
+  angle: "Angle",
+  angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hairline" },
+  private: "Only you and your technician see these.",
+  everyVisit: "Every visit",
+  count: (photographs: number) => (photographs === 1 ? "1 photo" : `${String(photographs)} photos`),
   // A photo's description for a screen reader.
   alt: (angle: string, phase: "before" | "after", date: string) => `${angle}, ${phase} the visit, ${date}`,
-  back: "Back to photos",
-  from: "From",
-  to: "To",
-  // The divider's name for a screen reader, what its place shows, and the compare opened with fewer
-  // than two visits.
-  divider: "Divider between the two photos",
+  from: "Before",
+  to: "After",
+  // The divider's name for a screen reader, and what its place shows.
+  divider: "Drag to compare before and after",
   dividerAt: (percent: number, from: string, to: string) =>
     `${String(percent)}% of ${from} on the left, ${String(100 - percent)}% of ${to} on the right`,
-  compareNone: "Compare opens once two visits have photos.",
   download: "Download",
   downloaded: "Saved to your phone’s photos.",
   photoOf: (angle: string, date: string) => `${angle} · ${date}`,

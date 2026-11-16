@@ -158,7 +158,7 @@ function Tracker() {
 export function TrackerScreen() {
   const { me } = useSession();
   return (
-    <Shell header={{ kind: "back", title: refer.fitted.title, to: "/refer", label: refer.fitted.back }} tab="/refer">
+    <Shell header={{ kind: "back", title: refer.fitted.title, to: "/refer", label: refer.fitted.back }} tab={null}>
       {me.refers ? (
         <Tracker />
       ) : (

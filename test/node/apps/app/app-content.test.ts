@@ -1,19 +1,22 @@
-// The client app's own values, held to their sources: the tab glyphs to the
-// design's tab bar, and the business number and booking page to the public site's.
+// The client app's own values, held to their sources: the tabs to the design's tab bar, and the business number and
+// booking page to the public site's.
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { BOOKING_URL, tabs, whatsapp } from "../../../../apps/app/src/content.ts";
-import { GLYPHS, TAB_ICONS } from "../../../../packages/brand/icons.ts";
+import { GLYPHS } from "../../../../packages/brand/icons.ts";
 import { whatsapp as siteWhatsapp } from "../../../../site/src/content/site.ts";
 import { HOSTNAME } from "../../../../src/config/environments.ts";
 
 describe("the client app’s content", () => {
-  it("draws the tab bar’s glyphs as the design’s tabs() does, in its order", () => {
-    const design = readFileSync("design/phase2/Client App.dc.html", "utf8");
-    const items = design.slice(design.indexOf("tabs(active) {"), design.indexOf("renderVals() {"));
-    const drawn = [...items.matchAll(/\{ label: '([^']+)', d: '([^']+)' \}/g)].map((match) => [match[1], match[2]]);
-    expect(drawn).toEqual(tabs.map((tab) => [tab.label, TAB_ICONS[tab.icon]]));
+  it("names the tabs as the design’s tab bar does, in its order", () => {
+    const design = readFileSync("design/client-redesign/Client App.prototype.html", "utf8");
+    const bar = /const t=(\[\[.*?\]\]);/.exec(design.slice(design.indexOf("const tabbar=")))?.[1] ?? "[]";
+    const drawn = [...bar.matchAll(/\['(\w+)','([^']+)'/g)].map((match) => [
+      `/${match[1]}`.replace("/home", "/"),
+      match[2],
+    ]);
+    expect(drawn).toEqual(tabs.map((tab) => [tab.page, tab.label]));
   });
 
   it("draws A2's bubble as the design does beside its automatic reading", () => {

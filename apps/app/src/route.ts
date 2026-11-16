@@ -15,7 +15,7 @@
 // to its new place (`movedTo`).
 
 /** The router the apps share (packages/ui/router.tsx), so a page takes its routes and its way between them from here. */
-export { go, usePath } from "@maneman/ui/router";
+export { go, redirect, usePath } from "@maneman/ui/router";
 
 export type Route =
   | { readonly page: "home" }

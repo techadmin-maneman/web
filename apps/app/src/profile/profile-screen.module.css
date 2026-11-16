@@ -1,13 +1,63 @@
-/* What ./ProfileScreen.tsx alone draws; what it shares is in ./profile.module.css. */
+/* What ./ProfileScreen.tsx and ./ProfilePages.tsx alone draw; what they share with the cards is in ./profile.module.css. */
 
 /* Under the profile's header the page starts 24 px down. */
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--sp-24);
-  padding: var(--sp-24) var(--sp-20);
+  padding: var(--sp-24) var(--screen-gutter);
 }
 
-.logout {
-  width: 100%;
+/* The client's initials in a navy square, their name and number beside. */
+.who {
+  display: flex;
+  gap: var(--sp-16);
+  align-items: center;
+}
+
+.initials {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--sp-28) * 2);
+  height: calc(var(--sp-28) * 2);
+  background: var(--navy-900);
+  color: var(--white-000);
+  font-size: var(--fs-18);
+  font-weight: var(--weight-semibold);
+}
+
+.name {
+  margin: 0;
+  color: var(--navy-900);
+  font-size: var(--fs-22);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.mobile,
+.lede {
+  margin: 0;
+  color: var(--ink-500);
+}
+
+.mobile {
+  font-size: var(--fs-14);
+}
+
+.lede {
+  font-size: var(--fs-15);
+}
+
+.signOut {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.legal {
+  margin: 0;
+  color: var(--ink-500);
+  font-size: var(--fs-13);
 }

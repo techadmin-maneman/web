@@ -140,6 +140,12 @@
     --row-title-text: var(--fs-14);
     --row-title-weight: var(--weight-medium);
     --row-meta-text: var(--fs-13);
+    /* A before and after (./Compare.tsx): the ink, its gilt line and handle, unless the app's look sets its own. */
+    --compare-ground: var(--ink-frame);
+    --compare-line: var(--gilt);
+    --compare-knob: var(--ink-deep);
+    --compare-knob-edge: var(--gilt);
+    --compare-knob-text: var(--gilt);
     /* A sheet's panel (./Sheet.tsx): the paper, unless the app's look sets its own. */
     --sheet-ground: var(--paper);
     --sheet-text: var(--text);

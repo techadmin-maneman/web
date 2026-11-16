@@ -79,12 +79,7 @@
      does not already hold the colour. Only the client app draws these, through its look's roles
      (apps/app/src/styles/look.css). Its stone is the technician app's: the brief's #b4bac3 is 1.9:1 on white, under the
      3:1 a control's edge needs (WCAG 1.4.11; ADR 0252). */
-  --navy-800: #1f2e49; /* a message on the navy card */
-  --gold-500: var(--gilt); /* the one highlight on navy: the live progress, a count on the rewards card */
-  --wash-100: #f4f0e8; /* the one highlighted row or note on a screen */
-  --slate-500: #6b7a93; /* icons in rows */
   --red-700: #a3361f; /* errors, a missed visit, a late change's warning */
-  --red-050: #fbf1ee; /* the ground under such a warning */
   --green-700: #2f6b4f; /* paid, signed off, refunded */
 
   /* ---- Colour: the hero's scrims, from --ink-night ----------------------- */
@@ -189,12 +184,8 @@
   --duration-phrase: 3200ms; /* how long each phrase of the hero's opening line shows before the next */
   --duration-hold: 3000ms; /* how long the SOS is held before it goes; letting go sooner sends nothing */
   --ease-house: cubic-bezier(0.22, 0.61, 0.36, 1);
-  /* The client app's own pace (docs/prompts/client-redesign.md, "Motion"): a toast's fade, a screen's slide, a sheet
-     rising and the alert banner dropping. None runs under reduced motion. */
+  /* The client app's toast fades in this quick (docs/prompts/client-redesign.md, "Motion"); not under reduced motion. */
   --duration-toast: 160ms;
-  --duration-screen: 180ms;
-  --duration-sheet: 220ms;
-  --duration-banner: 260ms;
 
   /* ---- Layers: what sits over what, from low to high ---------------------- */
   --press-scale: 0.92; /* a round control pressed: a camera's shutter */

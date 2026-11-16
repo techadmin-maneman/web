@@ -25,7 +25,7 @@ export { Link as AppLink } from "@maneman/ui/router";
 
 type Header =
   | { readonly kind: "home" }
-  | { readonly kind: "tab"; readonly title: string }
+  | { readonly kind: "tab"; readonly title: string; readonly action?: ReactNode }
   | {
       readonly kind: "back";
       /** None where the page's own first heading names it, as the profile's name does. */
@@ -81,6 +81,7 @@ function PageHeader({ header }: { header: Header }) {
       return (
         <header className={styles.header}>
           <h1 className={styles.tabTitle}>{header.title}</h1>
+          {header.action}
           <HeadActions />
         </header>
       );

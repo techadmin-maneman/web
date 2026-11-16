@@ -43,8 +43,8 @@ test("Photos shows a booked client’s before photo beside its look, each kept, 
     ),
   ).toBeVisible();
   // No visit has photographs yet: the design's lines, beneath the try-on.
-  await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
-  await expect(page.getByRole("link", { name: appCopy.titles.compare })).toHaveCount(0);
+  await expect(page.getByText(appCopy.empty.photos.lines[0])).toBeVisible();
+  await expect(page.getByRole("region", { name: appCopy.photos.compare })).toHaveCount(0);
 
   await look.click();
   const sheet = page.getByRole("dialog", { name: `Your look · ${date}` });

@@ -5,3 +5,24 @@
   align-self: flex-start;
   margin-top: var(--sp-8);
 }
+
+/* Every visit under its title and count, each visit's row under a hairline. */
+.every {
+  display: flex;
+  flex-direction: column;
+}
+
+.everyTitle {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.visit {
+  padding: var(--sp-16) 0;
+  border-top: var(--hairline) solid var(--line-200);
+}
+
+.every > .visit:first-of-type {
+  margin-top: var(--sp-12);
+}

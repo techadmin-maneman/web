@@ -74,19 +74,20 @@ test("a visit to come offers itself to the client’s calendar, at its time; one
   await expect(page.getByRole("link", { name: appCopy.calendar.google })).toHaveCount(0);
 });
 
-test("Photos: the timeline, a photograph saved to the phone, and the compare", async ({ page }) => {
+test("Photos: before and after at the top, every visit, and a photograph saved to the phone", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await tab(page, "Photos").click();
-  await expect(page.getByText(appCopy.photos.basis, { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: fullDate(client.service.date) })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: fullDate(client.firstFit.date) })).toBeVisible();
+  await expect(page.getByText(appCopy.photos.private, { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.photos.everyVisit })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 3, name: fullDate(client.service.date) })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 3, name: fullDate(client.firstFit.date) })).toBeVisible();
 
   // A row shows the small copy the technician's phone made, and a photograph with none, as from FSM, shows itself.
   const cell = (angle: string) =>
     page.getByRole("button", { name: `${angle}, after the visit, ${fullDate(client.service.date)}` }).locator("img");
   await expect(cell("Front")).toHaveAttribute("src", /\/api\/photos\/small\//);
-  await expect(cell("Hair")).toHaveAttribute("src", /\/api\/photos\/file\//);
+  await expect(cell("Hairline")).toHaveAttribute("src", /\/api\/photos\/file\//);
   await expect.poll(() => cell("Front").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(300);
 
   await page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` }).click();
@@ -101,13 +102,12 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   await sheet.getByRole("button", { name: appCopy.booking.close }).click();
   await expect(sheet).toBeHidden();
 
-  await page.getByRole("link", { name: appCopy.titles.compare }).click();
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.titles.compare })).toBeVisible();
-  await expect(page.getByRole("navigation")).toHaveCount(0);
-  await expect(page.getByLabel(appCopy.photos.from, { exact: true })).toHaveValue(client.firstFit.id);
-  await expect(page.getByLabel(appCopy.photos.to, { exact: true })).toHaveValue(client.service.id);
+  // Before and after opens on the first fit against the latest visit.
+  const compare = page.getByRole("region", { name: appCopy.photos.compare });
+  await expect(compare.getByLabel(appCopy.photos.from, { exact: true })).toHaveValue(client.firstFit.id);
+  await expect(compare.getByLabel(appCopy.photos.to, { exact: true })).toHaveValue(client.service.id);
 
-  const divider = page.getByRole("slider", { name: appCopy.photos.divider });
+  const divider = compare.getByRole("slider", { name: appCopy.photos.divider });
   await expect(divider).toHaveValue("50");
   await divider.press("ArrowLeft");
   await expect(divider).toHaveValue("49");
@@ -124,13 +124,11 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   await expect.poll(async () => Math.abs(Number(await divider.inputValue()) - 25)).toBeLessThanOrEqual(2);
 
   // The first fit has no hairline photograph: its side stays empty.
-  await page.getByRole("button", { name: appCopy.photos.compareAngles.hair }).click();
-  await expect(page.getByRole("button", { name: appCopy.photos.compareAngles.hair })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await expect(page.getByAltText(`Hairline, after the visit, ${fullDate(client.service.date)}`)).toBeVisible();
-  await expect(page.getByAltText(`Hairline, after the visit, ${fullDate(client.firstFit.date)}`)).toHaveCount(0);
+  const hairline = compare.getByRole("button", { name: appCopy.photos.angles.hair, exact: true });
+  await hairline.click();
+  await expect(hairline).toHaveAttribute("aria-pressed", "true");
+  await expect(compare.getByAltText(`Hairline, after the visit, ${fullDate(client.service.date)}`)).toBeVisible();
+  await expect(compare.getByAltText(`Hairline, after the visit, ${fullDate(client.firstFit.date)}`)).toHaveCount(0);
 });
 
 // A photograph's link lasts 15 minutes, and a page left open past them is read again rather than left blank.

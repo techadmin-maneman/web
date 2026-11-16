@@ -20,14 +20,20 @@ export const titles = {
   home: "Home",
   visits: "Visits",
   visit: "Visit",
+  issue: "Issue",
+  raise: "Report an issue",
   photos: "Photos",
-  compare: "Compare",
+  rewards: "Rewards",
+  invited: "Who you invited",
+  profile: "Your profile",
   payments: "Payments",
   entry: "Payment",
-  refer: "Refer",
-  fitted: "Who has been fitted",
-  profile: "Your profile",
-  replacement: "Replacement",
+  address: "Address",
+  privacy: "Privacy",
+  account: "Account",
+  alerts: "Alerts",
+  hairSystem: "Your hair system",
+  hairSystems: "Compare hair systems",
 } as const;
 
 export const whatsapp = {
@@ -145,7 +151,10 @@ export const messages = {
 export const empty = {
   photos: {
     title: "Photos",
-    lines: ["Your photos begin at your first visit.", "Five angles at every visit, for your record."],
+    lines: [
+      "Your photos start at your first fit",
+      "Your technician takes five angles at every visit, for your record. Only you and your technician see them.",
+    ],
     // A way on while there is nothing to show.
     tryOn: "Try on a look",
   },

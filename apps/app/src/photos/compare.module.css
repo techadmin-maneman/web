@@ -1,62 +1,21 @@
-/* Two visits on ink, cut by a gold divider, over the three angles. */
+/* Photos' before and after (./PhotoCompare.tsx): two pickers, the slider at 3:4 with each date on a navy tag, the
+   angles under it and the line on who sees them. */
 
 .compare {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  background: var(--ink-deep);
-  color: var(--paper);
-  --focus-colour: var(--paper);
-}
-
-.header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: var(--sp-16);
-  height: var(--btn-lg);
-  padding: 0 var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.back {
-  margin-left: calc(-1 * var(--sp-12));
-  color: var(--ink-soft);
-}
-
-.title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-22);
-  font-weight: var(--weight-regular);
-}
-
-.main {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
+  gap: var(--sp-12);
 }
 
 .pickers {
-  display: flex;
-  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--sp-8);
-  padding: var(--sp-16) var(--sp-20);
 }
 
-/* The chosen date is drawn; the select over it, unseen, is what a tap or the keyboard opens. */
-.picker {
-  flex: 1;
-}
-
-/* The select that takes the focus is unseen, so the global ring is drawn on the box around it. */
-
-/* The shared compare's stage (@maneman/ui/Compare), as tall as the screen leaves it. */
+/* The shared slider's stage (@maneman/ui/Compare), at the photographs' own 3:4. */
 .stage {
-  flex: 1;
-  min-height: 0;
-  margin: 0 var(--sp-20) var(--sp-16);
+  aspect-ratio: 3 / 4;
 }
 
 .sides,
@@ -66,12 +25,9 @@
   inset: 0;
 }
 
-.later {
-  background: var(--ink-raised);
-}
-
+.later,
 .earlier {
-  background: var(--ink-frame);
+  background: var(--grid-100);
 }
 
 .sides img {
@@ -84,36 +40,40 @@
 
 .date {
   position: absolute;
-  top: var(--sp-16);
-  font-size: var(--fs-14);
+  bottom: var(--sp-12);
+  padding: var(--sp-4) var(--sp-8);
+  background: var(--navy-900);
+  color: var(--white-000);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-semibold);
   font-variant-numeric: tabular-nums;
 }
 
 .later .date {
-  right: var(--sp-16);
-  color: var(--ink-soft);
+  right: var(--sp-12);
 }
 
 .earlier .date {
-  left: var(--sp-16);
-  color: var(--ink-muted);
+  left: var(--sp-12);
 }
 
+/* Five angles in a row, each as wide as its word; past the width, the row scrolls. */
 .angles {
   display: flex;
-  flex-shrink: 0;
   gap: var(--sp-8);
-  padding: 0 var(--sp-20) var(--sp-24);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .angle {
-  flex: 1;
+  flex: none;
 }
 
-/* Opened with fewer than two visits to compare, on paper. */
-.none {
+.private {
+  display: flex;
+  gap: var(--sp-8);
+  align-items: center;
   margin: 0;
-  padding: var(--sp-24) var(--sp-20);
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
+  color: var(--ink-500);
+  font-size: var(--fs-13);
 }

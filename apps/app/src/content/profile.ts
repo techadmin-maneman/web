@@ -14,8 +14,7 @@ export const profileMenu = {
   payments: "Payments and invoices",
   paymentsMeta: "Paid through Razorpay",
   issues: "Issues",
-  issuesMeta: (raised: number, open: number) =>
-    `${String(raised)} raised · ${String(open)} open`,
+  issuesMeta: (raised: number, open: number) => `${String(raised)} raised · ${String(open)} open`,
   issuesNone: "Anything off with a visit, your hair system or a payment",
   address: "Address and access notes",
   addressNone: "Add your address",

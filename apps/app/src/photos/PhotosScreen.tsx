@@ -1,7 +1,6 @@
-// Photos: each visit's photographs, newest first, and Compare once
-// there are two visits to compare. Before the first fit, Photos' empty
-// state. Above them, a try-on the client made on the site, while it is kept
-// (ADR 0082). A photograph opens in a sheet, to download.
+// Photos (design/client-redesign, the photos screen): once two visits have photographs, their before and after at the
+// top; then every visit's photographs, newest first, beneath a try-on the client made on the site while it is kept
+// (ADR 0082). Before the first fit, Photos' empty state. A photograph opens in a sheet, to download.
 
 import { TAB_ICONS } from "@maneman/brand/icons";
 import { ButtonLink } from "@maneman/ui/Button";
@@ -11,11 +10,12 @@ import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type PhotoTimeline } from "../api.ts";
 import { empty, photos, states, TRY_ON_URL } from "../content.ts";
-import { AppLink, Shell } from "../frame/Shell.tsx";
+import { Shell } from "../frame/Shell.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { visitName } from "../lib/visit.ts";
 import { PageFailed } from "../frame/PageFailed.tsx";
-import { ANGLES, PhotoRow, type OpenPhoto } from "./PhotoRow.tsx";
+import { PhotoCompare } from "./PhotoCompare.tsx";
+import { ANGLES, PhotoRow, shownPhase, type OpenPhoto } from "./PhotoRow.tsx";
 import { PhotoSheet } from "./PhotoSheet.tsx";
 import { LINKS_FRESH_MS, type Relink, useRelink } from "./relink.ts";
 import { TryOnGroup } from "./TryOnGroup.tsx";
@@ -36,49 +36,64 @@ function PhotosLoading() {
   );
 }
 
-/**
- * Each visit's photographs, newest first, beneath the try-ons still kept; before the first
- * fit, Photos' empty state, or its lines beneath a try-on.
- */
-function Timeline({
-  timeline,
-  onOpen,
-  relink,
-}: {
-  timeline: PhotoTimeline;
-  onOpen: (photo: OpenPhoto) => void;
-  relink: Relink;
-}) {
-  const { visits, try_ons: tryOns } = timeline;
-  if (visits.length === 0 && tryOns.length === 0) {
-    const tryOn = (
-      <ButtonLink variant="outline" size="small" className={styles.tryOn} href={TRY_ON_URL[import.meta.env.MM_ENV]}>
-        {empty.photos.tryOn}
-      </ButtonLink>
-    );
-    return <EmptyState look="page" lines={empty.photos.lines} icon={TAB_ICONS.photos} action={tryOn} />;
-  }
+type Visit = PhotoTimeline["visits"][number];
+
+/** Every visit's photographs, newest first, under how many there are. */
+function EveryVisit({ visits, onOpen, relink }: { visits: readonly Visit[]; onOpen: Open; relink: Relink }) {
+  const count = visits.reduce((sum, visit) => sum + visit.photos[shownPhase(visit.photos)].length, 0);
   return (
-    <>
-      <div className={shared.timeline}>
-        {tryOns.map((tryOn) => (
-          <TryOnGroup key={tryOn.id} tryOn={tryOn} onOpen={onOpen} relink={relink} />
-        ))}
-        {visits.length > 0 && <p className={shared.basis}>{photos.basis}</p>}
-        {visits.map((visit) => (
-          <section key={visit.visit_id} aria-labelledby={`visit-${visit.visit_id}`}>
-            <div className={shared.group}>
-              <h2 className={shared.groupDate} id={`visit-${visit.visit_id}`}>
-                {fullDate(visit.date)}
-              </h2>
-              <p className={shared.groupWhat}>{visitName(visit.type)}</p>
-            </div>
-            <PhotoRow set={visit.photos} date={visit.date} onOpen={onOpen} relink={relink} />
-          </section>
-        ))}
+    <section className={styles.every} aria-labelledby="every-visit">
+      <div className={shared.group}>
+        <h2 className={styles.everyTitle} id="every-visit">
+          {photos.everyVisit}
+        </h2>
+        <p className={shared.groupWhat}>{photos.count(count)}</p>
       </div>
-      {visits.length === 0 && <EmptyState look="page" lines={empty.photos.lines} />}
-    </>
+      {visits.map((visit) => (
+        <section key={visit.visit_id} className={styles.visit} aria-labelledby={`visit-${visit.visit_id}`}>
+          <div className={shared.group}>
+            <h3 className={shared.groupDate} id={`visit-${visit.visit_id}`}>
+              {fullDate(visit.date)}
+            </h3>
+            <p className={shared.groupWhat}>{visitName(visit.type)}</p>
+          </div>
+          <PhotoRow set={visit.photos} date={visit.date} onOpen={onOpen} relink={relink} />
+        </section>
+      ))}
+    </section>
+  );
+}
+
+type Open = (photo: OpenPhoto) => void;
+
+/** The before and after, the try-ons still kept and every visit; before the first fit, the empty state. */
+function Timeline({ timeline, onOpen, relink }: { timeline: PhotoTimeline; onOpen: Open; relink: Relink }) {
+  const { visits, try_ons: tryOns } = timeline;
+  const emptyState = (
+    <EmptyState
+      look="page"
+      lines={empty.photos.lines}
+      icon={TAB_ICONS.photos}
+      action={
+        <ButtonLink variant="outline" size="small" className={styles.tryOn} href={TRY_ON_URL[import.meta.env.MM_ENV]}>
+          {empty.photos.tryOn}
+        </ButtonLink>
+      }
+    />
+  );
+  if (visits.length === 0 && tryOns.length === 0) return emptyState;
+  return (
+    <div className={shared.timeline}>
+      <PhotoCompare visits={visits} relink={relink} />
+      {tryOns.map((tryOn) => (
+        <TryOnGroup key={tryOn.id} tryOn={tryOn} onOpen={onOpen} relink={relink} />
+      ))}
+      {visits.length > 0 ? (
+        <EveryVisit visits={visits} onOpen={onOpen} relink={relink} />
+      ) : (
+        <EmptyState look="page" lines={empty.photos.lines} />
+      )}
+    </div>
   );
 }
 
@@ -86,16 +101,8 @@ export function PhotosScreen() {
   const { loaded, refresh, retry } = useLiveLoad(api.photos, LINKS_FRESH_MS);
   const relink = useRelink(refresh);
   const [open, setOpen] = useState<OpenPhoto | null>(null);
-  const visits = loaded.state === "loaded" ? loaded.value.visits : [];
-  const compare =
-    visits.length >= 2 ? (
-      <AppLink className={shared.compareLink} to="/photos/compare">
-        <span>{photos.compare}</span>
-      </AppLink>
-    ) : undefined;
-
   return (
-    <Shell header={{ kind: "tab", title: photos.title, action: compare }} tab="/photos">
+    <Shell header={{ kind: "tab", title: photos.title }} tab="/photos">
       {whenLoaded(loaded, {
         loading: <PhotosLoading />,
         failed: <PageFailed onRetry={retry} />,

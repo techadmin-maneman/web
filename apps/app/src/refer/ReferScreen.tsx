@@ -112,7 +112,7 @@ function OpenInvite() {
 export function ReferScreen() {
   const { me } = useSession();
   return (
-    <Shell header={{ kind: "tab", title: refer.title }} tab="/refer">
+    <Shell header={{ kind: "tab", title: refer.title }} tab="/rewards">
       {me.refers ? (
         <OpenInvite />
       ) : (

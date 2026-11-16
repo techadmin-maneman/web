@@ -151,14 +151,14 @@ export function PaymentsScreen() {
   const thisYear = yearInIndia(apiNow());
   if (loaded.state === "loading") {
     return (
-      <Shell header={{ kind: "tab", title: payments.title }} tab="/payments">
+      <Shell header={{ kind: "tab", title: payments.title }} tab={null}>
         <Loading />
       </Shell>
     );
   }
   if (loaded.state === "failed") {
     return (
-      <Shell header={{ kind: "tab", title: payments.title }} tab="/payments">
+      <Shell header={{ kind: "tab", title: payments.title }} tab={null}>
         <PageFailed onRetry={retry} />
       </Shell>
     );
@@ -166,7 +166,7 @@ export function PaymentsScreen() {
   const rows = paymentsAndCredits(loaded.value.entries, loaded.value.credits);
   const { owed } = loaded.value;
   return (
-    <Shell header={{ kind: "tab", title: payments.title }} tab="/payments">
+    <Shell header={{ kind: "tab", title: payments.title }} tab={null}>
       {owed.length > 0 && <Owed owed={owed} thisYear={thisYear} />}
       {rows.length === 0 && owed.length === 0 && <EmptyState look="page" lines={emptyLines(me)} tight />}
       {rows.length > 0 && (

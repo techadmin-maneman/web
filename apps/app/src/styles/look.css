@@ -94,6 +94,13 @@
   --row-title-text: var(--fs-16);
   --row-title-weight: var(--weight-medium);
   --row-meta-text: var(--fs-14);
+
+  /* The before and after slider on white: a white line, and its handle white with navy arrows. */
+  --compare-ground: var(--grid-100);
+  --compare-line: var(--white-000);
+  --compare-knob: var(--white-000);
+  --compare-knob-edge: var(--line-200);
+  --compare-knob-text: var(--navy-900);
 }
 
 body {

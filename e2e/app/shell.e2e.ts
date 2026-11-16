@@ -127,7 +127,7 @@ test("keeps a large phone's column short of a laptop, and a laptop's frame beyon
 test("puts the tabs in a rail down the left on a laptop, each named beside its icon", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await home(page);
-  const tabs = page.getByRole("navigation", { name: appCopy.tabsLabel });
+  const tabs = page.getByRole("navigation", { name: appCopy.shell.tabsLabel });
   const rail = await tabs.boundingBox();
   const main = await page.getByRole("main").boundingBox();
   expect(rail?.height ?? 0).toBeGreaterThan(rail?.width ?? 0);
@@ -264,7 +264,7 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
 
 test("moves nothing under reduced motion, the share sheet included", async ({ page }) => {
   await home(page);
-  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.refer }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.rewards }).click();
   await page.getByRole("button", { name: appCopy.refer.share }).click();
   const sheet = page.getByRole("dialog");
   await expect(sheet).toBeVisible();
