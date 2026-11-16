@@ -80,6 +80,7 @@
      (apps/app/src/styles/look.css). Its stone is the technician app's: the brief's #b4bac3 is 1.9:1 on white, under the
      3:1 a control's edge needs (WCAG 1.4.11; ADR 0252). */
   --wash-100: #f4f0e8; /* the client's initials, and the one highlighted row or note on a screen */
+  --navy-800: #1f2e49; /* a message on the navy card: the technician's word */
   --red-700: #a3361f; /* errors, a missed visit, a late change's warning */
   --red-050: #fbf1ee; /* a missed visit's notice, behind --red-900's words */
   --red-900: #6b2414;

@@ -157,7 +157,7 @@ test("writes the late fee to move a visit as the pay step does, and C7's way to 
   );
   await logIn(page, fittedClient().mobile);
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
-  const sheet = page.getByRole("dialog", { name: /^Move \w+day’s visit$/ });
+  const sheet = page.getByRole("dialog", { name: /^.+ on \w{3} \d{1,2} \w{3}$/ });
   await expect(sheet.getByText(LATE_FEE_LINE)).toBeVisible();
   const instead = await sheet.getByRole("button", { name: appCopy.change.move.cancelInstead }).boundingBox();
   expect(instead?.height).toBeGreaterThanOrEqual(44);

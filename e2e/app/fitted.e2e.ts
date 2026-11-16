@@ -29,7 +29,7 @@ test("Home shows a fitted client’s next visit, with the technician, and Resche
   await expect(page.getByText(appCopy.home.prompt.addressMeta)).toBeVisible();
   // Self-serve booking is on locally, so Reschedule opens the move sheet (C7; e2e/app/changes.e2e.ts moves one).
   await page.getByRole("button", { name: appCopy.home.reschedule }).click();
-  await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: /^.+ on \w{3} \d{1,2} \w{3}$/ })).toBeVisible();
 });
 
 test("Visits lists what is coming and what is done, and a past visit opens with its photographs", async ({ page }) => {

@@ -135,7 +135,12 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
     length_minutes: 180,
     one_visit: { amount: 2_700_000, from: false, code: "TENPC" },
   };
-  await page.route("**/api/me", (route) => route.fulfill({ json: { ...me, next_visit: oneVisit, prompt: null } }));
+  // First fits changed in the app, so Change opens the sheet, named as the card names the visit.
+  const booking = me.booking as { self_serve_kinds: string[] };
+  const changeable = { ...booking, self_serve_kinds: [...booking.self_serve_kinds, "first_fit"] };
+  await page.route("**/api/me", (route) =>
+    route.fulfill({ json: { ...me, next_visit: oneVisit, prompt: null, booking: changeable } }),
+  );
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [oneVisit] } }));
   await page.reload();
 
@@ -149,6 +154,9 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
     "Choose your hair system, fitted there and then.",
   );
   expect(await axeViolations(page)).toEqual([]);
+  await card.getByRole("button", { name: appCopy.home.reschedule }).click();
+  await expect(page.getByRole("dialog", { name: new RegExp(`^${appCopy.ONE_VISIT} on `) })).toBeVisible();
+  await page.keyboard.press("Escape");
 
   await tab(page, "Visits").click();
   const row = page.getByRole("main").getByRole("link").first();
