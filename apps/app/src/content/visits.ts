@@ -2,10 +2,14 @@
 
 export const visits = {
   title: "Visits",
+  /** The three views, as a screen reader names their choice, and Issues with how many are open. */
+  show: "Show",
   upcoming: "Upcoming",
-  // Done, missed and cancelled visits alike, so a cancelled one still to come does not read as past.
-  past: "History",
+  past: "Past",
+  issues: "Issues",
+  issuesCounted: (open: number) => `Issues · ${String(open)}`,
   none: "Nothing booked yet.",
+  noneYet: "No visits yet. After your consultation, every visit shows here with its photos and invoice.",
   /** Visits: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
   /** A visit paid by UPI at the visit while online payment is off (ADR 0209): "Pay Rs. 2,200 by UPI at the visit". */

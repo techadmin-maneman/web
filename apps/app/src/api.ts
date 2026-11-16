@@ -46,6 +46,9 @@ export type CancelTerms = Schemas["CancelTerms"];
 export type Refer = Schemas["Refer"];
 export type BookableType = Me["booking"]["types"][number];
 export type OfferedService = Me["booking"]["services"][number];
+export type Issue = Schemas["Issue"];
+export type IssueEvent = Schemas["IssueEvent"];
+export type ProblemAbout = Schemas["ProblemReport"]["about"];
 export type BookingWindow = Hold["window"];
 
 /**
@@ -193,9 +196,22 @@ export const api = {
   /** The client's dispute of the no-show's charge on a visit, once a charge (ADR 0096). */
   dispute: (visitId: string, reason: string) =>
     client.post("/api/visits/{id}/dispute", { path: { id: visitId }, body: { reason } }),
-  /** Something wrong with the hair system or a visit, told to Care. */
-  reportProblem: (body: { about: "hair_system" | "visit"; visit_id: string | null; text: string }) =>
+  /** Something wrong, told to Care: answered with the report's reference (docs/decisions/0259-the-issue-log.md). */
+  reportProblem: (body: { about: ProblemAbout; visit_id: string | null; text: string }) =>
     client.post("/api/me/problems", { body }),
+  /** The client's issue log: their reports, grievances and missed-visit disputes, newest first. */
+  problems: () => client.get("/api/me/problems"),
+  updateProblem: (reference: string, text: string) =>
+    client.post("/api/me/problems/{reference}/updates", { path: { reference }, body: { text } }),
+  reopenProblem: (reference: string, text: string) =>
+    client.post("/api/me/problems/{reference}/reopen", { path: { reference }, body: { text } }),
+  problemSorted: (reference: string) => client.post("/api/me/problems/{reference}/sorted", { path: { reference } }),
+  /** A photograph for a report, as a JPEG. */
+  problemPhoto: (reference: string, photo: Blob) =>
+    client.request<{ n: number }>("POST", `/api/me/problems/${encodeURIComponent(reference)}/photos`, {
+      body: photo,
+      headers: { "Content-Type": "image/jpeg" },
+    }),
 };
 
 /** A visit's tax invoice, as a PDF the browser opens itself. */

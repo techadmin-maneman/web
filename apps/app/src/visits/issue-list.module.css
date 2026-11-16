@@ -1,0 +1,11 @@
+/* Visits' Issues (./IssueList.tsx): the rows the column's width, and what the log keeps beneath them. */
+
+.list {
+  padding: 0 var(--screen-gutter) var(--sp-24);
+}
+
+.kept {
+  margin: var(--sp-12) 0 0;
+  color: var(--ink-500);
+  font-size: var(--fs-13);
+}

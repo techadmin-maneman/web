@@ -56,7 +56,7 @@ function pageFor(route: Route) {
     case "home":
       return <HomeScreen />;
     case "visits":
-      return <VisitsScreen />;
+      return <VisitsScreen {...(route.show === undefined ? {} : { show: route.show })} />;
     case "visit":
       return <VisitScreen id={route.id} />;
     case "photos":

@@ -1,5 +1,4 @@
-// Visits: what is coming on ink, what has been done or cancelled
-// below, each opening its own page. A booking's
+// Visits (design/client-redesign, Visits): Upcoming, Past and Issues, side by side, each opening its own page. A booking's
 // consultation, not yet a visit, shows as the one upcoming, and a visit being
 // booked shows in its day's place, in Home's words. A visit not yet closed
 // stays under upcoming, saying where it stands, and "Book your next
@@ -12,6 +11,9 @@
 // the month their piece falls due (docs/fidelity-method.md).
 
 import { GLYPHS } from "@maneman/brand/icons";
+import { buttonLook } from "@maneman/ui/Button";
+import { Segmented } from "@maneman/ui/Segmented";
+import { useState } from "react";
 import { BookNext } from "../booking/index.ts";
 import { hasBegun, stageText } from "../home/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
@@ -22,10 +24,12 @@ import { fullDate, listDate, listMonth, monthInIndia, shortDate, yearInIndia } f
 import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
-import { arrivalHours, home, ONE_VISIT, VISIT_TYPES, visits, windowHours } from "../content.ts";
+import { arrivalHours, home, issues, ONE_VISIT, VISIT_TYPES, visits, windowHours } from "../content.ts";
 import { AppLink, Shell } from "../frame/Shell.tsx";
 import { bookingName, oneVisitOf, technicianOf, visitTitle } from "../lib/visit.ts";
+import { openIssues } from "../lib/counts.ts";
 import { useSession } from "../session.ts";
+import { IssueList } from "./IssueList.tsx";
 import { Loading } from "@maneman/ui/States";
 import { PageFailed } from "../frame/PageFailed.tsx";
 import { upcomingEntries, type UpcomingEntry } from "./upcoming.ts";
@@ -182,64 +186,94 @@ function Fact({ label, value, note }: { label: string; value: string; note?: str
 /** Each entry's key: a visit's ID, or the one consultation or booking of its kind. */
 const keyOf = (entry: UpcomingEntry): string => (entry.kind === "visit" ? entry.visit.id : entry.kind);
 
-function VisitList({ list, me }: { list: Visits; me: Me }) {
-  const { past } = list;
+function UpcomingList({ list, me }: { list: Visits; me: Me }) {
   const upcoming = upcomingEntries(list.upcoming, me.consultation, me.being_booked);
+  if (upcoming.length === 0) return <p className={styles.none}>{visits.none}</p>;
+  return (
+    <ul className={styles.upcoming}>
+      {upcoming.map((entry) => (
+        <UpcomingItem key={keyOf(entry)} entry={entry} />
+      ))}
+    </ul>
+  );
+}
+
+function PastList({ list }: { list: Visits }) {
   return (
     <>
-      <h2 className={capsLook(styles.label)}>{visits.upcoming}</h2>
-      {upcoming.length === 0 ? (
-        <p className={styles.none}>{visits.none}</p>
+      {list.past.length === 0 ? (
+        <p className={styles.none}>{visits.noneYet}</p>
       ) : (
-        <ul className={styles.upcoming}>
-          {upcoming.map((entry) => (
-            <UpcomingItem key={keyOf(entry)} entry={entry} />
+        <ul className={styles.past}>
+          {list.past.map((visit) => (
+            <li key={visit.id}>
+              <AppLink className={styles.row} to={`/visits/${visit.id}`}>
+                <span>
+                  {/* As the payments list dates its entries: the year only where it is not this one. */}
+                  <span className={styles.rowDate}>{listDate(visit.date, yearInIndia(apiNow()))}</span>
+                  <span className={styles.rowWhat}>{pastLine(visit)}</span>
+                </span>
+                <Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />
+              </AppLink>
+            </li>
           ))}
         </ul>
-      )}
-      {past.length > 0 && (
-        <>
-          <h2 className={capsLook(classes(styles.label, styles.pastLabel))}>{visits.past}</h2>
-          <ul className={styles.past}>
-            {past.map((visit) => (
-              <li key={visit.id}>
-                <AppLink className={styles.row} to={`/visits/${visit.id}`}>
-                  <span>
-                    {/* As the payments list dates its entries: the year only where it is not this one. */}
-                    <span className={styles.rowDate}>{listDate(visit.date, yearInIndia(apiNow()))}</span>
-                    <span className={styles.rowWhat}>{pastLine(visit)}</span>
-                  </span>
-                  <Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />
-                </AppLink>
-              </li>
-            ))}
-          </ul>
-        </>
       )}
       <Record history={list.history} />
     </>
   );
 }
 
-export function VisitsScreen() {
-  const { me } = useSession();
-  const [loaded, retry] = useLoad(api.visits);
+type Show = "upcoming" | "past" | "issues";
+
+/** The action at the foot: on Issues, reporting one; else the visit the app offers, while one may be booked. */
+function footerOf(shown: Show, me: Me) {
+  if (shown === "issues") {
+    return me.state === "fitted" ? (
+      <AppLink
+        className={buttonLook({ variant: "primary", size: "action", className: styles.book })}
+        to="/visits/issues/new"
+      >
+        {issues.report}
+      </AppLink>
+    ) : undefined;
+  }
   const firstFit = me.booking.types.includes("first_fit");
   // While a visit is under way or being closed, another is not booked in its place.
   const begun = me.next_visit !== null && hasBegun(me.next_visit);
+  if ((me.state !== "fitted" && !firstFit) || begun) return undefined;
   // The visit the app offers, with its day and window chosen, and the other kind beside it for a fitted client (ADR 0086).
-  const book = <BookNext className={styles.book} otherClassName={styles.other} />;
+  return <BookNext className={styles.book} otherClassName={styles.other} />;
+}
+
+export function VisitsScreen({ show = "upcoming" }: { show?: Show }) {
+  const { me } = useSession();
+  const [loaded, retry] = useLoad(api.visits);
+  const [shown, setShown] = useState<Show>(show);
+  const open = openIssues(me);
+  const footer = footerOf(shown, me);
   return (
-    <Shell
-      header={{ kind: "tab", title: visits.title }}
-      tab="/visits"
-      {...((me.state === "fitted" || firstFit) && !begun ? { footer: book } : {})}
-    >
-      {whenLoaded(loaded, {
-        loading: <Loading />,
-        failed: <PageFailed onRetry={retry} offlineLine={visits.offline} />,
-        loaded: (list) => <VisitList list={list} me={me} />,
-      })}
+    <Shell header={{ kind: "tab", title: visits.title }} tab="/visits" {...(footer === undefined ? {} : { footer })}>
+      <Segmented
+        className={styles.segments}
+        label={visits.show}
+        options={[
+          ["upcoming", visits.upcoming],
+          ["past", visits.past],
+          ["issues", open > 0 ? visits.issuesCounted(open) : visits.issues],
+        ]}
+        value={shown}
+        onChange={setShown}
+      />
+      {shown === "issues" ? (
+        <IssueList />
+      ) : (
+        whenLoaded(loaded, {
+          loading: <Loading />,
+          failed: <PageFailed onRetry={retry} offlineLine={visits.offline} />,
+          loaded: (list) => (shown === "upcoming" ? <UpcomingList list={list} me={me} /> : <PastList list={list} />),
+        })
+      )}
     </Shell>
   );
 }

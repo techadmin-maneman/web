@@ -27,7 +27,10 @@ describe("the client app’s routes", () => {
 
   it("opens one visit, one issue, raising one, the alerts and the hair system pages", () => {
     expect(routeOf(`/visits/${VISIT}`)).toEqual({ page: "visit", id: VISIT });
+    expect(routeOf("/visits/issues")).toEqual({ page: "visits", show: "issues" });
     expect(routeOf(`/visits/issues/${VISIT}`)).toEqual({ page: "issue", id: VISIT });
+    expect(routeOf("/visits/issues/MM-ISS-0032")).toEqual({ page: "issue", id: "MM-ISS-0032" });
+    expect(routeOf("/visits/issues/MM-ISS-x")).toEqual({ page: "home" });
     expect(routeOf("/visits/issues/new")).toEqual({ page: "raise" });
     expect(routeOf("/rewards/invited")).toEqual({ page: "invited" });
     expect(routeOf("/alerts")).toEqual({ page: "alerts" });

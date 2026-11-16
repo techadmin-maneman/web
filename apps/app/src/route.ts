@@ -2,7 +2,8 @@
 // Worker answers every path with the app, so a page can be opened directly.
 //
 //   /                          Home
-//   /visits                    upcoming, past and issues; /visits/:id, one visit; /visits/issues/:id, one issue;
+//   /visits                    upcoming, past and issues; /visits/:id, one visit; /visits/issues, the issues;
+//                              /visits/issues/:reference (or :id, where it has none), one issue;
 //                              /visits/issues/new, raising one
 //   /photos                    the timeline and before and after
 //   /rewards                   free service visits and the invite; /rewards/invited, who has been invited
@@ -19,7 +20,7 @@ export { go, redirect, usePath } from "@maneman/ui/router";
 
 export type Route =
   | { readonly page: "home" }
-  | { readonly page: "visits" }
+  | { readonly page: "visits"; readonly show?: "issues" }
   | { readonly page: "visit"; readonly id: string }
   | { readonly page: "issue"; readonly id: string }
   | { readonly page: "raise" }
@@ -39,11 +40,14 @@ export type Route =
 export type Tab = "/" | "/visits" | "/photos" | "/rewards";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** An issue opens by its report's reference, or by its ID where it is not a report and has none. */
+const ISSUE = /^(MM-ISS-\d{4,}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 const HOME: Route = { page: "home" };
 
 // Maps, not objects: a path such as /constructor must not find what every object carries.
 const PATHS: ReadonlyMap<string, Route> = new Map<string, Route>([
   ["/visits", { page: "visits" }],
+  ["/visits/issues", { page: "visits", show: "issues" }],
   ["/visits/issues/new", { page: "raise" }],
   ["/photos", { page: "photos" }],
   ["/rewards", { page: "rewards" }],
@@ -96,7 +100,7 @@ export function routeOf(path: string): Route {
   if (first === "visits" && second !== undefined && third === undefined && UUID.test(second)) {
     return { page: "visit", id: second };
   }
-  if (first === "visits" && second === "issues" && third !== undefined && UUID.test(third)) {
+  if (first === "visits" && second === "issues" && third !== undefined && ISSUE.test(third)) {
     return { page: "issue", id: third };
   }
   if (first === "profile" && second === "payments" && third !== undefined && UUID.test(third)) {
