@@ -12,20 +12,12 @@
 import { Suspense, useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { api, forgetHome, keptHome, onSessionEnded, type Me } from "./api.ts";
 import { titles, update } from "./content.ts";
-import { HomeScreen } from "./home/HomeScreen.tsx";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { titled } from "./lib/arrival.ts";
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { forgetSignedOut, rememberSignedOut, signedOutHere } from "./lib/signed-out.ts";
-import { HairSystemScreen } from "./home/HairSystemScreen.tsx";
-import { TrackerScreen } from "./refer/TrackerScreen.tsx";
-import { EntryScreen } from "./payments/EntryScreen.tsx";
-import { PaymentsScreen } from "./payments/PaymentsScreen.tsx";
-import { PhotosScreen } from "./photos/PhotosScreen.tsx";
-import { VisitScreen } from "./visits/VisitScreen.tsx";
-import { VisitsScreen } from "./visits/VisitsScreen.tsx";
 import { Login } from "./login/Login.tsx";
 import type { LinkedLogin } from "./login/linked-mobile.ts";
 import { go, movedTo, redirect, routeOf, usePath, type Route } from "./route.ts";
@@ -36,8 +28,20 @@ import { LoadFailed } from "./frame/LoadFailed.tsx";
 import { Loading } from "@maneman/ui/States";
 import styles from "./app.module.css";
 
-// The pages opened least, and the heaviest, load when first opened; the service worker keeps them, so they open
-// offline too. Every other page comes with Home: split, they would cost more to fetch than they save.
+// Every page the client opens once signed in loads when first opened, so the sign-in screen, the first thing a new
+// phone draws, carries none of them; the service worker keeps them all, so they open offline too.
+const HomeScreen = lazyScreen(() => import("./home/HomeScreen.tsx").then((module) => module.HomeScreen));
+const HairSystemScreen = lazyScreen(() =>
+  import("./home/HairSystemScreen.tsx").then((module) => module.HairSystemScreen),
+);
+const TrackerScreen = lazyScreen(() => import("./refer/TrackerScreen.tsx").then((module) => module.TrackerScreen));
+const EntryScreen = lazyScreen(() => import("./payments/EntryScreen.tsx").then((module) => module.EntryScreen));
+const PaymentsScreen = lazyScreen(() =>
+  import("./payments/PaymentsScreen.tsx").then((module) => module.PaymentsScreen),
+);
+const PhotosScreen = lazyScreen(() => import("./photos/PhotosScreen.tsx").then((module) => module.PhotosScreen));
+const VisitScreen = lazyScreen(() => import("./visits/VisitScreen.tsx").then((module) => module.VisitScreen));
+const VisitsScreen = lazyScreen(() => import("./visits/VisitsScreen.tsx").then((module) => module.VisitsScreen));
 const ReferScreen = lazyScreen(() => import("./refer/ReferScreen.tsx").then((module) => module.ReferScreen));
 const ProfileScreen = lazyScreen(() => import("./profile/ProfileScreen.tsx").then((module) => module.ProfileScreen));
 const AddressScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.AddressScreen));

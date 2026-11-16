@@ -73,6 +73,8 @@ test("says on the issue's page that a photo didn't upload, until one is added th
   await page.getByRole("radio", { name: appCopy.ISSUE_CATEGORIES.shedding }).click();
   await page.getByRole("textbox", { name: copy.raise.what }).fill("Hairs come away when I brush.");
   await page.getByLabel(copy.raise.addPhotos).setInputFiles(PHOTO);
+  // The photo is made small before it is kept with the report: Send waits for it.
+  await expect(page.getByRole("button", { name: copy.raise.removePhoto(1) })).toBeVisible();
   await page.route("**/api/me/problems/*/photos", (route) =>
     route.fulfill({ status: 500, json: { error: { code: "internal_error", request_id: "e2e" } } }),
   );
