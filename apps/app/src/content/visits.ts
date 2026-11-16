@@ -105,7 +105,8 @@ export const visits = {
       kept: (amount: string) => `We kept ${amount}`,
       creditSpent: "The free service visit it used is spent",
       dispute: "Dispute this charge",
-      disputeUntil: (day: string) => `Were you home? You can dispute the charge until ${day}.`,
+      /** "16 Dec, 12:30 am": the window closes at the charge's own time of day. */
+      disputeUntil: (when: string) => `Were you home? You can dispute the charge until ${when}.`,
       /** Where the button stood, once the days to dispute have passed. */
       disputeClosed: (day: string) => `The days to dispute this charge ended on ${day}.`,
       disputed: {

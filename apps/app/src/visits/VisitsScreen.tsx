@@ -106,14 +106,16 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
   );
 }
 
-/** A consultation from the site: what it is, its window, and whether it is only asked for. */
+/**
+ * A consultation from the site: what it is, its window, and whether it is only asked for. A consultation alone is free;
+ * one with the first fit is paid for once fitted, so is not called free.
+ */
 function Consultation({ consultation }: { consultation: NonNullable<Me["consultation"]> }) {
-  const what = oneVisitOf(consultation) === null ? VISIT_TYPES.consultation : ONE_VISIT;
-  const tag = consultation.requested ? (
-    <Badge tone="attention">{visits.requested}</Badge>
-  ) : (
-    <Badge>{visits.free}</Badge>
-  );
+  const oneVisit = oneVisitOf(consultation) !== null;
+  const what = oneVisit ? ONE_VISIT : VISIT_TYPES.consultation;
+  let tag: ReactNode;
+  if (consultation.requested) tag = <Badge tone="attention">{visits.requested}</Badge>;
+  else if (!oneVisit) tag = <Badge>{visits.free}</Badge>;
   return <UpcomingRow date={consultation.date} what={what} parts={[windowHours(consultation.hours)]} tag={tag} />;
 }
 

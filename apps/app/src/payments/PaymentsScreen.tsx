@@ -21,6 +21,7 @@ import { empty, payments, profile } from "../content.ts";
 import { Shell } from "../frame/Shell.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { oneVisitOf } from "../lib/visit.ts";
+import { backOf } from "../route.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "@maneman/ui/States";
 import { PageFailed } from "../frame/PageFailed.tsx";
@@ -153,7 +154,7 @@ function emptyLines(me: Me): readonly [string, string] {
   return empty.payments.lines;
 }
 
-const HEADER = { kind: "back", title: payments.title, to: "/profile", label: profile.back } as const;
+const HEADER = { kind: "back", title: payments.title, to: backOf({ page: "payments" }), label: profile.back } as const;
 
 export function PaymentsScreen() {
   const { me } = useSession();
@@ -193,7 +194,7 @@ export function PaymentsScreen() {
               </ListRows>
             </section>
           ))}
-          <p className={styles.note}>{payments.note}</p>
+          {me.booking.self_serve && <p className={styles.note}>{payments.note}</p>}
         </div>
       )}
     </Shell>

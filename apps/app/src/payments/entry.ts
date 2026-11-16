@@ -40,15 +40,22 @@ export function refundDestination(method: string | null): string | null {
   return payments.refundTo[method] ?? methodName(method, "short");
 }
 
+/** A payment's method as the list names it: "UPI via Razorpay"; one paid by UPI at the visit, by its name alone. */
+function methodLine(entry: PaymentEntry): string | null {
+  if (entry.method === null) return null;
+  if (entry.utr !== null) return methodName(entry.method, "short");
+  return payments.viaRazorpay(methodName(entry.method, "long") ?? entry.method);
+}
+
 /**
- * The list's line under the name: "22 Aug · UPI via Razorpay · for 30 Aug"; for a refund what it gave back, "14 Sep · First fit"; and for a
+ * The list's line under the name: "22 Aug · UPI via Razorpay · for 30 Aug", "22 Aug · UPI" for UPI at the visit; for a refund what it gave back, "14 Sep · First fit"; and for a
  * visit the client was not home for, "19 Sep · not home, we waited 16 min".
  */
 export function entryMeta(entry: Entry, thisYear: number): string {
   const date = listDate(entry.date, thisYear);
   if (entry.kind === "refund") return `${date} · ${entryWhat(entry)}`;
   if (entry.no_show !== null) return `${date} · ${payments.noShow.meta(entry.no_show)}`;
-  const method = entry.method === null ? null : payments.viaRazorpay(methodName(entry.method, "long") ?? entry.method);
+  const method = methodLine(entry);
   // Paid ahead, as every visit is: the visit's own day beside the day it was paid, so neither reads as the other.
   const forVisit =
     entry.visit !== null && entry.visit.date !== entry.date

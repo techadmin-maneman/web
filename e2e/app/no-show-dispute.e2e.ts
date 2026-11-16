@@ -52,6 +52,10 @@ test("says what the charge kept, and offers its dispute", async ({ page }) => {
     page.getByText("Nobody answered while the technician waited 16 minutes at your door. No work was done."),
   ).toBeVisible();
   await expect(page.getByText(appCopy.visits.detail.noShow.kept(PRICE.lateFeeFirstFit))).toBeVisible();
+  // The last moment to dispute, to the minute, since the window closes at the charge's time of day.
+  await expect(
+    page.getByText(/^Were you home\? You can dispute the charge until \d{1,2} \w{3}, \d{1,2}(:\d{2})?\s[ap]m\.$/),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.dispute.title })).toBeVisible();
 });
 

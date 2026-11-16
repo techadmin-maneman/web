@@ -31,6 +31,7 @@ const payment = (overrides: Record<string, unknown>) =>
     status: "captured",
     method: "upi",
     reference: null,
+    utr: null,
     visit: { id: "v", date: "2030-09-19", type: "service" },
     booking: null,
     purpose: "visit",
@@ -120,6 +121,8 @@ describe("a visit’s payment the client was not home for", () => {
   it("names the visit's own day beside the day it was paid, when they differ", () => {
     expect(entryMeta(payment({}), 2030)).toBe("10 Sep · UPI via Razorpay · for 19 Sep");
     expect(entryMeta(payment({ date: "2030-09-19" }), 2030)).toBe("19 Sep · UPI via Razorpay");
+    // Paid by UPI at the visit, which ops recorded by its bank reference: never through Razorpay.
+    expect(entryMeta(payment({ date: "2030-09-19", utr: "412345678901" }), 2030)).toBe("19 Sep · UPI");
   });
 
   it("says nobody was home and how long we waited, in place of the method", () => {

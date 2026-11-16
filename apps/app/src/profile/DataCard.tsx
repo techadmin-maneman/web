@@ -149,7 +149,7 @@ export function DataCard({ grievances, answerDays, onRaised }: DataCardProps) {
         {copy.label}
       </h2>
       <ListRows className={styles.rows}>
-        <ListRow icon={ICONS.download} title={copy.download} href={EXPORT_URL} chevron />
+        <ListRow icon={ICONS.download} title={copy.download} href={EXPORT_URL} download chevron />
         {state !== "sent" && !writing && (
           <ListRow
             icon={CLIENT_ICONS.alert}

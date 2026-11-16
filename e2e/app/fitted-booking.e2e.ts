@@ -81,6 +81,46 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   expect(await axeViolations(page)).toEqual([]);
 });
 
+// Visits tags a consultation from the site Free, or Requested while it is only asked for; a consultation and fit costs
+// something once fitted, so is never tagged Free. The API's answers are altered on their way, as above.
+test("Visits tags a consultation free, asked for, or neither when it is a consultation and fit", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
+  const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
+  const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
+  const consultation = {
+    date: "2027-09-25",
+    window: "morning",
+    hours: { start: "09:00", end: "12:00" },
+    window_label: null,
+    place: "Gurgaon",
+    requested: false,
+    one_visit: null,
+  };
+  let shown: Record<string, unknown> = consultation;
+  await page.route("**/api/me", (route) =>
+    route.fulfill({ json: { ...me, next_visit: null, being_booked: null, prompt: null, consultation: shown } }),
+  );
+  await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [] } }));
+  const row = page.getByRole("main").getByRole("listitem").first();
+  const opened = async () => {
+    await page.goto("/visits");
+    await expect(row).toContainText("Saturday · 9");
+  };
+
+  await opened();
+  await expect(row.getByText(appCopy.visits.free, { exact: true })).toBeVisible();
+  shown = { ...consultation, requested: true };
+  await opened();
+  await expect(row.getByText(appCopy.visits.requested, { exact: true })).toBeVisible();
+  await expect(row.getByText(appCopy.visits.free, { exact: true })).toHaveCount(0);
+  shown = { ...consultation, one_visit: { amount: 3_000_000, from: false, code: null } };
+  await opened();
+  await expect(row).toContainText("Consultation and fit");
+  await expect(row.getByText(appCopy.visits.free, { exact: true })).toHaveCount(0);
+});
+
 // A consultation and fit in one visit read "First fit · 180 minutes", with no price and no
 // word of the link it is paid by. The API's answers are altered on their way, as the local database books no one visit.
 test("Home and Visits name a consultation and fit, what it costs once fitted, and what to expect", async ({ page }) => {

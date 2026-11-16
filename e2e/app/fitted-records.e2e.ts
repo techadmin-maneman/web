@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { fullDate } from "../../packages/web-kit/dates.ts";
+import { fullDate, fullMonth } from "../../packages/web-kit/dates.ts";
 import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -164,6 +164,10 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
   await page.goto("/profile/payments");
   const entries = page.getByRole("main").getByRole("link");
   await expect(entries).toHaveCount(3);
+  // By month, each under its name.
+  await expect(
+    page.getByRole("heading", { level: 2, name: fullMonth(client.firstFit.date.slice(0, 7)) }),
+  ).toBeVisible();
   // A refund is titled a refund and reads as money coming back, never as a second charge.
   await expect(entries.nth(0)).toContainText(appCopy.payments.refund);
   await expect(entries.nth(0)).toContainText(appCopy.VISIT_TYPES.service);
@@ -204,6 +208,10 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
   await page.getByRole("link", { name: appCopy.payments.back }).click();
   await entries.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.payments.refund, exact: true })).toBeVisible();
+  // Where the money goes back to, which the list no longer says.
+  await expect(
+    page.getByRole("term").filter({ hasText: appCopy.payments.rows.destination }).locator("+ dd"),
+  ).toHaveText("UPI");
   // Begun eighteen days ago, it is past Razorpay's 5 to 7 working days, and the client is told so.
   await expect(page.getByText(appCopy.payments.lateRefund)).toBeVisible();
   await expect(page.getByRole("link", { name: appCopy.visits.detail.invoice.message })).toHaveAttribute(

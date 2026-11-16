@@ -131,7 +131,9 @@ function Dispute({ visitId, note, onDisputed }: { visitId: string; note: NoShowN
         <p className={styles.noShowLine}>{copy.disputeClosed(shortDate(indiaDate(note.dispute_closed_at)))}</p>
       )}
       {note.disputable && note.dispute_until !== null && (
-        <p className={styles.noShowLine}>{copy.disputeUntil(dayMonth(indiaDate(note.dispute_until)))}</p>
+        <p className={styles.noShowLine}>
+          {copy.disputeUntil(`${dayMonth(indiaDate(note.dispute_until))}, ${indiaClock(note.dispute_until)}`)}
+        </p>
       )}
       {note.disputable && (
         <Button

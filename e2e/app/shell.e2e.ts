@@ -173,6 +173,33 @@ test("offers a way on, not a blank page, when a page fails to draw", async ({ pa
   await expect(page.getByRole("button", { name: appCopy.broken.reload })).toBeVisible();
 });
 
+// Payments drew a tab's head with no tabs, so it had neither a way back nor the tab bar; and a page whose code was
+// still loading drew a bare spinner, with neither.
+test("gives a page under a tab a way back and no tab bar, while its code loads too", async ({ page }) => {
+  await home(page);
+  const tabs = page.getByRole("navigation", { name: appCopy.shell.tabsLabel });
+  // The page's code held back, as a slow first open holds it: the frame is drawn before the page.
+  const { promise: held, resolve: release } = Promise.withResolvers<undefined>();
+  await page.route("**/assets/PaymentsScreen-*.js", async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto("/profile/payments");
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.payments.title })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.profile.back })).toHaveAttribute("href", "/profile");
+  await expect(tabs).toHaveCount(0);
+  release(undefined);
+  await expect(page.getByRole("main").getByRole("link").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.profile.back })).toHaveAttribute("href", "/profile");
+  await expect(tabs).toHaveCount(0);
+
+  await page.goto(`/visits/${fittedClient().service.id}`);
+  await expect(page.getByRole("link", { name: appCopy.visits.detail.back })).toHaveAttribute("href", "/visits");
+  await expect(tabs).toHaveCount(0);
+  await page.goto("/visits");
+  await expect(tabs).toBeVisible();
+});
+
 test("makes each tab the design's full 60 px target", async ({ page }) => {
   await home(page);
   const tab = await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.home }).boundingBox();
