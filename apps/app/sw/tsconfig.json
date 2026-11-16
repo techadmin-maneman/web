@@ -5,5 +5,5 @@
     "lib": ["ES2024", "WebWorker"],
     "types": []
   },
-  "include": ["sw.ts"]
+  "include": ["*.ts"]
 }

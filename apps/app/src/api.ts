@@ -207,6 +207,8 @@ export const api = {
   /** The alerts under the bell, the last 30 days', newest first; opening them marks them read. */
   alerts: () => client.get("/api/me/alerts"),
   readAlerts: () => client.post("/api/me/alerts/read"),
+  /** This phone's push subscription, which the API pushes to when an alert is written. */
+  pushSubscribe: (endpoint: string) => client.post("/api/me/push-subscriptions", { body: { endpoint } }),
   /** The client's issue log: their reports, grievances and missed-visit disputes, newest first. */
   problems: () => client.get("/api/me/problems"),
   updateProblem: (reference: string, text: string) =>

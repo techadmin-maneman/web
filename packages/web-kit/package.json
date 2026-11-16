@@ -18,6 +18,7 @@
     "./hair-profile": "./hair-profile.ts",
     "./money": "./money.ts",
     "./mobile": "./mobile.ts",
+    "./web-push": "./web-push.ts",
     "./whatsapp": "./whatsapp.ts",
     "./small-jpeg": "./small-jpeg.ts",
     "./script-origins": "./script-origins.ts",

@@ -17,6 +17,7 @@ import { alerts, alertWords, profile, titles } from "../content.ts";
 import { PageFailed } from "../frame/PageFailed.tsx";
 import { AppLink, Shell } from "../frame/Shell.tsx";
 import { useSession } from "../session.ts";
+import { PhoneAlerts } from "./PhoneAlerts.tsx";
 import styles from "./alerts.module.css";
 
 /** "3:42 pm" today; "14 Nov, 3:42 pm" before. */
@@ -46,11 +47,12 @@ function Group({ label, list, today }: { label: string; list: readonly Alert[]; 
   );
 }
 
-function Inbox({ list }: { list: readonly Alert[] }) {
-  if (list.length === 0) return <EmptyState look="page" lines={alerts.none} icon={GLYPHS.bell} />;
+function Inbox({ list, pushKey }: { list: readonly Alert[]; pushKey: string | null }) {
   const today = todayInIndia(apiNow());
   return (
     <div className={styles.page}>
+      <PhoneAlerts pushKey={pushKey} />
+      {list.length === 0 && <EmptyState look="page" lines={alerts.none} icon={GLYPHS.bell} />}
       <Group label={alerts.today} list={list.filter((alert) => indiaDate(alert.at) === today)} today={today} />
       <Group label={alerts.earlier} list={list.filter((alert) => indiaDate(alert.at) !== today)} today={today} />
       <p className={styles.note}>
@@ -82,7 +84,7 @@ export function AlertsScreen() {
       {whenLoaded(loaded, {
         loading: <Loading />,
         failed: <PageFailed onRetry={retry} />,
-        loaded: ({ alerts: list }) => <Inbox list={list} />,
+        loaded: ({ alerts: list, push_key: pushKey }) => <Inbox list={list} pushKey={pushKey} />,
       })}
     </Shell>
   );
