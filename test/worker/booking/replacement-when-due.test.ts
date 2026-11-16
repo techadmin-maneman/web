@@ -157,11 +157,14 @@ describe("a replacement", () => {
 
   it("never counts the replacement that fitted a piece as booked for it, when a recall brings its due day back", async () => {
     const rohit = await client();
-    // A replacement on 3 October fitted the piece; a recall on 20 October makes it due that day.
+    // A replacement on 3 October fitted the piece, due in April; a recall on 20 October makes it due that day.
     await visit(rohit.id, "replacement", "completed", "2026-10-03T04:30:00.000Z", IMRAN);
-    const piece = await wornPiece(rohit.id, "2026-10-20", "2026-10-03");
+    const piece = await wornPiece(rohit.id, "2027-04-03", "2026-10-03");
     const booked = () =>
       env.DB.prepare("SELECT replacement_booked FROM pieces WHERE id = ?1").bind(piece).first("replacement_booked");
+    expect(await booked()).toBe(0);
+    // The recall moves the due day, which the piece's own trigger reads afresh.
+    await env.DB.prepare("UPDATE pieces SET replacement_due_at = '2026-10-20' WHERE id = ?1").bind(piece).run();
     expect(await booked()).toBe(0);
     await env.DB.batch(visitUpkeep(env.DB, { people: [rohit.id] }, NOW.toISOString()));
     expect(await booked()).toBe(0);
