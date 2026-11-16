@@ -348,7 +348,7 @@ function InvoiceLine({ invoice }: { invoice: NonNullable<Me["invoice"]> }) {
 /** "See what that involves": the app's own page on a replacement, in place of a WhatsApp message to us. */
 function Involves() {
   return (
-    <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/replacement">
+    <AppLink className={textLinkLook({ tone: "brass", className: styles.promptLink })} to="/hair-system">
       <span>{home.prompt.involves}</span>
     </AppLink>
   );

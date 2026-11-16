@@ -10,6 +10,7 @@ export * from "./content/home.ts";
 export * from "./content/visits.ts";
 export * from "./content/issues.ts";
 export * from "./content/alerts.ts";
+export * from "./content/hair-systems.ts";
 export * from "./content/booking.ts";
 export * from "./content/refer.ts";
 export * from "./content/photos.ts";

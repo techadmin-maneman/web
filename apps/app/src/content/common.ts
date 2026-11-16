@@ -33,7 +33,7 @@ export const titles = {
   account: "Account",
   alerts: "Notifications",
   hairSystem: "Your hair system",
-  hairSystems: "Compare hair systems",
+  hairSystems: "The four hair systems",
 } as const;
 
 export const whatsapp = {

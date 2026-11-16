@@ -19,7 +19,7 @@ import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { titled } from "./lib/arrival.ts";
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { forgetSignedOut, rememberSignedOut, signedOutHere } from "./lib/signed-out.ts";
-import { ReplacementScreen } from "./home/ReplacementScreen.tsx";
+import { HairSystemScreen } from "./home/HairSystemScreen.tsx";
 import { TrackerScreen } from "./refer/TrackerScreen.tsx";
 import { EntryScreen } from "./payments/EntryScreen.tsx";
 import { PaymentsScreen } from "./payments/PaymentsScreen.tsx";
@@ -38,13 +38,15 @@ import styles from "./app.module.css";
 // The pages opened least, and the heaviest, load when first opened; the service worker keeps them, so they open
 // offline too. Every other page comes with Home: split, they would cost more to fetch than they save.
 const ReferScreen = lazyScreen(() => import("./refer/ReferScreen.tsx").then((module) => module.ReferScreen));
-const ComingScreen = lazyScreen(() => import("./frame/ComingScreen.tsx").then((module) => module.ComingScreen));
 const ProfileScreen = lazyScreen(() => import("./profile/ProfileScreen.tsx").then((module) => module.ProfileScreen));
 const AddressScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.AddressScreen));
 const PrivacyScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.PrivacyScreen));
 const RaiseScreen = lazyScreen(() => import("./issues/RaiseScreen.tsx").then((module) => module.RaiseScreen));
 const IssueScreen = lazyScreen(() => import("./issues/IssueScreen.tsx").then((module) => module.IssueScreen));
 const AlertsScreen = lazyScreen(() => import("./alerts/AlertsScreen.tsx").then((module) => module.AlertsScreen));
+const HairSystemsScreen = lazyScreen(() =>
+  import("./home/HairSystemsScreen.tsx").then((module) => module.HairSystemsScreen),
+);
 const AccountScreen = lazyScreen(() => import("./profile/ProfilePages.tsx").then((module) => module.AccountScreen));
 
 type Session =
@@ -75,7 +77,7 @@ function pageFor(route: Route) {
     case "profile":
       return <ProfileScreen />;
     case "hairSystem":
-      return <ReplacementScreen />;
+      return <HairSystemScreen />;
     case "address":
       return <AddressScreen />;
     case "privacy":
@@ -89,7 +91,7 @@ function pageFor(route: Route) {
     case "alerts":
       return <AlertsScreen />;
     case "hairSystems":
-      return <ComingScreen page={route.page} />;
+      return <HairSystemsScreen />;
   }
 }
 

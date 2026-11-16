@@ -199,6 +199,8 @@ export const api = {
   /** Something wrong, told to Care: answered with the report's reference (docs/decisions/0259-the-issue-log.md). */
   reportProblem: (body: { about: ProblemAbout; visit_id: string | null; text: string }) =>
     client.post("/api/me/problems", { body }),
+  /** The four hair systems on sale from tomorrow, priced for the client's city, to compare. */
+  packages: () => client.get("/api/packages"),
   /** The alerts under the bell, the last 30 days', newest first; opening them marks them read. */
   alerts: () => client.get("/api/me/alerts"),
   readAlerts: () => client.post("/api/me/alerts/read"),
