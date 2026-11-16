@@ -15,6 +15,11 @@
   line-height: var(--lh-145);
 }
 
+/* The number right under its label, as drawn. */
+.number {
+  margin-top: var(--sp-8);
+}
+
 .hint {
   margin: 0;
   font-size: var(--fs-14);

@@ -66,7 +66,7 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
             {(control) => (
               <MobileInput
                 {...control}
-                className={shared.field}
+                className={styles.number}
                 prefix={copy.prefix}
                 name="mobile"
                 value={typed}

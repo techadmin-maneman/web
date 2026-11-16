@@ -86,7 +86,7 @@ export function RaiseScreen() {
     >
       <div className={styles.page}>
         <section aria-labelledby="about">
-          <h2 className={styles.title} id="about">
+          <h2 className={styles.question} id="about">
             {copy.about}
           </h2>
           <div className={styles.chips} role="radiogroup" aria-labelledby="about">

@@ -73,11 +73,6 @@
   margin-top: var(--sp-36);
 }
 
-/* Edged at 3:1 against the ink (WCAG 1.4.11), where the design's --ink-line is 1.75:1 (ADR 0025, item 36). */
-.field {
-  margin-top: var(--sp-36);
-}
-
 /* The app's focus ring, drawn round the whole field: the prefix with the number. */
 
 /* The field draws the ring. */
