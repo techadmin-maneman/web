@@ -6,7 +6,7 @@
 // (ADR 0068). A consultation and fit in one visit says what it costs once fitted, and has its own steps to expect;
 // one booked on /book shows as booked before it is a visit, as the site's consultation does.
 //
-// Beneath the card, a one visit's payment while the client owes it, the credit tile while there is a balance, its one prompt, and an invoice just issued as a line
+// Beneath the card, a one visit's payment while the client owes it, the credit tile while there is a balance, its one prompt, and an invoice just issued as a row
 // beneath that (src/domain/clients/home-prompt.ts). Where the prompt offers the next visit, it is Home's one way to book it,
 // with the sheet opened on its day and window; a replacement is booked here like any other visit.
 
@@ -268,7 +268,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
 
 type PromptOf<Kind extends NonNullable<Me["prompt"]>["kind"]> = Extract<NonNullable<Me["prompt"]>, { kind: Kind }>;
 
-/** Home's one prompt: a line, and the way to act on it. */
+/** Home's one prompt: the address to add as a row; the next visit or a replacement as a line and the way to book it. */
 function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
   switch (prompt.kind) {
     case "address":

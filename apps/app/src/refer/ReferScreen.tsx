@@ -179,12 +179,13 @@ function FriendSees({ state, onChange }: { state: Refer; onChange: () => void })
 
 /** How an invite goes, from the link to the visits, and the offer's terms on the site. */
 function HowItWorks() {
+  const { me } = useSession();
   return (
     <section aria-labelledby="how">
       <h2 className={styles.section} id="how">
         {refer.how.label}
       </h2>
-      <NumberedSteps steps={refer.how.steps} />
+      <NumberedSteps steps={refer.how.steps(rewardOf(me))} />
       <TextLink className={styles.terms} href={LEGAL_URLS[import.meta.env.MM_ENV].offerTerms} newTab>
         {refer.offerTerms}
       </TextLink>

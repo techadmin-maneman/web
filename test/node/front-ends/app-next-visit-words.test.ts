@@ -4,6 +4,8 @@
 import { describe, expect, it } from "vitest";
 import type { Me } from "../../../apps/app/src/api.ts";
 import { nextVisitWords } from "../../../apps/app/src/home/next-visit-words.ts";
+import { paidLine } from "../../../apps/app/src/home/paid-line.ts";
+import { refer } from "../../../apps/app/src/content.ts";
 
 type NextVisitPrompt = Extract<NonNullable<Me["prompt"]>, { kind: "next_visit" }>;
 
@@ -47,5 +49,33 @@ describe("Home’s prompt for the next visit", () => {
       line: "Your replacement is due in October.",
       book: "Book it for then",
     });
+  });
+});
+
+describe("the next visit card's money line", () => {
+  const visit = { pay_at_visit: null, prepaid: false, type: "service" } as const;
+
+  it("says what is left to pay at the visit, that it is paid ahead, or a consultation's nothing", () => {
+    expect(paidLine({ ...visit, pay_at_visit: 220000 })).toBe("Pay Rs. 2,200 by UPI at the visit");
+    expect(paidLine({ ...visit, prepaid: true })).toBe("Paid");
+    expect(paidLine({ ...visit, type: "consultation" })).toBe("Free");
+  });
+
+  it("says nothing of money for a visit neither paid ahead nor owed at it", () => {
+    expect(paidLine(visit)).toBeNull();
+  });
+});
+
+describe("how an invite works", () => {
+  const last = (reward: Parameters<typeof refer.how.steps>[0]) => refer.how.steps(reward)[2];
+
+  it("ends on the reward ops set, never one the promise above does not make", () => {
+    expect(last({ referrer_visits: 3, friend_visits: 3 })).toBe(
+      "Once they’re fitted, you both get 3 free service visits.",
+    );
+    expect(last({ referrer_visits: 2, friend_visits: 0 })).toBe("Once they’re fitted, you get 2 free service visits.");
+    expect(last({ referrer_visits: 0, friend_visits: 1 })).toBe("Once they’re fitted, they get 1 free service visit.");
+    expect(last({ referrer_visits: 0, friend_visits: 0 })).toBe("Once they’re fitted, we tell you.");
+    expect(last(null)).toBe("Once they’re fitted, we tell you.");
   });
 });

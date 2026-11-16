@@ -82,6 +82,23 @@ async function toRefer(page: Page) {
   await expect(page.getByRole("heading", { level: 1, name: appCopy.refer.title })).toBeVisible();
 }
 
+// Rewards' own Copy link sends the link alone, which never carries a card; where the phone will not copy, the sheet
+// opens with its other ways.
+test("Rewards copies the invite's link itself, and opens the sheet where the phone will not copy", async ({ page }) => {
+  await toRefer(page);
+  await page.getByRole("main").getByRole("button", { name: appCopy.refer.preview.copy }).click();
+  await expect(page.getByRole("main").getByRole("button", { name: appCopy.refer.preview.copied })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/\/r\/[A-Z0-9]{8}$/);
+
+  await page.reload();
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = () =>
+      Promise.reject(new DOMException("The page may not write to the clipboard.", "NotAllowedError"));
+  });
+  await page.getByRole("main").getByRole("button", { name: appCopy.refer.preview.copy }).click();
+  await expect(page.getByRole("dialog", { name: appCopy.refer.card.title })).toBeVisible();
+});
+
 test("Refer: the invite, the house card, the preview, and the empty tracker", async ({ page }) => {
   await toRefer(page);
   await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
@@ -442,6 +459,8 @@ test("draws Refer, its preview and its tracker, with no count, where the answers
   await changed(page, "/api/refer", (refer) => ({ ...refer, fitted: [{ first_name: "Karan", month: "2026-09" }] }));
   await toRefer(page);
   await expect(page.getByText("When a friend you refer is fitted, we tell you.")).toBeVisible();
+  // How it works ends on the same reward, never one the promise does not make.
+  await expect(page.getByText(appCopy.refer.how.steps(null)[2])).toBeVisible();
 
   await page.getByRole("button", { name: appCopy.refer.inviteOnWhatsApp }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });

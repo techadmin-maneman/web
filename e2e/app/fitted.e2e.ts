@@ -17,6 +17,10 @@ test("Home shows a fitted client’s next visit, with the technician, and Resche
   const next = page.getByRole("region", { name: appCopy.home.next.label });
   await expect(next.getByText("Imran", { exact: true })).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
+  // A service visit paid for neither ahead nor at the door: its kind is the card's label, and no money line.
+  await expect(next).not.toContainText(appCopy.VISIT_TYPES.service);
+  await expect(next).not.toContainText(appCopy.home.next.paid);
+  await expect(next).not.toContainText(appCopy.home.next.free);
   // Home's one prompt: this client has given no address, which comes before the replacement falling due.
   await expect(page.getByRole("link", { name: appCopy.home.prompt.addAddress })).toHaveAttribute(
     "href",

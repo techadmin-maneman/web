@@ -6,6 +6,7 @@
 import type { Page } from "@playwright/test";
 import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
+import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { CODE } from "./signed-in.ts";
 import { bookedNumber } from "./booked-numbers.ts";
 import { holdOpen } from "./one-tap.ts";
@@ -105,6 +106,26 @@ test("logging out takes the API’s word for it: offline it waits, and a refusal
   await logOut.click();
   await expect(page.getByRole("alert")).toHaveText(appCopy.profile.logoutFailed);
   await expect(page.getByRole("link", { name: appCopy.profileMenu.account })).toBeVisible();
+});
+
+// Before the consultation, the site's try-on, whose look comes back to Photos; once consulted, not on Home.
+test("offers a lead the try-on from Home until the consultation", async ({ page }) => {
+  await sendCode(page, bookedNumber());
+  await enter(page, CODE);
+  const tryOn = page.getByRole("link", { name: new RegExp(`^${appCopy.home.rows.tryOn}`) });
+  await expect(tryOn).toHaveAttribute("href", appCopy.TRY_ON_URL.local);
+  await page.route("**/api/me", async (route) => {
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}/api/me`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
+    const me = (await answer.json()) as Record<string, unknown>;
+    const consulted = { date: "2026-10-01", technician: null, recommended: null };
+    await route.fulfill({ response: answer, json: { ...me, consulted } });
+  });
+  await page.reload();
+  await expect(page.getByRole("link", { name: appCopy.hairSystems.compare })).toBeVisible();
+  await expect(tryOn).toHaveCount(0);
 });
 
 test("the tabs reach Visits, the empty Photos and Rewards, and Payments sits under the profile", async ({ page }) => {

@@ -65,7 +65,8 @@ Recorded as they are found while building; `docs/client-redesign/REPORT.md` list
 - **Visits' record** ("Your record": first fit, service visits, replacements, total paid) stays beneath Past.
 - **Home's card** says when the technician arrives and for how long, where, and what it costs now (paid ahead, free, or
   what is left to pay at the visit); with nothing paid ahead and nothing to pay, it says nothing of money. The
-  technician is named by first name, as before. Home's prompts (the address to add, an invoice to open) are rows. The
+  technician is named by first name, as before. A visit a free service visit covers reads "Paid", as Visits tags it:
+  the API carries one Prepaid flag for paid ahead and covered by a credit, not the prototype's "Free service visit". Home's prompts (the address to add, an invoice to open) are rows. The
   open issues are a count, not the issue itself, and the last visit has no thumbnail or photo count: `/api/me` and
   `/api/visits` carry neither.
 - **The consultation's steps** take the prototype's first two, and a third that is true of a consultation alone: the

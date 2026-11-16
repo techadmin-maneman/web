@@ -17,13 +17,13 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { dayMonth, shortDate, todayInIndia, weekdayName } from "@maneman/web-kit/dates";
 import { useState, type ReactNode } from "react";
 import type { OneVisitPrice, VisitSummary } from "../api.ts";
-import { arrivalHours, home, messages, note, visits } from "../content.ts";
-import { rupees } from "@maneman/web-kit/money";
+import { arrivalHours, home, messages, note } from "../content.ts";
 import { oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { oneVisitLines } from "./one-visit-words.ts";
 import { ProposedMove } from "./ProposedMove.tsx";
+import { paidLine } from "./paid-line.ts";
 import styles from "./home.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
 
@@ -219,13 +219,6 @@ export function OneVisitTerms({ price }: { price: OneVisitPrice }) {
 /** Days from today in India to the visit's day: 0 on the day. */
 export function daysAway(date: string): number {
   return Math.round((Date.parse(date) - Date.parse(todayInIndia(apiNow()))) / 86_400_000);
-}
-
-/** What the visit costs the client now: what is left to pay at it, paid ahead, or a consultation's nothing. */
-function paidLine(visit: VisitSummary): string | null {
-  if (visit.pay_at_visit !== null) return visits.payAtVisit(rupees(visit.pay_at_visit));
-  if (visit.prepaid) return home.next.paid;
-  return visit.type === "consultation" ? home.next.free : null;
 }
 
 /** One line of the card's facts, with its icon. */
