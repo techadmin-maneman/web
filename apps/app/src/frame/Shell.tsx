@@ -3,7 +3,7 @@
 // a tab's its title; each has the bell and the client's initials at the right. A page under a tab has a way back and
 // its title. Each page pads itself.
 
-import { APP_ICONS, CLIENT_ICONS, GLYPHS, ICONS, TAB_ICONS } from "@maneman/brand/icons";
+import { APP_ICONS, CLIENT_ICONS, GLYPHS, ICONS } from "@maneman/brand/icons";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
@@ -48,9 +48,9 @@ interface Props {
 }
 
 const TAB_ICON: Readonly<Record<Tab, string>> = {
-  "/": TAB_ICONS.home,
-  "/visits": TAB_ICONS.visits,
-  "/photos": TAB_ICONS.photos,
+  "/": CLIENT_ICONS.home,
+  "/visits": CLIENT_ICONS.calendar,
+  "/photos": CLIENT_ICONS.camera,
   "/rewards": CLIENT_ICONS.gift,
 };
 

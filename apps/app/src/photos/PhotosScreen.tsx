@@ -2,7 +2,7 @@
 // top; then every visit's photographs, newest first, beneath a try-on the client made on the site while it is kept
 // (ADR 0082). Before the first fit, Photos' empty state. A photograph opens in a sheet, to download.
 
-import { TAB_ICONS } from "@maneman/brand/icons";
+import { CLIENT_ICONS } from "@maneman/brand/icons";
 import { ButtonLink } from "@maneman/ui/Button";
 import { useLiveLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -73,7 +73,7 @@ function Timeline({ timeline, onOpen, relink }: { timeline: PhotoTimeline; onOpe
     <EmptyState
       look="page"
       lines={empty.photos.lines}
-      icon={TAB_ICONS.photos}
+      icon={CLIENT_ICONS.camera}
       action={
         <ButtonLink variant="outline" size="small" className={styles.tryOn} href={TRY_ON_URL[import.meta.env.MM_ENV]}>
           {empty.photos.tryOn}

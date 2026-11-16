@@ -1,7 +1,7 @@
 /*
- * Board B's frame: the header, the page, and the tab bar, on paper. Only the
- * page scrolls, so nothing passes under the header or the tabs, where a
- * focused control could be hidden (WCAG 2.4.11).
+ * The signed-in frame (./Shell.tsx; design/client-redesign): the head, the offline bar, the page and, on a tab's own
+ * page, the tabs, on white. Only the page scrolls, so nothing passes under the head or the tabs, where a focused control
+ * could be hidden (WCAG 2.4.11).
  */
 
 /* The screen's height, not flex: 1, which would let a long page stretch it and carry the tabs away. */
@@ -9,66 +9,73 @@
   display: flex;
   flex-direction: column;
   height: 100dvh;
-  background: var(--paper);
-  color: var(--text);
+  background: var(--white-000);
+  color: var(--ink-900);
 }
 
+/* The head runs under no rule: a tab's title, or Home's mark, then the bell and the initials at the right. */
 .header {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  justify-content: space-between;
-  height: var(--btn-lg);
-  padding: 0 var(--sp-20);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  background: var(--paper);
+  gap: var(--sp-8);
+  min-height: var(--btn-lg);
+  padding: var(--sp-8) var(--sp-12) var(--sp-4) var(--screen-gutter);
+  background: var(--white-000);
+}
+
+/* A page under a tab: its way back sits at the edge, a tap's width in. */
+.sub {
+  padding-left: var(--sp-4);
 }
 
 .mark {
   width: var(--sp-28);
   height: var(--sp-32);
-  color: var(--ink);
+  color: var(--navy-900);
   fill: currentColor;
 }
 
-.avatar {
+.back {
+  color: var(--ink-900);
+}
+
+.name,
+.tabTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+
+.name {
+  font-size: var(--fs-17);
+}
+
+.tabTitle {
+  color: var(--navy-900);
+  font-size: var(--fs-28);
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* The initials in a 36 px wash square, inside a target the tap's size. */
+.initials {
   display: flex;
   align-items: center;
   justify-content: center;
   width: var(--tap);
   height: var(--tap);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
-  font-family: var(--font-serif);
-  font-size: var(--fs-17);
-  color: var(--ink);
+  background: linear-gradient(var(--wash-100), var(--wash-100)) center / var(--sp-36) var(--sp-36) no-repeat;
+  color: var(--navy-900);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
   text-decoration: none;
-}
-
-.titled {
-  justify-content: flex-start;
-  gap: var(--sp-16);
-}
-
-.back {
-  margin-left: calc(-1 * var(--sp-12));
-  color: var(--text);
-}
-
-.name,
-.tabTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-}
-
-.name {
-  font-size: var(--fs-22);
-}
-
-/* A tab's title, as the design put it in the header. */
-.tabTitle {
-  font-size: var(--fs-24);
 }
 
 .offline {
@@ -77,21 +84,19 @@
   align-items: center;
   gap: var(--sp-12);
   margin: 0;
-  padding: var(--sp-12) var(--sp-20);
-  background: var(--ink-deep);
-  font-size: var(--fs-15);
-  color: var(--paper);
+  padding: var(--sp-8) var(--screen-gutter);
+  background: var(--ink-900);
+  color: var(--white-000);
+  font-size: var(--fs-14);
 }
 
 .offlineIcon {
   flex-shrink: 0;
-  color: var(--gilt);
 }
 
 /*
- * Each page pads itself, as its board does, and fades in as a tab changes:
- * never sliding. A control the keyboard reaches is scrolled clear of the
- * page's edges, where its focus ring would otherwise be cut.
+ * Each page pads itself, and fades in as a tab changes: never sliding. A control the keyboard reaches is scrolled clear
+ * of the page's edges, where its focus ring would otherwise be cut.
  */
 .page {
   flex: 1;
@@ -101,56 +106,24 @@
   scroll-padding-block: var(--sp-8);
 }
 
-/* Visits' bar above the tabs. */
-.footer {
-  flex-shrink: 0;
-  padding: var(--sp-16) var(--sp-20);
-  border-top: var(--hairline) solid var(--paper-line);
-  background: var(--paper);
-}
-
-/*
- * Installed on an iPhone, the app runs to the bottom edge (viewport-fit=cover): the tabs' ground does too, and
- * their row keeps clear of the home indicator. Each tab is the brief's full 64 px, the bar's rule above it.
- */
+/* The shared tab bar (@maneman/ui/TabBar), in the column under the page rather than over it. */
 .tabs {
-  display: grid;
+  position: static;
   flex-shrink: 0;
-  grid-template-columns: repeat(5, 1fr);
-  height: calc(var(--tap-row) + var(--hairline) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  border-top: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
-}
-
-.tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-4);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-  text-decoration: none;
-}
-
-.tab[aria-current="page"] {
-  color: var(--ink);
 }
 
 /* Drawn inside, since each sits against the frame's edge, where a ring outside would be cut. */
-.avatar:focus-visible,
-.back:focus-visible,
-.tab:focus-visible {
+.initials:focus-visible,
+.back:focus-visible {
   outline-offset: var(--focus-inset);
 }
 
 /*
- * A laptop or wider: the five tabs become a rail down the left with their names beside their icons, and the page
- * takes the width beside it, the header above it. The phone's column was a strip in an empty field.
+ * A laptop or wider: a tab's page puts the four tabs in a rail down the left with their names beside their icons, the
+ * head and the page beside it. A page with no tabs keeps the one column.
  */
 @media (min-width: 1024px) {
-  .shell {
+  .withTabs {
     --rail: calc(var(--sp-64) * 3.5);
 
     display: grid;
@@ -161,48 +134,50 @@
       "tabs status"
       "tabs page"
       "tabs footer";
-    border-inline: var(--hairline) solid var(--paper-line);
   }
 
-  .header {
+  .withTabs .header {
     grid-area: header;
     padding-inline: var(--sp-32);
   }
 
-  .status {
+  .withTabs .status {
     grid-area: status;
   }
 
-  .page {
+  .withTabs .page {
     grid-area: page;
   }
 
-  .footer {
-    grid-area: footer;
-    padding-inline: var(--sp-32);
-  }
-
-  .tabs {
+  /* The shared bar stood on end: its tabs one under another, each icon with its name beside it, the mark at the left. */
+  .withTabs .tabs {
     grid-area: tabs;
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-4);
-    height: auto;
     padding: var(--sp-24) var(--sp-12);
     border-top: 0;
-    border-right: var(--hairline) solid var(--paper-line);
+    border-right: var(--hairline) solid var(--line-200);
   }
 
-  .tab {
+  .withTabs .tabs ul {
+    grid-auto-flow: row;
+    align-content: start;
+    gap: var(--sp-4);
+  }
+
+  .withTabs .tabs a {
     flex-direction: row;
     justify-content: flex-start;
     gap: var(--sp-12);
-    min-height: var(--tap);
     padding: 0 var(--sp-16);
     font-size: var(--fs-15);
   }
 
-  .tab[aria-current="page"] {
-    background: var(--paper);
+  .withTabs .tabs a[aria-current="page"]::before {
+    inset: var(--sp-8) auto var(--sp-8) 0;
+    border-top: 0;
+    border-left: var(--rule-strong) solid var(--tab-mark);
+  }
+
+  .noTabs .header {
+    padding-inline: var(--sp-32);
   }
 }

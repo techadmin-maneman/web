@@ -125,6 +125,12 @@ export const TAB_ICONS = {
  * the prototype's rectangles and circles drawn as the lines they are.
  */
 export const CLIENT_ICONS = {
+  /** The tabs: Home, Visits and Photos. */
+  home: "M3 10.5 L12 3 L21 10.5 V20 A1 1 0 0 1 20 21 H15 V15 H9 V21 H4 A1 1 0 0 1 3 20 Z",
+  calendar:
+    "M4.5 4.5 H19.5 A1.5 1.5 0 0 1 21 6 V19.5 A1.5 1.5 0 0 1 19.5 21 H4.5 A1.5 1.5 0 0 1 3 19.5 V6 A1.5 1.5 0 0 1 4.5 4.5 Z M3 9.5 H21 M8 2.5 V6.5 M16 2.5 V6.5",
+  camera:
+    "M3 8 A1 1 0 0 1 4 7 H7 L9 4.5 H15 L17 7 H20 A1 1 0 0 1 21 8 V19 A1 1 0 0 1 20 20 H4 A1 1 0 0 1 3 19 Z M12 9.2 A3.8 3.8 0 0 1 12 16.8 A3.8 3.8 0 0 1 12 9.2",
   /** Rewards' tab, and Home's invite row. */
   gift: "M3 8 H21 V12.5 H3 Z M5 12.5 V21 H19 V12.5 M12 8 V21 M12 8 S10.5 3.5 7.8 4.2 C5.6 4.8 7 8 12 8 Z M12 8 S13.5 3.5 16.2 4.2 C18.4 4.8 17 8 12 8 Z",
   /** The four hair systems compared. */

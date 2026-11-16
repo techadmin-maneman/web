@@ -79,6 +79,7 @@
      does not already hold the colour. Only the client app draws these, through its look's roles
      (apps/app/src/styles/look.css). Its stone is the technician app's: the brief's #b4bac3 is 1.9:1 on white, under the
      3:1 a control's edge needs (WCAG 1.4.11; ADR 0252). */
+  --wash-100: #f4f0e8; /* the client's initials, and the one highlighted row or note on a screen */
   --red-700: #a3361f; /* errors, a missed visit, a late change's warning */
   --green-700: #2f6b4f; /* paid, signed off, refunded */
 
