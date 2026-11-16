@@ -18,10 +18,11 @@ test("rates a past visit once, and under four points to reporting what went wron
   await expect(page.getByRole("heading", { level: 2, name: copy.title })).toBeVisible();
   const stars = page.getByRole("radiogroup", { name: copy.label });
   expect(await axeViolations(page)).toEqual([]);
-  await stars.getByRole("radio", { name: copy.star(3) }).check();
+  // The stars change once the visit has its rating: a tap, then the thanks.
+  await stars.getByRole("radio", { name: copy.star(3) }).click();
 
   await expect(page.getByText(copy.low)).toBeVisible();
-  await expect(page.getByRole("link", { name: copy.report })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: copy.report, exact: true })).toHaveAttribute(
     "href",
     `/visits/issues/new?visit=${client.service.id}`,
   );
