@@ -4,7 +4,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { Hold } from "../../apps/app/src/api.ts";
+import type { Hold, MoveTerms } from "../../apps/app/src/api.ts";
 import { PayStep } from "../../apps/app/src/booking/steps/PayStep.tsx";
 import { booking } from "../../apps/app/src/content.ts";
 import { rupees } from "../../packages/web-kit/money.ts";
@@ -55,12 +55,14 @@ const draw = (
     failed?: boolean;
     unfinished?: boolean;
     leavable?: boolean;
+    moving?: MoveTerms;
   } = {},
 ) => {
   act(() => {
     root.render(
       createElement(PayStep, {
         hold,
+        moving: over.moving,
         address: ADDRESS,
         failed: over.failed ?? false,
         unfinished: over.unfinished ?? false,
@@ -219,5 +221,29 @@ describe("the review", () => {
     draw(holdOf(), { unfinished: true });
     const said = [...page.querySelectorAll('[role="status"]')].map((status) => status.textContent);
     expect(said).toContain(copy.notCompleted);
+  });
+
+  // A move keeps its visit's own address, which the profile's may no longer be, free, late or charged alike.
+  it("shows a move no address, and no way to change it", () => {
+    const move = (cost: MoveTerms["cost"]): MoveTerms => ({
+      visit_id: "visit-1",
+      type: "service",
+      notice: cost === "free" ? "free" : "late",
+      notice_hours: 24,
+      free_until: minutesFromNow(60),
+      paid: 200000,
+      credit: null,
+      cost,
+      price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 },
+    });
+    for (const cost of ["free", "late_fee", "charged"] as const) {
+      draw(holdOf(), { moving: move(cost) });
+      expect(page.textContent).not.toContain(ADDRESS.line1);
+      const terms = [...page.querySelectorAll("dt")].map((term) => term.textContent);
+      expect(terms).not.toContain(copy.address);
+      expect([...page.querySelectorAll("button")].some((button) => button.textContent === copy.changeAddress)).toBe(
+        false,
+      );
+    }
   });
 });
