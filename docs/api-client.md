@@ -4729,6 +4729,54 @@ A visit's invoice, as a PDF from Books
 }
 ```
 
+### GET /api/packages
+
+The packages on sale from tomorrow, in ops' order, priced for the client in their city
+
+**200**: The packages
+
+```json
+{
+  "$ref": "#/components/schemas/ClientPackages"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/availability
 
 The windows open for a service over 14 days
@@ -12711,6 +12759,103 @@ Request body:
 }
 ```
 
+### ClientPackages
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "packages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ClientPackage"
+      }
+    }
+  },
+  "required": [
+    "packages"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientPackage
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "first_fit": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/Price"
+        },
+        {
+          "description": "The hair system made to the client where their profile matches one, else the cheapest, and the service visit."
+        }
+      ]
+    },
+    "service": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Its service visit."
+    },
+    "service_every_days": {
+      "type": "integer",
+      "description": "Days from a visit to the service visit after it."
+    },
+    "replacement": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/Price"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Its replacement as sold, the service visit with it."
+    },
+    "replace_after_months": {
+      "type": "integer",
+      "description": "Months from a fit to its replacement."
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "description",
+    "first_fit",
+    "service",
+    "service_every_days",
+    "replacement",
+    "replace_after_months"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### Availability
 
 ```json
@@ -12742,6 +12887,11 @@ Request body:
     "change_notice_hours": {
       "type": "integer",
       "description": "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it."
+    },
+    "opens": {
+      "type": "string",
+      "format": "date",
+      "description": "The first day this visit may be booked on: a replacement's no sooner than its hair system can be fitted, where none is in stock."
     },
     "last": {
       "type": "string",
@@ -12830,6 +12980,7 @@ Request body:
     "service",
     "price",
     "change_notice_hours",
+    "opens",
     "last",
     "days"
   ],

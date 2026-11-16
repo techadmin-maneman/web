@@ -3617,6 +3617,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The packages on sale from tomorrow, in ops' order, priced for the client in their city */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The packages */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientPackages"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/availability": {
         parameters: {
             query?: never;
@@ -6693,6 +6747,23 @@ export interface components {
             /** @description normal (5 to 7 working days) or instant. */
             speed: string | null;
         };
+        ClientPackages: {
+            packages: components["schemas"]["ClientPackage"][];
+        };
+        ClientPackage: {
+            code: string;
+            name: string;
+            description: string | null;
+            first_fit: components["schemas"]["Price"] & unknown;
+            /** @description Its service visit. */
+            service: components["schemas"]["Price"] | null;
+            /** @description Days from a visit to the service visit after it. */
+            service_every_days: number;
+            /** @description Its replacement as sold, the service visit with it. */
+            replacement: components["schemas"]["Price"] | null;
+            /** @description Months from a fit to its replacement. */
+            replace_after_months: number;
+        };
         Availability: {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
@@ -6700,6 +6771,11 @@ export interface components {
             price: components["schemas"]["Price"] & unknown;
             /** @description The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it. */
             change_notice_hours: number;
+            /**
+             * Format: date
+             * @description The first day this visit may be booked on: a replacement's no sooner than its hair system can be fitted, where none is in stock.
+             */
+            opens: string;
             /**
              * Format: date
              * @description The last day this visit may be booked on: later days are asked for up to it.

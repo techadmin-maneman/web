@@ -17,7 +17,7 @@ import { latestProfile, profileTakenAt, type HairProfile } from "../clients/hair
 import { alertsForTechnician, type TechnicianAlert } from "../clients/client-alerts.ts";
 import { handoffFor, type Handoff } from "../clients/handoff-notes.ts";
 import { sentBackOf, type SentBack } from "./step-send-backs.ts";
-import { afterPhotosOf, type HistoryPhoto } from "./client-history.ts";
+import { afterPhotosOf, historyCountOf, type HistoryCount, type HistoryPhoto } from "./client-history.ts";
 import { codeOnVisit, type VisitCode } from "../money/discount-code-uses.ts";
 import { decisionAtVisit } from "../visits/one-visit.ts";
 import { evidenceMessage, messageStateOf } from "../no-shows/no-shows.ts";
@@ -115,6 +115,8 @@ interface JobDetail extends JobSummary {
   readonly client_alerts: TechnicianAlert[];
   /** The note the last technician left for this visit's; null while the job is locked, or where none was left. */
   readonly handoff: (Handoff & { readonly photos: HistoryPhoto[] }) | null;
+  /** How many of the client's visits closed before this one, and when the first was; null while the job is locked. */
+  readonly client_visits: HistoryCount | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
   readonly steps: CardStep[];
   /** The steps ops sent back to the technician, with why, not yet landed again. */
@@ -143,6 +145,16 @@ interface JobPaymentLink {
   readonly paid: boolean;
 }
 
+/** The card's steps, the sign-off only where clients sign off a fit in their app, and that sign-off where it is one. */
+async function stepsOf(
+  db: D1Database,
+  job: { readonly id: string; readonly type: Parameters<typeof cardStepsFor>[0]; readonly oneVisit: boolean },
+  clientSignOff: boolean,
+) {
+  const steps = cardStepsFor(job.type, job.oneVisit).filter((step) => clientSignOff || step !== SIGN_OFF_STEP);
+  return { steps, sign_off: steps.includes(SIGN_OFF_STEP) ? await signOffOf(db, job.id) : null };
+}
+
 /**
  * One job of this technician's, with everything the day-before unlock allows. Each read is a trip to D1 and back, so
  * the reads that need nothing from each other go together: the job and the day's times, then all the job leads to.
@@ -158,6 +170,8 @@ export async function jobDetail(
     arrivalMinutes: number;
     waits: Waits;
     phoneClock: PhoneClock;
+    /** Whether clients sign off a fit in their app; without, the card has no sign-off. */
+    clientSignOff: boolean;
   },
 ): Promise<JobDetail | null> {
   const [row, schedule] = await Promise.all([
@@ -204,10 +218,10 @@ export async function jobDetail(
     profile: null,
     client_alerts: [],
     handoff: null,
-    steps: cardStepsFor(type, oneVisit),
+    client_visits: null,
     sent_back: sentBack,
     reschedule_asked: await rescheduleAskedOf(db, row.id),
-    sign_off: cardStepsFor(type, oneVisit).includes(SIGN_OFF_STEP) ? await signOffOf(db, row.id) : null,
+    ...(await stepsOf(db, { id: row.id, type, oneVisit }, options.clientSignOff)),
   };
   if (unlockedParts === null) return locked;
   return {
@@ -234,14 +248,18 @@ export async function jobDetail(
 async function unlockedPartsOf(
   db: D1Database,
   row: JobRow,
-): Promise<Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile" | "client_alerts" | "handoff">> {
-  const [pieces, lastVisit, reminder, profile, alerts, handoff] = await Promise.all([
+): Promise<
+  Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile" | "client_alerts" | "handoff" | "client_visits">
+> {
+  const job = { personId: row.person_id, id: row.id, startsAt: row.window_start };
+  const [pieces, lastVisit, reminder, profile, alerts, handoff, visits] = await Promise.all([
     piecesOf(db, row.person_id),
     lastVisitOf(db, row),
     reminderOf(db, row.id),
     latestProfile(db, row.person_id),
     alertsForTechnician(db, row.person_id),
-    handoffFor(db, { personId: row.person_id, id: row.id, startsAt: row.window_start }),
+    handoffFor(db, job),
+    historyCountOf(db, job),
   ]);
   return {
     pieces: pieces.map(cardPiece),
@@ -250,6 +268,7 @@ async function unlockedPartsOf(
     profile,
     client_alerts: alerts,
     handoff: handoff === null ? null : { ...handoff, photos: await afterPhotosOf(db, row.id, handoff.visit_id) },
+    client_visits: visits,
   };
 }
 

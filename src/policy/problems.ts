@@ -1,4 +1,4 @@
-// What a client may tell Care from the app (src/domain/care/app-reports.ts; docs/decisions/0258-the-issue-log.md): the
+// What a client may tell Care from the app (src/domain/care/app-reports.ts; docs/decisions/0259-the-issue-log.md): the
 // issue's category, and the limits on what they send.
 
 /** The prototype's categories, in its order. */
@@ -16,8 +16,7 @@ export const PROBLEM_CATEGORIES = [
 export type ProblemCategory = (typeof PROBLEM_CATEGORIES)[number];
 
 /** What the app sent before the categories, which an app not yet reloaded still sends. */
-export const PROBLEM_ABOUT = ["hair_system", "visit"] as const;
-export type ProblemAbout = (typeof PROBLEM_ABOUT)[number];
+export type ProblemAbout = "hair_system" | "visit";
 
 /** A category, or an older app's word for one. */
 export const categoryOf = (given: ProblemCategory | ProblemAbout): ProblemCategory =>

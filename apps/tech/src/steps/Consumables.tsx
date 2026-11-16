@@ -14,6 +14,8 @@
 import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Field, NumberInput } from "@maneman/ui/Field";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
@@ -283,17 +285,16 @@ function Counting({
       {offered.length === 0 && <p className={shared.note}>{copy.consumables.nothingOffered}</p>}
       {others.length > 0 && (
         <div className={shared.field}>
-          <Button
-            variant="outline"
-            size="control"
-            className={shared.second}
+          <TextButton
+            className={styles.addItem}
             aria-expanded={adding}
             onClick={() => {
               setAdding(!adding);
             }}
           >
+            <Icon d={ICONS.plus} size="sm" />
             {copy.consumables.add}
-          </Button>
+          </TextButton>
           {adding && (
             <Picks
               others={others}

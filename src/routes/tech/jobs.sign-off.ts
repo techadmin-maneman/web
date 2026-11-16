@@ -21,7 +21,8 @@ import { SignOffSchema } from "../schemas/sign-off.ts";
 import { hasClosed, namedJob, refusalOf, superseded } from "./jobs.record.ts";
 import { EventIdSchema, jobId } from "./jobs.schemas.ts";
 
-const NOT_A_FIT = "invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement";
+const NOT_A_FIT =
+  "invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF)";
 const SIGNED_IN = errorResponse(
   "session_required; device_revoked: ops revoked this phone; technician_inactive: ops switched the technician off",
 );
@@ -80,7 +81,7 @@ async function fitJob(c: Ctx): Promise<WorkableJob | NotTaken> {
   const job = await namedJob(c, c.req.param("id") ?? "");
   if (job === null) return "not_found";
   const steps: readonly string[] = cardStepsFor(job.type, job.oneVisit !== null);
-  if (!steps.includes(SIGN_OFF_STEP)) return "not_a_fit";
+  if (!c.var.config.settings.clientSignOff || !steps.includes(SIGN_OFF_STEP)) return "not_a_fit";
   const superseding = await jobChangesSince(c.env.DB, job, technicianOf(c).technicianId, null);
   return superseding.changed.length > 0 ? { superseding } : job;
 }

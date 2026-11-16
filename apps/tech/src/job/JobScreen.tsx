@@ -118,12 +118,12 @@ function AtTheJob({ job, queued }: { job: Job; queued: readonly Queued[] }) {
       </CardFrame>
     );
   }
+  // Safety comes from the door on, as the design has it: before the check-in the visit has not begun.
   return (
     <CardFrame
       title={nameOf(job)}
       sub={whenOf(job)}
       back={backOf(job.id)}
-      safety={job.id}
       helper={checkIn.helper}
       foot={(helperId) => (
         <Button
@@ -138,7 +138,7 @@ function AtTheJob({ job, queued }: { job: Job; queued: readonly Queued[] }) {
         </Button>
       )}
     >
-      {checkIn.failed !== null && <CheckInFailed distance={checkIn.failed.distance} />}
+      {checkIn.failed !== null && <CheckInFailed distance={checkIn.failed.distance} radius={job.checkin_radius_m} />}
       <JobCard job={job} />
     </CardFrame>
   );
@@ -162,7 +162,7 @@ export function JobScreen({ id }: { id: string }) {
       title={nameOf(job)}
       sub={whenOf(job)}
       back={backOf(job.id)}
-      safety={job.id}
+      safety={stage === "started" ? job.id : undefined}
       foot={footFor(stage, job, queued)}
     >
       {stage === "changed" && (

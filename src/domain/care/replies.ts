@@ -182,7 +182,7 @@ export async function closeConversation(
   if ((await numberOf(db, change.conversationId)) === "not_found") return "not_found";
   const at = change.now.toISOString();
   // Closing the chat settles what the issue log of the client on its number reads open, in this chat or one on a number
-  // they held before, and leaves what it reads settled as it was (docs/decisions/0258-the-issue-log.md).
+  // they held before, and leaves what it reads settled as it was (docs/decisions/0259-the-issue-log.md).
   const holder = await db
     .prepare("SELECT pe.id FROM people pe JOIN conversations c ON c.mobile_e164 = pe.mobile_e164 WHERE c.id = ?1")
     .bind(change.conversationId)

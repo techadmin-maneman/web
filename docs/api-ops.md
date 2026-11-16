@@ -44400,7 +44400,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The reason the close opens on: the latest report still open in the chat's (ADR 0258); null for none."
+      "description": "The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none."
     }
   },
   "required": [

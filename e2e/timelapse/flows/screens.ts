@@ -15,6 +15,7 @@ import {
 } from "../../../apps/tech/src/content.ts";
 import { referral } from "../../../site/src/content/referral.ts";
 import * as siteCopy from "../../../site/src/content/site.ts";
+import { shots, throughTheTasks } from "../../tech/steps-fixtures.ts";
 import { Phone, razorpayPaid } from "../actors.ts";
 import { appOf, idOf } from "./clients.ts";
 import type { Job } from "./field.ts";
@@ -151,7 +152,7 @@ async function photograph(page: Page): Promise<void> {
   await expect(take).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await take.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: captureWords.finish }).click();
 }
@@ -208,14 +209,14 @@ export async function techJobOnScreen(
       if (offline) await phone.context.setOffline(true);
       await photograph(page);
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.checklist })).toBeVisible();
-      await page.getByRole("button", { name: stepWords.checklist.all }).click();
+      await throughTheTasks(page);
       await page.getByRole("button", { name: stepWords.next }).click();
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.consumables })).toBeVisible();
       await page.getByRole("button", { name: stepWords.next }).click();
       await expect(page.getByRole("heading", { level: 1, name: captureWords.after })).toBeVisible();
       await photograph(page);
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.outcome })).toBeVisible();
-      await page.getByRole("button", { name: captureWords.finish, exact: true }).click();
+      await page.getByRole("radio", { name: stepWords.outcome.done, exact: true }).click();
       await sim.clock.pass(Math.max(30, (job.minutes ?? 90) - 15) * MINUTE);
       await page.getByRole("button", { name: visitWords.close }).click();
       if (offline) {

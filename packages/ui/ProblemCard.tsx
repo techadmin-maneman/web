@@ -14,6 +14,7 @@ export function ProblemCard({
   onOpen,
   live = false,
   level,
+  runIn = false,
   className,
   children,
 }: {
@@ -27,6 +28,8 @@ export function ProblemCard({
   readonly live?: boolean;
   /** Its title as a heading in the screen's outline, where a reader jumps to it: a client's alerts before a visit. */
   readonly level?: 2 | 3;
+  /** Its title run into the words after it, one paragraph: "Client alert: Alcohol wipes irritate the scalp." */
+  readonly runIn?: boolean;
   readonly className?: string | undefined;
   /** What happened and what to do, in a line or two. */
   readonly children?: ReactNode;
@@ -37,6 +40,15 @@ export function ProblemCard({
       {children !== undefined && <span className={styles.body}>{children}</span>}
     </>
   );
+  if (onOpen === undefined && runIn) {
+    return (
+      <div className={classes(styles.card, className)} role={live ? "alert" : undefined}>
+        <p className={styles.runIn}>
+          <span className={styles.runInTitle}>{title}</span> {children}
+        </p>
+      </div>
+    );
+  }
   if (onOpen === undefined) {
     // Not a button, so its parts may be blocks: a heading, a list.
     const Title = level === undefined ? "div" : HEADINGS[level];

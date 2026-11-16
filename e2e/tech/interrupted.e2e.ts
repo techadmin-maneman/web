@@ -5,7 +5,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { startedThrough, stepAction } from "./steps-fixtures.ts";
+import { startedThrough, stepAction, throughTheTasks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 const { interrupted } = techCopy;
@@ -16,7 +16,7 @@ test("a job ops cancelled under the phone says so once, with a call to ops and t
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await throughTheTasks(page);
   fake.supersede = ["status"];
   await stepAction(page).click();
 
@@ -34,7 +34,7 @@ test("a job given to another technician names them", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await throughTheTasks(page);
   fake.moved = true;
   fake.wentTo = { technician: "Sandeep", at: null };
   await stepAction(page).click();
@@ -47,7 +47,7 @@ test("a job ops closed under the phone says so", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await throughTheTasks(page);
   fake.closedByOps = true;
   await stepAction(page).click();
 

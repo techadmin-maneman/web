@@ -1,4 +1,4 @@
-# 0258. The issue log
+# 0259. The issue log
 
 - Status: accepted
 - Date: 2026-11-16
@@ -15,7 +15,7 @@ for each ("MM-ISS-0032"), the client's update, marking one sorted, and reopening
 
 ## Decision
 
-1. **Storage** (migration 0212; the ratings' table takes 0213):
+1. **Storage** (migration 0212; the ratings' table takes 0214):
    - `client_reports`: one row a report, with its number (shown "MM-ISS-0032"), the client, the category, the visit it
      is about, their words, the Care chat it went into, and when the client marked it sorted or reopened it.
    - `client_report_photos`: up to three a report, each an object in the client photos bucket.

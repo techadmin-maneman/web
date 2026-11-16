@@ -144,6 +144,33 @@
     outline-offset: var(--focus-inset);
   }
 
+  /* A day written out over its unseen date input (./Field.tsx, DayInput), which takes the tap and the focus. */
+  .day {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .day:focus-within {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-inset);
+  }
+
+  .dayShown {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dayInput {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
   .box:disabled {
     background: var(--ui-box-off);
     color: var(--ui-text-muted);

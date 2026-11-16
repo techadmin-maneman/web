@@ -39,9 +39,10 @@
   color: var(--ui-text);
 }
 
+/* The last thing waiting to send clear of the home indicator below it. */
 .list {
   margin: 0;
-  padding: 0;
+  padding: 0 0 env(safe-area-inset-bottom);
   list-style: none;
 }
 
@@ -128,16 +129,19 @@
   margin-top: 0;
 }
 
-.nothing,
-.never {
+.nothing {
   margin: 0;
-  padding: var(--sp-16) var(--screen-gutter);
+  padding: var(--sp-16) var(--screen-gutter) 0;
   font-size: var(--fs-15);
   line-height: var(--lh-160);
   color: var(--ui-text-soft);
 }
 
-/* The screen's last line, so the last thing waiting to send sits clear of the home indicator above it. */
-.never {
-  padding-bottom: calc(var(--sp-16) + env(safe-area-inset-bottom));
+/* When the phone's work last reached us, under "Everything is uploaded." */
+.lastSync {
+  margin: var(--sp-2) 0 0;
+  padding: 0 var(--screen-gutter);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
 }

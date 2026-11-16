@@ -19,7 +19,7 @@ export const ERROR_CODES = [
   // Try-on (docs/decisions/0014-try-on-api.md).
   "busy",
   "photo_invalid_file",
-  // A report holds its three photographs already (docs/decisions/0258-the-issue-log.md).
+  // A report holds its three photographs already (docs/decisions/0259-the-issue-log.md).
   "photos_full",
   "upload_already_received",
   "upload_missing",

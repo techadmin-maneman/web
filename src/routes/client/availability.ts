@@ -11,7 +11,7 @@ import { isServed } from "../../domain/clients/service-area.ts";
 import type { Price } from "../../domain/money/price-book.ts";
 import { visitPriceOf } from "../../domain/booking/client-prices.ts";
 import { termsInForce } from "../../domain/visits/visit-changes.ts";
-import { bookable, movedService, moveTermsFor, rangeFor } from "../../http/client-booking.ts";
+import { bookable, movedService, moveTermsFor, rangeFor, stockedRange } from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
@@ -36,6 +36,10 @@ const AvailabilitySchema = z
     price: PriceSchema.openapi({ description: "The first day's price." }),
     change_notice_hours: z.number().int().openapi({
       description: "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it.",
+    }),
+    opens: z.iso.date().openapi({
+      description:
+        "The first day this visit may be booked on: a replacement's no sooner than its hair system can be fitted, where none is in stock.",
     }),
     last: z.iso
       .date()
@@ -113,6 +117,43 @@ function startsOfDay(asked: {
   });
 }
 
+/** The days open to the visit sold, and the strip's first day: later than asked where a replacement's opens later. */
+async function openDays(
+  c: Parameters<typeof stockedRange>[0],
+  personId: string,
+  sold: Parameters<typeof stockedRange>[2],
+  asked: {
+    readonly range: { readonly opens: string; readonly last: string };
+    readonly from: string | undefined;
+    readonly start: string;
+  },
+) {
+  const open = await stockedRange(c, personId, sold, asked.range);
+  return { open, first: open === asked.range ? asked.start : stripStart(asked.from, open, BOOKING_DAYS) };
+}
+
+/** One day of the strip: its windows with their hours and its starts, shut before the days open or past the last. */
+function stripDay(
+  day: Awaited<ReturnType<typeof availability>>[number],
+  at: {
+    readonly hours: ReturnType<typeof windowTimesOf>;
+    readonly open: { readonly opens: string; readonly last: string };
+    readonly minutes: number;
+    readonly inputs: OpsInputs;
+    readonly terms: Parameters<typeof changeChargedOnBooking>[2];
+    readonly now: Date;
+  },
+) {
+  const shut = day.date < at.open.opens || day.date > at.open.last;
+  const windows = day.windows.map((each) => {
+    const times = at.hours[each.window];
+    const changeCharged = changeChargedOnBooking(indiaInstant(day.date, times.start), at.now, at.terms);
+    return { ...each, ...times, open: !shut && each.open, change_charged: changeCharged };
+  });
+  const starts = startsOfDay({ day, minutes: at.minutes, shut, inputs: at.inputs, terms: at.terms, now: at.now });
+  return { date: day.date, windows, starts };
+}
+
 /** A service as the API names it. */
 const serviceBody = (service: { readonly tier: string; readonly name: string; readonly minutes: number }) => ({
   tier: service.tier,
@@ -176,6 +217,9 @@ export function registerClientAvailability(app: App): void {
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
     if (service === null || price === null) return refuse(c, "not_bookable");
     if (outside) return refuse(c, "not_served");
+    // A replacement opens no sooner than its hair system can be fitted, of the package it is sold as; the strip starts
+    // there where that is later than the day asked for.
+    const { open, first } = await openDays(c, session.subjectId, { type, tier: service.tier }, { range, from, start });
     // A move in place keeps the visit's technician; a charged move books a new visit with anyone.
     const moving = move === null || move.terms.move.cost === "charged" ? null : move.moving;
     // A move in place keeps its visit's terms, as its hold will (soldAs); anything else is sold under those in force.
@@ -198,13 +242,13 @@ export function registerClientAvailability(app: App): void {
         (await visitPriceOf(db, { type, tier: service.tier, on: date, city, personId: session.subjectId })) ?? price
       );
     };
-    const dates = Array.from({ length: BOOKING_DAYS }, (_, index) => addDays(start, index));
+    const dates = Array.from({ length: BOOKING_DAYS }, (_, index) => addDays(first, index));
     const [days, schedule, prices] = await Promise.all([
       availability({
         db,
         placing,
         visit: { minutes: service.minutes, until, fitting: fittingOf(type, service.tier) },
-        from: start,
+        from: first,
         days: BOOKING_DAYS,
         now,
       }),
@@ -215,23 +259,23 @@ export function registerClientAvailability(app: App): void {
     // A day before the bookable days open, or past the last, is offered to nobody. Each window says its hours that day,
     // and whether a visit booked in it now would already cost the client to change.
     const inputs = await opsInputs(c);
-    const strip = days.map((day) => {
-      const hours = windowTimesOf(schedule.on(day.date));
-      const shut = day.date < range.opens || day.date > range.last;
-      const windows = day.windows.map((each) => {
-        const times = hours[each.window];
-        const changeCharged = changeChargedOnBooking(indiaInstant(day.date, times.start), now, terms);
-        return { ...each, ...times, open: !shut && each.open, change_charged: changeCharged };
-      });
-      const starts = startsOfDay({ day, minutes: service.minutes, shut, inputs, terms, now });
-      return { date: day.date, windows, starts };
-    });
+    const strip = days.map((day) =>
+      stripDay(day, {
+        hours: windowTimesOf(schedule.on(day.date)),
+        open,
+        minutes: service.minutes,
+        inputs,
+        terms,
+        now,
+      }),
+    );
     return c.json(
       {
         type,
         service: serviceBody(service),
         price,
         change_notice_hours: terms.noticeHours,
+        opens: open.opens,
         last: range.last,
         days: strip.map((day) => ({ ...day, price: pricedOn.get(day.date) ?? price })),
       },

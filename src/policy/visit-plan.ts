@@ -9,17 +9,8 @@
 import type { VisitType } from "../config/visit-types.ts";
 import type { CardStep } from "./in-job-steps.ts";
 
-export const PLAN_SCREENS = [
-  "before_photos",
-  "tasks",
-  "hair_profile",
-  "hair_system",
-  "consumables",
-  "after_photos",
-  "sign_off",
-  "outcome",
-] as const;
-export type PlanScreen = (typeof PLAN_SCREENS)[number];
+export type PlanScreen =
+  "before_photos" | "tasks" | "hair_profile" | "hair_system" | "consumables" | "after_photos" | "sign_off" | "outcome";
 
 /** Which table a visit follows: its type, or the consultation and fit in one visit. */
 export type VisitPlan = "service" | "replacement" | "first_fit" | "consultation" | "one_visit";

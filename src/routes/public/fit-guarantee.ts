@@ -5,7 +5,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 
-export const FitGuaranteeSchema = z
+const FitGuaranteeSchema = z
   .object({
     days: z
       .number()

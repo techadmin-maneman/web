@@ -1,4 +1,4 @@
-// The photographs a client sends with a report (docs/decisions/0258-the-issue-log.md): up to three a report, each a JPEG
+// The photographs a client sends with a report (docs/decisions/0259-the-issue-log.md): up to three a report, each a JPEG
 // kept in the client photos bucket under the client, with a note for Care in the chat on the client's number that it
 // came; and what Care's console reads of them.
 

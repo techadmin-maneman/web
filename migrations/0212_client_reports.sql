@@ -1,5 +1,5 @@
 -- Migration number: 0212
--- The issue log (docs/decisions/0258-the-issue-log.md): each report a client files from the app, with its number, its
+-- The issue log (docs/decisions/0259-the-issue-log.md): each report a client files from the app, with its number, its
 -- category, the visit it is about and the Care chat it went into; and the photographs sent with it. New tables: the
 -- Worker already deployed reads and writes none of it.
 

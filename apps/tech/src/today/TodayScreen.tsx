@@ -4,7 +4,6 @@
 
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
-import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useState, type Ref } from "react";
 import type { JobSummary } from "../api.ts";
 import { Bell } from "../alerts/index.ts";
@@ -18,7 +17,7 @@ import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useRefreshTick } from "../lib/useRefreshTick.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { clock, dayAfter, dayBefore, todayInIndia } from "../lib/when.ts";
+import { clock, dayAfter, dayBefore, dayDate, todayInIndia } from "../lib/when.ts";
 import { kindName } from "../lib/kind.ts";
 import { nextOf, titleOf } from "../lib/today.ts";
 import { go } from "../route.ts";
@@ -74,7 +73,7 @@ function Head(props: { readonly date: string; readonly title: string; readonly h
   return (
     <header className={styles.head}>
       <div>
-        <p className={styles.date}>{sayNow(shortDate(props.date))}</p>
+        <p className={styles.date}>{sayNow(dayDate(props.date))}</p>
         <h1 className={styles.count} ref={props.heading} tabIndex={-1}>
           {props.title}
         </h1>

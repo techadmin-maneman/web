@@ -1,4 +1,4 @@
-// A claim under the fit guarantee (docs/decisions/0256-fit-guarantee-setting.md, docs/decisions/0258-the-issue-log.md):
+// A claim under the fit guarantee (docs/decisions/0256-fit-guarantee-setting.md, docs/decisions/0259-the-issue-log.md):
 // a report on the fit about a first fit inside its guarantee opens the Tasks row "Fit guarantee claim" from its first
 // report, with the fit's sign-off and the photographs sent, until Care close it; a claim after the close opens another.
 // NOW is Monday 21 September 2026, 12 noon in India. Every name, number and message here is made up.

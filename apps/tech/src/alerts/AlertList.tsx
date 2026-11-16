@@ -20,8 +20,12 @@ export function AlertList({ lines }: { readonly lines: readonly AlertLine[] }) {
       {lines.map((line) => (
         <ListRow
           key={line.id}
-          lead={line.when}
-          title={line.title}
+          title={
+            <>
+              <span className={styles.when}>{line.when}</span>
+              {line.title}
+            </>
+          }
           meta={line.body}
           to={line.to ?? undefined}
           end={line.to === null ? undefined : <Icon d={GLYPHS.chevron} size="sm" />}
@@ -47,7 +51,7 @@ export function SendMe(props: {
 }) {
   return (
     <>
-      <SectionHead title={copy.sendMe} className={styles.section} />
+      <SectionHead title={copy.sendMe} size="list" className={styles.section} />
       <ListRows className={styles.rows} label={copy.sendMe}>
         {ALERT_KINDS.map((kind) => (
           <ListRow

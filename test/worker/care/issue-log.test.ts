@@ -1,4 +1,4 @@
-// The client's issue log (src/routes/client/problem-log.ts; docs/decisions/0258-the-issue-log.md): each report with its
+// The client's issue log (src/routes/client/problem-log.ts; docs/decisions/0259-the-issue-log.md): each report with its
 // reference, category, thread and state, read from the Care chat it went into; the client's update, reopening and word
 // that it is sorted; and their grievances and missed-visit disputes beside the reports. NOW is Monday 21 September
 // 2026, 12 noon in India. Every name, number and message here is made up.

@@ -92,13 +92,13 @@ test("starts afresh once ops have handled the SOS", async ({ page }) => {
   await expect(page.getByText(safety.sentBody)).toHaveCount(0);
 });
 
-test("says ops can see the location only while the visit is under way", async ({ page }) => {
+test("is there from the door on, as the visit begins, and not before the check-in", async ({ page }) => {
   await fakeTech(page);
   await atTheDoor(page);
-  // Before the check-in nothing is shared.
+  // Before the check-in the visit has not begun: no Safety, and nothing shared.
   await page.goto(`/jobs/${JOB_ID}`);
-  await page.getByRole("button", { name: safety.open }).click();
-  await expect(sos(page)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: safety.open })).toHaveCount(0);
   await expect(page.getByText(safety.sharing)).toHaveCount(0);
 });
 

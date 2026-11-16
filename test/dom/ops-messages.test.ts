@@ -6,7 +6,6 @@
 import { act, createElement, Fragment } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Conversation } from "../../apps/ops/src/care/care-api.ts";
 import {
   CareTeamScreen,
   MessagesScreen,
@@ -21,42 +20,9 @@ import { contractChecked } from "./contract-fetch.ts";
 import { RECORD } from "../../e2e/ops/fixtures/clients.ts";
 import { openDialogsAsJsdomCan } from "./dialogs.ts";
 import { Shell } from "../../apps/ops/src/frame/Shell.tsx";
+import { ARJUN, IMRAN, STRANGER } from "./ops-messages-fixtures.ts";
 
-const ARJUN: Conversation = {
-  id: "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e",
-  person: { id: "11111111-1111-4111-8111-111111111111", name: "Arjun Mehta" },
-  mobile: "+919810000001",
-  state: "open",
-  care_person: "asha@maneman.test",
-  care_name: null,
-  covered_by: null,
-  technician: null,
-  last_message_at: "2026-09-21T05:12:00.000Z",
-  last_line: "Can I move tomorrow’s visit to the evening?",
-  waiting_since: "2026-09-21T05:12:00.000Z",
-  reply_by: "2026-09-21T06:12:00.000Z",
-};
-const STRANGER: Conversation = {
-  ...ARJUN,
-  id: "9d2e0a5c-6f7b-4c8d-0e9f-4a5b6c7d8e9f",
-  person: null,
-  care_person: null,
-  mobile: "+919811112222",
-  last_line: "Do you come to Noida?",
-};
-
-/** One of our technicians, on a number a client of ours has too: the chat is the technician's everywhere it is named. */
-const IMRAN: Conversation = {
-  ...ARJUN,
-  id: "ad3f1b6d-7a8c-4d9e-8f0a-5b6c7d8e9f0a",
-  technician: { id: "88000000-0000-4000-8000-000000000001", name: "Imran Qureshi" },
-  last_line: "Running ten minutes late.",
-};
 const LEAVE = { id: "7b0c8e3a-4d59-4a6b-8c7d-2e3f4a5b6c7d", from: "2026-10-20", to: "2026-10-22" };
-
-// Two photographs Arjun sent with a report (docs/decisions/0258-the-issue-log.md).
-const REPORT = "c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f";
-const PHOTOS = [1, 2].map((n) => ({ report_id: REPORT, reference: "MM-ISS-0001", n, at: "2026-09-21T05:00:00.000Z" }));
 
 const LATE = {
   id: "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d",
@@ -190,13 +156,6 @@ beforeEach(() => {
           }),
         );
       }
-      if (address.pathname === `/api/conversations/${ARJUN.id}/report-photos`) {
-        return Promise.resolve(Response.json({ photos: PHOTOS }));
-      }
-      if (address.pathname.startsWith(`/api/conversations/${ARJUN.id}/report-photos/`)) {
-        const jpeg = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: "image/jpeg" });
-        return Promise.resolve(new Response(jpeg, { headers: { "Content-Type": "image/jpeg" } }));
-      }
       if (address.pathname === `/api/conversations/${IMRAN.id}`) {
         const said = { kind: "in", at: IMRAN.last_message_at, author: "client", text: IMRAN.last_line, delivery: null };
         return Promise.resolve(Response.json({ conversation: IMRAN, items: [said], close_reason: null }));
@@ -208,7 +167,7 @@ beforeEach(() => {
         return Promise.resolve(
           Response.json({
             conversation: ARJUN,
-            // The chat's open report is about a payment (docs/decisions/0258-the-issue-log.md).
+            // The chat's open report is about a payment (docs/decisions/0259-the-issue-log.md).
             close_reason: "billing",
             items: [
               {
@@ -483,54 +442,6 @@ describe("the Messages page", () => {
     expect(panel?.textContent).toContain(copy.panel.visit("Thu 24 Sep, 12 pm", "Service visit"));
     expect(panel?.textContent).toContain("Gurgaon");
     expect(panel?.querySelector(`a[href$="/payments"]`)?.textContent).toBe(copy.panel.links.payments);
-  });
-
-  it("shows the photographs the client sent with their reports beside the chat, only once asked for", async () => {
-    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: () => "blob:photo", revokeObjectURL: () => undefined }));
-    await show();
-    await act(async () => {
-      chatButton("Arjun Mehta")?.click();
-      await answered();
-    });
-    const panel = document.body.querySelector(`[aria-label="${copy.panel.title}"]`);
-    // A viewing is logged, so nothing is fetched until Care ask.
-    expect(asked.filter((path) => path.includes("/report-photos/"))).toEqual([]);
-    const button = [...(panel?.querySelectorAll("button") ?? [])].find((each) =>
-      each.textContent.includes(copy.reportPhotos.show(2)),
-    );
-    await act(async () => {
-      button?.click();
-      await answered();
-    });
-    expect([...(panel?.querySelectorAll("img") ?? [])].map((image) => image.getAttribute("alt"))).toEqual([
-      copy.reportPhotos.alt("MM-ISS-0001", 1),
-      copy.reportPhotos.alt("MM-ISS-0001", 2),
-    ]);
-    expect(asked).toContain(`/api/conversations/${ARJUN.id}/report-photos/${REPORT}/1`);
-  });
-
-  it("opens the chat a task's link names, whichever view, in view once the list answers, if it answers last", async () => {
-    const scrolled: Element[] = [];
-    Reflect.set(Element.prototype, "scrollIntoView", function (this: Element) {
-      scrolled.push(this);
-    });
-    const answering = globalThis.fetch;
-    const late = (url: string, init?: RequestInit) =>
-      new Promise<Response>((resolve) => setTimeout(() => void answering(url, init).then(resolve), 30));
-    vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
-      new URL(url, "https://ops.maneman.test").pathname === "/api/conversations"
-        ? late(url, init)
-        : answering(url, init),
-    );
-    window.history.replaceState(null, "", `/messages#chat-${IMRAN.id}`);
-    await show();
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 60));
-      await answered();
-    });
-    const chat = document.body.querySelector(`[aria-label="${copy.thread.title("Imran Qureshi")}"]`);
-    expect(window.location.hash).toBe("");
-    expect(scrolled).toContain(chat?.parentElement);
   });
 
   it("sends a matter from the chat to the client’s city", async () => {

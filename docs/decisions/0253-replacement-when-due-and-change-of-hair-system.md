@@ -30,10 +30,20 @@ replacement_opens_on}`, from the piece in wear and the package it was fitted und
 3. **The package is chosen at booking.** The replacement's tier step marks each package Keep it, Upgrade, Downgrade or
    Switch, with its replacement and service prices and lifespan from the price book. `people.package` moves on booking,
    as ADR 0211 says.
-4. **Stocked as booked.** `codeFor` takes the booked tier for a replacement, as for a first fit, so demand, kits and
-   `stock_at_risk` follow the booking.
-5. **The old package's hair system returns to stock.** Where the booked package differs from what the
-   `replacement_order` task ordered or set aside, the task closes as "returned to stock" and that hair system becomes
-   ordinary stock. Nothing is charged to anyone.
-6. **Not in stock in the client's size.** The order is raised on the booking (ADR 0174's path), at no cost beyond the
-   package's own price, and start times open only from its promised date. The booking step says so.
+4. **Stocked as booked.** One rule names a fit's product (`bookedProduct`, `src/domain/inventory/hair-systems.ts`): the
+   package booked, at a first fit or a replacement; the standard one for a first fit booked with none; the product worn
+   for a replacement booked with none. Demand and `stock_at_risk`, the evening's kit check, the forecast, who takes the
+   fit and the stock gap told at booking all read it.
+5. **The old package's hair system returns to stock.** Nothing holds a hair system for a client, so one ordered for
+   the package they wear is ordinary stock already, for any client it fits. Its `replacement_order` task leaves Tasks
+   once the replacement is booked, whichever package, and comes back if that booking is cancelled. A replacement
+   counts as booked from the first day of the month its hair system falls due, when one may first be booked
+   (migration 0213; the booking's upkeep and the piece's triggers read it so). Nothing is charged to anyone.
+6. **Not in stock in the client's size.** Of the package the replacement is sold as (the one named, else the
+   client's; a move's, its own visit's), where no place holds the stock code made to the client and none is on its
+   way, the app's days open the day after the quickest supplier still in use can deliver it, as a fit's stock gap
+   reads delivery in time (`stockFitsFrom`, through `stockedRange`), and a hold before then is refused. The days'
+   answer says when they open (`opens`). `stock_at_risk` tells ops to order it once the replacement is booked. A code
+   some place holds opens as usual, ops moving it. A size no stock code matches is made to order, which ADR 0174's
+   custom order takes payment for first: how that goes at a replacement, at no cost beyond the package's price,
+   waits on the owner.

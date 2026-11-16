@@ -11,7 +11,24 @@ import { SectionHead } from "@maneman/ui/SectionHead";
 import type { Job } from "../api.ts";
 import { clientRecord as copy, guides } from "../content.ts";
 import { dayMonth } from "../lib/when.ts";
+import { shortMonth } from "@maneman/web-kit/dates";
+
 import styles from "./client-record.module.css";
+
+/** "Jul", the month of a day. */
+const monthName = (isoDate: string): string => shortMonth(isoDate.slice(0, 7)).split(" ")[0] ?? "";
+
+/** The history's row line: "5 visits since Jul", or a new client; nothing while the card does not say. */
+function visitsOf(job: Job): string | undefined {
+  const visits = job.client_visits;
+  if (visits === null) return undefined;
+  if (visits.count === 0 || visits.first === null) return copy.newClient;
+  const sameYear = visits.first.slice(0, 4) === job.date.slice(0, 4);
+  return copy.since(
+    visits.count,
+    sameYear ? monthName(visits.first) : `${monthName(visits.first)} ${visits.first.slice(0, 4)}`,
+  );
+}
 
 export function ClientRecord({ job }: { job: Job }) {
   return (
@@ -45,7 +62,12 @@ export function ClientRecord({ job }: { job: Job }) {
         )}
       </div>
       <ListRows>
-        <ListRow title={copy.history} to={`/jobs/${job.id}/history`} end={<Icon d={GLYPHS.chevron} size="sm" />} />
+        <ListRow
+          title={copy.history}
+          meta={visitsOf(job)}
+          to={`/jobs/${job.id}/history`}
+          end={<Icon d={GLYPHS.chevron} size="sm" />}
+        />
         <ListRow title={guides.howDone} to={`/guides/${job.type}`} end={<Icon d={GLYPHS.chevron} size="sm" />} />
       </ListRows>
     </section>

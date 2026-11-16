@@ -7,7 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE } from "./fixtures.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
-import { holding, startedThrough, writesTo } from "./steps-fixtures.ts";
+import { holding, startedThrough, writesTo, throughTheTasks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { stepAction } from "./steps-fixtures.ts";
 
@@ -351,7 +351,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
       page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.consultation }),
     ).toBeVisible();
     await expect(page.getByText(techCopy.visit.task(1, 3))).toBeVisible();
-    await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+    await throughTheTasks(page);
     await expect(page.getByRole("button", { name: /Adhesive applied/ })).toHaveCount(0);
     await stepAction(page).click();
 
@@ -432,7 +432,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("closes a fit booked for later as a consultation going ahead, with nothing to pay now", async ({ page }) => {
     const fake = await atTheOutcome(page, { product: "natural", fit_later: true });
-    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+    await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
 
     await expect(page.getByText(techCopy.oneVisit.endsGoingAhead("Mane Man Natural"))).toBeVisible();
     await expect(page.getByText(/payment link/)).toHaveCount(0);
@@ -448,7 +448,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   // A declined visit offers no code and promises no link, and closes as what it became.
   test("ends a declined visit as a free consultation, with no code asked for, and closes as one", async ({ page }) => {
     const fake = await atTheOutcome(page, { declined: true }, { code: "AUDTEST", given_by: "client" });
-    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+    await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
 
     await expect(page.getByText(techCopy.oneVisit.endsAsConsultation)).toBeVisible();
     await expect(page.getByText(/payment link/)).toHaveCount(0);
@@ -464,7 +464,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("names the product the payment link is for, once the client chose it", async ({ page }) => {
     await atTheOutcome(page, { product: "natural" });
-    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+    await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
     await expect(page.getByText("Closing sends the client a payment link for Mane Man Natural.")).toBeVisible();
     await expect(page.getByLabel(techCopy.oneVisit.code.label)).toBeVisible();
   });
@@ -484,7 +484,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     });
     const box = page.getByLabel(techCopy.oneVisit.code.label);
     await expect(box).toHaveCount(0);
-    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+    await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
     await box.fill("wrong1");
     await page.getByRole("button", { name: techCopy.oneVisit.code.apply }).click();
     await expect(page.getByRole("alert")).toHaveText("That code doesn’t apply to this visit.");
@@ -500,7 +500,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("says the code the client booked with, and asks for none", async ({ page }) => {
     await atTheOutcome(page, { product: "natural" }, { code: "AUDTEST", given_by: "client" });
-    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+    await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
     await expect(page.getByText("Code AUDTEST applied at booking. The payment link will take it off.")).toBeVisible();
     await expect(page.getByLabel(techCopy.oneVisit.code.label)).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);

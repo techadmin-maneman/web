@@ -44,7 +44,7 @@ describe("where a task leads", () => {
   });
 });
 
-describe("a fit guarantee claim (docs/decisions/0258-the-issue-log.md)", () => {
+describe("a fit guarantee claim (docs/decisions/0259-the-issue-log.md)", () => {
   const CHAT = "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e";
   const claim = (conversation: string | null, signOff: "signed" | null, photos: number): Task => ({
     ...task("c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f"),

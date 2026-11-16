@@ -431,6 +431,24 @@ describe("POST /api/visits/:id/close", () => {
     expect(tasks).toContainEqual(expect.objectContaining({ group: "fit_unsigned", id: VISIT }));
   });
 
+  it("closes a fit by hand as done with no sign-off asked, while clients sign off in no app", async () => {
+    await visit("replacement", THIS_MORNING);
+    const body = { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: "Phone lost" };
+    const app = appFor("local", fakeDependencies({ payments }), { clientSignOff: false }, "ops");
+    const closed = await request(
+      app,
+      `/api/visits/${VISIT}/close`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify(body),
+      },
+      { MESSAGE_QUEUE: messages },
+    );
+    expect(closed.status).toBe(200);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM fit_sign_offs").first("n")).toBe(0);
+  });
+
   it("closes a visit once: a second close is refused, and the first stands", async () => {
     await visit("service", THIS_MORNING);
     const first = { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: "Phone lost" };

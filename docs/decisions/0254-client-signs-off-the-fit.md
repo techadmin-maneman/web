@@ -1,6 +1,7 @@
 # 0254. The client signs off the fit
 
-- Status: accepted
+- Status: accepted. Amended 16 November 2026: the server work ships before the app's screens, so a switch,
+  `CLIENT_SIGN_OFF`, holds sign-off off until the app that asks the client ships (below).
 - Date: 2026-11-12
 - Topic: Field work
 - Builds on [0244](0244-the-visit-engine.md), whose plans gain the step
@@ -44,6 +45,15 @@ their own app on their own phone, and nowhere else (owner, 12 November 2026).
    fit's guarantee runs for whatever ops set since (ADR 0256).
 7. **The terms.** Signing off is recorded as acceptance at the visit and does not waive the guarantee (ADR 0256).
    Counsel's wording is an open point, not a blocker.
+
+## The switch
+
+The owner split the redesign on 16 November 2026: the server work in one pull request, the client app's screens in
+the next. Until the app that asks the client ships, nobody could sign, and every fit would close declined with a
+Tasks row. So `CLIENT_SIGN_OFF` (`wrangler.jsonc`, each environment's vars) is off on staging and production, and on
+locally, where the tests run. Off, the technician's card has no sign-off step, the sign-off request is refused as
+for a service visit, a fit closes done as it did before this decision, and one closed by hand needs none. The
+screens' pull request turns it on. The client's live card still counts the step, which only the new screens read.
 
 ## Departures
 

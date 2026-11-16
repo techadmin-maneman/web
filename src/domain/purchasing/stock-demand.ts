@@ -5,7 +5,7 @@
 
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { latestFits, type FitToMatch } from "../clients/hair-profiles.ts";
-import { hairSystemSpecs, matchingCode, type HairSystemSpec } from "../inventory/hair-systems.ts";
+import { bookedProduct, hairSystemSpecs, matchingCode, type HairSystemSpec } from "../inventory/hair-systems.ts";
 import { tierOf } from "../../config/visit-types.ts";
 import { bookedAhead } from "../../config/statuses.ts";
 import { visitCity } from "../clients/places.ts";
@@ -40,15 +40,14 @@ interface FitRow {
   readonly city: string | null;
 }
 
-/** The stock code made to a fit's spec: the product it was booked as on a first fit, the profile's on a replacement. */
+/** The stock code made to a fit's spec: the product it was booked as, by the client's profile. */
 function codeFor(
   fit: FitRow,
   profile: FitToMatch | undefined,
   specs: ReadonlyMap<string, HairSystemSpec>,
 ): string | null {
   if (profile === undefined) return null;
-  const product = fit.type === "first_fit" ? (fit.tier ?? "standard") : profile.product;
-  return matchingCode(specs, { ...profile, product });
+  return matchingCode(specs, { ...profile, product: bookedProduct(fit, profile.product) });
 }
 
 /**

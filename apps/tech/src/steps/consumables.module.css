@@ -4,3 +4,15 @@
 .step {
   --icon-button-size: var(--tech-stepper);
 }
+
+/* Add item: a plus and the words, at the tap's height, as the design has it. */
+.addItem {
+  display: inline-flex;
+  gap: var(--sp-8);
+  align-items: center;
+  min-height: var(--tech-min);
+  margin-top: var(--sp-8);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
+  text-decoration: none;
+}

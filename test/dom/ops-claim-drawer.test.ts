@@ -1,4 +1,4 @@
-// A fit guarantee claim's drawer on Tasks (apps/ops/src/tasks/TaskDetail.tsx; docs/decisions/0258-the-issue-log.md):
+// A fit guarantee claim's drawer on Tasks (apps/ops/src/tasks/TaskDetail.tsx; docs/decisions/0259-the-issue-log.md):
 // its line, its way to the client's chat, and the photographs of its own reports alone, once Care ask for them. Every
 // name and number is made up.
 

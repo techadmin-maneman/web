@@ -13,6 +13,7 @@ import type { CheckIn, Job, JobState, JobSummary, OutcomeRequest, VisitToFix } f
 import { dayAfter } from "../lib/when.ts";
 import { all, clear, get, put, remove } from "./db.ts";
 import { apiNow } from "@maneman/web-kit/clock";
+import { synced } from "./last-sync.ts";
 
 export async function keepDay(date: string, jobs: readonly JobSummary[]): Promise<void> {
   await put("days", { date, jobs });
@@ -27,6 +28,8 @@ export async function keptDay(date: string): Promise<readonly JobSummary[] | nul
  * signal, and before it is next read.
  */
 export async function keepLanded(jobId: string, state: JobState): Promise<void> {
+  // The phone's work reached us: Pending uploads says when (./last-sync.ts).
+  synced(apiNow());
   for (const day of await all("days")) {
     if (!day.jobs.some((job) => job.id === jobId)) continue;
     await put("days", { ...day, jobs: day.jobs.map((job) => (job.id === jobId ? { ...job, progress: state } : job)) });

@@ -318,7 +318,7 @@ const AVAILABILITY = {
   service: { tier: "standard", name: "Service visit", minutes: 90 },
   price: SERVICE_PRICE,
   change_notice_hours: 24,
-  last: "2030-09-29",
+  ...{ opens: "2030-09-16", last: "2030-09-29" },
   days: Array.from({ length: 14 }, (_, index) => ({
     date: `2030-09-${String(16 + index)}`,
     price: SERVICE_PRICE,

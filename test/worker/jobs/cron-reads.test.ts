@@ -160,7 +160,7 @@ const HISTORY = [
   `INSERT INTO razorpay_events (event_id, event, received_at) SELECT 'evt-' || i, 'payment.captured', '${AGO}' FROM n`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
-  // An issue each client reported from the app (docs/decisions/0258-the-issue-log.md).
+  // An issue each client reported from the app (docs/decisions/0259-the-issue-log.md).
   `INSERT INTO client_reports (id, number, person_id, category, text, created_at)
    SELECT 'cr-' || i, i, 'p-' || i, 'other', 'Something is wrong.', '${AGO}' FROM n`,
   `INSERT INTO client_report_photos (report_id, n, object_key, bytes, created_at)

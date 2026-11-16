@@ -1,7 +1,8 @@
 // What the technician's step tests share (steps*.e2e.ts): a time some minutes ago, a job started through to a step, the
 // writes it sent, the checklist's lines and what is drawn in gold.
 
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { capture, visit } from "../../apps/tech/src/content.ts";
 import { type Step } from "./fixtures.ts";
 import { type Fake } from "./fake-tech.ts";
 
@@ -21,8 +22,28 @@ export function startedThrough(fake: Fake, ...steps: Step[]): void {
 
 export const writesTo = (fake: Fake, step: string) => fake.writes.filter((write) => write.path.endsWith(`/${step}`));
 
-/** The checklist's items, each a button in its own row of the list. */
-export const checklistItems = (page: Page) => page.getByRole("listitem").getByRole("button");
+/** The angles in the order the camera takes them (apps/tech/src/lib/sets.ts). */
+const ANGLE_ORDER = ["front", "top", "left", "right", "hair"] as const;
+
+/** What the camera's head says once `taken` angles are: the shot being taken, "2 of 5 · Top", or "5 of 5" once done. */
+export const shots = (taken: number): string => {
+  const next = ANGLE_ORDER[taken];
+  return next === undefined ? capture.of(taken) : capture.taking(taken + 1, capture.angles[next]);
+};
+
+/**
+ * Through a visit's guided tasks to the last, by Next task: each task once, as the technician works them. The step's
+ * own action, on the last, is the caller's to tap.
+ */
+export async function throughTheTasks(page: Page): Promise<void> {
+  const count = page.getByText(/^Task \d+ of \d+$/);
+  const total = Number(/of (\d+)$/.exec((await count.textContent()) ?? "")?.[1] ?? "1");
+  for (let at = 1; at < total; at += 1) {
+    await expect(count).toHaveText(visit.task(at, total));
+    await page.getByRole("button", { name: visit.nextTask }).click();
+  }
+  await expect(count).toHaveText(visit.task(total, total));
+}
 
 /** How many things are marked in brass, the one mark a screen of the new look has: the step under way in the bar. */
 export const brassMarks = (page: Page) =>

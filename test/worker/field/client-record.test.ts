@@ -211,6 +211,9 @@ describe("the client's history", () => {
       await job.get(`/api/tech/jobs/${JOB}/client-history`)
     ).json<{ visits: { id: string }[] }>();
     expect(visits.map((visit) => visit.id)).toEqual([EARLIER, OLDER]);
+    // The card counts the same visits for the job's row, "2 visits since Aug", and dates the first.
+    const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ client_visits: unknown }>();
+    expect(card.client_visits).toEqual({ count: 2, first: "2026-08-01" });
   });
 
   it("gives a closed visit's result and what its last consumables step used, not every step sent", async () => {

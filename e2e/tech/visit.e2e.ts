@@ -7,6 +7,7 @@ import { axeViolations } from "../a11y.ts";
 import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { shots } from "./steps-fixtures.ts";
 
 const plan = techCopy.visit.plan;
 
@@ -76,7 +77,7 @@ test("marks a step the API refused as needing a fix, in red on the plan", async 
   for (let angle = 1; angle <= 5; angle += 1) {
     await expect(shutter).toBeEnabled();
     await shutter.click();
-    await expect(page.getByText(`${String(angle)} of 5`, { exact: true })).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
   // The set goes up: the API takes four photographs and refuses the front one.
@@ -97,5 +98,5 @@ test("says on the camera that there is no signal, and keeps taking photographs",
   await context.setOffline(true);
   await expect(page.getByText(techCopy.today.offline.bar)).toBeVisible();
   await page.getByRole("button", { name: techCopy.capture.take }).click();
-  await expect(page.getByText("1 of 5", { exact: true })).toBeVisible();
+  await expect(page.getByText(shots(1), { exact: true })).toBeVisible();
 });

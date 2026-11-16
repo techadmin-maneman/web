@@ -46,7 +46,7 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     `DELETE FROM tech_alert_kinds_off WHERE technician_id IN (${ids});`,
     `DELETE FROM push_subscriptions WHERE device_id IN (SELECT id FROM technician_devices WHERE technician_id IN (${ids}));`,
     // The invented clients' reports from the app and their photographs, which name the jobs: all of them, before the
-    // jobs (docs/decisions/0258-the-issue-log.md).
+    // jobs (docs/decisions/0259-the-issue-log.md).
     `DELETE FROM client_report_photos WHERE report_id IN (SELECT id FROM client_reports WHERE person_id IN (${persons}));`,
     `DELETE FROM client_reports WHERE person_id IN (${persons});`,
     // A hair profile is never deleted (migration 0064), so a job one was taken at, the invented client it is of and
