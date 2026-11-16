@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
+import type { Settings } from "../../../src/config/settings.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 
@@ -18,8 +19,8 @@ beforeEach(async () => {
 });
 
 /** A replacement worked up to its outcome, its sign-off left to the test. */
-async function replacementToTheClose(): Promise<Working> {
-  const job = await working("replacement");
+async function replacementToTheClose(settings: Partial<Settings> = {}): Promise<Working> {
+  const job = await working("replacement", {}, settings);
   await job.workTo("piece");
   const steps: [string, object, string][] = [
     ["piece", { piece_code: "MM-STD-5520-A" }, "event-piece-01"],
@@ -57,6 +58,16 @@ describe("a fit's sign-off", () => {
     await job.workTo("outcome");
     expect((await ask(job)).status).toBe(400);
     expect((await close(job)).status).toBe(202);
+  });
+
+  it("is not on the card, nor asked, and the fit closes done without it, while clients sign off in no app", async () => {
+    const job = await replacementToTheClose({ clientSignOff: false });
+    const read = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ steps: string[]; sign_off: unknown }>();
+    expect(read.steps).not.toContain("sign_off");
+    expect(read.sign_off).toBeNull();
+    expect((await ask(job)).status).toBe(400);
+    expect((await close(job)).status).toBe(202);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM fit_sign_offs").first("n")).toBe(0);
   });
 
   it("holds the fit's close done until the client signs, in their app, every check ticked", async () => {

@@ -38,6 +38,8 @@ interface HandClose {
   readonly audit: AuditEntry;
   /** The no-show waits in force, which ops set. */
   readonly waits: Waits;
+  /** Whether clients sign off a fit in their app; without, a fit closed done by hand needs none. */
+  readonly clientSignOff: boolean;
 }
 
 type HandClosed =
@@ -102,7 +104,7 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
 
   const at = now.toISOString();
   const unsigned =
-    close.outcome === "done" && (await needsSignOffByHand(db, visit, close.appointmentId))
+    close.outcome === "done" && close.clientSignOff && (await needsSignOffByHand(db, visit, close.appointmentId))
       ? [
           unsignedByHand(db, {
             appointmentId: close.appointmentId,

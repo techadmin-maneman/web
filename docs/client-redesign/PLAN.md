@@ -27,7 +27,10 @@ current state and where it goes, the work in build order, the gaps, and the PRs.
    - **PR A, the redesign.** Everything except production's switch. This covers the plan and ADRs, the look, every
      screen and W1 to W10. It also covers the Razorpay code the app needs (Checkout everywhere, the link for a one
      visit and a custom order, open points 16, 17 and 154), and staging on Razorpay's test keys. Built in the brief's
-     order, pushed once.
+     order. **Split on 16 November at the owner's ask into two, each pushed once:** the server PR
+     (`feat/client-redesign`: every server item, with the technician app and console work built beside them, and
+     `CLIENT_SIGN_OFF` off on staging and production, ADR 0254), then the screens PR (`feat/client-screens`: the client
+     app, staging's Razorpay test keys, and `CLIENT_SIGN_OFF` on).
    - **PR B, production pays only through Razorpay. The owner merges it.** It sets `env.production`'s vars (the live
      key, `PAYMENTS_PROVIDER: "razorpay"`, `SELF_SERVE_BOOKING: "true"`) and adds the startup guard with
      `OUTAGE_REQUESTS_ONLY`. It also retires pay-at-the-visit for new visits: no new `pay_at_visit` hold, no

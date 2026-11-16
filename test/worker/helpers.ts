@@ -44,6 +44,7 @@ export const LOCAL_SETTINGS: Settings = {
   acceptTurnstileTestToken: false,
   selfServeBooking: true,
   selfServeConsultations: true,
+  clientSignOff: true,
   referrerNameOnInvite: true,
   ipHashSalt: "test-salt-that-is-long-enough-000000",
   alertWebhookUrl: null,

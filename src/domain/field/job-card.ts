@@ -158,6 +158,8 @@ export async function jobDetail(
     arrivalMinutes: number;
     waits: Waits;
     phoneClock: PhoneClock;
+    /** Whether clients sign off a fit in their app; without, the card has no sign-off. */
+    clientSignOff: boolean;
   },
 ): Promise<JobDetail | null> {
   const [row, schedule] = await Promise.all([
@@ -186,6 +188,7 @@ export async function jobDetail(
     schedule,
     progress,
   });
+  const steps = cardStepsFor(type, oneVisit).filter((step) => options.clientSignOff || step !== SIGN_OFF_STEP);
   const locked = {
     ...summary,
     address: null,
@@ -204,10 +207,10 @@ export async function jobDetail(
     profile: null,
     client_alerts: [],
     handoff: null,
-    steps: cardStepsFor(type, oneVisit),
+    steps,
     sent_back: sentBack,
     reschedule_asked: await rescheduleAskedOf(db, row.id),
-    sign_off: cardStepsFor(type, oneVisit).includes(SIGN_OFF_STEP) ? await signOffOf(db, row.id) : null,
+    sign_off: steps.includes(SIGN_OFF_STEP) ? await signOffOf(db, row.id) : null,
   };
   if (unlockedParts === null) return locked;
   return {

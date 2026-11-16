@@ -81,6 +81,7 @@ async function doneBody(c: Ctx, job: WorkableJob, body: Extract<OutcomeBody, { o
  * signed, or the technician has recorded that they declined (docs/decisions/0254-client-signs-off-the-fit.md).
  */
 async function signOffLetsClose(c: Ctx, job: WorkableJob): Promise<boolean> {
+  if (!c.var.config.settings.clientSignOff) return true;
   const decision = job.oneVisit === null ? null : await decisionAtVisit(c.env.DB, job.id);
   const oneVisit = job.oneVisit === null ? null : { fitsToday: decision !== null && fitsToday(decision) };
   if (!needsSignOff(job.type, oneVisit)) return true;

@@ -294,6 +294,7 @@ async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.
     byHand: { by: actorOf(c).id, reason: asked.reason },
     audit: visitAudit(c, "visit.close", visitId, { outcome: asked.outcome }),
     waits: (await opsInputs(c)).noShowWaitMin,
+    clientSignOff: c.var.config.settings.clientSignOff,
   };
   const linkDeps = { ...deps, log, messagingSettings: c.var.config.settings.messaging };
   const closed = await closeByHand(c.env.DB, linkDeps, close, deps.now());

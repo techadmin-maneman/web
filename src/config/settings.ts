@@ -198,6 +198,12 @@ export interface Settings {
    * on wherever selfServeBooking is (SELF_SERVE_CONSULTATIONS). Paid visits then go through ops.
    */
   readonly selfServeConsultations: boolean;
+  /**
+   * Clients sign off a first fit or a replacement in their own app before it closes done
+   * (docs/decisions/0254-client-signs-off-the-fit.md). Off until the app that asks them ships: the technician's card
+   * has no sign-off, and a fit closes done as before.
+   */
+  readonly clientSignOff: boolean;
   /** The referrer's first name on their invite, for those who agreed to it (ADR 0025, item 24). */
   readonly referrerNameOnInvite: boolean;
   readonly ipHashSalt: string;
@@ -265,6 +271,12 @@ function readServiceTokenActsAs(read: Reader, environment: EnvironmentName | und
   return actsAs;
 }
 
+/** The switches that are a flag and nothing more: the referrer's name on their invite, and clients' sign-off in the app. */
+const readSwitches = (read: Reader) => ({
+  referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
+  clientSignOff: read.flag("CLIENT_SIGN_OFF"),
+});
+
 export function readSettings(
   env: Env,
   environment: EnvironmentName | undefined,
@@ -330,7 +342,7 @@ export function readSettings(
     acceptTurnstileTestToken,
     selfServeBooking,
     selfServeConsultations: selfServeBooking || read.optionalFlag("SELF_SERVE_CONSULTATIONS"),
-    referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
+    ...readSwitches(read),
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),

@@ -80,7 +80,7 @@ async function fitJob(c: Ctx): Promise<WorkableJob | NotTaken> {
   const job = await namedJob(c, c.req.param("id") ?? "");
   if (job === null) return "not_found";
   const steps: readonly string[] = cardStepsFor(job.type, job.oneVisit !== null);
-  if (!steps.includes(SIGN_OFF_STEP)) return "not_a_fit";
+  if (!c.var.config.settings.clientSignOff || !steps.includes(SIGN_OFF_STEP)) return "not_a_fit";
   const superseding = await jobChangesSince(c.env.DB, job, technicianOf(c).technicianId, null);
   return superseding.changed.length > 0 ? { superseding } : job;
 }
