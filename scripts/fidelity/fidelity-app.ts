@@ -1089,7 +1089,7 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
     design: await version("Reschedule", "More than 24 hours out"),
     built: await shot(free),
   });
-  await free.getByRole("button", { name: "Cancel instead" }).click();
+  await free.getByRole("button", { name: "Cancel the visit" }).click();
   await free.getByText("Rs. 2,360 back to your UPI in 5 to 7 working days.").waitFor();
   await pair({
     dir: OUT,

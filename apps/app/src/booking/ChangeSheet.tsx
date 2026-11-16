@@ -15,7 +15,7 @@ import { CLIENT_ICONS, ICONS } from "@maneman/brand/icons";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } from "../api.ts";
-import { booking, change, states, VISIT_TYPES } from "../content.ts";
+import { booking, change, states } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
@@ -27,6 +27,8 @@ import styles from "./booking.module.css";
 export interface ChangingVisit {
   readonly id: string;
   readonly type: BookableType;
+  /** What the card calls it: "Service visit", "Consultation and fit". */
+  readonly name: string;
   /** India's calendar date. */
   readonly date: string;
   /** What a message to ops says, should the app not be able to change it. */
@@ -244,7 +246,7 @@ export function ChangeSheet(props: {
         )}
         {step.kind === "move" && (
           <MoveStep
-            title={change.move.title(VISIT_TYPES[visit.type], shortDate(visit.date))}
+            title={change.move.title(visit.name, shortDate(visit.date))}
             terms={step.terms}
             onPick={() => {
               setStep({ kind: "picking", terms: step.terms });

@@ -82,3 +82,10 @@ Recorded as they are found while building; `docs/client-redesign/REPORT.md` list
 - **Notifications** has no "Mark all read": opening the inbox marks them read. A new one is marked by a small brass
   square, not a dot: corners stay square (ruling 10).
 - **Sign in** keeps no example number as a placeholder.
+- **The live card** gives the technician's word without "Also sent to you on WhatsApp": the app cannot know the client
+  takes WhatsApp updates.
+- **Change** opens on two rows, Move to another time and Cancel the visit, under the visit's name and day ("Service visit
+  on Fri 20 Nov", or "Consultation and fit"), as the card names it, without the hair system's tier. The prototype's third
+  row, Add a note, is the card's own button beside Change. The rows carry no second line: what moving costs is the line
+  above them, and what cancelling gives back is the cancel step's, which reads the API's terms before anything is
+  cancelled. A consultation's rows read as any visit's.
