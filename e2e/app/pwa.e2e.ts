@@ -158,8 +158,8 @@ test("offers a new build’s worker on Home, and loads the page on it at the tap
   await expect(update).toBeVisible({ timeout: 15_000 });
   await update.click();
   await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
-  // The page loaded again under the new build's worker.
+  // The page loaded again under the new build's worker; asked while it reloads, it has no answer yet.
   await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL ?? ""))
+    .poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL ?? "").catch(() => ""))
     .toContain("next-build");
 });

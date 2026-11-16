@@ -74,7 +74,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
 
   await tab(page, "Visits").click();
   const card = page.getByRole("main").getByRole("listitem").first();
-  await expect(card).toContainText("Consultation and fit");
+  await expect(card).toContainText(appCopy.ONE_VISIT);
   await expect(card).toContainText("Saturday · 9 am–12 noon");
   await expect(card).not.toContainText(appCopy.home.beingBooked.free);
   await expect(page.getByText(appCopy.home.next.none)).toHaveCount(0);
@@ -117,7 +117,7 @@ test("Visits tags a consultation free, asked for, or neither when it is a consul
   await expect(row.getByText(appCopy.visits.free, { exact: true })).toHaveCount(0);
   shown = { ...consultation, one_visit: { amount: 3_000_000, from: false, code: null } };
   await opened();
-  await expect(row).toContainText("Consultation and fit");
+  await expect(row).toContainText(appCopy.ONE_VISIT);
   await expect(row.getByText(appCopy.visits.free, { exact: true })).toHaveCount(0);
 });
 
@@ -151,7 +151,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
 
   await tab(page, "Visits").click();
   const row = page.getByRole("main").getByRole("link").first();
-  await expect(row).toContainText("Consultation and fit");
+  await expect(row).toContainText(appCopy.ONE_VISIT);
   await expect(row).toContainText(/day · 12–12:30\spm/);
 });
 

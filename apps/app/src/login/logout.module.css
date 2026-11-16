@@ -15,7 +15,6 @@
   min-height: var(--tap-row);
   padding: 0;
   border-width: var(--hairline) 0;
-  border-color: var(--line-200);
   font-size: var(--fs-16);
   font-weight: var(--weight-medium);
 }

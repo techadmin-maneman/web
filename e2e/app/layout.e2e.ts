@@ -35,7 +35,8 @@ test("reflows every page into 320 px without scrolling sideways", async ({ page 
 
 test("draws where the keyboard is on every control of Home, in the order they come", async ({ page }) => {
   await logIn(page, fittedClient().mobile);
-  await expect(page.getByRole("link", { name: appCopy.titles.profile })).toBeVisible();
+  // Home itself, not the frame drawn while its code loads, whose head has the same links.
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   let seen = 0;
   for (let press = 0; press < 12; press += 1) {
     await page.keyboard.press("Tab");
