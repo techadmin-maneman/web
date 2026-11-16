@@ -15,7 +15,7 @@ import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientRoute } from "../../http/session-routes.ts";
 import { guaranteeUntil } from "../../policy/fit-guarantee.ts";
 import { HISTORY_FIGURES, NoShowNoteSchema, PhotoSetSchema, VisitSummarySchema } from "../schemas/visits.ts";
-import { RatingSchema } from "./ratings.ts";
+import { RatingSchema } from "../schemas/ratings.ts";
 
 const VisitDetailSchema = VisitSummarySchema.extend({
   duration_minutes: z.union([z.number().int(), z.null()]).openapi({ description: "From start to finish, once done." }),

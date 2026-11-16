@@ -9,14 +9,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { clientRoute } from "../../http/session-routes.ts";
 import { STARS_MAX, STARS_MIN } from "../../policy/ratings.ts";
-
-export const RatingSchema = z
-  .object({
-    stars: z.number().int().min(STARS_MIN).max(STARS_MAX),
-    at: z.iso.datetime().openapi({ description: "When the client gave it." }),
-  })
-  .strict()
-  .openapi("Rating");
+import { RatingSchema } from "../schemas/ratings.ts";
 
 const rateRoute = clientRoute({
   method: "post",

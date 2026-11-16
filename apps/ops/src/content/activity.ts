@@ -245,6 +245,7 @@ const CALLS: Readonly<Partial<Record<string, string>>> = {
   "POST /api/visits/{id}/proposed-move/accept": "Accepted a new day",
   "POST /api/visits/{id}/dispute": "Disputed a no-show charge",
   "POST /api/visits/{id}/sign-off": "Answered the fit’s sign-off",
+  "POST /api/visits/{id}/rating": "Rated the visit",
   "PATCH /api/profile/address": "Changed their address",
   "PATCH /api/consents/{purpose}": "Changed a consent",
   "POST /api/number-change": "Asked to change their number",
