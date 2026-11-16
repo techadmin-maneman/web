@@ -1,4 +1,4 @@
-// What an app's 150 KB budget counts (scripts/lib/spa-build.ts): the JavaScript a first visit fetches.
+// What an app's budget counts (scripts/lib/spa-build.ts): the JavaScript a first visit fetches.
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

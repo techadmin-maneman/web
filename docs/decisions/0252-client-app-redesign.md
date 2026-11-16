@@ -37,6 +37,9 @@ PR, and production's move to Razorpay alone is a second (ADR 0257).
 6. **Words stay in the app** (owner, ruling 4): `apps/app/src/content*`, no Words-page keys. A state the prototype does
    not draw keeps its current words, restyled.
 7. **Every current state survives**, including those the prototype does not draw (audit section 9).
+8. **The client app's JavaScript budget is 200 KB**, gzipped, as the technician app's is (ADR 0247), not the brief's
+   150 KB (owner, 16 November 2026). The redesign's screens, the live visit, the sign-off, the alerts and request mode
+   take the first load past 150 KB, and the budget counts every chunk the service worker keeps. The console keeps 150 KB.
 
 ## Departures
 

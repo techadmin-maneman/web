@@ -30,8 +30,8 @@ export interface BuildOptions {
   readonly allowPlaceholders: boolean;
 }
 
-/** Each app's first load, in gzipped bytes: the technician app's, and every other's. */
-const TECH_BUDGET_BYTES = 200 * 1024;
+/** Each app's first load, in gzipped bytes: the phone apps', the client's and the technician's, and the console's. */
+const PHONE_BUDGET_BYTES = 200 * 1024;
 const BUDGET_BYTES = 150 * 1024;
 
 /** `--env <environment>` and `--allow-placeholders`, as each build script takes them. */
@@ -120,7 +120,7 @@ export function buildSpa(build: SpaBuild, { environment, allowPlaceholders }: Bu
 
   const gzipped = gzippedJavaScript(dist);
   const kilobytes = (gzipped / 1024).toFixed(1);
-  const budget = build.app === "tech" ? TECH_BUDGET_BYTES : BUDGET_BYTES;
+  const budget = build.app === "tech" || build.app === "app" ? PHONE_BUDGET_BYTES : BUDGET_BYTES;
   console.log(`${build.app} JavaScript: ${kilobytes} KB gzipped, of a ${String(budget / 1024)} KB budget`);
   if (gzipped > budget) {
     console.error(`${build.label}'s JavaScript is over its budget`);
