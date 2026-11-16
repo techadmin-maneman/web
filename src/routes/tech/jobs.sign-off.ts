@@ -21,7 +21,8 @@ import { SignOffSchema } from "../schemas/sign-off.ts";
 import { hasClosed, namedJob, refusalOf, superseded } from "./jobs.record.ts";
 import { EventIdSchema, jobId } from "./jobs.schemas.ts";
 
-const NOT_A_FIT = "invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement";
+const NOT_A_FIT =
+  "invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF)";
 const SIGNED_IN = errorResponse(
   "session_required; device_revoked: ops revoked this phone; technician_inactive: ops switched the technician off",
 );

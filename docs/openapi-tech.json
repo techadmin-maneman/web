@@ -10134,7 +10134,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement",
+            "description": "invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF)",
             "content": {
               "application/json": {
                 "schema": {
@@ -10349,7 +10349,7 @@
             }
           },
           "400": {
-            "description": "invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement; or a reason empty or over 300 characters",
+            "description": "invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF); or a reason empty or over 300 characters",
             "content": {
               "application/json": {
                 "schema": {

@@ -9,7 +9,7 @@
 
 import { SIGN_OFF_CHECKS, type SignOffCheck, type SignOffState } from "../../policy/sign-off.ts";
 
-export type SignOffChecks = Readonly<Record<SignOffCheck, boolean>>;
+type SignOffChecks = Readonly<Record<SignOffCheck, boolean>>;
 
 export interface SignOff {
   readonly state: SignOffState;

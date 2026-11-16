@@ -9,9 +9,9 @@
 import { reportNumberOf, reportReference, type ProblemCategory } from "../../policy/problems.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
 
-export type IssueState = "open" | "in_progress" | "resolved";
+type IssueState = "open" | "in_progress" | "resolved";
 
-export interface IssueEvent {
+interface IssueEvent {
   readonly at: string;
   /**
    * you: the client's words; care: a reply; city: passed to the client's city team; visits: free visits given; closed:

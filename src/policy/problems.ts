@@ -16,8 +16,7 @@ export const PROBLEM_CATEGORIES = [
 export type ProblemCategory = (typeof PROBLEM_CATEGORIES)[number];
 
 /** What the app sent before the categories, which an app not yet reloaded still sends. */
-export const PROBLEM_ABOUT = ["hair_system", "visit"] as const;
-export type ProblemAbout = (typeof PROBLEM_ABOUT)[number];
+export type ProblemAbout = "hair_system" | "visit";
 
 /** A category, or an older app's word for one. */
 export const categoryOf = (given: ProblemCategory | ProblemAbout): ProblemCategory =>

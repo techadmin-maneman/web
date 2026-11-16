@@ -3831,7 +3831,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement
+**400**: invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF)
 
 ```json
 {
@@ -3998,7 +3998,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement; or a reason empty or over 300 characters
+**400**: invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF); or a reason empty or over 300 characters
 
 ```json
 {

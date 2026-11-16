@@ -2835,7 +2835,7 @@ export interface paths {
                         "application/json": components["schemas"]["SignOff"];
                     };
                 };
-                /** @description invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement */
+                /** @description invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF) */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2954,7 +2954,7 @@ export interface paths {
                         "application/json": components["schemas"]["SignOff"];
                     };
                 };
-                /** @description invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement; or a reason empty or over 300 characters */
+                /** @description invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF); or a reason empty or over 300 characters */
                 400: {
                     headers: {
                         [name: string]: unknown;
