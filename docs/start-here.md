@@ -42,7 +42,8 @@ this map, or when the map names something that no longer exists.
   `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each), `drive-check` (Google's drives either side of a start), `public-booking-code` (a site booking's discount code), `new-number-state` (what a new number booking is answered),
   `day-plans` (each technician's days as booking plans them), `packages` (each package and its figures, and when its
   visits fall due), `packages-console` (a package added, changed, ordered or deleted in the console), `client-prices`
-  (a first fit priced by the hair system made to the client, and any visit's price from its parts)
+  (a first fit priced by the hair system made to the client, and any visit's price from its parts), `client-packages`
+  (the packages a client compares in the app, priced for them)
 - **Rules** (`src/policy/`): `booking`, `slot-times`, `site-booking`, `moving-a-visit`, `prepayment`, `services`,
   `visit-length`, `day-plan` (where a visit can start in a technician's day), `packages` (a visit's price from its
   parts, and a package's bounds)

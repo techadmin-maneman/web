@@ -46,6 +46,7 @@ import { registerClientDisputes } from "./routes/client/disputes.ts";
 import { registerClientSignOff } from "./routes/client/sign-offs.ts";
 import { registerClientAppAlerts } from "./routes/client/app-alerts.ts";
 import { registerClientProblemLog } from "./routes/client/problem-log.ts";
+import { registerClientPackages } from "./routes/client/packages.ts";
 import { registerClientProblems } from "./routes/client/problems.ts";
 import { registerClientMoveProposals } from "./routes/client/move-proposals.ts";
 import { registerClientErrors } from "./routes/client-errors.ts";
@@ -145,6 +146,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // The issue log (docs/decisions/0258-the-issue-log.md).
     registerClientProblemLog,
     registerClientPayments,
+    // The packages a client compares in the app (docs/decisions/0211-packages.md).
+    registerClientPackages,
     registerClientAvailability,
     registerClientBooking,
     registerClientDiscountCodes,
