@@ -19,7 +19,7 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `BOOKS_PROVIDER` | `stub` | `zoho` | `none` |
 | `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000000352005` | — |
 | `BOOKS_SAC` | — | — | — |
-| `CLIENT_SIGN_OFF` | `true` | `false` | `false` |
+| `CLIENT_SIGN_OFF` | `true` | `true` | `true` |
 | `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |
 | `ENVIRONMENT` | `local` | `staging` | `production` |
 | `GEOCODE_PROVIDER` | `stub` | `google` | `google` |
