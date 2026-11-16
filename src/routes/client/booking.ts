@@ -210,7 +210,7 @@ export function registerClientBooking(app: App): void {
       askedTime(c.env.DB, { date, window: asked, startText }),
       movingId === undefined ? null : moveTermsFor({ c, personId, visitId: movingId, type, on: date }),
       movingId === undefined ? bookable(c, personId, { type, tier }, date) : null,
-      rangeFor(c, personId, type),
+      rangeFor(c, personId, type, tier),
       currentAddress(c.env.DB, personId),
       opsInputs(c),
     ]);

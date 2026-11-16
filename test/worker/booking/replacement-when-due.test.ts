@@ -7,6 +7,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
+import { returnedToStock } from "../../../src/domain/clients/client-package.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, SANA, client, technician, visit, wornPiece } from "./client-booking-fixtures.ts";
 
@@ -57,6 +58,65 @@ describe("a replacement", () => {
     expect(days.days[0]?.date).toBe("2026-10-01");
     expect((await hold(rohit, "2026-09-30")).status).toBe(422);
     expect((await hold(rohit, "2026-10-01")).status).toBe(201);
+  });
+
+  it("opens from the quickest supplier's lead time where no place holds the hair system of the package asked for", async () => {
+    const rohit = await client();
+    await wornPiece(rohit.id, "2026-09-28");
+    const at = NOW.toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+           grey_percent, density_percent)
+         VALUES ('hp-1', ?1, 'ops@localhost', ?2, 'essential', 8, 10, '1B', 20, 100)`,
+      ).bind(rohit.id, at),
+      env.DB.prepare(
+        `INSERT INTO consumables (code, name, unit, unit_cost, reorder_kit, created_at, updated_at)
+         VALUES ('hs-essential', 'Essential 8x10', 'piece', 1200000, 0, ?1, ?1)`,
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO hair_systems (code, product, base_width_in, base_length_in, colour, grey_percent, density_percent)
+         VALUES ('hs-essential', 'essential', 8, 10, '1B', 20, 100)`,
+      ),
+      env.DB.prepare(
+        `INSERT INTO suppliers (id, name, country, currency, payment_terms_days, warranty_days, created_at, updated_at)
+         VALUES ('sup-1', 'A supplier', 'CN', 'USD', 30, 90, ?1, ?1)`,
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO supplier_items (supplier_id, consumable_code, unit_price, pack_size, minimum_order, lead_time_days,
+           updated_at)
+         VALUES ('sup-1', 'hs-essential', 12000, 1, 1, 10, ?1)`,
+      ).bind(at),
+    ]);
+
+    // None held anywhere: the days open ten days on, when the quickest supplier can deliver one.
+    const days = await (await replacementDays(rohit)).json<{ days: { date: string }[] }>();
+    expect(days.days[0]?.date).toBe("2026-10-01");
+    expect((await hold(rohit, "2026-09-25")).status).toBe(422);
+    expect((await hold(rohit, "2026-10-01")).status).toBe(201);
+  });
+
+  it("closes the order of the hair system worn, back to stock, only when booked as another package", async () => {
+    const rohit = await client();
+    const piece = await wornPiece(rohit.id, "2026-09-28");
+    await env.DB.prepare("UPDATE people SET package = 'essential' WHERE id = ?1").bind(rohit.id).run();
+    const booked = (id: string, tier: string) =>
+      env.DB.batch([
+        returnedToStock(env.DB, { id, personId: rohit.id, type: "replacement", tier, at: NOW.toISOString() }),
+      ]);
+    const closed = async () =>
+      (
+        await env.DB.prepare(
+          "SELECT subject_id, reason FROM task_closures WHERE task_group = 'replacement_order'",
+        ).all()
+      ).results;
+
+    await booked("v-same", "essential");
+    expect(await closed()).toEqual([]);
+    await booked("v-other", "natural");
+    expect(await closed()).toEqual([
+      { subject_id: piece, reason: "Returned to stock: the replacement is booked as natural" },
+    ]);
   });
 
   it("is offered from tomorrow once its month has begun", async () => {

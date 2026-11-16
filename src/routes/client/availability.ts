@@ -160,7 +160,7 @@ export function registerClientAvailability(app: App): void {
     const db = c.env.DB;
     // Where the client lives is read beside the days they may book, rather than after what they may book.
     const [range, outside, city] = await Promise.all([
-      rangeFor(c, session.subjectId, type),
+      rangeFor(c, session.subjectId, type, tier),
       addressOutsideArea(db, session.subjectId),
       cityOfPerson(db, session.subjectId),
     ]);

@@ -2,7 +2,7 @@
 // visit, books it in one batch; a paid hold keeps its time until it is booked, by the half-hour pass if its request
 // failed (src/domain/booking/unbooked-holds.ts), or is given back (src/domain/booking/give-back.ts).
 
-import { onPackageBooked } from "../clients/client-package.ts";
+import { onPackageBooked, returnedToStock } from "../clients/client-package.ts";
 import { carePersonStatement } from "../care/care-people.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { paymentsTab } from "../platform/alerts.ts";
@@ -362,7 +362,10 @@ async function writeNewBooking({
     // A first fit or a replacement puts the client on its package; a one visit's waits for the product chosen.
     ...(hold.one_visit === 1
       ? []
-      : [onPackageBooked(db, { personId: hold.person_id, type: hold.type, tier: hold.tier })]),
+      : [
+          returnedToStock(db, { id: visit.id, personId: hold.person_id, type: hold.type, tier: hold.tier, at }),
+          onPackageBooked(db, { personId: hold.person_id, type: hold.type, tier: hold.tier }),
+        ]),
     ...visitUpkeep(db, { visits: [visit.id] }, at),
   ]);
   const booked = await bookingHoldRow(db, hold.id);

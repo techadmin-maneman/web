@@ -19,6 +19,29 @@ export async function fitCode(db: D1Database, personId: string, product: string 
   return matchingCode(await hairSystemSpecs(db), product === null ? fit : { ...fit, product });
 }
 
+/**
+ * The first day the hair system a client is made as `product` can reach them, where no place holds one: today and
+ * the quickest supplier's lead time for it (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md).
+ * Null where a place holds one, which ops move as a fit at risk tells them, or no supplier sells it, or the client has
+ * no profile to match one by.
+ */
+export async function stockArrivesOn(
+  db: D1Database,
+  asked: { readonly personId: string; readonly product: string | null; readonly today: string },
+): Promise<string | null> {
+  const code = await fitCode(db, asked.personId, asked.product);
+  if (code === null) return null;
+  const row = await db
+    .prepare(
+      `SELECT EXISTS (SELECT 1 FROM stock_balances WHERE consumable_code = ?1 AND quantity > 0) AS held,
+         (SELECT MIN(lead_time_days) FROM supplier_items WHERE consumable_code = ?1) AS lead`,
+    )
+    .bind(code)
+    .first<{ held: number; lead: number | null }>();
+  if (row === null || row.held === 1 || row.lead === null) return null;
+  return addDays(asked.today, row.lead);
+}
+
 /** The places a technician's fit draws on: their kit, and their city's stockroom. `?2` is the technician. */
 const IN_REACH = `(SELECT ?2 UNION ALL SELECT r.id FROM stock_places r JOIN technicians t ON t.id = ?2
                    WHERE r.kind = 'stockroom' AND r.city = t.city AND r.active = 1)`;
