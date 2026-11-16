@@ -338,7 +338,9 @@ export const QUEUES: readonly Queue[] = [
            'sign_off', s.state,
            'conversation_id', (SELECT c.id FROM conversations c WHERE c.mobile_e164 = pe.mobile_e164),
            'photos', (SELECT COUNT(*) FROM client_report_photos p JOIN client_reports l ON l.id = p.report_id
-                       WHERE l.claim_visit_id = r.claim_visit_id AND l.number >= r.number)) AS facts,
+                       WHERE l.claim_visit_id = r.claim_visit_id AND l.number >= r.number),
+           'references', (SELECT json_group_array('MM-ISS-' || printf('%04d', l.number)) FROM client_reports l
+                           WHERE l.claim_visit_id = r.claim_visit_id AND l.number >= r.number)) AS facts,
          r.created_at AS since, NULL AS due_by, '' AS episode
     FROM client_reports r INDEXED BY client_reports_claims
     JOIN appointments a ON a.id = r.claim_visit_id JOIN people pe ON pe.id = a.person_id

@@ -172,11 +172,13 @@ function Conversations({ view, search, tools }: { view: ConversationView; search
   const pane = useRef<HTMLDivElement>(null);
   // A task's link names a chat, as "/messages#chat-…": it opens beside the list once read, whichever view it is in.
   useEffect(() => {
-    const named = /^chat-(.+)$/.exec(decodeURIComponent(window.location.hash.slice(1)))?.[1];
+    const named = /^chat-(.+)$/.exec(window.location.hash.slice(1))?.[1];
     if (named === undefined) return;
     window.history.replaceState(window.history.state, "", window.location.pathname);
     void careApi.conversation(named).then((answer) => {
-      if (answer.ok) setOpened(answer.body.conversation);
+      if (!answer.ok) return;
+      setOpened(answer.body.conversation);
+      requestAnimationFrame(() => pane.current?.scrollIntoView({ block: "nearest" }));
     });
   }, []);
   const arrived = useNewChats(loaded.state === "loaded" ? loaded.value.conversations : null);

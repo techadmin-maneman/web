@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { fileInbound } from "../../../src/domain/care/inbox.ts";
 import { closeConversation } from "../../../src/domain/care/replies.ts";
 import { deleteErasedFiles } from "../../../src/domain/privacy/erasure-files.ts";
+import { auditFailsFor } from "../audit-fails.ts";
 import { asClient, client, fittedInAugust, signedIn } from "../clients.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { syntheticJpeg } from "../tryon-fixtures.ts";
@@ -533,6 +534,21 @@ describe("a report's photographs", () => {
         .bind(ROHIT)
         .first("n"),
     ).toBe(1);
+  });
+
+  it("serves no photograph when its viewing cannot be logged", async () => {
+    await report({ about: "edges_lifting", text: "The front lifts." });
+    await send(syntheticJpeg(640, 480));
+    const listed = await request(ops(), `/api/conversations/${await chat()}/report-photos`);
+    const [photo] = (await listed.json<{ photos: { report_id: string }[] }>()).photos;
+    const answer = await request(
+      ops(),
+      `/api/conversations/${await chat()}/report-photos/${photo?.report_id ?? ""}/1`,
+      {},
+      { DB: auditFailsFor(env.DB, "photo.view") },
+    );
+    expect(answer.status).toBe(503);
+    expect(await answer.json()).toMatchObject({ error: { code: "unavailable" } });
   });
 
   it("reopens a closed chat with a photograph's note", async () => {

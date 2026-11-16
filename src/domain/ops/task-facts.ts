@@ -103,6 +103,8 @@ export type TaskFacts =
       readonly conversation_id: string | null;
       /** How many photographs the claim's reports carry. */
       readonly photos: number;
+      /** The claim's reports, as MM-ISS-0032, whose photographs its drawer shows. */
+      readonly references: string[];
     }
   | { readonly group: "at_risk_client"; readonly last_visit_at: Instant; readonly due_on: Day }
   | {

@@ -97,6 +97,9 @@ export const TaskFactsSchema = z
       sign_off: z.enum(["asked", "signed", "flagged", "declined"]).nullable(),
       conversation_id: z.string().nullable().openapi({ description: "The Care chat the photographs are read beside." }),
       photos: z.number().int(),
+      references: z
+        .array(z.string())
+        .openapi({ description: "The claim's reports, as MM-ISS-0032, whose photographs its drawer shows." }),
     }),
     facts("at_risk_client", { last_visit_at: instant, due_on: day }),
     facts("first_fit_to_book", {

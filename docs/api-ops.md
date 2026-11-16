@@ -10228,7 +10228,7 @@ Request body:
 }
 ```
 
-**409**: window_closed: the client last wrote on WhatsApp longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count
+**409**: window_closed: the client has not written on WhatsApp within the time the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count
 
 ```json
 {
@@ -50962,6 +50962,13 @@ Request body:
         },
         "photos": {
           "type": "integer"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The claim's reports, as MM-ISS-0032, whose photographs its drawer shows."
         }
       },
       "required": [
@@ -50970,7 +50977,8 @@ Request body:
         "fitted_on",
         "sign_off",
         "conversation_id",
-        "photos"
+        "photos",
+        "references"
       ],
       "additionalProperties": false
     },

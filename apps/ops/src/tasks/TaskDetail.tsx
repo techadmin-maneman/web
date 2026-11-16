@@ -144,7 +144,7 @@ export function TaskDrawer({ group, task, subject, now, acting, onDismiss }: Pro
         <CallAboutMove group={group} task={task} subject={subject} onTold={done} />
         <LeaveDecision group={group} task={task} onDecided={done} />
         {task.facts.group === "fit_guarantee_claim" && task.facts.conversation_id !== null && (
-          <ReportPhotos conversationId={task.facts.conversation_id} />
+          <ReportPhotos conversationId={task.facts.conversation_id} only={task.facts.references} />
         )}
       </div>
     </Drawer>,

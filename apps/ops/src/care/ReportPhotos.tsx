@@ -19,13 +19,19 @@ interface Shown {
   readonly url: string;
 }
 
-/** The photographs, for those who may read Care's chats; nothing for anyone else. */
-export function ReportPhotos({ conversationId }: { readonly conversationId: string }) {
-  const mayRead = useAccess().mayCall("GET /api/conversations/{id}/report-photos");
-  return mayRead ? <Photos conversationId={conversationId} /> : null;
+interface Props {
+  readonly conversationId: string;
+  /** The reports whose photographs to show, by reference, as a claim's; every report of the client's without. */
+  readonly only?: readonly string[];
 }
 
-function Photos({ conversationId }: { readonly conversationId: string }) {
+/** The photographs, for those who may read Care's chats; nothing for anyone else. */
+export function ReportPhotos(props: Props) {
+  const mayRead = useAccess().mayCall("GET /api/conversations/{id}/report-photos");
+  return mayRead ? <Photos {...props} /> : null;
+}
+
+function Photos({ conversationId, only }: Props) {
   const load = useCallback(() => careApi.reportPhotos(conversationId), [conversationId]);
   const [loaded] = useLoad(load);
   const [shown, setShown] = useState<readonly Shown[] | null>(null);
@@ -38,8 +44,11 @@ function Photos({ conversationId }: { readonly conversationId: string }) {
     },
     [shown],
   );
-  if (loaded.state !== "loaded" || loaded.value.photos.length === 0) return null;
-  const { photos } = loaded.value;
+  const photos =
+    loaded.state === "loaded"
+      ? loaded.value.photos.filter((photo) => only === undefined || only.includes(photo.reference))
+      : [];
+  if (photos.length === 0) return null;
   const show = () =>
     once(async () => {
       setFailed(false);

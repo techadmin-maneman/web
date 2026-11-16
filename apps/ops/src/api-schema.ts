@@ -7540,7 +7540,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description window_closed: the client last wrote on WhatsApp longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count */
+                /** @description window_closed: the client has not written on WhatsApp within the time the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -29394,6 +29394,8 @@ export interface components {
             /** @description The Care chat the photographs are read beside. */
             conversation_id: string | null;
             photos: number;
+            /** @description The claim's reports, as MM-ISS-0032, whose photographs its drawer shows. */
+            references: string[];
         } | {
             /** @enum {string} */
             group: "at_risk_client";

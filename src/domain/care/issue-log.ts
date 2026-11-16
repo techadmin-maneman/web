@@ -193,9 +193,12 @@ async function reportsOf(db: D1Database, personId: string): Promise<Issue[]> {
                   (SELECT n.new_mobile_e164 FROM number_change_requests n
                     WHERE n.person_id = ?1 AND n.state = 'confirmed' AND n.decided_at <= m.sent_at
                     ORDER BY n.decided_at DESC LIMIT 1),
-                  (SELECT n.replaced_mobile_e164 FROM number_change_requests n
-                    WHERE n.person_id = ?1 AND n.state = 'confirmed' ORDER BY n.decided_at LIMIT 1),
-                  (SELECT pe.mobile_e164 FROM people pe WHERE pe.id = ?1))
+                  -- The number a first change replaced, where one was; a change that kept none reads nothing before it.
+                  CASE WHEN EXISTS (SELECT 1 FROM number_change_requests n
+                                     WHERE n.person_id = ?1 AND n.state = 'confirmed')
+                       THEN (SELECT n.replaced_mobile_e164 FROM number_change_requests n
+                              WHERE n.person_id = ?1 AND n.state = 'confirmed' ORDER BY n.decided_at LIMIT 1)
+                       ELSE (SELECT pe.mobile_e164 FROM people pe WHERE pe.id = ?1) END)
           ORDER BY m.sent_at`,
       )
       .bind(personId, oldest, AUTO_REPLY),

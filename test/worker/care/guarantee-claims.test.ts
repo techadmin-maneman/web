@@ -74,7 +74,14 @@ describe("a fit guarantee claim", () => {
       detail: "Still not right.",
       // The deadline runs from the first report: writing again moves it no later.
       since: NOW.toISOString(),
-      facts: { group: "fit_guarantee_claim", reference: "MM-ISS-0001", sign_off: "signed", photos: 0 },
+      facts: {
+        group: "fit_guarantee_claim",
+        reference: "MM-ISS-0001",
+        sign_off: "signed",
+        photos: 0,
+        // Both reports are the one claim, whose photographs its drawer shows.
+        references: ["MM-ISS-0001", "MM-ISS-0002"],
+      },
     });
   });
 
