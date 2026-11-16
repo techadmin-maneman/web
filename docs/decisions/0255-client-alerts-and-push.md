@@ -51,6 +51,6 @@ running_late | at_the_gate, minutes, at}` from `technician_updates`, `step {inde
 
 - **D1 counts a trigger's rows in a statement's changes.** Migration 0211's triggers on `outbound_messages` make an
   insert there report two changes, not one. Code that reads a message insert's changes reads its returned row instead,
-  as the arrival notice does. That change went to production first, on its own, so the Worker deployed when the
-  migration runs reads its arrival notice as written; read by its changes, it left the message to the sweeper, 5 to 10
-  minutes after the check-in, or dropped it as too late to tell.
+  as the arrival notice does. That change went to main on its own first (#880), and production releases it before
+  the release that runs this migration: a Worker that reads the notice by its changes leaves it to the sweeper, 5 to 10
+  minutes after the check-in, or drops it as too late to tell, through the canary's soak and after any rollback.

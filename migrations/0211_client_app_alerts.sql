@@ -2,7 +2,7 @@
 -- The client's alerts in their app (docs/decisions/0255-client-alerts-and-push.md): one beside each message written to
 -- them about their account or their visits, whether or not WhatsApp sends it, and one each time a technician asks them
 -- to sign off a fit; and the session that takes the pushes telling the app of them. New tables, and triggers that write
--- only them; the deployed Worker's arrival notice reads its insert's returned row, which theirs leave alone (ADR 0255).
+-- only them; the arrival notice reads its insert's returned row, which theirs leave alone, and ships first (ADR 0255).
 
 CREATE TABLE client_app_alerts (
   id TEXT PRIMARY KEY,
