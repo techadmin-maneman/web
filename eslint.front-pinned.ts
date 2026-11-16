@@ -3,7 +3,6 @@
 // once it is within SIZE; a new file starts within SIZE.
 
 export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
-  "apps/app/src/App.tsx": { fn: 83 },
   "apps/app/src/booking/BookingSheet.tsx": { fn: 114 },
   "apps/app/src/booking/ChangeSheet.tsx": { fn: 134 },
   "apps/app/src/booking/CodeBox.tsx": { fn: 101 },
