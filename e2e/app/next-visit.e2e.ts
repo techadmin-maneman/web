@@ -132,6 +132,15 @@ test("Visits lets a fitted client book a service or a replacement, each in its o
   const { due } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, due.mobile);
+  await expect(page.getByRole("button", { name: appCopy.home.prompt.bookNext })).toBeVisible();
+  // This client has no hair system falling due, so the API offers no replacement: its answer is altered on its way.
+  const me = await page.evaluate(
+    async () => (await fetch("/api/me")).json() as Promise<{ booking: { types: string[] } }>,
+  );
+  await page.route("**/api/me", (route) =>
+    route.fulfill({ json: { ...me, booking: { ...me.booking, types: [...me.booking.types, "replacement"] } } }),
+  );
+  await page.reload();
   await page.getByRole("navigation").getByRole("link", { name: appCopy.visits.title }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.visits.title })).toBeVisible();
   await page.getByRole("button", { name: appCopy.home.next.orReplacement }).click();
