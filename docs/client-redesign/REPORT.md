@@ -101,24 +101,24 @@ Every old path still opens its page (`PLAN.md`, "Routes"), as `test/node/front-e
 
 ## 2. The work items
 
-| #   | Work                                                                         | State                                                                                             |
-| --- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| 0   | The plan and the ADRs                                                        | Done: `PLAN.md`, ADRs 0252 to 0260                                                                |
-| 1   | Look file, tokens, Plex, base parts; the toast                               | Done, #881                                                                                        |
-| 2   | Shell, tabs, top bar, Profile and its pages, redirects                       | Done, #881 #884                                                                                   |
-| 3   | Home and the next-visit card; Your hair system; the four hair systems        | Done, #881 #885                                                                                   |
-| 4   | Booking and Razorpay Checkout; change and cancel; request mode; staging keys | Done, #881 #886 #887                                                                              |
-| 5   | W1 replacement only when due; W2 change of hair system at booking            | W1 and W2's server side done, #879 (ADR 0253). **Owed**: the app's tier step, the next PR         |
-| 6   | W9 values on the API; the custom-order and one-visit paths                   | Done, #879 #881                                                                                   |
-| 7   | W3 live fields; the live card                                                | Done, #879 #881 #886                                                                              |
-| 8   | W4 sign-off across the three apps                                            | Done, #879 #881 (ADR 0254)                                                                        |
-| 9   | W5 client alerts and push; the inbox                                         | Done, #879 #881 (ADR 0255)                                                                        |
-| 10  | W6 issue log; W7 fit guarantee; the console's view of both                   | Done, #879 #881 (ADRs 0256, 0259)                                                                 |
-| 11  | W8 ratings and the technician's quality figure                               | Done, #882 (ADR 0260)                                                                             |
-| 12  | Photos and Rewards                                                           | Done, #881 #884 #885                                                                              |
-| 13  | Razorpay code: items 16, 17, 154; webhook and refund tests                   | **Owed**: planned, waiting on the owner's yes and the Books account to name (section 5)           |
-| 14  | States, offline, errors, 360 px and 130% text; this report                   | Done with this PR: every page holds at 360 px and with text at 130% (`e2e/app/large-text.e2e.ts`) |
-| B   | Production on Razorpay alone                                                 | **Owed**: waits on the owner's items in section 5; the owner merges                               |
+| #   | Work                                                                         | State                                                                                                                                                                                                                                                                                                                                                                                                |
+| --- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | The plan and the ADRs                                                        | Done: `PLAN.md`; ADRs 0252 to 0257, 0259 and 0260                                                                                                                                                                                                                                                                                                                                                    |
+| 1   | Look file, tokens, Plex, base parts; the toast                               | Done, #881                                                                                                                                                                                                                                                                                                                                                                                           |
+| 2   | Shell, tabs, top bar, Profile and its pages, redirects                       | Done, #881 #884                                                                                                                                                                                                                                                                                                                                                                                      |
+| 3   | Home and the next-visit card; Your hair system; the four hair systems        | Done, #881 #885                                                                                                                                                                                                                                                                                                                                                                                      |
+| 4   | Booking and Razorpay Checkout; change and cancel; request mode; staging keys | Done, #881 #886 #887                                                                                                                                                                                                                                                                                                                                                                                 |
+| 5   | W1 replacement only when due; W2 change of hair system at booking            | W1 and W2's server side done, #879 (ADR 0253). **Owed**: the app's tier step; and, for a size no stock code matches, the app's word that we will order the client's size and message them, ops taking it on WhatsApp (the owner's ruling of 16 November)                                                                                                                                             |
+| 6   | W9 values on the API; the custom-order and one-visit paths                   | Done, #879 #881                                                                                                                                                                                                                                                                                                                                                                                      |
+| 7   | W3 live fields; the live card                                                | Done, #879 #881 #886                                                                                                                                                                                                                                                                                                                                                                                 |
+| 8   | W4 sign-off across the three apps                                            | Done, #879 #881 (ADR 0254)                                                                                                                                                                                                                                                                                                                                                                           |
+| 9   | W5 client alerts and push; the inbox                                         | Done, #879 #881 (ADR 0255)                                                                                                                                                                                                                                                                                                                                                                           |
+| 10  | W6 issue log; W7 fit guarantee; the console's view of both                   | Done, #879 #881 (ADRs 0256, 0259)                                                                                                                                                                                                                                                                                                                                                                    |
+| 11  | W8 ratings and the technician's quality figure                               | Done, #882 (ADR 0260)                                                                                                                                                                                                                                                                                                                                                                                |
+| 12  | Photos and Rewards                                                           | Done, #881 #884 #885                                                                                                                                                                                                                                                                                                                                                                                 |
+| 13  | Razorpay code: items 16, 17, 154; webhook and refund tests                   | **Owed**: planned, waiting on the owner's yes and the Books account to name (section 5)                                                                                                                                                                                                                                                                                                              |
+| 14  | States, offline, errors, 360 px and 130% text; this report                   | Done with this PR for sign-in, every page (one visit and one payment open) and the booking sheet's day and time and review, at 390 and 360 px and at 130% text (`e2e/app/large-text.e2e.ts`); it found and fixed one break, the four hair systems' facts. **Owed**: the same measure of the offline bar, a page that failed, the loading skeletons, an issue's page, the booked screen and the waits |
+| B   | Production on Razorpay alone                                                 | **Owed**: waits on the owner's items in section 5; the owner merges                                                                                                                                                                                                                                                                                                                                  |
 
 ## 3. Backend gaps, and how each was met
 
@@ -133,19 +133,28 @@ The app reads no mock: every figure it shows comes from the API (`test/node/apps
 
 ## 4. What does not match the prototype, and why
 
-Each departure is recorded, with its reason, in ADR 0252's "Departures", screen by screen. The ones that change what
-a client can do:
+Each is recorded, with its reason, in ADR 0252's "Departures"; here, by the screens it touches.
 
-- **Booking** keeps the I-agree tick (ruling of 25 October) and the WhatsApp reminder's tick. The review has no switch
-  to use a free service visit, since the API applies it, and no note box, since a note needs the visit to exist (the
-  booked screen's "Add a note" writes it).
-- **Booked** promises no WhatsApp on a technician swap: a swap tells the client nothing (ruling 5; ADR 0115).
-- **The waits**: the design's "Waiting for your bank" is "This is taking longer than usual": the app cannot tell a
-  bank's wait from the booking's own.
-- **The consultation's steps**, **Privacy's first line** and **Rewards' share sheet** keep what the owner agreed on 17
-  November.
-- **Visits' record**, **the account's sessions** and **the address as written** stay, though the prototype draws none.
-- **Photos' angles** scroll sideways on a small phone, the last one showing half, as the prototype's row does.
+| Screen                    | What differs, and why                                                                                                                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Every page under a tab    | A way back and no tab bar, as the prototype draws every page that is not a tab's own, a loading page too; its action in the gutter under a hairline                              |
+| Visits, Past              | No photo thumbnail or amount: `GET /api/visits` carries neither. Visits' record stays beneath Past                                                                               |
+| Visits and Payments, tags | A state to watch is navy, not brass, which falls under 4.5:1 on its wash                                                                                                         |
+| A missed visit            | No "What happened" log and no "Book again": the API keeps no such log, and booking stays where every visit is booked                                                             |
+| Account                   | Keeps "Signed in on", the sessions                                                                                                                                               |
+| Home                      | The card says the arrival, where and what it costs now; a covered visit reads "Paid", the API's one flag; prompts are rows; open issues a count; no last-visit thumbnail         |
+| Home, a consultation      | Its third step is true of a consultation alone: nothing is fitted on the day                                                                                                     |
+| Rewards                   | Choosing the card and agreeing to its photographs stay in the share sheet, where the consent is recorded before any card is made                                                 |
+| Privacy and messages      | The first line keeps the words the booking records as the photographs' consent                                                                                                   |
+| Address                   | A saved address shows as written, with Edit                                                                                                                                      |
+| Notifications             | No "Mark all read": opening the inbox marks them read; a new one is a brass square, not a dot (square corners)                                                                   |
+| Sign in                   | No example number as a placeholder                                                                                                                                               |
+| The live card             | No "Also sent to you on WhatsApp": the app cannot know the client takes WhatsApp updates                                                                                         |
+| Change                    | Two rows, Move and Cancel, under the visit's name and day; Add a note is the card's own button                                                                                   |
+| Booking, day and time     | The days come a fortnight at a time with "Later dates", as the API gives them; a day inside the notice is not marked on the strip, the time chosen says so                       |
+| Booking, the review       | The I-agree and reminder ticks stay; no free-visit switch, since the API applies it; no note box, since a note needs the visit; Back and Change only until Checkout has an order |
+| Booking, booked           | Names the technician the API holds; no promise of a WhatsApp on a technician swap, which tells the client nothing (ruling 5)                                                     |
+| Booking, the waits        | "This is taking longer than usual" for the design's "Waiting for your bank": the app cannot tell the two waits apart                                                             |
 
 ## 5. Owed by the owner, before the first live payment
 
@@ -158,6 +167,9 @@ From the brief's "Razorpay only", step 7, and `docs/open-points.md`:
 - The CA's word on advances.
 - A yes to item 13's plan, and which Books account receives Razorpay's money: "Razorpay", the account refunds leave
   from, or the company's bank account once it is linked.
+
+A size no stock code matches needs nothing more from the owner: they ruled on 16 November that ops take it on
+WhatsApp, and the app's word for it is owed (section 2, item 5).
 
 **The charges to review.** The late move or cancel charge and the no-show charge are set to Nothing in Settings ·
 Rules, as they were while nothing was paid ahead. The app shows whatever is set; the owner should set them before
