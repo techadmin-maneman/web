@@ -239,6 +239,48 @@ describe("a replacement", () => {
     expect((await holdAs("essential")).status).toBe(201);
   });
 
+  it("says an address we do not come to before a hair system made to order, which is ordered only where we come", async () => {
+    const rohit = await client();
+    await wornPiece(rohit.id, "2026-09-28");
+    await profiled(rohit.id);
+    await sold("essential", { held: true });
+    await aPackage({
+      code: "natural",
+      name: "Mane Man natural",
+      firstFit: 3000000,
+      spec: { baseWidthIn: 9, baseLengthIn: 10, colour: "1B", greyPercent: 0, densityPercent: 100 },
+    });
+    // A pincode we do not hold.
+    await env.DB.prepare("UPDATE addresses SET pincode = '411001' WHERE person_id = ?1").bind(rohit.id).run();
+    const codeOf = async (answer: Response) => (await answer.json<{ error: { code: string } }>()).error.code;
+
+    const days = await request(app, "/api/availability?type=replacement&tier=natural", {
+      headers: { Cookie: rohit.cookie },
+    });
+    expect([days.status, await codeOf(days)]).toEqual([422, "not_served"]);
+    const held = await request(app, "/api/holds", {
+      method: "POST",
+      headers: { Cookie: rohit.cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ type: "replacement", tier: "natural", date: "2026-10-02", window: "morning" }),
+    });
+    expect([held.status, await codeOf(held)]).toEqual([422, "not_served"]);
+
+    // With no address yet, a hold asks for one first; the days, which never ask for one, say it is made to order.
+    const ravi = await client(false, { withoutAddress: true });
+    await wornPiece(ravi.id, "2026-09-28");
+    await profiled(ravi.id);
+    const daysWithout = await request(app, "/api/availability?type=replacement&tier=natural", {
+      headers: { Cookie: ravi.cookie },
+    });
+    expect([daysWithout.status, await codeOf(daysWithout)]).toEqual([422, "made_to_order"]);
+    const heldWithout = await request(app, "/api/holds", {
+      method: "POST",
+      headers: { Cookie: ravi.cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ type: "replacement", tier: "natural", date: "2026-10-02", window: "morning" }),
+    });
+    expect([heldWithout.status, await codeOf(heldWithout)]).toEqual([409, "address_required"]);
+  });
+
   it("is not made to order while the client's profile is not complete, nor without one", async () => {
     const rohit = await client();
     await wornPiece(rohit.id, "2026-09-28");

@@ -24,6 +24,7 @@ import {
 import { type SoldTerms, LATE_FEES } from "../policy/moving-a-visit.ts";
 import { bookHold } from "./book-hold.ts";
 import type { AppEnv } from "./context.ts";
+import { errorBody, refuse } from "./errors.ts";
 import { opsInputs } from "./ops-inputs.ts";
 import { packageWanted } from "../domain/clients/client-package.ts";
 import { pricedFor } from "../domain/booking/client-prices.ts";
@@ -132,6 +133,25 @@ export async function bookable(
   }
   const noProduct = wanted.type === "first_fit" && (await offeredProducts(db, on, city)).length === 0;
   return noProduct ? "no_product" : "not_bookable";
+}
+
+/** Where the visit would be fitted, as a refusal of it says: no address yet, or one we do not come to; null for one we do. */
+export type AddressRefusal = "address_required" | "not_served" | null;
+
+/**
+ * A visit `bookable` refused, answered with its reason; for a hair system made to order, which is ordered only for an
+ * address we come to, the address's own refusal is said first.
+ */
+export async function notOffered(
+  c: Context<AppEnv>,
+  why: Exclude<Awaited<ReturnType<typeof bookable>>, PricedService>,
+  address: AddressRefusal | (() => Promise<AddressRefusal>),
+) {
+  if (why === "made_to_order") {
+    const first = typeof address === "function" ? await address() : address;
+    if (first !== null) return refuse(c, first);
+  }
+  return c.json(errorBody(why, c.var.requestId), 422);
 }
 
 /** A moved visit's own service, by its name as it is now, with the length the visit keeps. */
