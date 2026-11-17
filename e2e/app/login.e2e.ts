@@ -32,7 +32,7 @@ async function enter(page: Page, code: string): Promise<void> {
 test("a booked number logs in with its code and lands on its consultation", async ({ page }) => {
   const mobile = bookedNumber();
   await sendCode(page, mobile);
-  await expect(page.getByText(`If +91 ${mobile.slice(0, 2)}xxx x${mobile.slice(-4)} has a booking`)).toBeVisible();
+  await expect(page.getByText(`If +91 ${mobile.slice(0, 2)}xxx x${mobile.slice(-4)} has a visit booked`)).toBeVisible();
   await enter(page, CODE);
 
   await expect(page.getByRole("heading", { level: 2, name: appCopy.home.consultation.label })).toBeVisible();
