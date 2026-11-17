@@ -37,46 +37,122 @@ test.describe("header", () => {
     }
   });
 
-  test("hides the section links and the area tag below 760 px, with no menu button", async ({ page }) => {
+  test("hides the section links below 760 px, with no menu button", async ({ page }) => {
     await page.goto("/");
     const links = page.locator("header").getByRole("link", { name: siteCopy.range.title });
-    if (narrow(page.viewportSize()?.width)) {
-      await expect(links).toBeHidden();
-      await expect(page.locator("header").getByText(siteCopy.header.area)).toBeHidden();
-    } else {
-      await expect(links).toBeVisible();
-      await expect(page.locator("header").getByText(siteCopy.header.area)).toBeVisible();
-    }
+    if (narrow(page.viewportSize()?.width)) await expect(links).toBeHidden();
+    else await expect(links).toBeVisible();
     await expect(page.locator("header").getByRole("button")).toHaveCount(0);
   });
 
-  test("scrolls a section link to its section, 56 px below the top", async ({ page }) => {
+  // The page's own filled button is the one on the screen (ADR 0266).
+  test("draws its Book as an outline", async ({ page }) => {
+    await page.goto("/");
+    const book = narrow(page.viewportSize()?.width) ? siteCopy.header.bookShort : siteCopy.header.book;
+    const button = page.locator("header").getByRole("link", { name: book, exact: true });
+    expect(await button.evaluate((link) => getComputedStyle(link).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  });
+
+  // The client app answers locally, so its sign-in is offered (site/src/lib/app-link.ts).
+  test("offers Sign in to the client app", async ({ page }) => {
+    await page.goto("/");
+    const signIn = page.locator("header").getByRole("link", { name: siteCopy.header.signIn });
+    await expect(signIn).toBeVisible();
+    await expect(signIn).toHaveAttribute("href", /^http:\/\/app\.localhost:\d+$/);
+  });
+
+  test("scrolls a section link to its section, 72 px below the top", async ({ page }) => {
     test.skip(narrow(page.viewportSize()?.width), "the links are hidden below 760 px");
     await page.goto("/");
     await page.locator("header").getByRole("link", { name: siteCopy.range.title }).click();
     await expect
       .poll(() => page.evaluate(() => Math.round(document.getElementById("range")?.getBoundingClientRect().top ?? 0)))
-      .toBe(56);
+      .toBe(72);
   });
 
   test("goes home first from another page, then to the section", async ({ page }) => {
     test.skip(narrow(page.viewportSize()?.width), "the links are hidden below 760 px");
-    await page.goto("/book");
+    await page.goto("/privacy");
     await page.locator("header").getByRole("link", { name: siteCopy.faq.title }).click();
     await expect(page).toHaveURL(/\/#faq$/);
     await expect
       .poll(() => page.evaluate(() => Math.round(document.getElementById("faq")?.getBoundingClientRect().top ?? 0)))
-      .toBe(56);
+      .toBe(72);
+  });
+});
+
+// A laptop's /book and /try are a flow of their own: the lockup and the way back, no footer (ADR 0265).
+test.describe("the flow's bar", () => {
+  for (const path of ["/book", "/try"]) {
+    test(`on ${path} leads back to the site, with no footer on a laptop`, async ({ page }) => {
+      await page.goto(path);
+      const header = page.locator("header");
+      const back = header.getByRole("link", { name: siteCopy.tryOn.backToSite });
+      if (narrow(page.viewportSize()?.width)) {
+        await expect(back).toBeHidden();
+        await expect(page.locator("footer")).toBeVisible();
+      } else {
+        await expect(back).toHaveAttribute("href", "/");
+        await expect(header.getByRole("link", { name: siteCopy.header.signIn })).toBeHidden();
+        await expect(header.getByRole("link", { name: siteCopy.range.title })).toBeHidden();
+        await expect(page.locator("footer")).toBeHidden();
+      }
+    });
+  }
+
+  test("on /try offers the free consultation as an outline", async ({ page }) => {
+    await page.goto("/try");
+    const book = page.locator("header").getByRole("link", { name: siteCopy.header.bookShort });
+    await expect(book).toHaveAttribute("href", "/book");
+    expect(await book.evaluate((link) => getComputedStyle(link).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  });
+});
+
+// While the cookie bar asks, a laptop's flow keeps its room beneath the form, which has no footer below it.
+test.describe("the cookie bar on a flow", () => {
+  test.use({ consentBarAsks: true });
+
+  test("leaves the form's last button above it", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === "390", "a phone's flow keeps its slim foot");
+    await visit(page, "/book");
+    const bar = page.getByRole("region", { name: siteCopy.consentBar.label });
+    await expect(bar).toBeVisible();
+    // At once: the site scrolls smoothly, and the measure would be taken mid-way.
+    await page.evaluate(() => {
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
+    });
+    const form = page.locator("main form").last();
+    const formBottom = await form.evaluate((element) => element.getBoundingClientRect().bottom);
+    const barTop = await bar.evaluate((element) => element.getBoundingClientRect().top);
+    expect(formBottom).toBeLessThanOrEqual(barTop);
   });
 });
 
 test.describe("sticky bar and footer: the home page only", () => {
   // The bar is a phone's: on a wider screen the header's own button books.
-  test("appear on the home page, the bar on a phone only", async ({ page }, testInfo) => {
+  test("appear on the home page, the bar on a phone once the hero has gone by", async ({ page }, testInfo) => {
     await page.goto("/");
     const bar = page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel });
+    await expect(bar).toBeHidden();
+    await page.locator('[data-section="what"]').evaluate((section) => {
+      section.scrollIntoView();
+    });
     if (testInfo.project.name === "390") await expect(bar).toBeVisible();
     else await expect(bar).toBeHidden();
+    if (testInfo.project.name === "390") {
+      // A section's own filled button on the screen sends the bar down, so one filled button shows (ADR 0266).
+      await page
+        .locator("main [data-filled]")
+        .first()
+        .evaluate((button) => {
+          button.scrollIntoView({ block: "center" });
+        });
+      await expect(bar).toBeHidden();
+    }
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await expect(bar).toBeHidden();
     await expect(page.locator("footer")).toBeVisible();
     await expect(page.locator("footer")).toContainText(siteCopy.footer.entity);
     await expect(page.locator("footer")).toContainText(siteCopy.footer.area);
@@ -84,13 +160,17 @@ test.describe("sticky bar and footer: the home page only", () => {
       "href",
       "/#faq",
     );
-    await expect(page.locator('footer a[href="/book"]')).toHaveCount(1);
+    // The closing band above it is the last call (ADR 0263).
+    await expect(page.locator('footer a[href="/book"]')).toHaveCount(0);
   });
 
-  // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms.
+  // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms. A laptop's /try and
+  // /book have no foot at all (the flow's bar, above).
   for (const path of ["/try", "/book", "/privacy"]) {
-    test(`are absent from ${path}, which keeps the slim foot`, async ({ page }) => {
+    test(`are absent from ${path}, which keeps the slim foot`, async ({ page }, testInfo) => {
+      test.skip(path !== "/privacy" && testInfo.project.name !== "390", "a laptop's flow has no foot");
       await page.goto(path);
+      await expect(page.locator("footer")).toBeVisible();
       await expect(page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel })).toHaveCount(0);
       await expect(page.locator("footer")).toHaveCount(1);
       await expect(page.locator("footer")).not.toContainText(siteCopy.footer.area);
@@ -136,6 +216,9 @@ test.describe("skip link", () => {
   test("the bar is a landmark, and its button keeps to a phone’s width", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "390", "the bar is a phone's");
     await page.goto("/");
+    await page.locator('[data-section="what"]').evaluate((section) => {
+      section.scrollIntoView();
+    });
     const book = page
       .getByRole("navigation", { name: siteCopy.stickyBar.label })
       .getByRole("link", { name: siteCopy.header.book });
@@ -188,17 +271,80 @@ test.describe("home sections", () => {
     ]);
   });
 
-  test("hero calls to action go to /try and /book", async ({ page }) => {
+  // Book first and gold, the hero's one filled button; Try beside it or under it as an outline (ADR 0264).
+  test("hero calls to action: Book first and filled, then Try, to /book and /try", async ({ page }) => {
+    await page.goto("/");
+    const actions = page.locator('[data-section="hero"] .actions a');
+    await expect(actions).toHaveText([siteCopy.hero.book, siteCopy.hero.tryOn]);
+    await expect(actions.nth(0)).toHaveAttribute("href", "/book");
+    await expect(actions.nth(1)).toHaveAttribute("href", "/try");
+    const ground = (index: number) => actions.nth(index).evaluate((link) => getComputedStyle(link).backgroundColor);
+    expect(await ground(0)).toBe("rgb(201, 163, 99)");
+    expect(await ground(1)).toBe("rgba(0, 0, 0, 0)");
+  });
+
+  // The area and Pause sit at the hero's top corners, on the page's column as the words are (ADR 0264).
+  // A phone's browser with its bars showing leaves the hero less than the board's 692 px: the words keep below the
+  // area line and Pause rather than run under them.
+  test("the hero's words keep clear of its top corners on a short screen", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 664 });
     await page.goto("/");
     const hero = page.locator('[data-section="hero"]');
-    await expect(hero.getByRole("link", { name: siteCopy.hero.tryOn })).toHaveAttribute("href", "/try");
-    await expect(hero.getByRole("link", { name: siteCopy.hero.book })).toHaveAttribute("href", "/book");
+    const line = await hero.locator(".sequence").boundingBox();
+    const area = await hero.getByText(siteCopy.hero.area, { exact: true }).boundingBox();
+    const pause = await hero.getByRole("button", { name: siteCopy.hero.pause }).boundingBox();
+    const top = Math.max((area?.y ?? 0) + (area?.height ?? 0), (pause?.y ?? 0) + (pause?.height ?? 0));
+    expect(line?.y ?? 0).toBeGreaterThanOrEqual(top);
+  });
+
+  test("the hero's area line and Pause keep to the page's column", async ({ page }) => {
+    await page.goto("/");
+    const hero = page.locator('[data-section="hero"]');
+    await expect(hero.getByText(siteCopy.hero.area, { exact: true })).toBeVisible();
+    const area = await hero.getByText(siteCopy.hero.area, { exact: true }).boundingBox();
+    const title = await hero.getByRole("heading", { level: 1 }).boundingBox();
+    const pause = await hero.getByRole("button", { name: siteCopy.hero.pause }).boundingBox();
+    const book = await hero.getByRole("link", { name: siteCopy.hero.book }).boundingBox();
+    expect(Math.round(area?.x ?? -1)).toBe(Math.round(title?.x ?? 0));
+    expect(Math.round(book?.x ?? -1)).toBe(Math.round(title?.x ?? 0));
+    const width = page.viewportSize()?.width ?? 0;
+    const column = await hero.locator(".content").evaluate((content) => {
+      const style = getComputedStyle(content);
+      return content.getBoundingClientRect().right - parseFloat(style.paddingRight);
+    });
+    expect(Math.round((pause?.x ?? 0) + (pause?.width ?? 0))).toBe(Math.round(Math.min(column, width)));
+  });
+
+  // The film plays by itself where it may; Pause stops it with the line, and Play starts it again (WCAG 2.2.2). The
+  // browser here cannot decode the film, so what the page asks of it is what is checked.
+  test("the hero's Pause stops the film it started, and Play starts it again", async ({ page }) => {
+    await page.addInitScript(() => {
+      const asked: string[] = [];
+      Object.assign(window, { filmAsked: asked });
+      HTMLMediaElement.prototype.play = function play(this: HTMLMediaElement) {
+        asked.push("play");
+        return Promise.resolve();
+      };
+      HTMLMediaElement.prototype.pause = function pause() {
+        asked.push("pause");
+      };
+    });
+    await page.goto("/");
+    const asked = () => page.evaluate(() => (window as unknown as { filmAsked: string[] }).filmAsked.join(" "));
+    await expect.poll(asked).toBe("play");
+    await page.getByRole("button", { name: siteCopy.hero.pause }).click();
+    await expect.poll(asked).toBe("play pause");
+    await page.getByRole("button", { name: siteCopy.hero.play }).click();
+    await expect.poll(asked).toBe("play pause play");
+    await expect(page.getByRole("button", { name: siteCopy.hero.pause })).toBeVisible();
   });
 
   test("the hero’s opening line is read whole, once, and turns one phrase at a time until paused", async ({ page }) => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
     await expect(line).toHaveText(siteCopy.hero.sequence.join(" "));
+    // Polite, and its words never change as it turns, so nothing is said again (ADR 0264).
+    await expect(line).toHaveAttribute("aria-live", "polite");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.hero.title);
     const phrases = line.locator(".phrase");
     await expect(phrases.nth(0)).toHaveClass(/\bon\b/);

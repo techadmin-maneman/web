@@ -28,8 +28,10 @@ function gilded(files: readonly string[]): string[] {
 describe("gold", () => {
   // The sign-in's mark is navy in the light look it now takes (docs/decisions/0251-hindi-and-the-sign-in.md).
   it("marks only the technician app's one primary action", () => {
+    // The site's gold on its navy is a look of the shared button too (ADR 0262), drawn by the site alone.
     expect(gilded([...stylesheets("apps/tech/src"), "packages/ui/button.module.css"])).toEqual([
       "packages/ui/button.module.css .gold",
+      "packages/ui/button.module.css .goldOnNavy",
     ]);
   });
 

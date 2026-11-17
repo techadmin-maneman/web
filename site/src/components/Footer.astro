@@ -1,15 +1,14 @@
 ---
-// The footer, on the home page only: the brand, its line and the way to book, with the number beneath them, beside
-// the links in two columns; then the company, its notices, the area and the company's pages elsewhere on one line, as
-// global sites put them. The wordmark here is 132 px wide, so it is the display cut (design/brand/README.md).
-import { WORDMARK } from "@maneman/brand/marks";
-import { buttonLook } from "@maneman/ui/Button";
+// The footer, on the home page only, navy under a navy-700 rule (ADR 0263): the lockup, its line and the number on the
+// left, the links in two columns beside them; then the company, its notices and the area. It has no Book: the
+// closing band above it is the last call.
 import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { business, footer, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { MORE_PAGES } from "../lib/more-pages.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import Lockup from "./Lockup.astro";
 import Social from "./Social.astro";
 
 const { service, more, reach, legal } = footer.columns;
@@ -18,22 +17,14 @@ const showWhatsapp = isShown(whatsapp);
 const year = new Date().getFullYear();
 ---
 
-<footer class="footer on-ink">
+<footer class="footer">
   <div class="inner">
     <div class="top">
       <div class="brand">
-        <a class={textLinkLook({ tone: "ink", quiet: true, className: "lockup" })} href="/" aria-label={business.name}>
-          <svg class="mark" viewBox="0 0 200 217.4" width="38" height="41" aria-hidden="true">
-            <use href="#mm"></use>
-          </svg>
-          <svg class="word" viewBox="-4 -4 741 108" width="132" height="19" aria-hidden="true">
-            <path d={WORDMARK.d}></path>
-          </svg>
+        <a class={textLinkLook({ tone: "ink", quiet: true, className: "home" })} href="/" aria-label={business.name}>
+          <Lockup size="footer" tone="white" />
         </a>
         <p class="tagline">{footer.tagline}</p>
-        <a class={buttonLook({ variant: "light", size: "control", className: "book" })} href="/book">
-          {footer.book}
-        </a>
         {showWhatsapp && (
           <div class="reach">
             <span class={capsLook("title")}>{reach.title}</span>
@@ -68,83 +59,59 @@ const year = new Date().getFullYear();
       </nav>
     </div>
     <div class="bottom">
-      <div class="company">
-        <span>{`${footer.copyright} ${String(year)} ${footer.entity}`}</span>
-        <nav class="legal" aria-label={legal.title}>
-          {legal.links.map((link) => (
-            <a class={textLinkLook({ tone: "ink", quiet: true })} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </div>
-      <div class="end">
-        <span>{footer.area}</span>
-        <Social />
-      </div>
+      <nav class="legal" aria-label={legal.title}>
+        <span class="quiet">{`${footer.copyright} ${String(year)} ${footer.entity}`}</span>
+        {legal.links.map((link) => (
+          <a class={textLinkLook({ tone: "ink", quiet: true, className: "item small" })} href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
+      <span class="quiet area">{footer.area}</span>
+      <Social />
     </div>
   </div>
 </footer>
 
 <style>
   .footer {
-    margin-top: var(--section-gap);
-    background: var(--ink);
+    background: var(--site-navy);
+    border-top: var(--hairline) solid var(--site-navy-rule);
+    color: var(--site-on-navy);
   }
   .inner {
     max-width: var(--page-max);
     margin: 0 auto;
-    padding: var(--footer-pad-top) var(--gutter) var(--footer-pad-bottom);
+    padding: var(--sp-40) var(--gutter) calc(var(--bar-h) + var(--sp-40));
   }
-  /* The brand on the left and the links in three columns on the right, on one grid; stacked on a phone. */
   .top {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-xl);
-    padding-bottom: var(--space-l);
-    border-bottom: var(--hairline) solid var(--ink-rule);
-  }
-  @media (min-width: 761px) {
-    .top {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    }
+    gap: var(--sp-28);
   }
   .brand {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-s);
   }
-  .lockup {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-16);
-  }
-  .mark {
-    fill: var(--gilt);
-  }
-  .word {
-    fill: var(--paper);
+  .home {
+    display: flex;
   }
   .tagline {
-    margin: 0;
+    margin: var(--sp-16) 0 0;
     max-width: var(--measure-short);
-    font-family: var(--site-font);
-    font-size: var(--fs-h5);
-    line-height: var(--lh-115);
-    color: var(--paper);
-    text-wrap: balance;
+    font-size: var(--fs-16);
+    line-height: var(--lh-130);
   }
   .reach {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-4);
-    margin-top: var(--sp-8);
+    margin-top: var(--sp-28);
   }
   .columns {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--column-min-narrow)), 1fr));
-    gap: var(--space-l);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-24);
     align-content: start;
   }
   .column {
@@ -152,40 +119,72 @@ const year = new Date().getFullYear();
     flex-direction: column;
   }
   .title {
-    font-size: var(--fs-13);
-    color: var(--ink-muted);
-    min-height: var(--sp-36);
-    display: flex;
-    align-items: center;
+    font-size: var(--fs-14);
+    color: var(--site-on-navy-muted);
   }
   .item {
-    font-size: var(--fs-15);
+    font-size: var(--fs-16);
+    color: var(--site-on-navy);
   }
   .number {
     font-variant-numeric: tabular-nums;
   }
-  .company,
+  .bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--sp-16);
+    margin-top: var(--sp-28);
+    padding-top: var(--sp-8);
+    border-top: var(--hairline) solid var(--site-navy-rule);
+    font-size: var(--fs-14);
+  }
   .legal {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--sp-8) var(--space-s);
+    gap: 0 var(--sp-16);
   }
-  /* The area, and the company's pages elsewhere at the line's end. */
-  .end {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--sp-8) var(--space-m);
-  }
-  .bottom {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--sp-12) var(--space-l);
-    padding-top: var(--sp-24);
+  .small {
     font-size: var(--fs-14);
-    color: var(--ink-muted);
+  }
+  .quiet {
+    color: var(--site-on-navy-muted);
+  }
+  .area {
+    flex-basis: 100%;
+    padding-top: var(--sp-8);
+  }
+
+  @media (min-width: 761px) {
+    .inner {
+      padding: var(--sp-64) var(--gutter) var(--sp-48);
+    }
+    .top {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 2fr);
+      gap: var(--sp-40);
+    }
+    .tagline {
+      margin-top: var(--sp-20);
+      max-width: var(--measure-button-column);
+      font-size: var(--fs-24);
+      line-height: var(--lh-130);
+    }
+    .reach {
+      margin-top: var(--sp-32);
+    }
+    .columns {
+      gap: var(--sp-40);
+    }
+    .bottom {
+      gap: 0 var(--sp-24);
+      margin-top: var(--sp-48);
+      padding-top: var(--sp-12);
+    }
+    .area {
+      flex-basis: auto;
+      margin-left: auto;
+      padding-top: 0;
+    }
   }
 </style>

@@ -14,7 +14,8 @@ export const header = {
     { label: "The range", href: "/#range" },
     { label: "Questions", href: "/#faq" },
   ],
-  area: serviceArea,
+  /** The client app's sign-in, where the app answers (site/src/lib/app-link.ts). */
+  signIn: "Sign in",
   book: "Book a free consultation",
   /** The same button on a phone, where the full words would run into the wordmark. */
   bookShort: "Free consultation",
@@ -28,9 +29,8 @@ export const stickyBar = {
 };
 
 export const footer = {
-  /** Beneath the wordmark, then the way to book. */
+  /** Beneath the wordmark. */
   tagline: "A full head of hair, matched to your own. Fitted at home.",
-  book: header.book,
   columns: {
     service: {
       title: "Service",
@@ -76,6 +76,8 @@ export const illustrationTag = "Illustration";
 // ---------------------------------------------------------------------------
 
 export const hero = {
+  /** Over the footage at its top left, where the service is (ADR 0264). */
+  area: `${serviceArea} · home service`,
   /** Shown one at a time over the footage, round and round. */
   sequence: [
     "Natural up close.",

@@ -22,6 +22,10 @@ export const BUTTON_VARIANTS = [
   "outline",
   /** Any other action on ink: a lighter ink edge, with paper words. */
   "outlineOnInk",
+  /** The public site's one action on its navy: gold with navy words, a lighter gold under a pointer. */
+  "goldOnNavy",
+  /** Any other action on the public site's navy: white words, a white edge at 55%, all white under a pointer. */
+  "outlineOnNavy",
   /** A quieter action on paper beside the others: edged in the paper's own line, as the profile's and a sheet's Close. */
   "quiet",
   /** An answer on ink that can cost the client: the error's line, with paper words, never the gold. */

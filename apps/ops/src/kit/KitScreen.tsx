@@ -71,8 +71,12 @@ function Grounds(props: { title: string; paper: ReactNode; ink?: ReactNode }) {
 }
 
 function Buttons() {
-  const onPaper = BUTTON_VARIANTS.filter((variant) => !["light", "gold", "outlineOnInk"].includes(variant));
-  const onInk = BUTTON_VARIANTS.filter((variant) => ["light", "gold", "outlineOnInk"].includes(variant));
+  const onPaper = BUTTON_VARIANTS.filter(
+    (variant) => !["light", "gold", "outlineOnInk", "goldOnNavy", "outlineOnNavy"].includes(variant),
+  );
+  const onInk = BUTTON_VARIANTS.filter((variant) =>
+    ["light", "gold", "outlineOnInk", "goldOnNavy", "outlineOnNavy"].includes(variant),
+  );
   const row = (variants: readonly (typeof BUTTON_VARIANTS)[number][]) =>
     variants.map((variant) => (
       <div className={styles.row} key={variant}>

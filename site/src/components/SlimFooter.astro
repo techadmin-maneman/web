@@ -1,40 +1,38 @@
 ---
-// The foot of every page but the home page, which has the full footer: the full one's ink and wordmark, shorter. Where
-// to go from here and the company's pages elsewhere, then the company and its privacy notice and terms, so every page
-// that takes a person's details links both.
-import { WORDMARK } from "@maneman/brand/marks";
+// The foot of every page but the home page, which has the full footer: navy, the lockup in white and where to go from
+// here, then the company and its privacy notice and terms under a navy-700 rule, so every page that takes a person's
+// details links both. A laptop's /book, referral landing and /try draw none, the flow ending in itself (ADR 0265);
+// their consent lines link the notices and the terms.
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { business, footer } from "../content/site.ts";
 import { MORE_PAGES } from "../lib/more-pages.ts";
+import { isFlowPage, pagePath } from "../lib/page-path.ts";
+import Lockup from "./Lockup.astro";
 import Social from "./Social.astro";
 
 const { legal } = footer.columns;
 const year = new Date().getFullYear();
+const flow = isFlowPage(pagePath(Astro.url.pathname));
 ---
 
-<footer class="slim on-ink">
+<footer class:list={["slim", flow && "flow"]}>
   <div class="inner">
     <div class="top">
-      <a class={textLinkLook({ tone: "ink", quiet: true, className: "lockup" })} href="/" aria-label={business.name}>
-        <svg class="mark" viewBox="0 0 200 217.4" width="28" height="30" aria-hidden="true">
-          <use href="#mm"></use>
-        </svg>
-        <svg class="word" viewBox="-4 -4 741 108" width="104" height="15" aria-hidden="true">
-          <path d={WORDMARK.d}></path>
-        </svg>
+      <a class={textLinkLook({ tone: "ink", quiet: true, className: "home" })} href="/" aria-label={business.name}>
+        <Lockup size="slim" tone="white" />
       </a>
       <nav class="pages" aria-label={footer.pagesLabel}>
         {[...footer.pages, ...MORE_PAGES].map((link) => (
-          <a class={textLinkLook({ tone: "ink", quiet: true })} href={link.href}>
+          <a class={textLinkLook({ tone: "ink", quiet: true, className: "item" })} href={link.href}>
             {link.label}
           </a>
         ))}
       </nav>
     </div>
     <div class="legal">
-      <span>{`${footer.copyright} ${String(year)} ${footer.entity}`}</span>
+      <span class="quiet">{`${footer.copyright} ${String(year)} ${footer.entity}`}</span>
       {legal.links.map((link) => (
-        <a class={textLinkLook({ tone: "ink", quiet: true })} href={link.href}>
+        <a class={textLinkLook({ tone: "ink", quiet: true, className: "item small" })} href={link.href}>
           {link.label}
         </a>
       ))}
@@ -46,53 +44,79 @@ const year = new Date().getFullYear();
 <style>
   .slim {
     margin-top: var(--section-gap);
-    background: var(--ink);
+    background: var(--site-navy);
+    color: var(--site-on-navy);
   }
   .inner {
     max-width: var(--page-max);
     margin: 0 auto;
-    padding: var(--space-m) var(--gutter) var(--space-l);
+    padding: var(--sp-36) var(--gutter);
     display: flex;
     flex-direction: column;
-    gap: var(--sp-16);
+    gap: var(--sp-12);
   }
   .top {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-16) var(--space-l);
-    padding-bottom: var(--sp-16);
-    border-bottom: var(--hairline) solid var(--ink-rule);
-  }
-  .lockup {
-    display: inline-flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: var(--sp-12);
   }
-  .mark {
-    fill: var(--gilt);
-  }
-  .word {
-    fill: var(--paper);
+  .home {
+    display: flex;
   }
   .pages {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--sp-8) var(--space-s);
-    font-size: var(--fs-15);
+    gap: 0 var(--sp-20);
+  }
+  .item {
+    font-size: var(--fs-16);
+    color: var(--site-on-navy);
   }
   /* The company's name on the line its links' words sit on, though each link is a thumb's height to tap. */
   .legal {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--sp-8) var(--space-s);
-    font-size: var(--fs-14);
-    color: var(--ink-muted);
+    gap: 0 var(--sp-16);
+    padding-top: var(--sp-8);
+    border-top: var(--hairline) solid var(--site-navy-rule);
+    font-size: var(--fs-13);
+  }
+  .small {
+    font-size: var(--fs-13);
+  }
+  .quiet {
+    color: var(--site-on-navy-muted);
   }
   /* The company's pages elsewhere, at the legal line's end. */
   .legal > :global(.social) {
     margin-left: auto;
+  }
+
+  @media (min-width: 761px) {
+    .inner {
+      padding: var(--sp-48) var(--gutter) var(--sp-40);
+      gap: var(--sp-20);
+    }
+    .top {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pages {
+      gap: 0 var(--sp-28);
+    }
+    .legal {
+      gap: 0 var(--sp-24);
+      padding-top: var(--sp-12);
+      font-size: var(--fs-14);
+    }
+    .small {
+      font-size: var(--fs-14);
+    }
+    .flow {
+      display: none;
+    }
   }
 </style>
