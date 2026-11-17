@@ -141,7 +141,7 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.before })).toBeVisible();
   await expect(page.getByText("The top photo wouldn’t upload. Take it again.")).toBeVisible();
   // The fifth shot is the refused one, the top.
-  await expect(page.getByText(techCopy.capture.taking(5, techCopy.capture.angles.top), { exact: true })).toBeVisible();
+  await expect(page.getByText(techCopy.capture.taking(5, "top"), { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.capture.retake })).toBeDisabled();
   fake.refusedPhoto = null;
   await photograph(page, 5);

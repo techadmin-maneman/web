@@ -132,9 +132,7 @@ test("each tile shows its photograph once taken, and a tap on one takes that ang
   // Not only the last: the front, taken first, is taken again, and is the angle Capture takes next.
   await page.getByRole("button", { name: "Take Front again" }).click();
   // The front is the shot being taken again, the second of the five.
-  await expect(
-    page.getByText(techCopy.capture.taking(2, techCopy.capture.angles.front), { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText(techCopy.capture.taking(2, "front"), { exact: true })).toBeVisible();
   await expect(pictures).toHaveCount(1);
   await expect(page.getByText(techCopy.capture.guides.front)).toBeVisible();
   await capture.click();
@@ -266,6 +264,9 @@ test("a camera the phone refused can be asked for again", async ({ page }) => {
 
   await expect(page.getByText(techCopy.capture.unavailableTitle)).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.capture.withoutPhotos })).toBeVisible();
+  // With no camera there is nothing to take: no shutter and no strip of angles, as the prototype draws it.
+  await expect(page.getByRole("button", { name: techCopy.capture.take })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: techCopy.capture.retakeAngle("Front") })).toHaveCount(0);
   await page.getByRole("button", { name: techCopy.capture.retry }).click();
   await expect(page.getByRole("button", { name: techCopy.capture.take })).toBeEnabled();
 });
@@ -276,7 +277,7 @@ test("the frames waiting show on the waiting screen, with the design’s line ab
   const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   await capture.click();
-  await expect(page.getByText(techCopy.capture.taking(2, techCopy.capture.angles.top))).toBeVisible();
+  await expect(page.getByText(techCopy.capture.taking(2, "top"))).toBeVisible();
 
   // A frame goes up only with the set it belongs to, so this one waits: its own row, as the prototype draws it.
   await page.goto("/waiting");

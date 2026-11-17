@@ -721,16 +721,24 @@ export const capture = localised({
   take: "Take photo",
   /** "5 of 5", beneath the step's name once every angle is taken. */
   of: (taken: number) => `${String(taken)} of 5`,
-  /** "1 of 5 · Front": the shot being taken. */
+  /** "1 of 5 · front": the shot being taken, its angle in lower case as the prototype writes it. */
   taking: (shot: number, angle: string) => `${String(shot)} of 5 · ${angle}`,
   close: "Close",
   saved: "Saved on phone",
   /** Compare: the last visit's after photograph before the visit, this visit's before one after it. */
-  compareWith: { before: "Compare with last visit", after: "Compare with before" },
+  compareWith: { before: "Compare with last visit", after: "Compare with today’s before" },
   /** "Compare with 12 Oct, Imran": the visit before photographs are set beside. */
   compareWithVisit: (date: string, who: string | null) =>
     who === null ? `Compare with ${date}` : `Compare with ${date}, ${who}`,
   compareImage: { before: (angle: string) => `Last visit, ${angle}`, after: (angle: string) => `Before, ${angle}` },
+  /** Over the photograph compared with, as the prototype labels it: "12 Oct, Imran K. · top", "today’s before · top". */
+  compared: (whose: string, angle: string) => `${whose} · ${angle}`,
+  /** Whose that photograph is, where the last visit's day is not known, and after the visit. */
+  comparedWith: { before: "last visit", after: "today’s before" },
+  /** The last visit, by its day and who did it: "12 Oct, Imran K." */
+  visitOf: (date: string, who: string | null) => (who === null ? date : `${date}, ${who}`),
+  /** Under the line, what the camera sees now. */
+  now: "Now",
   torch: "Torch",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   // The board writes Top's guide alone; the other four are ours.

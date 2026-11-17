@@ -25,10 +25,10 @@ export const writesTo = (fake: Fake, step: string) => fake.writes.filter((write)
 /** The angles in the order the camera takes them (apps/tech/src/lib/sets.ts). */
 const ANGLE_ORDER = ["front", "top", "left", "right", "hair"] as const;
 
-/** What the camera's head says once `taken` angles are: the shot being taken, "2 of 5 · Top", or "5 of 5" once done. */
+/** What the camera's head says once `taken` angles are: the shot being taken, "2 of 5 · top", or "5 of 5" once done. */
 export const shots = (taken: number): string => {
   const next = ANGLE_ORDER[taken];
-  return next === undefined ? capture.of(taken) : capture.taking(taken + 1, capture.angles[next]);
+  return next === undefined ? capture.of(taken) : capture.taking(taken + 1, capture.angles[next].toLowerCase());
 };
 
 /**

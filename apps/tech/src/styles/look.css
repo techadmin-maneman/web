@@ -146,7 +146,8 @@
   --ui-text-soft: var(--mist-300);
   --ui-text-muted: var(--mist-300);
   --ui-text-quiet: var(--mist-300);
-  --ui-toggle-text: var(--mist-300);
+  /* A toggle's words white on its navy edge, as Compare is drawn; chosen, it is filled white (`filled`). */
+  --ui-toggle-text: var(--white-000);
   --ui-hint: var(--mist-300);
   --ui-tint: var(--camera-700);
   --ui-raised: var(--camera-900);

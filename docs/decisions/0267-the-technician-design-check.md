@@ -46,6 +46,10 @@ which were added to the same list.
 - **Pending uploads** keeps, beside the prototype's row for each photo set, a row for a job's other writes, the time
   its oldest has waited on the phone (which is what an eviction would take), and every way it had to send, put right
   or let go of a job's work ([0246](0246-closed-and-sent-back.md), decision 9).
+- **A camera the phone refused** offers Try again where the prototype offers Open settings: a web app cannot open the
+  phone's settings, so the line asks the technician to turn camera access on there and then try again.
+- **The camera's count** names the angle in lower case, "1 of 5 · front", as the prototype writes it. The design pass
+  ([0258](0258-the-technician-design-pass.md), decision 1) wrote it capitalised; the prototype is the source.
 
 ## Consequences
 

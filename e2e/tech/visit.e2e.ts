@@ -61,6 +61,10 @@ test("compares the angle to take with the last visit's, over the top half of the
   await compare.click();
   await expect(compare).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("img", { name: techCopy.capture.compareImage.before("Front") })).toBeVisible();
+  // Each half named, as the prototype labels them: whose photograph it is and the angle, and the camera's now.
+  const { compared, comparedWith } = techCopy.capture;
+  await expect(page.getByText(compared(comparedWith.before, "front"), { exact: true })).toBeVisible();
+  await expect(page.getByText(techCopy.capture.now, { exact: true })).toBeVisible();
 });
 
 test("offers no Compare where there is nothing to compare with", async ({ page }) => {
