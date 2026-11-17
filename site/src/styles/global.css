@@ -90,9 +90,11 @@
   }
 }
 
-/* The site's buttons are wider than the apps', the words further from the edges, and its fields as tall as its
-   buttons (packages/ui/base.css); its lines of what went wrong are in its 14 px small size. */
+/* The site's buttons are 52 px tall, as the redesign's brief draws them, and wider than the apps', the words further
+   from the edges; its fields are as tall as its buttons (packages/ui/base.css); its lines of what went wrong are in
+   its 14 px small size. */
 :root {
+  --action-height: var(--site-button-h);
   --action-pad: var(--sp-32);
   --control-pad: var(--sp-24);
   --small-pad: var(--sp-20);
@@ -171,6 +173,43 @@
 }
 .ground-navy .lead {
   color: var(--site-on-navy-muted);
+}
+
+/* A page of text: the guides, the cities, the policies, the notices, /stop and the 404. Its words keep to one column,
+   as wide as the boards draw them, a short page's narrower. */
+.text-page {
+  max-width: calc(var(--site-measure-text) + var(--gutter) + var(--gutter));
+  margin: 0 auto;
+  padding: var(--page-pad-top) var(--gutter) 0;
+}
+.text-page.short {
+  max-width: calc(var(--site-measure-short) + var(--gutter) + var(--gutter));
+}
+.page-title {
+  margin: 0;
+  font-family: var(--site-font);
+  font-weight: var(--weight-semibold);
+  font-size: var(--site-fs-page-title);
+  line-height: var(--site-lh-page-title);
+  letter-spacing: var(--site-tracking-page-title);
+  color: var(--site-navy);
+}
+.page-lede {
+  margin: var(--site-gap-page-lede) 0 0;
+  font-size: var(--site-fs-page-lede);
+  line-height: var(--lh-150);
+  color: var(--site-text-muted);
+}
+/* A list's heading on a page of text, over a navy rule: "More guides", "City by city". */
+.list-head {
+  margin: var(--sp-40) 0 0;
+  padding-bottom: var(--site-space-6);
+  border-bottom: var(--rule-strong) solid var(--site-navy);
+  font-family: var(--site-font);
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-155);
+  color: var(--site-navy);
 }
 
 /* A section's small heading: "The guarantee", "Try-on". */

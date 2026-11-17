@@ -375,7 +375,7 @@ export const referral = {
     body: "Your technician arrives in those hours. Details are on WhatsApp at +91 {mobile}.",
     ready: {
       consultation: `${capitalised(visitLength.consultation)} at home, and free. Nothing is fitted.`,
-      oneVisit: `${capitalised(visitLength.firstFit)} at home. You pay by UPI at the visit, once fitted.`,
+      oneVisit: `${capitalised(visitLength.firstFit)} at home. Paid through a Razorpay link once you’re fitted.`,
     },
     calendar: {
       label: "Add to your calendar",

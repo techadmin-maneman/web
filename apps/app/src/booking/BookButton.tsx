@@ -37,8 +37,7 @@ function recommendationOf(me: Me): Recommended | undefined {
 
 /**
  * A visit booked with ops: Ask for a time, from the first day it may be booked, whose pick opens WhatsApp to them with
- * the service named, and a toast that it is opening. The main button says what the visit costs, paid by UPI at the
- * visit.
+ * the service named, and a toast that it is opening. Beneath it, what the visit costs; ops say how to pay it.
  */
 function WithOps(props: {
   label: string;

@@ -1,6 +1,6 @@
 // What the client app's card says of a consultation and fit in one visit (apps/app/src/home/one-visit-words.ts), and
 // what it calls the visit and how long it says it is. It read "First fit · 180 minutes", with no price
-// and no word of the link it is paid by.
+// and no word of the link it is paid by; it is paid through a Razorpay link, never UPI at the visit (ADR 0272).
 
 import { describe, expect, it } from "vitest";
 import type { VisitSummary } from "../../../apps/app/src/api.ts";
@@ -12,14 +12,14 @@ const PRICE = { amount: 3_000_000, from: false, code: null };
 
 describe("a one visit’s card", () => {
   it("says what it costs once fitted, only if the client goes ahead, and that it is paid once fitted", () => {
-    expect(oneVisitLines(PRICE)).toEqual(["Rs. 30,000, only if you go ahead", "By UPI at the visit, once fitted"]);
+    expect(oneVisitLines(PRICE)).toEqual(["Rs. 30,000, only if you go ahead", "By a Razorpay link, once fitted"]);
   });
 
   it("says where the prices start when the hair systems differ, and names the code taken off", () => {
     expect(oneVisitLines({ amount: 2_700_000, from: true, code: "TENPC" })).toEqual([
       "From Rs. 27,000, only if you go ahead",
       "Code TENPC applied",
-      "By UPI at the visit, once fitted",
+      "By a Razorpay link, once fitted",
     ]);
   });
 
@@ -29,7 +29,7 @@ describe("a one visit’s card", () => {
     ]);
     expect(oneVisitLines({ amount: null, from: false, code: null })).toEqual([
       "You pay only if you go ahead",
-      "By UPI at the visit, once fitted",
+      "By a Razorpay link, once fitted",
     ]);
   });
 });

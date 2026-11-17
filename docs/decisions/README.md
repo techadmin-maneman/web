@@ -267,6 +267,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0265](0265-book-and-try-on-the-client-apps-look.md) `/book` and `/try` on the client app's look
 - [0266](0266-the-sites-header-book-and-focus-ring.md) The site's header Book and focus ring
 - [0269](0269-the-one-visits-note-on-book.md) The one visit's note on `/book`
+- [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) The one visit is paid through Razorpay only
 
 ### The ops console
 
@@ -576,7 +577,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0266](0266-the-sites-header-book-and-focus-ring.md) | The site's header Book and focus ring | 2026-11-17 | accepted |  |
 | [0267](0267-the-technician-design-check.md) | The technician app's design check | 2026-11-17 | accepted | [0268](0268-the-visits-design-check.md), [0270](0270-the-design-checks-api-side.md) |
 | [0268](0268-the-visits-design-check.md) | The visit's design check | 2026-11-17 | accepted |  |
-| [0269](0269-the-one-visits-note-on-book.md) | The one visit's note on `/book` | 2026-11-17 | accepted |  |
+| [0269](0269-the-one-visits-note-on-book.md) | The one visit's note on `/book` | 2026-11-17 | accepted | [0272](0272-why-a-hair-system-failed.md) |
 | [0270](0270-the-design-checks-api-side.md) | The design check's API side | 2026-11-17 | accepted | [0271](0271-the-technician-follow-ups.md), [0272](0272-why-a-hair-system-failed.md) |
 | [0271](0271-the-technician-follow-ups.md) | The technician follow-ups | 2026-11-17 | accepted |  |
+| [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) | The one visit is paid through Razorpay only | 2026-11-17 | accepted |  |
 | [0272](0272-why-a-hair-system-failed.md) | Why a hair system failed | 2026-11-18 | accepted |  |

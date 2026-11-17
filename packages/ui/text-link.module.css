@@ -60,10 +60,17 @@
     text-decoration-color: currentcolor;
   }
 
+  .strong {
+    color: var(--ui-strong);
+    font-weight: var(--weight-medium);
+    text-decoration-color: currentcolor;
+  }
+
   .inline {
     display: inline;
     min-height: 0;
     color: inherit;
+    font-weight: inherit;
   }
 
   .quiet {

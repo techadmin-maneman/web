@@ -5,6 +5,7 @@ import { looks, tryOn } from "../../content/site.ts";
 import { lookLabel } from "./machine.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import shared from "./TryOn.module.css";
+import { LegalLinks } from "../LegalLinks.tsx";
 import styles from "./looks.module.css";
 
 /**
@@ -59,6 +60,7 @@ export function Looks(props: {
           {lookLabel(look)}
         </Button>
       </div>
+      <LegalLinks alone={shared.legal} />
     </div>
   );
 }
