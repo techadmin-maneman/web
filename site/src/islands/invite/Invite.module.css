@@ -30,7 +30,7 @@
 .title {
   order: 3;
   margin: var(--sp-24) 0 0;
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-weight: var(--weight-regular);
   font-size: var(--fs-h1);
   line-height: var(--lh-115);
@@ -115,7 +115,7 @@
 
 .stepNumber {
   flex: none;
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-size: var(--fs-h5);
   line-height: var(--lh-100);
   color: var(--text-muted);
@@ -162,7 +162,7 @@
 
 .panelTitle {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-weight: var(--weight-regular);
   font-size: var(--fs-h5);
   line-height: var(--lh-115);
@@ -197,7 +197,7 @@
   display: flex;
   align-items: center;
   gap: var(--sp-12);
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-weight: var(--weight-regular);
   font-size: var(--fs-26);
   line-height: var(--lh-115);
@@ -241,7 +241,7 @@
 .formTitle,
 .waitlistTitle {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-weight: var(--weight-regular);
 }
 

@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Try-on on a laptop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16233A}a:hover{color:#1F2E49}
+.mm *{box-sizing:border-box}
+.mm{font-family:"IBM Plex Sans",Arial,sans-serif;color:#1F2328;-webkit-font-smoothing:antialiased;font-size:16px;line-height:1.5}
+.mm button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.mm input{font:inherit;color:inherit}
+.mm .btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;font-weight:600;font-size:16px;line-height:1;text-decoration:none;text-align:center;border:0}
+.mm .btn-primary{background:#16233A;color:#FDFDFB}.mm .btn-primary:hover{background:#1F2E49;color:#FDFDFB}
+.mm .btn-primary:disabled{background:#B4BAC3;cursor:not-allowed}
+.mm .btn-secondary{background:transparent;color:#16233A;border:1px solid #16233A}
+.mm .btn-gold{background:#C9A363;color:#16233A}
+.mm .btn-onnavy{background:transparent;color:#FDFDFB;border:1px solid rgba(253,253,251,.5);height:46px;font-size:14px;padding:0 14px}
+.mm .btn-ghost{height:44px;color:#FDFDFB;font-weight:600;font-size:15px;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.mm .icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;color:#16233A;text-decoration:none}
+.mm .title{font-weight:600;letter-spacing:-.3px;margin:4px 0 6px;color:#16233A}
+.mm .lede{color:#5F6670;margin:0 0 14px}
+.mm .xs{font-size:13px;line-height:1.4;color:#5F6670}
+.mm .step{font-size:14px;font-weight:600;color:#5F6670;margin:0 0 6px}
+.mm .field{display:flex;flex-direction:column;gap:6px;margin:0 0 16px}
+.mm .field label{font-size:14px;font-weight:500}
+.mm .input{height:52px;border:1px solid #B4BAC3;padding:0 14px;background:#fff;width:100%;font-size:16px;border-radius:0}
+.mm .input:focus{outline:2px solid #16233A;outline-offset:-1px;border-color:#16233A}
+.mm .input.err{border-color:#A3361F}
+.mm .ro{height:52px;display:flex;align-items:center;font-size:16px}
+.mm .ferr{font-size:13px;color:#A3361F}
+.mm .phone{display:flex;border:1px solid #B4BAC3;height:52px;background:#fff}
+.mm .phone.err{border-color:#A3361F}
+.mm .phone:focus-within{outline:2px solid #16233A;outline-offset:-1px}
+.mm .phone span{display:flex;align-items:center;padding:0 14px;border-right:1px solid #D9DCE1;color:#5F6670}
+.mm .phone input{border:0;outline:0;flex:1;padding:0 14px;font-size:17px;background:transparent;min-width:0}
+.mm .stepbar{display:flex;gap:4px;margin:6px 0 18px}
+.mm .stepbar i{flex:1;height:3px;background:#E8EAED}
+.mm .stepbar i.on{background:#16233A}
+.mm .choice{display:flex;gap:14px;align-items:center;width:100%;padding:16px;border:1px solid #D9DCE1;margin:0 0 10px;background:#FDFDFB;font-weight:500}
+.mm .choice[aria-checked="true"]{border-color:#16233A;box-shadow:inset 0 0 0 1px #16233A}
+.mm .radio{width:20px;height:20px;border-radius:50%;border:1.5px solid #B4BAC3;flex:none;display:flex;align-items:center;justify-content:center}
+.mm [aria-checked="true"] .radio{border-color:#16233A}
+.mm [aria-checked="true"] .radio::after{content:"";width:10px;height:10px;border-radius:50%;background:#16233A}
+.mm .date{border:1px solid #D9DCE1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center}
+.mm .date .d{font-size:12px;color:#5F6670}
+.mm .date .n{font-size:20px;font-weight:600;line-height:1.2}
+.mm .date .a{font-size:10.5px;color:#5F6670}
+.mm .date[aria-pressed="true"]{background:#16233A;border-color:#16233A;color:#fff}
+.mm .date[aria-pressed="true"] .d{color:#A9B2C1}
+.mm .date:disabled{background:#E8EAED;border-color:#E8EAED;color:#B4BAC3;cursor:not-allowed}
+.mm .date:disabled .d,.mm .date:disabled .a{color:#B4BAC3}
+.mm .slot{height:46px;border:1px solid #D9DCE1;text-align:center;font-weight:500;font-size:15px;font-variant-numeric:tabular-nums}
+.mm .slot[aria-pressed="true"]{background:#16233A;border-color:#16233A;color:#fff}
+.mm .slot:disabled{color:#B4BAC3;text-decoration:line-through;cursor:not-allowed;border-color:#E8EAED}
+.mm .slot-h{font-size:14px;font-weight:600;margin:20px 0 8px}
+.mm .banner{display:flex;gap:12px;align-items:center;padding:14px 16px;background:#16233A;color:#FDFDFB;font-weight:600;margin:0 0 18px}
+.mm .notice{display:flex;gap:12px;padding:14px 16px;font-size:14px;line-height:1.45;margin:0 0 16px}
+.mm .notice.err{background:#FBF1EE;color:#6B2414}
+.mm .ck{display:flex;gap:12px;align-items:flex-start;width:100%;padding:10px 0 4px;font-size:15px}
+.mm .ck .bx{width:22px;height:22px;border:1.5px solid #B4BAC3;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;margin-top:1px}
+.mm .ck[aria-checked="true"] .bx{background:#16233A;border-color:#16233A}
+.mm .ck.err .bx{border-color:#A3361F}
+.mm .otp{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:8px 0 8px;max-width:420px}
+.mm .otp div{height:58px;border:1px solid #B4BAC3;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;background:#fff}
+.mm .otp div.cur{border-color:#16233A;box-shadow:inset 0 0 0 1px #16233A}
+.mm .otp input{position:absolute;inset:0;opacity:0;width:100%;font-size:16px}
+.mm .sugg{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:12px 14px;border-bottom:1px solid #D9DCE1;background:#fff}
+.mm .sugg:hover{background:#F1F3F6}
+.mm .check{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;border:2px solid #C9A363;color:#C9A363;margin:0 0 20px}
+.mm .linkbtn{color:#16233A;font-weight:500;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.mm .how li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:4px;padding:14px 0;border-bottom:1px solid #D9DCE1}
+.mm :focus-visible{outline:2px solid #B98B45;outline-offset:2px}
+
+.mm .look{position:relative;display:flex;flex-direction:column;border:1px solid #D9DCE1;background:#FDFDFB;width:100%}
+.mm .look[aria-checked="true"]{border-color:#16233A;box-shadow:inset 0 0 0 1px #16233A}
+.mm .tag{position:absolute;top:0;font-size:12px;font-weight:600;background:#16233A;color:#FDFDFB;padding:6px 9px;line-height:1}
+.mm input[type=range].cmp{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+.mm .tips li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:4px;padding:12px 0;border-bottom:1px solid #D9DCE1}
+.mm .note{display:flex;gap:12px;padding:14px 16px;background:#F1F3F6;font-size:14px;line-height:1.45;margin:16px 0 0}
+
+.mm .title{font-size:32px;line-height:1.15}
+.mm .lede{font-size:16px}
+.mm .stack{display:flex;flex-direction:column;gap:10px;margin:24px 0 0}
+.mm .btn{width:100%}
+</style>
+</helmet>
+<div class="mm" style="width: 1440px; height: 900px; position: relative; overflow: hidden; background: #FDFDFB; display: flex; flex-direction: column">
+<header style="flex: none; height: 72px; border-bottom: 1px solid #D9DCE1"><div style="max-width: 1200px; margin: 0 auto; padding: 0 40px; height: 72px; display: flex; align-items: center; gap: 24px">
+<a href="LaptopHome.dc.html" aria-label="Mane Man home" style="display: flex"><img src="/_blob/46c99c5eb0be46270893d5352e07bb7c" alt="Mane Man" style="height: 40px; width: auto"></a><span style="flex: 1"></span>
+<a class="btn btn-secondary" style="width: auto; height: 44px; font-size: 15px; padding: 0 18px" href="LaptopBook.dc.html">Free consultation</a>
+<a href="LaptopHome.dc.html" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px; border: 1px solid #D9DCE1; font-size: 15px; font-weight: 500; color: #16233A; text-decoration: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>Back to the site</a></div></header>
+<div style="flex: 1; overflow-y: auto"><div style="max-width: 1200px; margin: 0 auto; padding: 48px 40px 64px; display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 80px; align-items: start">
+<div><sc-if value="{{isCheck}}" hint-placeholder-val="{{false}}">
+<div style="aspect-ratio: 4 / 3; position: relative; background: #0B111C; color: #FDFDFB">
+<div style="position: absolute; inset: 0; overflow: hidden"><img src="/_blob/ec91a2c2f8571d957ec002fff1a7e49c" alt="Your photo" style="width: 100%; height: 100%; object-fit: cover; object-position: 62% 40%">
+<button class="icon-btn" style="position: absolute; top: 10px; left: 10px; background: rgba(11,17,28,.7); color: #FDFDFB" aria-label="Close" onClick="{{toPhoto}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+<span style="position: absolute; top: 18px; left: 50%; transform: translateX(-50%); background: rgba(11,17,28,.75); padding: 7px 12px; font-size: 14px; white-space: nowrap">Face clear and well lit?</span></div>
+
+</div>
+</sc-if><sc-if value="{{leftEmpty}}" hint-placeholder-val="{{true}}"><div style="aspect-ratio: 4 / 3; background: #F1F3F6; display: flex; align-items: center; justify-content: center; color: #B4BAC3"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a1 1 0 0 1 1-1h3l2-2.5h6L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path><circle cx="12" cy="13" r="3.8"></circle></svg></div></sc-if><sc-if value="{{leftPhoto}}" hint-placeholder-val="{{false}}"><div style="position: relative; aspect-ratio: 4 / 3; background: #0B111C; overflow: hidden"><img src="/_blob/ec91a2c2f8571d957ec002fff1a7e49c" alt="Your photo" style="width: 100%; height: 100%; object-fit: cover"></div></sc-if><sc-if value="{{is_ready}}" hint-placeholder-val="{{false}}"><div style="position: relative; aspect-ratio: 648 / 467; background: #F1F3F6; overflow: hidden; touch-action: none">
+<img src="/_blob/ec91a2c2f8571d957ec002fff1a7e49c" alt="Your photo" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+<img src="/_blob/e95078326f2527d0d4f8c838bc12afc1" alt="Your new look" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(0 0 0 {{pos}}%)">
+<span class="tag" style="left: 0">Before</span><span class="tag" style="right: 0">After</span>
+<div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{pos}}%; width: 2px; margin-left: -1px; background: #FDFDFB"><span style="position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; background: #FDFDFB; display: flex; align-items: center; justify-content: center; color: #16233A; box-shadow: 0 2px 8px rgba(22,35,58,.25)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6-5 6 5 6M15 6l5 6-5 6"></path></svg></span></div>
+<input class="cmp" type="range" min="0" max="100" value="{{pos}}" onChange="{{onPos}}" aria-label="Drag to compare your photo and your new look">
+</div></sc-if></div>
+<div><sc-if value="{{canBack}}" hint-placeholder-val="{{false}}"><button class="linkbtn" style="font-size: 15px; margin: 0 0 18px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none" onClick="{{back}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg>Back</button></sc-if>
+<sc-if value="{{showBar}}" hint-placeholder-val="{{true}}"><div class="stepbar"><i class="{{b1}}"></i><i class="{{b2}}"></i><i class="{{b3}}"></i></div></sc-if>
+<sc-if value="{{is_photo}}" hint-placeholder-val="{{true}}"><p class="step">Step 1 of 3</p><h2 class="title">One photo, taken straight on.</h2>
+<p class="lede">The look is only as good as the photo. Three things matter, and none of them need a good camera.</p>
+<ol class="tips" style="list-style: none; margin: 0; padding: 0; border-top: 1px solid #D9DCE1">
+<li><span style="color: #5F6670">1</span><div><div style="font-weight: 600">Face the window</div><div class="xs" style="font-size: 14px">Daylight from the front, nothing bright behind you.</div></div></li>
+<li><span style="color: #5F6670">2</span><div><div style="font-weight: 600">Straight on, no tilt</div><div class="xs" style="font-size: 14px">Phone at eye level, arm out, chin level.</div></div></li>
+<li><span style="color: #5F6670">3</span><div><div style="font-weight: 600">Nothing on your head</div><div class="xs" style="font-size: 14px">No cap, no hood, hair as it is today.</div></div></li>
+</ol>
+<p class="xs" style="margin: 20px 0 0">Prototype: <button class="linkbtn" onClick="{{showError}}">see a photo error</button></p><div class="stack"><button class="btn btn-primary" onClick="{{takePhoto}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a1 1 0 0 1 1-1h3l2-2.5h6L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"></path><circle cx="12" cy="13" r="3.8"></circle></svg>Take a photo</button><button class="btn btn-secondary" onClick="{{takePhoto}}">Choose a photo</button></div></sc-if><sc-if value="{{is_look}}" hint-placeholder-val="{{false}}"><p class="step">Step 2 of 3</p><h2 class="title">Choose a look.</h2>
+<p class="lede">You get one look, so pick the one you'd wear.</p>
+<div role="radiogroup" aria-label="Look" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{looks}}" as="l" hint-placeholder-count="6">
+<button class="look" role="radio" aria-checked="{{l.on}}" onClick="{{l.pick}}">
+<img src="{{l.img}}" alt="" style="width: 100%; aspect-ratio: 328 / 244; object-fit: cover; display: block; background: #F1F3F6">
+<span style="padding: 10px 12px 12px; display: block"><span style="display: block; font-weight: 600; font-size: 15px">{{l.name}}</span><span class="xs" style="display: block; min-height: 18px">{{l.sub}}</span></span>
+<sc-if value="{{l.on}}" hint-placeholder-val="{{false}}"><span style="position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%; background: #16233A; color: #FDFDFB; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.5 5 5 10-11"></path></svg></span></sc-if>
+</button>
+</sc-for>
+</div><div class="stack"><button class="btn btn-primary" disabled="{{noLook}}" onClick="{{toSend}}">{{lookBtn}}</button></div></sc-if><sc-if value="{{is_send}}" hint-placeholder-val="{{false}}"><p class="step">Step 3 of 3</p><h2 class="title">Where should we send it?</h2>
+<div class="field"><label for="nm">Name</label><input id="nm" class="{{nameCls}}" autocomplete="name" value="{{name}}" onChange="{{onName}}"><sc-if value="{{nameErr}}" hint-placeholder-val="{{false}}"><span class="ferr">Enter your name.</span></sc-if></div>
+<div class="field"><label for="mob">Mobile</label><div class="{{mobCls}}"><span>+91</span><input id="mob" inputmode="numeric" autocomplete="tel-national" maxlength="10" value="{{mobile}}" onChange="{{onMobile}}"></div><sc-if value="{{mobErr}}" hint-placeholder-val="{{false}}"><span class="ferr">Enter a valid 10-digit mobile number.</span></sc-if></div>
+<sc-if value="{{codeSent}}" hint-placeholder-val="{{false}}">
+<div class="field"><label>WhatsApp code</label>
+<div class="otp"><sc-for list="{{cells}}" as="c" hint-placeholder-count="6"><div class="{{c.cls}}">{{c.v}}</div></sc-for><input inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="{{code}}" onChange="{{onCode}}" aria-label="WhatsApp code"></div>
+<span class="xs">Sent on WhatsApp to +91 {{mobileFmt}}. It confirms the number is yours.</span>
+<button class="linkbtn" style="font-size: 15px; margin-top: 6px; align-self: flex-start" onClick="{{resend}}">Send a new code</button>
+<span class="xs">Prototype: any 6 digits work.</span></div>
+</sc-if><div class="stack"><sc-if value="{{codeNotSent}}" hint-placeholder-val="{{true}}"><button class="btn btn-primary" onClick="{{sendLook}}">Send my look</button></sc-if><sc-if value="{{codeSent}}" hint-placeholder-val="{{false}}"><button class="btn btn-primary" disabled="{{codeShort}}" onClick="{{confirm}}">Confirm and send my look</button></sc-if><p class="xs" style="margin: 12px 0 0">By sending it, you agree to our <a href="LaptopNotices.dc.html">try-on notice</a>.</p></div></sc-if><sc-if value="{{is_sent}}" hint-placeholder-val="{{false}}"><div style="width: 48px; height: 48px; background: #F1F3F6; display: flex; align-items: center; justify-content: center; color: #16233A; margin: 0 0 14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"></path></svg></div>
+<p class="step">On its way to your WhatsApp</p>
+<h2 class="title">Your new look is on its way.</h2>
+<p class="lede">It’ll reach WhatsApp on +91 {{mobileFmt}} within minutes. We delete it after 14 days.</p><div class="note"><span>An illustration, not a photo of a result. Your hair system is matched to your own hair colour, density and growth pattern.</span></div><div class="stack"><a class="btn btn-primary" href="LaptopBook.dc.html">Book a free consultation</a><a class="btn btn-secondary" href="LaptopHome.dc.html">Back to the site</a></div></sc-if><sc-if value="{{is_ready}}" hint-placeholder-val="{{false}}"><h2 class="title" style="margin-top: 0px">Here’s your new look.</h2>
+<p class="lede">It’ll reach WhatsApp on +91 {{mobileFmt}} within minutes. We delete it after 14 days.</p><div class="note"><span>An illustration, not a photo of a result. Your hair system is matched to your own hair colour, density and growth pattern.</span></div><div class="stack"><a class="btn btn-primary" href="LaptopBook.dc.html">Book a free consultation</a><a class="btn btn-secondary" href="LaptopHome.dc.html">Back to the site</a></div></sc-if><sc-if value="{{is_error}}" hint-placeholder-val="{{false}}"><p class="step">Face not clear</p>
+<h2 class="title">We couldn’t see your face clearly.</h2>
+<p class="lede">Try a well-lit photo, taken straight on.</p><div class="stack"><button class="btn btn-primary" onClick="{{toPhoto}}">Choose another</button><a class="btn btn-secondary" href="LaptopBook.dc.html">Book a consultation instead</a></div></sc-if><sc-if value="{{isCheck}}" hint-placeholder-val="{{false}}"><p class="step">Step 1 of 3</p><h2 class="title">Face clear and well lit?</h2><p class="lede">By using this photo, you agree to our <a href="LaptopNotices.dc.html">try-on notice</a>.</p><div class="stack"><button class="btn btn-primary" onClick="{{usePhoto}}">Use photo</button><button class="btn btn-secondary" onClick="{{toPhoto}}">Choose another</button></div></sc-if></div>
+</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    const s = Object.assign({ step: 'photo', look: null, name: '', mobile: '', tried: false, codeSent: false, code: '', pos: 50 }, this.state || {});
+    const set = (o) => this.setState(o);
+    const L = [
+      ['Side part', '', '/_blob/316a6d141d6a614fcec08bcb5c2f74c3'], ['Slick back', '', '/_blob/5d2c9e47b8ff610e040ba53520fa43ae'],
+      ['Textured crop', 'Low fade', '/_blob/9f34a59f232d28622166389286ee52d2'], ['French crop', '', '/_blob/51cb936a4952f6b8fb65d5b690b47b43'],
+      ['Quiff', '', '/_blob/92d19f8f8dbccdeddc71663cbad3c057'], ['Crew cut', 'Ivy League', '/_blob/64634d46ee42367a952f8bb0fa6a642f']
+    ];
+    const stepN = { look: 2, send: 3 }[s.step] || 1;
+    const bars = [1, 2, 3].map(n => n <= stepN ? 'on' : '');
+    const eName = !s.name.trim(), eMob = s.mobile.length !== 10;
+    const mf = s.mobile.length === 10 ? s.mobile.slice(0, 5) + ' ' + s.mobile.slice(5) : (s.mobile || '98100 00000');
+    return {
+      showTop: s.step !== 'check', showBar: ['photo', 'look', 'send', 'check'].includes(s.step),
+      canBack: ['look', 'send', 'error'].includes(s.step), noBack: !['look', 'send', 'error'].includes(s.step),
+      back: () => set({ step: { look: 'photo', send: 'look', error: 'photo' }[s.step] }),
+      b1: bars[0], b2: bars[1], b3: bars[2],
+      is_photo: s.step === 'photo', isCheck: s.step === 'check', is_look: s.step === 'look', is_send: s.step === 'send', is_sent: s.step === 'sent', is_ready: s.step === 'ready', is_error: s.step === 'error',
+      leftEmpty: ['photo', 'error'].includes(s.step), leftPhoto: ['look', 'send', 'sent'].includes(s.step),
+      takePhoto: () => set({ step: 'check' }), toPhoto: () => set({ step: 'photo' }), usePhoto: () => set({ step: 'look' }), showError: () => set({ step: 'error' }),
+      looks: L.map((l, i) => ({ name: l[0], sub: l[1], img: l[2], on: s.look === i, pick: () => set({ look: i }) })),
+      noLook: s.look === null, lookBtn: s.look === null ? 'Choose one to continue' : 'Continue', toSend: () => set({ step: 'send' }),
+      name: s.name, onName: (e) => set({ name: e.target.value }), nameErr: s.tried && eName, nameCls: s.tried && eName ? 'input err' : 'input',
+      mobile: s.mobile, onMobile: (e) => set({ mobile: e.target.value.replace(/\D/g, '').slice(0, 10) }), mobErr: s.tried && eMob, mobCls: s.tried && eMob ? 'phone err' : 'phone',
+      codeSent: s.codeSent, codeNotSent: !s.codeSent, mobileFmt: mf,
+      sendLook: () => { if (eName || eMob) return set({ tried: true }); set({ codeSent: true, tried: false, code: '' }); },
+      cells: [0, 1, 2, 3, 4, 5].map(i => ({ v: s.code[i] || '', cls: i === s.code.length ? 'cur' : '' })),
+      code: s.code, onCode: (e) => set({ code: e.target.value.replace(/\D/g, '').slice(0, 6) }), codeShort: s.code.length !== 6, resend: () => set({ code: '' }),
+      confirm: () => { set({ step: 'sent' }); clearTimeout(this.t); this.t = setTimeout(() => this.setState({ step: 'ready' }), 3000); },
+      pos: s.pos, onPos: (e) => set({ pos: +e.target.value })
+    };
+  }
+}
+</script>
+</body>
+</html>

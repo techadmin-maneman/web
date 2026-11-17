@@ -14,21 +14,25 @@ const FONTS = "node_modules/@fontsource";
 const tokens = readFileSync("packages/brand/tokens.css", "utf8");
 const colour = (name: string) => colourOf(name, tokens);
 
-/** The page's one stylesheet, a file of its own so the policy needs no hash for it. */
-const STYLES = `@font-face{font-family:"EB Garamond";src:url(/fonts/serif.woff2) format("woff2");font-display:swap}
-@font-face{font-family:"Instrument Sans";src:url(/fonts/sans.woff2) format("woff2");font-display:swap}
+/**
+ * The page's one stylesheet, a file of its own so the policy needs no hash for it: IBM Plex Sans on navy, as the site
+ * draws its navy bands (ADR 0262), with the one action an outline on navy (mist, where the site draws white at 55%,
+ * which colourOf cannot read) and a brass ring for the keyboard.
+ */
+const STYLES = `@font-face{font-family:"IBM Plex Sans";font-weight:400;src:url(/fonts/plex-400.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"IBM Plex Sans";font-weight:600;src:url(/fonts/plex-600.woff2) format("woff2");font-display:swap}
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:${colour("--ink")};color:${colour("--paper")}}
-body{font:17px/1.6 "Instrument Sans",system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;padding:32px 16px}
+html,body{margin:0;min-height:100%;background:${colour("--ink")};color:${colour("--white-000")}}
+body{font:16px/1.6 "IBM Plex Sans",system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;padding:32px 16px}
 main{max-width:560px;text-align:center}
 .brand{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:48px}
 .brand svg{fill:${colour("--gilt")}}
-.brand .word{fill:${colour("--paper")}}
-h1{font:400 clamp(32px,6vw,48px)/1.15 "EB Garamond",serif;margin:0}
-p{margin:16px 0 0;color:${colour("--ink-muted")}}
-a.action{display:inline-flex;align-items:center;min-height:48px;margin-top:32px;padding:0 24px;border:1px solid ${colour("--paper")};color:${colour("--paper")};text-decoration:none}
-a.action:hover{background:${colour("--paper")};color:${colour("--ink")}}
-a:focus-visible{outline:2px solid ${colour("--paper")};outline-offset:3px}
+.brand .word{fill:${colour("--white-000")}}
+h1{font:600 clamp(26px,6vw,44px)/1.15 "IBM Plex Sans",system-ui,sans-serif;letter-spacing:-0.01em;margin:0}
+p{margin:16px 0 0;color:${colour("--mist-300")}}
+a.action{display:inline-flex;align-items:center;min-height:52px;margin-top:32px;padding:0 24px;border:1px solid ${colour("--mist-300")};color:${colour("--white-000")};font-weight:600;text-decoration:none}
+a.action:hover{border-color:${colour("--white-000")}}
+a:focus-visible{outline:2px solid ${colour("--brass")};outline-offset:3px}
 `;
 
 /** A page in the holding look: the brand, then what it says. */
@@ -77,8 +81,8 @@ export function buildComingSoon(out = "site/dist/production"): void {
     page(comingSoon.title, `<h1>${comingSoon.notFound}</h1>\n      <a class="action" href="/">${comingSoon.home}</a>`),
   );
   writeFileSync(`${out}/coming-soon.css`, STYLES);
-  cpSync(`${FONTS}/eb-garamond/files/eb-garamond-latin-400-normal.woff2`, `${out}/fonts/serif.woff2`);
-  cpSync(`${FONTS}/instrument-sans/files/instrument-sans-latin-400-normal.woff2`, `${out}/fonts/sans.woff2`);
+  cpSync(`${FONTS}/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2`, `${out}/fonts/plex-400.woff2`);
+  cpSync(`${FONTS}/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2`, `${out}/fonts/plex-600.woff2`);
   cpSync("site/public/refs", `${out}/refs`, { recursive: true });
   const csp = contentSecurityPolicy({ scripts: [], styles: [] }, { ga4: null, googleAds: null, metaPixel: null });
   writeFileSync(`${out}/_headers`, headersFile(false, csp));

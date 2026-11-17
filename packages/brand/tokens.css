@@ -87,6 +87,13 @@
   --red-900: #6b2414;
   --green-700: #2f6b4f; /* paid, signed off, refunded */
 
+  /* ---- Colour: the site's grounds ------------------------------------------
+     The site redesign's table (docs/prompts/site-redesign.md, "Tokens"; ADR 0262), where the apps' above do not
+     already hold the colour. Only the site draws these, through its roles (site/src/styles/tokens-site.css). */
+  --cool-100: #f1f3f6; /* the cool ground every other section takes, between white ones */
+  --gilt-hover: #d4b47a; /* a gold button under the pointer */
+  --white-055: rgba(253, 253, 251, 0.55); /* an outlined button's edge on navy */
+
   /* ---- Colour: the hero's scrims, from --ink-night ----------------------- */
   --hero-scrim: rgba(11, 18, 32, 0.3);
   /* Not drawn: what shows of the screen behind an app's sheet. The boards draw the sheet alone; ink at 72% keeps the
