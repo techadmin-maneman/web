@@ -5,6 +5,7 @@ import { Icon } from "@maneman/ui/Icon";
 import type { TryOnState } from "./machine.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import shared from "./TryOn.module.css";
+import { LegalLinks } from "../LegalLinks.tsx";
 import styles from "./sent.module.css";
 
 /** The sent screen's heading: the look shown here, a visitor back after one no longer kept, or the look on its way. */
@@ -59,6 +60,7 @@ export function Sent(props: {
           {sent.home}
         </ButtonLink>
       </div>
+      <LegalLinks alone={shared.legal} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { tryOn } from "../../content/site.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
+import { LegalLinks } from "../LegalLinks.tsx";
 
 /** The error screen: the design's for a photograph that cannot be used, and the same frame for the other kinds. */
 export function Failed(props: { kind: ErrorKind; heading: HeadingRef; onAgain: () => void }) {
@@ -25,6 +26,7 @@ export function Failed(props: { kind: ErrorKind; heading: HeadingRef; onAgain: (
           {tryOn.error.book}
         </ButtonLink>
       </div>
+      <LegalLinks alone={styles.legal} />
     </div>
   );
 }

@@ -18,12 +18,15 @@ through Razorpay only.
    fills says the same.
 2. **No site copy offers UPI** as a way to pay for a visit.
 3. **The client app says the same**, as the owner asked the same day: the one visit's card ("By a Razorpay link, once
-   fitted"), the payments line, the booking made with ops and a visit still to pay while online payment is off (ADR
-   0209) each name the Razorpay link, never UPI at the visit.
+   fitted") and its payments line name the Razorpay link. Two lines describe visits that, while online payment is off
+   (ADR 0209), are paid at the visit and recorded by ops, never through a link: so they name no way to pay at all, and
+   neither names UPI. A visit still to pay reads "Pay {amount} at the visit"; a visit ops book on WhatsApp reads "We
+   book it with you on WhatsApp, and tell you how to pay {price}.", true whether online payment is on or off.
 
 ## Consequences
 
 - The terms and the privacy policy, counsel's text, name UPI among the ways to pay. They are not the redesign's copy;
   they are left for counsel, and the redesign's report lists them.
-- ADR 0209's mode with online payment off still lets ops record a UPI payment taken at the visit. The app no longer
-  tells the client to pay that way; whether the mode itself goes is the owner's, and the report lists it.
+- ADR 0209's mode with online payment off still has ops record a UPI payment taken at the visit, and its WhatsApp
+  message (`visit_booked_at_visit_v1`) still says "Pay {{6}} by UPI to Mane Man at the visit". Whether the mode goes,
+  as production's Razorpay-only switch would make it, is the owner's; the report lists it.

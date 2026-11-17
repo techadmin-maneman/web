@@ -58,7 +58,7 @@ const trail = [
   publish={guide.publish}
   structuredData={[guideArticle(guide), breadcrumbs(trail)]}
   ogType="article"
-  back={{ href: "/guides", label: guidesPage.all }}
+  back={{ href: "/guides", label: guidesPage.title }}
 >
   {guide.picture !== undefined && (
     <div class="frame picture">

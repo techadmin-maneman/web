@@ -34,6 +34,6 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "scripts/lib/wrangler-config-check.ts": { lines: 419 },
   "site/src/islands/invite/Consultation.tsx": { fn: 143 },
   "site/src/islands/invite/Waitlist.tsx": { fn: 95 },
-  "site/src/islands/tryon/TryOn.tsx": { fn: 120 },
+  "site/src/islands/tryon/TryOn.tsx": { fn: 118 },
   "site/src/islands/tryon/useGate.ts": { fn: 139 },
 };

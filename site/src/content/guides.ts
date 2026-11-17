@@ -45,8 +45,6 @@ export const guidesPage = {
   home: "Home",
   /** Above a long guide's sections: a link to each. */
   contents: "On this page",
-  /** Above each guide's title, the way back to the list. */
-  all: "All guides",
 };
 
 export const guides: readonly Guide[] = [
@@ -337,8 +335,6 @@ export const areasPage = {
   check: "Check your pincode",
   /** Its list of the cities, each a page of its own. */
   cityPages: "City by city",
-  /** Above each city's title, the way back to this page. */
-  all: "All areas",
 };
 
 /**

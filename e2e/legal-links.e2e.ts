@@ -4,8 +4,8 @@
 import { expect, test } from "./support.ts";
 import { referral } from "../site/src/content/referral.ts";
 
-// Every page with a form among them: /book, /try, the invite and /stop; and, with no footer on a flow (ADR 0265), every
-// screen of /book and the try-on past the first, each opened as its ?state= preview.
+// Every page with a form among them: /book, /try, the invite and /stop; and, with no footer on a flow (ADR 0265), each
+// screen of /book and the try-on past the first that has a ?state= preview, opened as it.
 for (const path of [
   "/",
   "/book",

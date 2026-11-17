@@ -34,7 +34,9 @@ const { rows, look = "others" } = Astro.props;
           <span class="name">{row.title}</span>
           {row.summary !== undefined && <span class="summary">{row.summary}</span>}
         </span>
-        <Icon name="chevron" size="sm" class="chevron" />
+        <span class="chevron">
+          <Icon name="chevron" size="sm" />
+        </span>
       </a>
     </li>
   ))}
@@ -88,6 +90,7 @@ const { rows, look = "others" } = Astro.props;
     color: var(--site-text-muted);
   }
   .chevron {
+    display: flex;
     flex-shrink: 0;
     color: var(--site-chevron);
   }
