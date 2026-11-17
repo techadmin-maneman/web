@@ -113,7 +113,7 @@ export function Reschedule({ job }: { readonly job: Job }) {
   if (asked !== null) {
     return (
       <p className={styles.asked} role="status">
-        {copy.asked(stamp(asked.asked_at), copy.reasons[asked.reason])}
+        {copy.asked(stamp(asked.asked_at), copy.reasonsAfter[asked.reason])}
       </p>
     );
   }

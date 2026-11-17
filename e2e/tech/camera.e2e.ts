@@ -278,9 +278,10 @@ test("the frames waiting show on the waiting screen, with the design’s line ab
   await capture.click();
   await expect(page.getByText(techCopy.capture.taking(2, techCopy.capture.angles.top))).toBeVisible();
 
-  // A frame goes up only with the set it belongs to, so this one waits.
+  // A frame goes up only with the set it belongs to, so this one waits: its own row, as the prototype draws it.
   await page.goto("/waiting");
-  await expect(page.getByText("1 photo set waiting")).toBeVisible();
+  await expect(page.getByText(new RegExp(` · ${techCopy.queue.phasesAfter.before}$`))).toBeVisible();
+  await expect(page.getByText(techCopy.queue.taken(1, 5))).toBeVisible();
 });
 
 test("goes on without photos when the camera will not open, and the set says so for ops", async ({ page }) => {

@@ -47,6 +47,11 @@ export function Quality() {
       <Waiting loaded={loaded} failed={copy.failed} onRetry={retry} />
       {loaded.state === "loaded" && (
         <dl className={styles.lines}>
+          {/* The clients' rating first, as the prototype orders them. */}
+          <Line
+            term={copy.rating(loaded.value.rating_days)}
+            value={loaded.value.rating === null ? copy.none : copy.rated(loaded.value.rating)}
+          />
           <Line
             term={copy.redo}
             value={loaded.value.fits === 0 ? copy.none : copy.redone(loaded.value.redone, loaded.value.fits)}
@@ -54,10 +59,6 @@ export function Quality() {
           <Line
             term={copy.onTime}
             value={loaded.value.visits === 0 ? copy.none : copy.onTimeShare(loaded.value.on_time, loaded.value.visits)}
-          />
-          <Line
-            term={copy.rating(loaded.value.rating_days)}
-            value={loaded.value.rating === null ? copy.none : copy.rated(loaded.value.rating)}
           />
         </dl>
       )}

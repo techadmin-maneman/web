@@ -89,10 +89,35 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* The rows on the gutter's line, their rules gutter to gutter, as the prototype draws them. */
+/*
+ * The Account list as the prototype draws it: one-line rows 56 px tall on the gutter's line, the label 16 px in the
+ * regular weight, what each holds and a chevron at its end; a rule between rows, none under the last.
+ */
 .rows {
-  border-top: var(--hairline) solid var(--ui-line);
-  border-bottom: var(--hairline) solid var(--ui-line);
+  --row-min-height: calc(var(--sp-48) + var(--sp-8));
+  --row-pad-y: var(--sp-8);
+  --row-title-weight: var(--weight-regular);
+
+  line-height: var(--lh-130);
+}
+
+.signOut {
+  color: var(--ui-error);
+}
+
+/* The Contact sheet: ops in the technician's city over Call and WhatsApp, as the prototype's. */
+.contact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}
+
+.contactTitle {
+  margin: 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+  color: var(--ui-strong);
 }
 
 .stayed {
@@ -104,8 +129,4 @@
 
 .section {
   margin-top: var(--sp-24);
-}
-
-.ops {
-  margin-top: var(--sp-12);
 }

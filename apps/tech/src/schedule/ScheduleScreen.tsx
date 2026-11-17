@@ -26,7 +26,7 @@ import { useOutbox } from "../lib/useOutbox.ts";
 import { useRefreshTick } from "../lib/useRefreshTick.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { wayTo } from "../lib/navigate.ts";
-import { apiDate, clock, dayAfter, dayMonth, spanEnds, todayInIndia } from "../lib/when.ts";
+import { apiDate, clock, dayMonth, spanEnds, todayInIndia } from "../lib/when.ts";
 import { redirect } from "../route.ts";
 import { useSession } from "../session.ts";
 import { keptDay } from "../store/jobs.ts";
@@ -112,11 +112,10 @@ function DriveLine({ job, words }: { readonly job: JobSummary; readonly words: s
   );
 }
 
-/** A day's heading: today's and tomorrow's said as such, "Today, Thu 12 Nov"; any other, "Sat, 14 Nov". */
+/** A day's heading: today's said as such, "Today, Thu 12 Nov"; any other plainly, "Fri, 13 Nov", as the prototype. */
 function dayTitle(date: string, today: string): string {
   const weekday = weekdayName(date).slice(0, 3);
   if (date === today) return copy.today(weekday, dayMonth(date));
-  if (date === dayAfter(today)) return copy.tomorrow(weekday, dayMonth(date));
   return copy.day(weekday, dayMonth(date));
 }
 

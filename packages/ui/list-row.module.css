@@ -30,7 +30,7 @@
     align-items: center;
     gap: var(--sp-12);
     width: 100%;
-    min-height: var(--sp-64);
+    min-height: var(--row-min-height);
     padding: var(--row-pad-y) var(--row-pad-x);
     border: 0;
     background: none;

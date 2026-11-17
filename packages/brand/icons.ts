@@ -102,6 +102,8 @@ export const GLYPHS = {
   bell: "M6 16.5 V11 A6 6 0 0 1 18 11 V16.5 L19.5 18.5 H4.5 Z M10 20.5 A2 2 0 0 0 14 20.5",
   /** The technician's Navigate, on the next job: the arrow a map's directions draw. */
   navigate: "M20 4 L3.5 11 L10.5 13.5 L13 20.5 Z",
+  /** The technician's Scan, on a hair system arriving in the kit: a frame's four corners over a label's line. */
+  scan: "M4 8 V4 H8 M16 4 H20 V8 M20 16 V20 H16 M8 20 H4 V16 M7 12 H17",
   /** The technician's day, saved and sent: a cloud. */
   cloud: "M7 18.5 H17 A4 4 0 0 0 17.6 10.5 A6 6 0 0 0 6.1 12.1 A3.3 3.3 0 0 0 7 18.5 Z",
   /** The technician's Schedule tab: a calendar with its days' lines. */

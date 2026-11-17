@@ -106,9 +106,9 @@ function labelOf(where: Where | null): string {
   return where.sentBack === null ? visit.close : visit.sendFix;
 }
 
-/** What ops said when they sent the step back, their words as they wrote them. */
+/** What ops said when they sent the step back, their words as they wrote them, ended as a sentence. */
 const sentBackLine = (reason: string | null): string | null =>
-  reason === null ? null : visit.sentBack(theirs(reason));
+  reason === null ? null : visit.fixIt(theirs(/[.!?]$/.test(reason.trim()) ? reason.trim() : `${reason.trim()}.`));
 
 export function StepFrame({
   title,
@@ -165,7 +165,7 @@ export function StepFrame({
       {where !== null && <StepBar where={where} />}
       <div className={styles.body}>
         {said !== null && (
-          <ProblemCard className={styles.notice} title={visit.plan.needsFix} live>
+          <ProblemCard className={styles.notice} title={visit.refused} live>
             {said}
           </ProblemCard>
         )}

@@ -9,33 +9,47 @@
 .title {
   margin: 0;
   font-size: var(--fs-20);
-  font-weight: var(--weight-medium);
-  color: var(--ui-text);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-strong);
 }
 
 .note {
   margin: 0;
-  font-size: var(--fs-15);
+  font-size: var(--fs-14);
   color: var(--ui-text-soft);
 }
 
-/* The SOS: the height the brief draws it at, a thumb's hold. */
+/* The SOS: the height the prototype draws it at, a thumb's hold; its words 18/600, the line beneath 14. */
 .sos {
   min-height: calc(var(--sp-64) + var(--sp-12));
-  font-size: var(--fs-20);
+  font-size: var(--fs-18);
+  font-weight: var(--weight-semibold);
+
+  --hold-sub-text: var(--fs-14);
 }
 
+/* Sent: a box ruled in the error's red, when in red and what now in the ink. */
 .sent {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-8);
+  gap: var(--sp-4);
+  padding: calc(var(--sp-12) + var(--sp-2));
+  border: var(--rule-strong) solid var(--ui-error);
+  border-radius: var(--ui-radius-button);
 }
 
 .sentAt {
   margin: 0;
   font-size: var(--fs-17);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-semibold);
   color: var(--ui-error);
+}
+
+.sentBody {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text);
 }
 
 .sending {
