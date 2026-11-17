@@ -18,8 +18,8 @@ const SCREENS = {
   upload: { label: "Step 1 of 3", steps: 1 },
   looks: { label: "Step 2 of 3", steps: 2 },
   gate: { label: "Step 3 of 3", steps: 3 },
-  sent: { label: "Sent to WhatsApp", steps: 0 },
-  error: { label: "Can’t use this photo", steps: 0 },
+  sent: { label: "On its way to your WhatsApp", steps: 0 },
+  error: { label: "Can’t read the photo", steps: 0 },
 } as const;
 type Screen = keyof typeof SCREENS;
 
@@ -186,7 +186,6 @@ test.describe("upload", () => {
     await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.camera })).toHaveCount(0);
   });
 
-  // On a phone the caption sat across the oval's lower corner brackets; there, the camera opens over the page.
   test("a chosen photo is looked at first, and goes on to the looks once used", async ({ page }) => {
     await open(page, "upload");
     await page
@@ -349,31 +348,28 @@ test.describe("error", () => {
   const KINDS = [
     {
       kind: "renderFailed",
-      step: "Something went wrong",
       frame: "The look didn’t work",
       heading: "The look didn’t work this time.",
       another: true,
     },
     {
       kind: "busy",
-      step: "Please try again shortly",
       frame: "The try-on is busy",
       heading: "The try-on is busy just now.",
       another: true,
     },
     {
       kind: "unavailable",
-      step: "Not available right now",
       frame: "WhatsApp",
       heading: "We can’t send to WhatsApp just now.",
       another: false,
     },
   ];
-  for (const { kind, step, heading, another } of KINDS) {
+  for (const { kind, frame, heading, another } of KINDS) {
     test(`${kind} has its own labels, heading and body, and never blames the photograph`, async ({ page }) => {
       await page.goto(`/try?state=error&kind=${kind}`);
       await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-      await expect(page.getByText(step, { exact: true })).toBeVisible();
+      await expect(page.getByText(frame, { exact: true })).toBeVisible();
       await expect(page.getByText("photograph", { exact: false }).filter({ hasText: /Cannot/ })).toHaveCount(0);
       await expect(page.getByRole("link", { name: siteCopy.tryOn.error.book })).toBeVisible();
       await expect(page.getByRole("button", { name: siteCopy.tryOn.error.another })).toHaveCount(another ? 1 : 0);

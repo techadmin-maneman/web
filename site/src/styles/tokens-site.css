@@ -298,13 +298,9 @@
   /* The results' before and after at its tallest. */
   --result-picture-max: 540px; /* a result's pair at its widest, at its photographs' own 4:5 */
 
-  --comparison-label-w: var(
-    --stage-min
-  ); /* a laptop table's first column, the rows' names: 220 px, which the
-                                            try-on's --stage-min also is; moving one moves both */
+  --comparison-label-w: 220px; /* a laptop table's first column, the rows' names */
 
   --teaser-frame-h: clamp(280px, 42vw, 420px);
-  /* The try-on's look beside its photograph, on the sent screen. */
 
   --column-min-narrow: 140px; /* a column of short links or names, two to a phone */
 
@@ -314,5 +310,4 @@
   --try-look-ratio: 648 / 467; /* the look beside the photograph, as the boards draw it */
   --try-title: clamp(26px, calc(23.77px + 0.5714vw), 32px); /* a step's title: 26 on a phone, 32 on a laptop */
   --try-lead: clamp(15px, calc(14.63px + 0.0952vw), 16px);
-  --stage-min: 220px;
 }

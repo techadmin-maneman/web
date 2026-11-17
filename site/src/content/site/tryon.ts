@@ -42,8 +42,6 @@ export const tryOn = {
     upload: "Step 1 of 3",
     looks: "Step 2 of 3",
     gate: "Step 3 of 3",
-    sent: "Sent to WhatsApp",
-    error: "Can’t use this photo",
   },
   upload: {
     title: "One photo, taken straight on.",
@@ -73,9 +71,7 @@ export const tryOn = {
     },
     /** Where the browser will not open the camera here: Take a photo then opens the phone’s own. */
     blocked: "The camera is blocked here. Allow it in your browser’s settings, or choose a photo.",
-    previewCaption: "Your photo appears here",
     previewAlt: "The photo you chose",
-    oval: "Fill the oval",
   },
   looks: {
     title: "Choose a look.",
@@ -85,8 +81,6 @@ export const tryOn = {
   },
   /** Both fields are needed: the number is where the look goes. Its agreement is the gate notice's one line. */
   gate: {
-    frame: "For your WhatsApp only",
-    caption: "Your look goes to your WhatsApp, and shows here once it’s ready.",
     title: "Where should we send it?",
     name: "Name",
     nameError: CLIENT_WORDS.nameError,
@@ -138,74 +132,63 @@ export const tryOn = {
     /** By ErrorKind (lib/tryon-errors.ts). */
     kinds: {
       photo: {
-        step: "Can’t use this photo",
         frame: "Can’t read the photo",
         title: "We can’t use this photo.",
         body: "Your face may be turned, your hairline covered, or the light too low. Face a window and shoot straight on.",
       },
       noFace: {
-        step: "Can’t see your face",
         frame: "Face not clear",
         title: "We couldn’t see your face clearly.",
         body: "Try a well-lit photo, taken straight on.",
       },
       shoulders: {
-        step: "Show your shoulders",
         frame: "Shoulders out of frame",
         title: "We need to see your shoulders.",
         body: "Use a photo that shows your head and shoulders.",
       },
       facing: {
-        step: "Face the camera",
         frame: "Face turned away",
         title: "Face the camera straight on.",
         body: "Then take the photo again.",
       },
       onePerson: {
-        step: "Just you, please",
         frame: "More than one person",
         title: "Only you in the photo, please.",
         body: "Use a photo with no one else in it.",
       },
       notStyleable: {
-        step: "Try another photo",
         frame: "Cannot style this one",
         title: "We couldn’t style this photo.",
         body: "Please try another one.",
       },
       refused: {
-        step: "Try another photo",
         frame: "Photo not accepted",
         title: "Please try another photo.",
         body: "We can’t use this one.",
       },
       renderFailed: {
-        step: "Something went wrong",
         frame: "The look didn’t work",
         title: "The look didn’t work this time.",
         body: "We couldn’t make your look this time. Try again, or book a free consultation to see it in person.",
       },
       busy: {
-        step: "Please try again shortly",
         frame: "The try-on is busy",
         title: "The try-on is busy just now.",
         body: "Try again in a few minutes, or book a consultation and see it in person.",
       },
       /** While WhatsApp cannot send a look, the try-on does not run. It has no Choose another. */
       unavailable: {
-        step: "Not available right now",
         frame: "WhatsApp",
         title: "We can’t send to WhatsApp just now.",
         body: "Try again in a few minutes, or book a free consultation and see the real thing.",
       },
       /** While the simulation itself cannot run. It has no Choose another either. */
       paused: {
-        step: "Not available right now",
         frame: "Paused",
         title: "Try-on is temporarily unavailable.",
         body: "Book a free consultation and see the real thing.",
       },
-    } satisfies Record<ErrorKind, { step: string; frame: string; title: string; body: string }>,
+    } satisfies Record<ErrorKind, { frame: string; title: string; body: string }>,
   },
 };
 

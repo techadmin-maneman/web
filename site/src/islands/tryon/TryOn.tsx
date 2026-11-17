@@ -75,11 +75,13 @@ function usePhotoWidget(screen: Screen, siteKey: string) {
 const STEPS = 3;
 const STEP_AT: Partial<Record<Screen, number>> = { upload: 1, looks: 2, gate: 3 };
 
-/** The step's line over its words, "Step 2 of 3", or, on the sent and error screens, what they are. */
-function StepLabel(props: { screen: Screen; kind: TryOnState["errorKind"] }) {
+/** The step's line over its words, "Step 2 of 3", or, on the error screen, what went wrong: "Face not clear". */
+function StepLabel(props: { screen: Exclude<Screen, "sent">; kind: TryOnState["errorKind"] }) {
   const { screen } = props;
   return (
-    <p class={styles.stepLabel}>{screen === "error" ? tryOn.error.kinds[props.kind].step : tryOn.stepLabels[screen]}</p>
+    <p class={styles.stepLabel}>
+      {screen === "error" ? tryOn.error.kinds[props.kind].frame : tryOn.stepLabels[screen]}
+    </p>
   );
 }
 
@@ -196,7 +198,7 @@ function TryOnFlow(props: Props) {
           {/* Turnstile shows here only if Cloudflare needs the visitor to act: above the step, before its button. */}
           <div ref={turnstileBox} class={styles.turnstile} />
 
-          {screen === "upload" && <Upload photo={state.photo} heading={heading} onChoose={choosePhoto} />}
+          {screen === "upload" && <Upload heading={heading} onChoose={choosePhoto} />}
           {screen === "looks" && (
             <Looks
               look={state.look}
@@ -230,7 +232,7 @@ function TryOnFlow(props: Props) {
 /** The island as the page mounts it: a throw while it draws is reported, and the way to us shown in its place. */
 export default function TryOn(props: Props) {
   return (
-    <IslandBoundary>
+    <IslandBoundary top={<FlowTop title={tryOnTeaser.eyebrow} onBack={null} />}>
       <TryOnFlow {...props} />
     </IslandBoundary>
   );

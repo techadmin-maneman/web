@@ -119,7 +119,7 @@ function Guidelines(props: { heading: HeadingRef }) {
  * page, the whole screen on a phone; where the browser will not open it, Take a photo asks for the phone's own camera
  * through a file input instead, which a phone answers with its camera app.
  */
-export function Upload(props: { photo: string | null; heading: HeadingRef; onChoose: (file: File) => void }) {
+export function Upload(props: { heading: HeadingRef; onChoose: (file: File) => void }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const phoneCamera = useRef<HTMLInputElement>(null);
   const hasCamera = useHasCamera();

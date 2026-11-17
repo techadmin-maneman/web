@@ -35,7 +35,7 @@ export function Sent(props: {
           <span class={styles.tile}>
             <Icon d={ICONS.whatsapp} size="md" />
           </span>
-          <p class={shared.stepLabel}>{tryOn.stepLabels.sent}</p>
+          <p class={shared.stepLabel}>{tryOn.sent.frame}</p>
         </>
       )}
       <Title heading={props.heading} className={shared.noticeTitle}>

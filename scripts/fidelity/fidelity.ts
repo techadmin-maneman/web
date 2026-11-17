@@ -78,7 +78,7 @@ const TRY_STATES: readonly { state: TryBoardState; preview: string }[] = [
   { state: "look", preview: "looks" },
   { state: "send", preview: "gate" },
   { state: "sent", preview: "sent" },
-  { state: "error", preview: "error" },
+  { state: "error", preview: "error&kind=noFace" },
 ];
 
 const WIDTHS = [
