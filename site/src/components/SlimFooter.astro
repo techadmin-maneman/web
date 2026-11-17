@@ -18,7 +18,7 @@ const flow = isFlowPage(pagePath(Astro.url.pathname));
 <footer class:list={["slim", flow && "flow"]}>
   <div class="inner">
     <div class="top">
-      <a class="home" href="/" aria-label={business.name}>
+      <a class={textLinkLook({ tone: "ink", quiet: true, className: "home" })} href="/" aria-label={business.name}>
         <Lockup size="slim" tone="white" />
       </a>
       <nav class="pages" aria-label={footer.pagesLabel}>

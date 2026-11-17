@@ -21,7 +21,7 @@ const year = new Date().getFullYear();
   <div class="inner">
     <div class="top">
       <div class="brand">
-        <a class="home" href="/" aria-label={business.name}>
+        <a class={textLinkLook({ tone: "ink", quiet: true, className: "home" })} href="/" aria-label={business.name}>
           <Lockup size="footer" tone="white" />
         </a>
         <p class="tagline">{footer.tagline}</p>

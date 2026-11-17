@@ -23,7 +23,7 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
 
 <div class="space" aria-hidden="true"></div>
 <header class:list={["bar", flow && "flow"]}>
-  <a class="home" href="/" aria-label={header.homeLabel}>
+  <a class={textLinkLook({ quiet: true, className: "home" })} href="/" aria-label={header.homeLabel}>
     <Lockup size="header" tone="navy" />
   </a>
   <nav class="sections wide-only" aria-label={header.navLabel}>
@@ -46,7 +46,7 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
     </a>
   )}
   {flow && (
-    <a class="back" href="/">
+    <a class={buttonLook({ variant: "quiet", size: "small", className: "back" })} href="/">
       <Icon name="cross" size="md" />
       {tryOn.backToSite}
     </a>
