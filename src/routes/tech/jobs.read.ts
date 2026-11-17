@@ -10,7 +10,7 @@ import { kitUnits } from "../../domain/inventory/stock-units.ts";
 import type { JobSheetItem } from "../../config/job-sheet.ts";
 import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/field/job-sheet-settings.ts";
 import { jobsOn } from "../../domain/field/tech-jobs.ts";
-import { jobDetail, lastVisitPhoto } from "../../domain/field/job-card.ts";
+import { jobDetail } from "../../domain/field/job-card.ts";
 import { refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -18,14 +18,7 @@ import { listableDate } from "../../policy/job-visibility.ts";
 import { inputsIn, rulesOfVisit } from "../../domain/cities/city-rules.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 
-import {
-  clientHistoryRoute,
-  comparePhotoRoute,
-  historyPhotoRoute,
-  jobsRoute,
-  jobRoute,
-  lastVisitPhotoRoute,
-} from "./jobs.routes.ts";
+import { clientHistoryRoute, comparePhotoRoute, historyPhotoRoute, jobsRoute, jobRoute } from "./jobs.routes.ts";
 import { clientHistory, comparePhoto, historyPhoto } from "../../domain/field/client-history.ts";
 import { alertsForTechnician } from "../../domain/clients/client-alerts.ts";
 import { workableJob } from "../../domain/field/workable-job.ts";
@@ -179,21 +172,6 @@ function registerPhotoReads(app: App): void {
     const photo = job === null ? null : await comparePhoto(c.env.DB, job, phase, angle);
     const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
     if (photo === null || object === null) return refuse(c, "not_found");
-    return new Response(object.body, {
-      headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },
-    });
-  });
-
-  app.openapi(lastVisitPhotoRoute, async (c) => {
-    const photo = await lastVisitPhoto(c.env.DB, {
-      technicianId: technicianOf(c).technicianId,
-      jobId: c.req.valid("param").id,
-      now: c.var.deps.now(),
-      unlockHour: (await opsInputs(c)).addressUnlockHour,
-    });
-    const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
-    if (photo === null || object === null) return refuse(c, "not_found");
-    // A client's photograph stays off a technician's phone: neither the browser nor the service worker keeps it.
     return new Response(object.body, {
       headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },
     });

@@ -13,7 +13,7 @@ export const visits = {
   paid: "Paid",
   free: "Free",
   /**
-   * A visit booked while online payment is off, paid at the visit (ADR 0209), naming no way to pay (ADR 0271): "Pay
+   * A visit booked while online payment is off, paid at the visit (ADR 0209), naming no way to pay (ADR 0272): "Pay
    * Rs. 2,200 at the visit".
    */
   payAtVisit: (amount: string) => `Pay ${amount} at the visit`,

@@ -1,6 +1,6 @@
 // What the client app's card says of a consultation and fit in one visit (apps/app/src/home/one-visit-words.ts), and
 // what it calls the visit and how long it says it is. It read "First fit · 180 minutes", with no price
-// and no word of the link it is paid by; it is paid through a Razorpay link, never UPI at the visit (ADR 0271).
+// and no word of the link it is paid by; it is paid through a Razorpay link, never UPI at the visit (ADR 0272).
 
 import { describe, expect, it } from "vitest";
 import type { VisitSummary } from "../../../apps/app/src/api.ts";

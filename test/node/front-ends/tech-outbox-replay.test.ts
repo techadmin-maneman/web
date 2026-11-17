@@ -7,7 +7,8 @@ import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { onSessionEnded } from "../../../apps/tech/src/api.ts";
 import { wipe } from "../../../apps/tech/src/store/db.ts";
-import { keptArrival, keptJob } from "../../../apps/tech/src/store/jobs.ts";
+import type { Job } from "../../../apps/tech/src/api.ts";
+import { keepJob, keptArrival, keptJob } from "../../../apps/tech/src/store/jobs.ts";
 import {
   events,
   frames,
@@ -111,6 +112,17 @@ describe("sending what the phone holds", () => {
       "GET /api/tech/jobs/a",
     ]);
     expect(await keptJob("a")).toMatchObject({ starts_at: card.starts_at });
+  });
+
+  // The step left the outbox before the card was read again, and in between the checklist read the choice as unmade.
+  it("keeps a one visit's choice on its card as its piece step lands, before the step leaves the outbox", async () => {
+    await keepJob({ id: "a", one_visit: true, client_choice: null } as unknown as Job);
+    await queue("piece", "a", { declined: true });
+    api(() => accepted);
+
+    await replay();
+    expect(await events()).toEqual([]);
+    expect(await keptJob("a")).toMatchObject({ client_choice: { declined: true } });
   });
 
   it("does not read again a job given to someone else", async () => {

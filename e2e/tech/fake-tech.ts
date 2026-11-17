@@ -703,11 +703,6 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       assertInContract("tech", method, path, 200);
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
-    if (path === `/api/tech/jobs/${JOB_ID}/last-visit-photo`) {
-      if (fake.moved || !fake.lastVisit) return refuse(route, 404, "not_found");
-      assertInContract("tech", method, path, 200);
-      return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
-    }
     if (path === `/api/tech/jobs/${JOB_ID}`) {
       if (fake.slowCardMs > 0) await new Promise((resolve) => setTimeout(resolve, fake.slowCardMs));
       if (fake.moved) return refuse(route, 404, "not_found");

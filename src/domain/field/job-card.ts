@@ -57,13 +57,12 @@ interface CardPiece {
   readonly replaced_at: string | null;
 }
 
-/** The client's visit before this one that has after photographs: the job card's "Last visit, after. 22 Aug, Imran." */
+/** The client's visit before this one that has after photographs: the hair profile's "Last visit 22 Aug". */
 interface LastVisit {
   /** YYYY-MM-DD, in India. */
   readonly date: string;
   /** The first name of the technician who did it. */
   readonly technician: string | null;
-  readonly photo_url: string;
 }
 
 interface JobProgress extends JobState {
@@ -356,33 +355,7 @@ async function lastVisitOf(db: D1Database, row: JobRow): Promise<LastVisit | nul
   return {
     date: indiaDate(new Date(visit.window_start)),
     technician: visit.technician === null ? null : firstNameOf(visit.technician),
-    photo_url: `/api/tech/jobs/${row.id}/last-visit-photo`,
   };
-}
-
-/** The front first, as the job card shows it, then the other angles in the order they are taken. */
-const ANGLE_ORDER =
-  "CASE p.angle WHEN 'front' THEN 0 WHEN 'top' THEN 1 WHEN 'left' THEN 2 WHEN 'right' THEN 3 ELSE 4 END";
-/**
- * The last visit's after photograph, for this technician's unlocked job only:
- * the rule the card it sits on keeps. Null when there is none to show.
- */
-export async function lastVisitPhoto(
-  db: D1Database,
-  options: { technicianId: string; jobId: string; now: Date; unlockHour: number },
-): Promise<{ key: string; contentType: string } | null> {
-  const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
-  if (row === null || !unlocked(new Date(row.window_start), options.now, options.unlockHour)) return null;
-  const visit = await lastVisit(db, row);
-  if (visit === null) return null;
-  const photo = await db
-    .prepare(
-      `SELECT p.r2_key, p.content_type FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id
-       WHERE s.appointment_id = ?1 AND s.phase = 'after' ORDER BY ${ANGLE_ORDER} LIMIT 1`,
-    )
-    .bind(visit.id)
-    .first<{ r2_key: string; content_type: string }>();
-  return photo === null ? null : { key: photo.r2_key, contentType: photo.content_type };
 }
 
 /**
