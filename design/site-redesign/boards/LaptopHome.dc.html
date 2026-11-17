@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mane Man home on a laptop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16233A}a:hover{color:#1F2E49}
+.mm *{box-sizing:border-box}
+.mm{font-family:"IBM Plex Sans",Arial,sans-serif;color:#1F2328;-webkit-font-smoothing:antialiased;font-size:18px;line-height:1.55}
+.mm button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.mm .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;font-weight:600;font-size:16px;line-height:1;text-decoration:none;text-align:center;border:0}
+.mm .btn-primary{background:#16233A;color:#FDFDFB}
+.mm .btn-primary:hover{background:#1F2E49;color:#FDFDFB}
+.mm .btn-secondary{background:transparent;color:#16233A;border:1px solid #16233A}
+.mm .btn-gold{background:#C9A363;color:#16233A}
+.mm .btn-gold:hover{background:#D4B47A;color:#16233A}
+.mm .btn-onnavy{background:transparent;color:#FDFDFB;border:1px solid rgba(253,253,251,.55)}
+.mm .btn-onnavy:hover{color:#FDFDFB;border-color:#FDFDFB}
+.mm .btn-sm{height:44px;font-size:16px;padding:0 18px}
+.mm .wrap{max-width:1200px;margin:0 auto;padding:0 40px}
+.mm .sec{padding:96px 0}
+.mm .band{background:#F1F3F6}
+.mm .h2{font-size:44px;line-height:1.15;font-weight:600;letter-spacing:-.5px;color:#16233A;margin:0}
+.mm .lede{font-size:18px;line-height:1.5;color:#5F6670;margin:12px 0 0}
+.mm .label{font-size:14px;font-weight:600;color:#5F6670;margin:0}
+.mm .nav a{font-size:16px;font-weight:500;color:#1F2328;text-decoration:none}
+.mm .nav a:hover{color:#16233A;text-decoration:underline;text-underline-offset:6px}
+.mm .tag{position:absolute;top:0;font-size:14px;font-weight:600;background:#16233A;color:#FDFDFB;padding:7px 10px;line-height:1}
+.mm .icon-btn{width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:#16233A;border:1px solid #D9DCE1}
+.mm .icon-btn:hover{border-color:#16233A}
+.mm table{border-collapse:collapse;width:100%}
+.mm th,.mm td{text-align:left;vertical-align:top;padding:16px;font-size:16px;line-height:1.45}
+.mm thead th{color:#16233A;font-weight:600;font-size:16px;border-bottom:2px solid #16233A}
+.mm tbody th{font-size:14px;font-weight:600;color:#5F6670;width:220px}
+.mm tbody tr{border-bottom:1px solid #D9DCE1}
+.mm .flink{color:#FDFDFB;text-decoration:none;font-size:16px}
+.mm .flink:hover{color:#FDFDFB;text-decoration:underline}
+.mm input[type=range].cmp{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+.mm .faqq:hover{color:#16233A}
+.mm :focus-visible{outline:2px solid #B98B45;outline-offset:2px}
+.mm .lh{position:relative;overflow:hidden;background:#16233A;display:flex;align-items:flex-end}
+.mm .lh video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+.mm .lh .scrim{position:absolute;inset:0;background:#0b12204d}
+.mm .lh .up{background:linear-gradient(to top,#0b1220 0%,#0b1220ad 50%,#0b12201a 100%)}
+.mm .lh .side{background:linear-gradient(to right,#0b1220c7 0%,#0b122080 42%,#0b122000 72%)}
+.mm .lh .seq{display:grid;margin:0;font-weight:600;line-height:1;letter-spacing:-.02em;color:#FDFDFB;max-width:900px}
+.mm .lh .seq span{grid-area:1/1;text-wrap:balance;transition:opacity .42s ease}
+.mm .lh h1{margin:0;font-weight:500;line-height:1.15;letter-spacing:-.01em;color:#FDFDFB;max-width:900px;text-wrap:balance}
+.mm .lh .lb{margin:16px 0 0;line-height:1.6;color:#A9B2C1;max-width:600px}
+.mm .lh .acts{display:flex;flex-wrap:wrap;gap:16px}
+.mm .lh .b{display:flex;align-items:center;justify-content:center;min-height:56px;padding:0 16px;font:inherit;font-size:16px;font-weight:500;text-decoration:none;border-radius:0}
+.mm .lh .b-gold{background:#C9A363;color:#16233A}
+.mm .lh .b-out{border:1px solid rgba(253,253,251,.55);color:#FDFDFB;background:transparent}
+.mm .lh .pz{position:absolute;z-index:1;min-height:44px;padding:0 16px;font-size:16px;font-weight:500;border:1px solid rgba(253,253,251,.55);color:#FDFDFB}
+.mm .linkbtn{background:none;border:0;padding:0;cursor:pointer;font:inherit}
+</style>
+</helmet>
+<div class="mm" style="width: 1440px; height: 900px; position: relative; overflow: hidden; background: #FDFDFB">
+
+<header style="position: absolute; top: 0; left: 0; right: 0; height: 72px; z-index: 20; background: #FDFDFB; border-bottom: 1px solid #D9DCE1">
+<div class="wrap" style="height: 72px; display: flex; align-items: center; gap: 32px">
+<a href="#top" aria-label="Mane Man home" style="display: flex"><img src="/_blob/46c99c5eb0be46270893d5352e07bb7c" alt="Mane Man" style="height: 40px; width: auto; display: block"></a>
+<span style="flex: 1"></span>
+<nav class="nav" aria-label="Main" style="display: flex; gap: 28px"><a href="#what">What it is</a><a href="#range">The range</a><a href="#faq">Questions</a></nav>
+<a href="https://claude.ai/artifact/R3jhpuNxKkZxi6YBExSQk3" style="display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; color: #16233A; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"></path></svg>Sign in</a>
+<a class="btn btn-primary btn-sm" href="LaptopBook.dc.html">Book a free consultation</a>
+</div>
+</header>
+
+<div style="position: absolute; top: 72px; left: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden">
+<div id="top"></div>
+
+<section class="lh" style="min-height: 738px; padding-bottom: 72px">
+<div style="position: absolute; inset: 0; background: #0b1220"><video data-hero-video autoplay muted loop playsinline preload="auto" poster="/_blob/16cd1a46342a9abc6eb6b51cd94ca1d3" src="/_blob/7130bf7a4c2f38082622061f6cfaa682" aria-hidden="true"></video></div>
+<div class="scrim"></div><div class="scrim up"></div><div class="scrim side"></div>
+<button class="pz" onClick="{{togglePause}}" style="top: 26px; right: max(40px, calc((100% - 1200px) / 2 + 40px))">{{pauseLabel}}</button>
+<p style="position: absolute; z-index: 1; top: 26px; left: max(40px, calc((100% - 1200px) / 2 + 40px)); margin: 0; min-height: 44px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #FDFDFB">Delhi NCR · home service</p>
+<div style="position: relative; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 40px 64px">
+<p class="seq" aria-live="polite" style="font-size: 80px"><sc-for list="{{phrases}}" as="ph" hint-placeholder-count="5"><span style="opacity: {{ph.op}}">{{ph.t}}</span></sc-for></p>
+<h1 style="margin-top: 24px; font-size: 26px">A full head of hair, matched to your own.</h1>
+<p class="lb" style="font-size: 18px">Your technician comes when it suits you, matches a hair system to your own hair and fits it.</p>
+<div class="acts" style="margin-top: 36px; ">
+<a class="b b-gold" href="LaptopBook.dc.html">Book a free consultation</a>
+<a class="b b-out" href="LaptopTry.dc.html">Try a new look</a>
+</div>
+</div>
+</section>
+
+<section id="results" class="sec">
+<div class="wrap" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 96px; align-items: center">
+<div>
+<h2 class="h2">10,000+ transformations by our specialists. Quietly.</h2>
+<div style="margin: 48px 0 0; padding: 20px 0 0; border-top: 1px solid #D9DCE1; display: flex; align-items: center; gap: 12px">
+<div style="flex: 1"><div style="font-size: 24px; font-weight: 600; color: #16233A">{{caption}}</div><div style="font-size: 16px; color: #5F6670">{{pager}}</div></div>
+<button class="icon-btn" aria-label="Previous result" onClick="{{prevRes}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></button>
+<button class="icon-btn" aria-label="Next result" onClick="{{nextRes}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg></button>
+</div>
+</div>
+<div style="position: relative; aspect-ratio: 638 / 788; max-height: 680px; background: #F1F3F6; overflow: hidden">
+<img src="/_blob/a61f447e2f699745f59ad83d99a48b3e" alt="Before" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+<img src="/_blob/9815d97bc5d84b0fbae65f5ac30d85e0" alt="After" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(0 0 0 {{resPos}}%)">
+<span class="tag" style="left: 0">Before</span><span class="tag" style="right: 0">After</span>
+<div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{resPos}}%; width: 2px; margin-left: -1px; background: #FDFDFB"><span style="position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; background: #FDFDFB; display: flex; align-items: center; justify-content: center; color: #16233A; box-shadow: 0 2px 8px rgba(22,35,58,.25)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6-5 6 5 6M15 6l5 6-5 6"></path></svg></span></div>
+<input class="cmp" type="range" min="0" max="100" value="{{resPos}}" onChange="{{onRes}}" aria-label="Drag to compare before and after">
+</div>
+</div>
+</section>
+
+<section id="what" class="sec band">
+<div class="wrap" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 96px">
+<div><h2 class="h2">What it is</h2><p style="margin: 20px 0 0; font-size: 18px; line-height: 1.55">A fine base of lace, mono or skin, with 100% real human hair tied in strand by strand. Shaped to your scalp, matched to your own hair, and bonded to the skin. It is not a wig.</p></div>
+<p style="margin: 0; padding: 24px 0 0; border-top: 2px solid #16233A; align-self: end; font-size: 34px; line-height: 1.2; font-weight: 600; letter-spacing: -.4px; color: #16233A">You sleep in it, shower in it, train in it.</p>
+</div>
+</section>
+
+<section id="scale" class="sec">
+<div class="wrap">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px">
+<div><h2 class="h2">Where you are on the scale</h2><p class="lede">Hair loss in men is graded in seven stages.</p><p style="margin: 14px 0 0; font-size: 14px; font-weight: 600; color: #5F6670">Stages III to VII · We fit all five</p></div>
+<a class="btn btn-primary" href="LaptopBook.dc.html">Book a free consultation</a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; margin: 40px 0 0">
+<sc-for list="{{stages}}" as="st" hint-placeholder-count="6">
+<figure style="margin: 0">
+<div style="position: relative; aspect-ratio: 204 / 255; background: #F1F3F6; overflow: hidden"><img src="{{st.img}}" alt="{{st.alt}}" style="width: 100%; height: 100%; object-fit: cover; display: block"><span style="position: absolute; left: 0; top: 0; min-width: 44px; height: 38px; padding: 0 10px; background: #16233A; color: #FDFDFB; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{st.n}}</span></div>
+<figcaption style="padding: 12px 0 0"><div style="font-size: 16px; font-weight: 600; color: #16233A">{{st.t}}</div><div style="font-size: 14px; color: #5F6670">{{st.s}}</div></figcaption>
+</figure>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section id="why" class="sec band">
+<div class="wrap">
+<h2 class="h2">Why choose a hair system</h2><p class="lede">How a hair system compares.</p>
+<table style="margin: 40px 0 0">
+<thead><tr><th scope="col" style="width: 220px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Measure</span></th><th scope="col">Transplant</th><th scope="col">Medication</th><th scope="col" style="background: #FDFDFB">Hair system</th></tr></thead>
+<tbody>
+<sc-for list="{{cmpRows}}" as="r" hint-placeholder-count="7"><tr><th scope="row">{{r.k}}</th><td style="color: #5F6670">{{r.t}}</td><td style="color: #5F6670">{{r.m}}</td><td style="background: #FDFDFB; color: #16233A; font-weight: 600">{{r.us}}</td></tr></sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="tryon" style="background: #16233A; color: #FDFDFB; padding: 96px 0">
+<div class="wrap" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 96px; align-items: center">
+<div>
+<p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #A9B2C1">Try-on</p>
+<h2 style="margin: 0; font-size: 44px; line-height: 1.1; font-weight: 600; letter-spacing: -.6px">See yourself with hair.</h2>
+<p style="margin: 16px 0 0; font-size: 18px; line-height: 1.5; color: #A9B2C1">One photo, one look from six, sent privately to your WhatsApp.</p>
+<a class="btn btn-gold" href="LaptopTry.dc.html" style="margin-top: 32px">Start the try-on</a>
+</div>
+<div style="position: relative; aspect-ratio: 648 / 467; background: #16233A; overflow: hidden">
+<img src="/_blob/ec91a2c2f8571d957ec002fff1a7e49c" alt="A visitor's photo" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+<img src="/_blob/e95078326f2527d0d4f8c838bc12afc1" alt="The look, illustrated" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(0 0 0 {{tryPos}}%)">
+<span class="tag" style="left: 0">Before</span><span class="tag" style="right: 0">After</span>
+<div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{tryPos}}%; width: 2px; margin-left: -1px; background: #FDFDFB"></div>
+<input class="cmp" type="range" min="0" max="100" value="{{tryPos}}" onChange="{{onTry}}" aria-label="Drag to compare the photo and the look">
+</div>
+</div>
+</section>
+
+<section id="how" class="sec">
+<div class="wrap">
+<h2 class="h2">How it works</h2>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin: 40px 0 0">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+<div style="border-top: 2px solid #16233A; padding: 20px 0 0">
+<div style="display: flex; gap: 14px; align-items: baseline"><span style="font-size: 24px; font-weight: 600; color: #16233A">{{s.n}}</span><h3 style="margin: 0; font-size: 24px; font-weight: 600; color: #16233A">{{s.t}}</h3></div>
+<p style="margin: 10px 0 0; font-size: 16px; line-height: 1.55; min-height: 75px">{{s.b}}</p>
+<p style="margin: 8px 0 18px; font-size: 14px; color: #5F6670">{{s.m}}</p>
+<img src="{{s.img}}" alt="{{s.alt}}" style="width: 100%; aspect-ratio: 644 / 480; object-fit: cover; display: block; background: #F1F3F6">
+</div>
+</sc-for>
+</div>
+<p style="margin: 56px 0 0; font-size: 34px; line-height: 1.2; font-weight: 600; letter-spacing: -.4px; color: #16233A; max-width: 800px">90 minutes at your own table, and nobody else need ever know.</p>
+</div>
+</section>
+
+<section id="range" class="sec band">
+<div class="wrap">
+<h2 class="h2">The range</h2><p class="lede">Four hair systems, every one 100% real human hair. Your technician helps you choose.</p>
+<table style="margin: 40px 0 0">
+<thead><tr><th scope="col" style="width: 220px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Detail</span></th><th scope="col">Essential</th><th scope="col">Active</th><th scope="col">Natural</th><th scope="col">Celebrity</th></tr></thead>
+<tbody><sc-for list="{{rangeRows}}" as="r" hint-placeholder-count="6"><tr><th scope="row">{{r.k}}</th><td>{{r.a}}</td><td>{{r.b}}</td><td>{{r.c}}</td><td>{{r.d}}</td></tr></sc-for></tbody>
+</table>
+</div>
+</section>
+
+<section class="sec">
+<div class="wrap" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 96px">
+<div style="border-top: 2px solid #16233A; padding: 20px 0 0"><p class="label">The guarantee</p><p style="margin: 12px 0 0; font-size: 34px; line-height: 1.25; font-weight: 600; letter-spacing: -.3px; color: #16233A">If the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full.</p></div>
+<div style="border-top: 1px solid #D9DCE1; padding: 20px 0 0">
+<p class="label">A note from the founder</p>
+<p style="margin: 12px 0 0">I started losing my hair at twenty-four. By thirty, I'd had a transplant and spent years on medication, trying to hold on to what I was losing. Over time, I realised these came with trade-offs I didn't like. I was fighting a losing battle.</p>
+<sc-if value="{{founderOpen}}" hint-placeholder-val="{{false}}"><p style="margin: 14px 0 0">Hair loss is hard enough. Navigating an industry that can make you feel worse about yourself shouldn't be part of it.</p>
+<p style="margin: 14px 0 0">Losing your hair is natural. It's nobody's fault, and it doesn't define you. You can own it, do something about it, or simply move on. What matters is feeling good about the person you see in the mirror, and getting on with being the best version of yourself.</p>
+<p style="margin: 14px 0 0">That's why I started Mane Man. A more private, straightforward way to get your hair back, on your terms.</p>
+</sc-if>
+<sc-if value="{{founderShut}}" hint-placeholder-val="{{true}}"><button class="linkbtn" onClick="{{openFounder}}" style="margin: 12px 0 0; font-size: 16px; font-weight: 500; color: #16233A; text-decoration: underline">Read the full note</button></sc-if>
+<p style="margin: 18px 0 0; font-size: 16px"><span style="font-weight: 600; color: #16233A">Rishabh Gupta</span><br><span style="color: #5F6670">Founder, Mane Man</span></p>
+</div>
+</div>
+</section>
+
+<section id="faq" class="sec band">
+<div class="wrap" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 96px">
+<div><h2 class="h2">Questions</h2><p class="lede">If yours isn't here, <a href="https://wa.me/919034572990">ask on WhatsApp</a>.</p></div>
+<div style="border-top: 1px solid #D9DCE1">
+<sc-for list="{{faqs}}" as="f" hint-placeholder-count="10">
+<div style="border-bottom: 1px solid #D9DCE1">
+<button class="faqq" aria-expanded="{{f.open}}" onClick="{{f.toggle}}" style="display: flex; width: 100%; align-items: center; gap: 16px; min-height: 64px; padding: 16px 0; font-size: 18px; font-weight: 500"><span style="flex: 1">{{f.q}}</span><span style="font-size: 24px; font-weight: 400; color: #16233A; width: 20px; text-align: center">{{f.sign}}</span></button>
+<sc-if value="{{f.open}}" hint-placeholder-val="{{false}}"><p style="margin: 0; padding: 0 60px 20px 0; font-size: 16px; line-height: 1.6; color: #5F6670">{{f.a}}</p></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="background: #16233A; color: #FDFDFB; padding: 88px 0">
+<div class="wrap" style="display: flex; align-items: center; justify-content: space-between; gap: 40px">
+<p style="margin: 0; font-size: 34px; line-height: 1.2; font-weight: 600; letter-spacing: -.4px; max-width: 600px">The consultation takes 60 minutes and costs nothing.</p>
+<a class="btn btn-gold" href="LaptopBook.dc.html">Book a free consultation</a>
+</div>
+</section>
+
+<footer style="background: #16233A; border-top: 1px solid #33435F; color: #FDFDFB; padding: 72px 0 48px">
+<div class="wrap">
+<div style="display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: 40px">
+<div><img src="/_blob/b973a775e3f46aa5ea5548b5a149c5fd" alt="Mane Man" style="height: 40px; width: auto; display: block"><p style="margin: 20px 0 0; font-size: 24px; line-height: 1.35; max-width: 360px">A full head of hair, matched to your own. Fitted at home.</p>
+<p style="margin: 32px 0 0; font-size: 14px; font-weight: 600; color: #A9B2C1">Reach us</p><a class="flink" href="https://wa.me/919034572990" style="display: block; margin-top: 6px">WhatsApp · +91 90345 72990</a></div>
+<div style="display: flex; flex-direction: column; gap: 12px"><span style="font-size: 14px; font-weight: 600; color: #A9B2C1">Service</span><a class="flink" href="#what">What it is</a><a class="flink" href="#range">The range</a><a class="flink" href="LaptopTry.dc.html">Try-on</a><a class="flink" href="#faq">Questions</a></div>
+<div style="display: flex; flex-direction: column; gap: 12px"><span style="font-size: 14px; font-weight: 600; color: #A9B2C1">Learn</span><a class="flink" href="LaptopGuides.dc.html">Guides</a></div>
+</div>
+<div style="margin: 56px 0 0; padding: 24px 0 0; border-top: 1px solid #33435F; display: flex; flex-wrap: wrap; gap: 12px 24px; font-size: 14px"><span style="color: #A9B2C1">© 2026 Mane Man Private Limited</span><a class="flink" style="font-size: 14px" href="LaptopPrivacy.dc.html">Privacy</a><a class="flink" style="font-size: 14px" href="LaptopTerms.dc.html">Terms</a><a class="flink" style="font-size: 14px" href="LaptopAftercare.dc.html">Aftercare</a><a class="flink" style="font-size: 14px" href="LaptopOfferTerms.dc.html">Offer terms</a><span style="flex: 1"></span><span style="color: #A9B2C1">Delhi NCR · home service only</span></div>
+</div>
+</footer>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  vid() { try { return (this.root && this.root.querySelector ? this.root : document).querySelector('[data-hero-video]'); } catch (e) { return null; } }
+  film(on) { const v = this.vid(); if (!v) return; if (on) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } else v.pause(); }
+  componentDidMount() { let rm = false; try { rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {} if (rm) { this.setState({ paused: true, phrase: 4 }); setTimeout(() => this.film(false), 0); } this.iv = setInterval(() => { const st = this.state || {}; if (!st.paused) this.setState({ phrase: ((st.phrase || 0) + 1) % 5 }); }, 3200); }
+  componentWillUnmount() { clearInterval(this.iv); }
+  renderVals() {
+    const s = Object.assign({ phrase: 0, paused: false, resPos: 50, tryPos: 50, res: 0, faq: 0 }, this.state || {});
+    const set = (o) => this.setState(o);
+    const rows = [
+      ['Cost', 'Rs. 1.2–3 lakh, very often repeated', 'Rs. 20,000–50,000 a year, for life', 'Quoted free, before anything is fitted'],
+      ['Visible result', '9–12 months', '6–9 months', 'The same day'],
+      ['Covers advanced loss', 'No', 'No', 'Yes'],
+      ['No surgery', 'No', 'Yes', 'Yes'],
+      ['Side effects', 'Surgical risks', 'Long-term side effects', 'Nothing implanted or swallowed'],
+      ['Reversible', 'No', 'Yes', 'Yes'],
+      ['Upkeep', 'Loss carries on; repeats are common', 'Daily, for life', 'A service visit every 2 to 4 weeks']
+    ];
+    const R = [
+      ['Made for', 'Everyday wear', 'The gym and sport', 'A visible parting', 'A close look'],
+      ['Base', 'Fine mono', 'French lace', 'Silk over lace', 'Thin skin'],
+      ['Hairline', 'Good', 'Very good', 'Very good', 'Best'],
+      ['Breathes', 'Moderate', 'Highest', 'Moderate', 'Low'],
+      ['Lasts', '8 months', '6 months', '6 months', '4 months'],
+      ['Service visit', 'Monthly', 'Monthly', 'Monthly', 'Twice a month']
+    ];
+    const F = [
+      ['Will anyone be able to tell?', 'Not at conversational distance. The hairline is where it is won or lost, and every hair system we fit has a lace front that melts into the skin. Under a shower, or with a hand run back through the hair, someone could tell.'],
+      ['How long does a hair system last?', 'Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every two to four weeks keeps it at its best.'],
+      ['What happens at a service visit?', 'The technician lifts the hair system, cleans the adhesive off the base and your scalp, checks the knots, re-bonds it and trims the hair to match your own growth. About 60 minutes, at your home.'],
+      ['Can I swim, shower and exercise with it?', 'Yes to all three. Chlorine and sea salt shorten the life of the base, so rinse it in fresh water afterwards. Heavy sweating is fine.'],
+      ['Does it damage the hair I still have?', 'The base sits on skin, not on hair, and the perimeter is bonded to areas where you have little or none. Hair under the base is trimmed short rather than shaved.'],
+      ['How do you match the colour and the hairline?', 'Colour is matched against forty samples in daylight at the consultation, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed with you before anything is fitted.'],
+      ["What if I don't like it?", "Say so before it's fitted and you pay nothing. Once it's fitted: if the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full."],
+      ['Which cities do you cover?', "We're in Delhi, Gurgaon, Noida, Faridabad and Ghaziabad, by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are."],
+      ['What does it cost?', 'It depends on the hair system you choose. Your technician quotes it at the free consultation, before anything is fitted. No deposit, no package.'],
+      ['Is this the same thing as a wig?', 'No. A wig sits on the whole head, is held by tension or clips, and comes off at night. This is bonded to the skin over the area you have lost, is cut to your face, and stays on for weeks at a time.']
+    ];
+    return {
+      resPos: s.resPos, tryPos: s.tryPos,
+      onRes: (e) => set({ resPos: +e.target.value }), onTry: (e) => set({ tryPos: +e.target.value }),
+      caption: ['Life-changing.', 'Ten years younger.', 'Head held high again.', 'Love it.'][s.res], pager: (s.res + 1) + ' of 4',
+      phrases: ['Natural up close.', '100% real human hair.', 'Fitted at home.', 'Confidence restored.', 'Be the Main Man again.'].map((t, i) => ({ t, op: i === s.phrase ? 1 : 0 })), pauseLabel: s.paused ? 'Play' : 'Pause', founderOpen: !!s.founder, founderShut: !s.founder, openFounder: () => set({ founder: true }), togglePause: () => { this.film(s.paused); set({ paused: !s.paused }); },
+      prevRes: () => set({ res: (s.res + 3) % 4, resPos: 50 }), nextRes: () => set({ res: (s.res + 1) % 4, resPos: 50 }),
+      stages: [
+        { n: 'III', t: 'A clear M', s: 'We fit', img: '/_blob/a5492dcc8a58cdd102717ad0b2414525', alt: 'Stage III hair loss' },
+        { n: 'IV', t: 'Front and crown', s: 'We fit', img: '/_blob/bbab40e5c65579e47942dd15aba0f368', alt: 'Stage IV hair loss' },
+        { n: 'V', t: 'The bridge narrows', s: 'We fit', img: '/_blob/42bda878273d884f5adf41aa981869b5', alt: 'Stage V hair loss' },
+        { n: 'VI', t: 'The bridge is gone', s: 'We fit', img: '/_blob/83b08d225cf5f12f13718335d7d1a361', alt: 'Stage VI hair loss' },
+        { n: 'VII', t: 'A rim only', s: 'We fit', img: '/_blob/4a2ba88c85e96be053da77fbefde5362', alt: 'Stage VII hair loss' },
+        { n: 'After', t: 'From these to this in 90 minutes.', s: 'Illustration', img: '/_blob/a07b75b76ded983aa1ee549560968fe0', alt: 'Illustration of the same man fitted' }
+      ],
+      cmpRows: rows.map(r => ({ k: r[0], t: r[1], m: r[2], us: r[3] })),
+      rangeRows: R.map(r => ({ k: r[0], a: r[1], b: r[2], c: r[3], d: r[4] })),
+      steps: [
+        { n: '01', t: 'Consultation at home', b: 'Your scalp measured, your colour matched in daylight, and your hair system chosen with you. Then see how one looks on you, for real.', m: '60 minutes · free', img: '/_blob/639c2a63f11b7d0d6540cbeca2c04a5e', alt: 'A technician measuring a scalp' },
+        { n: '02', t: 'The first fit', b: 'The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Confidence, delivered.', m: '90 minutes · at your home', img: '/_blob/9163b1cbe05919d0f57a68586e3af776', alt: 'A client after the first fit' },
+        { n: '03', t: 'Regular service visits', b: 'Every month, or every two weeks on Celebrity: lifted, cleaned, re-bonded and trimmed to your own growth.', m: '60 minutes · at your home', img: '/_blob/f4b4d4e26ae533e08364cff24ae8a856', alt: "The technician's tool roll" }
+      ],
+      faqs: F.map((f, i) => ({ q: f[0], a: f[1], open: s.faq === i, sign: s.faq === i ? '−' : '+', toggle: () => set({ faq: s.faq === i ? -1 : i }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

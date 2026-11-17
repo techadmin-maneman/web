@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Book a free consultation on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16233A}a:hover{color:#1F2E49}
+.mm *{box-sizing:border-box}
+.mm{font-family:"IBM Plex Sans",Arial,sans-serif;color:#1F2328;-webkit-font-smoothing:antialiased;font-size:16px;line-height:1.5}
+.mm button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.mm input{font:inherit;color:inherit}
+.mm .btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;font-weight:600;font-size:16px;line-height:1;text-decoration:none;text-align:center;border:0}
+.mm .btn-primary{background:#16233A;color:#FDFDFB}.mm .btn-primary:hover{background:#1F2E49;color:#FDFDFB}
+.mm .btn-primary:disabled{background:#B4BAC3;cursor:not-allowed}
+.mm .btn-secondary{background:transparent;color:#16233A;border:1px solid #16233A}
+.mm .btn-gold{background:#C9A363;color:#16233A}
+.mm .btn-onnavy{background:transparent;color:#FDFDFB;border:1px solid rgba(253,253,251,.5);height:46px;font-size:14px;padding:0 14px}
+.mm .btn-ghost{height:44px;color:#FDFDFB;font-weight:600;font-size:15px;text-decoration:none;display:flex;align-items:center;justify-content:center}
+.mm .icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;color:#16233A;text-decoration:none}
+.mm .title{font-weight:600;letter-spacing:-.3px;margin:4px 0 6px;color:#16233A}
+.mm .lede{color:#5F6670;margin:0 0 14px}
+.mm .xs{font-size:13px;line-height:1.4;color:#5F6670}
+.mm .step{font-size:14px;font-weight:600;color:#5F6670;margin:0 0 6px}
+.mm .field{display:flex;flex-direction:column;gap:6px;margin:0 0 16px}
+.mm .field label{font-size:14px;font-weight:500}
+.mm .input{height:52px;border:1px solid #B4BAC3;padding:0 14px;background:#fff;width:100%;font-size:16px;border-radius:0}
+.mm .input:focus{outline:2px solid #16233A;outline-offset:-1px;border-color:#16233A}
+.mm .input.err{border-color:#A3361F}
+.mm .ro{height:52px;display:flex;align-items:center;font-size:16px}
+.mm .ferr{font-size:13px;color:#A3361F}
+.mm .phone{display:flex;border:1px solid #B4BAC3;height:52px;background:#fff}
+.mm .phone.err{border-color:#A3361F}
+.mm .phone:focus-within{outline:2px solid #16233A;outline-offset:-1px}
+.mm .phone span{display:flex;align-items:center;padding:0 14px;border-right:1px solid #D9DCE1;color:#5F6670}
+.mm .phone input{border:0;outline:0;flex:1;padding:0 14px;font-size:17px;background:transparent;min-width:0}
+.mm .stepbar{display:flex;gap:4px;margin:6px 0 18px}
+.mm .stepbar i{flex:1;height:3px;background:#E8EAED}
+.mm .stepbar i.on{background:#16233A}
+.mm .choice{display:flex;gap:14px;align-items:center;width:100%;padding:16px;border:1px solid #D9DCE1;margin:0 0 10px;background:#FDFDFB;font-weight:500}
+.mm .choice[aria-checked="true"]{border-color:#16233A;box-shadow:inset 0 0 0 1px #16233A}
+.mm .radio{width:20px;height:20px;border-radius:50%;border:1.5px solid #B4BAC3;flex:none;display:flex;align-items:center;justify-content:center}
+.mm [aria-checked="true"] .radio{border-color:#16233A}
+.mm [aria-checked="true"] .radio::after{content:"";width:10px;height:10px;border-radius:50%;background:#16233A}
+.mm .date{border:1px solid #D9DCE1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center}
+.mm .date .d{font-size:12px;color:#5F6670}
+.mm .date .n{font-size:20px;font-weight:600;line-height:1.2}
+.mm .date .a{font-size:10.5px;color:#5F6670}
+.mm .date[aria-pressed="true"]{background:#16233A;border-color:#16233A;color:#fff}
+.mm .date[aria-pressed="true"] .d{color:#A9B2C1}
+.mm .date:disabled{background:#E8EAED;border-color:#E8EAED;color:#B4BAC3;cursor:not-allowed}
+.mm .date:disabled .d,.mm .date:disabled .a{color:#B4BAC3}
+.mm .slot{height:46px;border:1px solid #D9DCE1;text-align:center;font-weight:500;font-size:15px;font-variant-numeric:tabular-nums}
+.mm .slot[aria-pressed="true"]{background:#16233A;border-color:#16233A;color:#fff}
+.mm .slot:disabled{color:#B4BAC3;text-decoration:line-through;cursor:not-allowed;border-color:#E8EAED}
+.mm .slot-h{font-size:14px;font-weight:600;margin:20px 0 8px}
+.mm .banner{display:flex;gap:12px;align-items:center;padding:14px 16px;background:#16233A;color:#FDFDFB;font-weight:600;margin:0 0 18px}
+.mm .notice{display:flex;gap:12px;padding:14px 16px;font-size:14px;line-height:1.45;margin:0 0 16px}
+.mm .notice.err{background:#FBF1EE;color:#6B2414}
+.mm .ck{display:flex;gap:12px;align-items:flex-start;width:100%;padding:10px 0 4px;font-size:15px}
+.mm .ck .bx{width:22px;height:22px;border:1.5px solid #B4BAC3;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;margin-top:1px}
+.mm .ck[aria-checked="true"] .bx{background:#16233A;border-color:#16233A}
+.mm .ck.err .bx{border-color:#A3361F}
+.mm .otp{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:8px 0 8px;max-width:420px}
+.mm .otp div{height:58px;border:1px solid #B4BAC3;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;background:#fff}
+.mm .otp div.cur{border-color:#16233A;box-shadow:inset 0 0 0 1px #16233A}
+.mm .otp input{position:absolute;inset:0;opacity:0;width:100%;font-size:16px}
+.mm .sugg{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:12px 14px;border-bottom:1px solid #D9DCE1;background:#fff}
+.mm .sugg:hover{background:#F1F3F6}
+.mm .check{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;border:2px solid #C9A363;color:#C9A363;margin:0 0 20px}
+.mm .linkbtn{color:#16233A;font-weight:500;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.mm .how li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:4px;padding:14px 0;border-bottom:1px solid #D9DCE1}
+.mm :focus-visible{outline:2px solid #B98B45;outline-offset:2px}
+
+.mm .btn{width:100%}
+.mm .top{display:flex;align-items:center;gap:4px;min-height:56px;padding:6px 6px 0}
+.mm .top h1{font-size:17px;font-weight:600;margin:0;flex:1}
+.mm .pad{padding:0 20px}
+.mm .title{font-size:26px;line-height:1.18}
+.mm .lede{font-size:15px}
+.mm .dates{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.mm .date{height:62px}
+.mm .slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mm .footer-cta{flex:none;padding:12px 20px 16px;border-top:1px solid #D9DCE1;background:#FDFDFB}
+</style>
+</helmet>
+<div class="mm" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FDFDFB; display: flex; flex-direction: column">
+<sc-if value="{{inFlow}}" hint-placeholder-val="{{true}}">
+<div class="top">
+<sc-if value="{{canBack}}" hint-placeholder-val="{{false}}"><button class="icon-btn" aria-label="Back" onClick="{{back}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></button></sc-if>
+<sc-if value="{{noBack}}" hint-placeholder-val="{{true}}"><span style="width: 14px"></span></sc-if>
+<h1>Free consultation</h1>
+<a class="icon-btn" href="Main.dc.html" aria-label="Back to the site"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></a>
+</div>
+<div class="stepbar" style="padding: 0 20px" aria-label="{{stepLabel}}"><i class="{{b1}}"></i><i class="{{b2}}"></i><i class="{{b3}}"></i><i class="{{b4}}"></i></div>
+</sc-if>
+<sc-if value="{{isYou}}" hint-placeholder-val="{{true}}"><div style="flex: 1; overflow-y: auto"><div class="pad"><h2 class="title">{{pageTitle}}</h2>
+<p class="lede" style="margin-bottom: 20px">60 minutes at your home, completely free.</p>
+<div class="field"><label for="nm">Name</label><input id="nm" class="{{nameCls}}" autocomplete="name" value="{{name}}" onChange="{{onName}}"><sc-if value="{{nameErr}}" hint-placeholder-val="{{false}}"><span class="ferr">Enter your name.</span></sc-if></div>
+<div class="field"><label for="mob">Mobile</label><div class="{{mobCls}}"><span>+91</span><input id="mob" inputmode="numeric" autocomplete="tel-national" maxlength="10" value="{{mobile}}" onChange="{{onMobile}}"></div><sc-if value="{{mobErr}}" hint-placeholder-val="{{false}}"><span class="ferr">Enter a valid 10-digit mobile number.</span></sc-if></div>
+<button class="ck" role="checkbox" aria-checked="{{wa}}" onClick="{{toggleWa}}"><span class="bx"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.5 5 5 10-11"></path></svg></span><span>Send my booking confirmation and updates via WhatsApp. <a href="PhoneNotices.dc.html">Details</a></span></button>
+<button class="{{termsCls}}" role="checkbox" aria-checked="{{terms}}" onClick="{{toggleTerms}}"><span class="bx"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.5 5 5 10-11"></path></svg></span><span>I agree to the <a href="PhoneTerms.dc.html">Terms and Conditions</a> and the <a href="PhonePrivacy.dc.html">Privacy Policy</a>.</span></button>
+<div style="padding-left: 34px"><sc-if value="{{termsErr}}" hint-placeholder-val="{{false}}"><span class="ferr">Agree to the Terms and the Privacy Policy to book.</span></sc-if></div>
+<sc-if value="{{youErr}}" hint-placeholder-val="{{false}}"><p role="alert" class="ferr" style="margin: 14px 0 0; font-size: 14px">{{youErrText}}</p></sc-if><div style="margin: 28px 0 24px; border-top: 1px solid #D9DCE1"><button class="linkbtn" aria-expanded="{{howOpen}}" onClick="{{toggleHow}}" style="display: flex; width: 100%; justify-content: space-between; align-items: center; min-height: 52px; font-size: 15px; font-weight: 600; color: #16233A; text-decoration: none"><span>How it works</span><span style="font-size: 20px; font-weight: 400">{{howSign}}</span></button><sc-if value="{{howOpen}}" hint-placeholder-val="{{false}}"><ol class="how" style="list-style: none; margin: 0; padding: 0; border-top: 1px solid #D9DCE1">
+<li><span style="color: #5F6670">1</span><div><div style="font-weight: 600">Consultation at home</div><div>60 minutes. Completely confidential.</div><div class="xs" style="font-size: 14px">We map your scalp, match your exact hair texture and tone, and let you feel the hair in person. Zero obligation, zero cost.</div></div></li>
+<li><span style="color: #5F6670">2</span><div><div style="font-weight: 600">The first fit</div><div>90 minutes. Real-time transformation. Be the Main Man again.</div><div class="xs" style="font-size: 14px">Crafted, cut, blended and styled right in your living room. Look in the mirror and walk out with seamless, natural-looking hair.</div></div></li>
+<li><span style="color: #5F6670">3</span><div><div style="font-weight: 600">Regular service visits</div><div>No trips to the salon. We come to you.</div><div class="xs" style="font-size: 14px">A tune-up every month, or every two weeks on Celebrity, to keep you looking sharp.</div></div></li>
+</ol></sc-if></div></div></div><div class="footer-cta"><button class="btn btn-primary" onClick="{{toArea2}}">Book your free consultation <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></div></sc-if><sc-if value="{{isArea}}" hint-placeholder-val="{{false}}"><div style="flex: 1; overflow-y: auto"><div class="pad">
+<p style="margin: 0 0 16px; font-size: 15px">For {{whoName}}, +91 {{mobileFmt}} · <button class="linkbtn" onClick="{{toYou}}">Change</button></p>
+
+<h3 style="margin: 0 0 10px; font-size: 20px; font-weight: 600; color: #16233A">Do we come to you?</h3>
+<label for="pin" style="font-size: 14px; font-weight: 500; display: block; margin: 0 0 6px">Pincode</label>
+<div style="display: flex; gap: 8px; max-width: 420px"><input id="pin" class="{{pinCls}}" inputmode="numeric" autocomplete="postal-code" maxlength="6" value="{{pin}}" onChange="{{onPin}}" style="flex: 1"><button class="btn btn-primary" style="width: auto; padding: 0 22px" onClick="{{checkPin}}">Check</button></div>
+<div style="margin-top: 6px"><sc-if value="{{pinEmpty}}" hint-placeholder-val="{{false}}"><span class="ferr">Enter your pincode.</span></sc-if><sc-if value="{{pinBad}}" hint-placeholder-val="{{false}}"><span class="ferr">That isn’t a 6-digit Indian pincode.</span></sc-if></div>
+<p class="xs" style="margin: 14px 0 0">Prototype: 122018 is served, 400050 is not.</p><div style="height: 24px"></div></div></div></sc-if><sc-if value="{{isVisit}}" hint-placeholder-val="{{false}}"><div style="flex: 1; overflow-y: auto"><div class="pad">
+
+<div class="banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A363" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.5 5 5 10-11"></path></svg><span style="flex: 1">We come to Sector 65, {{pin}}</span><button class="linkbtn" style="color: #FDFDFB" onClick="{{toArea}}">Change</button></div>
+
+
+<div role="radiogroup" aria-label="What to book" style="">
+<button class="choice" role="radio" aria-checked="{{isConsult}}" onClick="{{pickConsult}}"><span class="radio"></span><span>Consultation · 60 minutes</span></button>
+<button class="choice" role="radio" aria-checked="{{isFit}}" onClick="{{pickFit}}"><span class="radio"></span><span>Consultation and fit · 2.5 hours</span></button>
+</div>
+<sc-if value="{{isFit}}" hint-placeholder-val="{{false}}"><p style="margin: 0 0 8px; font-size: 15px; color: #5F6670">Pay by UPI once fitted. Decide against it and you pay nothing.</p></sc-if>
+<p style="margin: 18px 0 4px; font-size: 14px; font-weight: 600">Pick a date</p>
+<p style="margin: 0 0 8px; font-size: 15px">October</p>
+<div class="dates" role="group" aria-label="Day"><sc-for list="{{days}}" as="d" hint-placeholder-count="14"><button class="date" aria-pressed="{{d.on}}" disabled="{{d.full}}" onClick="{{d.pick}}" aria-label="{{d.aria}}"><span class="d">{{d.wd}}</span><span class="n">{{d.n}}</span><span class="a">{{d.left}}</span></button></sc-for></div>
+<p style="margin: 22px 0 0; font-size: 14px; font-weight: 600">Time</p>
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div class="slot-h">{{g.name}}</div>
+<div class="slots"><sc-for list="{{g.slots}}" as="t" hint-placeholder-count="6"><button class="slot" aria-pressed="{{t.on}}" disabled="{{t.taken}}" onClick="{{t.pick}}" aria-label="{{t.aria}}">{{t.label}}</button></sc-for></div>
+</sc-for><div style="height: 24px"></div></div></div><div class="footer-cta"><button class="btn btn-primary" disabled="{{noSlot}}" onClick="{{toAddress}}">Continue</button></div></sc-if><sc-if value="{{isAddress}}" hint-placeholder-val="{{false}}"><div style="flex: 1; overflow-y: auto"><div class="pad">
+
+
+
+<div class="field"><label for="bq">Search for your building</label><input id="bq" class="input" value="{{bq}}" onChange="{{onBq}}" autocomplete="off">
+<sc-if value="{{showSugg}}" hint-placeholder-val="{{false}}"><div style="border: 1px solid #D9DCE1; border-top: 0"><sc-for list="{{sugg}}" as="s" hint-placeholder-count="3"><button class="sugg" onClick="{{s.pick}}"><span style="font-weight: 500">{{s.t}}</span><span class="xs">{{s.s}}</span></button></sc-for><div class="xs" style="padding: 6px 14px; text-align: right">Google Maps</div></div></sc-if>
+</div>
+<div class="field"><label for="flat">Flat or house number</label><input id="flat" class="{{flatCls}}" value="{{flat}}" onChange="{{onFlat}}"><sc-if value="{{flatErr}}" hint-placeholder-val="{{false}}"><span class="ferr">Enter the flat or house number.</span></sc-if></div>
+<sc-if value="{{moreAddr}}" hint-placeholder-val="{{false}}"><div class="field"><label for="fl">Floor (optional)</label><input id="fl" class="input" value="{{floor}}" onChange="{{onFloor}}"></div><div class="field"><label for="tw">Tower or block (optional)</label><input id="tw" class="input" value="{{tower}}" onChange="{{onTower}}"></div></sc-if>
+<sc-if value="{{lessAddr}}" hint-placeholder-val="{{true}}"><button class="linkbtn" style="font-size: 15px; margin: 0 0 16px" onClick="{{openMore}}">Add floor, tower or landmark</button></sc-if>
+<div class="field"><label for="bld">Building, society or street</label><input id="bld" class="{{bldCls}}" value="{{bld}}" onChange="{{onBld}}"><sc-if value="{{bldErr}}" hint-placeholder-val="{{false}}"><span class="ferr">Enter the building, society or street.</span></sc-if></div>
+<div class="field"><label for="st">Street (optional)</label><input id="st" class="input" value="{{street}}" onChange="{{onStreet}}"></div><sc-if value="{{moreAddr}}" hint-placeholder-val="{{false}}"><div class="field"><label for="lm">Landmark (optional)</label><input id="lm" class="input" value="{{landmark}}" onChange="{{onLandmark}}"></div></sc-if>
+<div class="field"><label for="sec">Sector or area</label><input id="sec" class="input" value="{{sector}}" onChange="{{onSector}}"></div><div class="field"><label for="city">City</label><input id="city" class="input" value="{{city}}" onChange="{{onCity}}"></div>
+<div class="field"><label>Pincode</label><div class="ro">{{pin}}</div></div>
+<div class="field"><label for="acc">Access notes (optional)</label><input id="acc" class="input" value="{{notes}}" onChange="{{onNotes}}"></div>
+<sc-if value="{{isFit}}" hint-placeholder-val="{{false}}"><div class="field"><label for="dc">Discount code (optional)</label><input id="dc" class="input" value="{{dcode}}" onChange="{{onDcode}}"><span class="xs"><a href="PhoneOfferTerms.dc.html">Offer terms</a></span></div></sc-if>
+<sc-if value="{{codeSent}}" hint-placeholder-val="{{false}}">
+<div class="field" style="margin-top: 8px"><label>WhatsApp code</label>
+<div class="otp"><sc-for list="{{cells}}" as="c" hint-placeholder-count="6"><div class="{{c.cls}}">{{c.v}}</div></sc-for><input inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="{{code}}" onChange="{{onCode}}" aria-label="WhatsApp code"></div>
+<span class="xs">Sent on WhatsApp to +91 {{mobileFmt}}.</span>
+<button class="linkbtn" style="font-size: 15px; margin-top: 6px; align-self: flex-start" onClick="{{resend}}">Send a new code</button>
+<span class="xs">Prototype: any 6 digits work.</span></div>
+</sc-if><div style="height: 24px"></div></div></div><div class="footer-cta"><sc-if value="{{codeNotSent}}" hint-placeholder-val="{{true}}"><button class="btn btn-primary" onClick="{{sendCode}}">Book the consultation</button></sc-if><sc-if value="{{codeSent}}" hint-placeholder-val="{{false}}"><button class="btn btn-primary" disabled="{{codeShort}}" onClick="{{confirm}}">Confirm and book</button></sc-if></div></sc-if><sc-if value="{{isNotServed}}" hint-placeholder-val="{{false}}"><div style="flex: 1; overflow-y: auto"><div class="pad"><h2 class="title">Not in your area yet</h2>
+<p style="margin: 0 0 16px; font-size: 15px">For {{whoName}}, +91 {{mobileFmt}} · <button class="linkbtn" onClick="{{toYou}}">Change</button></p>
+<div style="padding: 14px 16px; background: #16233A; color: #FDFDFB; margin: 0 0 18px"><div style="font-weight: 600">We’re not in Bandra yet</div><div style="color: #A9B2C1; font-size: 14px">Delhi NCR only, for now.</div></div>
+
+<h3 style="margin: 0 0 6px; font-size: 20px; font-weight: 600; color: #16233A">Join the list</h3>
+<p style="margin: 0 0 8px; font-size: 15px">For 400050, Bandra · <button class="linkbtn" onClick="{{toArea}}">Change</button></p>
+<button class="{{contactCls}}" role="checkbox" aria-checked="{{contact}}" onClick="{{toggleContact}}"><span class="bx"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.5 5 5 10-11"></path></svg></span><span>You may contact me about this request. <a href="PhoneNotices.dc.html">Details</a> <span class="xs">Required</span></span></button>
+<div style="padding-left: 34px"><sc-if value="{{contactErr}}" hint-placeholder-val="{{false}}"><span class="ferr">We need this to contact you.</span></sc-if><p class="xs" style="margin: 2px 0 0">Our <a href="PhoneTerms.dc.html">Terms</a> and <a href="PhonePrivacy.dc.html">Privacy Notice</a> apply.</p></div>
+<button class="ck" role="checkbox" aria-checked="{{launch}}" onClick="{{toggleLaunch}}"><span class="bx"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.5 5 5 10-11"></path></svg></span><span>Tell me when you launch in my area. <a href="PhoneNotices.dc.html">Details</a> <span class="xs">Optional</span></span></button><div style="height: 24px"></div></div></div><div class="footer-cta"><button class="btn btn-primary" onClick="{{joinList}}">Add me to the list</button></div></sc-if><sc-if value="{{isListed}}" hint-placeholder-val="{{false}}"><div style="flex: 1; overflow-y: auto"><div class="pad"><div class="check" style="border-color: #16233A; color: #16233A"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.5 5 5 10-11"></path></svg></div>
+<div style="color: #5F6670; font-size: 14px; font-weight: 600">On the list</div>
+<h2 class="title">You are on the Bandra list</h2>
+<p class="lede">We’ll message you on WhatsApp when we start coming to 400050.</p><div style="height: 24px"></div></div></div><div class="footer-cta"><a class="btn btn-primary" href="PhoneTry.dc.html">Try a new look</a><a class="btn btn-secondary" href="Main.dc.html" style="margin-top: 10px">Back to the site</a></div></sc-if>
+<sc-if value="{{isDone}}" hint-placeholder-val="{{false}}">
+<div style="flex: 1; display: flex; flex-direction: column; background: #16233A; color: #FDFDFB">
+<div style="flex: 1; overflow-y: auto; padding: 72px 20px 24px"><div class="check"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 12.5 5 5 10-11"></path></svg></div>
+<div style="color: #A9B2C1; font-size: 14px; font-weight: 600">Booked</div>
+<h2 style="font-size: 30px; font-weight: 600; line-height: 1.15; margin: 6px 0 14px">{{doneWhen}}</h2>
+<p style="color: #FDFDFB; font-size: 15px; margin: 0 0 10px">Details are on WhatsApp at +91 {{mobileFmt}}.</p>
+<p style="color: #FDFDFB; font-size: 15px; margin: 0 0 22px">{{doneLine}}</p>
+<p style="color: #A9B2C1; font-size: 13px; font-weight: 600; margin: 0 0 8px">Add to your calendar</p>
+<div style="display: flex; gap: 10px"><a class="btn btn-onnavy" href="{{gcal}}">Google Calendar</a><a class="btn btn-onnavy" href="{{outlook}}">Apple or Outlook</a></div>
+</div>
+<div style="padding: 12px 20px 16px; border-top: 1px solid #33435F"><a class="btn btn-gold" href="https://claude.ai/artifact/R3jhpuNxKkZxi6YBExSQk3">Open the app</a><a class="btn-ghost" href="Main.dc.html" style="margin-top: 4px">Back to the site</a></div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = Object.assign({ step: 'you', name: '', mobile: '', wa: true, terms: false, triedYou: false, pin: '', pinErr: '', kind: 'consult', day: null, slot: null,
+      bq: '', flat: '', floor: '', tower: '', bld: '', street: '', landmark: '', sector: '', city: 'Gurgaon', notes: '', dcode: '', more: false, triedAddr: false,
+      codeSent: false, code: '', contact: false, launch: false, triedList: false, calG: false, calA: false, howOpen: false }, this.state || {});
+    const set = (o) => this.setState(o);
+    const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], WDL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const tm = (m) => { const h = Math.floor(m / 60), mi = m % 60, hh = ((h + 11) % 12) + 1; return hh + (mi ? ':' + String(mi).padStart(2, '0') : '') + ' ' + (h < 12 ? 'am' : 'pm'); };
+    const tmR = (m) => { const a = tm(m), b = tm(m + 30); return a.split(' ')[1] === b.split(' ')[1] ? a.split(' ')[0] + '–' + b : a + '–' + b; };
+    const fit = s.kind === 'fit';
+    const all = (i) => { const out = []; for (let m = 540; m <= 1140; m += 30) { if (fit && m > 900) continue; const h = (i * 7 + Math.round(m / 30) * 3) % 5; out.push({ m, open: h !== 0 && h !== 3 && !(i === 0 && m < 720) }); } return out; };
+    const days = []; for (let i = 0; i < 14; i++) { const n = 3 + i, wd = (6 + i) % 7; const full = i % 6 === 4; days.push({ i, n, wd, full: full || !all(i).some(o => o.open) }); }
+    const firstOpen = days.find(d => !d.full);
+    const day = s.day === null ? firstOpen.i : s.day; const dd = days[day];
+    const grp = [['Morning', o => o.m < 720], ['Afternoon', o => o.m >= 720 && o.m < 960], ['Evening', o => o.m >= 960]];
+    const groups = grp.map(([name, f]) => ({ name, slots: all(day).filter(f).map(o => ({ label: tm(o.m), on: s.slot === o.m, taken: !o.open, aria: tm(o.m) + (o.open ? '' : ', taken'), pick: () => set({ slot: o.m }) })) })).filter(g => g.slots.length);
+    const eName = !s.name.trim(), eMob = s.mobile.length !== 10, eTerms = !s.terms;
+    const nYou = [eName, eMob, eTerms].filter(Boolean).length;
+    const eFlat = !s.flat.trim(), eBld = !s.bld.trim();
+    const stepN = { you: 1, area: 2, visit: 3, address: 4, nots: 3 }[s.step] || 4;
+    const bars = [1, 2, 3, 4].map(n => n <= stepN ? 'on' : '');
+    const SUG = [['Palm Grove Society', 'Sector 65, Gurgaon, Haryana', 'Sector 65'], ['Palm Springs', 'Golf Course Road, Sector 54, Gurgaon, Haryana', 'Sector 54'], ['Palm Terraces Select', 'Sector 66, Gurgaon, Haryana', 'Sector 66']];
+    const mf = s.mobile.length === 10 ? s.mobile.slice(0, 5) + ' ' + s.mobile.slice(5) : (s.mobile || '98100 00000');
+    const v = (k) => (e) => set({ [k]: e.target.value });
+    return {
+      howOpen: !!s.howOpen, howSign: s.howOpen ? '−' : '+', toggleHow: () => set({ howOpen: !s.howOpen }),
+      pageTitle: fit ? 'Book a consultation and fit' : 'Meet your hair again. Completely private, right at home.',
+      inFlow: ['you', 'area', 'visit', 'address', 'nots', 'listed'].includes(s.step), canBack: ['area', 'visit', 'address', 'nots'].includes(s.step), noBack: !['area', 'visit', 'address', 'nots'].includes(s.step),
+      back: () => set({ step: { area: 'you', visit: 'area', address: 'visit', nots: 'area' }[s.step] }),
+      stepLabel: 'Step ' + stepN + ' of 4', b1: bars[0], b2: bars[1], b3: bars[2], b4: bars[3],
+      isYou: s.step === 'you', isArea: s.step === 'area', isVisit: s.step === 'visit', isAddress: s.step === 'address', isDone: s.step === 'done', isNotServed: s.step === 'nots', isListed: s.step === 'listed',
+      name: s.name, onName: v('name'), nameErr: s.triedYou && eName, nameCls: s.triedYou && eName ? 'input err' : 'input',
+      mobile: s.mobile, onMobile: (e) => set({ mobile: e.target.value.replace(/\D/g, '').slice(0, 10) }), mobErr: s.triedYou && eMob, mobCls: s.triedYou && eMob ? 'phone err' : 'phone',
+      wa: s.wa, toggleWa: () => set({ wa: !s.wa }), terms: s.terms, toggleTerms: () => set({ terms: !s.terms }), termsErr: s.triedYou && eTerms, termsCls: s.triedYou && eTerms ? 'ck err' : 'ck',
+      youErr: s.triedYou && nYou > 0, youErrText: 'Check the ' + nYou + (nYou === 1 ? ' field' : ' fields') + ' marked above.',
+      toArea2: () => { if (nYou) return set({ triedYou: true }); set({ step: 'area', triedYou: false }); },
+      toYou: () => set({ step: 'you' }), toArea: () => set({ step: 'area' }), mobileFmt: mf, whoName: s.name || 'Test Visitor',
+      pin: s.pin, onPin: (e) => set({ pin: e.target.value.replace(/\D/g, '').slice(0, 6), pinErr: '' }), pinEmpty: s.pinErr === 'empty', pinBad: s.pinErr === 'bad', pinCls: s.pinErr ? 'input err' : 'input',
+      checkPin: () => { if (!s.pin) return set({ pinErr: 'empty' }); if (s.pin.length !== 6) return set({ pinErr: 'bad' }); set({ step: s.pin.startsWith('4') ? 'nots' : 'visit', city: 'Gurgaon' }); },
+      isConsult: !fit, isFit: fit, pickConsult: () => set({ kind: 'consult', slot: null }), pickFit: () => set({ kind: 'fit', slot: null }),
+      days: days.map(d => ({ wd: WD[d.wd], n: d.n, left: d.full ? 'Full' : '', full: d.full, on: d.i === day, aria: WD[d.wd] + ' ' + d.n + ' October' + (d.full ? ', full' : ''), pick: () => set({ day: d.i, slot: null }) })),
+      groups, noSlot: s.slot === null, toAddress: () => set({ step: 'address' }),
+      bq: s.bq, onBq: (e) => set({ bq: e.target.value }), showSugg: s.bq.trim().length >= 2 && s.bq !== s.bld,
+      sugg: SUG.map(x => ({ t: x[0], s: x[1], pick: () => set({ bq: x[0], bld: x[0], sector: x[2] }) })),
+      flat: s.flat, onFlat: v('flat'), flatErr: s.triedAddr && eFlat, flatCls: s.triedAddr && eFlat ? 'input err' : 'input',
+      bld: s.bld, onBld: v('bld'), bldErr: s.triedAddr && eBld, bldCls: s.triedAddr && eBld ? 'input err' : 'input',
+      floor: s.floor, onFloor: v('floor'), tower: s.tower, onTower: v('tower'), street: s.street, onStreet: v('street'), landmark: s.landmark, onLandmark: v('landmark'),
+      sector: s.sector, onSector: v('sector'), city: s.city, onCity: v('city'), notes: s.notes, onNotes: v('notes'), dcode: s.dcode, onDcode: v('dcode'),
+      moreAddr: s.more, lessAddr: !s.more, openMore: () => set({ more: true }),
+      codeSent: s.codeSent, codeNotSent: !s.codeSent, sendCode: () => { if (eFlat || eBld) return set({ triedAddr: true }); set({ codeSent: true, code: '', triedAddr: false }); },
+      cells: [0, 1, 2, 3, 4, 5].map(i => ({ v: s.code[i] || '', cls: i === s.code.length ? 'cur' : '' })),
+      code: s.code, onCode: (e) => set({ code: e.target.value.replace(/\D/g, '').slice(0, 6) }), codeShort: s.code.length !== 6, resend: () => set({ code: '' }),
+      confirm: () => set({ step: 'done' }),
+      doneWhen: WDL[dd.wd] + ' ' + dd.n + ' October, ' + (s.slot === null ? '' : tmR(s.slot)),
+      doneLine: fit ? '2.5 hours at home. You pay by UPI at the visit, once fitted.' : '60 minutes at home, and free. Nothing is fitted.',
+      gcal: (() => { const st = s.slot === null ? 600 : s.slot, en = st + (fit ? 150 : 60), p = (m) => String(Math.floor(m / 60)).padStart(2, '0') + String(m % 60).padStart(2, '0') + '00', d = '202610' + String(dd.n).padStart(2, '0');
+        return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(fit ? 'Mane Man consultation and fit' : 'Mane Man home consultation') + '&dates=' + d + 'T' + p(st) + '/' + d + 'T' + p(en) + '&ctz=Asia/Kolkata&location=' + encodeURIComponent((s.flat || 'Flat 402') + ', ' + (s.bld || 'Palm Grove Society') + ', ' + (s.sector || 'Sector 65') + ', Gurgaon ' + (s.pin || '122018')); })(),
+      outlook: (() => { const st = s.slot === null ? 600 : s.slot, en = st + (fit ? 150 : 60), t = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0') + ':00', d = '2026-10-' + String(dd.n).padStart(2, '0');
+        return 'https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=' + encodeURIComponent(fit ? 'Mane Man consultation and fit' : 'Mane Man home consultation') + '&startdt=' + d + 'T' + t(st) + '%2B05:30&enddt=' + d + 'T' + t(en) + '%2B05:30'; })(),
+      contact: s.contact, toggleContact: () => set({ contact: !s.contact }), launch: s.launch, toggleLaunch: () => set({ launch: !s.launch }),
+      contactErr: s.triedList && !s.contact, contactCls: s.triedList && !s.contact ? 'ck err' : 'ck',
+      joinList: () => { if (!s.contact) return set({ triedList: true }); set({ step: 'listed' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>
