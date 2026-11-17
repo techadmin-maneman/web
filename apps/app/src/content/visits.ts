@@ -19,7 +19,7 @@ export const visits = {
   // A visit that is not this client's, or no longer exists.
   notFound: "We couldn’t find this visit.",
   // Offline, the visits are not kept on the phone.
-  offline: "Your visits will load when you are back online.",
+  offline: "Your visits will load when you’re back online.",
   cancelled: "Cancelled",
   notHome: "Missed visit",
   /** A visit nobody came to, in the history once its day is over, until ops close it. */
@@ -97,7 +97,7 @@ export const visits = {
       charge: "Missed-visit charge",
       yourDispute: "Your dispute",
       decision: {
-        undecided: "We are looking at it. Nothing is charged until we have.",
+        undecided: "We’re looking at it. Nothing is charged until we have.",
         charged: "Charged",
         waived: "Not charged",
       },
@@ -110,7 +110,7 @@ export const visits = {
       /** Where the button stood, once the days to dispute have passed. */
       disputeClosed: (day: string) => `The days to dispute this charge ended on ${day}.`,
       disputed: {
-        open: "You disputed this charge. We are looking at it.",
+        open: "You disputed this charge. We’re looking at it.",
         refunded: "We looked at your dispute and refunded the charge.",
         upheld: "We looked at your dispute. The charge stands.",
       },

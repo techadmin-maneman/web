@@ -61,7 +61,7 @@ export const ALERTS: Readonly<Record<string, AlertWords | undefined>> = {
   },
   friend_credited: { title: "Free service visits added", line: "They’re applied when you book.", page: "/rewards" },
   referral_rejected: { title: "About your invite", line: "See Rewards for why.", page: "/rewards" },
-  credits_expiring: { title: "Free visits ending soon", line: "Use them before they end.", page: "/rewards" },
+  credits_expiring: { title: "Free service visits ending soon", line: "Use them before they end.", page: "/rewards" },
   launch_alert: { title: "We’re in your city", line: "Book a free consultation.", page: "/" },
   deletion_rejected: { title: "About your deletion request", line: "See Account for why.", page: "/profile/account" },
   concern_received: {

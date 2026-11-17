@@ -10,11 +10,11 @@ included). **Done** means built, reviewed and merged.
 
 ### Sign in
 
-| Current                                                                                                 | New                                                       | State           |
-| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | --------------- |
-| 01 mobile number · 02 WhatsApp code                                                                     | Sign in (number), then the code screen with its countdown | Done, #881 #885 |
-| 03 number not recognised                                                                                | "No booking on this number?" with a free consultation     | Done, #881      |
-| code: SMS fallback, wrong / expired / limited / failed, session ended note, help, one-tap from the site | The same two screens, each refusal under its field        | Done, #881      |
+| Current                                                                                                 | New                                                        | State           |
+| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------- |
+| 01 mobile number · 02 WhatsApp code                                                                     | Sign in (number), then the code screen with its countdown  | Done, #881 #885 |
+| 03 number not recognised                                                                                | "No visit booked on this number?" with a free consultation | Done, #881      |
+| code: SMS fallback, wrong / expired / limited / failed, session ended note, help, one-tap from the site | The same two screens, each refusal under its field         | Done, #881      |
 
 ### Home
 

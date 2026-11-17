@@ -57,6 +57,13 @@ describe("the service worker’s files", () => {
     ]);
   });
 
+  it("keeps no source map, which the deploy deletes before the app ships", () => {
+    expect(precacheList(["index.html", "sw.js", "sw.js.map", "assets/index-a1.js", "assets/index-a1.js.map"])).toEqual([
+      "/",
+      "/assets/index-a1.js",
+    ]);
+  });
+
   it("keeps no font the app never draws with: the extended Latin subsets and the rupee", () => {
     const built = [
       "index.html",
