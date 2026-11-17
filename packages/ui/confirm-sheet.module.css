@@ -70,6 +70,11 @@
     gap: var(--sp-8);
   }
 
+  /* An answer that cannot be taken back, said in red on a control's quiet edge (`quietYes`). */
+  .paper .quietYes {
+    border-color: var(--outline-edge);
+  }
+
   .paper .yes,
   .paper .no {
     margin-top: 0;

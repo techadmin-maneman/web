@@ -6,17 +6,15 @@
 // in the app's words — the API answers a code and the fields behind it, never a
 // sentence (apps/tech/src/content.ts). A step the API refused can be put right
 // where it stands, a refused photograph set retaken; deleting the job's work asks
-// a second time, since what it deletes never reaches us. It is drawn in the new look
-// (docs/decisions/0246-closed-and-sent-back.md).
+// a second time, since what it deletes never reaches us. It is drawn as the prototype draws it, a row for each photo
+// set with where it stands, keeping every action it had (docs/decisions/0246-closed-and-sent-back.md, decision 9).
 
-import { APP_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
-import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
 import { CardFrame } from "../frame/CardFrame.tsx";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
-import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../content.ts";
+import { queue as copy, reference, whatStopped } from "../content.ts";
 import { jobLabel } from "../lib/kind.ts";
 import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
@@ -56,7 +54,7 @@ function Stopped(props: {
       )}
       <div className={styles.buttons}>
         {stopped.note === STUCK && (
-          <Button variant="outline" size="small" className={styles.button} onClick={() => void sendAgain(jobId)}>
+          <Button variant="primary" size="small" className={styles.button} onClick={() => void sendAgain(jobId)}>
             {copy.retry}
           </Button>
         )}
@@ -86,14 +84,29 @@ function stateOf(stopped: boolean, offline: boolean): string {
   return offline ? copy.states.waiting : copy.states.uploading;
 }
 
-function SetLine({ set }: { set: PhotoSet }) {
-  const phase = copy.phases[set.phase];
-  const line = set.queued ? copy.sent(phase, sentOf(set), IN_A_SET) : copy.taking(phase, set.held, IN_A_SET);
+/** A row's head: whose and what, and where it stands at its end, in the error's colour once stopped. */
+function RowTop({ title, state, failed }: { title: string; state: string; failed: boolean }) {
   return (
-    <>
-      <Progress done={sentOf(set)} total={IN_A_SET} />
-      <p className={styles.count}>{line}</p>
-    </>
+    <div className={styles.rowTop}>
+      <span className={styles.who}>{title}</span>
+      <span className={failed ? styles.stateStopped : styles.state}>{state}</span>
+    </div>
+  );
+}
+
+/** A photo set's row: whose and which, how many, and how far sent, its line gone once it has stopped. */
+function SetRow(props: { name: string; set: PhotoSet; state: string; failed: boolean }) {
+  const { set } = props;
+  const title = copy.setOf(props.name, copy.phasesAfter[set.phase]);
+  return (
+    <div className={styles.row}>
+      <RowTop title={title} state={props.state} failed={props.failed} />
+      <p className={styles.count}>
+        {set.queued ? copy.photos(IN_A_SET) : copy.taken(set.held, IN_A_SET)}
+        {props.failed && ` · ${copy.sentOf(sentOf(set), IN_A_SET)}`}
+      </p>
+      {!props.failed && <Progress done={sentOf(set)} total={IN_A_SET} label={title} />}
+    </div>
   );
 }
 
@@ -110,18 +123,21 @@ function WaitingJob(props: {
 }) {
   const { line, offline } = props;
   const stopped = line?.stopped ?? null;
+  const failed = stopped !== null;
+  const state = stateOf(failed, offline);
+  const actions = line?.waiting ?? 0;
   return (
     <li className={styles.job}>
-      <div className={styles.jobTop}>
-        <span className={styles.who}>{props.name}</span>
-        <span className={stopped === null ? styles.state : styles.stateStopped}>
-          {stateOf(stopped !== null, offline)}
-        </span>
-      </div>
       {props.sets.map((set) => (
-        <SetLine set={set} key={set.phase} />
+        <SetRow key={set.phase} name={props.name} set={set} state={state} failed={failed} />
       ))}
-      {line !== undefined && line.waiting > 0 && <p className={styles.count}>{copy.events(line.waiting)}</p>}
+      {/* The writes beside the sets, which the prototype does not draw, in a row of the job's own. */}
+      {(actions > 0 || props.sets.length === 0) && (
+        <div className={styles.row}>
+          <RowTop title={props.name} state={state} failed={failed} />
+          {actions > 0 && <p className={styles.count}>{copy.events(actions)}</p>}
+        </div>
+      )}
       {/* How long it has been on the phone, which is how much an eviction would take. */}
       {props.since !== null && <p className={styles.count}>{copy.since(clock(new Date(props.since).toISOString()))}</p>}
       {stopped !== null && (
@@ -155,7 +171,7 @@ function AllSent() {
 }
 
 export function WaitingScreen() {
-  const { offline, atRisk } = useSession();
+  const { offline } = useSession();
   const waiting = useOutbox();
   const kept = useHeldJobs(waiting);
   const [forgetting, setForgetting] = useState<string | null>(null);
@@ -193,16 +209,7 @@ export function WaitingScreen() {
         <AllSent />
       ) : (
         <>
-          {atRisk && (
-            <div className={styles.atRisk} role="status">
-              <p className={styles.atRiskTitle}>{atRiskCopy.title}</p>
-              <p className={styles.atRiskBody}>{atRiskCopy.body}</p>
-            </div>
-          )}
-          <div className={styles.sets}>
-            <Icon className={styles.setsIcon} d={APP_ICONS.uploadQueue} size="md" weight="heavy" />
-            <span className={styles.setsLine}>{copy.waiting(sets.length)}</span>
-          </div>
+          {/* Unsent work at risk is Today's card alone, as the prototype has it. */}
           <ul className={styles.list}>
             {jobs.map((id) => (
               <WaitingJob

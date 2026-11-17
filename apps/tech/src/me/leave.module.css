@@ -6,7 +6,11 @@
   padding: 0 var(--screen-gutter);
 }
 
+/* The prototype's fields here: 48 px, their words 15 px (the look's are 56 and 17); the ask keeps the action's 56. */
 .form {
+  --field-height: var(--tech-min);
+  --field-text: var(--fs-15);
+
   display: grid;
   gap: var(--sp-12);
   margin-top: var(--sp-8);

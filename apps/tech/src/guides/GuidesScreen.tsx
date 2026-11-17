@@ -58,7 +58,9 @@ export function GuideScreen({ type, back }: { readonly type: VisitType; readonly
                 ))}
               </ListRows>
             ) : (
-              <p className={styles.stepWhat}>{copy.what[screen.id]}</p>
+              <p className={styles.stepWhat}>
+                {type === "consultation" && screen.id === "outcome" ? copy.consultationOutcome : copy.what[screen.id]}
+              </p>
             )}
           </li>
         ))}

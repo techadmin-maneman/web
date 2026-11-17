@@ -39,6 +39,9 @@ which were added to the same list.
   shared order is put right with the console's screens captured.
 - **"Report missing" at 130 % text** wraps onto two lines: at the prototype's own padding and size it cannot fit half
   the width either.
+- **Pending uploads** keeps, beside the prototype's row for each photo set, a row for a job's other writes, the time
+  its oldest has waited on the phone (which is what an eviction would take), and every way it had to send, put right
+  or let go of a job's work ([0246](0246-closed-and-sent-back.md), decision 9).
 
 ## Consequences
 

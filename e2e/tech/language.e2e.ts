@@ -192,7 +192,8 @@ test("Kit says its names and amounts in Hindi where the catalog holds them, and 
 
   await expect(page.getByText("सॉल्वेंट", { exact: true })).toBeVisible();
   await expect(page.getByText("टेप स्ट्रिप", { exact: true })).toBeVisible();
-  await expect(page.locator("main")).toContainText("TS-1 · 5 स्ट्रिप");
+  // A lot by its code and expiry, as the prototype writes it, its count bare at the row's end.
+  await expect(page.locator("main")).toContainText("TS-1 · 31 मार्च 2031 तक");
   // The product and its count on one line, its details beneath, as ops named them.
   await expect(page.locator("main")).toContainText("Mane Man Essential · 2 पीस");
   await expect(page.locator("main")).toContainText("8 × 10 in · #1B · 20% grey · 120% density");

@@ -155,6 +155,8 @@
        and from its rules above and below. */
     --row-pad-x: var(--sp-16);
     --row-pad-y: var(--sp-12);
+    /* A row's least height: two lines' worth, unless a list of one-line rows sets less. */
+    --row-min-height: var(--sp-64);
     --row-lead-text: var(--fs-13);
     --row-lead-colour: var(--ui-text-muted);
     --row-lead-wrap: nowrap;

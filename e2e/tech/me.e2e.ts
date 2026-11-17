@@ -15,12 +15,18 @@ test("opens from its tab, and lists leave, what waits to send, and the way to op
 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.me.title })).toBeVisible();
   await expect(tab(page, techCopy.tabs.me)).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { name: techCopy.me.leave, exact: true })).toHaveAttribute("href", "/leave");
+  await expect(page.getByRole("link", { name: new RegExp(`^${techCopy.me.leave}`) })).toHaveAttribute("href", "/leave");
   await expect(page.getByRole("link", { name: new RegExp(`^${techCopy.me.pending}`) })).toContainText(
     techCopy.me.nothingPending,
   );
-  await expect(page.getByRole("link", { name: techCopy.ops.call })).toHaveAttribute("href", /^tel:\+/);
   expect(await axeViolations(page)).toEqual([]);
+
+  // Contact ops is a row, as the prototype draws it, opening ops in the technician's city with Call filled.
+  await page.getByRole("button", { name: techCopy.me.contact }).click();
+  const contact = page.getByRole("dialog");
+  await expect(contact.getByRole("heading", { level: 2 })).toHaveText(/^Ops, |^Contact ops$/);
+  await expect(contact.getByRole("link", { name: techCopy.ops.callShort })).toHaveAttribute("href", /^tel:\+/);
+  await expect(contact.getByRole("link", { name: techCopy.ops.whatsAppShort })).toBeVisible();
 });
 
 test("keeps the tab bar on every top-level screen, and none inside a job", async ({ page }) => {

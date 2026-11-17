@@ -167,19 +167,29 @@ export const me = localised({
   pending: "Pending uploads",
   nothingPending: "None",
   contact: "Contact ops",
+  /** The Contact sheet's title: ops in the technician's city. */
+  contactTitle: (city: string) => `Ops, ${city}`,
+  /** Leave's line on Me: the asks ops have still to answer. */
+  withOps: (count: number) => `${String(count)} with ops`,
   signOut: "Sign out",
   /** The sheet before signing out, which wipes the phone. */
   sheet: {
     title: "Sign out?",
     uploaded: "Everything is uploaded.",
+    /** Work on the phone not yet sent, which signing out would lose: "5 uploads will be lost." */
+    lost: (count: number) => `${String(count)} ${count === 1 ? "upload" : "uploads"} will be lost.`,
     cancel: "Cancel",
   },
+  closeContact: "Close",
 } as const);
 
 /** The way to ops from anywhere the app says to ask them (./components/ReachOps.tsx). */
 export const ops = localised({
   call: "Call ops",
   whatsApp: "WhatsApp ops",
+  /** Under a title that names ops already, as the Contact sheet's: "Call", "WhatsApp". */
+  callShort: "Call",
+  whatsAppShort: "WhatsApp",
 } as const);
 
 /** The Safety sheet, from the shield in a visit's header (docs/prompts/tech-redesign.md, "Safety"). */
@@ -217,20 +227,7 @@ const listed = (words: readonly string[]) =>
  * has not reached us, and says so when there is no signal to sign out with.
  */
 export const leaving = localised({
-  // Neither file draws a sign-out with work still on the phone, or with no signal.
-  unsent: (sets: number, actions: number) => {
-    const held: string[] = [];
-    if (sets > 0) held.push(counted(sets, "photo set", "photo sets"));
-    if (actions > 0) held.push(counted(actions, "action", "actions"));
-    return `${held.join(" and ")} not sent yet`;
-  },
-  body: "Sign out now and they’re lost.",
-  // Nothing is waiting to be sent: signing out still takes the jobs off the phone.
-  confirm: "Sign out of this phone?",
-  confirmBody: "Your jobs leave this phone until you sign in again.",
-  stay: "Stay signed in",
-  send: "Send first",
-  anyway: "Sign out anyway",
+  // The prototype draws no sign-out with no signal.
   stayed: "No signal. You’re still signed in. Try again with signal.",
 } as const);
 
@@ -271,7 +268,6 @@ export const atRisk = localised({
 } as const);
 
 export const queue = localised({
-  waiting: (count: number) => `${String(count)} photo ${count === 1 ? "set" : "sets"} waiting`,
   retry: "Retry",
   states: {
     uploading: "Uploading…",
@@ -281,10 +277,14 @@ export const queue = localised({
   /** Beneath the title: how many jobs still have work on the phone. */
   jobsWaiting: (count: number) => `${String(count)} waiting`,
   noneWaiting: "None waiting",
-  // The board writes "7 of 10"; each set is counted on its own, by the photographs the API confirmed.
-  phases: { before: "Before photos", after: "After photos" },
-  sent: (phase: string, done: number, total: number) => `${phase} · ${String(done)} of ${String(total)} sent`,
-  taking: (phase: string, taken: number, total: number) => `${phase} · ${String(taken)} of ${String(total)} taken`,
+  /** A set's row, as the prototype heads it: whose, and which, "Rohit M. · before photos". */
+  setOf: (who: string, phase: string) => `${who} · ${phase}`,
+  phasesAfter: { before: "before photos", after: "after photos" },
+  /** Beneath it: how many, or, still being taken, how many so far. */
+  photos: (count: number) => counted(count, "photo", "photos"),
+  taken: (taken: number, total: number) => `${String(taken)} of ${String(total)} taken`,
+  /** How far a set has gone: said beside a stopped one, which has no line, and to a screen reader beside the line. */
+  sentOf: (sent: number, total: number) => `${String(sent)} of ${String(total)} sent`,
   // The board draws the photo sets; these name the writes beside them.
   title: "Pending uploads",
   nothing: "Everything is uploaded.",
@@ -1300,6 +1300,8 @@ export const guides = localised({
     sign_off: "The client checks the fit and signs",
     outcome: "Result and close",
   },
+  /** A consultation's outcome, which asks whether the client goes ahead with a fit, and sends no link of its own. */
+  consultationOutcome: "Going ahead or not",
   /** "Service visit · Service", beneath a task's name. */
   where: (kind: string, step: string) => `${kind} · ${step}`,
   gone: "This task isn’t in the guide any more.",

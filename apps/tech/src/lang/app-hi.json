@@ -94,6 +94,7 @@
     "From your kit": "आपकी किट से",
     "Get to signal today so everything sends.": "आज नेटवर्क में आएँ ताकि सब भेजा जा सके।",
     "Go to the door and tap again. Still refused? Call ops.": "दरवाज़े पर जाकर फिर से टैप करें। फिर भी न हो तो ऑप्स को कॉल करें।",
+    "Going ahead or not": "आगे बढ़ रहे हैं या नहीं",
     "Grey (%)": "सफ़ेद बाल (%)",
     "Hair system cleaned": "हेयर सिस्टम साफ़ किया",
     "Hair system refitted": "हेयर सिस्टम दोबारा लगाया",
@@ -1073,6 +1074,22 @@
     {
       "match": "^Use ([^·]+) first, expires ([^·]+)$",
       "hi": "पहले $1 इस्तेमाल करें, $2 तक"
+    },
+    {
+      "match": "^([^·]+) uploads? will be lost\\.$",
+      "hi": "$1 अपलोड खो जाएँगे।"
+    },
+    {
+      "match": "^([^·]+) with ops$",
+      "hi": "$1 ऑप्स के पास"
+    },
+    {
+      "match": "^Ops, ([^·]+)$",
+      "hi": "ऑप्स, $1"
+    },
+    {
+      "match": "^([^·]+) photos?$",
+      "hi": "$1 फ़ोटो"
     }
   ],
   "dateTokens": {
