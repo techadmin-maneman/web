@@ -106,9 +106,9 @@ Test mode works as soon as you sign up, with no KYC and no website check.
    - Webhook URL: `https://staging.maneman.in/api/hooks/razorpay`
    - Secret: a new random string of 32 or more characters (a password manager can make one). Not the Key Secret.
    - Alert email: the tech admin's.
-   - Active events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, `payment_link.paid`.
+   - Active events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, `payment_link.paid`, `settlement.processed`.
    - **Create Webhook.** If it asks for an OTP in test mode, it is `754081`.
-5. Leave **Payments Capture** at its default. We set each order's capture window through the API.
+5. Leave **Payments Capture** at its default. Each order asks Razorpay to capture its payment itself, within 12 minutes (`createOrder`, ADR 0261).
 6. Save everything in `.env.razorpay-staging`:
 
    ```sh

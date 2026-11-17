@@ -243,7 +243,7 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
 const STAGING_TEST = "Staging test";
 
 /** "Service visit" as the invoice writes it: "Service Visit". */
-const titled = (words: string) =>
+export const titled = (words: string) =>
   words.replace(/(^|\s)(\S)/g, (_whole, space: string, first: string) => space + first.toUpperCase());
 
 /**

@@ -19,6 +19,7 @@ import { bookUnbookedHolds } from "../domain/booking/unbooked-holds.ts";
 import { eraseBooksCustomers } from "../domain/books/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books/books-invoices.ts";
 import { checkBooksItems } from "../domain/books/books-items.ts";
+import type { SettlementAccounts } from "../domain/books/books-settlements.ts";
 import { syncBooks } from "../domain/books/books-sync.ts";
 import type { BooksSyncOptions } from "../domain/books/books-pass.ts";
 import { closeStaleLowStock } from "../domain/inventory/low-stock.ts";
@@ -371,10 +372,21 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
 export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   return {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
+    settlementAccounts: settlementAccountsOf(config),
     billAccounts: config.settings.zohoBooks?.billAccounts ?? null,
     labelAsTest: config.environment !== "production",
     gst: booksGst(config),
   };
+}
+
+/** Where Razorpay's settlements post; null until Razorpay's, the bank's and the fee's accounts are all set. */
+function settlementAccountsOf(config: StaticConfig): SettlementAccounts | null {
+  const books = config.settings.zohoBooks;
+  const razorpay = books?.refundAccountId ?? null;
+  const bank = books?.bankAccountId ?? null;
+  const fees = books?.gatewayFeesAccountId ?? null;
+  if (razorpay === null || bank === null || fees === null) return null;
+  return { razorpay, bank, fees, feesTaxId: books?.gatewayFeesTaxId ?? null };
 }
 
 /** The GST registration Books carries here; none where Books is not Zoho's. */

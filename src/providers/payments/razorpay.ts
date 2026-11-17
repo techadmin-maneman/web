@@ -67,6 +67,24 @@ export const RazorpayPaymentLinkSchema = z.object({
 
 export type RazorpayPaymentLink = z.infer<typeof RazorpayPaymentLinkSchema>;
 
+/**
+ * Razorpay's payout of what it holds for us to the bank (docs/decisions/0261-razorpay-money-in-books.md): what it paid
+ * out, its fee with the GST in it, in paise, and the bank's reference. Only a processed one has reached the bank.
+ */
+export const RazorpaySettlementSchema = z.object({
+  id: z.string(),
+  amount: z.number().int(),
+  fees: z.number().int(),
+  tax: z.number().int(),
+  utr: z.string().nullish(),
+  status: z.string(),
+  /** Unix seconds. */
+  created_at: z.number().int(),
+});
+export type RazorpaySettlement = z.infer<typeof RazorpaySettlementSchema>;
+
+const Settlements = z.object({ items: z.array(RazorpaySettlementSchema) });
+
 /** The fields of Razorpay's refund entity that the mirror reads. */
 export const RazorpayRefundSchema = z.object({
   id: z.string(),
@@ -138,6 +156,16 @@ function linkBody(link: PaymentLinkRequest) {
   };
 }
 
+/**
+ * Each order's payment captured as it is authorised, whatever the account's own setting (docs/open-points.md, item 154;
+ * Razorpay's Orders API: an order's values outrank the Dashboard's): within Razorpay's least window, 12 minutes, and one
+ * left uncaptured by the manual window's end, its five days, refunded at normal speed, as our refunds are.
+ */
+const CAPTURE = {
+  capture: "automatic",
+  capture_options: { automatic_expiry_period: 12, manual_expiry_period: 7200, refund_speed: "normal" },
+} as const;
+
 export function createRazorpay(
   settings: RazorpaySettings,
   deps: { fetch: typeof fetch; log: Logger },
@@ -170,7 +198,10 @@ export function createRazorpay(
   }
 
   return {
-    createOrder: (order) => call("create_order", "/orders", { ...order, currency: "INR" }, Created),
+    createOrder: (order) => call("create_order", "/orders", { ...order, currency: "INR", payment: CAPTURE }, Created),
+    settlements: async (from, to) =>
+      (await call("settlements", `/settlements?from=${String(from)}&to=${String(to)}&count=100`, null, Settlements))
+        .items,
     orderPayments: async (orderId) => {
       const path = `/orders/${encodeURIComponent(orderId)}/payments`;
       return (await call("order_payments", path, null, OrderPayments)).items;

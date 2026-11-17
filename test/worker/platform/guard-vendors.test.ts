@@ -45,12 +45,26 @@ describe("validateStaticConfig: Zoho Books", () => {
       apiHost: "www.zohoapis.in",
       orgId: "60088931635",
       refundAccountId: null,
+      bankAccountId: null,
+      gatewayFeesAccountId: null,
+      gatewayFeesTaxId: null,
       gst: { gstin: null, stateCode: null, sac: null },
       itemPush: false,
       billAccounts: null,
     });
     const withAccount = validateStaticConfig({ ...stagingBase, BOOKS_REFUND_ACCOUNT_ID: "bank-7" });
     expect(withAccount.settings.zohoBooks?.refundAccountId).toBe("bank-7");
+    const settling = validateStaticConfig({
+      ...stagingBase,
+      BOOKS_BANK_ACCOUNT_ID: "bank-kotak",
+      BOOKS_GATEWAY_FEES_ACCOUNT_ID: "acct-fees",
+      BOOKS_GATEWAY_FEES_TAX_ID: "tax-18",
+    });
+    expect(settling.settings.zohoBooks).toMatchObject({
+      bankAccountId: "bank-kotak",
+      gatewayFeesAccountId: "acct-fees",
+      gatewayFeesTaxId: "tax-18",
+    });
   });
 
   it("reads the two accounts a bill posts to only when both are set", () => {

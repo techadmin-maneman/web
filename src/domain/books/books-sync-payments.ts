@@ -70,6 +70,8 @@ export async function recordPayment(pass: Pass, payment: PaymentToRecord): Promi
         reference,
         description: `${pass.label}${mode} payment ${takenAs}`,
         supply: `${pass.label}${supplyOf(payment)}`,
+        // Razorpay's money is in its own account until it settles to the bank; a UPI payment's is ours already.
+        depositAccountId: mode === "Razorpay" ? pass.options.refundAccountId : null,
       }));
     await db
       .prepare("UPDATE payments SET books_payment_id = ?1, books_checked_at = NULL WHERE id = ?2")

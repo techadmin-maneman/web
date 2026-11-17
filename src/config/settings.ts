@@ -106,6 +106,14 @@ export interface ZohoBooksSettings {
    * in Books and their vouchers wait (docs/open-points.md).
    */
   readonly refundAccountId: string | null;
+  /**
+   * Where Razorpay's settlements post (docs/decisions/0261-razorpay-money-in-books.md): the company's bank account its
+   * payouts reach, and the expense account its fees are booked to, with the tax its fee's GST is claimed under once
+   * GST is on. Without the bank's and the fee's accounts, settlements wait unrecorded.
+   */
+  readonly bankAccountId: string | null;
+  readonly gatewayFeesAccountId: string | null;
+  readonly gatewayFeesTaxId: string | null;
   /** Empty while GST is off in Books; the CA's figures once it is on. */
   readonly gst: GstRegistration;
   /**

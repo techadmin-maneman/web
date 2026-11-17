@@ -118,6 +118,8 @@ const HISTORY = [
   `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, created_at, processed_at, updated_at,
      books_refund_id)
    SELECT 'ref-' || i, 'pay-' || i, 'rfnd_' || i, 1000, 'processed', '${AGO}', '${AGO}', '${AGO}', 'br-' || i FROM n`,
+  `INSERT INTO razorpay_settlements (id, amount, fees, tax, utr, settled_at, received_at, books_transfer_id, books_fee_id)
+   SELECT 'setl_' || i, 190000, 4720, 720, 'UTR' || i, '${AGO}', '${AGO}', 'bt-' || i, 'be-' || i FROM n`,
   `INSERT INTO referral_codes (code, person_id, created_at, updated_at) SELECT 'CODE' || i, 'p-' || i, '${AGO}', '${AGO}'
    FROM n`,
   `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, first_fit_appointment_id,

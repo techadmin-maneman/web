@@ -22,7 +22,7 @@ function razorpay(routes: Parameters<typeof fakeFetch>[0]) {
 }
 
 describe("Razorpay: orders and refunds", () => {
-  it("makes an order in rupees' paise, as INR, under the key's basic auth, and answers its ID", async () => {
+  it("makes an order in rupees' paise, as INR, captured as it is paid, under the key's basic auth, and answers its ID", async () => {
     const { payments, calls } = razorpay({
       [`${API}/orders`]: () =>
         json({ id: "order_9", entity: "order", amount: 200000, currency: "INR", status: "created" }),
@@ -38,6 +38,11 @@ describe("Razorpay: orders and refunds", () => {
       receipt: "hold-1",
       notes: { hold_id: "hold-1" },
       currency: "INR",
+      // Captured as it is authorised, whatever the account's setting (docs/open-points.md, item 154).
+      payment: {
+        capture: "automatic",
+        capture_options: { automatic_expiry_period: 12, manual_expiry_period: 7200, refund_speed: "normal" },
+      },
     });
   });
 
