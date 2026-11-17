@@ -76,6 +76,8 @@ export const illustrationTag = "Illustration";
 // ---------------------------------------------------------------------------
 
 export const hero = {
+  /** Over the footage at its top left, where the service is (ADR 0264). */
+  area: `${serviceArea} · home service`,
   /** Shown one at a time over the footage, round and round. */
   sequence: [
     "Natural up close.",

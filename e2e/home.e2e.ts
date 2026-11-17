@@ -271,17 +271,80 @@ test.describe("home sections", () => {
     ]);
   });
 
-  test("hero calls to action go to /try and /book", async ({ page }) => {
+  // Book first and gold, the hero's one filled button; Try beside it or under it as an outline (ADR 0264).
+  test("hero calls to action: Book first and filled, then Try, to /book and /try", async ({ page }) => {
+    await page.goto("/");
+    const actions = page.locator('[data-section="hero"] .actions a');
+    await expect(actions).toHaveText([siteCopy.hero.book, siteCopy.hero.tryOn]);
+    await expect(actions.nth(0)).toHaveAttribute("href", "/book");
+    await expect(actions.nth(1)).toHaveAttribute("href", "/try");
+    const ground = (index: number) => actions.nth(index).evaluate((link) => getComputedStyle(link).backgroundColor);
+    expect(await ground(0)).toBe("rgb(201, 163, 99)");
+    expect(await ground(1)).toBe("rgba(0, 0, 0, 0)");
+  });
+
+  // The area and Pause sit at the hero's top corners, on the page's column as the words are (ADR 0264).
+  // A phone's browser with its bars showing leaves the hero less than the board's 692 px: the words keep below the
+  // area line and Pause rather than run under them.
+  test("the hero's words keep clear of its top corners on a short screen", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 664 });
     await page.goto("/");
     const hero = page.locator('[data-section="hero"]');
-    await expect(hero.getByRole("link", { name: siteCopy.hero.tryOn })).toHaveAttribute("href", "/try");
-    await expect(hero.getByRole("link", { name: siteCopy.hero.book })).toHaveAttribute("href", "/book");
+    const line = await hero.locator(".sequence").boundingBox();
+    const area = await hero.getByText(siteCopy.hero.area, { exact: true }).boundingBox();
+    const pause = await hero.getByRole("button", { name: siteCopy.hero.pause }).boundingBox();
+    const top = Math.max((area?.y ?? 0) + (area?.height ?? 0), (pause?.y ?? 0) + (pause?.height ?? 0));
+    expect(line?.y ?? 0).toBeGreaterThanOrEqual(top);
+  });
+
+  test("the hero's area line and Pause keep to the page's column", async ({ page }) => {
+    await page.goto("/");
+    const hero = page.locator('[data-section="hero"]');
+    await expect(hero.getByText(siteCopy.hero.area, { exact: true })).toBeVisible();
+    const area = await hero.getByText(siteCopy.hero.area, { exact: true }).boundingBox();
+    const title = await hero.getByRole("heading", { level: 1 }).boundingBox();
+    const pause = await hero.getByRole("button", { name: siteCopy.hero.pause }).boundingBox();
+    const book = await hero.getByRole("link", { name: siteCopy.hero.book }).boundingBox();
+    expect(Math.round(area?.x ?? -1)).toBe(Math.round(title?.x ?? 0));
+    expect(Math.round(book?.x ?? -1)).toBe(Math.round(title?.x ?? 0));
+    const width = page.viewportSize()?.width ?? 0;
+    const column = await hero.locator(".content").evaluate((content) => {
+      const style = getComputedStyle(content);
+      return content.getBoundingClientRect().right - parseFloat(style.paddingRight);
+    });
+    expect(Math.round((pause?.x ?? 0) + (pause?.width ?? 0))).toBe(Math.round(Math.min(column, width)));
+  });
+
+  // The film plays by itself where it may; Pause stops it with the line, and Play starts it again (WCAG 2.2.2). The
+  // browser here cannot decode the film, so what the page asks of it is what is checked.
+  test("the hero's Pause stops the film it started, and Play starts it again", async ({ page }) => {
+    await page.addInitScript(() => {
+      const asked: string[] = [];
+      Object.assign(window, { filmAsked: asked });
+      HTMLMediaElement.prototype.play = function play(this: HTMLMediaElement) {
+        asked.push("play");
+        return Promise.resolve();
+      };
+      HTMLMediaElement.prototype.pause = function pause() {
+        asked.push("pause");
+      };
+    });
+    await page.goto("/");
+    const asked = () => page.evaluate(() => (window as unknown as { filmAsked: string[] }).filmAsked.join(" "));
+    await expect.poll(asked).toBe("play");
+    await page.getByRole("button", { name: siteCopy.hero.pause }).click();
+    await expect.poll(asked).toBe("play pause");
+    await page.getByRole("button", { name: siteCopy.hero.play }).click();
+    await expect.poll(asked).toBe("play pause play");
+    await expect(page.getByRole("button", { name: siteCopy.hero.pause })).toBeVisible();
   });
 
   test("the hero’s opening line is read whole, once, and turns one phrase at a time until paused", async ({ page }) => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
     await expect(line).toHaveText(siteCopy.hero.sequence.join(" "));
+    // Polite, and its words never change as it turns, so nothing is said again (ADR 0264).
+    await expect(line).toHaveAttribute("aria-live", "polite");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.hero.title);
     const phrases = line.locator(".phrase");
     await expect(phrases.nth(0)).toHaveClass(/\bon\b/);

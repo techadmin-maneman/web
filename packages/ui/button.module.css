@@ -121,6 +121,22 @@
     color: var(--ink-tag);
   }
 
+  /* The public site's gold, on its navy: the brand's navy in its words (ADR 0262). */
+  .goldOnNavy {
+    background: var(--gilt);
+    color: var(--ink);
+  }
+
+  .goldOnNavy:active:not(:disabled):not([aria-disabled="true"]) {
+    box-shadow: inset 0 0 0 var(--rule-strong) var(--ink);
+  }
+
+  .goldOnNavy:disabled,
+  .goldOnNavy[aria-disabled="true"]:not([data-settling]) {
+    background: var(--ink-disabled);
+    color: var(--ink-tag);
+  }
+
   .destructive {
     background: var(--ui-error);
     color: var(--ui-on-strong);
@@ -140,6 +156,7 @@
 
   .outline,
   .outlineOnInk,
+  .outlineOnNavy,
   .quiet,
   .danger,
   .dangerQuiet {
@@ -186,8 +203,20 @@
     background: var(--ink-raised);
   }
 
+  /* The public site's outline on its navy: white words and a white edge at 55%. */
+  .outlineOnNavy {
+    border-color: var(--white-055);
+    color: var(--white-000);
+  }
+
+  .outlineOnNavy:active:not(:disabled):not([aria-disabled="true"]) {
+    background: var(--ink-raised);
+  }
+
   .outlineOnInk:disabled,
   .outlineOnInk[aria-disabled="true"]:not([data-settling]),
+  .outlineOnNavy:disabled,
+  .outlineOnNavy[aria-disabled="true"]:not([data-settling]),
   .dangerOnInk:disabled,
   .dangerOnInk[aria-disabled="true"]:not([data-settling]) {
     border-color: var(--ink-disabled);
@@ -228,6 +257,14 @@
 
     .gold:hover:not(:disabled):not([aria-disabled="true"]) {
       box-shadow: inset 0 0 0 var(--hairline) var(--ink-deep);
+    }
+
+    .goldOnNavy:hover:not(:disabled):not([aria-disabled="true"]) {
+      background: var(--gilt-hover);
+    }
+
+    .outlineOnNavy:hover:not(:disabled):not([aria-disabled="true"]) {
+      border-color: var(--white-000);
     }
 
     .destructive:hover:not(:disabled):not([aria-disabled="true"]) {

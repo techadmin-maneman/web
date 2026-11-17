@@ -182,8 +182,9 @@ const isRedrawn = (file: string) => REDRAWN.some((place) => slashed(file).starts
 
 /** The older screens' rules on the ink, with the shared buttons' rules for the looks they draw. */
 function inkRules(): [string, string][] {
+  // A look by its whole class name: the site's .goldOnNavy is not the technician's .gold.
   const shared = rulesOf(SHARED_BUTTONS.file).filter(([selector]) =>
-    SHARED_BUTTONS.looks.some((look) => selector.includes(look)),
+    SHARED_BUTTONS.looks.some((look) => new RegExp(`\\${look}(?![\\w-])`).test(selector)),
   );
   const own = stylesheets("apps/tech/src").filter((file) => !isRedrawn(file));
   return [...own.flatMap(rulesOf), ...shared];
