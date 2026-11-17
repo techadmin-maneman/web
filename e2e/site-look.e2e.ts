@@ -1,24 +1,9 @@
-// The site's look on every built page (ADR 0262): IBM Plex Sans is the only typeface a page loads.
+// The site's look on every built page (ADR 0262): IBM Plex Sans is the only typeface a page loads, and no page draws
+// paper or wash.
 
+import type { Locator, Page } from "@playwright/test";
 import { expect, fakeTurnstile, test, visit } from "./support.ts";
-import * as siteCopy from "../site/src/content/site.ts";
-
-const PAGES = [
-  "/",
-  "/try",
-  "/book",
-  "/privacy",
-  siteCopy.NOTICES_PATH,
-  "/terms",
-  "/aftercare",
-  "/offer-terms",
-  "/stop",
-  "/guides",
-  "/guides/what-is-a-hair-system",
-  "/areas",
-  "/r/RM4K7P",
-  "/no-such-page",
-];
+import { PAGES, SCREENS } from "./site-screens.ts";
 
 test.beforeEach(async ({ page }) => {
   await fakeTurnstile(page);
@@ -62,4 +47,66 @@ test.describe("the before and after pairs", () => {
       expect(await image.evaluate((element) => getComputedStyle(element).objectPosition)).toBe("50% 28%");
     }
   });
+});
+
+/** The brand's paper family and the client app's wash, none of which the redesign draws on the site (ADR 0262). */
+const PAPER = [
+  "--paper",
+  "--paper-light",
+  "--paper-line",
+  "--paper-control",
+  "--paper-hint",
+  "--paper-shade",
+  "--wash-100",
+];
+
+/** Each paper colour the page's own elements draw: "a.item color=--paper". */
+async function paperDrawn(page: Page, scope: Locator): Promise<string[]> {
+  return scope.evaluateAll((elements, names) => {
+    const probe = document.createElement("i");
+    document.body.append(probe);
+    const paper = new Map(
+      names.map((name) => {
+        probe.style.color = `var(${name})`;
+        return [getComputedStyle(probe).color, name];
+      }),
+    );
+    probe.remove();
+    const found = new Set<string>();
+    for (const element of elements) {
+      const style = getComputedStyle(element);
+      if (style.display === "none" || style.visibility === "hidden") continue;
+      for (const side of ["color", "background-color", "outline-color", "border-top-color", "border-bottom-color"]) {
+        const name = paper.get(style.getPropertyValue(side));
+        if (name === undefined) continue;
+        if (side.startsWith("border") && parseFloat(style.getPropertyValue(side.replace("color", "width"))) === 0)
+          continue;
+        if (side === "outline-color" && style.outlineStyle === "none") continue;
+        found.add(
+          `${element.tagName.toLowerCase()}.${(element.getAttribute("class") ?? "").split(" ")[0] ?? ""} ${side}=${name}`,
+        );
+      }
+    }
+    return [...found];
+  }, PAPER);
+}
+
+// The redesign draws no paper and no wash (ADR 0262): not at rest, nor on a link or a button under the pointer, where a
+// shared look once turned the ink's words paper.
+test.describe("no paper or wash", () => {
+  for (const path of SCREENS) {
+    test(`on ${path}, at rest or pointed at`, async ({ page }) => {
+      await page.goto(path);
+      await page.evaluate(() => document.fonts.ready);
+      expect(await paperDrawn(page, page.locator("body *"))).toEqual([]);
+      const controls = page.locator("a:visible, button:visible");
+      const pointed: string[] = [];
+      for (const control of await controls.all()) {
+        if (!(await control.isVisible())) continue;
+        await control.hover({ timeout: 2_000 }).catch(() => undefined);
+        pointed.push(...(await paperDrawn(page, control)));
+      }
+      expect([...new Set(pointed)]).toEqual([]);
+    });
+  }
 });

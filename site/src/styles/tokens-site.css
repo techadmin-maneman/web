@@ -113,6 +113,12 @@
   --site-version-label: 180px; /* a policy's version table: its names' column */
   --site-foot-gap: clamp(56px, calc(35.2px + 5.333vw), 112px); /* a page's last words to its footer */
   --site-chevron: var(--stone); /* a row that opens a page; the boards' paler grey, at the apps' chevron colour */
+
+  /* ---- What the shared parts draw light on the navy, and a choice card's edge: no paper on the site ---- */
+  --on-ink: var(--site-on-navy);
+  --on-ink-pressed: var(--site-band);
+  --choice-edge: var(--stone);
+  --compare-focus: var(--site-focus);
 }
 
 @media (min-width: 761px) {
