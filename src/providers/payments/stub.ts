@@ -2,7 +2,7 @@
 // it was asked.
 
 import { ProviderError } from "../provider-error.ts";
-import { type RazorpayPayment, type RazorpayPaymentLink } from "./razorpay.ts";
+import { type RazorpayPayment, type RazorpayPaymentLink, type RazorpaySettlement } from "./razorpay.ts";
 import type { PaymentLinkRequest, PaymentsProvider, MadeLink } from "./index.ts";
 
 /** The stub, and what it was asked, for tests to read. */
@@ -19,6 +19,8 @@ export interface StubPayments extends PaymentsProvider {
   readonly paymentsOn: Map<string, RazorpayPayment[]>;
   /** How a test says Razorpay holds a link now, by the link's ID; a link the stub made is otherwise unpaid. */
   readonly linksNow: Map<string, RazorpayPaymentLink>;
+  /** The settlements to the bank a test says Razorpay made; it answers those made in the instants asked. */
+  readonly settled: RazorpaySettlement[];
 }
 
 /**
@@ -38,10 +40,14 @@ export function createStubPayments(): StubPayments {
   const linksByReference = new Map<string, MadeLink>();
   const paymentsOn = new Map<string, RazorpayPayment[]>();
   const linksNow = new Map<string, RazorpayPaymentLink>();
+  const settled: RazorpaySettlement[] = [];
   return {
     made,
     paymentsOn,
     linksNow,
+    settled,
+    settlements: (from, to) =>
+      Promise.resolve(settled.filter((each) => each.created_at >= from && each.created_at <= to)),
     createOrder: (order) => {
       made.orders.push(order);
       return Promise.resolve({ id: `order_stub_${crypto.randomUUID()}` });

@@ -49,9 +49,14 @@ export interface NewBooksPayment {
   readonly description: string;
   /** What the money was for, which the receipt prints as its description of supply. */
   readonly supply: string;
+  /**
+   * The account it is deposited to: Razorpay's own, which its refunds leave from and its settlements to the bank are
+   * transferred out of, so Books holds what Razorpay owes us; null for Books' Undeposited Funds, as a UPI payment.
+   */
+  readonly depositAccountId: string | null;
 }
 
-/** Money given back from a recorded payment, from the account Razorpay settles into. Amounts in paise. */
+/** Money given back from a recorded payment, from the account Razorpay holds our money in. Amounts in paise. */
 export interface NewBooksRefund {
   readonly amount: number;
   readonly date: string;
@@ -59,6 +64,32 @@ export interface NewBooksRefund {
   readonly reference: string;
   readonly description: string;
   readonly fromAccountId: string;
+}
+
+/** Money moved between two of our accounts, as Razorpay's settlement to the bank. Amounts in paise. */
+export interface NewBooksTransfer {
+  readonly fromAccountId: string;
+  readonly toAccountId: string;
+  readonly amount: number;
+  readonly date: string;
+  /** The bank's reference for the payout, its UTR, else Razorpay's settlement ID. */
+  readonly reference: string;
+  readonly description: string;
+}
+
+/** An expense paid out of one of our accounts, as Razorpay's fee taken from a settlement. Amounts in paise. */
+export interface NewBooksExpense {
+  /** The expense account it is booked to. */
+  readonly accountId: string;
+  readonly paidThroughAccountId: string;
+  /** GST included, where `taxId` names its tax. */
+  readonly amount: number;
+  readonly date: string;
+  /** Razorpay's settlement ID. */
+  readonly reference: string;
+  readonly description: string;
+  /** The GST it carries, claimed as input credit; null while GST is off in Books, the whole amount the expense. */
+  readonly taxId: string | null;
 }
 
 /** A client as their Books customer holds them. */
@@ -202,6 +233,12 @@ export interface BooksProvider {
   findRefund(paymentId: string, reference: string): Promise<string | null>;
   /** Records money given back from a payment; returns Books' ID for the refund. */
   recordRefund(paymentId: string, refund: NewBooksRefund): Promise<string>;
+  /** A transfer out of `fromAccountId` under `reference`; null for none. */
+  findTransfer(fromAccountId: string, reference: string): Promise<string | null>;
+  recordTransfer(transfer: NewBooksTransfer): Promise<string>;
+  /** An expense under `reference`; null for none. */
+  findExpense(reference: string): Promise<string | null>;
+  recordExpense(expense: NewBooksExpense): Promise<string>;
   /** The person's customer, added, or found by their person ID and brought up to date; Books' ID for it. */
   upsertCustomer(customer: NewBooksCustomer): Promise<string>;
   /** Writes a client's details as they now are over their customer. */
@@ -253,6 +290,10 @@ export function createBooksProvider(
     applyToInvoice: off,
     findRefund: off,
     recordRefund: off,
+    findTransfer: off,
+    recordTransfer: off,
+    findExpense: off,
+    recordExpense: off,
     upsertCustomer: off,
     updateCustomer: off,
     crmContactOf: off,

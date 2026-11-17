@@ -250,7 +250,7 @@ export function registerClientBooking(app: App): void {
       // A client back from Checkout without paying who picks the same window again gets their hold back, whose order a
       // payment may still land on, with its countdown started again, rather than a second technician's time.
       move === null && offered !== null
-        ? holdAtCheckout(c.env.DB, { personId, type, tier: offered.tier, date, window, now })
+        ? holdAtCheckout(c.env.DB, { personId, type, tier: offered.tier, date, window, startsAt, address, now })
         : null,
     ]);
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;

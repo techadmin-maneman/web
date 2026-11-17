@@ -5,7 +5,7 @@
 
 import type { RazorpaySettings } from "../../config/settings.ts";
 import type { Logger } from "../../log.ts";
-import { createRazorpay, type RazorpayPayment, type RazorpayPaymentLink } from "./razorpay.ts";
+import { createRazorpay, type RazorpayPayment, type RazorpayPaymentLink, type RazorpaySettlement } from "./razorpay.ts";
 import { createStubPayments } from "./stub.ts";
 
 /** A refund, asked for under a receipt of ours that no other refund of the payment carries. */
@@ -33,6 +33,8 @@ export interface PaymentLinkRequest {
 export interface PaymentsProvider {
   /** An order for Checkout to pay; its notes come back on the payment. */
   createOrder(order: { amount: number; receipt: string; notes: Record<string, string> }): Promise<{ id: string }>;
+  /** Razorpay's settlements to the bank made between two instants, in Unix seconds: up to a hundred. */
+  settlements(from: number, to: number): Promise<readonly RazorpaySettlement[]>;
   /** Each payment made on an order, as Razorpay holds it now: "created" while one is still being made. */
   orderPayments(orderId: string): Promise<readonly RazorpayPayment[]>;
   /**
@@ -78,6 +80,7 @@ export function createPaymentsProvider(
   const none: PaymentsProvider = {
     createOrder: off,
     orderPayments: off,
+    settlements: off,
     refund: off,
     createPaymentLink: off,
     findPaymentLink: off,

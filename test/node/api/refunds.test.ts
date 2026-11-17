@@ -14,6 +14,7 @@ function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[])
   const payments: PaymentsProvider = {
     createOrder: notAsked,
     orderPayments: notAsked,
+    settlements: notAsked,
     createPaymentLink: notAsked,
     findPaymentLink: notAsked,
     resendPaymentLink: notAsked,

@@ -27,6 +27,7 @@
 // item 181). scripts/release/zoho-contract-probe.ts tries every read on the org.
 
 import { purchaseCalls } from "./zoho-purchases.ts";
+import { settlementCalls } from "./zoho-settlements.ts";
 import { z } from "zod";
 import type { ZohoBooksSettings } from "../../config/settings.ts";
 import type {
@@ -67,6 +68,7 @@ export function createZohoBooks(settings: ZohoBooksSettings, deps: ZohoRequester
     ...invoiceCalls(books),
     ...itemCalls(books),
     ...purchaseCalls(books),
+    ...settlementCalls(books),
   };
 }
 
@@ -216,6 +218,7 @@ function paymentCalls({ request, org, read }: BooksApi): Payments {
             reference_number: payment.reference,
             description: payment.description,
             product_description: payment.supply,
+            ...(payment.depositAccountId === null ? {} : { account_id: payment.depositAccountId }),
           },
         },
       }),

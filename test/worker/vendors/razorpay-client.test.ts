@@ -22,7 +22,7 @@ function razorpay(routes: Parameters<typeof fakeFetch>[0]) {
 }
 
 describe("Razorpay: orders and refunds", () => {
-  it("makes an order in rupees' paise, as INR, under the key's basic auth, and answers its ID", async () => {
+  it("makes an order in rupees' paise, as INR, captured as it is paid, under the key's basic auth, and answers its ID", async () => {
     const { payments, calls } = razorpay({
       [`${API}/orders`]: () =>
         json({ id: "order_9", entity: "order", amount: 200000, currency: "INR", status: "created" }),
@@ -38,6 +38,11 @@ describe("Razorpay: orders and refunds", () => {
       receipt: "hold-1",
       notes: { hold_id: "hold-1" },
       currency: "INR",
+      // Captured as it is authorised, whatever the account's setting.
+      payment: {
+        capture: "automatic",
+        capture_options: { automatic_expiry_period: 12, manual_expiry_period: 7200, refund_speed: "normal" },
+      },
     });
   });
 
@@ -140,6 +145,53 @@ describe("Razorpay: orders and refunds", () => {
   it("fails loudly on a list of an order's payments it cannot read, rather than say none was made", async () => {
     const { payments } = razorpay({ [`${API}/orders/order_9/payments`]: () => json({ entity: "collection" }) });
     await expect(payments.orderPayments("order_9")).rejects.toThrow();
+  });
+});
+
+describe("Razorpay: settlements", () => {
+  it("reads the settlements made between two instants, in Unix seconds, by a GET that sends no body", async () => {
+    const { payments, calls } = razorpay({
+      [`${API}/settlements`]: () =>
+        json({
+          entity: "collection",
+          count: 1,
+          items: [
+            {
+              id: "setl_9",
+              entity: "settlement",
+              amount: 1900000,
+              status: "processed",
+              fees: 47200,
+              tax: 7200,
+              utr: "UTR9",
+              created_at: 1790058600,
+            },
+          ],
+        }),
+    });
+
+    expect(await payments.settlements(1789453800, 1790058600)).toEqual([
+      {
+        id: "setl_9",
+        amount: 1900000,
+        fees: 47200,
+        tax: 7200,
+        utr: "UTR9",
+        status: "processed",
+        created_at: 1790058600,
+      },
+    ]);
+    const asked = new URL(calls[0]?.url ?? "");
+    expect(calls[0]?.method).toBe("GET");
+    expect(calls[0]?.body).toBe("");
+    expect(asked.searchParams.get("from")).toBe("1789453800");
+    expect(asked.searchParams.get("to")).toBe("1790058600");
+    expect(asked.searchParams.get("count")).toBe("100");
+  });
+
+  it("fails loudly on settlements it cannot read, rather than say none was made", async () => {
+    const { payments } = razorpay({ [`${API}/settlements`]: () => json({ entity: "collection" }) });
+    await expect(payments.settlements(0, 1)).rejects.toThrow();
   });
 });
 

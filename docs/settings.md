@@ -11,13 +11,16 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `ACCESS_OPS_AUD` | — | `c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4` | `aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773` |
 | `ACCESS_PROVIDER` | `stub` | `cloudflare` | `cloudflare` |
 | `ANALYTICS_PROVIDER` | `stub` | `none` | `none` |
+| `BOOKS_BANK_ACCOUNT_ID` | — | — | `4242595000001689024` |
 | `BOOKS_BILL_CONSUMABLES_ACCOUNT` | — | `4242595000000034057` | `4242595000000034057` |
 | `BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT` | — | `4242595000000000567` | `4242595000000000567` |
+| `BOOKS_GATEWAY_FEES_ACCOUNT_ID` | — | — | `4242595000000000507` |
+| `BOOKS_GATEWAY_FEES_TAX_ID` | — | — | — |
 | `BOOKS_GSTIN` | — | — | — |
 | `BOOKS_GST_STATE` | — | — | — |
 | `BOOKS_ITEM_PUSH` | `false` | `true` | `false` |
 | `BOOKS_PROVIDER` | `stub` | `zoho` | `none` |
-| `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000000352005` | — |
+| `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000001556003` | `4242595000001556003` |
 | `BOOKS_SAC` | — | — | — |
 | `CLIENT_SIGN_OFF` | `true` | `true` | `true` |
 | `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |

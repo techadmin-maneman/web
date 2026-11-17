@@ -968,6 +968,7 @@ export interface Rows {
     readonly kind: string;
     readonly amount_ex_gst: number | null;
     readonly gst_percent: number | null;
+    readonly books_kept_invoice_id: string | null;
   };
   readonly people: {
     readonly id: string;
@@ -1167,6 +1168,18 @@ export interface Rows {
     readonly event_id: string;
     readonly event: string;
     readonly received_at: string;
+  };
+  readonly razorpay_settlements: {
+    readonly id: string;
+    readonly amount: number;
+    readonly fees: number;
+    readonly tax: number;
+    readonly utr: string | null;
+    readonly settled_at: string;
+    readonly received_at: string;
+    readonly books_transfer_id: string | null;
+    readonly books_fee_id: string | null;
+    readonly books_checked_at: string | null;
   };
   readonly recall_pieces: {
     readonly recall_id: string;

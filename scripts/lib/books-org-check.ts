@@ -169,7 +169,7 @@ export function billAccount(
   return { outcome: "pass", check, detail: `${account.account_name} (${account.account_type})` };
 }
 
-/** The account refunds are paid from, which Razorpay settles into: without it, no refund is recorded in Books. */
+/** The account Razorpay holds our money in, which refunds are paid from: without it, no refund is recorded in Books. */
 export function refundAccount(accountId: string | null, answer: BooksAnswer | null): CheckLine {
   const check = "refund account";
   if (accountId === null || answer === null) {

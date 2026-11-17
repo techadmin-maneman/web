@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0261. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0262. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -167,6 +167,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0202](0202-razorpay-events-queued.md) Razorpay's events are queued, and every queue has its dead letters
 - [0209](0209-paid-at-the-visit-by-upi.md) Paid at the visit by UPI, while online payment is off
 - [0257](0257-razorpay-only.md) Razorpay is the only way to pay
+- [0261](0261-razorpay-money-in-books.md) Razorpay's money in Books, from payment to the bank
 
 ### Privacy and accounts
 
@@ -495,7 +496,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0197](0197-one-inbound-port.md) | One inbound port | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 |  |
 | [0198](0198-cities-as-data.md) | Cities as data | 2026-10-14 | accepted |  |
 | [0199](0199-derived-state-in-the-domain.md) | Derived state in the domain | 2026-10-14 | accepted |  |
-| [0200](0200-staging-tenants-of-its-own.md) | Staging's tenants of its own | 2026-10-14 | accepted |  |
+| [0200](0200-staging-tenants-of-its-own.md) | Staging's tenants of its own | 2026-10-14 | accepted | [0261](0261-razorpay-money-in-books.md) |
 | [0201](0201-the-try-on-on-youcam.md) | The try-on on YouCam | 2026-10-14 | accepted |  |
 | [0202](0202-razorpay-events-queued.md) | Razorpay's events are queued, and every queue has its dead letters | 2026-10-14 | accepted |  |
 | [0203](0203-a-vendor-down-is-held-off.md) | A vendor that is down is held off, and a contact change waits in D1 | 2026-10-14 | accepted |  |
@@ -556,3 +557,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0258](0258-the-technician-design-pass.md) | The technician app's design pass | 2026-11-12 | accepted |  |
 | [0259](0259-the-issue-log.md) | The issue log | 2026-11-16 | accepted |  |
 | [0260](0260-ratings.md) | Ratings | 2026-11-16 | accepted |  |
+| [0261](0261-razorpay-money-in-books.md) | Razorpay's money in Books, from payment to the bank | 2026-11-17 | accepted |  |

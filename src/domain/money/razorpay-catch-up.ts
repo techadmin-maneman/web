@@ -22,11 +22,15 @@ import { recordBookingConsents } from "../privacy/booking-consents.ts";
 import { customOrderPaid } from "./custom-order-links.ts";
 import { linkPaid } from "./payment-links-paid.ts";
 import { recordPayment } from "./payments.ts";
+import { catchUpSettlements } from "./razorpay-settlements.ts";
 import { ASKS } from "./refunds.ts";
 import { graceEnds } from "../booking/hold-stages.ts";
 import { recordHoldLinkPaid } from "../booking/visit-booking.ts";
 import { PAYMENT_TAKEN, statusIn } from "../../config/statuses.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
+
+/** The job runs each quarter hour; only the hour's first run reads Razorpay's settlements. */
+const SETTLEMENTS_READ_BEFORE_MINUTE = 15;
 
 /** Holds asked about in one run at most, and one visit's links the same. */
 const CHECKS_PER_PASS = 5;
@@ -105,6 +109,13 @@ export async function catchUpWithRazorpay(
   budget: CallBudget,
   now: Date,
 ): Promise<number> {
+  // The last week's settlements to the bank, which the webhook may also have missed: one call, in the hour's first
+  // run, and a failure waits for the next hour rather than ending this run's questions.
+  if (now.getUTCMinutes() < SETTLEMENTS_READ_BEFORE_MINUTE && budget.spend(1)) {
+    await catchUpSettlements(db, deps.payments, now).catch((error: unknown) => {
+      deps.log.warn("razorpay_settlements_unread", { error: failureReason(error, 200) });
+    });
+  }
   const aboutHolds = (await holdsToAsk(db, now)).map((hold): Question => ({
     about: `hold ${hold.id}`,
     calls: callsForHold(hold),

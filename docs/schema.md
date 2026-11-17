@@ -27,7 +27,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | A client's alerts in their app, and the sessions that take their pushes | `client_app_alerts`, `client_push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a browser that allowed pushes since takes none | Nothing: the messages since stay in WhatsApp, and the app subscribes again when it next opens |
 | A technician's alerts, the kinds they turned off, and the phones that take their pushes | `tech_alerts`, `tech_alert_kinds_off`, `push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a kind turned off since is on, and a phone that allowed pushes since takes none | Nothing: the cron writes the day's alerts again as they fall due, a kind is turned off again in Alerts, and the phone subscribes again when the app next opens |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
-| Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
+| Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links`, `razorpay_settlements` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A settlement since is read again from Razorpay within the week; one older is not. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
@@ -155,6 +155,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [push_subscriptions](#push_subscriptions): The phone that takes a technician's pushes, one subscription a phone, by the push service's address; a phone signed out or revoked takes none (ADR 0250).
 - [quick_replies](#quick_replies): Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
+- [razorpay_settlements](#razorpay_settlements): Each payout Razorpay made to the bank, its fee, and its transfer and fee in Books (ADR 0261).
 - [recall_pieces](#recall_pieces): Each fitted piece a recall made due for replacement, and the day it was due before (ADR 0187).
 - [recalls](#recalls): Each lot recalled: why, who raised it and when, and when it was closed once dealt with (ADR 0187).
 - [receipt_lines](#receipt_lines): What a receipt brought of each order line: accepted, damaged, failed its check, its lot, and what one cost landed (ADR 0167).
@@ -2092,7 +2093,7 @@ Indexes:
 
 The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 
-Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0096_payments_to_refund.sql`, `0099_retention.sql`, `0201_trigger_clocks.sql`.
+Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0096_payments_to_refund.sql`, `0099_retention.sql`, `0201_trigger_clocks.sql`, `0216_razorpay_settlements.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2120,6 +2121,7 @@ Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_c
 | `kind` | TEXT | no | `'visit'` |  | What a payment paid for: the visit, or a late fee for moving it. |
 | `amount_ex_gst` | INTEGER | yes |  |  | What a payment was before GST, and at what rate, as the hold priced it. Null for a payment no hold priced, which the Payments tab splits at GST_PERCENT. |
 | `gst_percent` | INTEGER | yes |  |  |  |
+| `books_kept_invoice_id` | TEXT | yes |  |  | The invoice Books raised for the charge a payment kept (src/domain/books/books-kept.ts), so a refund reaching into it can name the invoice to free the payment from, and staging's clean-up can find it. |
 
 Indexes:
 
@@ -2535,6 +2537,29 @@ Made by `0014_payments.sql`; changed by `0172_retention_reaches_every_table.sql`
 Indexes:
 
 - `razorpay_events_by_received`: on (`received_at`)
+
+## razorpay_settlements
+
+Each payout Razorpay made to the bank, its fee, and its transfer and fee in Books (ADR 0261).
+
+Made by `0216_razorpay_settlements.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key | Razorpay's ID, setl_… |
+| `amount` | INTEGER | no |  |  | Paise: what reached the bank, and Razorpay's fee taken out of it, the GST in that fee within it. |
+| `fees` | INTEGER | no |  |  |  |
+| `tax` | INTEGER | no |  |  |  |
+| `utr` | TEXT | yes |  |  | The bank's reference for the payout, which its line in the bank feed carries. |
+| `settled_at` | TEXT | no |  |  |  |
+| `received_at` | TEXT | no |  |  |  |
+| `books_transfer_id` | TEXT | yes |  |  |  |
+| `books_fee_id` | TEXT | yes |  |  |  |
+| `books_checked_at` | TEXT | yes |  |  | When the Books pass last claimed it, so two passes record it once. |
+
+Indexes:
+
+- `razorpay_settlements_to_record`: on (`settled_at`), where `books_transfer_id IS NULL OR (books_fee_id IS NULL AND fees > 0)`
 
 ## recall_pieces
 

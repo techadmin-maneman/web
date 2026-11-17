@@ -35,6 +35,7 @@ export function booksWith(invoice: BooksInvoice | null): StubBooks {
 
 export const optionsFor = (overrides: Partial<BooksSyncOptions> = {}): BooksSyncOptions => ({
   refundAccountId: "bank-7",
+  settlementAccounts: null,
   billAccounts: null,
   labelAsTest: true,
   gst: NO_GST,
@@ -112,6 +113,8 @@ export const did = (counts: Partial<BooksSyncSummary>): BooksSyncSummary => ({
   credits: 0,
   recorded: 0,
   applied: 0,
+  kept: 0,
   refunded: 0,
+  settled: 0,
   ...counts,
 });
