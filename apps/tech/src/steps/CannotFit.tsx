@@ -1,4 +1,4 @@
-// "Can't fit today" (docs/decisions/0269-the-design-checks-api-side.md), as the prototype draws it: a link beneath the
+// "Can't fit today" (docs/decisions/0270-the-design-checks-api-side.md), as the prototype draws it: a link beneath the
 // scanner, then a light sheet asking why, from the reasons ops keep, and the close off until one is picked. The fit
 // closes as not fitted from here, and ops are given its refit to book. A card kept before the list reached the phone
 // has none to offer, and closes with no reason, as it did.

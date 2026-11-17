@@ -26281,7 +26281,7 @@ export interface components {
                 code: string;
                 label: string;
             } | null;
-            /** @description On a fit closed with "Can't fit today", why it was not fitted, in the job sheet's words; null where none is kept (ADR 0269). */
+            /** @description On a fit closed with "Can't fit today", why it was not fitted, in the job sheet's words; null where none is kept (ADR 0270). */
             not_fitted_reason: {
                 code: string;
                 label: string;
@@ -30553,7 +30553,7 @@ export interface components {
                 set_by: string | null;
                 set_at: string | null;
             };
-            /** @description Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0269). */
+            /** @description Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0270). */
             not_fitted_reasons: {
                 /** @description What the technician is offered, in order. */
                 items: {

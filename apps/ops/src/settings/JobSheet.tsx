@@ -1,5 +1,5 @@
 // Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): the technician's checklists, why a job is left
-// partly done, why a client does not go ahead (ADR 0149) and why a hair system was not fitted (ADR 0269). A
+// partly done, why a client does not go ahead (ADR 0149) and why a hair system was not fitted (ADR 0270). A
 // phone keeps the list it got with the job and an item taken off is kept, so older records still read. Until ops save a
 // list, src/config/job-sheet.ts's stands.
 

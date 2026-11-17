@@ -369,7 +369,7 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
     });
   },
   // Version 14: a card carries where the visit was booked, and why a fit may not be fitted today
-  // (docs/decisions/0269-the-design-checks-api-side.md). One kept before says neither until it is read again, so its
+  // (docs/decisions/0270-the-design-checks-api-side.md). One kept before says neither until it is read again, so its
   // Can't fit today closes with no reason, as it did.
   (_db, upgrade) => {
     eachAgain(upgrade.objectStore("cards"), (value) => {

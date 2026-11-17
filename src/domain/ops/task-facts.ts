@@ -72,7 +72,7 @@ export type TaskFacts =
       readonly reason_code: string | null;
       /** The reason in the words ops gave it, or the job sheet's. */
       readonly reason: string | null;
-      /** A fit closed with "Can't fit today", why, in the job sheet's words; null for any other close (ADR 0269). */
+      /** A fit closed with "Can't fit today", why, in the job sheet's words; null for any other close (ADR 0270). */
       readonly not_fitted: string | null;
       /** How the technician suggested finishing it (docs/decisions/0246-closed-and-sent-back.md); null for none. */
       readonly ask: FinishAsk | null;

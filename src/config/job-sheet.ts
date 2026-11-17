@@ -85,7 +85,7 @@ export const LOST_REASONS: readonly JobSheetItem[] = [
 
 /**
  * Why a hair system could not be fitted today, picked as the technician closes the fit with "Can't fit today"
- * (docs/decisions/0269-the-design-checks-api-side.md), as the prototype words them. Ops keep the list; these stand
+ * (docs/decisions/0270-the-design-checks-api-side.md), as the prototype words them. Ops keep the list; these stand
  * until they save their own.
  */
 export const NOT_FITTED_REASONS: readonly JobSheetItem[] = [

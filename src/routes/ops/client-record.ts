@@ -46,7 +46,7 @@ const ClientVisitSchema = VisitSummarySchema.extend({
   not_fitted_reason: z.union([LostReasonSchema, z.null()]).openapi({
     description:
       "On a fit closed with \"Can't fit today\", why it was not fitted, in the job sheet's words; null where none " +
-      "is kept (ADR 0269).",
+      "is kept (ADR 0270).",
   }),
   going_ahead: z.union([z.boolean(), z.null()]).openapi({
     description:

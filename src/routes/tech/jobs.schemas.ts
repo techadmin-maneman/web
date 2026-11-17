@@ -177,7 +177,7 @@ export const JobDetailSchema = JobSummarySchema.extend({
   }),
   not_fitted_reasons: z.array(JobSheetItemSchema).openapi({
     description:
-      "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0269). " +
+      "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0270). " +
       "Empty for any other visit.",
   }),
   consumables: z.array(OfferedSchema).openapi({

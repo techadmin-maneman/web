@@ -29,11 +29,15 @@ test.describe("header", () => {
   });
 
   // The built pages are book.html and r.html, whose addresses the rule never matched, so both offered themselves.
+  // On a phone the booking pages draw the client app's top bar in the header's place (ADR 0265).
   test("offers no Book a consultation on the booking pages themselves", async ({ page }) => {
     for (const path of ["/book", "/r/RM4K7P"]) {
       await page.goto(path);
-      await expect(page.locator("header").getByRole("link", { name: siteCopy.header.homeLabel })).toBeVisible();
+      const home = page.locator("header").getByRole("link", { name: siteCopy.header.homeLabel });
+      if (narrow(page.viewportSize()?.width)) await expect(home).toBeHidden();
+      else await expect(home).toBeVisible();
       await expect(page.locator('header a[href="/book"]'), path).toHaveCount(0);
+      await expect(page.locator('main a[href="/book"]'), path).toHaveCount(0);
     }
   });
 
@@ -81,7 +85,8 @@ test.describe("header", () => {
   });
 });
 
-// A laptop's /book and /try are a flow of their own: the lockup and the way back, no footer (ADR 0265).
+// A laptop's /book and /try are a flow of their own: the lockup and the way back, no footer (ADR 0265). A phone's
+// /book draws its own top bar and no footer at all; a phone's /try keeps the header and the slim foot until it does.
 test.describe("the flow's bar", () => {
   for (const path of ["/book", "/try"]) {
     test(`on ${path} leads back to the site, with no footer on a laptop`, async ({ page }) => {
@@ -90,7 +95,12 @@ test.describe("the flow's bar", () => {
       const back = header.getByRole("link", { name: siteCopy.tryOn.backToSite });
       if (narrow(page.viewportSize()?.width)) {
         await expect(back).toBeHidden();
-        await expect(page.locator("footer")).toBeVisible();
+        if (path === "/book") {
+          await expect(page.getByRole("link", { name: siteCopy.tryOn.backToSite })).toHaveAttribute("href", "/");
+          await expect(page.locator("footer")).toHaveCount(0);
+        } else {
+          await expect(page.locator("footer")).toBeVisible();
+        }
       } else {
         await expect(back).toHaveAttribute("href", "/");
         await expect(header.getByRole("link", { name: siteCopy.header.signIn })).toBeHidden();
@@ -108,12 +118,12 @@ test.describe("the flow's bar", () => {
   });
 });
 
-// While the cookie bar asks, a laptop's flow keeps its room beneath the form, which has no footer below it.
+// While the cookie bar asks, a flow with no footer below its form, a laptop's or a phone's /book, keeps the bar's room
+// beneath it; a phone's step button waits there in place of being pinned at the foot, so the bar covers neither.
 test.describe("the cookie bar on a flow", () => {
   test.use({ consentBarAsks: true });
 
-  test("leaves the form's last button above it", async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name === "390", "a phone's flow keeps its slim foot");
+  test("leaves the form's last button above it", async ({ page }) => {
     await visit(page, "/book");
     const bar = page.getByRole("region", { name: siteCopy.consentBar.label });
     await expect(bar).toBeVisible();
@@ -166,8 +176,8 @@ test.describe("sticky bar and footer: the home page only", () => {
   });
 
   // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms. A laptop's /try and
-  // /book have no foot at all (the flow's bar, above).
-  for (const path of ["/try", "/book", "/privacy"]) {
+  // /book, and a phone's /book, have no foot at all (the flow's bar, above).
+  for (const path of ["/try", "/privacy"]) {
     test(`are absent from ${path}, which keeps the slim foot`, async ({ page }, testInfo) => {
       test.skip(path !== "/privacy" && testInfo.project.name !== "390", "a laptop's flow has no foot");
       await page.goto(path);

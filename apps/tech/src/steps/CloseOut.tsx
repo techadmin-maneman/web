@@ -214,7 +214,7 @@ function Rows(props: {
 
 /**
  * A fit closed with "Can't fit today", as the prototype lists it: not fitted and why, the photographs, and that ops
- * rebook it (docs/decisions/0269-the-design-checks-api-side.md).
+ * rebook it (docs/decisions/0270-the-design-checks-api-side.md).
  */
 function NotFittedRows({ job, said, photos }: { job: Job; said: OutcomeRequest | null; photos: string }) {
   const code = said?.outcome === "partial" ? said.not_fitted_reason : undefined;

@@ -434,7 +434,7 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   // The corrected piece goes first, and the outcome that waited behind it follows.
   await expect.poll(() => fake.writes.map((write) => write.path.split("/").at(-1))).toEqual(["piece", "outcome"]);
   // Its base and lot follow the label corrected, from the kit or its check, never the label refused
-  // (docs/decisions/0269-the-design-checks-api-side.md).
+  // (docs/decisions/0270-the-design-checks-api-side.md).
   expect(writesTo(fake, "piece").at(-1)?.body).toMatchObject({ piece_code: "MM-STD-7193-C" });
   await page.goto("/waiting");
   await expect(page.getByText(techCopy.queue.nothing)).toBeVisible();

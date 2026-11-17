@@ -103,10 +103,23 @@
 
 /* ---- Layout ------------------------------------------------------------- */
 
-/* A laptop's flow has no footer, so while the cookie bar asks its form keeps the bar's room beneath it. */
+/* A flow with no footer beneath it, a laptop's or a phone's /book, keeps the cookie bar's room beneath its form while
+   the bar asks. */
+.app-look main {
+  padding-bottom: var(--consent-reserve);
+}
 @media (min-width: 761px) {
   .in-flow main {
     padding-bottom: var(--consent-reserve);
+  }
+}
+
+/* A phone's booking pages have no fixed header, and pin the step's button at the foot: whatever the page scrolls to,
+   a focused control above all, stops clear of the button and its line, and of the cookie bar while it asks. */
+@media (max-width: 760px) {
+  html:has(> body.app-look) {
+    scroll-padding-top: 0;
+    scroll-padding-bottom: calc(var(--bar-h) + var(--sp-48) + var(--site-safe-bottom) + var(--consent-reserve));
   }
 }
 

@@ -834,7 +834,7 @@ export const steps = localised({
     },
   },
   piece: {
-    // Scan-first, as the prototype draws it (docs/decisions/0269-the-design-checks-api-side.md): a label is read by its
+    // Scan-first, as the prototype draws it (docs/decisions/0270-the-design-checks-api-side.md): a label is read by its
     // QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
     scanTitle: "Scan the hair system",
     expected: { chosen: "Chosen", newPiece: "New piece", spec: "Spec", replacing: "Replacing" },

@@ -156,7 +156,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
   expect(reasons).toEqual([{ reason: "Moving to Pune; wants no more visits." }]);
 });
 
-// A fit closed with "Can't fit today" said "No piece to fit", never why (docs/decisions/0269-the-design-checks-api-side.md).
+// A fit closed with "Can't fit today" said "No piece to fit", never why (docs/decisions/0270-the-design-checks-api-side.md).
 test("says why a fit closed with Can’t fit today was not fitted", async ({ page }) => {
   const board: OpsReply<"/api/tasks"> = {
     overdue: 0,

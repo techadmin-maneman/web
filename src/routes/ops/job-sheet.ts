@@ -56,7 +56,7 @@ const JobSheetSchema = z
       description: "Why a client is not going ahead with a fit after their consultation (ADR 0149).",
     }),
     not_fitted_reasons: z.object(LIST).strict().openapi({
-      description: "Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0269).",
+      description: "Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0270).",
     }),
     max_checklist_items: z.number().int(),
     max_partial_reasons: z.number().int(),

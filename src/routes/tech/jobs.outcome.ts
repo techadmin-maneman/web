@@ -88,7 +88,7 @@ async function signOffLetsClose(c: Ctx, job: WorkableJob): Promise<boolean> {
   return closesFit((await signOffOf(c.env.DB, job.id))?.state ?? null);
 }
 
-/** "Can't fit today": a fit closed from its piece step, with why where the phone asked (docs/decisions/0269-the-design-checks-api-side.md). */
+/** "Can't fit today": a fit closed from its piece step, with why where the phone asked (docs/decisions/0270-the-design-checks-api-side.md). */
 async function cannotFitBody(
   c: Ctx,
   job: WorkableJob,

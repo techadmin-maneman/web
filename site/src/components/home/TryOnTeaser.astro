@@ -22,7 +22,6 @@ const widths = [390, 780, 1280];
       <div class="picture">
         <BeforeAfter
           client:visible
-          className="teaser-compare"
           start={tryOnTeaser.start_percent}
           beforeLabel={tryOnTeaser.before}
           afterLabel={tryOnTeaser.after}
@@ -36,6 +35,7 @@ const widths = [390, 780, 1280];
             alt={teaserPair.after.alt}
             sizes={sizes}
             widths={widths}
+            class="focus-client"
           />
           <DesignPicture
             slot="before"
@@ -43,6 +43,7 @@ const widths = [390, 780, 1280];
             alt={teaserPair.before.alt}
             sizes={sizes}
             widths={widths}
+            class="focus-client"
           />
         </BeforeAfter>
       </div>
@@ -71,10 +72,6 @@ const widths = [390, 780, 1280];
   .picture {
     grid-area: picture;
     margin-top: var(--sp-20);
-  }
-  .picture :global(.teaser-compare) {
-    height: auto;
-    aspect-ratio: 648 / 467;
   }
   .start {
     grid-area: start;

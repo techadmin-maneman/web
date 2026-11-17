@@ -11,6 +11,8 @@ import { numberCode as words } from "../content/site.ts";
 /** A page's classes for the words beneath the field, and for where "Send again" stands. */
 export interface CodeFieldClasses {
   readonly hint: string | undefined;
+  /** The hint's second sentence, why the code is asked, where a form keeps it out of sight. */
+  readonly why?: string | undefined;
   readonly error: string | undefined;
   readonly again: string | undefined;
 }
@@ -52,7 +54,8 @@ export function NumberCodeField(props: {
         onChange={props.onInput}
       />
       <p id={hintId} class={classes.hint}>
-        {`${words.sentTo}${props.mobile}. ${words.hint}`}
+        {`${words.sentTo}${props.mobile}.`}
+        <span class={classes.why}>{` ${words.hint}`}</span>
       </p>
       <div aria-live="polite">
         {bad && (

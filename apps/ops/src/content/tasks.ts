@@ -296,7 +296,7 @@ export const tasks = {
     noReason: "No reason given",
     // "Can't fit today" in the technician app: no piece of the client's spec to fit.
     noPiece: "No piece to fit",
-    /** A fit closed with "Can't fit today", with the technician's reason (docs/decisions/0269-the-design-checks-api-side.md). */
+    /** A fit closed with "Can't fit today", with the technician's reason (docs/decisions/0270-the-design-checks-api-side.md). */
     notFitted: (reason: string) => `Not fitted · ${reason}`,
     no_show_decision: (technician: string) => `${technician} came by`,
     /** "Disputes the charge that kept Rs. 1,234", or the free service visit it spent. */

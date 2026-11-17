@@ -2,7 +2,7 @@
 // docs/open-points.md, item 28): each kind of visit's checklist, the reasons
 // a job may be left partly done, why a client is not going ahead after a
 // consultation (docs/decisions/0149-lost-reasons.md), and why a hair system could not be fitted
-// (docs/decisions/0269-the-design-checks-api-side.md). The technician app reads them with the job, and
+// (docs/decisions/0270-the-design-checks-api-side.md). The technician app reads them with the job, and
 // keeps them on the phone with it, so a job opened in a basement shows the list
 // it was given (ADR 0053).
 //

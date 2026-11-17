@@ -1,6 +1,6 @@
 // The job in the new look (docs/prompts/tech-redesign.md, "Job"; docs/decisions/0243-job-and-the-door.md): the map's
 // place, the address and its landmark, the way in with Copy, the client's note, then Navigate, Call and Message; the
-// client's record; the client block the prototype draws for the kind of visit (docs/decisions/0269-the-design-checks-
+// client's record; the client block the prototype draws for the kind of visit (docs/decisions/0270-the-design-checks-
 // api-side.md), and a consultation's options. A job further out has none of it: the API withholds the address and the
 // client until the day before, so the job says when they open.
 

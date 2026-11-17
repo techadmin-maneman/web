@@ -177,7 +177,7 @@ export const OutcomeRequestSchema = z
           .openapi({
             description:
               "With cannot_fit, why: one of the card's not_fitted_reasons, by its id; one ops have since taken off is " +
-              "still taken. Left out by a phone on a build before it was asked (ADR 0269).",
+              "still taken. Left out by a phone on a build before it was asked (ADR 0270).",
           }),
         ...CLOSE_NOTES,
       })

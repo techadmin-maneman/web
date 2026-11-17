@@ -205,6 +205,8 @@
     /* A day with nothing open: shaded, unless the app's look sets its own. */
     --strip-off-ground: var(--paper-shade);
     --strip-off-text: var(--text-muted);
+    /* A day's square: as tall as its width allows, unless the app's look gives its height. */
+    --strip-day-height: auto;
     /* A day's times (./TimeChoice.tsx): four to a row a row's height, under small-capital names, a taken one shaded,
        unless the app's look sets its own. */
     --time-columns: 4;

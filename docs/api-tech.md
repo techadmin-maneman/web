@@ -8568,7 +8568,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "items": {
         "$ref": "#/components/schemas/JobSheetItem"
       },
-      "description": "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0269). Empty for any other visit."
+      "description": "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0270). Empty for any other visit."
     },
     "consumables": {
       "type": "array",
@@ -11301,7 +11301,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "string",
           "minLength": 1,
           "maxLength": 64,
-          "description": "With cannot_fit, why: one of the card's not_fitted_reasons, by its id; one ops have since taken off is still taken. Left out by a phone on a build before it was asked (ADR 0269)."
+          "description": "With cannot_fit, why: one of the card's not_fitted_reasons, by its id; one ops have since taken off is still taken. Left out by a phone on a build before it was asked (ADR 0270)."
         },
         "handoff_note": {
           "type": "string",

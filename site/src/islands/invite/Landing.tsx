@@ -21,6 +21,8 @@ import { fill } from "../../lib/text.ts";
 import { IslandBoundary } from "../IslandBoundary.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
+import { FlowTop } from "./FlowFrame.tsx";
+import { LegalLinks } from "./fields.tsx";
 import { Arrival, confirmation, PincodeAndForm } from "./PageParts.tsx";
 import { useLandingData } from "./useLandingData.ts";
 import { usePageFlow } from "./usePageFlow.ts";
@@ -75,13 +77,13 @@ function LandingPage(props: Props) {
   const credits = invite?.state === "valid";
   const unknown = invite?.state === "unknown";
 
-  const done = confirmation(page, name, reward);
+  const done = confirmation(page, name, reward, { top: <FlowTop onBack={null} />, how: "both" });
   if (done !== null) return done;
   const offer = credits && reward !== null ? referral.arrival.offer(reward) : null;
   const discount = unknown ? null : (invite?.discount ?? null);
   const form = { name, invited: true, credits, reward, turnstileSiteKey: props.turnstileSiteKey };
   return (
-    <Arrival aside={<InviteCard invite={invite} />}>
+    <Arrival top={<FlowTop onBack={null} />} aside={<InviteCard invite={invite} />}>
       {!unknown && <div class={capsLook(styles.from)}>{fromLine(name, invite?.partner ?? null)}</div>}
       <h1 ref={page.heading} tabIndex={-1} class={styles.title}>
         {inviteHeading(invite)}
@@ -97,6 +99,8 @@ function LandingPage(props: Props) {
         )}
       </div>
       <PincodeAndForm page={page} form={form} stage="all" />
+      {/* The terms and the privacy notice, linked from the first screen as from every page; the form brings its own. */}
+      {page.pincode.answer === null && <LegalLinks alone={styles.arrivalLegal} />}
     </Arrival>
   );
 }
@@ -104,7 +108,7 @@ function LandingPage(props: Props) {
 /** The island as the page mounts it: a throw while it draws is reported, and the way to us shown in its place. */
 export default function Landing(props: Props) {
   return (
-    <IslandBoundary>
+    <IslandBoundary top={<FlowTop onBack={null} />}>
       <LandingPage {...props} />
     </IslandBoundary>
   );

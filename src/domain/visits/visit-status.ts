@@ -103,7 +103,7 @@ export function closeVisit({
   outcome: VisitOutcome;
   times: VisitTimes;
   partialReason: string | null;
-  /** A fit closed with "Can't fit today", why (docs/decisions/0269-the-design-checks-api-side.md). */
+  /** A fit closed with "Can't fit today", why (docs/decisions/0270-the-design-checks-api-side.md). */
   notFittedReason?: string | null;
   /** After a consultation, why the client is not going ahead with a fit (docs/decisions/0149-lost-reasons.md). */
   lostReason?: string | null;

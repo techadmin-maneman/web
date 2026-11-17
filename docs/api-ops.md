@@ -36610,7 +36610,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "On a fit closed with \"Can't fit today\", why it was not fitted, in the job sheet's words; null where none is kept (ADR 0269)."
+      "description": "On a fit closed with \"Can't fit today\", why it was not fitted, in the job sheet's words; null where none is kept (ADR 0270)."
     },
     "going_ahead": {
       "anyOf": [
@@ -56021,7 +56021,7 @@ Request body:
         "set_at"
       ],
       "additionalProperties": false,
-      "description": "Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0269)."
+      "description": "Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0270)."
     },
     "max_checklist_items": {
       "type": "integer"

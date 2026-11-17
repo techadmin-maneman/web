@@ -1,4 +1,4 @@
-// The hair system step scan-first (docs/decisions/0269-the-design-checks-api-side.md), as the prototype draws it: what
+// The hair system step scan-first (docs/decisions/0270-the-design-checks-api-side.md), as the prototype draws it: what
 // is expected, the product with its spec and the piece it replaces; the scanner, with "Type the code" and "Can't fit
 // today" beneath it, until a label reads; then the piece confirmed, against the profile and the kit. The base, the lot
 // and the piece that came off are the label's and the card's, so the screen asks for the scan alone.

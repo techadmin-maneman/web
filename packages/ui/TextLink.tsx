@@ -43,10 +43,10 @@ type LinkProps = Look &
     readonly ref?: Ref<HTMLAnchorElement>;
   };
 
-export function TextLink({ tone, compact, inline, className, newTab = false, children, ...rest }: LinkProps) {
+export function TextLink({ tone, compact, inline, quiet, className, newTab = false, children, ...rest }: LinkProps) {
   const beside = newTab ? { target: "_blank", rel: "noopener noreferrer" } : { rel: "noopener" };
   return (
-    <a {...rest} {...beside} className={textLinkLook({ tone, compact, inline, className })}>
+    <a {...rest} {...beside} className={textLinkLook({ tone, compact, inline, quiet, className })}>
       {children}
     </a>
   );
@@ -63,6 +63,7 @@ export function TextButton({
   tone,
   compact,
   inline,
+  quiet,
   className,
   busy = false,
   type = "button",
@@ -80,7 +81,7 @@ export function TextButton({
     <button
       {...rest}
       type={type}
-      className={textLinkLook({ tone, compact, inline, className })}
+      className={textLinkLook({ tone, compact, inline, quiet, className })}
       aria-busy={busy ? true : undefined}
       onClick={click}
     />

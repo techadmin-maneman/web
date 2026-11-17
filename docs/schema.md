@@ -126,7 +126,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 - [no_show_disputes](#no_show_disputes): A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, refunded or upheld, with their reason (ADR 0096).
 - [no_show_refunds](#no_show_refunds): What a no-show's ruling gives back of the visit's payment, kept as owed with the ruling until it is refunded or left to ops (ADR 0096).
-- [not_fitted_reasons](#not_fitted_reasons): Why a hair system could not be fitted today, as ops set them, one they took off kept as retired; none means the committed list (ADR 0269).
+- [not_fitted_reasons](#not_fitted_reasons): Why a hair system could not be fitted today, as ops set them, one they took off kept as retired; none means the committed list (ADR 0270).
 - [number_change_requests](#number_change_requests): A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
 - [number_codes](#number_codes): Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
@@ -1849,7 +1849,7 @@ Indexes:
 
 ## not_fitted_reasons
 
-Why a hair system could not be fitted today, as ops set them, one they took off kept as retired; none means the committed list (ADR 0269).
+Why a hair system could not be fitted today, as ops set them, one they took off kept as retired; none means the committed list (ADR 0270).
 
 Made by `0218_not_fitted_reasons.sql`.
 
@@ -2993,7 +2993,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `payment_checked_at` | TEXT | yes |  |  |  |
 | `pay_at_visit` | INTEGER | no | `0` |  | A paid visit ops booked while online payment is off: nothing is taken at booking, the client pays by UPI at the visit, and ops record the payment once it reaches the account (docs/decisions/0209-paid-at-the-visit-by-upi.md). |
 | `starts_at` | TEXT | yes |  |  | The start a hold keeps (docs/decisions/0210-booking-by-start-time.md), in place of the window's half-slot, and the claims by their day, which booking reads every technician's lock on. Only a new column and an index; the code deployed neither reads nor writes the column. |
-| `booked_from` | TEXT | yes |  |  | Migration number: 0217 Where a hold was made: the client's app, the site, or ops in the console. The technician's card names it as the consultation's "Booked via" (docs/decisions/0269-the-design-checks-api-side.md). A hold made before it has none. Only a new column, which the Worker already deployed leaves empty. |
+| `booked_from` | TEXT | yes |  |  | Migration number: 0217 Where a hold was made: the client's app, the site, or ops in the console. The technician's card names it as the consultation's "Booked via" (docs/decisions/0270-the-design-checks-api-side.md). A hold made before it has none. Only a new column, which the Worker already deployed leaves empty. |
 
 Indexes:
 

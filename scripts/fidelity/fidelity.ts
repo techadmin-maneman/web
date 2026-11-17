@@ -11,11 +11,17 @@
 //
 // Writes docs/fidelity/site/<width>/<name>.jpg: the design on the left, the build on the right. Differences in type,
 // spacing, colour or order are defects. Each pair it makes is replaced; nothing else in docs/fidelity is touched.
-import { readFileSync } from "node:fs";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
-import { pair as pairIn, routeDesignLibraries, STILL } from "../lib/fidelity.ts";
+import { pair as pairIn } from "../lib/fidelity.ts";
+import {
+  bookBoardAt,
+  openBoard as openBoardAt,
+  preparePage as preparePageAt,
+  settle,
+  type BookBoardState,
+} from "./site-boards.ts";
 import { serveDirectory } from "../lib/static-server.ts";
 
 const SITE_DIR = resolve("site/dist/local");
@@ -23,20 +29,6 @@ const DESIGN_DIR = resolve("design");
 const SITE = "http://127.0.0.1:4311";
 const DESIGN = "http://127.0.0.1:4312/site-redesign/boards";
 const OUT = resolve("docs/fidelity/site");
-
-/** Each board's picture, from the README's table: `| \`<id>\` | \`<file>` …`. */
-const BLOBS: ReadonlyMap<string, string> = new Map(
-  [...readFileSync("design/site-redesign/README.md", "utf8").matchAll(/^\| `([0-9a-f]{32})` \| `([^` (]+)/gm)].map(
-    (match) => [match[1] ?? "", match[2] ?? ""],
-  ),
-);
-
-const CONTENT_TYPES: Readonly<Record<string, string>> = {
-  svg: "image/svg+xml",
-  jpg: "image/jpeg",
-  png: "image/png",
-  mp4: "video/mp4",
-};
 
 /**
  * The home boards' sections, in order, and the build's section each pairs with. The board's guarantee and founder are
@@ -71,98 +63,22 @@ const PAGES: readonly { board: string; path: string }[] = [
   { board: "NotFound", path: "/no-such-page" },
 ];
 
+/** /book's states past the first that the page opens at with ?state= (islands/invite/preview.ts), by the board's names. */
+const BOOK_STATES: readonly { state: BookBoardState; preview: string }[] = [
+  { state: "visit", preview: "served" },
+  { state: "nots", preview: "unserved" },
+  { state: "listed", preview: "listed" },
+  { state: "done", preview: "booked" },
+];
+
 const WIDTHS = [
   { width: 390, height: 844, home: "Main", prefix: "Phone" },
   { width: 1440, height: 900, home: "LaptopHome", prefix: "Laptop" },
 ] as const;
 
-async function preparePage(browser: Browser, width: number, height: number): Promise<Page> {
-  // The site's content security policy would refuse the style that stills the page; screenshots set it aside.
-  const page = await browser.newPage({ viewport: { width, height }, bypassCSP: true });
-  await page.route("**/*.mp4", (route) => route.abort());
-  // The try-on readies Turnstile as it opens; here it gets one that passes.
-  await page.route("https://challenges.cloudflare.com/turnstile/**", (route) =>
-    route.fulfill({ contentType: "text/javascript", body: 'window.turnstile = { render: () => "fake", reset() {} };' }),
-  );
-  await routeDesignLibraries(page);
-  // The boards load the canvas's runtime beside them; it is the one in design/.
-  await page.route(`${DESIGN}/support.js`, (route) =>
-    route.fulfill({ contentType: "text/javascript", body: readFileSync("design/support.js") }),
-  );
-  await page.route("**/_blob/*", async (route) => {
-    const id = new URL(route.request().url()).pathname.split("/").pop() ?? "";
-    const file = BLOBS.get(id);
-    if (file === undefined || file.endsWith(".mp4")) return route.abort();
-    return route.fulfill({
-      body: readFileSync(file),
-      contentType: CONTENT_TYPES[file.split(".").pop() ?? ""] ?? "application/octet-stream",
-    });
-  });
-  return page;
-}
-
-async function settle(page: Page): Promise<void> {
-  await page.addStyleTag({ content: STILL });
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-    // Load every lazy image: walk down the page, then back to the top.
-    for (let y = 0; y < document.body.scrollHeight; y += 700) {
-      window.scrollTo(0, y);
-      await new Promise((done) => setTimeout(done, 40));
-    }
-    window.scrollTo(0, 0);
-    // Every image settles, loaded or not, within five seconds.
-    const images = [...document.images]
-      .filter((image) => !image.complete)
-      .map(
-        (image) =>
-          new Promise((done) => {
-            image.addEventListener("load", done, { once: true });
-            image.addEventListener("error", done, { once: true });
-          }),
-      );
-    await Promise.race([Promise.all(images), new Promise((done) => setTimeout(done, 5000))]);
-  });
-}
-
-/** Opens a board and unrolls it: the board's frame and the page scrolling inside it take their full length. */
-async function openBoard(page: Page, board: string): Promise<void> {
-  await page.goto(`${DESIGN}/${board}.dc.html`, { waitUntil: "networkidle" });
-  await page.locator(".mm:visible").first().waitFor();
-  await page.evaluate(() => {
-    const root = [...document.querySelectorAll<HTMLElement>(".mm")].find(
-      (element) => element.getClientRects().length > 0,
-    );
-    if (root === undefined) return;
-    // The page's own scroller is screen-tall; a row of cards or a table that scrolls inside it is not. Where each sits
-    // is read before anything moves, since a computed style changes as the element's own style does.
-    const scrollers = [...root.querySelectorAll<HTMLElement>("*")]
-      .filter((element) => {
-        const style = getComputedStyle(element);
-        return (style.overflowY === "auto" || style.overflowY === "scroll") && element.clientHeight >= 300;
-      })
-      .map((element) => ({
-        element,
-        absolute: getComputedStyle(element).position === "absolute",
-        top: element.offsetTop,
-        padding: parseFloat(getComputedStyle(element).paddingTop),
-      }));
-    // At least the board's own height, where its page is shorter than the screen it is drawn on.
-    root.style.minHeight = `${String(root.getBoundingClientRect().height)}px`;
-    root.style.height = "auto";
-    root.style.overflow = "visible";
-    for (const { element, absolute, top, padding } of scrollers) {
-      element.style.position = "static";
-      element.style.overflow = "visible";
-      element.style.height = "auto";
-      element.style.flex = "none";
-      // Below the board's header, which stays where the board draws it. Padding, since a margin would pass through
-      // the root, now overflowing, and carry the header down with it.
-      if (absolute) element.style.paddingTop = `${String(padding + top)}px`;
-    }
-  });
-  await settle(page);
-}
+const preparePage = (browser: Browser, width: number, height: number) => preparePageAt(browser, DESIGN, width, height);
+const openBoard = (page: Page, board: string, before?: (page: Page) => Promise<void>) =>
+  openBoardAt(page, DESIGN, board, before);
 
 async function openSite(page: Page, path: string): Promise<void> {
   await page.goto(`${SITE}${path}`, { waitUntil: "networkidle" });
@@ -220,20 +136,32 @@ async function run(browser: Browser, frame: (typeof WIDTHS)[number]): Promise<vo
 
   // Every other page, as far down as its board draws it: a legal page's board holds a few of its clauses, where the
   // build holds them all.
-  for (const { board, path } of PAGES) {
-    await openBoard(design, `${prefix}${board}`);
-    await openSite(site, path);
+  const pairWhole = async (name: string) => {
     await fixedBars(site, false);
-    const name = board.replace(/[A-Z]/g, (letter, at: number) => (at === 0 ? "" : "-") + letter.toLowerCase());
     const drawn = design.locator(".mm:visible").first();
     const boardHeight = (await drawn.boundingBox())?.height ?? height;
     const pageHeight = await site.evaluate(() => document.documentElement.scrollHeight);
     await pair(
       width,
-      `page-${name}`,
+      name,
       await drawn.screenshot(),
       await site.screenshot({ fullPage: true, clip: { x: 0, y: 0, width, height: Math.min(boardHeight, pageHeight) } }),
     );
+  };
+  for (const { board, path } of PAGES) {
+    await openBoard(design, `${prefix}${board}`);
+    await openSite(site, path);
+    await pairWhole(
+      `page-${board.replace(/[A-Z]/g, (letter, at: number) => (at === 0 ? "" : "-") + letter.toLowerCase())}`,
+    );
+  }
+
+  // /book's steps past the first, each as its board draws it once walked there (site-boards.ts), beside the page
+  // opened at the same state.
+  for (const { state, preview } of BOOK_STATES) {
+    await openBoard(design, `${prefix}Book`, (board) => bookBoardAt(board, state));
+    await openSite(site, `/book?state=${preview}`);
+    await pairWhole(`page-book-${state}`);
   }
 
   await design.close();

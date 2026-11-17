@@ -16,7 +16,10 @@
     align-items: center;
     justify-content: center;
     gap: var(--sp-4);
+    /* As wide as its column; as tall as the look gives, or by the ratio where it gives none. */
+    width: 100%;
     aspect-ratio: 1 / 1.15;
+    height: var(--strip-day-height);
     padding: 0;
     border: var(--hairline) solid var(--pick-edge);
     background: var(--white);

@@ -1,12 +1,14 @@
 // /book's first step: the name and number, with the agreement the consultation asks for, kept as a lead before
 // anything else is asked (docs/decisions/0116-book-asks-for-the-name-and-number-first.md). Someone who stops at the
-// slot or the address has left what we need to call them. The steps after it start from what it kept.
+// slot or the address has left what we need to call them. The steps after it start from what it kept. On a phone, How
+// it works folds above its button (ADR 0265).
 
 import { referral } from "../../content/referral.ts";
 import { booking } from "../../content/site.ts";
 import { leaveLead } from "../../lib/api.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { PersonFieldset, Send, StepLine } from "./fields.tsx";
+import { HowItWorks } from "./HowItWorks.tsx";
 import { PERSON_START } from "./person.ts";
 import styles from "./Invite.module.css";
 import { mobileToSend, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
@@ -61,6 +63,7 @@ export function AboutYou(props: {
         consentNote=""
         onChange={form.setFields}
       />
+      <HowItWorks on="phone" />
       <div ref={form.box} class={styles.turnstile} />
       <Send
         failure={form.failure}

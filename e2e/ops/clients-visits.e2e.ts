@@ -154,7 +154,7 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(visitRow(page, "22 Aug 2027").getByRole("link", { name: /on the board/ })).toHaveCount(0);
 });
 
-// A fit closed with "Can't fit today" said only "Partly done" (docs/decisions/0269-the-design-checks-api-side.md).
+// A fit closed with "Can't fit today" said only "Partly done" (docs/decisions/0270-the-design-checks-api-side.md).
 test("says why a fit closed with Can’t fit today was not fitted", async ({ page }) => {
   const [done] = RECORD.visits.past;
   if (done === undefined) throw new Error("the record has a visit done");

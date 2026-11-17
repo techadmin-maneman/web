@@ -1,5 +1,5 @@
 // Step 4, the hair system, for a replacement and a first fit only, scan-first as the prototype draws it
-// (docs/decisions/0269-the-design-checks-api-side.md): what is expected, then its label read by the camera or typed, and
+// (docs/decisions/0270-the-design-checks-api-side.md): what is expected, then its label read by the camera or typed, and
 // the piece confirmed; on a replacement the piece that came off is the one the card has on the client's head
 // (docs/decisions/0163-pieces-scanned-from-the-kit.md). A consultation and fit in one visit asks first for the client's
 // choice (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). "Can't fit today" closes the fit from here.

@@ -21,7 +21,7 @@ async function typeCode(page: Page, code: string): Promise<void> {
 /** Rohit's piece, worn since before the visit's day, as the one a replacement takes off. */
 const WORN = { ...ROHITS_PIECE, fitted_at: "2020-07-02" };
 
-// Scan-first, as the prototype draws it (docs/decisions/0269-the-design-checks-api-side.md).
+// Scan-first, as the prototype draws it (docs/decisions/0270-the-design-checks-api-side.md).
 test.describe("the hair system step", () => {
   async function onThePiece(page: Page): Promise<Fake> {
     const fake = await fakeTech(page);
