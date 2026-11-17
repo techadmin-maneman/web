@@ -3,7 +3,7 @@
 
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { MEDIA } from "../../../packages/brand/breakpoints.ts";
+import { CONTAINER, MEDIA } from "../../../packages/brand/breakpoints.ts";
 
 const ROOTS = ["apps/app/src", "apps/ops/src", "apps/tech/src", "packages/ui", "site/src"];
 
@@ -17,6 +17,7 @@ function filesUnder(directory: string): string[] {
 
 const sheets = ROOTS.flatMap(filesUnder).filter((path) => /\.(css|astro)$/.test(path));
 const listed = new Set<string>(Object.values(MEDIA));
+const listedForContainers = new Set<string>(Object.values(CONTAINER));
 
 describe("the widths a layout changes at", () => {
   it("are each one of the list's", () => {
@@ -26,6 +27,16 @@ describe("the widths a layout changes at", () => {
         .flatMap((condition) => condition.match(/\((?:min|max)-width:[^)]*\)/g) ?? [])
         .filter((width) => !listed.has(width))
         .map((width) => `${path} ${width}`),
+    );
+    expect(off).toEqual([]);
+  });
+
+  it("are each one of the list's for a part's own box too", () => {
+    const off = sheets.flatMap((path) =>
+      [...readFileSync(path, "utf8").matchAll(/@container\s+(?:[a-z][a-z0-9-]*\s+)?([^{]*?)\s*\{/g)]
+        .map((match) => match[1] ?? "")
+        .filter((condition) => !listedForContainers.has(condition))
+        .map((condition) => `${path} ${condition}`),
     );
     expect(off).toEqual([]);
   });

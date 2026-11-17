@@ -57,13 +57,14 @@ const PATTERNS = [
 ] as const;
 
 /**
- * Comments, media conditions and @page rules taken out: a condition, and a printed page's size, cannot use custom
- * properties. A condition's widths are held to the one list in packages/brand/breakpoints.ts instead.
+ * Comments, media and container conditions and @page rules taken out: a condition, and a printed page's size, cannot
+ * use custom properties. A condition's widths are held to the lists in packages/brand/breakpoints.ts instead.
  */
 export function withoutCommentsAndConditions(css: string): string {
   return css
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/@media[^{]*\{/g, "@media {")
+    .replace(/@container[^{]*\{/g, "@container {")
     .replace(/@page[^{]*\{[^}]*\}/g, "");
 }
 

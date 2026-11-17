@@ -30,6 +30,7 @@
   --ui-tint: var(--navy-700);
 
   margin: var(--sp-16) 0 0;
+  container: track / inline-size;
 }
 
 .trackNames {
@@ -44,6 +45,17 @@
 .trackNow {
   color: var(--white-000);
   font-weight: var(--weight-semibold);
+}
+
+/* The five names need more room than larger text leaves on a small phone: there the stage the visit is at is named alone. */
+@container track (width < 13rem) {
+  .trackNames {
+    display: block;
+  }
+
+  .trackNames span:not(.trackNow) {
+    display: none;
+  }
 }
 
 .line {
