@@ -113,9 +113,9 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Payments and refunds",
-    tables: ["payments", "refunds", "razorpay_events", "payment_links"],
+    tables: ["payments", "refunds", "razorpay_events", "payment_links", "razorpay_settlements"],
     leftAtT:
-      "Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A payment link sent since has no row, though a payment on it still finds its visit",
+      "Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A settlement since is read again from Razorpay within the week; one older is not. A payment link sent since has no row, though a payment on it still finds its visit",
     putBackBy: "Adding the rows since `<T>`, checked against Razorpay's dashboard",
   },
   {

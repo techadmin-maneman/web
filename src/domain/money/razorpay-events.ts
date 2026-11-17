@@ -14,6 +14,7 @@ import {
   type RazorpayPayment,
   type RazorpayPaymentLink,
   type RazorpayRefund,
+  RazorpaySettlementSchema,
 } from "../../providers/payments/razorpay.ts";
 import { bookPaidHold } from "../booking/book-paid-hold.ts";
 import { holdOfLink, type LinkHold } from "../booking/booked-hold.ts";
@@ -30,6 +31,7 @@ import {
   recordRefund,
   recordRefundedPayment,
 } from "./payments.ts";
+import { keepSettlement } from "./razorpay-settlements.ts";
 
 /** An event as Razorpay sends it: its name, and the entities it carries. */
 export const RazorpayEventSchema = z.object({
@@ -39,6 +41,7 @@ export const RazorpayEventSchema = z.object({
       payment: z.object({ entity: z.looseObject({ id: z.string() }) }).optional(),
       refund: z.object({ entity: z.looseObject({ id: z.string() }) }).optional(),
       payment_link: z.object({ entity: z.looseObject({ id: z.string() }) }).optional(),
+      settlement: z.object({ entity: z.looseObject({ id: z.string() }) }).optional(),
     })
     .optional(),
 });
@@ -253,6 +256,11 @@ export async function applyRazorpayEvent(basis: EventBasis, { event, payload }: 
   }
   if (payload?.refund !== undefined) {
     return refundEvent(basis, RazorpayRefundSchema.parse(payload.refund.entity), payload.payment?.entity);
+  }
+  // Razorpay's payout to the bank, which the Books pass records (docs/decisions/0261-razorpay-money-in-books.md).
+  if (payload?.settlement !== undefined) {
+    await keepSettlement(basis.db, RazorpaySettlementSchema.parse(payload.settlement.entity), basis.now);
+    return "applied";
   }
   basis.log.info("razorpay_hook_ignored", { event: event.slice(0, 40) });
   return "applied";

@@ -1,6 +1,6 @@
 # 0200. Staging's tenants of its own
 
-- Status: accepted; staging's Books organisation and WhatsApp number wait on the owner
+- Status: accepted; superseded for Books by [0261](0261-razorpay-money-in-books.md) on 17 November 2026, as the owner keeps one Books organisation for both; staging's WhatsApp number waits on the owner
 - Date: 2026-10-14
 - Topic: Platform
 - Amends [0025](0025-phase-2-conflicts-register.md), item 26

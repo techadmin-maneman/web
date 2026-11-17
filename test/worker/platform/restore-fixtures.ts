@@ -130,6 +130,7 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, created_at, updated_at)
      VALUES ('rf1', 'pay1', 'rfnd_1', 100000, 'processed', '${AT}', '${AT}')`,
   `INSERT INTO razorpay_events (event_id, event, received_at) VALUES ('evt_1', 'payment.captured', '${AT}')`,
+  `INSERT INTO razorpay_settlements (id, amount, fees, tax, settled_at, received_at) VALUES ('setl_1', 190000, 4720, 720, '${AT}', '${AT}')`,
   `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
      gst_percent, state, appointment_id, expires_at, created_at, updated_at)
      VALUES ('h1', 'p1', 'first_fit', '2026-09-22', 'morning', 't1', 0, 2500000, 2118644, 18, 'booked', 'ap1',

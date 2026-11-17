@@ -86,7 +86,7 @@ beforeEach(async () => {
 
 describe("payments and refunds", () => {
   describe("recording payments", () => {
-    it("records a captured payment against the client's Books record, once, labelled as a test on staging", async () => {
+    it("records a captured payment against the client's Books record, once, into Razorpay's account, labelled as a test on staging", async () => {
       await payment();
       const books = createStubBooks();
       expect(await pass(books, "books-customer-9")).toEqual(did({ recorded: 1 }));
@@ -99,6 +99,7 @@ describe("payments and refunds", () => {
           reference: "MM-2026-0841",
           description: "Staging test: Razorpay payment pay_test41",
           supply: "Staging test: Advance for First fit, Fri 25 Sep",
+          depositAccountId: "bank-7",
         },
       ]);
       expect((await paymentRow())?.books_payment_id).toMatch(/^stub-payment-/);
@@ -130,8 +131,13 @@ describe("payments and refunds", () => {
       await payment();
       await env.DB.prepare("UPDATE payments SET razorpay_payment_id = 'upi:412345678901'").run();
       const books = createStubBooks();
-      await pass(books, "books-customer-9", NOW, { refundAccountId: null, labelAsTest: false });
-      expect(books.made.payments[0]).toMatchObject({ mode: "UPI", description: "UPI payment 412345678901" });
+      // Razorpay's account is set, and the payment still names none: it is ours already, so in Undeposited Funds.
+      await pass(books, "books-customer-9", NOW, { refundAccountId: "bank-7", labelAsTest: false });
+      expect(books.made.payments[0]).toMatchObject({
+        mode: "UPI",
+        description: "UPI payment 412345678901",
+        depositAccountId: null,
+      });
     });
 
     it("leaves an authorised payment until it is captured", async () => {

@@ -6,12 +6,18 @@ import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { availability } from "../../domain/booking/availability.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
-import { currentAddress } from "../../domain/clients/profile.ts";
-import { isServed } from "../../domain/clients/service-area.ts";
 import type { Price } from "../../domain/money/price-book.ts";
 import { visitPriceOf } from "../../domain/booking/client-prices.ts";
 import { termsInForce } from "../../domain/visits/visit-changes.ts";
-import { bookable, movedService, moveTermsFor, notOffered, rangeFor, stockedRange } from "../../http/client-booking.ts";
+import {
+  addressOutsideArea,
+  bookable,
+  movedService,
+  moveTermsFor,
+  notOffered,
+  rangeFor,
+  stockedRange,
+} from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -80,13 +86,6 @@ const AvailabilitySchema = z
   })
   .strict()
   .openapi("Availability");
-/** Whether the client's address is in a pincode we do not come to; false while they have given none. */
-async function addressOutsideArea(db: D1Database, personId: string): Promise<boolean> {
-  const address = await currentAddress(db, personId);
-  if (address === null) return false;
-  return !(await isServed(db, address.pincode));
-}
-
 /** A day's grid of starts as the API gives it, each open or taken. */
 function startsOfDay(asked: {
   readonly day: { readonly date: string; readonly starts: readonly { readonly time: string }[] };

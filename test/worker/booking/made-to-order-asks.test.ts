@@ -101,6 +101,15 @@ describe("a client's ask for a hair system made to order", () => {
     expect(await asked()).toEqual([]);
   });
 
+  it("is refused where the client's address is one we do not come to, which the days tell first", async () => {
+    const rohit = await fittedOfEssential();
+    await env.DB.prepare("UPDATE serviceable_pincodes SET served = 0").run();
+    const refused = await ask(rohit, { type: "replacement", tier: "natural" });
+    expect(refused.status).toBe(422);
+    expect(await refused.json()).toMatchObject({ error: { code: "not_made_to_order" } });
+    expect(await asked()).toEqual([]);
+  });
+
   it("is settled once a visit of its kind is booked for the client, by ops or by them", async () => {
     const rohit = await fittedOfEssential();
     await ask(rohit, { type: "replacement", tier: "natural" });

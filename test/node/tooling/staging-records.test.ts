@@ -111,11 +111,11 @@ function stagingDatabase(): DatabaseSync {
       ('visit-new', 'ours:visit-new', 'new', 'service', '2026-10-09T03:30:00Z', '2026-10-09T05:00:00Z', 'scheduled',
         '2026-10-02T00:00:00Z', NULL, NULL);
     INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, status, created_at, updated_at,
-        captured_at, books_payment_id, books_applied_at) VALUES
+        captured_at, books_payment_id, books_applied_at, books_kept_invoice_id) VALUES
       ('applied', 'here', 'pay_1', 2900000, 'INR', 'captured', '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z',
-        '2026-10-01T00:00:00Z', 'payment-1', '2026-10-02T00:00:00Z'),
+        '2026-10-01T00:00:00Z', 'payment-1', '2026-10-02T00:00:00Z', 'invoice-kept'),
       ('refunded', 'erased', 'pay_2', 100000, 'INR', 'refunded', '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z',
-        '2026-10-01T00:00:00Z', 'payment-2', NULL);
+        '2026-10-01T00:00:00Z', 'payment-2', NULL, NULL);
   `);
   return db;
 }
@@ -137,7 +137,7 @@ function purchasingDatabase(): DatabaseSync {
 }
 
 describe("the IDs staging's database keeps", () => {
-  it("are every client's Books customer and CRM lead, erased clients' too, and each payment's and invoice's", () => {
+  it("are every client's Books customer and CRM lead, erased clients' too, and each payment's and invoice's, a kept charge's too", () => {
     const known = stagingDatabase().prepare(KNOWN_IDS_SQL).all();
 
     expect(known).toEqual(
@@ -148,11 +148,12 @@ describe("the IDs staging's database keeps", () => {
         { kind: "books/customerpayments", id: "payment-2" },
         { kind: "books/invoices", id: "invoice-1" },
         { kind: "books/invoices", id: "invoice-2" },
+        { kind: "books/invoices", id: "invoice-kept" },
         { kind: "crm/Leads", id: "lead-erased" },
         { kind: "crm/Leads", id: "lead-here" },
       ]),
     );
-    expect(known).toHaveLength(8);
+    expect(known).toHaveLength(9);
   });
 
   it("are each supplier's vendor and each receipt's bill", () => {
@@ -183,7 +184,7 @@ describe("clearing the links to records now gone", () => {
   const links = (db: DatabaseSync) => ({
     people: db.prepare("SELECT id, books_customer_id, zoho_lead_id FROM people ORDER BY id").all(),
     visits: db.prepare("SELECT id, books_invoice_id FROM appointments ORDER BY id").all(),
-    payments: db.prepare("SELECT id, books_payment_id FROM payments ORDER BY id").all(),
+    payments: db.prepare("SELECT id, books_payment_id, books_kept_invoice_id FROM payments ORDER BY id").all(),
   });
 
   it("lets go of a client's customer and lead and a visit's invoice, and of nothing still held", () => {
@@ -194,6 +195,7 @@ describe("clearing the links to records now gone", () => {
       { kind: "crm/Leads", id: "lead-erased" },
       { kind: "books/invoices", id: "invoice-2" },
       { kind: "books/invoices", id: "invoice-2" },
+      { kind: "books/invoices", id: "invoice-kept" },
     ])) {
       db.exec(statement);
     }
@@ -210,8 +212,8 @@ describe("clearing the links to records now gone", () => {
         { id: "visit-new", books_invoice_id: null },
       ],
       payments: [
-        { id: "applied", books_payment_id: "payment-1" },
-        { id: "refunded", books_payment_id: "payment-2" },
+        { id: "applied", books_payment_id: "payment-1", books_kept_invoice_id: null },
+        { id: "refunded", books_payment_id: "payment-2", books_kept_invoice_id: null },
       ],
     });
   });
