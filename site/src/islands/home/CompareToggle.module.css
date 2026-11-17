@@ -1,6 +1,7 @@
 /* A phone's comparison or range (./CompareToggle.tsx): the toggles, then the rows. */
 .toggle {
-  --control-height: var(--tap);
+  /* Each choice a finger's 44 px, inside the track's 2 px either side. */
+  --control-height: calc(var(--tap) + 2 * var(--sp-2));
 
   margin-top: var(--site-gap-list);
 }
@@ -48,6 +49,14 @@
 /* The hair system's answer, marked by a navy rule down its side. */
 .us {
   border-left: var(--progress-line) solid var(--site-navy);
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
+}
+
+/* An option's name over its rows, before the toggles are drawn. */
+.option {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--site-fs-label);
   font-weight: var(--weight-semibold);
   color: var(--site-navy);
 }

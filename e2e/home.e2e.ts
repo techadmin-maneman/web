@@ -503,6 +503,27 @@ test.describe("home sections", () => {
     await expect(range.getByText("Twice a month").filter({ visible: true })).toBeVisible();
   });
 
+  // A finger's 44 px for every choice, inside the track's own edge (the brief, "Accessibility").
+  test("the phone's choices are each 44 px tall", async ({ page }) => {
+    test.skip(!narrow(page.viewportSize()?.width), "a laptop draws no choices");
+    await page.goto("/");
+    for (const [section, label] of [
+      ["norwood", siteCopy.norwood.picker],
+      ["comparison", siteCopy.comparison.title],
+      ["range", siteCopy.range.title],
+    ] as const) {
+      const block = page.locator(`[data-section="${section}"]`);
+      await block.scrollIntoViewIfNeeded();
+      const buttons = block.getByRole("group", { name: label }).getByRole("button");
+      await expect(buttons.first()).toBeVisible();
+      for (const height of await buttons.evaluateAll((all) =>
+        all.map((button) => button.getBoundingClientRect().height),
+      )) {
+        expect(height).toBeGreaterThanOrEqual(44);
+      }
+    }
+  });
+
   // The founder's words are never trimmed: the rest of the note unfolds in place, every word in the page.
   test("the founder's note shows its first paragraph and unfolds the rest", async ({ page }) => {
     await page.goto("/");
@@ -626,6 +647,26 @@ test.describe("a visitor saving data", () => {
     await page.getByRole("button", { name: siteCopy.hero.play }).click();
     await expect(page.getByRole("button", { name: siteCopy.hero.pause })).toBeVisible();
     await expect(video).toHaveAttribute("src", /\.mp4$/);
+  });
+});
+
+// A phone without scripts loses nothing (ADR 0263): every stage, and every option's rows, are the page's own.
+test.describe("the home page's choices without scripts", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("show every stage and every option's rows on a phone", async ({ page }) => {
+    test.skip(!narrow(page.viewportSize()?.width), "a laptop shows the row and the tables");
+    await page.goto("/");
+    const norwood = page.locator('[data-section="norwood"]');
+    for (const stage of siteCopy.norwood.stages) {
+      await expect(norwood.getByText(stage.name, { exact: true }).filter({ visible: true })).toBeVisible();
+    }
+    await expect(norwood.getByRole("group", { name: siteCopy.norwood.picker })).toHaveCount(0);
+    const comparison = page.locator('[data-section="comparison"]');
+    await expect(comparison.getByText("Surgical risks").filter({ visible: true })).toBeVisible();
+    await expect(comparison.getByText("Long-term side effects").filter({ visible: true })).toBeVisible();
+    const range = page.locator('[data-section="range"]');
+    await expect(range.getByText("Twice a month").filter({ visible: true })).toBeVisible();
   });
 });
 

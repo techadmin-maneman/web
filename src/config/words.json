@@ -608,14 +608,6 @@
     "reviewed": false
   },
   {
-    "key": "site:home/norwood.after",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "After",
-    "reviewed": false
-  },
-  {
     "key": "site:home/comparison.title",
     "surface": "site",
     "group": "Home",

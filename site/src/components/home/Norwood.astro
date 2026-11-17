@@ -5,7 +5,14 @@
 import { getImage } from "astro:assets";
 import { buttonLook } from "@maneman/ui/Button";
 import NorwoodPicker, { type PickerPicture } from "../../islands/home/NorwoodPicker.tsx";
-import { illustrationTag, norwood, norwoodPhotos, norwoodRestored, placeholderTag } from "../../content/site.ts";
+import {
+  illustrationTag,
+  norwood,
+  norwoodPhotos,
+  norwoodRestored,
+  placeholderTag,
+  results,
+} from "../../content/site.ts";
 import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
 import { designImage } from "../../lib/images.ts";
 import DesignPicture from "../DesignPicture.astro";
@@ -80,7 +87,7 @@ const restoredPicture = showRestored ? await picture(norwoodRestored.image.file,
                 sizes={sizes}
                 widths={widths}
               />
-              <span class="label numeral">{norwood.after}</span>
+              <span class="label numeral">{results.after}</span>
             </div>
             <figcaption class="caption">
               <span class="name">{norwood.restored}</span>
@@ -93,7 +100,13 @@ const restoredPicture = showRestored ? await picture(norwoodRestored.image.file,
 
     {showPhotos && (
       <div class="phone">
-        <NorwoodPicker client:visible stages={pickerStages} restored={restoredPicture} />
+        <NorwoodPicker
+          client:idle
+          stages={pickerStages}
+          restored={restoredPicture}
+          illustration={norwoodRestored.illustration}
+          placeholder={isTaggedPlaceholder(norwoodPhotos) ? placeholderTag : null}
+        />
       </div>
     )}
 
@@ -116,9 +129,10 @@ const restoredPicture = showRestored ? await picture(norwoodRestored.image.file,
     font-weight: var(--weight-semibold);
     color: var(--site-text-muted);
   }
+  /* Two to a row on a phone, where the drawings stand in for the photographs; six on a laptop. */
   .row {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--sp-16);
     margin: var(--site-gap-list) 0 0;
     padding: 0;
@@ -183,6 +197,9 @@ const restoredPicture = showRestored ? await picture(norwoodRestored.image.file,
     }
   }
   @media (min-width: 761px) {
+    .row {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
     .phone,
     .narrow {
       display: none;

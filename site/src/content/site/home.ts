@@ -153,11 +153,9 @@ export const norwood = {
   /** A phone's choice of stage over its picture (ADR 0263), and each option said aloud. */
   picker: "Choose your stage",
   pickerOption: "Stage {numeral}, {name}",
-  /** The restored hairline's tag, beside the stage chosen. */
-  after: "After",
 };
 
-/** A comparison cell: text, or a tick (true) or cross (false). */
+/** A comparison cell: text, or true or false, written Yes and No. */
 export type ComparisonCell = string | boolean;
 
 export const comparison = {

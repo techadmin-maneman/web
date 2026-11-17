@@ -1,10 +1,11 @@
 // A phone's Norwood scale (ADR 0263): the five stages we fit as a choice above two pictures, the stage chosen and the
-// restored hairline beside it. Choosing a stage changes only its own picture. Without scripts the first stage shows.
+// restored hairline beside it. Choosing a stage changes only its own picture. Until the page's script runs, or where
+// it never does, every stage shows, two to a row, and the choice is not drawn.
 
 import "../refs-as-props.ts";
 import { Segmented } from "@maneman/ui/Segmented";
-import { useState } from "preact/hooks";
-import { illustrationTag, norwood } from "../../content/site.ts";
+import { useEffect, useState } from "preact/hooks";
+import { illustrationTag, norwood, results } from "../../content/site.ts";
 import { fill } from "../../lib/text.ts";
 import styles from "./NorwoodPicker.module.css";
 
@@ -36,8 +37,35 @@ function Picture({ picture }: { picture: PickerPicture }) {
   );
 }
 
-export default function NorwoodPicker(props: { stages: readonly PickerStage[]; restored: PickerPicture | null }) {
+function StageTile({ stage, placeholder }: { stage: PickerStage; placeholder: string | null }) {
+  return (
+    <figure class={styles.tile}>
+      <div class={styles.frame}>
+        <Picture picture={stage.picture} />
+        <span class={`label ${styles.numeral ?? ""}`}>{stage.numeral}</span>
+        {placeholder !== null && <span class={styles.band}>{placeholder}</span>}
+      </div>
+      <figcaption class={styles.caption}>
+        <span class={styles.name}>{stage.name}</span>
+        <span class={styles.sub}>{stage.tag}</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+export default function NorwoodPicker(props: {
+  stages: readonly PickerStage[];
+  restored: PickerPicture | null;
+  /** Whether the restored hairline was made with an AI tool rather than photographed, so says so. */
+  illustration: boolean;
+  /** The Placeholder tag, where the stages' photographs are still marked as placeholders; null where they are not. */
+  placeholder: string | null;
+}) {
   const [at, setAt] = useState("0");
+  const [running, setRunning] = useState(false);
+  useEffect(() => {
+    setRunning(true);
+  }, []);
   const stage = props.stages[Number(at)] ?? props.stages[0];
   if (stage === undefined) return null;
   const names = Object.fromEntries(
@@ -46,34 +74,30 @@ export default function NorwoodPicker(props: { stages: readonly PickerStage[]; r
       fill(norwood.pickerOption, { numeral: each.numeral, name: each.name }),
     ]),
   );
+  const shown = running ? [stage] : props.stages;
 
   return (
     <div class={styles.picker}>
-      <Segmented
-        pressed
-        label={norwood.picker}
-        options={props.stages.map((each, index) => [String(index), each.numeral] as const)}
-        names={names}
-        value={at}
-        onChange={setAt}
-      />
+      {running && (
+        <Segmented
+          pressed
+          label={norwood.picker}
+          options={props.stages.map((each, index) => [String(index), each.numeral] as const)}
+          names={names}
+          value={at}
+          onChange={setAt}
+        />
+      )}
       <div class={styles.tiles}>
-        <figure class={styles.tile}>
-          <div class={styles.frame}>
-            <Picture picture={stage.picture} />
-            <span class={`label ${styles.numeral ?? ""}`}>{stage.numeral}</span>
-          </div>
-          <figcaption class={styles.caption}>
-            <span class={styles.name}>{stage.name}</span>
-            <span class={styles.sub}>{stage.tag}</span>
-          </figcaption>
-        </figure>
+        {shown.map((each) => (
+          <StageTile stage={each} placeholder={props.placeholder} key={each.numeral} />
+        ))}
         {props.restored !== null && (
           <figure class={styles.tile}>
             <div class={`${styles.frame ?? ""} ${styles.restored ?? ""}`}>
               <Picture picture={props.restored} />
-              <span class={`label ${styles.after ?? ""}`}>{norwood.after}</span>
-              <span class={styles.illustration}>{illustrationTag}</span>
+              <span class={`label ${styles.numeral ?? ""}`}>{results.after}</span>
+              {props.illustration && <span class={styles.band}>{illustrationTag}</span>}
             </div>
             <figcaption class={`${styles.caption ?? ""} ${styles.name ?? ""}`}>{norwood.restored}</figcaption>
           </figure>

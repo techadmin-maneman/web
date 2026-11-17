@@ -1,6 +1,7 @@
 /* A phone's Norwood picker (./NorwoodPicker.tsx): the choice of stage, then its picture beside the restored hairline. */
 .picker {
-  --control-height: var(--tap);
+  /* Each choice a finger's 44 px, inside the track's 2 px either side. */
+  --control-height: calc(var(--tap) + 2 * var(--sp-2));
 
   margin-top: var(--site-gap-list);
 }
@@ -8,6 +9,9 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-12);
+}
+/* Beneath the choice, once it is drawn. */
+.picker > :global([role="group"]) + .tiles {
   margin-top: var(--sp-16);
 }
 .tile {
@@ -29,8 +33,7 @@
   object-fit: cover;
   object-position: 50% 30%;
 }
-.numeral,
-.after {
+.numeral {
   position: absolute;
   top: 0;
   left: 0;
@@ -40,8 +43,8 @@
   min-width: var(--site-numeral-w);
   height: var(--site-numeral-h);
 }
-/* The band across the restored picture's foot that says it is an illustration. */
-.illustration {
+/* The band across a picture's foot that says what it is: an illustration, or a placeholder. */
+.band {
   position: absolute;
   right: 0;
   bottom: 0;

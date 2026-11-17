@@ -170,7 +170,6 @@
   --compare-knob-edge: var(--site-line);
   --compare-knob-text: var(--site-navy);
   --compare-knob-radius: 0;
-  --compare-handle: var(--site-compare-handle);
 }
 
 /* On navy, words are white and their quieter lines mist; nothing is paper. */
@@ -249,7 +248,10 @@
   /* The results' before and after at its tallest. */
   --result-picture-max-h: 680px; /* a laptop's result at its tallest, as the board draws it */
 
-  --comparison-label-w: var(--stage-min); /* a laptop table's first column, the rows' names: 220 px */
+  --comparison-label-w: var(
+    --stage-min
+  ); /* a laptop table's first column, the rows' names: 220 px, which the
+                                            try-on's --stage-min also is; moving one moves both */
 
   --teaser-frame-h: clamp(280px, 42vw, 420px);
   /* The try-on's look beside its photograph, on the sent screen. */
