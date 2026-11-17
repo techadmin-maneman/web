@@ -134,21 +134,29 @@ async function openBoard(page: Page, board: string): Promise<void> {
       (element) => element.getClientRects().length > 0,
     );
     if (root === undefined) return;
+    // The page's own scroller is screen-tall; a row of cards or a table that scrolls inside it is not. Where each sits
+    // is read before anything moves, since a computed style changes as the element's own style does.
+    const scrollers = [...root.querySelectorAll<HTMLElement>("*")]
+      .filter((element) => {
+        const style = getComputedStyle(element);
+        return (style.overflowY === "auto" || style.overflowY === "scroll") && element.clientHeight >= 300;
+      })
+      .map((element) => ({
+        element,
+        absolute: getComputedStyle(element).position === "absolute",
+        top: element.offsetTop,
+      }));
     // At least the board's own height, where its page is shorter than the screen it is drawn on.
     root.style.minHeight = `${String(root.getBoundingClientRect().height)}px`;
     root.style.height = "auto";
     root.style.overflow = "visible";
-    // The page's own scroller is screen-tall; a row of cards or a table that scrolls inside it is not.
-    for (const element of root.querySelectorAll<HTMLElement>("*")) {
-      const style = getComputedStyle(element);
-      const scrolls = style.overflowY === "auto" || style.overflowY === "scroll";
-      if (!scrolls || element.clientHeight < 300) continue;
-      const top = element.offsetTop;
+    for (const { element, absolute, top } of scrollers) {
       element.style.position = "static";
       element.style.overflow = "visible";
       element.style.height = "auto";
       element.style.flex = "none";
-      if (style.position === "absolute") element.style.marginTop = `${String(top)}px`;
+      // Below the board's header, which stays where the board draws it.
+      if (absolute) element.style.marginTop = `${String(top)}px`;
     }
   });
   await settle(page);

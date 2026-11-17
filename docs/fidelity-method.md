@@ -21,9 +21,9 @@ Any difference in type, spacing, colour or order is a defect, but for the depart
 
 ## Phase 2 boards
 
-The Phase 2 files in `design/phase2` run on the same prototype runtime. `test/node/architecture/briefs-and-designs.test.ts` checks that their `support.js` is byte-identical to `design/support.js`, so the same library routing renders them. Pairs for the client and technician apps follow the Phase 1 method, with two differences:
+The Phase 2 files in `design/phase2` run on the same prototype runtime. `test/node/architecture/briefs-and-designs.test.ts` checks that their `support.js` is byte-identical to `design/support.js`, so the same library routing renders them. Pairs for the client and technician apps follow the site's method above, with two differences:
 
-- **Compare frames, not boards.** A spec board draws several states side by side, with captions and notes around them. Crop the design to the one frame a screen matches, such as `A2 · Code · after 30 seconds`, and shoot the build in that state (a `?state=` preview, as the Phase 1 site has).
+- **Compare frames, not boards.** A spec board draws several states side by side, with captions and notes around them. Crop the design to the one frame a screen matches, such as `A2 · Code · after 30 seconds`, and shoot the build in that state (a `?state=` preview, as the site has).
 - **Match the frame's width:**
   - the client and technician apps at 390 px, the width of the phone frames.
 

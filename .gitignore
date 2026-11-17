@@ -19,6 +19,8 @@ lighthouse/
 # The site's fidelity pairs, 11 MB shot afresh by each change of the redesign; the nightly run keeps them as an artifact
 # (docs/fidelity-method.md, "The site").
 docs/fidelity/site/
+# The site redesign's 60 full-page renders, 23.6 MB, kept on the machine that builds it (docs/site-redesign/PLAN.md).
+design/site-redesign/screens/
 
 # Files the owner supplies that hold personal data, such as ops' referral log. Never committed.
 private/

@@ -74,10 +74,13 @@
     appearance: none;
   }
 
-  /* Keyboard focus: a brass ring on every ground, the one place brass is drawn (ADR 0262). */
+  /* Keyboard focus: a metal ring, brass on navy and gold-700 on white and cool (ADR 0262). */
   :focus-visible {
     outline: var(--focus-width) solid var(--focus-colour, var(--site-focus));
     outline-offset: var(--focus-offset);
+  }
+  .on-ink {
+    --focus-colour: var(--site-focus-on-navy);
   }
 
   /*

@@ -29,8 +29,8 @@ Worker's rewrites, `?state=` previews, and the Lighthouse budgets. No endpoint, 
 | `PhoneStop` / `LaptopStop`             | `*-11-stop-ask`, `-done`, `-visits`, `-expired`, `-offline` | `pages/stop.astro`, `islands/StopMessages.tsx`                            | `content/site/pages.ts` (`stopMessages`)                            |
 | `PhoneNotFound` / `LaptopNotFound`     | `*-12-404`                                                  | `pages/404.astro`                                                         | `content/site/pages.ts`                                             |
 
-The referral landing (`/r/:code`) has no board. It shares `/book`'s island and takes `/book`'s look; its fidelity stays
-`fidelity:refer`'s, reshot.
+The referral landing (`/r/:code`) has no board. It shares `/book`'s island and takes `/book`'s look; its fidelity
+pairs against `/book`'s board: PR 5 moves `fidelity:refer` onto it.
 
 ### Home, section by section
 
@@ -105,18 +105,27 @@ A test asserts the set of files in `site/src/assets` is unchanged by the redesig
 
 - **Palette.** In `packages/brand/tokens.css`, the primitives the brief names already exist (`--ink` #16233A,
   `--navy-700`, `--navy-800`, `--gilt` #C9A363, `--brass`, `--white-000`, `--line-200`, `--ink-900`, `--ink-500`,
-  `--mist-300`, `--ink-night`, `--red-700`, `--red-050`). Two are new: `--cool-100` #F1F3F6 and `--gilt-hover` #D4B47A.
-  `site/src/styles/tokens-site.css` maps the site's roles onto them (`--site-ground`, `--site-band`, `--site-navy`,
-  `--site-line`, `--site-text`, `--site-text-muted`, `--site-on-navy-muted`, `--site-focus`, the button roles) and stops
-  reading `--paper` and `--wash-100`. A test fails a site stylesheet or built page that draws `#E9E4D8` or `#F4F0E8`.
+  `--mist-300`, `--ink-night`, `--red-700`, `--red-050`). Three are new: `--cool-100` #F1F3F6, `--gilt-hover`
+  #D4B47A and `--white-055`, an outline's edge on navy. `site/src/styles/tokens-site.css` maps the site's roles onto
+  them (`--site-ground`, `--site-band`, `--site-navy`, `--site-line`, `--site-text`, `--site-text-muted`,
+  `--site-on-navy-muted`, `--site-focus`, the button roles), and the shared parts' `--ui-*` roles onto white.
+- **Focus and edges.** The focus ring is brass on navy and `--gold-700` on white and cool, where brass is under 3:1; a
+  control's edge is stone on white and `--ink-500` on cool (ADR 0262, decisions 4 and 5).
 - **Type.** `packages/brand/fonts-plex.css` replaces `fonts.css` on the site; EB Garamond and Instrument Sans leave
-  the site's build. Plex draws ₹ from its Devanagari file (`fonts-plex.css` ranges it over U+20B9), so the one-glyph
-  rupee file goes too. The clamp scale: turning line 40–80, hero title 20–26, section 26–44, statement 20–34, lead 16–18, body 16, labels 14,
-  buttons 16, written once as `--site-fs-*` with `clamp()` between 390 and 1440 px.
-- **Space.** Column 1200 px, gutters 20 / 40 px; section padding 56 / 96 px; buttons 52 px; header buttons 40 / 44 px.
+  the site's build, and production's coming-soon page takes Plex too. The clamp scale: turning line 40–80, hero title
+  20–26, section 26–44, statement 20–34, lead 16–18, body 16, labels 14, buttons 16, written once as `--site-fs-*`
+  with `clamp()` between 390 and 1440 px.
+- **Space.** Column 1200 px, gutters 20 / 40 px; section padding 56 / 96 px; buttons 52 px; the header's button 40 px
+  on a phone and 44 px on a laptop.
 - **Radius.** 0; circles only for radio dots, the spinner and the slider knob.
 - **`/book` and `/try`** take the client app's look values (`apps/app/src/styles/look.css` roles), so the shared parts
   draw alike (ADR 0121).
+- **Between PR 1 and PR 4.** PR 1 points the old scale's names (`--fs-hero`, `--fs-h1`, `--fs-h2`, `--fs-lead`,
+  `--fs-body`, `--fs-band`, `--gutter`, `--page-max`, `--section-gap`) at the new scale, so every page moves at once.
+  Where a name served several roles, a size differs from the boards until its section is rebuilt and the old name
+  goes: What it is's statement, the results caption and closing title (`--fs-h3`), the hero's title (`--fs-h4`), and a
+  section's padding, which the old `--section-gap` gives at its top alone. Staging shows this; production serves its
+  coming-soon page until the site goes live there.
 
 ## Copy changes (the only new strings)
 
@@ -140,9 +149,10 @@ The flow frame's other words are live strings, reused by key: "Free consultation
 1. **Phone comparison and range.** The brief says "the Transplant and Medication toggle, as now", but live draws
    swipeable cards (#783). The prototype draws segmented toggles; the prototype wins on look, so the cards become
    toggles.
-2. **Two filled buttons in one viewport.** At the Norwood section on a laptop the sticky header's "Book a free
-   consultation" and the section's own Book button are both filled navy and both on screen. The prototype draws it;
-   kept, and recorded.
+2. **Two filled buttons in one view: for the owner.** The fixed header's filled "Book a free consultation" shares the
+   screen with every section's own filled button: the hero's gold Book, Norwood's, the try-on teaser's gold button and
+   the closing band's; on a phone the sticky bar's Book joins it. The boards draw each, and the brief says one filled
+   button per view. Built as the boards draw it until the owner rules; listed in REPORT.md.
 3. **Board stand-ins**: one results pair, grey look thumbnails, guide photographs, "Prototype:" lines and the stubbed
    clauses in privacy and terms are not built; the real content is.
 4. **The one visit's length** reads as the API gives it; the board's "2.5 hours" shows only if ops set it.
@@ -152,9 +162,11 @@ The flow frame's other words are live strings, reused by key: "Free consultation
 ## How each PR is verified
 
 `npm test`, `npm run typecheck`, `npm run lint`, `npm run check:site`, the site's Playwright projects (390, 1440),
-`npm run fidelity` against `design/site-redesign/boards`, and `npm run lighthouse` on PR 8. New tests: the Norwood
-picker, the founder's disclosure, the hero's Pause with the film, the phone `/book` disclosures, the two toggles, no
-paper or wash drawn, no typed visit length, the asset set unchanged. Screenshots at 360, 390 and 1440 px (and 130% text
+`npm run fidelity` against `design/site-redesign/boards`, and `npm run lighthouse` on PR 8. New tests, by the PR that
+adds each: PR 1, the brief's colours, Plex alone in the stylesheets and on every built page (`e2e/site-look.e2e.ts`),
+the asset set unchanged; PR 3, the hero's Pause with the film; PR 4, the Norwood picker, the founder's disclosure, the
+two toggles; PR 5, the phone `/book` disclosures and no typed visit length; PR 8, no paper or wash drawn on any built
+page. Screenshots at 360, 390 and 1440 px (and 130% text
 where touched) for `ui-guard`.
 
 ## PRs

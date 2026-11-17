@@ -19,7 +19,10 @@
   --site-navy-rule: var(--navy-700); /* rules and edges on navy: the footer's top */
   --site-gold: var(--gilt); /* the one filled button on navy */
   --site-gold-hover: var(--gilt-hover);
-  --site-focus: var(--brass); /* the focus ring, on every ground */
+  /* The focus ring: brass on navy (5.1:1); on white and cool, where brass is 3.0:1 and 2.8:1, the brief's metal
+     darkened to gold-700 (4.9:1 and 4.5:1), clear of WCAG 1.4.11's 3:1 (ADR 0262). */
+  --site-focus: var(--gold-700);
+  --site-focus-on-navy: var(--brass);
   --site-line: var(--line-200);
   --site-text: var(--ink-900);
   --site-text-muted: var(--ink-500);
@@ -45,8 +48,8 @@
   --site-gutter: clamp(20px, calc(12.57px + 1.905vw), 40px);
   --site-section-y: clamp(56px, calc(41.14px + 3.81vw), 96px);
   --site-button-h: var(--btn-client); /* 52 */
-  --site-header-button-h: var(--sp-40); /* a laptop's header */
-  --site-header-icon: var(--tap); /* a phone's header, 44 */
+  --site-header-button: var(--sp-40); /* the header's button on a phone, 14 px words */
+  --site-header-button-wide: var(--tap); /* the header's button on a laptop, 16 px words; also a phone's Sign in */
 }
 
 /* The shared parts' roles (packages/brand/tokens.css) on the site's white, as the client app's look sets them
@@ -104,6 +107,7 @@
   --status-saved: var(--site-on-navy);
   --status-done: var(--site-on-navy);
   --status-note: var(--site-on-navy-muted);
+  --focus-colour: var(--site-focus-on-navy);
 }
 
 :root {
@@ -112,9 +116,9 @@
      display sizes of the band's statement and how it works' numerals. The brand's fixed sizes (--fs-13 to --fs-30)
      are for what does not grow. */
   --fs-hero: var(--site-fs-turning);
-  /* The hero's turning line: on a narrow phone it shrinks so its longest phrase, about 8.7 times the type's size,
-     keeps to one line. */
-  --fs-hero-line: min(var(--fs-hero), calc((100vw - 2 * var(--gutter)) / 8.9));
+  /* The hero's turning line, at the scale's size: on a phone its longer phrases take two lines, as the board draws
+     them (ADR 0264). */
+  --fs-hero-line: var(--fs-hero);
   --fs-band: var(--site-fs-statement);
   --fs-step-number: clamp(40px, 5vw, 72px);
   --fs-h1: var(--site-fs-section);
