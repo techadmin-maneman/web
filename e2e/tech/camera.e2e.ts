@@ -327,3 +327,23 @@ test("asks for the angle again when a frame comes out blank, and keeps none of i
   await expect(page.getByText(shots(0), { exact: true })).toBeVisible();
   expect((await heldOnPhone(page)).frames).toBe(0);
 });
+
+// A camera that would not open again took the strip and Done with it, so a set already on the phone could only go as
+// "without photos", which tells ops they are missing.
+test("keeps the strip and Done for a set already taken when the camera will not open again", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(BEFORE);
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await expect(capture).toBeEnabled({ timeout: 10_000 });
+    await capture.click();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
+  }
+  // Another app holds the camera now.
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException("busy", "NotReadableError"));
+  });
+  await page.reload();
+  await expect(page.getByText(techCopy.capture.unavailableTitle)).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.capture.finish, exact: true })).toBeEnabled();
+});

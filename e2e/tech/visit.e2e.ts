@@ -67,6 +67,17 @@ test("compares the angle to take with the last visit's, over the top half of the
   await expect(page.getByText(techCopy.capture.now, { exact: true })).toBeVisible();
 });
 
+test("names the last visit's photograph by its day and who took it, over the angle", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.compare = true;
+  fake.lastVisit = true;
+  await page.goto(`/jobs/${JOB_ID}/before-photos`);
+  const { compareWithVisit, compared, visitOf } = techCopy.capture;
+  await page.getByRole("button", { name: compareWithVisit("22 Aug", "Imran") }).click();
+  await expect(page.getByText(compared(visitOf("22 Aug", "Imran"), "front"), { exact: true })).toBeVisible();
+  await expect(page.getByText(techCopy.capture.now, { exact: true })).toBeVisible();
+});
+
 test("offers no Compare where there is nothing to compare with", async ({ page }) => {
   await fakeTech(page);
   const answered = page.waitForResponse((response) => response.url().includes("/compare/before/front"));

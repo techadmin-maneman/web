@@ -38,15 +38,14 @@ which were added to the same list.
   only that ops cancelled it.
 - **What a past visit used**, in the client's history, names each thing with its count ("Walker tape × 2"): the API's
   history gives no unit, so the prototype's "10 ml solvent" waits for it to.
+- **A ruled choice list** keeps the shared choices' 8 px between its rows, which wins over the list's own gap of none
+  in `packages/ui`; the technician look sets its rows 8 px shorter so rule to rule is the prototype's 60 px, until the
+  shared order is put right with the console's screens captured.
 - **"Report missing" at 130 % text** wraps onto two lines: at the prototype's own padding and size it cannot fit half
   the width either.
 - **Pending uploads** keeps, beside the prototype's row for each photo set, a row for a job's other writes, the time
   its oldest has waited on the phone (which is what an eviction would take), and every way it had to send, put right
   or let go of a job's work ([0246](0246-closed-and-sent-back.md), decision 9).
-- **A camera the phone refused** offers Try again where the prototype offers Open settings: a web app cannot open the
-  phone's settings, so the line asks the technician to turn camera access on there and then try again.
-- **The camera's count** names the angle in lower case, "1 of 5 · front", as the prototype writes it. The design pass
-  ([0258](0258-the-technician-design-pass.md), decision 1) wrote it capitalised; the prototype is the source.
 
 ## Consequences
 

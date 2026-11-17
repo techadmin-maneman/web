@@ -113,6 +113,9 @@ function Evidence({ job }: { job: Job }) {
   const distance = job.progress.distance_m ?? kept?.arrival?.distance_m ?? null;
   const photographed = kept?.photographed ?? null;
   const waited = waitedOf(job, kept?.closed ?? null);
+  // The call and the door's photograph are this phone's to say: one closed elsewhere, by ops or on another phone, has
+  // no record of them here, and the close says only what the API knows.
+  const keptHere = kept !== null && (kept.arrival !== null || kept.called !== null || photographed !== null);
   return (
     <>
       <dl className={classes(shared.rows, styles.rows)}>
@@ -124,16 +127,15 @@ function Evidence({ job }: { job: Job }) {
         )}
         <Row name={copy.noShow.waited} value={copy.length(waited.hours, waited.minutes)} />
         <Row name={copy.noShow.whatsApp} value={receiptOf(job)} />
-        {job.client !== null && (
+        {keptHere && job.client !== null && (
+          <Row name={copy.noShow.call} value={kept.called === null ? copy.noShow.notCalled : copy.noShow.noAnswer} />
+        )}
+        {keptHere && (
           <Row
-            name={copy.noShow.call}
-            value={(kept?.called ?? null) === null ? copy.noShow.notCalled : copy.noShow.noAnswer}
+            name={copy.noShow.doorPhoto}
+            value={copy.noShow.taken(photographed === null ? null : clock(new Date(photographed).toISOString()))}
           />
         )}
-        <Row
-          name={copy.noShow.doorPhoto}
-          value={copy.noShow.taken(photographed === null ? null : clock(new Date(photographed).toISOString()))}
-        />
       </dl>
       <p className={styles.closeNote}>{copy.noShow.ops}</p>
     </>
@@ -177,7 +179,8 @@ const midLine = (words: string): string =>
 
 /**
  * What the visit came to: the decision, how long it took, its photographs and how it is paid. A consultation's, as the
- * prototype lists them: how long, the photographs, then whether the client goes ahead; it charges nothing here.
+ * prototype lists them: how long, the photographs, then whether the client goes ahead; and how it is paid where the
+ * technician collects it, as a priced one sold to pay at the visit.
  */
 function Rows(props: {
   job: Job;
@@ -194,6 +197,7 @@ function Rows(props: {
         {took}
         <Row name={copy.photos} value={props.photos} />
         <Decided job={props.job} />
+        {props.job.badge === "at_visit" && <Row name={copy.paymentRow} value={badges[props.job.badge]} />}
       </dl>
     );
   }
@@ -230,11 +234,17 @@ function firstOf(day: KeptLoad<readonly JobSummary[]>): JobSummary | null {
 }
 
 /** What comes next: today's next job, or, after the last, that the day is done and tomorrow's first. */
-function WhatsNext({ later, names }: { later: JobSummary | null; names: ReadonlyMap<string, string> }) {
+function WhatsNext(props: {
+  later: JobSummary | null;
+  /** Whether today's jobs were read: only then is a day with none left done. */
+  todayLoaded: boolean;
+  names: ReadonlyMap<string, string>;
+}) {
+  const { later, names } = props;
   const [tomorrow] = useDay(dayAfter(todayInIndia()));
   if (later !== null)
     return <NextUp next={later} name={names.get(later.id) ?? later.client_name ?? where(later.sector)} />;
-  const first = firstOf(tomorrow);
+  const first = props.todayLoaded ? firstOf(tomorrow) : null;
   return first === null ? null : <DoneForToday first={first} />;
 }
 
@@ -315,7 +325,7 @@ export function CloseOut({ id }: { id: string }) {
         {/* A card the phone kept from before one visits names no link. */}
         {job.one_visit && job.payment_link !== null && <PaymentLink job={job} link={job.payment_link} />}
         {outcome === "partial" && <FinishTheWork job={job} closing={closing} />}
-        <WhatsNext later={later} names={names} />
+        <WhatsNext later={later} todayLoaded={day.state === "loaded"} names={names} />
       </section>
 
       <div className={classes(frame.foot, light.paperFoot, styles.foot)}>

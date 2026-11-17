@@ -1,6 +1,7 @@
 // Step 6: Done, or Partial with one of ops' reasons (docs/decisions/0087-consumables-and-stock.md). Nothing is chosen
 // for the technician, so a gloved tap cannot close a job they have not finished (ADR 0025, "The technician boards").
-// A consultation asks at once whether the client goes ahead (docs/decisions/0149-lost-reasons.md), and closes done.
+// A consultation asks at once whether the client goes ahead (docs/decisions/0268-the-visits-design-check.md), and
+// closes done.
 
 import { sayKnown, theirs } from "../lang/index.ts";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
@@ -259,7 +260,7 @@ function Choosing({
     refused,
     job.partial_reasons.map((one) => one.id),
   );
-  // A consultation closes done: what it asks is whether the client goes ahead (owner, 17 Nov 2026).
+  // A consultation closes done: what it asks is whether the client goes ahead.
   const consultation = job.type === "consultation" && !job.one_visit;
   const [choice, setChoice] = useState<Choice>(consultation ? "done" : (sent?.choice ?? null));
   const [reason, setReason] = useState<PartialReason["id"] | null>(sent?.reason ?? null);

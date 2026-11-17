@@ -5,7 +5,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { JOB_ID, jobsToday, ONE_VISIT_CHECKLIST, ROHITS_PIECE, todayInIndia } from "./fixtures.ts";
+import { dayAfter, JOB_ID, jobsToday, ONE_VISIT_CHECKLIST, ROHITS_PIECE, todayInIndia } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { atTheDoor, deviceRecordOnPhone, heldOnPhone, pageScrolls, queuedOnPhone, recordOnPhone } from "./on-phone.ts";
 import { holding, startedThrough, writesTo, brassMarks, throughTheTasks } from "./steps-fixtures.ts";
@@ -85,7 +85,8 @@ test("times the visit from the check-in to the close", async ({ page }) => {
   await expect(page.getByText(techCopy.closeOut.length(0, 30), { exact: true })).toBeVisible();
 });
 
-// After a consultation, the outcome asks whether the client is going ahead, and why not (docs/decisions/0149-lost-reasons.md).
+// A consultation's outcome asks at once whether the client is going ahead, and why not
+// (docs/decisions/0268-the-visits-design-check.md).
 test("a consultation’s outcome asks whether the client is going ahead, and why not", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "consultation";
@@ -95,7 +96,7 @@ test("a consultation’s outcome asks whether the client is going ahead, and why
   await page.getByRole("radio", { name: /^Mane Man Essential/ }).click();
   await stepAction(page).click();
 
-  // The question is asked at once, with no Result before it and no Summary (owner, 17 Nov 2026).
+  // The question is asked at once, with no Result before it and no Summary.
   await expect(page.getByRole("group", { name: techCopy.steps.outcome.goingAhead })).toBeVisible();
   await expect(page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true })).toHaveCount(0);
   await expect(page.getByText(techCopy.steps.outcome.summary, { exact: true })).toHaveCount(0);
@@ -557,4 +558,41 @@ test("after the day's last job, the close says the day is done, with tomorrow's 
   await page.goto(`/jobs/${JOB_ID}/done`);
   await expect(page.getByText(techCopy.closeOut.next.doneForToday, { exact: true })).toBeVisible();
   await expect(page.getByText(/^Tomorrow · \d{1,2}(:\d{2})? [ap]m$/)).toBeVisible();
+});
+
+// With today's jobs unread, the close cannot know the day is done: it says nothing of tomorrow.
+test("says nothing of tomorrow on the close while today's jobs have not been read", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.tomorrow = true;
+  fake.dayFails = true;
+  startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos", "outcome");
+  fake.progress = { ...fake.progress, outcome: "done" };
+  const tomorrowRead = page.waitForResponse((response) => response.url().includes(`date=${dayAfter(todayInIndia())}`));
+  await page.goto(`/jobs/${JOB_ID}/done`);
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.closed })).toBeVisible();
+  await tomorrowRead;
+  await expect(page.getByText(techCopy.closeOut.next.doneForToday, { exact: true })).toHaveCount(0);
+});
+
+// The piece step still on the phone, with no signal for it yet, is the piece fitted.
+test("names the hair system from the piece step still on the phone", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "replacement";
+  startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos", "sign_off");
+  // The piece's write never answers, so it and the close stay on the phone.
+  await page.route(`**/api/tech/jobs/${JOB_ID}/piece`, () => undefined);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await queuedOnPhone(page, [
+    {
+      id: "01000000-0000-7000-8000-000000000021",
+      kind: "piece",
+      route: "piece",
+      body: { piece_code: "MM-ESS-0000779-S" },
+    },
+    { id: "01000000-0000-7000-8000-000000000022", kind: "outcome", route: "outcome", body: { outcome: "done" } },
+  ]);
+  await page.goto(`/jobs/${JOB_ID}/done`);
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.closed })).toBeVisible();
+  await expect(page.locator("dl").first().getByText("MM-ESS-0000779-S", { exact: true })).toBeVisible();
 });

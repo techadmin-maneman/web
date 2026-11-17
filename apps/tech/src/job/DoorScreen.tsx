@@ -27,7 +27,7 @@ import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useJob } from "../lib/useDay.ts";
 import { clock, countdown, metres, todayInIndia } from "../lib/when.ts";
 import { go, redirect, stepPath } from "../route.ts";
-import { keepCalled, keepClosed, keepPhotographed, keptArrival, keptCalled } from "../store/jobs.ts";
+import { keepCalled, keepClosed, keepPhotographed, keptArrival, keptCalled, keptPhotographed } from "../store/jobs.ts";
 import {
   checkInRefusedAsEarly,
   events,
@@ -76,10 +76,11 @@ function useDoor(job: Job, queued: readonly Queued[]) {
   const arrival = valueOr(useAsync(readArrival, queued)[0], null);
   const readCalled = useCallback(() => keptCalled(job.id), [job.id]);
   const calledAt = valueOr(useAsync(readCalled, marks)[0], null);
-  const readDoor = useCallback(
-    async () => (await frames()).find((frame) => frame.id === `${job.id}:door`)?.kept_at ?? null,
-    [job.id],
-  );
+  // When the door's photograph was taken, on the API's clock as the close says it, where the phone holds the photograph.
+  const readDoor = useCallback(async () => {
+    const frame = (await frames()).find((each) => each.id === `${job.id}:door`);
+    return frame === undefined ? null : ((await keptPhotographed(job.id)) ?? frame.kept_at);
+  }, [job.id]);
   const photographedAt = valueOr(useAsync(readDoor, marks)[0], null);
 
   const kept = theWait(job, queued, arrival);

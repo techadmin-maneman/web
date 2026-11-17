@@ -410,8 +410,8 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
             />
           )}
         </div>
-        {/* With no camera there is nothing to take: the strip and the shutter go, as the prototype draws it. */}
-        {!refusedCamera && (
+        {/* No camera and nothing taken: no strip or shutter, as drawn; once a photo is taken they stay, with Done. */}
+        {!(refusedCamera && taken.length === 0) && (
           <div className={styles.dock}>
             <Tiles taken={taken} now={angle} pictures={pictures} onRetake={(frameId) => void retake(frameId)} />
             <Controls

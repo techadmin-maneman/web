@@ -154,6 +154,9 @@
   --ui-line-control: var(--navy-700);
   --ui-strong: var(--white-000);
   --outline-edge: var(--ui-strong);
+  /* A button not usable yet, as Retake before a shot: clear on the dark, edged in its navy, not the paper's grey fill. */
+  --outline-off-ground: transparent;
+  --outline-off-edge: var(--navy-700);
   --ui-on-strong: var(--navy-900);
   --ui-strong-pressed: var(--mist-300);
   --focus-colour: var(--white-000);
