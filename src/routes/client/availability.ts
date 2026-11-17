@@ -186,8 +186,9 @@ const availabilityRoute = selfServeRoute({
     409: errorResponse("ops_assisted: self-serve booking is off; or not_changeable: the visit can no longer be moved"),
     422: errorResponse(
       "not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first " +
-        "fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not " +
-        "come to",
+        "fit, on a day the console offers no hair system; made_to_order: a fit whose hair system no stock code is " +
+        "made to the client's size, which ops order and book; not_served: the client's address is in a pincode we " +
+        "do not come to",
     ),
   },
 });

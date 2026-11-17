@@ -4338,6 +4338,7 @@ Razorpay's webhook: payments and refunds
             "service_retired",
             "no_product",
             "no_profile",
+            "made_to_order",
             "unknown_invite",
             "own_invite",
             "already_invited",

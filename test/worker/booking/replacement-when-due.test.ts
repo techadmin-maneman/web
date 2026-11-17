@@ -206,6 +206,54 @@ describe("a replacement", () => {
     expect((await holdAs("2026-10-01", { moving: booked })).status).toBe(422);
   });
 
+  it("is made to order in a size no stock code is made to, of the package it is sold as, for ops to order and book", async () => {
+    const rohit = await client();
+    await wornPiece(rohit.id, "2026-09-28");
+    await profiled(rohit.id);
+    await sold("essential", { held: true });
+    // Natural's hair systems are ranged an inch wider than the client's base alone.
+    await aPackage({
+      code: "natural",
+      name: "Mane Man natural",
+      firstFit: 3000000,
+      spec: { baseWidthIn: 9, baseLengthIn: 10, colour: "1B", greyPercent: 0, densityPercent: 100 },
+    });
+    await env.DB.prepare("UPDATE people SET package = 'essential' WHERE id = ?1").bind(rohit.id).run();
+    const holdAs = (tier: string) =>
+      request(app, "/api/holds", {
+        method: "POST",
+        headers: { Cookie: rohit.cookie, "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify({ type: "replacement", tier, date: "2026-10-02", window: "morning" }),
+      });
+
+    const natural = await request(app, "/api/availability?type=replacement&tier=natural", {
+      headers: { Cookie: rohit.cookie },
+    });
+    expect(natural.status).toBe(422);
+    expect(await natural.json()).toMatchObject({ error: { code: "made_to_order" } });
+    const held = await holdAs("natural");
+    expect(held.status).toBe(422);
+    expect(await held.json()).toMatchObject({ error: { code: "made_to_order" } });
+    // Their own package's is made to their size, and opens as usual.
+    expect((await opensOn(rohit)).opens).toBe("2026-09-22");
+    expect((await holdAs("essential")).status).toBe(201);
+  });
+
+  it("is not made to order while the client's profile is not complete, nor without one", async () => {
+    const rohit = await client();
+    await wornPiece(rohit.id, "2026-09-28");
+    await aPackage({
+      code: "natural",
+      name: "Mane Man natural",
+      firstFit: 3000000,
+      spec: { baseWidthIn: 9, baseLengthIn: 10, colour: "1B", greyPercent: 0, densityPercent: 100 },
+    });
+    expect((await opensOn(rohit, "&tier=natural")).opens).toBe("2026-09-22");
+    await profiled(rohit.id);
+    await env.DB.prepare("UPDATE hair_profiles SET density_percent = NULL WHERE person_id = ?1").bind(rohit.id).run();
+    expect((await opensOn(rohit, "&tier=natural")).opens).toBe("2026-09-22");
+  });
+
   it("is offered from tomorrow once its month has begun", async () => {
     const rohit = await client();
     await wornPiece(rohit.id, "2026-09-28");

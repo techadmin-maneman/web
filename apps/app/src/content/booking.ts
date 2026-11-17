@@ -97,6 +97,14 @@ export const booking = {
     body: "Change your address below, or join the waitlist and we’ll tell you when we arrive.",
     waitlist: "Join the waitlist",
   },
+  /** A fit whose hair system no stock code is made to the client's size: ops order it and book it on WhatsApp. */
+  madeToOrder: {
+    title: "Made to order in your size",
+    line: "Ask us and we’ll order it, then message you to book your fitting.",
+    ask: "Ask us on WhatsApp",
+    /** The WhatsApp message "Ask us" opens with: "Please order my Mane Man Essential replacement in my size." */
+    asking: (visit: string | null) => `Please order my ${visit ?? "hair system"} in my size.`,
+  },
   /**
    * The day and the time on it, on one screen (design/client-redesign, "Pick a time"): the earliest open time to take
    * at a tap, the days in a row that scrolls, each with how many times are left, then the day's times under its

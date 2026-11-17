@@ -44,6 +44,8 @@ replacement_opens_on}`, from the piece in wear and the package it was fitted und
    way, the app's days open the day after the quickest supplier still in use can deliver it, as a fit's stock gap
    reads delivery in time (`stockFitsFrom`, through `stockedRange`), and a hold before then is refused. The days'
    answer says when they open (`opens`). `stock_at_risk` tells ops to order it once the replacement is booked. A code
-   some place holds opens as usual, ops moving it. A size no stock code matches is made to order, which ADR 0174's
-   custom order takes payment for first: how that goes at a replacement, at no cost beyond the package's price,
-   waits on the owner.
+   some place holds opens as usual, ops moving it. A size no stock code matches is made to order: ops order it, take
+   its payment and book the fitting on WhatsApp (the owner's ruling of 16 November), with no custom-order step in the
+   app. A first fit or a replacement of a package no code is made to the client's complete profile in is refused
+   `made_to_order`, its days and its hold alike (`madeToOrder`, through `bookable`), and the app says so, with a way to
+   ask on WhatsApp. Once ADR 0174's custom order is paid, its code matches, and the visit books as usual.

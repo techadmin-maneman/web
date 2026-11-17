@@ -75,10 +75,11 @@ describe("choosing a service", () => {
   it("offers every replacement on sale, and holds the client's package's where the booking names none", async () => {
     const rohit = await client();
     await wornPiece(rohit.id, "2026-09-30");
+    // Made to the packages' own hair system's spec, so it is in stock in their size.
     await env.DB.prepare(
       `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
          grey_percent, density_percent)
-       VALUES ('hp-premium', ?1, 'ops@localhost', ?2, 'premium', 8, 10, '1B', 20, 100)`,
+       VALUES ('hp-premium', ?1, 'ops@localhost', ?2, 'premium', 8, 10, '1B', 0, 100)`,
     )
       .bind(rohit.id, NOW.toISOString())
       .run();
@@ -99,6 +100,28 @@ describe("choosing a service", () => {
     ]);
     const held = await hold(rohit, { type: "replacement", date: "2026-09-22", window: "morning" });
     expect(await held.json()).toMatchObject({ service: { tier: "premium" }, price: { amount_ex_gst: 3_000_000 } });
+  });
+
+  it("leaves a first fit in a size no stock code is made to for ops to order and book", async () => {
+    const lead = await client(true);
+    await aPackage({ code: "premium", name: "Premium first fit", firstFit: 4_000_000 });
+    // Their profile is complete, its base an inch wider than any hair system ranged.
+    await env.DB.prepare(
+      `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+         grey_percent, density_percent)
+       VALUES ('hp-wide', ?1, 'ops@localhost', ?2, 'premium', 9, 10, '1B', 0, 100)`,
+    )
+      .bind(lead.id, NOW.toISOString())
+      .run();
+
+    const days = await request(app, "/api/availability?type=first_fit&tier=premium", {
+      headers: { Cookie: lead.cookie },
+    });
+    expect(days.status).toBe(422);
+    expect(await days.json()).toMatchObject({ error: { code: "made_to_order" } });
+    const held = await hold(lead, { type: "first_fit", tier: "premium", date: "2026-09-22", window: "morning" });
+    expect(held.status).toBe(422);
+    expect(await held.json()).toMatchObject({ error: { code: "made_to_order" } });
   });
 
   it("offers a longer service only where its half-slots fit, and holds it for its own length and price", async () => {

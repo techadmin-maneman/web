@@ -10,7 +10,6 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { addDays, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
-  api,
   type Address,
   type Availability,
   type BookableType,
@@ -35,6 +34,7 @@ import { ConfirmedStep, ExpiredStep, WaitStep } from "./steps/OutcomeSteps.tsx";
 import { LoadingStep, moveLine, stepOf, TITLE_ID } from "./steps/shared.tsx";
 import { PayStep } from "./steps/PayStep.tsx";
 import { ServiceStep, type Recommended } from "./steps/ServiceStep.tsx";
+import { MadeToOrderStep } from "./steps/MadeToOrderStep.tsx";
 import { TierStep } from "./steps/TierStep.tsx";
 import { WhenStep } from "./steps/WhenStep.tsx";
 import styles from "./booking.module.css";
@@ -252,11 +252,15 @@ function HeldSteps(
     case "address":
     case "notServed":
     case "when":
+    case "madeToOrder":
       return null;
   }
 }
 
-/** The steps before the days: loading, the service, the address, or the answer that it is not served. */
+/**
+ * The steps before the days: loading, the service, the address, or the answer that it is not served; or in their place,
+ * that its hair system is made to order. `onBack`: to the service, where one was picked.
+ */
 function BeforeTheDays(props: {
   step: Step;
   before: number;
@@ -267,6 +271,7 @@ function BeforeTheDays(props: {
   onPick: (service: OfferedService) => void;
   onPicked: () => void;
   onAddressSaved: () => void;
+  onBack: (() => void) | undefined;
   onClose: () => void;
 }) {
   const { step } = props;
@@ -312,6 +317,15 @@ function BeforeTheDays(props: {
       );
     case "notServed":
       return <NotServedStep address={step.address} onSaved={props.onAddressSaved} onClose={props.onClose} />;
+    case "madeToOrder":
+      // The service picked, else the one there is.
+      return (
+        <MadeToOrderStep
+          name={(props.picked ?? props.services[0])?.name ?? null}
+          onBack={props.onBack}
+          onClose={props.onClose}
+        />
+      );
     // The day and time, and the steps once a start is held, which the sheet draws apart.
     case "when":
     case "pay":
@@ -342,7 +356,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
   const [problem, setProblem] = useState<string | null>(null);
   const [remind, setRemind] = useState(false);
   const sheet = useSheetData({ dispatch, movingId, firstDay, offeredDate, offeredWindow, wanted, setWanted });
-  const { days, reminders, setReminders, address, addressFirst, askForAddress, showNotServed, load, pick } = sheet;
+  const { days, reminders, switchOnReminders, address, addressFirst, askForAddress, showNotServed, load, pick } = sheet;
 
   // Each step's heading takes the focus the last step's button took with it, as it does when "Later dates" goes with
   // the last of them.
@@ -354,12 +368,6 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
   const close = () => dialog.current?.close();
 
   const holdStart = useHoldStart({ once, wanted, days, movingId, setProblem, dispatch, askForAddress, showNotServed });
-
-  /** The client ticked "Remind me": their yes to WhatsApp about their visits, recorded under the box's own line. */
-  const switchOnReminders = async () => {
-    const answer = await api.switchConsent("whatsapp_visits", true, "app_booking");
-    if (answer.ok) setReminders(true);
-  };
 
   const { payFor, letGo, changed, paying, hasOrder, dismissedOn } = usePay(step, {
     dialog,
@@ -404,6 +412,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
             if (picked !== null) void pick(picked);
           }}
           onAddressSaved={() => void load(wanted)}
+          onBack={picking ? stepBack : undefined}
           onClose={close}
         />
         {step.kind === "when" && (

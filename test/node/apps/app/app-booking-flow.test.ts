@@ -49,6 +49,17 @@ describe("the booking sheet’s way through", () => {
     expect(nextStep(window, { kind: "notServed", address: null })).toEqual({ kind: "broken" });
   });
 
+  it("says a hair system is made to order in the client's size in place of its days, with a way back to the pick", () => {
+    expect(after({ kind: "asking" }, { kind: "madeToOrder" })).toEqual({ kind: "madeToOrder" });
+    // A hold refused for it says so from the day and time too.
+    const window = after({ kind: "answered", picking: false, addressMissing: false });
+    expect(nextStep(window, { kind: "madeToOrder" })).toEqual({ kind: "madeToOrder" });
+    expect(nextStep({ kind: "madeToOrder" }, { kind: "back" })).toEqual({ kind: "service" });
+    // Never once a start is held.
+    const pay: Step = { kind: "pay", hold: HOLD };
+    expect(nextStep(pay, { kind: "madeToOrder" })).toBe(pay);
+  });
+
   it("lets a failed payment be tried again, and a lapsed hold be picked again", () => {
     const failed = after(
       { kind: "answered", picking: false, addressMissing: false },
