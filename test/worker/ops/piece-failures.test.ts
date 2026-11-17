@@ -172,6 +172,33 @@ describe("Was the hair system at fault?", () => {
     expect(await piece(WORN)).toMatchObject({ failure_reason: "Edges lifting", failure_code: "edges_lifting" });
   });
 
+  it("leaves a failure already marked standing as a claim closes with another reason", async () => {
+    const cookie = await signedIn(ROHIT);
+    const fitStart = new Date(NOW.getTime() - 3 * 86_400_000).toISOString();
+    await env.DB.prepare("UPDATE appointments SET window_start = ?2, window_end = ?2 WHERE id = ?1")
+      .bind(FIT, fitStart)
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO visit_outcomes (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at)
+       VALUES ('vo-1', ?1, ?2, ?2, 180, 'done', ?2)`,
+    )
+      .bind(FIT, fitStart)
+      .run();
+    await asClient(cookie, "/api/me/problems", { method: "POST", body: { about: "fit_guarantee", text: "Lifting." } });
+    const [claim] = (await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS)).tasks.filter(
+      (task) => task.group === "fit_guarantee_claim",
+    );
+    expect(claim).toBeDefined();
+
+    await call("POST", failure, { failure_reason: "base_torn", failed_on: "2026-09-20" });
+    const closed = await call("POST", `/api/tasks/fit_guarantee_claim/${claim?.id ?? ""}/close`, {
+      reason: "Refit booked.",
+      failure_reason: "edges_lifting",
+    });
+    expect(closed.status).toBe(204);
+    expect(await piece(WORN)).toMatchObject({ failure_reason: "Base torn", failure_code: "base_torn" });
+  });
+
   it("is asked of a chat whose open report is about the hair system worn, and marks it failed today", async () => {
     const cookie = await signedIn(ROHIT);
     await asClient(cookie, "/api/me/problems", {
@@ -190,6 +217,21 @@ describe("Was the hair system at fault?", () => {
     });
     expect(answer.status).toBe(200);
     expect(await piece(WORN)).toMatchObject({ failed_at: NOW.toISOString().slice(0, 10) + "T06:30:00.000Z" });
+  });
+
+  it("is not asked of a chat about a hair system Care already marked failed", async () => {
+    await call("POST", failure, { failure_reason: "shedding", failed_on: "2026-09-20" });
+    const cookie = await signedIn(ROHIT);
+    await asClient(cookie, "/api/me/problems", {
+      method: "POST",
+      body: { about: "shedding", text: "Still shedding." },
+    });
+    const chat = await env.DB.prepare("SELECT id FROM conversations WHERE person_id = ?1")
+      .bind(ROHIT)
+      .first<string>("id");
+    expect(await (await request(ops(), `/api/conversations/${chat ?? ""}`)).json()).toMatchObject({
+      piece_report: null,
+    });
   });
 
   it("is not asked of a chat whose client wears no hair system, and refused there", async () => {

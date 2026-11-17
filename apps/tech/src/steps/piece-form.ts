@@ -35,13 +35,14 @@ export interface PieceForm {
 
 export const given = (text: string): boolean => text.trim() !== "";
 
-/** A piece on the client's head now, which is the one a replacement takes off. */
-const onTheHead = (piece: ClientPiece): boolean =>
-  piece.fitted_at !== null && piece.failed_at === null && piece.replaced_at === null;
+/** A piece on the client's head: fitted and not since replaced, though Care may have marked it failed there. */
+const onTheHead = (piece: ClientPiece): boolean => piece.fitted_at !== null && piece.replaced_at === null;
 
 /**
- * On a replacement, the piece that comes off: the newest on the client's head fitted before this visit's day, so a step
- * opened again after its piece landed never names the new one. Null for any other visit, or none on the head.
+ * On a replacement, the piece that comes off: the newest on the client's head fitted before this visit's day, failed or
+ * not, so one Care marked failed before the visit still comes off and goes back, and a step opened again after its piece
+ * landed never names the new one. The card lists the client's pieces newest first. Null for any other visit, or none on
+ * the head.
  */
 export function cameOff(job: Pick<Job, "type" | "pieces" | "date">): ClientPiece | null {
   if (job.type !== "replacement") return null;
@@ -50,10 +51,11 @@ export function cameOff(job: Pick<Job, "type" | "pieces" | "date">): ClientPiece
 
 /**
  * Whether the piece a replacement takes off came off before it was due, which asks, never requires, why
- * (docs/decisions/0273-why-a-hair-system-failed.md).
+ * (docs/decisions/0273-why-a-hair-system-failed.md). One already marked failed has its reason, and is not asked.
  */
 export function cameOffEarly(job: Pick<Job, "type" | "pieces" | "date">): boolean {
-  const due = cameOff(job)?.replacement_due_at ?? null;
+  const old = cameOff(job);
+  const due = old?.failed_at === null ? old.replacement_due_at : null;
   return due !== null && due > job.date;
 }
 

@@ -30,7 +30,8 @@ from a list ops keep that starts with six reasons.
    "Can't fit today" with the reasons as chips; Done sends the one picked as `old_piece.failure_reason`, by its code,
    and the piece that came off is recorded as failed for it, its hand-back for the claims list too. One left unsaid is
    replaced, as before. The card carries the list on a replacement (`failure_reasons`), and a card kept before it
-   offers none.
+   offers none. A piece Care marked failed before the visit is still the one that comes off: it is asked nothing, and
+   its hand-back takes the failure's words for the claims list.
 4. **Care may mark a client's hair system failed, or take a failure back**, on the client's Hair systems tab:
    Mark failed asks why, from the list, and the day, from its fit to today (`POST /api/clients/{id}/pieces/{code}/failure`);
    Undo takes it back (`DELETE` on the same path), the hand-back's reason with it while that is still to be settled. A
@@ -56,7 +57,7 @@ A Worker rolled back past this reads and writes neither `failure_reasons` nor `p
 technician records then keeps the code's words unturned, as it was sent.
 
 Tests: `test/worker/ops/job-sheet-settings.test.ts` (the fifth list), `test/worker/field/field-piece.test.ts` (a code
-kept as its words with the code), `test/worker/ops/piece-failures.test.ts` (Mark failed, Undo, a claim's and a chat's
+kept as its words with the code, and a piece Care marked failed taken off), `test/worker/ops/piece-failures.test.ts` (Mark failed, Undo, a claim's and a chat's
 close), `test/worker/inventory/stock-quality.test.ts` (failures by reason), `test/node/front-ends/tech-piece-form.test.ts`
 (when it asks, and what it sends), `test/node/front-ends/tech-kept.test.ts` (a card kept before the list),
 `test/dom/ops-chat-close-fault.test.ts` (a chat's close), `test/dom/tech-checklist-choice.test.ts` (the no heard while

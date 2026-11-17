@@ -66,8 +66,11 @@ export async function markFailed(
       )
       .bind(piece.id, at, reason.label, reason.id, now),
     db
-      .prepare("UPDATE piece_returns SET reason = ?2 WHERE piece_code = ?1 AND reason IS NULL AND settled_at IS NULL")
-      .bind(failure.pieceCode, reason.label),
+      .prepare(
+        `UPDATE piece_returns SET reason = ?2 WHERE piece_code = ?1 AND reason IS NULL AND settled_at IS NULL
+           AND appointment_id IN (SELECT id FROM appointments WHERE person_id = ?3)`,
+      )
+      .bind(failure.pieceCode, reason.label, failure.personId),
     auditStatement(
       db,
       {
@@ -110,8 +113,11 @@ export async function undoFailure(
       )
       .bind(row.id, written.now.toISOString()),
     db
-      .prepare("UPDATE piece_returns SET reason = NULL WHERE piece_code = ?1 AND settled_at IS NULL")
-      .bind(piece.pieceCode),
+      .prepare(
+        `UPDATE piece_returns SET reason = NULL WHERE piece_code = ?1 AND settled_at IS NULL
+           AND appointment_id IN (SELECT id FROM appointments WHERE person_id = ?2)`,
+      )
+      .bind(piece.pieceCode, piece.personId),
     auditStatement(
       db,
       {
@@ -144,7 +150,7 @@ export async function failClaimedPiece(
   const piece = await db
     .prepare(
       `SELECT p.person_id, p.piece_code FROM client_reports r
-       JOIN pieces p ON p.appointment_id = r.claim_visit_id AND p.person_id IS NOT NULL AND p.deleted_at IS NULL
+       JOIN pieces p ON p.appointment_id = r.claim_visit_id AND p.person_id = r.person_id AND p.deleted_at IS NULL
        WHERE r.id = ?1 ORDER BY p.fitted_at DESC LIMIT 1`,
     )
     .bind(claim.reportId)

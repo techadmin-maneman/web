@@ -247,7 +247,7 @@ describe("the piece that comes off a replacement", () => {
     supplier_lot: null,
     fitted_at: fitted,
     replacement_due_at: null as string | null,
-    failed_at: null,
+    failed_at: null as string | null,
     failure_reason: null,
     replaced_at: null,
   });
@@ -263,6 +263,16 @@ describe("the piece that comes off a replacement", () => {
   it("is none where nothing is on the head, and on any other visit", () => {
     expect(cameOff(job([]))).toBeNull();
     expect(cameOff({ ...job([piece("MM-STD-4417-B", "2026-07-02")]), type: "first_fit" })).toBeNull();
+  });
+
+  it("is one Care marked failed before the visit, which then asks no why of its own", () => {
+    const marked = {
+      ...piece("MM-STD-4417-B", "2026-07-02"),
+      replacement_due_at: "2027-01-02",
+      failed_at: "2026-11-10",
+    };
+    expect(cameOff(job([marked]))?.piece_code).toBe("MM-STD-4417-B");
+    expect(cameOffEarly(job([marked]))).toBe(false);
   });
 
   it("came off early where it was due after the visit's day, and not on or after its due day", () => {

@@ -145,9 +145,10 @@ export function PieceFailure(props: {
         setFailure({ code: answer.code });
         return;
       }
-      // Taken back: the tab is read again, as it now stands.
+      // Taken back: the tab is read again, as it now stands, or says why it could not be.
       const now = await clientsApi.clientPieces(clientId);
       if (now.ok) onChanged(now.body);
+      else setFailure({ code: now.code });
     });
   return (
     <>
