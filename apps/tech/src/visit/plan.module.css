@@ -1,30 +1,50 @@
-/* The visit plan (./PlanScreen.tsx), in the new look: how far along, then each screen with its marker. */
+/* The visit plan (./PlanScreen.tsx), as the prototype draws it: a step to fix first, the count beside when to finish
+   over the visit's time gone, then each screen numbered, 58 px from rule to rule. */
+
+/* Each step to fix, the column's width. */
+.fixes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  padding: var(--sp-16) var(--screen-gutter) 0;
+}
+
+.fixCard {
+  width: 100%;
+}
 
 .head {
   padding: var(--sp-20) var(--screen-gutter) 0;
 }
 
-.count {
+.counts {
+  display: flex;
+  gap: var(--sp-12);
+  justify-content: space-between;
   margin: 0;
-  font-size: var(--fs-17);
+  font-size: var(--fs-14);
+}
+
+.count {
   font-weight: var(--weight-semibold);
 }
 
-.bar {
-  margin-top: var(--sp-12);
-}
-
 .finish {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
   color: var(--ui-text-soft);
 }
 
-.fixCard {
-  margin: var(--sp-16) var(--screen-gutter) 0;
-  width: auto;
+.bar {
+  margin-top: calc(var(--sp-8) + var(--sp-2));
 }
 
 .list {
-  margin: var(--sp-16) var(--screen-gutter) 0;
+  --row-min-height: calc(var(--sp-48) + var(--sp-8) + var(--sp-2));
+  --row-pad-y: var(--sp-8);
+  --step-mark-size: calc(var(--sp-24) + var(--sp-2));
+
+  margin: var(--sp-8) var(--screen-gutter) 0;
+}
+
+.fix {
+  color: var(--ui-error);
 }

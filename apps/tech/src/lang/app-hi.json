@@ -384,7 +384,10 @@
     "Your week didn’t load.": "आपका हफ़्ता लोड नहीं हुआ।",
     "You’re offline. Codes need signal.": "आप ऑफ़लाइन हैं। कोड के लिए नेटवर्क चाहिए।",
     "You’re offline. Reconnect, then sign in.": "आप ऑफ़लाइन हैं। नेटवर्क जोड़ें, फिर साइन इन करें।",
+    "after photos": "बाद की फ़ोटो",
     "before": "पहले वाली",
+    "before photos": "पहले की फ़ोटो",
+    "checklist": "चेकलिस्ट",
     "close in, sharp focus": "पास से, साफ़ फ़ोकस",
     "closed": "बंद",
     "ear in the centre": "कान बीच में",
@@ -423,6 +426,10 @@
     {
       "match": "^([^·]+) actions? not sent yet$",
       "hi": "$1 एंट्री अभी नहीं भेजी गईं"
+    },
+    {
+      "match": "^([^·]+) tasks?$",
+      "hi": "$1 काम"
     },
     {
       "match": "^Taken ([^·]+)$",
@@ -863,6 +870,10 @@
     {
       "match": "^Ops couldn’t accept ([^·]+) steps$",
       "hi": "ऑप्स $1 स्टेप नहीं ले पाए"
+    },
+    {
+      "match": "^Ops couldn’t accept ([^·]+)$",
+      "hi": "ऑप्स $1 वाला स्टेप नहीं ले पाए"
     },
     {
       "match": "^([^·]+) jobs? left$",

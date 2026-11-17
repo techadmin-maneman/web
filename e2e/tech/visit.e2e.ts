@@ -22,22 +22,30 @@ test("opens the visit's plan from the job once begun: each screen done, under wa
   await page.goto(`/jobs/${JOB_ID}`);
   await page.getByRole("link", { name: techCopy.visit.allSteps }).click();
 
-  await expect(page.getByRole("heading", { level: 1, name: plan.title })).toBeVisible();
+  // The client and the visit, and when it started, as the prototype heads the plan.
+  await expect(
+    page.getByRole("heading", { level: 1, name: techCopy.visit.whoAndWhat("Rohit M.", "service visit") }),
+  ).toBeVisible();
+  await expect(page.getByText(/^Started \d{1,2}(:\d{2})? [ap]m$/)).toBeVisible();
   await expect(page.getByText(plan.done(1, 5))).toBeVisible();
   await expect(page.getByText(/^Finish by /)).toBeVisible();
+  // Each step with what it is, numbered while it waits; one done says so, and a step of tasks counts them.
   const rows = page.getByRole("list", { name: plan.title }).getByRole("listitem");
+  const what = techCopy.guides.what;
   await expect(rows).toHaveText([
-    /^Before photos\s*Done$/,
-    /^Service\s*Now$/,
-    /^Consumables\s*To do$/,
-    /^After photos\s*To do$/,
-    /^Outcome\s*To do$/,
+    `Before photos${plan.stepDone}`,
+    `Service${plan.tasks(3)}`,
+    `3Consumables${what.consumables}`,
+    `4After photos${what.after_photos}`,
+    `5Outcome${what.outcome}`,
   ]);
   // A screen done or under way opens; one to do waits its turn.
+  await expect(rows.nth(1).getByRole("link")).toHaveCount(1);
   await expect(rows.nth(2).getByRole("link")).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 
-  await rows.nth(1).getByRole("link").click();
+  // Continue opens the step under way.
+  await page.getByRole("button", { name: plan.continue }).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
 });
 

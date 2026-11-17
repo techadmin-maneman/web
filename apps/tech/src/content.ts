@@ -689,14 +689,20 @@ export const visit = localised({
   watchFor: "Watch for",
   taskDone: (title: string) => `Done: ${title}`,
   plan: {
+    /** The plan's list, as a screen reader hears it; the head names the client and the visit. */
     title: "Visit plan",
+    /** "Started 9:38 am", under the client and the visit. */
+    started: (time: string) => `Started ${time}`,
     done: (done: number, total: number) => `${String(done)} of ${String(total)} done`,
     finishBy: (time: string) => `Finish by ${time}`,
-    states: { done: "Done", now: "Now", todo: "To do" },
+    /** A step's line once done; before, what it is (../guides), or its tasks counted. */
+    stepDone: "Done",
+    tasks: (count: number) => counted(count, "task", "tasks"),
     needsFix: "Needs a fix",
-    open: (title: string) => `Open ${title}`,
-    /** A step ops sent back, and what they said to fix. */
-    sentBack: (title: string, reason: string) => `${title}: ${reason}`,
+    /** Over a step ops sent back, as the prototype words it: "Ops couldn’t accept consumables", then their reason. */
+    couldNotAccept: (step: string) => `Ops couldn’t accept ${step}`,
+    /** Opens the step under way. */
+    continue: "Continue",
   },
   /** Above a step ops sent back: what they said to fix, as they wrote it. */
   sentBack: (reason: string) => `Ops sent this back: ${reason}`,
