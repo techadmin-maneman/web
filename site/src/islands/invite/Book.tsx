@@ -70,20 +70,14 @@ function BookPage(props: Props) {
       <h1 ref={page.heading} tabIndex={-1} class={titled ? styles.title : `${styles.title ?? ""} ${hiddenOnPhoneLook ?? ""}`}>
         {bookingTitle(answer, plan)}
       </h1>
-      {/* Past the first step a phone goes straight to the form; the headline stays to say what it books. */}
-      <div class={kept === null ? styles.offer : `${styles.offer ?? ""} ${styles.offerPast ?? ""}`}>
-        {answer?.served === false ? (
-          <p>{booking.introWaitlist}</p>
-        ) : (
-          <>
-            <p class={styles.introShort}>{booking.introShort}</p>
-            {booking.intro.map((paragraph) => (
-              <p key={paragraph} class={styles.introLong}>
-                {paragraph}
-              </p>
-            ))}
-          </>
-        )}
+      {/* The first step's intro, however it is reached; past it the page goes straight to the step. */}
+      <div class={first ? styles.offer : `${styles.offer ?? ""} ${styles.offerPast ?? ""}`}>
+        <p class={styles.introShort}>{booking.introShort}</p>
+        {booking.intro.map((paragraph) => (
+          <p key={paragraph} class={styles.introLong}>
+            {paragraph}
+          </p>
+        ))}
       </div>
       {first ? (
         <AboutYou turnstileSiteKey={props.turnstileSiteKey} kept={kept} onKept={page.keepPerson} />
@@ -103,7 +97,7 @@ function BookPage(props: Props) {
 /** The island as the page mounts it: a throw while it draws is reported, and the way to us shown in its place. */
 export default function Book(props: Props) {
   return (
-    <IslandBoundary>
+    <IslandBoundary top={<FlowTop onBack={null} />}>
       <BookPage {...props} />
     </IslandBoundary>
   );

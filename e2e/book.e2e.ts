@@ -92,8 +92,10 @@ test("keeps the name and number first, then asks for the area, the visit and the
 test("Change returns to the name and number as typed, and the same again is not kept twice", async ({ page }) => {
   await mockApi(page);
   const leads = await leadCalls(page);
-  // The area step, where the line naming who it is for shows at every width; a phone's visit step opens on its banner.
-  await openAtPincode(page);
+  // A laptop's visit step names who it is for, two steps on from them; a phone's opens on its banner, so it changes
+  // them from the area step.
+  if (narrow(page.viewportSize()?.width)) await openAtPincode(page);
+  else await openForm(page);
 
   await page.getByRole("button", { name: siteCopy.booking.changeYouLabel }).click();
   await expect(page.getByText("Step 1 · About you")).toBeFocused();
@@ -473,6 +475,9 @@ test("a phone's /book is the app's frame, How it works folded into the first ste
   await expect(page.getByRole("button", { name: siteCopy.booking.next })).toBeInViewport();
   expect(await axeViolations(page)).toEqual([]);
 
+  await toAddress(page);
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+  await expect(page.getByRole("button", { name: siteCopy.booking.next })).toBeVisible();
   await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
   await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
   await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
@@ -497,4 +502,45 @@ test("a laptop's /book keeps the full intro, the step's line and How it works be
   await leaveDetails(page);
   await expect(page.getByText(siteCopy.booking.intro[0] ?? "")).toBeHidden();
   await expect(page.getByRole("heading", { level: 1, name: siteCopy.booking.title })).toBeVisible();
+
+  // Its Back link steps back as the browser's does, and the first step's intro is there again.
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
+  await expect(page.getByText(siteCopy.booking.intro[0] ?? "")).toBeVisible();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
+  await checkPincode(page, SERVED.pincode);
+  await toAddress(page);
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+  await expect(page.getByRole("button", { name: siteCopy.booking.next })).toBeVisible();
+});
+
+// Tabbing down a phone's long steps, each control comes to rest above the button pinned at the foot (WCAG 2.4.11).
+test("a phone's focused control is never under the pinned button", async ({ page }) => {
+  test.skip(!narrow(page.viewportSize()?.width), "a phone's pinned button");
+  await mockApi(page);
+  await openForm(page);
+  const next = page.getByRole("button", { name: siteCopy.booking.next });
+  const clear = async (control: ReturnType<typeof page.locator>) => {
+    const box = await control.boundingBox();
+    const foot = await next.evaluate((button) => button.parentElement?.getBoundingClientRect().top ?? 0);
+    return box !== null && box.y + box.height <= foot;
+  };
+  // The last open day and the last open start: the controls lowest on the step.
+  const open = (group: string) => page.getByRole("group", { name: group }).locator("input:enabled").last();
+  for (const control of [
+    open(referralCopy.referral.consultation.date),
+    open(referralCopy.referral.consultation.window),
+  ]) {
+    await control.focus();
+    await expect.poll(() => clear(control)).toBe(true);
+  }
+});
+
+// Back at the first step, by the browser or by Change, the page introduces itself again.
+test("the first step keeps its intro however it is reached again", async ({ page }) => {
+  await mockApi(page);
+  await openAtPincode(page);
+  await page.goBack();
+  const intro = narrow(page.viewportSize()?.width) ? siteCopy.booking.introShort : (siteCopy.booking.intro[0] ?? "");
+  await expect(page.getByText(intro)).toBeVisible();
 });

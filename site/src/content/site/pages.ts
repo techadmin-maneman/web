@@ -18,8 +18,6 @@ export const booking = {
   ],
   /** A phone's one line under the first step's title, in place of the two above (ADR 0265). */
   introShort: `${capitalised(visitLength.consultation)} at your home, completely free.`,
-  /** Where we do not come yet: what the list is for. The WhatsApp is the visitor's to tick, so it is promised as so. */
-  introWaitlist: "Join the list. Tick the box and we’ll WhatsApp you the week we start coming to you.",
   /**
    * The page's steps, the name and number first, kept before anything else
    * (docs/decisions/0116-book-asks-for-the-name-and-number-first.md).

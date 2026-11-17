@@ -105,7 +105,7 @@ function LandingPage(props: Props) {
 /** The island as the page mounts it: a throw while it draws is reported, and the way to us shown in its place. */
 export default function Landing(props: Props) {
   return (
-    <IslandBoundary>
+    <IslandBoundary top={<FlowTop onBack={null} />}>
       <LandingPage {...props} />
     </IslandBoundary>
   );

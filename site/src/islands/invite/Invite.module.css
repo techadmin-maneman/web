@@ -392,6 +392,11 @@
   margin-top: var(--sp-12);
 }
 
+/* While the cookie bar asks, the button waits at the form's foot, where the page's room beneath it keeps it clear. */
+:global(html[data-consent-asking]) .send {
+  position: static;
+}
+
 /* ---- A phone: the shorter steps --------------------------------------------------- */
 
 @media (max-width: 760px) {

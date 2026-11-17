@@ -7,12 +7,13 @@
 import { ADDRESS_FIELDS, type AddressField, type AddressPart } from "@maneman/web-kit/address";
 import { Label, TextInput } from "./Field.tsx";
 import { TextButton } from "./TextLink.tsx";
+import type { ReactNode } from "react";
 import styles from "./address-fields.module.css";
 
 export interface AddressFieldsWords {
   readonly labels: Readonly<Record<AddressPart, string>>;
   /** A line beneath a part that says what it is for. */
-  readonly hints?: Readonly<Partial<Record<AddressPart, string>>>;
+  readonly hints?: Readonly<Partial<Record<AddressPart, ReactNode>>>;
   /** The button that unfolds the folded parts, where the form folds them. */
   readonly more?: string;
 }

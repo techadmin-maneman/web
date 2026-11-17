@@ -90,7 +90,7 @@ export function DiscountCode({
           {referral.errors.codeNotApplicable}
         </div>
       )}
-      <p id="invite-consultation-code-hint" class={shared.hint}>
+      <p id="invite-consultation-code-hint" class={`${shared.hint ?? ""} ${hiddenOnPhoneLook ?? ""}`}>
         {consultation.code.hint}
       </p>
     </div>

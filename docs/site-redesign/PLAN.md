@@ -30,7 +30,7 @@ Worker's rewrites, `?state=` previews, and the Lighthouse budgets. No endpoint, 
 | `PhoneNotFound` / `LaptopNotFound`     | `*-12-404`                                                  | `pages/404.astro`                                                         | `content/site/pages.ts`                                             |
 
 The referral landing (`/r/:code`) has no board. It shares `/book`'s island and takes `/book`'s look; its fidelity
-pairs against `/book`'s board: PR 5 moves `fidelity:refer` onto it.
+pairs against `/book`'s board: PR 5 moved `fidelity:refer` onto it (`scripts/lib/site-boards.ts`).
 
 ### Home, section by section
 
@@ -160,6 +160,11 @@ The flow frame's other words are live strings, reused by key: "Free consultation
 4. **The one visit's length** reads as the API gives it; the board's "2.5 hours" shows only if ops set it.
 5. **"10,000+ transformations"** is live copy with no source in the repository; kept, listed for the owner.
 6. **"Sign in" in production** is left out until the client app is switched on there.
+7. **The home page's before and after pairs** are framed as they were before the redesign, at the owner's request on
+   17 November 2026: the results whole at their photographs' own 4:5, at most 540 px wide, where the boards crop them
+   to 638:788; the try-on's pair at its band's height on the client's framing (`focus-client`), so the hair shows.
+8. **A phone's address step** keeps its helper lines out of sight but in the page, each still describing its field to a
+   screen reader.
 
 ## How each PR is verified
 

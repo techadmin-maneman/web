@@ -1544,14 +1544,6 @@
     "reviewed": false
   },
   {
-    "key": "site:pages/booking.introWaitlist",
-    "surface": "site",
-    "group": "Book",
-    "where": "booking",
-    "text": "Join the list. Tick the box and we’ll WhatsApp you the week we start coming to you.",
-    "reviewed": false
-  },
-  {
     "key": "site:pages/booking.step",
     "surface": "site",
     "group": "Book",

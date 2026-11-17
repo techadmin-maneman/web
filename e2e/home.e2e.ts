@@ -118,12 +118,12 @@ test.describe("the flow's bar", () => {
   });
 });
 
-// While the cookie bar asks, a laptop's flow keeps its room beneath the form, which has no footer below it.
+// While the cookie bar asks, a flow with no footer below its form, a laptop's or a phone's /book, keeps the bar's room
+// beneath it; a phone's step button waits there in place of being pinned at the foot, so the bar covers neither.
 test.describe("the cookie bar on a flow", () => {
   test.use({ consentBarAsks: true });
 
-  test("leaves the form's last button above it", async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name === "390", "a phone's flow keeps its slim foot");
+  test("leaves the form's last button above it", async ({ page }) => {
     await visit(page, "/book");
     const bar = page.getByRole("region", { name: siteCopy.consentBar.label });
     await expect(bar).toBeVisible();
@@ -695,6 +695,26 @@ test.describe("arriving at a section on a phone", () => {
       expect(await top()).toBe(60);
     });
   }
+});
+
+// The before and after pairs as they were framed before the redesign: the results whole, at their photographs' own
+// 4:5, and the try-on's pair on the client's framing, which keeps the hair in the band.
+test.describe("the before and after pairs", () => {
+  test("show the results whole, and the try-on's hair", async ({ page }) => {
+    await page.goto("/");
+    const result = page.locator('[data-section="results"] img').first();
+    await result.scrollIntoViewIfNeeded();
+    const shape = await result.evaluate((image) => {
+      const box = image.getBoundingClientRect();
+      return Math.round((box.width / box.height) * 100) / 100;
+    });
+    expect(shape).toBe(0.8);
+    const teaser = page.locator('[data-section="teaser"] img');
+    await expect(teaser).toHaveCount(2);
+    for (const image of await teaser.all()) {
+      expect(await image.evaluate((element) => getComputedStyle(element).objectPosition)).toBe("50% 28%");
+    }
+  });
 });
 
 test.describe("WCAG on the home page", () => {

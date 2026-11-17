@@ -18,11 +18,15 @@ import styles from "./Invite.module.css";
 
 const copy = referral.address;
 
-const WORDS = {
+/** A helper line a phone's address step keeps out of sight (ADR 0265), still read with its field. */
+const quietOnPhone = (words: string) => <span class={hiddenOnPhoneLook}>{words}</span>;
+
+/** The fields' words, made as each drawing needs them, so no element is drawn twice. */
+const wordsOf = () => ({
   labels: { ...copy.labels, access_notes: copy.labels.accessNotes, pincode: copy.pincode },
-  hints: { access_notes: copy.accessHint },
+  hints: { access_notes: quietOnPhone(copy.accessHint) },
   more: copy.more,
-};
+});
 
 const ERRORS: Partial<Record<AddressPart, string>> = copy.errors;
 
@@ -73,6 +77,7 @@ export function AddressFieldset(props: {
           }}
           words={{
             ...copy.building,
+            hint: quietOnPhone(copy.building.hint),
             found: (count) =>
               count === 1 ? copy.building.foundOne : fill(copy.building.foundMany, { count: String(count) }),
           }}
@@ -101,7 +106,7 @@ export function AddressFieldset(props: {
             const key = keyOf(part);
             if (key !== null) props.onChange({ ...address, [key]: value });
           }}
-          words={WORDS}
+          words={wordsOf()}
         />
       </div>
     </Fieldset>
