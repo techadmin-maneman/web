@@ -248,6 +248,14 @@
     "reviewed": false
   },
   {
+    "key": "site:home/hero.area",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
+    "text": "Delhi NCR · home service",
+    "reviewed": false
+  },
+  {
     "key": "site:home/hero.sequence.0",
     "surface": "site",
     "group": "Home",

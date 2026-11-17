@@ -5,7 +5,8 @@
 // over it, fetches nothing until it plays, once the page has loaded.
 // Over it the opening line shows one phrase at a time, round and round,
 // until Pause stops it with the film; a screen reader hears the whole line
-// once, and reduced motion shows the last phrase alone.
+// once, and reduced motion shows the last phrase alone. Restyled in Plex on the page's column, the area at the top
+// left and Pause at the top right, Book gold and first (ADR 0264).
 import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
 import { hero, heroFootage } from "../../content/site.ts";
@@ -41,9 +42,10 @@ const showFootage = isShown(heroFootage);
   <div class="scrim scrim--up"></div>
   <div class="scrim scrim--side"></div>
   {isTaggedPlaceholder(heroFootage) && showFootage && <div class={capsLook("label tag")}>{heroFootage.tag}</div>}
+  <p class="area">{hero.area}</p>
   <button
     type="button"
-    class={buttonLook({ variant: "outlineOnInk", size: "small", className: "strong pause" })}
+    class={buttonLook({ variant: "outlineOnInk", size: "small", className: "pause" })}
     data-hero-toggle
     data-pause={hero.pause}
     data-play={hero.play}
@@ -51,7 +53,7 @@ const showFootage = isShown(heroFootage);
     {hero.pause}
   </button>
   <div class="content">
-    <p class="sequence">
+    <p class="sequence" aria-live="polite">
       {hero.sequence.map((phrase, index) => (
         <span class:list={["phrase", { on: index === 0 }]} data-phrase>
           {phrase}{" "}
@@ -61,11 +63,11 @@ const showFootage = isShown(heroFootage);
     <h1>{hero.title}</h1>
     <p class="body">{hero.body}</p>
     <div class="actions">
-      <a class={buttonLook({ variant: "light", size: "action" })} href="/try">
-        {hero.tryOn}
-      </a>
-      <a class={buttonLook({ variant: "outlineOnInk", size: "action", className: "strong" })} href="/book">
+      <a class={buttonLook({ variant: "gold", size: "action", className: "act book" })} href="/book">
         {hero.book}
+      </a>
+      <a class={buttonLook({ variant: "outlineOnInk", size: "action", className: "act try" })} href="/try">
+        {hero.tryOn}
       </a>
     </div>
   </div>
@@ -148,7 +150,7 @@ const showFootage = isShown(heroFootage);
 <style>
   .hero {
     position: relative;
-    background: var(--ink-deep);
+    background: var(--site-navy);
     overflow: hidden;
     min-height: var(--hero-min-h);
     display: flex;
@@ -158,7 +160,7 @@ const showFootage = isShown(heroFootage);
   .footage {
     position: absolute;
     inset: 0;
-    background: var(--ink-night);
+    background: var(--site-scrim);
   }
   .poster,
   video {
@@ -188,19 +190,41 @@ const showFootage = isShown(heroFootage);
     padding: var(--sp-8) var(--sp-12);
     font-size: var(--fs-14);
   }
-  /* The way to stop the footage (WCAG 2.2.2), at the corner the placeholder tag leaves free (ADR 0022). */
+  /* Where the page's column starts and ends, for what is set over the footage at its corners. */
+  .hero {
+    --hero-edge: max(var(--gutter), calc((100% - var(--page-max)) / 2 + var(--gutter)));
+  }
+  .area {
+    position: absolute;
+    z-index: var(--z-raised);
+    top: var(--hero-tag-top);
+    left: var(--hero-edge);
+    margin: 0;
+    min-height: var(--tap);
+    display: flex;
+    align-items: center;
+    font-size: var(--fs-14);
+    font-weight: var(--weight-medium);
+    color: var(--site-on-navy);
+  }
+  /* The way to stop the footage (WCAG 2.2.2). */
   .pause {
     position: absolute;
     z-index: var(--z-raised);
     top: var(--hero-tag-top);
-    right: var(--gutter);
+    right: var(--hero-edge);
+    padding: 0 var(--sp-16);
+    font-size: var(--fs-16);
+    font-weight: var(--weight-medium);
+    border-color: var(--site-on-navy-edge);
+    color: var(--site-on-navy);
   }
   .content {
     position: relative;
     width: 100%;
     max-width: var(--page-max);
     margin: 0 auto;
-    padding: 0 var(--gutter) var(--space-2xl);
+    padding: 0 var(--gutter) var(--hero-pad-bottom);
   }
   /* The phrases share one cell, so the line keeps the height of its longest and nothing below it moves. */
   .sequence {
@@ -209,10 +233,11 @@ const showFootage = isShown(heroFootage);
     display: grid;
     margin: 0;
     font-family: var(--site-font);
+    font-weight: var(--weight-semibold);
     font-size: var(--fs-hero-line);
     line-height: var(--lh-100);
     letter-spacing: var(--tracking-display);
-    color: var(--paper);
+    color: var(--site-on-navy);
     max-width: var(--measure-hero);
   }
   .phrase {
@@ -230,23 +255,22 @@ const showFootage = isShown(heroFootage);
     }
   }
   h1 {
-    margin: var(--space-xs) 0 0;
+    margin: var(--hero-title-gap) 0 0;
     font-family: var(--site-font);
-    font-weight: var(--weight-regular);
-    font-size: var(--fs-h4);
+    font-weight: var(--weight-medium);
+    font-size: var(--site-fs-hero-title);
     line-height: var(--lh-115);
     letter-spacing: var(--tracking-heading);
-    color: var(--paper);
+    color: var(--site-on-navy);
     max-width: var(--measure-hero);
     text-wrap: balance;
   }
   .body {
     margin: var(--sp-16) 0 0;
-    font-size: var(--fs-lead);
+    font-size: var(--site-fs-lead);
     line-height: var(--lh-160);
-    color: var(--ink-tag);
+    color: var(--site-on-navy-muted);
     max-width: var(--measure-hero-body);
-    text-wrap: pretty;
   }
   /* On a phone the two stack at one width; on a wider screen they sit side by side at their own. */
   @media (max-width: 760px) {
@@ -258,10 +282,31 @@ const showFootage = isShown(heroFootage);
     display: flex;
     flex-wrap: wrap;
     gap: var(--sp-16);
-    margin-top: var(--space-s);
+    margin-top: var(--hero-actions-gap);
   }
-  /* Over the film, the outlines' edge is the stronger line. */
-  .strong {
-    --edge-on-ink: var(--ink-line-strong);
+  /* The hero's own buttons, a little taller than the page's and in Plex's medium, as the board draws them. */
+  .act {
+    min-height: var(--btn-lg);
+    padding: 0 var(--sp-16);
+    font-size: var(--fs-16);
+    font-weight: var(--weight-medium);
+  }
+  .book {
+    color: var(--site-navy);
+  }
+  .try {
+    border-color: var(--site-on-navy-edge);
+    color: var(--site-on-navy);
+  }
+  @media (hover: hover) {
+    .book:hover {
+      background: var(--site-gold-hover);
+      box-shadow: none;
+    }
+    .try:hover,
+    .pause:hover {
+      border-color: var(--site-on-navy);
+      background: transparent;
+    }
   }
 </style>
