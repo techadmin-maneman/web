@@ -380,8 +380,7 @@
    booking holds its own; the line above it says what went wrong. */
 .send {
   position: sticky;
-  /* Above the cookie bar while it asks (components/ConsentBar.astro). */
-  bottom: var(--consent-reserve);
+  bottom: 0;
   z-index: var(--z-raised);
   margin-inline: calc(-1 * var(--gutter));
   padding: var(--sp-12) var(--gutter) calc(var(--sp-16) + var(--site-safe-bottom));

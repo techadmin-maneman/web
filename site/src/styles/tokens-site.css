@@ -218,6 +218,13 @@
   --flow-action-min: 240px; /* a laptop's step button, at its narrowest */
 }
 
+/* A phone's step button is pinned at the foot, so the cookie bar sits above it, as it does above the home page's bar. */
+@media (max-width: 760px) {
+  .app-look {
+    --foot-bar-h: calc(var(--bar-h) + var(--site-safe-bottom));
+  }
+}
+
 @media (min-width: 761px) {
   .app-look {
     --strip-day-height: var(--sp-72);
