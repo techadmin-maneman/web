@@ -22,10 +22,13 @@ import { sayNow, theirs } from "../lang/index.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { keptDay } from "../store/jobs.ts";
+import { HowDone } from "../guides/HowDone.tsx";
+import { screensOf } from "../visit/index.ts";
 import { ClientRecord } from "./ClientRecord.tsx";
 import { Reschedule } from "./Reschedule.tsx";
 import { TellClient } from "./TellClient.tsx";
 import styles from "./job-card.module.css";
+import { Chevron } from "../frame/Chevron.tsx";
 
 type Piece = NonNullable<Job["pieces"]>[number];
 
@@ -199,16 +202,14 @@ export function JobCard({ job }: { job: Job }) {
       <ProfileSection profile={job.profile} />
       {job.type === "consultation" ? (
         <ListRows className={styles.rowList}>
-          <ListRow
-            title={optionsCopy.link}
-            to={`/jobs/${job.id}/options`}
-            end={<Icon d={GLYPHS.chevron} size="sm" />}
-          />
+          <ListRow title={optionsCopy.link} to={`/jobs/${job.id}/options`} end={<Chevron />} />
         </ListRows>
       ) : (
         <PieceSection job={job} />
       )}
       {job.last_visit !== null && <LastVisit last={job.last_visit} />}
+      {/* Last, as the prototype orders the card: the way the visit is done, its steps counted. */}
+      {job.type !== null && <HowDone to={`/guides/${job.type}`} steps={screensOf(job).length} />}
     </>
   );
 }

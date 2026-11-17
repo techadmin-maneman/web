@@ -75,7 +75,7 @@ test("a job closed out on another phone is done with on Today, and the next is t
   await expect(closed).toContainText(`Service visit · ${techCopy.today.closedAfter.partial}`);
   await expect(closed).not.toContainText("min drive");
   await closed.click();
-  await expect(page.getByText("Closed out · partly done")).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.job.viewSummary })).toBeVisible();
 });
 
 test("says when a job under way runs into the next", async ({ page }) => {

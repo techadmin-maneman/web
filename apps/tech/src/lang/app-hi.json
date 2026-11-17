@@ -240,7 +240,6 @@
     "Sent": "भेजा",
     "Sent again.": "फिर से भेजा।",
     "Sent as often as today allows. Ops can send it.": "आज जितनी बार भेज सकते थे, भेज दिया। ऑप्स भेज सकते हैं।",
-    "Sent on WhatsApp from Mane Man’s number.": "Mane Man के नंबर से WhatsApp पर भेजा।",
     "Sent, not delivered": "भेजा, पहुँचा नहीं",
     "Sent.": "भेज दिया।",
     "September": "सितंबर",
@@ -399,6 +398,7 @@
     "ops notified": "ऑप्स को बताया",
     "ops will add it to your next transfer": "ऑप्स अगली खेप में भेजेंगे",
     "pays at the visit": "विज़िट पर पेमेंट",
+    "running late": "देर हो रही है",
     "the after photos": "बाद की फ़ोटो",
     "the before photos": "पहले की फ़ोटो",
     "the client": "क्लाइंट",
@@ -492,8 +492,8 @@
       "hi": "$1 × $2 इंच"
     },
     {
-      "match": "^([^·]+) / ([^·]+)% grey$",
-      "hi": "$1 / $2% सफ़ेद"
+      "match": "^([^·]+) · ([^·]+)% grey$",
+      "hi": "$1 · $2% सफ़ेद"
     },
     {
       "match": "^([^·,]+), nothing booked$",
@@ -1090,6 +1090,10 @@
     {
       "match": "^([^·]+) photos?$",
       "hi": "$1 फ़ोटो"
+    },
+    {
+      "match": "^After photos, ([^·]+)$",
+      "hi": "बाद की फ़ोटो, $1"
     }
   ],
   "dateTokens": {

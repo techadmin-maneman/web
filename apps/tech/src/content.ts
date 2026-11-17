@@ -197,10 +197,10 @@ export const safety = localised({
   open: "Safety",
   title: "Safety",
   sharing: "Ops can see your location until you close this visit.",
-  sos: "SOS",
+  sos: "Hold for SOS",
   sosSub: "Alerts ops and shares your location",
   /** Beneath SOS while it is held: under reduced motion, the only sign it is going. */
-  keepHolding: "Keep holding…",
+  keepHolding: "Keep holding",
   sending: "Sending your SOS…",
   hold: "Press and hold for 3 seconds. Let go to cancel.",
   /** "SOS sent 9:41 am" */
@@ -467,21 +467,22 @@ export const clientRecord = localised({
   history: "Client history",
   /** "5 visits since Jul", beneath the history's row. */
   since: (count: number, month: string) => `${counted(count, "visit", "visits")} since ${month}`,
-  newClient: "New client",
+  /** Beneath the handoff's photographs: which they are, and when. */
+  afterPhotos: (date: string) => `After photos, ${date}`,
   /** The history screen. */
   title: "Client history",
-  back: "Back to the job",
   none: "No earlier visits.",
   failed: "The client’s history didn’t load.",
   retry: "Try again",
   /** "Service visit · 1 Sep" */
-  visit: (kind: string, date: string) => `${kind} · ${date}`,
+  /** The history's two heads, as the prototype has them. */
+  clientAlerts: "Client alerts",
+  visits: "Visits",
   results: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
   /** "Imran · Done" */
   byAndResult: (who: string | null, result: string) => (who === null ? result : `${who} · ${result}`),
   photo: (angle: string) => `After, ${angle}`,
-  used: "Used",
-  piece: (label: string) => `Piece fitted: ${label}`,
+  piece: (label: string) => `Fitted ${label}`,
 } as const);
 
 export const job = localised({
@@ -519,7 +520,6 @@ export const job = localised({
     minute: (minutes: number) => `${String(minutes)} min`,
     onTheWay: (minutes: number) => `On my way, ${String(minutes)} min`,
     late: (minutes: number) => `Running ${String(minutes)} min late`,
-    fromUs: "Sent on WhatsApp from Mane Man’s number.",
     sentAt: (time: string) => `Sent at ${time}`,
     /** "Sent: on my way, 20 min", under the actions. */
     sent: (what: string) => `Sent: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
@@ -534,7 +534,6 @@ export const job = localised({
   putRight: "Put it right",
   // The board draws no job's state on its card or its row.
   states: { inProgress: "In progress", closed: "Closed out", atTheDoor: "At the door" },
-  closedAs: (outcome: string) => `Closed out · ${outcome}`,
   notToday: {
     tomorrow: "This job is tomorrow. Arrive and start it on the day.",
     other: "This job isn’t today’s. Arrive and start it on its day.",
@@ -1151,7 +1150,7 @@ export const profile = localised({
     adhesive: "Adhesive",
     scalp: "Scalp",
     size: (width: number, length: number) => `${String(width)} × ${String(length)} in`,
-    shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} / ${String(grey)}% grey`),
+    shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} · ${String(grey)}% grey`),
   },
 } as const);
 
@@ -1336,6 +1335,8 @@ export const reschedule = localised({
   open: "Ask ops to reschedule",
   why: "Why",
   reasons: { client_asked: "Client asked", running_late: "I’m running late", kit_problem: "Kit problem" },
+  /** The reason inside the note once asked, mid-sentence: "· client asked ·". */
+  reasonsAfter: { client_asked: "client asked", running_late: "running late", kit_problem: "kit problem" },
   send: "Send to ops",
   close: "Close",
   needsSignal: "Needs signal",

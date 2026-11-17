@@ -2,8 +2,6 @@
 // order and the tasks each guides, and every task read-only. Drawn from the visit engine and the checklists as ops set
 // them, which the phone keeps (./checklists.ts), so it opens with no signal.
 
-import { GLYPHS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { cardStepsFor } from "@rules/policy/in-job-steps.ts";
 import { VISIT_TYPES, type VisitType } from "@rules/config/visit-types.ts";
@@ -13,6 +11,7 @@ import { TaskGuide } from "../steps/index.ts";
 import { screensOf, taskFor, type Screen } from "../visit/index.ts";
 import { useChecklists } from "./checklists.ts";
 import styles from "./guides.module.css";
+import { Chevron } from "../frame/Chevron.tsx";
 
 /** A kind of visit's screens, in the order they are worked, as a visit of that kind would have them. */
 export const screensFor = (type: VisitType): Screen[] =>
@@ -28,7 +27,7 @@ export function GuidesScreen() {
             title={types[type]}
             meta={copy.steps(screensFor(type).length)}
             to={`/guides/${type}`}
-            end={<Icon d={GLYPHS.chevron} size="sm" />}
+            end={<Chevron />}
           />
         ))}
       </ListRows>
@@ -53,7 +52,7 @@ export function GuideScreen({ type, back }: { readonly type: VisitType; readonly
                     key={item.id}
                     title={taskFor(item).title}
                     to={`/guides/${type}/${item.id}`}
-                    end={<Icon d={GLYPHS.chevron} size="sm" />}
+                    end={<Chevron />}
                   />
                 ))}
               </ListRows>

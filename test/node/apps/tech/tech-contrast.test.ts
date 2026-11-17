@@ -55,6 +55,7 @@ const LIGHT_PAIRINGS: readonly Pairing[] = [
   { text: "--error", ground: "--grid-100", where: "a problem card’s title under a pointer" },
   { text: "--error", ground: "--disabled", where: "an action that takes something away, pressed" },
   { text: "--ink-900", ground: "--disabled", where: "a person’s initials" },
+  { text: "--ink-900", ground: "--wash-100", where: "a note on the warm wash: a reschedule asked" },
   { text: "--white-000", ground: "--error", where: "a destructive action" },
   { text: "--white-000", ground: "--camera-900", where: "the camera’s head and its prompt" },
   { text: "--ink-500", ground: "--placeholder", where: "the map’s line beneath its pin" },
@@ -142,6 +143,12 @@ const REDRAWN = [
   "apps/tech/src/job/CheckIn.tsx",
   "apps/tech/src/job/client-record.module.css",
   "apps/tech/src/job/ClientRecord.tsx",
+  "apps/tech/src/job/photo-tiles.module.css",
+  "apps/tech/src/job/PhotoTiles.tsx",
+  "apps/tech/src/frame/chevron.module.css",
+  "apps/tech/src/frame/Chevron.tsx",
+  "apps/tech/src/frame/row-end.module.css",
+  "apps/tech/src/frame/RowEnd.tsx",
   "apps/tech/src/job/door.module.css",
   "apps/tech/src/job/DoorScreen.tsx",
   "apps/tech/src/job/job-card.module.css",
@@ -185,14 +192,19 @@ function inkRules(): [string, string][] {
 /** The redrawn screens' rules. */
 const lightRules = (): [string, string][] => stylesheets("apps/tech/src").filter(isRedrawn).flatMap(rulesOf);
 
-/** Every token each rule sets as a text colour and as a ground, and the rules that set both. */
+/** A rule that colours a glyph and no words, a row's chevron: held to a control's 3:1 (WCAG 1.4.11), not words' 4.5:1. */
+const GLYPH = /\.chevron\b/;
+
+/** Every token each rule sets as a text colour and as a ground, the rules that set both, and each glyph's. */
 function coloursUsed(rules: [string, string][]): {
   texts: Set<string>;
   grounds: Set<string>;
   both: [string, string, string][];
+  glyphs: Set<string>;
 } {
   const texts = new Set<string>();
   const grounds = new Set<string>();
+  const glyphs = new Set<string>();
   const both: [string, string, string][] = [];
   for (const [selector, body] of rules) {
     let text: string | null = null;
@@ -204,11 +216,15 @@ function coloursUsed(rules: [string, string][]): {
       if (property === "color") text = token;
       if (property === "background" || property === "background-color") ground = token;
     }
+    if (text !== null && GLYPH.test(selector) && ground === null) {
+      glyphs.add(text);
+      continue;
+    }
     if (text !== null) texts.add(text);
     if (ground !== null) grounds.add(ground);
     if (text !== null && ground !== null) both.push([selector, text, ground]);
   }
-  return { texts, grounds, both };
+  return { texts, grounds, both, glyphs };
 }
 
 function ratioOf(pairing: Pairing): number {
@@ -382,6 +398,12 @@ describe("what the redrawn screens use", () => {
     expect([...used.texts].filter((token) => !texts.has(inLook(token)))).toEqual([]);
     expect([...used.grounds].filter((token) => !grounds.has(inLook(token)))).toEqual([]);
     expect(used.both.filter(([, text, ground]) => !listed.has(`${inLook(text)} on ${inLook(ground)}`))).toEqual([]);
+  });
+
+  it("draws a chevron in a colour the control edges list, which clears 3:1 on the ground", () => {
+    expect(used.glyphs.size).toBeGreaterThan(0);
+    const edges = new Set(LIGHT_EDGES.map((pairing) => pairing.edge));
+    expect([...used.glyphs].filter((token) => !edges.has(inLook(token)))).toEqual([]);
   });
 });
 

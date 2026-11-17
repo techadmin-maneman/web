@@ -209,10 +209,6 @@
   color: var(--ui-text-soft);
 }
 
-.chevron {
-  color: var(--ui-text-soft);
-}
-
 .none {
   margin: var(--sp-12) 0;
   font-size: var(--fs-15);

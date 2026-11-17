@@ -27,13 +27,14 @@ which were added to the same list.
 3. **Kept as built, and recorded here**, where the owner accepted the recommendation to keep:
    - Kit's "Hand back 1 hair system" and "Hand back expired stock": the hand-back is the kit's own workflow
      ([0164](0164-the-kit-screen.md)), which the prototype does not draw.
+   - A closed job offers no Message and no Ask ops to reschedule: the visit is over, and View summary is its way on.
 4. **Held to earlier rulings**, not changed: a chip and a control at the gloved 48 px ([0245](0245-the-steps.md)); a
    control's edge at 3:1 in `--stone` ([0239](0239-technician-light-look.md), [0258](0258-the-technician-design-pass.md)).
 
 ## Departures from the prototype
 
-- **A list's chevron** stays in the soft ink until the contrast test holds an icon to 3:1 rather than text's 4.5:1; the
-  prototype draws it lighter.
+- **What a past visit used**, in the client's history, names each thing with its count ("Walker tape × 2"): the API's
+  history gives no unit, so the prototype's "10 ml solvent" waits for it to.
 - **A ruled choice list** keeps the shared choices' 8 px between its rows, which wins over the list's own gap of none
   in `packages/ui`; the technician look sets its rows 8 px shorter so rule to rule is the prototype's 60 px, until the
   shared order is put right with the console's screens captured.

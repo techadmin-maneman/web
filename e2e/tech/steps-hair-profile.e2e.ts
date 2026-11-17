@@ -198,7 +198,7 @@ test.describe("the client’s hair profile", () => {
     const card = page.getByRole("region", { name: techCopy.steps.titles.profile });
     await expect(card.getByText("Mane Man Essential")).toBeVisible();
     await expect(card.getByText("8 × 10 in")).toBeVisible();
-    await expect(card.getByText("#1B / 20% grey")).toBeVisible();
+    await expect(card.getByText("#1B · 20% grey")).toBeVisible();
     await expect(card.getByText(techCopy.profile.attachments.tape, { exact: true })).toBeVisible();
     await expect(card.getByText("Dry at the crown")).toBeVisible();
   });

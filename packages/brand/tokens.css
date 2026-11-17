@@ -69,6 +69,7 @@
   --stone: #8c939e; /* a radio's or a box's edge not chosen, a chevron, a field's edge (3:1, WCAG 1.4.11) */
   --disabled: #eef0f2; /* a button not usable yet */
   --error: #b42318; /* errors, what has expired, SOS, the client's alerts: a functional colour, not the brand's */
+  --sos-900: #8e1b12; /* the SOS at rest, before its hold sweeps across it in --error */
   --placeholder: #eceef1; /* where a map or a photograph will be */
   --mist-300: #a9b2c1; /* words beneath words on the camera's dark */
   --camera-900: #0b0f16; /* the camera's chrome: its head and its shutter's bar */

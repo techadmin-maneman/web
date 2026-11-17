@@ -21,6 +21,7 @@ export function HoldButton({
   children,
   sub,
   holdingSub,
+  holdingLabel,
   describedBy,
   className,
   onHeld,
@@ -30,6 +31,8 @@ export function HoldButton({
   readonly sub?: ReactNode;
   /** The line beneath while it is held, which says so where the fill is not drawn, as under reduced motion. */
   readonly holdingSub?: ReactNode;
+  /** Its words while it is held, where they change, as the SOS's "Keep holding". */
+  readonly holdingLabel?: ReactNode;
   /** The id of the line saying how to hold it. */
   readonly describedBy?: string | undefined;
   readonly className?: string | undefined;
@@ -89,7 +92,7 @@ export function HoldButton({
     >
       <span className={styles.fill} aria-hidden="true" />
       <span className={styles.words}>
-        <span>{children}</span>
+        <span>{holding && holdingLabel !== undefined ? holdingLabel : children}</span>
         {line !== undefined && <span className={styles.sub}>{line}</span>}
       </span>
     </button>

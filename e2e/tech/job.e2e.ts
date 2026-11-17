@@ -484,7 +484,8 @@ test("a closed job reads as closed, with View summary", async ({ page }) => {
   };
   await page.goto(`/jobs/${JOB_ID}`);
 
-  await expect(page.getByText("Closed out · done")).toBeVisible();
+  // No band above the map, as the prototype draws it: View summary is the sign it closed.
+  await expect(page.getByText(/^Closed out · /)).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.job.continueJob })).toHaveCount(0);
   await page.getByRole("button", { name: techCopy.job.viewSummary }).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.closed })).toBeVisible();

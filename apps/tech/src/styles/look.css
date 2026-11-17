@@ -16,6 +16,11 @@
   --ui-ground: var(--white-000);
   --ui-raised: var(--white-000);
   --ui-tint: var(--grid-100);
+  /* The one note a screen marks warmly, as the prototype draws a reschedule asked. */
+  --ui-wash: var(--wash-100);
+  /* The SOS, as the prototype draws it: the deep red at rest, the error's red sweeping across as it is held. */
+  --hold-ground: var(--sos-900);
+  --hold-fill: var(--error);
   --ui-shade: var(--disabled);
   --ui-box: var(--white-000);
   --ui-box-off: var(--disabled);

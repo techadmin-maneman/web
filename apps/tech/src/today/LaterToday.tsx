@@ -3,9 +3,7 @@
 // ink and quieter, its time over how it closed and its visit with it, as the prototype draws it; then tomorrow, which
 // opens the Schedule.
 
-import { GLYPHS } from "@maneman/brand/icons";
 import { classes } from "@maneman/ui/classes";
-import { Icon } from "@maneman/ui/Icon";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Link } from "@maneman/ui/router";
 import { SectionHead } from "@maneman/ui/SectionHead";
@@ -18,6 +16,7 @@ import type { Heard } from "../store/jobs.ts";
 import { howClosed, keptWhole } from "../lib/today.ts";
 import { apiDate, clock, dayAfter, runsOver, todayInIndia } from "../lib/when.ts";
 import styles from "./today.module.css";
+import { Chevron } from "../frame/Chevron.tsx";
 
 /** The row's third line: that it runs into the next job, where the technician is with it, or the drive and when to leave. */
 function lastLine(job: JobSummary, state: RowState | null, ahead: Ahead): string | null {
@@ -74,7 +73,7 @@ function Row(props: {
           {last !== null && <span className={styles.rowLine}>{keptWhole(last)}</span>}
         </>
       }
-      end={<Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />}
+      end={<Chevron />}
     />
   );
 }
@@ -135,7 +134,7 @@ export function Tomorrow({ jobs, loaded }: { readonly jobs: readonly JobSummary[
         {" · "}
         {first === undefined ? copy.nothingBooked : copy.tomorrowJobs(jobs.length, clock(first.starts_at))}
       </span>
-      <Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />
+      <Chevron />
     </Link>
   );
 }

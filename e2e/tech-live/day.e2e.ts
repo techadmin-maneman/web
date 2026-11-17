@@ -28,7 +28,8 @@ async function signIn(page: Page): Promise<void> {
   await page.getByRole("button", { name: signInWords.sendCode }).click();
   // The sixth digit sends the code.
   await page.getByRole("textbox", { name: signInWords.codeLabel }).fill(LOCAL_LOGIN_CODE);
-  await expect(page.getByRole("heading", { name: /jobs? today$/ })).toBeVisible();
+  // A day with a job closed counts those left.
+  await expect(page.getByRole("heading", { name: /jobs? (today|left)$/ })).toBeVisible();
 }
 
 /** Takes the five photographs of a set, and sends it. */
@@ -108,9 +109,9 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
   // Every write carried the start the phone holds, which is the API's own.
   expect(new Set(written)).toEqual(new Set([startsAt]));
 
-  // Read again from the API: the job is closed.
+  // Read again from the API: the job is closed, which its View summary says.
   await page.goto(`/jobs/${id}`);
-  await expect(page.getByText("Closed out · done")).toBeVisible();
+  await expect(page.getByRole("button", { name: jobWords.viewSummary })).toBeVisible();
 });
 
 test("a job ops moved while the phone held it is refused, and the card says it moved", async ({ page, context }) => {

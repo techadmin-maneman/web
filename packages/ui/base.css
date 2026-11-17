@@ -157,6 +157,10 @@
     --row-pad-y: var(--sp-12);
     /* A row's least height: two lines' worth, unless a list of one-line rows sets less. */
     --row-min-height: var(--sp-64);
+    /* A button held to act (./HoldButton.tsx): its ground, and the fill that crosses it as it is held. */
+    --hold-ground: var(--error);
+    --hold-fill: var(--error-on-paper);
+    --hold-sub-text: var(--fs-15);
     --row-lead-text: var(--fs-13);
     --row-lead-colour: var(--ui-text-muted);
     --row-lead-wrap: nowrap;

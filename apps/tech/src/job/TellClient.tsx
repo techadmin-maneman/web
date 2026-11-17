@@ -92,7 +92,6 @@ export function MessageSheet({
         </div>
         {word("on_the_way", copy.tell.onTheWay(minutes))}
         {word("running_late", copy.tell.late(minutes))}
-        <p className={styles.note}>{copy.tell.fromUs}</p>
       </SheetPanel>
     </Sheet>
   );
