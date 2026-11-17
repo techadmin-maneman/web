@@ -141,7 +141,8 @@
   .outline,
   .outlineOnInk,
   .quiet,
-  .danger {
+  .danger,
+  .dangerQuiet {
     border-width: var(--hairline);
     font-weight: var(--control-weight);
   }
@@ -159,7 +160,8 @@
 
   .outline:active:not(:disabled):not([aria-disabled="true"]),
   .quiet:active:not(:disabled):not([aria-disabled="true"]),
-  .danger:active:not(:disabled):not([aria-disabled="true"]) {
+  .danger:active:not(:disabled):not([aria-disabled="true"]),
+  .dangerQuiet:active:not(:disabled):not([aria-disabled="true"]) {
     background: var(--ui-shade);
   }
 
@@ -168,7 +170,9 @@
   .quiet:disabled,
   .quiet[aria-disabled="true"]:not([data-settling]),
   .danger:disabled,
-  .danger[aria-disabled="true"]:not([data-settling]) {
+  .danger[aria-disabled="true"]:not([data-settling]),
+  .dangerQuiet:disabled,
+  .dangerQuiet[aria-disabled="true"]:not([data-settling]) {
     border-color: var(--ui-line);
     color: var(--ui-text-quiet);
   }
@@ -206,6 +210,11 @@
     color: var(--ui-error);
   }
 
+  .dangerQuiet {
+    border-color: var(--outline-edge);
+    color: var(--ui-error);
+  }
+
   /* ---- A pointer resting on it: at a desk, never a finger's lingering tap ----- */
 
   @media (hover: hover) {
@@ -227,7 +236,8 @@
 
     .outline:hover:not(:disabled):not([aria-disabled="true"]),
     .quiet:hover:not(:disabled):not([aria-disabled="true"]),
-    .danger:hover:not(:disabled):not([aria-disabled="true"]) {
+    .danger:hover:not(:disabled):not([aria-disabled="true"]),
+    .dangerQuiet:hover:not(:disabled):not([aria-disabled="true"]) {
       background: var(--ui-shade);
     }
 

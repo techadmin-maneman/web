@@ -22,7 +22,7 @@ test("asks ops to move the visit, with why, and says so on the card", async ({ p
   expect(await axeViolations(page, (axe) => axe.exclude("dialog > button"))).toEqual([]);
   await sheet.getByRole("button", { name: copy.send }).click();
 
-  await expect(page.getByRole("status").filter({ hasText: copy.reasons.running_late })).toContainText(
+  await expect(page.getByRole("status").filter({ hasText: copy.reasonsAfter.running_late })).toContainText(
     "ops will confirm with the client",
   );
   expect(fake.writes.find((write) => write.path.endsWith("/reschedule-request"))?.body).toEqual({
@@ -57,6 +57,6 @@ test("shows an ask already open on the card, and offers no other", async ({ page
   const fake = await fakeTech(page);
   fake.rescheduleAsked = { asked_at: new Date().toISOString(), reason: "client_asked" };
   await page.goto(`/jobs/${JOB_ID}`);
-  await expect(page.getByRole("status").filter({ hasText: copy.reasons.client_asked })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: copy.reasonsAfter.client_asked })).toBeVisible();
   await expect(page.getByRole("button", { name: copy.open })).toHaveCount(0);
 });

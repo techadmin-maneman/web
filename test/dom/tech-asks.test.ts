@@ -53,7 +53,7 @@ describe("the ask to reschedule on the job", () => {
 
   it("says the ask stands while the card does, and offers it again once ops settle it", () => {
     draw({ asked_at: new Date().toISOString(), reason: "client_asked" });
-    expect(host.querySelector('[role="status"]')?.textContent).toContain(copy.reasons.client_asked);
+    expect(host.querySelector('[role="status"]')?.textContent).toContain(copy.reasonsAfter.client_asked);
     expect(host.textContent).not.toContain(copy.open);
 
     // The card read again: ops have settled it.

@@ -50,9 +50,3 @@
 .word {
   width: 100%;
 }
-
-.note {
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--ui-text-soft);
-}

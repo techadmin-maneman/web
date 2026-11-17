@@ -24,6 +24,7 @@ export function ConfirmSheet({
   onNo,
   onPaper = false,
   safeLast = false,
+  quietYes = false,
 }: {
   readonly title: string;
   readonly body: string;
@@ -34,6 +35,8 @@ export function ConfirmSheet({
   readonly onPaper?: boolean;
   /** On paper, the risky answer first and the safe one last, filled. */
   readonly safeLast?: boolean;
+  /** On paper, the answer that cannot be taken back in the error's words on a control's quiet edge, not a red one. */
+  readonly quietYes?: boolean;
 }) {
   const titleId = useId();
   const safe = useRef<HTMLButtonElement>(null);
@@ -60,7 +63,7 @@ export function ConfirmSheet({
         {onPaper ? (
           <div className={styles.answers}>
             {!safeLast && keep}
-            <Button variant="danger" size="action" className={styles.yes} onClick={onYes}>
+            <Button variant={quietYes ? "dangerQuiet" : "danger"} size="action" className={styles.yes} onClick={onYes}>
               {yes}
             </Button>
             {safeLast && keep}

@@ -2,7 +2,7 @@
 // a consumable received once in hand; a hair system's pieces scanned one by one, received once the last is in, or
 // with the rest reported missing, or still to come (docs/decisions/0258-the-technician-design-pass.md).
 
-import { TAB_ICONS } from "@maneman/brand/icons";
+import { GLYPHS } from "@maneman/brand/icons";
 import { amountOf } from "@maneman/web-kit/figures";
 import { indiaDate } from "@maneman/web-kit/dates";
 import { Button } from "@maneman/ui/Button";
@@ -150,7 +150,7 @@ function PieceActions(props: {
           disabled={offline || busy}
           onClick={props.onScan}
         >
-          {!offline && !props.scanning && <Icon d={TAB_ICONS.photos} size="md" />}
+          {!offline && !props.scanning && <Icon d={GLYPHS.scan} size="md" />}
           <span>{scanLabel(offline, props.scanning)}</span>
         </Button>
       )}

@@ -213,8 +213,10 @@ test("a job of today's called off, read from a push, opens the dialog that says 
   };
   await page.goto("/");
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("heading", { name: techCopy.interrupted.cancelled("Rohit M.") })).toBeVisible();
-  await expect(dialog.getByText(techCopy.interrupted.cancelledAlert)).toBeVisible();
+  // As the prototype words it: whose visit, and when ops called it off, from when the push was sent.
+  await expect(dialog.getByRole("heading", { name: techCopy.interrupted.cancelledOf("Rohit M.") })).toBeVisible();
+  const [before = "", after = ""] = techCopy.interrupted.cancelledAt("TIME").split("TIME");
+  await expect(dialog.getByText(new RegExp(`^${before}\\d[\\d:]* (am|pm)${after.replace(".", "\\.")}$`))).toBeVisible();
   await dialog.getByRole("button", { name: techCopy.interrupted.today }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
@@ -234,7 +236,7 @@ test("a push read with the app open, of a job of today's called off, opens the d
     navigator.serviceWorker.dispatchEvent(new MessageEvent("message", { data: { kind: "mm-alerts" } }));
   });
   await expect(
-    page.getByRole("dialog").getByRole("heading", { name: techCopy.interrupted.cancelled("Rohit M.") }),
+    page.getByRole("dialog").getByRole("heading", { name: techCopy.interrupted.cancelledOf("Rohit M.") }),
   ).toBeVisible();
 });
 

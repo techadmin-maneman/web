@@ -1,0 +1,6 @@
+/* A row's chevron (./Chevron.tsx): the prototype's #8C939E, the controls' grey. */
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--ui-line-control);
+}

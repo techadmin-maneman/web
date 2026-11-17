@@ -8,8 +8,9 @@
   background: transparent;
 }
 
+/* The prototype's: 20 px in, the title 20/600, the body 15 px, then Call ops beside Back to Today. */
 .panel {
-  padding: var(--sp-24) var(--screen-gutter);
+  padding: var(--sp-20);
   border-radius: var(--ui-radius-button);
   background: var(--ui-ground);
   color: var(--ui-text);
@@ -24,14 +25,18 @@
 }
 
 .body {
-  margin: var(--sp-12) 0 0;
-  font-size: var(--fs-16);
+  margin: calc(var(--sp-8) + var(--sp-2)) 0 0;
+  font-size: var(--fs-15);
   line-height: var(--lh-145);
 }
 
 .actions {
   display: flex;
-  flex-direction: column;
   gap: var(--sp-8);
-  margin-top: var(--sp-24);
+  margin-top: var(--sp-16);
+}
+
+.action {
+  flex: 1;
+  gap: var(--sp-8);
 }

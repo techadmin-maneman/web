@@ -18,6 +18,10 @@ test("opens today and the six days after it, today down the hours with the drive
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
   await expect(page.getByRole("radiogroup", { name: copy.title }).getByRole("radio")).toHaveCount(7);
   await expect(page.getByRole("table", { name: copy.dayView })).toBeVisible();
+  // Only today is named, as the prototype writes it: "Today, Thu 12 Nov".
+  await expect(page.getByRole("heading", { level: 2 }).first()).toHaveText(
+    /^Today, [A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2}$/,
+  );
   await expect(page.getByText(/^18 min · leave \d{1,2}(:\d{2})? [ap]m$/)).toBeVisible();
   await expect(page.locator(`a[href="/jobs/${JOB_ID}"]`)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
@@ -30,6 +34,8 @@ test("opens tomorrow's job, its card open since 6 pm, from Schedule, and goes ba
   await page.goto("/");
   await page.getByRole("link", { name: new RegExp(`^${techCopy.today.tomorrow}`) }).click();
   await expect(page).toHaveURL(new RegExp(`/week/${tomorrow}$`));
+  // Any other day plainly: "Fri, 13 Nov".
+  await expect(page.getByRole("heading", { level: 2 }).first()).toHaveText(/^[A-Z][a-z]{2}, \d{1,2} [A-Z][a-z]{2}$/);
   await page.locator(`a[href="/jobs/${TOMORROW_JOB_ID}"]`).click();
   await expect(page).toHaveURL(new RegExp(`/jobs/${TOMORROW_JOB_ID}$`));
   await page.getByRole("button", { name: techCopy.job.back }).click();

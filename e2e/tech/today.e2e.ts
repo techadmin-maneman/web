@@ -4,7 +4,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { card, JOB_ID, NOTHING_DONE, ROHITS_PIECE, SECOND_JOB_ID, todayInIndia } from "./fixtures.ts";
+import { card, JOB_ID, jobsToday, NOTHING_DONE, ROHITS_PIECE, SECOND_JOB_ID, todayInIndia } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { keptOnPhone, leftOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
@@ -38,7 +38,7 @@ test("puts the next job first with the way there, then the rest of the day, with
   );
   // Message and Call, once the card the phone keeps names the client's number.
   await expect(next.getByRole("link", { name: techCopy.today.call("Rohit") })).toHaveAttribute("href", /^tel:/);
-  await expect(next.getByRole("link", { name: techCopy.today.message("Rohit") })).toBeVisible();
+  await expect(next.getByRole("button", { name: techCopy.today.message("Rohit") })).toBeVisible();
 
   // The rest of the day: each with its drive and when to leave, the locked one by its kind.
   const rows = laterRows(page);
@@ -66,12 +66,16 @@ test("a job closed out on another phone is done with on Today, and the next is t
   };
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1, name: "2 jobs today" })).toBeVisible();
+  // Once one has closed, the title counts those left, as the prototype words it.
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.today.left(2) })).toBeVisible();
   await expect(nextJob(page)).toContainText("Vikram S.");
+  // A row done with: its time over how it closed, and its visit with it, with no drive.
   const closed = laterRows(page).first();
   await expect(closed).toContainText(techCopy.today.closed.partial);
+  await expect(closed).toContainText(`Service visit · ${techCopy.today.closedAfter.partial}`);
+  await expect(closed).not.toContainText("min drive");
   await closed.click();
-  await expect(page.getByText("Closed out · partly done")).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.job.viewSummary })).toBeVisible();
 });
 
 test("says when a job under way runs into the next", async ({ page }) => {
@@ -82,6 +86,24 @@ test("says when a job under way runs into the next", async ({ page }) => {
   await page.goto("/");
   await expect(nextJob(page)).toContainText(techCopy.today.next.inProgress);
   await expect(nextJob(page)).toContainText(techCopy.today.runsOver("11 am", "11:30 am"));
+});
+
+test("says there are no more jobs under the title once every job has closed, the list headed Today", async ({
+  page,
+}) => {
+  await fakeTech(page);
+  const today = todayInIndia();
+  const closed = jobsToday(today).map((job) => ({ ...job, status: "completed" as const }));
+  // Registered after the fake, so it answers first: today's three jobs, each closed.
+  await page.route(
+    (url) => url.pathname === "/api/tech/jobs" && url.searchParams.get("date") === today,
+    (route) => route.fulfill({ json: { date: today, jobs: closed, sent_back: [] } }),
+  );
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.today.allDone })).toBeVisible();
+  await expect(page.getByText(techCopy.today.noMore, { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: techCopy.today.title, exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: techCopy.today.later, exact: true })).toHaveCount(0);
 });
 
 test("says there are no jobs when the day is empty", async ({ page }) => {
@@ -320,4 +342,23 @@ test("cuts no time or length short at 360 px in Hindi, nor with its text at 130%
     document.documentElement.style.setProperty("zoom", "1.3");
   });
   expect(await clipped(page)).toEqual([]);
+});
+
+test("Message on the next job opens the job's own sheet, and sends the client the word from there", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  await page.goto("/");
+  await nextJob(page)
+    .getByRole("button", { name: techCopy.today.message("Rohit") })
+    .click();
+
+  const sheet = page.getByRole("dialog", { name: techCopy.job.tell.title("Rohit") });
+  await sheet.getByRole("button", { name: techCopy.job.tell.late(20) }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/updates")).length).toBe(1);
+  expect(fake.writes.find((write) => write.path.endsWith("/updates"))?.body).toEqual({
+    preset: "running_late",
+    minutes: 20,
+  });
 });

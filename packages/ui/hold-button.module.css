@@ -1,4 +1,5 @@
-/* A button that acts only once held (./HoldButton.tsx): the error's colour, a darker fill crossing it as it is held. */
+/* A button that acts only once held (./HoldButton.tsx): the error's colour, a fill crossing it as it is held, each a
+   role a look may set (./base.css). */
 
 @layer base, ui;
 
@@ -11,7 +12,7 @@
     padding: var(--sp-12) var(--sp-16);
     border: 0;
     border-radius: var(--ui-radius-button);
-    background: var(--error);
+    background: var(--hold-ground);
     font: inherit;
     font-size: var(--control-text);
     font-weight: var(--weight-medium);
@@ -31,7 +32,7 @@
   .fill {
     position: absolute;
     inset: 0;
-    background: var(--error-on-paper);
+    background: var(--hold-fill);
     transform: scaleX(0);
     transform-origin: left;
   }
@@ -58,7 +59,7 @@
   }
 
   .sub {
-    font-size: var(--fs-15);
+    font-size: var(--hold-sub-text);
     font-weight: var(--weight-regular);
   }
 }
