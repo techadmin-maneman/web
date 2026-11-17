@@ -4,7 +4,7 @@ import { expect, test } from "./support.ts";
 import * as guideCopy from "../site/src/content/guides.ts";
 import { placeholderTag } from "../site/src/content/site.ts";
 
-test("lists every guide, and each opens with its title and a way to book", async ({ page }) => {
+test("lists every guide, and each opens with its title, the way back and a way to book", async ({ page }) => {
   await page.goto("/guides");
   await expect(page.getByRole("heading", { level: 1, name: guideCopy.guidesPage.title })).toBeVisible();
   const [first] = guideCopy.guides;
@@ -14,6 +14,9 @@ test("lists every guide, and each opens with its title and a way to book", async
   await page.getByRole("link", { name: first.title }).click();
   await expect(page).toHaveURL(new RegExp(`/guides/${first.slug}$`));
   await expect(page.getByRole("heading", { level: 1, name: first.title })).toBeVisible();
+  await expect(
+    page.getByRole("main").getByRole("link", { name: guideCopy.guidesPage.title, exact: true }),
+  ).toHaveAttribute("href", "/guides");
   // Approved, so no draft tag.
   await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(0);
   for (const section of first.sections)
@@ -71,17 +74,20 @@ test("each city has a page of its own, linked from /areas, its areas left for th
   await page.goto("/areas");
   const city = "Gurgaon";
   const title = guideCopy.cityPage.title.replace("{city}", city);
-  await page
-    .getByRole("navigation", { name: guideCopy.areasPage.cityPages })
-    .getByRole("link", { name: title })
-    .click();
+  const cities = page.getByRole("navigation", { name: guideCopy.areasPage.cityPages });
+  // Each row names its city, so the Worker leaves out one served nowhere (site/src/worker.ts, UnservedLeftOut).
+  await expect(cities.locator("li:not([data-city])")).toHaveCount(0);
+  await cities.getByRole("link", { name: title }).click();
   await expect(page).toHaveURL(/\/areas\/gurgaon$/);
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  await expect(
+    page.getByRole("main").getByRole("link", { name: guideCopy.areasPage.title, exact: true }),
+  ).toHaveAttribute("href", "/areas");
   await expect(page.locator("[data-city-areas]")).toBeHidden();
   await expect(page.getByRole("link", { name: guideCopy.cityPage.check })).toHaveAttribute("href", "/book");
-  await expect(
-    page.getByRole("navigation", { name: guideCopy.cityPage.others }).getByRole("link", { name: /Hair systems in/ }),
-  ).toHaveCount(4);
+  const others = page.getByRole("navigation", { name: guideCopy.cityPage.others });
+  await expect(others.getByRole("link", { name: /Hair systems in/ })).toHaveCount(4);
+  await expect(others.locator("li:not([data-city])")).toHaveCount(0);
 });
 
 test("the home page names the company and the site, with the company’s mark", async ({ page }) => {

@@ -10,6 +10,7 @@ import type { FormRef } from "../useInvalidFocus.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./gate.module.css";
 import shared from "./TryOn.module.css";
+import { LegalLinks } from "../LegalLinks.tsx";
 
 /** The WhatsApp code's field, on the gate's white. */
 const CODE_FIELD: CodeFieldClasses = { hint: styles.codeHint, error: styles.error, again: styles.codeAgain };
@@ -109,6 +110,7 @@ export function Gate(props: {
           )}
         </div>
       </form>
+      <LegalLinks alone={shared.legal} />
     </div>
   );
 }

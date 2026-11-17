@@ -57,8 +57,11 @@ export const booking = {
   },
   /** A first fit while ops offer no hair system in the console. */
   firstFitNotYet: "First fits aren’t open to book yet.",
-  /** A paid visit, booked with ops on WhatsApp while online payment is off: what to expect. */
-  withOps: (price: string) => `We book it with you on WhatsApp. You pay ${price} by UPI at the visit.`,
+  /**
+   * A paid visit ops book with the client on WhatsApp: what it costs, and that they say how to pay, which differs with
+   * whether online payment is on (ADR 0209, ADR 0272).
+   */
+  withOps: (price: string) => `We book it with you on WhatsApp, and tell you how to pay ${price}.`,
   /** Request mode (design/client-redesign, "Ask for a time"): while booking with ops, the pick goes to them on WhatsApp. */
   request: {
     title: "Ask for a time",

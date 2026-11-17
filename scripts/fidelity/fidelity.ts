@@ -61,7 +61,9 @@ const PAGES: readonly { board: string; path: string }[] = [
   { board: "Terms", path: "/terms" },
   { board: "OfferTerms", path: "/offer-terms" },
   { board: "Notices", path: "/notices" },
-  { board: "Stop", path: "/stop" },
+  // Opened as a message's link opens it, a token in its fragment, so it asks as the board does; with none it says the
+  // link no longer works.
+  { board: "Stop", path: "/stop#fidelity" },
   { board: "NotFound", path: "/no-such-page" },
 ];
 

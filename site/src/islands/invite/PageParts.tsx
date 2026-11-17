@@ -7,6 +7,7 @@ import { Consultation } from "./Consultation.tsx";
 import { Booked, Listed } from "./Done.tsx";
 import type { FormProps } from "./fields.tsx";
 import { HowItWorks } from "./HowItWorks.tsx";
+import { LegalLinks } from "../LegalLinks.tsx";
 import inviteSheet from "./Invite.module.css";
 import styles from "./page-parts.module.css";
 import { PincodePanel } from "./PincodePanel.tsx";
@@ -59,6 +60,7 @@ export function confirmation(page: PageFlow, name: string | null, reward: Referr
       <Arrival top={frame.top} how={frame.how}>
         {frame.steps}
         <Listed listing={state.listed} name={name} reward={reward} heading={heading} />
+        <LegalLinks alone={inviteSheet.flowLegal} />
       </Arrival>
     );
   }
