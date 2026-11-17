@@ -9,6 +9,7 @@
   --ui-ground: var(--ink-deep);
   --ui-raised: var(--ink);
   --ui-tint: var(--ink-deep);
+  --ui-wash: var(--ink-raised);
   --ui-shade: var(--ink-raised);
   --ui-box: var(--ink-night);
   --ui-box-off: var(--ink-frame);
@@ -49,6 +50,7 @@
     --ui-ground: var(--ink-deep);
     --ui-raised: var(--ink);
     --ui-tint: var(--ink-deep);
+    --ui-wash: var(--ink-raised);
     --ui-shade: var(--ink-raised);
     --ui-box: var(--ink-night);
     --ui-box-off: var(--ink-frame);
