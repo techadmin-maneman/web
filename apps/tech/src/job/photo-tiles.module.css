@@ -1,10 +1,11 @@
-/* A visit's photographs as tiles (./PhotoTiles.tsx): five in a row 6 px apart, 56 px tall (72 on the handoff), each its
-   angle's name at its foot. */
+/* A visit's photographs as tiles (./PhotoTiles.tsx): five columns 6 px apart, a fifth wide however many there are, 56 px
+   tall (72 on the handoff), each its angle's name at its foot. */
 
 .tiles {
   --tile-height: calc(var(--sp-48) + var(--sp-8));
 
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: calc(var(--sp-4) + var(--sp-2));
   margin: calc(var(--sp-8) + var(--sp-2)) 0 0;
   padding: 0;
@@ -18,7 +19,6 @@
 .tile {
   position: relative;
   display: flex;
-  flex: 1;
   align-items: flex-end;
   justify-content: center;
   height: var(--tile-height);

@@ -12,7 +12,7 @@ import { firstNameOf } from "@rules/lib/names.ts";
 import { useCallback, useState } from "react";
 import type { Job, JobSummary } from "../api.ts";
 import { badgesLower, job as jobCopy, today as copy } from "../content.ts";
-import { MessageSheet, takesUpdates, type Sent } from "../job/TellClient.tsx";
+import { MessageSheet, takesUpdates, type Sent } from "../job/index.ts";
 import { kindName } from "../lib/kind.ts";
 import { callLink, wayTo } from "../lib/navigate.ts";
 import type { RowState } from "../lib/progress.ts";

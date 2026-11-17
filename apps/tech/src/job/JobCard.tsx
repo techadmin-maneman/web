@@ -22,7 +22,7 @@ import { sayNow, theirs } from "../lang/index.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { keptDay } from "../store/jobs.ts";
-import { HowDone } from "../guides/HowDone.tsx";
+import { HowDone } from "../guides/index.ts";
 import { screensOf } from "../visit/index.ts";
 import { ClientRecord } from "./ClientRecord.tsx";
 import { Reschedule } from "./Reschedule.tsx";

@@ -33,6 +33,9 @@ which were added to the same list.
 
 ## Departures from the prototype
 
+- **A job cancelled or moved under the phone** says when ops did it only where the API says: a move's time, or the push
+  that told of it. A cancellation the phone learns of from a write the API refused carries no time, so the dialog says
+  only that ops cancelled it.
 - **What a past visit used**, in the client's history, names each thing with its count ("Walker tape × 2"): the API's
   history gives no unit, so the prototype's "10 ml solvent" waits for it to.
 - **A ruled choice list** keeps the shared choices' 8 px between its rows, which wins over the list's own gap of none

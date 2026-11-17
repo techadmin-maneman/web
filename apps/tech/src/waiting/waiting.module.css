@@ -94,17 +94,18 @@
   margin-top: 0;
 }
 
+/* Nothing waiting, as the prototype says it: 16 px in the ink, 24 px under the head. */
 .nothing {
   margin: 0;
-  padding: var(--sp-16) var(--screen-gutter) 0;
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--ui-text-soft);
+  padding: var(--sp-24) var(--screen-gutter) 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-145);
+  color: var(--ui-text);
 }
 
 /* When the phone's work last reached us, under "Everything is uploaded." */
 .lastSync {
-  margin: var(--sp-2) 0 0;
+  margin: var(--sp-4) 0 0;
   padding: 0 var(--screen-gutter);
   font-size: var(--fs-14);
   line-height: var(--lh-145);

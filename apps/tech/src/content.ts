@@ -474,7 +474,6 @@ export const clientRecord = localised({
   none: "No earlier visits.",
   failed: "The client’s history didn’t load.",
   retry: "Try again",
-  /** "Service visit · 1 Sep" */
   /** The history's two heads, as the prototype has them. */
   clientAlerts: "Client alerts",
   visits: "Visits",
