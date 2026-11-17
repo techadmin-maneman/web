@@ -167,6 +167,8 @@ export function Scanner(props: {
         key={round}
         words={copy.camera}
         aim={copy.pointAt}
+        // The label in hand, held up again, is no new read: the camera reads on, and nothing is checked twice.
+        takes={(text) => asLabel(text) !== props.code}
         onRead={(text) => {
           setRound(round + 1);
           props.onCode(asLabel(text));

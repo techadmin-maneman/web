@@ -1034,122 +1034,6 @@ The photograph an angle is compared with as it is taken, under the card's own un
 }
 ```
 
-### GET /api/tech/jobs/{id}/last-visit-photo
-
-The client's last visit, after: one photograph, under the card's own unlock, never cached
-
-**200**: The image
-
-**400**: invalid_request
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "invalid_request"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
-**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "session_required",
-                "device_revoked",
-                "technician_inactive"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
-**404**: not_found: no such job of this technician's, not unlocked yet, or no earlier visit's photograph
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "not_found"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
 ### POST /api/tech/jobs/{id}/checkin
 
 I have arrived: the time and the phone's position, inside the geofence
@@ -8460,16 +8344,11 @@ One of the client's try-on looks, under the card's own unlock, never cached
                 }
               ],
               "description": "The first name of who did it."
-            },
-            "photo_url": {
-              "type": "string",
-              "description": "Its after photograph, never to be kept on the phone."
             }
           },
           "required": [
             "date",
-            "technician",
-            "photo_url"
+            "technician"
           ],
           "additionalProperties": false
         },

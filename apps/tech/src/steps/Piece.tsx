@@ -158,7 +158,7 @@ function Fitting({
   const missing = stillMissing(form, job, checkedOf(looked));
   /** A label read or typed, with what follows it (piece-form's labelTaken). */
   const takeLabel = (label: string) => {
-    const next = labelTaken(job, stock, label);
+    const next = labelTaken(job, stock, label, sent);
     setCode(label);
     setLooked(NOT_LOOKED);
     setStock(next.stock);

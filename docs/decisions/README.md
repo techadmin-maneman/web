@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0271. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0272. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -151,6 +151,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0267](0267-the-technician-design-check.md) The technician app's design check
 - [0268](0268-the-visits-design-check.md) The visit's design check
 - [0270](0270-the-design-checks-api-side.md) The design check's API side
+- [0271](0271-the-technician-follow-ups.md) The technician follow-ups
 
 ### Money and Books
 
@@ -360,7 +361,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0050](0050-crm-in-the-real-org.md) | The CRM moves to the real Zoho org | 2026-09-22 | accepted | [0059](0059-a-clients-history.md), [0070](0070-vendor-correctness.md) |
 | [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md), [0086](0086-the-next-visit-is-offered.md), [0089](0089-an-invite-is-not-lost.md), [0116](0116-book-asks-for-the-name-and-number-first.md) |
 | [0052](0052-technician-sessions.md) | Technician sessions, devices and the day-before unlock | 2026-09-23 | accepted |  |
-| [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted | [0251](0251-hindi-and-the-sign-in.md), [0270](0270-the-design-checks-api-side.md) |
+| [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted | [0251](0251-hindi-and-the-sign-in.md), [0270](0270-the-design-checks-api-side.md), [0271](0271-the-technician-follow-ups.md) |
 | [0054](0054-address-capture.md) | Capturing an address: the fields, the pin, and the way to the door | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md), [0098](0098-the-door-in-fsms-address.md) |
 | [0055](0055-invoices.md) | The invoice for a finished job | 2026-09-23 | accepted | [0056](0056-issuing-the-invoice.md) |
 | [0056](0056-issuing-the-invoice.md) | The invoice is issued, and shown beside the visit | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md) |
@@ -467,7 +468,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0159](0159-stock-views-and-expiry.md) | Stock views and expiry | 2026-10-12 | accepted |  |
 | [0160](0160-demand-and-opening-counts.md) | Demand ahead and opening counts | 2026-10-12 | accepted |  |
 | [0161](0161-pieces-as-units.md) | Pieces as units | 2026-10-12 | accepted |  |
-| [0162](0162-scanning-labels.md) | Scanning labels | 2026-10-12 | accepted |  |
+| [0162](0162-scanning-labels.md) | Scanning labels | 2026-10-12 | accepted | [0271](0271-the-technician-follow-ups.md) |
 | [0163](0163-pieces-scanned-from-the-kit.md) | Pieces scanned from the kit | 2026-10-12 | accepted |  |
 | [0164](0164-the-kit-screen.md) | The kit screen | 2026-10-12 | accepted |  |
 | [0165](0165-suppliers.md) | Suppliers | 2026-10-12 | accepted |  |
@@ -575,4 +576,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0267](0267-the-technician-design-check.md) | The technician app's design check | 2026-11-17 | accepted | [0268](0268-the-visits-design-check.md), [0270](0270-the-design-checks-api-side.md) |
 | [0268](0268-the-visits-design-check.md) | The visit's design check | 2026-11-17 | accepted |  |
 | [0269](0269-the-one-visits-note-on-book.md) | The one visit's note on `/book` | 2026-11-17 | accepted |  |
-| [0270](0270-the-design-checks-api-side.md) | The design check's API side | 2026-11-17 | accepted |  |
+| [0270](0270-the-design-checks-api-side.md) | The design check's API side | 2026-11-17 | accepted | [0271](0271-the-technician-follow-ups.md) |
+| [0271](0271-the-technician-follow-ups.md) | The technician follow-ups | 2026-11-17 | accepted |  |
