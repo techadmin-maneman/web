@@ -5,7 +5,7 @@
 import type { EventBody, Job } from "../api.ts";
 import { oneVisit, steps as copy } from "../content.ts";
 import type { Queued } from "../store/outbox.ts";
-import { isLabel } from "./label.ts";
+import { asLabel, isLabel } from "./label.ts";
 import type { PieceSent } from "./sent-before.ts";
 
 export type ClientPiece = NonNullable<Job["pieces"]>[number];
@@ -182,17 +182,24 @@ function afterLabel(
 /**
  * What the step holds once a label is read or typed: its base, lot and hair system follow it, never the label's before
  * it. A piece of the kit gives its hair system, whose name is its base, and its lot, with or without signal; the lookup
- * fills them for one from elsewhere. Kit stock with no labels, picked from the kit, stays picked.
+ * fills them for one from elsewhere. Kit stock with no labels, picked from the kit, stays picked. A refused step's own
+ * piece, its label corrected to the same one, keeps the base and lot it was sent with, as an older build took them typed.
  */
 export function labelTaken(
   job: Pick<Job, "kit_hair_systems">,
   stock: string | null,
   label: string,
+  sent: Pick<PieceSent, "code" | "base" | "lot"> | null = null,
 ): { readonly stock: string | null; readonly base: string; readonly lot: string } {
   const next = afterLabel(job, { code: "", lot: "" }, label);
   const picked = job.kit_hair_systems.find((each) => each.code === stock && each.units.length === 0) ?? null;
   const fromKit = job.kit_hair_systems.find((each) => each.code === next.stock) ?? null;
-  return { stock: next.stock ?? picked?.code ?? null, base: fromKit?.name ?? "", lot: next.lot };
+  const same = sent !== null && label !== "" && asLabel(sent.code) === label;
+  return {
+    stock: next.stock ?? picked?.code ?? null,
+    base: fromKit?.name ?? (same ? sent.base : ""),
+    lot: given(next.lot) || !same ? next.lot : sent.lot,
+  };
 }
 
 /** Whether a one visit's client decided against the fit, which fits nothing and asks for no label. */
@@ -242,13 +249,17 @@ export function stillMissing(
 }
 
 /** The step's body: against the fit, or the piece with what was said of it, and on a replacement the one off. */
-export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBody<"piece"> {
+export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit" | "kit_hair_systems">): EventBody<"piece"> {
   if (declinedTheFit(form, job)) return { declined: true };
   if (fitLater(form, job) && form.choice !== null) return { product: form.choice, fit_later: true };
+  // A piece of kit stock with no labels, picked from the kit, is based as its hair system is named, as a labelled one.
+  const base = given(form.base)
+    ? form.base.trim()
+    : job.kit_hair_systems.find((each) => each.code === form.stock)?.name;
   return {
     piece_code: form.code,
     ...(job.one_visit && form.choice !== null ? { product: form.choice } : {}),
-    ...(given(form.base) ? { base: form.base.trim() } : {}),
+    ...(base === undefined ? {} : { base }),
     ...(given(form.lot) ? { supplier_lot: form.lot.trim() } : {}),
     ...(form.stock === null ? {} : { stock_code: form.stock }),
     ...(given(form.oldCode) ? { old_piece: { piece_code: form.oldCode } } : {}),

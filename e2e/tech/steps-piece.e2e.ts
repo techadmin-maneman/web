@@ -149,7 +149,11 @@ test.describe("the hair system step", () => {
     await stepAction(page).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
-    expect(writesTo(fake, "piece")[0]?.body).toEqual({ piece_code: "MM-STD-5120-A", stock_code: "hs_exact" });
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({
+      piece_code: "MM-STD-5120-A",
+      base: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density",
+      stock_code: "hs_exact",
+    });
   });
 
   test("confirms a label from the kit against the profile and the kit, and holds an expired one", async ({ page }) => {

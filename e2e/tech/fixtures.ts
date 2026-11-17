@@ -431,10 +431,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     // Not the policy's 200 m: ops have tuned it, and the door says theirs.
     checkin_radius_m: 150,
     pieces: [...(options.pieces ?? [])],
-    last_visit:
-      options.lastVisit === true
-        ? { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${JOB_ID}/last-visit-photo` }
-        : null,
+    last_visit: options.lastVisit === true ? { date: "2030-08-22", technician: "Imran" } : null,
     reminder:
       options.reminderDelivered === undefined
         ? null

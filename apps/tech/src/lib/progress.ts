@@ -125,7 +125,7 @@ export const stepsToFix = (job: Job, queued: readonly Queued[]): InJobStep[] =>
 export type ClientChoice = NonNullable<Job["client_choice"]>;
 
 /** The choice a piece step's body records; null for one that records none. */
-function choiceIn(body: unknown): ClientChoice | null {
+export function choiceIn(body: unknown): ClientChoice | null {
   const sent = body as { declined?: unknown; product?: unknown; fit_later?: unknown } | null;
   if (sent?.declined === true) return { declined: true };
   if (typeof sent?.product !== "string") return null;

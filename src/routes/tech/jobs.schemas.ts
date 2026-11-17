@@ -140,7 +140,6 @@ export const JobDetailSchema = JobSummarySchema.extend({
         .object({
           date: z.iso.date(),
           technician: z.union([z.string(), z.null()]).openapi({ description: "The first name of who did it." }),
-          photo_url: z.string().openapi({ description: "Its after photograph, never to be kept on the phone." }),
         })
         .strict(),
       z.null(),

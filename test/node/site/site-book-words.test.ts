@@ -1,5 +1,5 @@
 // /book's words of how long a visit takes (ADR 0265): each is the console's, through visitLength, never typed into a
-// line; and the one visit is paid through a Razorpay link (ADR 0269, ADR 0271), never by UPI or in cash.
+// line; and the one visit is paid through a Razorpay link (ADR 0269, ADR 0272), never by UPI or in cash.
 
 import { describe, expect, it } from "vitest";
 import { referral } from "../../../site/src/content/referral.ts";

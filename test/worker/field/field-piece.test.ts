@@ -77,6 +77,23 @@ describe("the piece", () => {
     ]);
   });
 
+  // A kit piece's base is its hair system's name, which ran past the 60 the step took and was refused.
+  it("takes a base as long as a hair system's name, a service's name of 60 with its spec", async () => {
+    const nextMorning = new Date("2026-09-22T03:30:00.000Z");
+    await upToThePiece(nextMorning);
+    const name = `Mane Man Essential Hairline Front Lace Ultra Thin Skin Natur · 10.5 × 12.5 in · #1B80 · 100% grey · 120% density`;
+    expect(name.length).toBeGreaterThan(100);
+    const answer = await postAt(
+      nextMorning,
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", base: name },
+      uuidv7At(610),
+    );
+    expect(answer.status).toBe(202);
+    const kept = await env.DB.prepare("SELECT base FROM pieces WHERE piece_code = 'MM-STD-5520-A'").first();
+    expect(kept).toEqual({ base: name });
+  });
+
   it("takes the worn piece off as replaced, not failed, where the old piece is not named", async () => {
     await upToThePiece(minutesAfterStart(60));
     const answer = await postAt(

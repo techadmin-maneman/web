@@ -59,7 +59,7 @@ export const booking = {
   firstFitNotYet: "First fits aren’t open to book yet.",
   /**
    * A paid visit ops book with the client on WhatsApp: what it costs, and that they say how to pay, which differs with
-   * whether online payment is on (ADR 0209, ADR 0271).
+   * whether online payment is on (ADR 0209, ADR 0272).
    */
   withOps: (price: string) => `We book it with you on WhatsApp, and tell you how to pay ${price}.`,
   /** Request mode (design/client-redesign, "Ask for a time"): while booking with ops, the pick goes to them on WhatsApp. */
