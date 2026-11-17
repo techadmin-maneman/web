@@ -20,5 +20,7 @@
 
   /* The shared parts' room, as the technician app draws them. */
   --check-row-height: var(--tech-row);
+  /* A toast just over a job's action bar: its 64 px button and 12 px above and below, as the prototype sets it. */
+  --toast-lift: calc(var(--tech-primary) + var(--sp-24) + env(safe-area-inset-bottom));
   --check-box-size: var(--tech-box);
 }

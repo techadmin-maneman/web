@@ -17,6 +17,10 @@ import { Chevron } from "../frame/Chevron.tsx";
 export const screensFor = (type: VisitType): Screen[] =>
   screensOf({ type, one_visit: false, steps: cardStepsFor(type) });
 
+/** What a step is, in a line: "Same 5 shots"; a consultation's outcome, whether the client goes ahead. */
+export const stepLine = (id: Screen["id"], consultation: boolean): string =>
+  consultation && id === "outcome" ? copy.consultationOutcome : copy.what[id];
+
 export function GuidesScreen() {
   return (
     <CardFrame title={copy.title} back="/me" foot={null}>
@@ -57,9 +61,7 @@ export function GuideScreen({ type, back }: { readonly type: VisitType; readonly
                 ))}
               </ListRows>
             ) : (
-              <p className={styles.stepWhat}>
-                {type === "consultation" && screen.id === "outcome" ? copy.consultationOutcome : copy.what[screen.id]}
-              </p>
+              <p className={styles.stepWhat}>{stepLine(screen.id, type === "consultation")}</p>
             )}
           </li>
         ))}

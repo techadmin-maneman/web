@@ -86,9 +86,11 @@
   margin-top: var(--sp-16);
 }
 
+/* Close as no-show at the prototype's 12 px within, so its line beside it holds one row at 390 px. */
 .close > :last-child {
   flex-shrink: 0;
   margin-left: auto;
+  padding-inline: var(--sp-12);
 }
 
 .closeHelper {

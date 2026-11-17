@@ -190,7 +190,8 @@
   .danger[aria-disabled="true"]:not([data-settling]),
   .dangerQuiet:disabled,
   .dangerQuiet[aria-disabled="true"]:not([data-settling]) {
-    border-color: var(--ui-line);
+    border-color: var(--outline-off-edge);
+    background: var(--outline-off-ground);
     color: var(--ui-text-quiet);
   }
 

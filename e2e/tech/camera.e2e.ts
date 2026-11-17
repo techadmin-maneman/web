@@ -132,9 +132,7 @@ test("each tile shows its photograph once taken, and a tap on one takes that ang
   // Not only the last: the front, taken first, is taken again, and is the angle Capture takes next.
   await page.getByRole("button", { name: "Take Front again" }).click();
   // The front is the shot being taken again, the second of the five.
-  await expect(
-    page.getByText(techCopy.capture.taking(2, techCopy.capture.angles.front), { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText(techCopy.capture.taking(2, "front"), { exact: true })).toBeVisible();
   await expect(pictures).toHaveCount(1);
   await expect(page.getByText(techCopy.capture.guides.front)).toBeVisible();
   await capture.click();
@@ -266,6 +264,9 @@ test("a camera the phone refused can be asked for again", async ({ page }) => {
 
   await expect(page.getByText(techCopy.capture.unavailableTitle)).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.capture.withoutPhotos })).toBeVisible();
+  // With no camera there is nothing to take: no shutter and no strip of angles, as the prototype draws it.
+  await expect(page.getByRole("button", { name: techCopy.capture.take })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: techCopy.capture.retakeAngle("Front") })).toHaveCount(0);
   await page.getByRole("button", { name: techCopy.capture.retry }).click();
   await expect(page.getByRole("button", { name: techCopy.capture.take })).toBeEnabled();
 });
@@ -276,7 +277,7 @@ test("the frames waiting show on the waiting screen, with the design’s line ab
   const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   await capture.click();
-  await expect(page.getByText(techCopy.capture.taking(2, techCopy.capture.angles.top))).toBeVisible();
+  await expect(page.getByText(techCopy.capture.taking(2, "top"))).toBeVisible();
 
   // A frame goes up only with the set it belongs to, so this one waits: its own row, as the prototype draws it.
   await page.goto("/waiting");
@@ -325,4 +326,24 @@ test("asks for the angle again when a frame comes out blank, and keeps none of i
   await expect(page.getByRole("alert")).toHaveText(techCopy.capture.blank);
   await expect(page.getByText(shots(0), { exact: true })).toBeVisible();
   expect((await heldOnPhone(page)).frames).toBe(0);
+});
+
+// A camera that would not open again took the strip and Done with it, so a set already on the phone could only go as
+// "without photos", which tells ops they are missing.
+test("keeps the strip and Done for a set already taken when the camera will not open again", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(BEFORE);
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await expect(capture).toBeEnabled({ timeout: 10_000 });
+    await capture.click();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
+  }
+  // Another app holds the camera now.
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException("busy", "NotReadableError"));
+  });
+  await page.reload();
+  await expect(page.getByText(techCopy.capture.unavailableTitle)).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.capture.finish, exact: true })).toBeEnabled();
 });

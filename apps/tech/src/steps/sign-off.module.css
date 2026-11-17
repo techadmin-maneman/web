@@ -1,6 +1,11 @@
 /* The client's sign-off (./SignOff.tsx): the line saying where it stands, the way to record a decline, and its sheet,
    a column. */
 
+/* Every state at the step's gutter, as the prototype draws the step. */
+.content {
+  padding: var(--sp-20) var(--screen-gutter) 0;
+}
+
 .line {
   margin: 0;
   font-size: var(--fs-16);

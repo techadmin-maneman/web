@@ -61,7 +61,6 @@ export function Chips<T extends string | number>({
             <ToggleButton
               key={option.id}
               asRadio={!many}
-              className={styles.chip}
               filled
               pressed={on}
               onClick={() => {

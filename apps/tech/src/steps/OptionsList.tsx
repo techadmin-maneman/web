@@ -5,7 +5,8 @@
 // A look is never kept on the phone.
 
 import { Button } from "@maneman/ui/Button";
-import { ToggleButton } from "@maneman/ui/ToggleButton";
+import { Radio } from "@maneman/ui/Field";
+import { SectionHead } from "@maneman/ui/SectionHead";
 import { useLoad } from "@maneman/ui/useLoad";
 import { dayMonth } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -38,7 +39,10 @@ function Prices({ option }: { option: Package }) {
   );
 }
 
-/** One product: its name, a choice where the client picks one, and its prices once they have loaded. */
+/**
+ * One product, as the prototype draws it: a radio row where the client picks one, its name over its line, its prices
+ * beneath once they have loaded. A tap on the one picked undoes it, so a pick is never forced.
+ */
 function Product(props: {
   product: Job["products"][number];
   option: Package | undefined;
@@ -48,26 +52,29 @@ function Product(props: {
   const { product, option, picked, onPick } = props;
   const description = option?.description ?? undefined;
   return (
-    <section aria-label={product.name}>
+    <li className={styles.product}>
       {onPick === undefined ? (
         <>
           <h3 className={styles.name}>{product.name}</h3>
-          {description !== undefined && <p className={styles.quiet}>{description}</p>}
+          {description !== undefined && <p className={styles.line}>{description}</p>}
         </>
       ) : (
-        <ToggleButton
-          className={shared.choice}
-          pressed={picked}
-          sub={description}
-          onClick={() => {
-            onPick(picked ? null : product.tier);
+        <Radio
+          name="pick"
+          className={styles.pick}
+          label={<span className={styles.name}>{product.name}</span>}
+          detail={description}
+          checked={picked}
+          onChange={() => {
+            onPick(product.tier);
           }}
-        >
-          {product.name}
-        </ToggleButton>
+          onClick={() => {
+            if (picked) onPick(null);
+          }}
+        />
       )}
       {option !== undefined && <Prices option={option} />}
-    </section>
+    </li>
   );
 }
 
@@ -102,23 +109,23 @@ export function OptionsList({
   const choosing = onPick !== undefined && job.products.length > 0;
   return (
     <>
-      <section className={shared.field} aria-labelledby="prices-title">
-        <h2 className={styles.head} id="prices-title">
-          <span>{copy.prices}</span>
-          <span>{copy.inclGst}</span>
-        </h2>
+      <section className={styles.products} aria-labelledby="prices-title">
+        <SectionHead id="prices-title" ruled={false} title={copy.prices} end={copy.inclGst} />
         {job.products.length === 0 && <p className={styles.quiet}>{copy.none}</p>}
         {choosing && <p className={styles.quiet}>{copy.markPick}</p>}
-        <div className={styles.list}>
-          {job.products.map((product) => (
-            <Product
-              key={product.tier}
-              product={product}
-              option={priced.get(product.tier)}
-              picked={picked === product.tier}
-              onPick={onPick}
-            />
-          ))}
+        {/* A list of products, which is one choice where the client picks. */}
+        <div role={choosing ? "radiogroup" : undefined} aria-labelledby={choosing ? "prices-title" : undefined}>
+          <ul className={styles.list}>
+            {job.products.map((product) => (
+              <Product
+                key={product.tier}
+                product={product}
+                option={priced.get(product.tier)}
+                picked={picked === product.tier}
+                onPick={onPick}
+              />
+            ))}
+          </ul>
         </div>
         {loaded.state === "failed" && (
           <div className={styles.failed}>

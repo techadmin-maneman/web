@@ -1,7 +1,7 @@
 // At the door (docs/prompts/tech-redesign.md, "At the door"; docs/decisions/0243-job-and-the-door.md): once checked in,
 // the no-show's wait on the API's clock with its brass bar, and what a no-show needs: the WhatsApp delivered, a call
-// made, a photograph of the door. Close as no-show waits for all of them and asks first, since it can bring the client
-// a charge. Start visit is the screen's one action.
+// made, a photograph of the door, each offered until it is done. Close as no-show waits for all of them and asks first,
+// since it can bring the client a charge. Start visit is the screen's one action.
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
@@ -9,6 +9,7 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { ProgressLine } from "@maneman/ui/Progress";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { StepMark } from "@maneman/ui/StepMark";
+import { Toast } from "@maneman/ui/Toast";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -24,9 +25,9 @@ import { buzz } from "../lib/haptics.ts";
 import { outcomeOf, stageOf, theWait } from "../lib/progress.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useJob } from "../lib/useDay.ts";
-import { clock, countdown, todayInIndia } from "../lib/when.ts";
+import { clock, countdown, metres, todayInIndia } from "../lib/when.ts";
 import { go, redirect, stepPath } from "../route.ts";
-import { keepCalled, keepClosed, keptArrival, keptCalled } from "../store/jobs.ts";
+import { keepCalled, keepClosed, keepPhotographed, keptArrival, keptCalled, keptPhotographed } from "../store/jobs.ts";
 import {
   checkInRefusedAsEarly,
   events,
@@ -38,7 +39,7 @@ import {
   type Queued,
 } from "../store/outbox.ts";
 import { CardFrame, nameOf } from "../frame/CardFrame.tsx";
-import { useCheckIn } from "./CheckIn.tsx";
+import { takeArrived, useCheckIn } from "./CheckIn.tsx";
 import { whatsAppState } from "./receipt.ts";
 import styles from "./door.module.css";
 
@@ -75,8 +76,12 @@ function useDoor(job: Job, queued: readonly Queued[]) {
   const arrival = valueOr(useAsync(readArrival, queued)[0], null);
   const readCalled = useCallback(() => keptCalled(job.id), [job.id]);
   const calledAt = valueOr(useAsync(readCalled, marks)[0], null);
-  const readDoor = useCallback(async () => (await frames()).some((frame) => frame.id === `${job.id}:door`), [job.id]);
-  const photographed = valueOr(useAsync(readDoor, marks)[0], false);
+  // When the door's photograph was taken, on the API's clock as the close says it, where the phone holds the photograph.
+  const readDoor = useCallback(async () => {
+    const frame = (await frames()).find((each) => each.id === `${job.id}:door`);
+    return frame === undefined ? null : ((await keptPhotographed(job.id)) ?? frame.kept_at);
+  }, [job.id]);
+  const photographedAt = valueOr(useAsync(readDoor, marks)[0], null);
 
   const kept = theWait(job, queued, arrival);
   const now = useNow(kept.endsAt !== null);
@@ -93,7 +98,7 @@ function useDoor(job: Job, queued: readonly Queued[]) {
   const again = () => {
     setMarks((was) => was + 1);
   };
-  return { wait, calledAt, photographed, again };
+  return { wait, calledAt, photographedAt, again };
 }
 
 /** What the line under the timer says: when the wait starts, that it waits for signal, or that it is over. */
@@ -137,11 +142,11 @@ function NeededList(props: {
   job: Job;
   who: string;
   calledAt: number | null;
-  photographed: boolean;
+  photographedAt: number | null;
   onCalled: () => void;
   onTake: () => void;
 }) {
-  const { job, who, calledAt, photographed } = props;
+  const { job, who, calledAt, photographedAt } = props;
   const whatsApp = whatsAppState(job.reminder);
   return (
     <ul className={styles.list}>
@@ -150,45 +155,49 @@ function NeededList(props: {
         <Needed
           done={calledAt !== null}
           title={copy.door.call(who)}
-          state={calledAt === null ? copy.door.notCalled : copy.door.called(timeOf(calledAt))}
+          state={calledAt === null ? copy.door.notCalled : copy.door.called}
           action={
-            <ButtonLink
-              variant="outline"
-              size="control"
-              href={callLink(job.client.mobile)}
-              aria-label={copy.door.call(who)}
-              onClick={() => {
-                void keepCalled(job.id).then(props.onCalled);
-              }}
-            >
-              {copy.door.callAction}
-            </ButtonLink>
+            calledAt === null && (
+              <ButtonLink
+                variant="outline"
+                size="control"
+                href={callLink(job.client.mobile)}
+                aria-label={copy.door.call(who)}
+                onClick={() => {
+                  void keepCalled(job.id).then(props.onCalled);
+                }}
+              >
+                {copy.door.callAction}
+              </ButtonLink>
+            )
           }
         />
       )}
       <Needed
-        done={photographed}
+        done={photographedAt !== null}
         title={copy.door.photo}
-        state={photographed ? copy.door.taken : copy.door.notTaken}
+        state={photographedAt === null ? copy.door.notTaken : copy.door.taken(timeOf(photographedAt))}
         action={
-          <Button variant="outline" size="control" onClick={props.onTake}>
-            {photographed ? copy.door.retake : copy.door.take}
-          </Button>
+          photographedAt === null && (
+            <Button variant="outline" size="control" onClick={props.onTake}>
+              {copy.door.take}
+            </Button>
+          )
         }
       />
     </ul>
   );
 }
 
-/** What Close as no-show still waits on: the wait, then the call and the door's photograph; none once it can. */
-function closeHelperOf(wait: Wait, called: boolean, photographed: boolean): string | null {
+/** Beside Close as no-show: what it still waits on, the wait and then the call and the door's photograph, or that it can. */
+function closeHelperOf(wait: Wait, called: boolean, photographed: boolean): string {
   if (!wait.over) return copy.door.waitFirst;
   if (!called || !photographed) return copy.door.evidenceFirst;
-  return null;
+  return copy.door.ready;
 }
 
 /** The note for ops, Close as no-show with what it waits on, and the question before it closes. */
-function CloseNoShow({ job, who, ready, helper }: { job: Job; who: string; ready: boolean; helper: string | null }) {
+function CloseNoShow({ job, who, ready, helper }: { job: Job; who: string; ready: boolean; helper: string }) {
   const [note, setNote] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [busy, once] = useOneAtATime();
@@ -219,9 +228,9 @@ function CloseNoShow({ job, who, ready, helper }: { job: Job; who: string; ready
         )}
       </Field>
       <div className={styles.close}>
-        {helper !== null && <p className={styles.closeHelper}>{helper}</p>}
+        <p className={styles.closeHelper}>{helper}</p>
         <Button
-          variant="outline"
+          variant="danger"
           size="control"
           disabled={!ready || busy}
           onClick={() => {
@@ -286,14 +295,17 @@ function useAway(job: Job, queued: readonly Queued[]): boolean {
 
 function AtTheDoor({ job, queued }: { job: Job; queued: readonly Queued[] }) {
   const away = useAway(job, queued);
-  const { wait, calledAt, photographed, again } = useDoor(job, queued);
+  const { wait, calledAt, photographedAt, again } = useDoor(job, queued);
   const [shooting, setShooting] = useState(false);
+  // How far the check-in that brought them here was measured, said once over the door.
+  const [arrived] = useState(() => takeArrived(job.id));
   const [starting, once] = useOneAtATime();
 
   if (away) return null;
   const who = job.client === null ? copy.door.theClient : firstNameOf(job.client.name);
   const called = job.client === null || calledAt !== null;
-  const helper = closeHelperOf(wait, called, photographed);
+  const photographed = photographedAt !== null;
+  const ready = wait.over && called && photographed;
   const at = checkedInAt(job, queued);
   const start = () =>
     void once(async () => {
@@ -320,29 +332,26 @@ function AtTheDoor({ job, queued }: { job: Job; queued: readonly Queued[] }) {
           job={job}
           who={who}
           calledAt={calledAt}
-          photographed={photographed}
+          photographedAt={photographedAt}
           onCalled={again}
           onTake={() => {
             setShooting(true);
           }}
         />
-        <CloseNoShow job={job} who={who} ready={helper === null} helper={helper} />
+        <CloseNoShow job={job} who={who} ready={ready} helper={closeHelperOf(wait, called, photographed)} />
         {refusedAsEarly(queued, job.id) && (
           <p className={styles.early} role="alert">
             {copy.door.early}
           </p>
         )}
       </section>
-      <section className={styles.section}>
-        <SectionHead title={copy.appears.title} size="list" />
-        <p className={styles.line}>{copy.appears.body}</p>
-      </section>
+      {arrived !== undefined && <Toast fullWidth>{copy.door.arrived(arrived === null ? null : metres(arrived))}</Toast>}
       {/* Over the screen, so what was typed for ops stays while the photograph is taken. */}
       {shooting && (
         <DoorCamera
           onTaken={(photo) => {
             buzz();
-            void keepDoorFrame(job.id, photo).then(() => {
+            void Promise.all([keepDoorFrame(job.id, photo), keepPhotographed(job.id)]).then(() => {
               setShooting(false);
               again();
             });

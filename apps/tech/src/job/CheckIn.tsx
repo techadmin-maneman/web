@@ -46,6 +46,16 @@ function useBefore(at: number): boolean {
   return before;
 }
 
+/** A check-in that just passed, for At the door to say once: the job's, and how far it was measured, if it was. */
+let arrived: { readonly jobId: string; readonly distance: number | null } | null = null;
+
+/** How far the check-in that just passed was measured, once: undefined for none, or one for another job. */
+export function takeArrived(jobId: string): number | null | undefined {
+  const note = arrived;
+  arrived = null;
+  return note?.jobId === jobId ? note.distance : undefined;
+}
+
 export interface CheckIn {
   /** At the door: the card says so, or the phone's own answer does until it catches up. */
   readonly here: boolean;
@@ -113,8 +123,12 @@ export function useCheckIn(job: Job, queued: readonly Queued[]): CheckIn {
       await replay();
       // Measured too far stays here to say so; passed, or waiting for signal, is at the door.
       const kept = await keptArrival(job.id);
-      if (kept?.passed === false) setSettled({ distance: kept.distance_m });
-      else go(`/jobs/${job.id}/door`);
+      if (kept?.passed === false) {
+        setSettled({ distance: kept.distance_m });
+        return;
+      }
+      if (kept?.passed === true) arrived = { jobId: job.id, distance: kept.distance_m };
+      go(`/jobs/${job.id}/door`);
     });
 
   const opens = notYet || checkInRefusedAsEarly(queued, job.id);

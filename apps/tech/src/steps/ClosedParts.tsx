@@ -77,8 +77,8 @@ export function FinishTheWork({ job, closing }: { job: Job; closing: boolean }) 
     });
   return (
     <section className={styles.section} aria-labelledby="closed-finish">
-      <SectionHead id="closed-finish" title={copy.finish.title} />
-      <p className={styles.note}>{copy.finish.ask}</p>
+      <SectionHead id="closed-finish" size="list" title={copy.finish.title} />
+      <p className={styles.finishAsk}>{copy.finish.ask}</p>
       <div className={styles.asks}>
         {ASKS.map((each) => (
           <ToggleButton key={each} filled pressed={asked === each} onClick={() => void ask(each)}>
@@ -112,6 +112,24 @@ export function NextUp({ next, name }: { next: JobSummary; name: string }) {
       />
       <p className={styles.nextWho}>{`${clock(next.starts_at)} · ${name}`}</p>
       <p className={styles.note}>{meta.filter((part) => part !== null && part !== "").join(" · ")}</p>
+    </section>
+  );
+}
+
+/** After the day's last job, as the prototype draws it: done for today, in gold, over tomorrow's first job. */
+export function DoneForToday({ first }: { first: JobSummary }) {
+  return (
+    <section className={styles.section} aria-labelledby="closed-next">
+      <SectionHead
+        id="closed-next"
+        size="list"
+        title={copy.next.title}
+        end={<span className={styles.leaveBy}>{copy.next.doneForToday}</span>}
+      />
+      <p className={styles.nextWho}>{copy.next.tomorrow(clock(first.starts_at))}</p>
+      <p className={styles.note}>
+        {[kindName(first), first.sector].filter((part) => part !== null && part !== "").join(" · ")}
+      </p>
     </section>
   );
 }

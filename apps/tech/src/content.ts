@@ -603,6 +603,8 @@ export const notHome = localised({
   door: {
     title: "At the door",
     checkedIn: (who: string, time: string) => `${who} · checked in ${time}`,
+    /** Over the door just after a check-in that passed: "Checked in · 40 m away", or alone where none was measured. */
+    arrived: (distance: string | null) => (distance === null ? "Checked in" : `Checked in · ${distance} away`),
     waitingFor: (who: string) => `Waiting for ${who}`,
     of: (minutes: number) => `of ${String(minutes)} min`,
     booked: (time: string) => `Booked for ${time}`,
@@ -619,21 +621,25 @@ export const notHome = localised({
     noneSent: "Not sent",
     call: (who: string) => `Call ${who}`,
     callAction: "Call",
-    called: (time: string) => `Called ${time}`,
+    // The phone knows only that the call was made from here: one made at the door is one the client did not answer.
+    called: "Called · no answer",
     notCalled: "Not called",
     photo: "Photo of the door",
-    taken: "Taken",
+    /** "Taken 9:32 am" */
+    taken: (time: string) => `Taken ${time}`,
     notTaken: "Not taken",
     take: "Take",
-    retake: "Retake",
     note: "Note for ops (optional)",
     waitFirst: "Available when the wait ends",
     evidenceFirst: "Call and take the door photo first",
+    /** Beside Close as no-show once it can. */
+    ready: "The wait is over",
     close: "Close as no-show",
     theClient: "the client",
   },
   /** The single-shot camera for the door. */
   camera: {
+    title: "Door photo",
     prompt: "Door and flat number in the frame",
     shutter: "Take photo",
     cancel: "Cancel",
@@ -650,11 +656,6 @@ export const notHome = localised({
     bodyNothingPaid: "Ops are told nobody was home. Close only if no one has answered.",
     yes: "Close as no-show",
     no: "Not yet",
-  },
-  appears: {
-    title: "Client’s here",
-    atTheDoor: (who: string) => `${who} is at the door`,
-    body: "The timer stops. Nothing is charged.",
   },
 } as const);
 
@@ -688,14 +689,20 @@ export const visit = localised({
   watchFor: "Watch for",
   taskDone: (title: string) => `Done: ${title}`,
   plan: {
+    /** The plan's list, as a screen reader hears it; the head names the client and the visit. */
     title: "Visit plan",
+    /** "Started 9:38 am", under the client and the visit. */
+    started: (time: string) => `Started ${time}`,
     done: (done: number, total: number) => `${String(done)} of ${String(total)} done`,
     finishBy: (time: string) => `Finish by ${time}`,
-    states: { done: "Done", now: "Now", todo: "To do" },
+    /** A step's line once done; before, what it is (../guides), or its tasks counted. */
+    stepDone: "Done",
+    tasks: (count: number) => counted(count, "task", "tasks"),
     needsFix: "Needs a fix",
-    open: (title: string) => `Open ${title}`,
-    /** A step ops sent back, and what they said to fix. */
-    sentBack: (title: string, reason: string) => `${title}: ${reason}`,
+    /** Over a step ops sent back, as the prototype words it: "Ops couldn’t accept consumables", then their reason. */
+    couldNotAccept: (step: string) => `Ops couldn’t accept ${step}`,
+    /** Opens the step under way. */
+    continue: "Continue",
   },
   /** Above a step ops sent back: what they said to fix, as they wrote it. */
   sentBack: (reason: string) => `Ops sent this back: ${reason}`,
@@ -714,16 +721,24 @@ export const capture = localised({
   take: "Take photo",
   /** "5 of 5", beneath the step's name once every angle is taken. */
   of: (taken: number) => `${String(taken)} of 5`,
-  /** "1 of 5 · Front": the shot being taken. */
+  /** "1 of 5 · front": the shot being taken, its angle in lower case as the prototype writes it. */
   taking: (shot: number, angle: string) => `${String(shot)} of 5 · ${angle}`,
   close: "Close",
   saved: "Saved on phone",
   /** Compare: the last visit's after photograph before the visit, this visit's before one after it. */
-  compareWith: { before: "Compare with last visit", after: "Compare with before" },
+  compareWith: { before: "Compare with last visit", after: "Compare with today’s before" },
   /** "Compare with 12 Oct, Imran": the visit before photographs are set beside. */
   compareWithVisit: (date: string, who: string | null) =>
     who === null ? `Compare with ${date}` : `Compare with ${date}, ${who}`,
   compareImage: { before: (angle: string) => `Last visit, ${angle}`, after: (angle: string) => `Before, ${angle}` },
+  /** Over the photograph compared with, as the prototype labels it: "12 Oct, Imran K. · top", "today’s before · top". */
+  compared: (whose: string, angle: string) => `${whose} · ${angle}`,
+  /** Whose that photograph is, where the last visit's day is not known, and after the visit. */
+  comparedWith: { before: "last visit", after: "today’s before" },
+  /** The last visit, by its day and who did it: "12 Oct, Imran K." */
+  visitOf: (date: string, who: string | null) => (who === null ? date : `${date}, ${who}`),
+  /** Under the line, what the camera sees now. */
+  now: "Now",
   torch: "Torch",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   // The board writes Top's guide alone; the other four are ours.
@@ -759,22 +774,23 @@ export const steps = localised({
   back: "Back",
   of: (done: number, total: number) => `${String(done)} of ${String(total)}`,
   place: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
+  // Each step named as the plan names it (../visit/engine.ts), as the prototype heads them.
   titles: {
     before_photos: "Before photos",
-    checklist: "Service checklist",
-    consumables: "Consumables used",
-    piece: "The hair system",
+    checklist: "Service",
+    consumables: "Consumables",
+    piece: "Hair system",
     // No board draws the hair profile (ADR 0106).
     profile: "Hair profile",
     after_photos: "After photos",
     outcome: "Outcome",
   },
-  // The board titles a service visit's list; the other types' are named the same way.
+  // The guided tasks, as the plan names them: a service's, a fitting's, and a consultation's look at the scalp.
   checklistTitles: {
-    service: "Service checklist",
-    replacement: "Replacement checklist",
-    first_fit: "First fit checklist",
-    consultation: "Consultation checklist",
+    service: "Service",
+    replacement: "Fitting",
+    first_fit: "Fitting",
+    consultation: "Scalp and hairline",
   },
   // The board names no step but the one it draws.
   next: "Next",
@@ -872,6 +888,8 @@ export const steps = localised({
   outcome: {
     /** What the close leaves on the client's record, for whoever takes their next visit. */
     nextNote: "Note for the next technician",
+    /** Under the note: where it shows. */
+    nextNoteWhere: "Shown on this client’s next job, whoever takes it.",
     alert: "Alert for every visit",
     notePlaceholder: "What should the next technician know?",
     result: "Result",
@@ -885,9 +903,10 @@ export const steps = localised({
     photosSent: (count: number) => `${String(count)} sent`,
     /** A one visit closed as done texts the client the payment link. */
     sendLinkAndClose: "Send link and close",
-    // The board draws Done chosen already; nothing is chosen for the technician here.
-    choose: "Choose Done or Partly done",
-    pickReason: "Pick a reason to continue",
+    // The board draws Done chosen already; nothing is chosen for the technician here. What the dim Next waits on, as
+    // the prototype words it.
+    choose: "Pick a result",
+    pickReason: "Pick a reason",
     done: "Done",
     partial: "Partly done",
     // After a consultation: whether the client is going ahead with a fit, and why not (docs/decisions/0149-lost-reasons.md).
@@ -898,8 +917,8 @@ export const steps = localised({
     picked: (name: string) => `Their pick: ${name}.`,
     /** The head over a choice's reasons, a partly done's or a not now's. */
     reason: "Reason",
-    pickWhy: "Pick why to continue",
-    answerFirst: "Say if they’re going ahead",
+    pickWhy: "Pick a reason",
+    answerFirst: "Pick yes or not now",
   },
 } as const);
 
@@ -919,7 +938,9 @@ export const closeOut = localised({
   paymentRow: "Payment",
   why: "Why",
   fit: "Fit",
-  goingAhead: "Going ahead",
+  /** A consultation's yes, as the prototype writes it: "Mane Man Natural · ops to book"; ops book the fit. */
+  goingAhead: (product: string | null) => `${product ?? "Going ahead"} · ops to book`,
+  /** "Not now · the price": ops' reason, as it reads mid-line. */
   notNow: (why: string | null) => (why === null ? "Not now" : `Not now · ${why}`),
   // The board writes "1 h 22 m"; the phone times it from Start job (open point 60).
   length: (hours: number, minutes: number) => lengthOf(hours * 60 + minutes),
@@ -965,20 +986,33 @@ export const closeOut = localised({
     /** "25 min drive", after the next job's kind and place. */
     drive: (minutes: number) => `${String(minutes)} min drive`,
     today: "Today",
+    /** After the day's last job: nothing more today, then tomorrow's first, "Tomorrow · 9:30 am". */
+    doneForToday: "Done for today",
+    tomorrow: (time: string) => `Tomorrow · ${time}`,
   },
+  /** The piece fitted at the visit, by its label. */
+  hairSystem: "Hair system",
   // The board draws the next job; the day ends without one.
   lastJob: "Back to today",
   // The evidence chain's close: the evidence summary, and what happens to it.
   noShow: {
     ops: "This goes to ops.",
     checkedIn: "Checked in",
-    distance: "Distance",
+    /** "9:27 am · 40 m away", or the time alone where nothing was measured. */
+    checkedInAt: (time: string, distance: string | null) => (distance === null ? time : `${time} · ${distance} away`),
+    waited: "Waited",
     whatsApp: "WhatsApp",
     delivered: (time: string) => `Delivered ${time}`,
     // The board draws the receipt delivered.
     notDelivered: "Sent, not delivered",
     noneSent: "None sent",
-    unmeasured: "Not measured",
+    call: "Call",
+    // A call from the door is one the client did not answer: had they, they would have come to it.
+    noAnswer: "No answer",
+    notCalled: "Not called",
+    doorPhoto: "Door photo",
+    /** "Taken 9:32 am"; "Taken" alone where the phone that took it is not this one. */
+    taken: (time: string | null) => (time === null ? "Taken" : `Taken ${time}`),
   },
   // The board draws no close-out opened before the job closed.
   notClosed: "This job isn’t closed yet.",
@@ -1078,8 +1112,8 @@ type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, st
 export const profile = localised({
   sections: {
     stage: "Norwood stage",
-    head: "Head (in)",
-    base: "Base (in)",
+    head: "Head, inches",
+    base: "Base, inches",
     colour: "Colour",
     grey: "Grey (%)",
     density: "Density",
@@ -1135,6 +1169,11 @@ export const profile = localised({
   checkFigure: (figure: string) => `${figure.replace(/ \(.*\)$/, "")} is out of range`,
   // The fit spec's second page: what the hair system is matched to.
   match: { title: "Colour and style" },
+  /** Each page's head, as the prototype draws them, the measure's with where the profile came from at its end. */
+  measureHead: "Measure",
+  matchHead: "Match",
+  newClient: "New client",
+  fromConsultation: (date: string) => `From consultation, ${date}`,
   history: {
     title: "History",
     remedies: "Remedies tried",

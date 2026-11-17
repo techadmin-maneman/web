@@ -141,7 +141,7 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.before })).toBeVisible();
   await expect(page.getByText("The top photo wouldn’t upload. Take it again.")).toBeVisible();
   // The fifth shot is the refused one, the top.
-  await expect(page.getByText(techCopy.capture.taking(5, techCopy.capture.angles.top), { exact: true })).toBeVisible();
+  await expect(page.getByText(techCopy.capture.taking(5, "top"), { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.capture.retake })).toBeDisabled();
   fake.refusedPhoto = null;
   await photograph(page, 5);
@@ -207,7 +207,7 @@ test("warns when the phone will not promise to keep the queue, and says how long
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
   await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await expect(page.getByRole("list", { name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
 
@@ -234,7 +234,7 @@ test("says nothing about keeping the queue when the phone has promised to", asyn
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
   await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await expect(page.getByRole("list", { name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
 
@@ -256,7 +256,7 @@ test("accounts plainly for what has not reached us, and says what changed on a s
   // move here is a link inside the app: with no signal there is no navigation.
   await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await expect(page.getByRole("list", { name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
@@ -470,7 +470,7 @@ test("asks before a sign-out would lose unsent work, keeps it on Cancel, and sig
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
   await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await expect(page.getByRole("list", { name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   // Nothing answered, so the phone reads as offline, and says what it holds.

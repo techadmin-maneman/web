@@ -142,6 +142,26 @@
   display: none;
 }
 
+/* Each half named, as the prototype labels them: the photograph compared with at its top, the camera's under the line. */
+.compared,
+.comparedNow {
+  position: absolute;
+  left: var(--sp-12);
+  margin: 0;
+  padding: var(--sp-4) var(--sp-8);
+  border-radius: var(--ui-radius-box);
+  background: var(--camera-900);
+  font-size: var(--fs-14);
+}
+
+.compared {
+  top: calc(var(--sp-8) + var(--sp-2));
+}
+
+.comparedNow {
+  top: calc(50% + var(--sp-8) + var(--sp-2));
+}
+
 /* The angle's prompt over whatever the camera sees, on the chrome's own ground. */
 .prompt {
   position: absolute;
@@ -158,13 +178,19 @@
   text-align: center;
 }
 
+/* No camera: the chrome's dark fills everything under the head, the way on at its top. */
+.stageOff {
+  align-items: flex-start;
+  background: var(--camera-900);
+}
+
 .unavailable {
   display: flex;
   flex-direction: column;
   gap: var(--sp-16);
   align-items: stretch;
   width: 100%;
-  padding: var(--sp-40) var(--sp-24);
+  padding: var(--sp-24);
   background: var(--camera-900);
 }
 

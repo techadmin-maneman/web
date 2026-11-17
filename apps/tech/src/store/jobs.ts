@@ -62,11 +62,7 @@ export async function keptJob(id: string): Promise<Job | null> {
 
 /** What the check-in measured: the distance, the radius, and when the no-show wait ends. */
 export async function keepArrival(jobId: string, arrival: CheckIn): Promise<void> {
-  const calledAt = (await get("arrivals", jobId))?.called_at;
-  await put(
-    "arrivals",
-    calledAt === undefined ? { job_id: jobId, arrival } : { job_id: jobId, arrival, called_at: calledAt },
-  );
+  await put("arrivals", { ...((await get("arrivals", jobId)) ?? { job_id: jobId }), arrival });
 }
 
 export async function keptArrival(jobId: string): Promise<CheckIn | null> {
@@ -80,6 +76,15 @@ export async function keepCalled(jobId: string, at: number = apiNow()): Promise<
 
 export async function keptCalled(jobId: string): Promise<number | null> {
   return (await get("arrivals", jobId))?.called_at ?? null;
+}
+
+/** When the door's photograph was taken, kept with the call's, for the no-show's close to say. */
+export async function keepPhotographed(jobId: string, at: number = apiNow()): Promise<void> {
+  await put("arrivals", { ...((await get("arrivals", jobId)) ?? { job_id: jobId }), photographed_at: at });
+}
+
+export async function keptPhotographed(jobId: string): Promise<number | null> {
+  return (await get("arrivals", jobId))?.photographed_at ?? null;
 }
 
 /** When the technician took the outcome, which the close-out's duration runs to, and what was chosen, which it repeats. */

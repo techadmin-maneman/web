@@ -12,23 +12,31 @@ import type { Job, JobSummary } from "../api.ts";
 import { badges, closeOut as copy, titles } from "../content.ts";
 import { kindNameLower } from "../lib/kind.ts";
 import { arrivedAt, declinedTheFit, fitBookedLater, outcomeOf, type Outcome } from "../lib/progress.ts";
-import { useDay, useJob, useNames } from "../lib/useDay.ts";
+import { useDay, useJob, useNames, type KeptLoad } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
+import { clock, dayAfter, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
 import { NO_PIECE } from "@rules/policy/in-job-steps.ts";
 import { go } from "../route.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
-import { type Heard, keptArrival, keptClosed, keptOutcome, keptStates } from "../store/jobs.ts";
+import {
+  type Heard,
+  keptArrival,
+  keptCalled,
+  keptClosed,
+  keptOutcome,
+  keptPhotographed,
+  keptStates,
+} from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
 import { classes } from "@maneman/ui/classes";
 import frame from "../frame/frame.module.css";
 import light from "../frame/light.module.css";
-import { FinishTheWork, NavigateNext, NextUp, PaymentLink } from "./ClosedParts.tsx";
+import { DoneForToday, FinishTheWork, NavigateNext, NextUp, PaymentLink } from "./ClosedParts.tsx";
 import shared from "./steps.module.css";
 import styles from "./close-out.module.css";
-import { sayKnown, theirs } from "../lang/index.ts";
+import { sayKnown, theirs, useLanguage } from "../lang/index.ts";
 
 const NOTHING_HEARD: ReadonlyMap<string, Heard> = new Map();
 
@@ -81,19 +89,53 @@ function receiptOf(job: Job): string {
   return delivered === null ? copy.noShow.notDelivered : copy.noShow.delivered(clock(delivered));
 }
 
-/** The evidence chain's close: the three facts ops rule on, as the phone knows them. */
-function Evidence({ job }: { job: Job }) {
-  const readArrival = useCallback(() => keptArrival(job.id), [job.id]);
-  const measured = valueOr(useAsync(readArrival)[0], null)?.distance_m ?? null;
-
+/** How long they waited at the door: from the later of the check-in and the booked start to the close, else the wait. */
+function waitedOf(job: Job, closedAt: number | null): { hours: number; minutes: number } {
   const checkedIn = job.progress.checked_in_at;
-  const distance = job.progress.distance_m ?? measured;
+  const from = Math.max(checkedIn === null ? 0 : Date.parse(checkedIn), Date.parse(job.starts_at));
+  if (closedAt !== null && closedAt > from) return lengthOf(from, closedAt);
+  return { hours: Math.floor(job.no_show_wait_min / 60), minutes: job.no_show_wait_min % 60 };
+}
+
+/** The evidence chain's close, as the prototype lists it: the check-in, the wait, the WhatsApp, the call and the door. */
+function Evidence({ job }: { job: Job }) {
+  const read = useCallback(
+    async () => ({
+      arrival: await keptArrival(job.id),
+      called: await keptCalled(job.id),
+      photographed: await keptPhotographed(job.id),
+      closed: await keptClosed(job.id),
+    }),
+    [job.id],
+  );
+  const kept = valueOr(useAsync(read)[0], null);
+  const checkedIn = job.progress.checked_in_at;
+  const distance = job.progress.distance_m ?? kept?.arrival?.distance_m ?? null;
+  const photographed = kept?.photographed ?? null;
+  const waited = waitedOf(job, kept?.closed ?? null);
+  // The call and the door's photograph are this phone's to say: one closed elsewhere, by ops or on another phone, has
+  // no record of them here, and the close says only what the API knows.
+  const keptHere = kept !== null && (kept.arrival !== null || kept.called !== null || photographed !== null);
   return (
     <>
-      <dl className={shared.rows}>
-        {checkedIn !== null && <Row name={copy.noShow.checkedIn} value={clock(checkedIn)} />}
-        <Row name={copy.noShow.distance} value={distance === null ? copy.noShow.unmeasured : metres(distance)} />
+      <dl className={classes(shared.rows, styles.rows)}>
+        {checkedIn !== null && (
+          <Row
+            name={copy.noShow.checkedIn}
+            value={copy.noShow.checkedInAt(clock(checkedIn), distance === null ? null : metres(distance))}
+          />
+        )}
+        <Row name={copy.noShow.waited} value={copy.length(waited.hours, waited.minutes)} />
         <Row name={copy.noShow.whatsApp} value={receiptOf(job)} />
+        {keptHere && job.client !== null && (
+          <Row name={copy.noShow.call} value={kept.called === null ? copy.noShow.notCalled : copy.noShow.noAnswer} />
+        )}
+        {keptHere && (
+          <Row
+            name={copy.noShow.doorPhoto}
+            value={copy.noShow.taken(photographed === null ? null : clock(new Date(photographed).toISOString()))}
+          />
+        )}
       </dl>
       <p className={styles.closeNote}>{copy.noShow.ops}</p>
     </>
@@ -104,6 +146,8 @@ function Evidence({ job }: { job: Job }) {
 function Decided({ job }: { job: Job }) {
   const readOutcome = useCallback(() => keptOutcome(job.id), [job.id]);
   const said = valueOr(useAsync(readOutcome)[0], null);
+  // In English ops' reason reads mid-line, "Not now · the price"; inside Hindi it stays exactly as they wrote it.
+  const english = useLanguage() === "en";
   if (said === null) return null;
   // Ops' reasons, in Hindi where a catalog holds the whole of one, as they wrote it otherwise.
   const label = (reasons: Job["partial_reasons"], id: string | undefined) => {
@@ -115,9 +159,12 @@ function Decided({ job }: { job: Job }) {
     return why === null ? null : <Row name={copy.why} value={why} />;
   }
   if (said.going_ahead === undefined) return null;
+  if (said.going_ahead) {
+    const product = job.products.find((one) => one.tier === said.product)?.name ?? null;
+    return <Row name={copy.fit} value={copy.goingAhead(product === null ? null : theirs(product))} />;
+  }
   const lost = label(job.lost_reasons, said.lost_reason);
-  const fit = said.going_ahead ? copy.goingAhead : copy.notNow(lost === null ? null : theirs(lost));
-  return <Row name={copy.fit} value={fit} />;
+  return <Row name={copy.fit} value={copy.notNow(lost === null ? null : theirs(english ? midLine(lost) : lost))} />;
 }
 
 /** How long the visit took, from the check-in to its close: as this phone kept the close, else when it was queued. */
@@ -126,16 +173,79 @@ function tookOf(started: number | null, closedAt: number | null, queued: readonl
   return started === null || closed === null ? null : lengthOf(started, closed);
 }
 
-/** What the visit came to: the decision, how long it took, its photographs and how it is paid. */
-function Rows(props: { job: Job; took: { hours: number; minutes: number } | null; photos: string }) {
+/** A reason as it reads mid-line, "the price": a common phrase's first capital lowered, a name's kept. */
+const midLine = (words: string): string =>
+  /^\p{Lu}[^\p{Lu}]*$/u.test(words) ? words.charAt(0).toLowerCase() + words.slice(1) : words;
+
+/**
+ * What the visit came to: the decision, how long it took, its photographs and how it is paid. A consultation's, as the
+ * prototype lists them: how long, the photographs, then whether the client goes ahead; and how it is paid where the
+ * technician collects it, as a priced one sold to pay at the visit.
+ */
+function Rows(props: {
+  job: Job;
+  took: { hours: number; minutes: number } | null;
+  photos: string;
+  piece: string | null;
+}) {
+  const consultation = props.job.type === "consultation" && !props.job.one_visit;
+  const took =
+    props.took === null ? null : <Row name={copy.duration} value={copy.length(props.took.hours, props.took.minutes)} />;
+  if (consultation) {
+    return (
+      <dl className={classes(shared.rows, styles.rows)}>
+        {took}
+        <Row name={copy.photos} value={props.photos} />
+        <Decided job={props.job} />
+        {props.job.badge === "at_visit" && <Row name={copy.paymentRow} value={badges[props.job.badge]} />}
+      </dl>
+    );
+  }
   return (
     <dl className={classes(shared.rows, styles.rows)}>
       <Decided job={props.job} />
-      {props.took !== null && <Row name={copy.duration} value={copy.length(props.took.hours, props.took.minutes)} />}
+      {took}
       <Row name={copy.photos} value={props.photos} />
+      {props.piece !== null && <Row name={copy.hairSystem} value={props.piece} />}
       <Row name={copy.paymentRow} value={badges[props.job.badge]} />
     </dl>
   );
+}
+
+/**
+ * The piece fitted at this visit, by its label: the piece step still on the phone, else the client's newest piece once
+ * it is one fitted on the visit's day or after.
+ */
+function fittedPiece(job: Job, queued: readonly Queued[]): string | null {
+  if (!job.steps.includes("piece")) return null;
+  const sent = queued.find((event) => event.job_id === job.id && event.kind === "piece")?.body as
+    { piece_code?: unknown } | null | undefined;
+  if (typeof sent?.piece_code === "string") return sent.piece_code;
+  const newest = job.pieces?.[0] ?? null;
+  const fittedOn = newest?.fitted_at ?? null;
+  if (newest === null || fittedOn === null) return null;
+  return fittedOn >= job.date ? newest.piece_code : null;
+}
+
+/** Tomorrow's first job, where today has none left: the day after's, earliest first. */
+function firstOf(day: KeptLoad<readonly JobSummary[]>): JobSummary | null {
+  if (day.state !== "loaded") return null;
+  return [...day.value].sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0] ?? null;
+}
+
+/** What comes next: today's next job, or, after the last, that the day is done and tomorrow's first. */
+function WhatsNext(props: {
+  later: JobSummary | null;
+  /** Whether today's jobs were read: only then is a day with none left done. */
+  todayLoaded: boolean;
+  names: ReadonlyMap<string, string>;
+}) {
+  const { later, names } = props;
+  const [tomorrow] = useDay(dayAfter(todayInIndia()));
+  if (later !== null)
+    return <NextUp next={later} name={names.get(later.id) ?? later.client_name ?? where(later.sector)} />;
+  const first = props.todayLoaded ? firstOf(tomorrow) : null;
+  return first === null ? null : <DoneForToday first={first} />;
 }
 
 /** How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed. */
@@ -207,13 +317,15 @@ export function CloseOut({ id }: { id: string }) {
         <p className={styles.sub}>
           {copy.sub(who, kindNameLower(job), closedAs(job, outcome, waiting.events, notFitted))}
         </p>
-        {outcome === "no_show" ? <Evidence job={job} /> : <Rows job={job} took={took} photos={photos} />}
+        {outcome === "no_show" ? (
+          <Evidence job={job} />
+        ) : (
+          <Rows job={job} took={took} photos={photos} piece={fittedPiece(job, waiting.events)} />
+        )}
         {/* A card the phone kept from before one visits names no link. */}
         {job.one_visit && job.payment_link !== null && <PaymentLink job={job} link={job.payment_link} />}
         {outcome === "partial" && <FinishTheWork job={job} closing={closing} />}
-        {later !== null && (
-          <NextUp next={later} name={names.get(later.id) ?? later.client_name ?? where(later.sector)} />
-        )}
+        <WhatsNext later={later} todayLoaded={day.state === "loaded"} names={names} />
       </section>
 
       <div className={classes(frame.foot, light.paperFoot, styles.foot)}>

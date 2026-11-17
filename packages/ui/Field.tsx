@@ -29,8 +29,9 @@ import { capsLook } from "./Caps.tsx";
 import { Icon } from "./Icon.tsx";
 import { classes } from "./classes.ts";
 import { VisuallyHidden } from "./VisuallyHidden.tsx";
-import list from "./choice-list.module.css";
+// The field's own styles first, then the ruled list's, so a ruled list's gap of none wins over the choices' 8 px.
 import styles from "./field.module.css";
+import list from "./choice-list.module.css";
 
 /** What a field gives its control. */
 export interface FieldControl {

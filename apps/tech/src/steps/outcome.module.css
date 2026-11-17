@@ -8,6 +8,16 @@
   padding: var(--sp-24) var(--screen-gutter) 0;
 }
 
+.noteBox {
+  margin-top: var(--sp-8);
+}
+
+.noteWhere {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
 /* The result as radio rows under its heading, and the summary under a rule, as the design has them. */
 .result {
   margin: var(--sp-16) var(--screen-gutter) 0;

@@ -101,7 +101,7 @@ test("Me's Language row switches every screen without a reload, and a visit keep
 
   // Back to the visit within the app: on the task it was on, in Hindi, the page never loaded again.
   await goInApp(page, `/jobs/${JOB_ID}/checklist`);
-  await expect(page.getByRole("heading", { level: 1, name: "सर्विस की चेकलिस्ट" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "सर्विस" })).toBeVisible();
   await expect(page.getByText("काम 2/3", { exact: true })).toBeVisible();
   await expect(page.locator("body")).toHaveAttribute("data-same-load", "yes");
 });
@@ -114,13 +114,12 @@ test("the close-out says what was decided in Hindi around ops' own reason, which
   fake.lostReasons = [{ id: "moved_away", label: "Client moved to another city" }];
   startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
-  await page.getByRole("button", { name: /^Mane Man Essential/ }).click();
+  await page.getByRole("radio", { name: /^Mane Man Essential/ }).click();
   await stepAction(page).click();
-  await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
-  await page.getByRole("button", { name: techCopy.steps.outcome.notNow }).click();
+  await page.getByRole("radio", { name: techCopy.steps.outcome.notNow, exact: true }).click();
   await page.getByRole("button", { name: "Client moved to another city" }).click();
   await stepAction(page).click();
-  await expect(page.getByText(techCopy.closeOut.notNow("Client moved to another city"))).toBeVisible();
+  await expect(page.getByText(techCopy.closeOut.notNow("client moved to another city"))).toBeVisible();
   const closeOut = new URL(page.url()).pathname;
 
   await goInApp(page, "/me");

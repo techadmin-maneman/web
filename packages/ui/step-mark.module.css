@@ -6,13 +6,14 @@
   .done,
   .now,
   .todo,
+  .numbered,
   .fix {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: var(--sp-24);
-    height: var(--sp-24);
+    width: var(--step-mark-size);
+    height: var(--step-mark-size);
     border-radius: 50%;
   }
 
@@ -25,11 +26,26 @@
     border: var(--rule-strong) solid var(--ui-accent);
   }
 
+  .dot {
+    width: calc(var(--sp-8) + var(--sp-2));
+    height: calc(var(--sp-8) + var(--sp-2));
+    border-radius: 50%;
+    background: var(--ui-accent);
+  }
+
   .todo {
     border: var(--rule-strong) solid var(--ui-line-control);
   }
 
   .fix {
     border: var(--rule-strong) solid var(--ui-error);
+  }
+
+  /* A step still to do where the list counts them: its number in a quieter ring. */
+  .numbered {
+    border: var(--rule-strong) solid var(--ui-line);
+    font-size: var(--fs-13);
+    font-weight: var(--weight-semibold);
+    color: var(--ui-text-soft);
   }
 }

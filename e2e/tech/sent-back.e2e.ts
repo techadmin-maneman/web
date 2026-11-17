@@ -7,6 +7,7 @@ import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { startedThrough, stepAction, writesTo, throughTheTasks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { STEP_PATHS } from "../../apps/tech/src/route.ts";
 
 const { today, job, visit, capture } = techCopy;
 
@@ -49,10 +50,12 @@ test("the visit's plan marks a step sent back as needing a fix, with what ops wa
   fake.sentBack = [{ kind: "checklist", reason: "Tick the scalp check.", sent_at: new Date().toISOString() }];
   await page.goto(`/jobs/${JOB_ID}/plan`);
 
-  await expect(
-    page.getByText(visit.plan.sentBack(visit.screens.service, "Tick the scalp check."), { exact: true }),
-  ).toBeVisible();
+  // First, as the prototype words it: which step ops could not accept, and their reason; a tap opens it.
+  const card = page.getByRole("button", { name: new RegExp(`^${visit.plan.couldNotAccept("checklist")}`) });
+  await expect(card).toContainText("Tick the scalp check.");
   await expect(page.getByRole("link", { name: new RegExp(visit.screens.service) })).toContainText(visit.plan.needsFix);
+  await card.click();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}/${STEP_PATHS.checklist}$`));
 });
 
 test("a set of photographs ops sent back opens the camera again from its first angle, saying why", async ({ page }) => {

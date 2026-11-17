@@ -15,17 +15,21 @@ import { deviceId, enrolled, enrolledAt, keepMe, keptMe } from "../../../apps/te
 import {
   forgetOld,
   keepArrival,
+  keepCalled,
   keepClosed,
   keepDay,
   keepJob,
   keepLanded,
   keptArrival,
+  keptCalled,
   keptClosed,
   keptDay,
   keptJob,
   keptJobs,
   keptNames,
+  keptPhotographed,
   keptStates,
+  keepPhotographed,
 } from "../../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
@@ -201,6 +205,20 @@ describe("what the phone lets go of", () => {
 
     expect(await keptJob("old")).not.toBeNull();
     expect(await keptArrival("old")).not.toBeNull();
+  });
+});
+
+// The door's evidence and the check-in share one record: a check-in landing after the call and the photograph wrote
+// over both, and the no-show's close then said neither.
+describe("the door's record", () => {
+  it("keeps the call and the photograph's time when the check-in lands after them", async () => {
+    await keepCalled("a", 1_000);
+    await keepPhotographed("a", 2_000);
+    await keepArrival("a", arrival);
+
+    expect(await keptCalled("a")).toBe(1_000);
+    expect(await keptPhotographed("a")).toBe(2_000);
+    expect(await keptArrival("a")).toEqual(arrival);
   });
 });
 

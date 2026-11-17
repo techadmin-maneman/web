@@ -49,6 +49,10 @@
     --small-pad: var(--sp-16);
     /* An outline's edge on the ink, 3:1 or more on every ink ground (WCAG 1.4.11), where the boards draw a fainter line. */
     --edge-on-ink: var(--ink-line-strong);
+    /* An outlined button that cannot be used (./button.module.css): clear, edged in the paper's line, unless the app
+       fills it, as the technician app's prototype draws every button it cannot use. */
+    --outline-off-ground: transparent;
+    --outline-off-edge: var(--ui-line);
     /* A field's box: the tap's height, which the technician app raises on its body. */
     --field-height: var(--tap);
     --field-text: var(--fs-15);
@@ -157,6 +161,8 @@
     --row-pad-y: var(--sp-12);
     /* A row's least height: two lines' worth, unless a list of one-line rows sets less. */
     --row-min-height: var(--sp-64);
+    /* Where one thing of a list stands (./StepMark.tsx): its disc or ring, which a list of steps sets larger. */
+    --step-mark-size: var(--sp-24);
     /* A button held to act (./HoldButton.tsx): its ground, and the fill that crosses it as it is held. */
     --hold-ground: var(--error);
     --hold-fill: var(--error-on-paper);

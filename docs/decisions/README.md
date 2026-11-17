@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0268. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0269. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -149,6 +149,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0254](0254-client-signs-off-the-fit.md) The client signs off the fit
 - [0258](0258-the-technician-design-pass.md) The technician app's design pass
 - [0267](0267-the-technician-design-check.md) The technician app's design check
+- [0268](0268-the-visits-design-check.md) The visit's design check
 
 ### Money and Books
 
@@ -451,7 +452,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0146](0146-the-nightly-analytics-copy.md) | The nightly analytics copy | 2026-10-12 | accepted | [0196](0196-long-work-in-workflows.md) |
 | [0147](0147-task-spans.md) | Task spans | 2026-10-12 | accepted |  |
 | [0148](0148-the-channel-rule.md) | The channel rule | 2026-10-12 | accepted |  |
-| [0149](0149-lost-reasons.md) | Lost reasons | 2026-10-12 | accepted |  |
+| [0149](0149-lost-reasons.md) | Lost reasons | 2026-10-12 | accepted | [0268](0268-the-visits-design-check.md) |
 | [0150](0150-spend.md) | Spend | 2026-10-12 | accepted |  |
 | [0151](0151-retention-figures.md) | Retention figures | 2026-10-12 | accepted |  |
 | [0152](0152-standard-costs.md) | Standard costs | 2026-10-12 | accepted |  |
@@ -560,7 +561,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0255](0255-client-alerts-and-push.md) | Client alerts and push, and the live visit | 2026-11-12 | accepted |  |
 | [0256](0256-fit-guarantee-setting.md) | The fit guarantee's days as a setting, and a claim as a Tasks row | 2026-11-12 | accepted |  |
 | [0257](0257-razorpay-only.md) | Razorpay is the only way to pay | 2026-11-12 | accepted |  |
-| [0258](0258-the-technician-design-pass.md) | The technician app's design pass | 2026-11-12 | accepted |  |
+| [0258](0258-the-technician-design-pass.md) | The technician app's design pass | 2026-11-12 | accepted | [0268](0268-the-visits-design-check.md) |
 | [0259](0259-the-issue-log.md) | The issue log | 2026-11-16 | accepted |  |
 | [0260](0260-ratings.md) | Ratings | 2026-11-16 | accepted |  |
 | [0261](0261-razorpay-money-in-books.md) | Razorpay's money in Books, from payment to the bank | 2026-11-17 | accepted |  |
@@ -569,4 +570,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0264](0264-the-hero-restyled.md) | The hero, restyled | 2026-11-17 | accepted |  |
 | [0265](0265-book-and-try-on-the-client-apps-look.md) | `/book` and `/try` on the client app's look | 2026-11-17 | accepted |  |
 | [0266](0266-the-sites-header-book-and-focus-ring.md) | The site's header Book and focus ring | 2026-11-17 | accepted |  |
-| [0267](0267-the-technician-design-check.md) | The technician app's design check | 2026-11-17 | accepted |  |
+| [0267](0267-the-technician-design-check.md) | The technician app's design check | 2026-11-17 | accepted | [0268](0268-the-visits-design-check.md) |
+| [0268](0268-the-visits-design-check.md) | The visit's design check | 2026-11-17 | accepted |  |
