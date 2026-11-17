@@ -92,10 +92,8 @@
   --label-weight: var(--weight-regular);
   --check-row-height: var(--tap-row);
   /* A ruled list's choice as the outcome's Result and the language sheet draw them: the prototype's 60 px from rule to
-     rule, which is 52 px rows and the 8 px the choices keep between them (packages/ui field.module.css .choices, which
-     wins over the ruled list's own gap of none); no rule over the first, its words 16 px at Plex's medium, under a
-     20 px title. */
-  --choice-row-height: calc(var(--btn-lg) - var(--sp-4));
+     rule; no rule over the first, its words 16 px at Plex's medium, under a 20 px title. */
+  --choice-row-height: calc(var(--btn-lg) + var(--sp-4));
   --choice-rule-top: 0;
   --choice-text: var(--fs-16);
   --choice-weight: var(--weight-medium);

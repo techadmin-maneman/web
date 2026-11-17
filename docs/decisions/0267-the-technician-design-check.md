@@ -38,9 +38,6 @@ which were added to the same list.
   only that ops cancelled it.
 - **What a past visit used**, in the client's history, names each thing with its count ("Walker tape × 2"): the API's
   history gives no unit, so the prototype's "10 ml solvent" waits for it to.
-- **A ruled choice list** keeps the shared choices' 8 px between its rows, which wins over the list's own gap of none
-  in `packages/ui`; the technician look sets its rows 8 px shorter so rule to rule is the prototype's 60 px, until the
-  shared order is put right with the console's screens captured.
 - **"Report missing" at 130 % text** wraps onto two lines: at the prototype's own padding and size it cannot fit half
   the width either.
 - **Pending uploads** keeps, beside the prototype's row for each photo set, a row for a job's other writes, the time

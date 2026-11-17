@@ -124,7 +124,6 @@ function choosing(form: FitForm, onChange: (form: FitForm) => void) {
   };
 }
 
-/** The first page: the Norwood stage, then the head's and the base's figures, typed off the tape. */
 /** A page's head, as the prototype draws it: "Measure", "Match", with what the page starts from at its end. */
 function PageHead({ title, end }: { title: string; end?: string }) {
   return <SectionHead className={styles.pageHead} ruled={false} title={title} end={end} />;
@@ -134,6 +133,7 @@ function PageHead({ title, end }: { title: string; end?: string }) {
 const startedFrom = (job: Job): string =>
   job.profile === null ? copy.newClient : copy.fromConsultation(dayMonth(job.profile.recorded_at.slice(0, 10)));
 
+/** The first page: the Norwood stage, then the head's and the base's figures, typed off the tape. */
 function MeasureFields({
   form,
   from,
