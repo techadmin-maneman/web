@@ -603,6 +603,8 @@ export const notHome = localised({
   door: {
     title: "At the door",
     checkedIn: (who: string, time: string) => `${who} · checked in ${time}`,
+    /** Over the door just after a check-in that passed: "Checked in · 40 m away", or alone where none was measured. */
+    arrived: (distance: string | null) => (distance === null ? "Checked in" : `Checked in · ${distance} away`),
     waitingFor: (who: string) => `Waiting for ${who}`,
     of: (minutes: number) => `of ${String(minutes)} min`,
     booked: (time: string) => `Booked for ${time}`,
@@ -619,21 +621,25 @@ export const notHome = localised({
     noneSent: "Not sent",
     call: (who: string) => `Call ${who}`,
     callAction: "Call",
-    called: (time: string) => `Called ${time}`,
+    // The phone knows only that the call was made from here: one made at the door is one the client did not answer.
+    called: "Called · no answer",
     notCalled: "Not called",
     photo: "Photo of the door",
-    taken: "Taken",
+    /** "Taken 9:32 am" */
+    taken: (time: string) => `Taken ${time}`,
     notTaken: "Not taken",
     take: "Take",
-    retake: "Retake",
     note: "Note for ops (optional)",
     waitFirst: "Available when the wait ends",
     evidenceFirst: "Call and take the door photo first",
+    /** Beside Close as no-show once it can. */
+    ready: "The wait is over",
     close: "Close as no-show",
     theClient: "the client",
   },
   /** The single-shot camera for the door. */
   camera: {
+    title: "Door photo",
     prompt: "Door and flat number in the frame",
     shutter: "Take photo",
     cancel: "Cancel",
@@ -650,11 +656,6 @@ export const notHome = localised({
     bodyNothingPaid: "Ops are told nobody was home. Close only if no one has answered.",
     yes: "Close as no-show",
     no: "Not yet",
-  },
-  appears: {
-    title: "Client’s here",
-    atTheDoor: (who: string) => `${who} is at the door`,
-    body: "The timer stops. Nothing is charged.",
   },
 } as const);
 

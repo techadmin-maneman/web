@@ -33,12 +33,14 @@
     "Blend at the sides": "साइड में ब्लेंड",
     "Bonding area, cleaned": "साफ़ बॉन्डिंग एरिया",
     "Booked as": "बुकिंग का प्रकार",
+    "Called · no answer": "कॉल किया · जवाब नहीं",
     "Change number": "नंबर बदलें",
     "Check in at the door.": "दरवाज़े पर चेक इन करें।",
     "Check the figures to continue": "आगे बढ़ने के लिए नाप जाँचें",
     "Check the label to continue": "आगे बढ़ने के लिए लेबल जाँचें",
     "Check the number and the code.": "नंबर और कोड जाँचें।",
     "Check-in failed": "चेक इन नहीं हुआ",
+    "Checked in": "चेक इन हो गया",
     "Checking the label…": "लेबल जाँच रहे हैं…",
     "Checking…": "जाँच रहे हैं…",
     "Choose Done or Partly done": "हो गया या आधा हुआ चुनें",
@@ -48,7 +50,6 @@
     "Client declined to sign": "क्लाइंट ने साइन करने से मना किया",
     "Client sign-off": "क्लाइंट का साइन-ऑफ़",
     "Client stopped it partway": "क्लाइंट ने बीच में रोका",
-    "Client’s here": "क्लाइंट आ गए",
     "Client’s own supplies": "क्लाइंट का अपना सामान",
     "Close without fitting": "बिना फ़िट किए बंद करें",
     "Close without fitting?": "बिना फ़िट किए बंद करें?",
@@ -78,6 +79,7 @@
     "Details closed": "जानकारी बंद",
     "Discount code, if the client has one": "डिस्काउंट कोड, अगर क्लाइंट के पास है",
     "Distance": "दूरी",
+    "Door photo": "दरवाज़े की फ़ोटो",
     "Ends as a free consultation. Nothing to pay.": "फ़्री कंसल्टेशन के तौर पर बंद होगी। कोई पेमेंट नहीं।",
     "Enter your 10-digit mobile number.": "अपना 10 अंकों का मोबाइल नंबर डालें।",
     "February": "फ़रवरी",
@@ -260,7 +262,6 @@
     "Sunday": "रविवार",
     "Supplier lot": "सप्लायर लॉट",
     "Take photo": "फ़ोटो लें",
-    "Taken": "ली गई",
     "Tape placement on the base": "बेस पर टेप कहाँ लगे",
     "Technician": "टेक्नीशियन",
     "Template checked against the head": "टेम्पलेट सिर पर जाँचा",
@@ -300,8 +301,8 @@
     "The payment link has gone, so the code can no longer change.": "पेमेंट लिंक जा चुका है, इसलिए कोड अब नहीं बदल सकता।",
     "The photos wouldn’t upload.": "फ़ोटो अपलोड नहीं हुईं।",
     "The same five shots": "वही पाँच फ़ोटो",
-    "The timer stops. Nothing is charged.": "टाइमर रुक जाएगा। कोई चार्ज नहीं लगेगा।",
     "The transplant’s year": "ट्रांसप्लांट का साल",
+    "The wait is over": "इंतज़ार पूरा हुआ",
     "The wait is over.": "इंतज़ार पूरा हुआ।",
     "The wait isn’t over yet. Try again in a minute.": "इंतज़ार अभी पूरा नहीं हुआ। एक मिनट में फिर से कोशिश करें।",
     "Their looks": "उनके लुक",
@@ -422,6 +423,10 @@
     {
       "match": "^([^·]+) actions? not sent yet$",
       "hi": "$1 एंट्री अभी नहीं भेजी गईं"
+    },
+    {
+      "match": "^Taken ([^·]+)$",
+      "hi": "$1 पर ली"
     },
     {
       "match": "^This deletes ([^·]+) photos? and ([^·]+) actions? from this phone\\.$",
@@ -710,10 +715,6 @@
     {
       "match": "^([^·]+) doesn’t take WhatsApp updates\\. Call instead\\.$",
       "hi": "$1 WhatsApp पर अपडेट नहीं लेते। कॉल करें।"
-    },
-    {
-      "match": "^([^·]+) is at the door$",
-      "hi": "$1 दरवाज़े पर हैं"
     },
     {
       "match": "^([^·]+) is in your kit$",

@@ -25,17 +25,20 @@ async function arrive(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: door.title })).toBeVisible();
 }
 
-/** What a no-show needs besides the wait: the call made from the door, and its photograph. */
+/** What a no-show needs besides the wait: the call made from the door, and its photograph, each offered until done. */
 async function gatherEvidence(page: Page): Promise<void> {
   // A tel: link the browser cannot follow; the tap is what the phone keeps.
   await page.getByRole("link", { name: door.call("Rohit") }).dispatchEvent("click");
-  await expect(page.getByText(/^Called /)).toBeVisible();
+  await expect(page.getByText(door.called, { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: door.call("Rohit") })).toHaveCount(0);
   await page.getByRole("button", { name: door.take, exact: true }).click();
+  await expect(page.getByRole("heading", { level: 2, name: techCopy.notHome.camera.title })).toBeVisible();
   const shutter = page.getByRole("button", { name: techCopy.notHome.camera.shutter });
   await expect(shutter).toBeEnabled({ timeout: 10_000 });
   await expect(page.getByText(techCopy.notHome.camera.prompt)).toBeVisible();
   await shutter.click();
-  await expect(page.getByText(door.taken, { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Taken \d{1,2}(:\d{2})? [ap]m$/)).toBeVisible();
+  await expect(page.getByRole("button", { name: door.take, exact: true })).toHaveCount(0);
 }
 
 test("sends Navigate to a route any phone opens, by the pin when the address has one", async ({ page }) => {
@@ -231,6 +234,8 @@ test("checks in at the door, and records the time and the distance", async ({ pa
   await foot(page).click();
 
   await expect(page.getByRole("heading", { level: 1, name: door.title })).toBeVisible();
+  // Said once, over the door, as the prototype does: how far the check-in was measured.
+  await expect(page.getByText(door.arrived("40 m"), { exact: true })).toBeVisible();
   await expect(page.getByText(door.waitingFor("Rohit"))).toBeVisible();
   await expect(page.getByText(door.of(15))).toBeVisible();
   // Checked in after the booked start, the wait runs from the check-in: never "the booked start" for a moment.
@@ -291,13 +296,13 @@ test("keeps Close as no-show off with the call alone, and keeps the call through
   await expect(page.getByText(door.evidenceFirst)).toBeVisible({ timeout: 10_000 });
 
   await page.getByRole("link", { name: door.call("Rohit") }).dispatchEvent("click");
-  await expect(page.getByText(/^Called /)).toBeVisible();
+  await expect(page.getByText(door.called, { exact: true })).toBeVisible();
   await expect(close).toBeDisabled();
   await expect(page.getByText(door.evidenceFirst)).toBeVisible();
 
   // The call is kept on the phone: a reload still has it, and the photograph alone is now what is missing.
   await page.reload();
-  await expect(page.getByText(/^Called /)).toBeVisible();
+  await expect(page.getByText(door.called, { exact: true })).toBeVisible();
   await expect(close).toBeDisabled();
 });
 
@@ -309,7 +314,7 @@ test("keeps Close as no-show off with the photograph alone", async ({ page }) =>
   const shutter = page.getByRole("button", { name: techCopy.notHome.camera.shutter });
   await expect(shutter).toBeEnabled({ timeout: 10_000 });
   await shutter.click();
-  await expect(page.getByText(door.taken, { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Taken \d{1,2}(:\d{2})? [ap]m$/)).toBeVisible();
   await expect(page.getByText(door.evidenceFirst)).toBeVisible({ timeout: 10_000 });
   await expect(page.getByRole("button", { name: door.close })).toBeDisabled();
 });
@@ -324,6 +329,7 @@ test("asks before closing as a no-show, since ops decide on the charge", async (
 
   const close = page.getByRole("button", { name: door.close });
   await expect(close).toBeEnabled({ timeout: 10_000 });
+  await expect(page.getByText(door.ready, { exact: true })).toBeVisible();
   await close.click();
 
   const sheet = page.getByRole("dialog", { name: techCopy.notHome.confirm.title });

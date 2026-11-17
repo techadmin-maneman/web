@@ -53,7 +53,7 @@ export function DoorCamera({ onTaken, onCancel }: { onTaken: (photo: Blob) => vo
         <header className={styles.head}>
           <IconButton className={styles.close} d={ICONS.cross} size="lg" label={copy.cancel} onClick={onCancel} />
           <h2 className={styles.title} id={titleId} ref={heading} tabIndex={-1}>
-            {notHome.door.photo}
+            {notHome.camera.title}
           </h2>
         </header>
         <div className={styles.view}>
