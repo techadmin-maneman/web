@@ -145,18 +145,20 @@ async function openBoard(page: Page, board: string): Promise<void> {
         element,
         absolute: getComputedStyle(element).position === "absolute",
         top: element.offsetTop,
+        padding: parseFloat(getComputedStyle(element).paddingTop),
       }));
     // At least the board's own height, where its page is shorter than the screen it is drawn on.
     root.style.minHeight = `${String(root.getBoundingClientRect().height)}px`;
     root.style.height = "auto";
     root.style.overflow = "visible";
-    for (const { element, absolute, top } of scrollers) {
+    for (const { element, absolute, top, padding } of scrollers) {
       element.style.position = "static";
       element.style.overflow = "visible";
       element.style.height = "auto";
       element.style.flex = "none";
-      // Below the board's header, which stays where the board draws it.
-      if (absolute) element.style.marginTop = `${String(top)}px`;
+      // Below the board's header, which stays where the board draws it. Padding, since a margin would pass through
+      // the root, now overflowing, and carry the header down with it.
+      if (absolute) element.style.paddingTop = `${String(padding + top)}px`;
     }
   });
   await settle(page);

@@ -1,5 +1,5 @@
-// The redesign reuses every asset the site has (docs/prompts/site-redesign.md, the owner's ruling 2): a picture or film
-// added to site/src/assets, or taken from it, fails here until the owner's word changes the list.
+// The redesign reuses every asset the site has (docs/prompts/site-redesign.md, the brief's ruling 2): a picture or film
+// added to site/src/assets, or taken from it, fails here until the brief changes the list.
 
 import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
