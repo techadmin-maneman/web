@@ -314,7 +314,7 @@ export const booking = {
     line: "We’re refunding your payment in full.",
   },
   failedToStart: "That didn’t go through. Try again.",
-  creditGone: "Your free service visit is already used on another booking. This visit is charged at the price below.",
+  creditGone: "Your free service visit is already used, so this visit is charged at the price below.",
   close: "Close",
 } as const;
 

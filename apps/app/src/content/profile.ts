@@ -202,8 +202,8 @@ export const profile = {
     /** The law's days to act and years invoices are kept, from the API; none in a Home kept from before it said. */
     body: (law: { readonly days: number; readonly years: number } | null) =>
       law === null
-        ? "Bookings and payments are settled first, and invoices are kept as the law requires."
-        : `We act on your request within ${String(law.days)} days. Bookings and payments are settled first, and invoices are kept for ${String(law.years)} years, as the law requires.`,
+        ? "Visits and payments are settled first, and invoices are kept as the law requires."
+        : `We act on your request within ${String(law.days)} days. Visits and payments are settled first, and invoices are kept for ${String(law.years)} years, as the law requires.`,
     request: "Request deletion",
     confirm: "Ask us to delete your account? We’ll confirm on WhatsApp before anything is deleted.",
     yes: "Yes, request deletion",

@@ -572,7 +572,7 @@ async function login(browser: Browser, design: Page): Promise<void> {
     built: await shot(app),
   });
 
-  await app.getByRole("button", { name: "No booking on this number?" }).click();
+  await app.getByRole("button", { name: "No visit booked on this number?" }).click();
   await pair({
     dir: OUT,
     width: WIDTH,
