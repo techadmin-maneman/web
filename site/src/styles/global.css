@@ -119,7 +119,6 @@
   margin: 0;
   font-family: var(--site-font);
   font-weight: var(--weight-semibold);
-  color: var(--site-navy);
   font-size: var(--fs-h2);
   line-height: var(--lh-115);
   letter-spacing: var(--tracking-heading);
