@@ -36,6 +36,9 @@ function spills(page: Page) {
       (box) => box.closest("svg") === null && !unseen(box),
     );
     const spilled = shown.flatMap((box) => {
+      // A field's words are its value, drawn inside it and scrolled there, never laid out as the page's own; its box is
+      // still held to its parent's edge below.
+      if (["TEXTAREA", "SELECT"].includes(box.tagName)) return [];
       const own = [...box.childNodes].filter(
         (node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim() !== "",
       );

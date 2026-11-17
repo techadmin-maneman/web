@@ -120,6 +120,12 @@ for (const size of SIZES) {
   test(`a note, a low rating's thanks and the invite hold at ${named(size)}`, async ({ page }) => {
     test.setTimeout(120_000);
     const fitted = await signedIn(page);
+    // A note already left for the technician, as the sheet opens on it, whatever other tests have left.
+    await passedThrough(page, `**/api/visits/${fitted.next.id}`, (visit: Record<string, unknown>) =>
+      "client_note" in visit
+        ? { ...visit, client_note: "The lift is out, so call from the gate and I will come down to meet you." }
+        : visit,
+    );
     await page.goto(`/visits/${fitted.next.id}`);
     await page.getByRole("button", { name: home.note }).click();
     await expect(page.getByRole("dialog").getByRole("textbox", { name: note.label })).toBeVisible();
