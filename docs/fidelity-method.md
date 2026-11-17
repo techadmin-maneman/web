@@ -160,7 +160,8 @@ has no board of its own in the site redesign: it is `/book`'s island with an inv
 is paired with `/book`'s board walked to the step that draws the same thing, at 390 and 1440 px: `arrival` (the
 board's pincode step), `served` (the visit), `not-served` (the list), `on-the-list` and `booked`. The walk is a
 visitor's, on the board itself (`scripts/fidelity/site-boards.ts`, `bookBoardAt`); `npm run fidelity` uses the same walk
-for `/book`'s own states (`page-book-<state>`).
+for `/book`'s own states (`page-book-<state>`), and `tryBoardAt` for the try-on's (`page-try-<state>`: the look, where it
+is sent, sent, and the photo error; the look shown once ready has no `?state=` and no pair).
 
 - **The page's API is answered with the design's own example:** Rohit's invite, Sector 65 for 122018 and Bandra for 400050. No mm-api runs, Turnstile is never reached, and the cookie bar is answered.
 - **The page's clock is Friday 20 September 2030 in India,** so a booking is confirmed for the Saturday after it on

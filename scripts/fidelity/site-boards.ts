@@ -159,3 +159,30 @@ export async function bookBoardAt(page: Page, state: BookBoardState): Promise<vo
   await board.locator(".otp input").fill("123456");
   await board.getByRole("button", { name: "Confirm and book" }).click();
 }
+
+/** The try-on's states as its board draws them, and the steps a visitor takes on the board to reach each. */
+export type TryBoardState = "photo" | "look" | "send" | "sent" | "error";
+
+/**
+ * Walks the try-on's board to a state, as a visitor would: a photo chosen and used, a look chosen, and on to where the
+ * look is sent; its photo error is the board's own link to it.
+ */
+export async function tryBoardAt(page: Page, state: TryBoardState): Promise<void> {
+  if (state === "photo") return;
+  const board = page.locator(".mm:visible").first();
+  if (state === "error") {
+    await board.getByRole("button", { name: "see a photo error" }).click();
+    return;
+  }
+  await board.getByRole("button", { name: "Choose a photo" }).click();
+  await board.getByRole("button", { name: "Use photo" }).click();
+  if (state === "look") return;
+  await board.locator(".look").first().click();
+  await board.getByRole("button", { name: "Continue", exact: true }).click();
+  if (state === "send") return;
+  await board.locator("#nm").fill("Rahul");
+  await board.locator("#mob").fill("9810000000");
+  await board.getByRole("button", { name: "Send my look" }).click();
+  await board.getByRole("textbox", { name: "WhatsApp code" }).fill("123456");
+  await board.getByRole("button", { name: "Confirm and send my look" }).click();
+}

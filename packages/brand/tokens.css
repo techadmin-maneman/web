@@ -118,7 +118,6 @@
 
   --tracking-12: 0.12em;
   --tracking-14: 0.14em;
-  --tracking-16: 0.16em;
   --tracking-display: -0.02em;
   --tracking-title: -0.015em;
   --tracking-heading: -0.01em;
@@ -230,7 +229,6 @@
   --header-h: var(--btn-lg);
   --measure-column: 660px;
   --measure-form: 440px;
-  --preview-h: clamp(340px, 56vw, 520px); /* a photograph being taken: the try-on's, the technician's camera */
 }
 
 /*

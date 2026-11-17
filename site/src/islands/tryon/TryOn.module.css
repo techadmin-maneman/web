@@ -1,182 +1,122 @@
+/*
+ * The try-on (./TryOn.tsx) on the client app's look (ADR 0265). On a phone, one column under the flow's top bar, each
+ * step's buttons pinned at the foot; on a laptop, as the boards draw it, the step's picture on the left
+ * (./Picture.tsx) and the step beside it.
+ */
+
 .flow {
-  background: var(--ink-deep);
-  min-height: calc(100dvh - var(--site-header-h));
+  padding-bottom: var(--sp-24);
 }
 
-/* ---- Progress and the top line ----------------------------------------- */
-
-.track {
-  height: var(--rule-strong);
-  background: var(--ink-rule);
-  position: relative;
-}
-.progress {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  background: var(--gilt);
-  transition: width var(--duration-travel) var(--ease-house);
-}
-.progress-upload,
-.progress-error {
-  width: 24%;
-}
-.progress-looks {
-  width: 58%;
-}
-.progress-gate {
-  width: 90%;
-}
-.progress-sent {
-  width: 100%;
-}
-
-.inner {
+.stage {
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: var(--space-xl) var(--gutter) var(--flow-pad-bottom);
-}
-/* On a narrow phone the step label goes beneath Back, whole, rather than either breaking in two. */
-.topline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0 var(--sp-20);
-  margin-bottom: var(--space-s);
-}
-.back,
-.stepLabel {
-  white-space: nowrap;
-}
-.stepLabel {
-  letter-spacing: var(--tracking-16);
-  font-size: var(--fs-15);
-  color: var(--ink-muted);
+  padding-inline: var(--gutter);
 }
 
-/* ---- Shared ------------------------------------------------------------- */
+.column {
+  min-width: 0;
+}
+
+/* "Step 2 of 3", or what the sent and error screens are, over the step's title. */
+.stepLabel {
+  margin: 0 0 calc(var(--sp-4) + var(--sp-2));
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  color: var(--site-text-muted);
+}
+
+/* ---- The step's words -------------------------------------------------------------- */
 
 .title,
 .titleLarge,
 .noticeTitle {
-  margin: 0;
-  font-family: var(--site-font);
-  font-weight: var(--weight-regular);
-  color: var(--paper);
+  margin: 0 0 calc(var(--sp-4) + var(--sp-2));
+  font-size: var(--try-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-115);
+  letter-spacing: var(--tracking-heading);
+  color: var(--site-navy);
 }
-.title {
-  font-size: var(--fs-h2);
-  line-height: var(--lh-100);
-  letter-spacing: var(--tracking-title);
-  text-wrap: balance;
-}
-.titleLarge {
-  font-size: var(--fs-h1);
-  line-height: var(--lh-100);
-  letter-spacing: var(--tracking-title);
-  max-width: var(--measure-upload-title);
-  text-wrap: balance;
-}
+
 .title:focus,
 .titleLarge:focus,
 .noticeTitle:focus {
   outline: none;
 }
-.body {
-  margin: var(--sp-20) 0 0;
-  font-size: var(--fs-body);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-  max-width: var(--measure-short);
+
+.body,
+.noticeBody {
+  margin: 0;
+  font-size: var(--try-lead);
+  line-height: var(--lh-150);
+  color: var(--site-text-muted);
   text-wrap: pretty;
 }
-.split .body {
-  margin-top: var(--sp-24);
+
+/* What the look is, on the cool ground, as the boards box it. */
+.disclaimer {
+  margin-top: calc(var(--sp-16) + var(--sp-2));
+  padding: var(--sp-16);
+  background: var(--site-band);
+  font-size: var(--fs-14);
+  line-height: var(--lh-150);
 }
+
 .next {
   width: 100%;
-  max-width: var(--flow-button-max);
-  margin-top: var(--sp-28);
-}
-/* On a phone the button spans the screen, as the gate's does. */
-@media (max-width: 760px) {
-  .next {
-    max-width: none;
-  }
-}
-.nextSpaced {
-  margin-top: var(--sp-32);
 }
 
-/* ---- Upload ------------------------------------------------------------- */
+/* ---- The step's buttons: pinned at a phone's foot, under the words on a laptop ----------- */
 
-.split {
+.foot {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-raised);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-wide)), 1fr));
-  gap: var(--flow-split-gap);
-  align-items: center;
+  gap: calc(var(--sp-8) + var(--sp-2));
+  margin: var(--sp-24) calc(-1 * var(--gutter)) 0;
+  padding: var(--sp-12) var(--gutter) calc(var(--sp-16) + var(--site-safe-bottom));
+  border-top: var(--hairline) solid var(--site-line);
+  background: var(--site-ground);
 }
 
-/* ---- Gate --------------------------------------------------------------- */
-/* On a phone the frame holds nothing to look at: the caption says it all. */
-
-/* ---- Error and sent: a notice in a frame -------------------------------- */
-
-.notice {
-  max-width: var(--measure-note);
-}
-.noticeFrame {
-  border: var(--hairline) solid var(--ink-line);
-  width: 100%;
-  height: var(--error-frame-h);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-16);
-  padding: var(--sp-24);
-  text-align: center;
-  color: var(--ink-muted);
-  font-size: var(--fs-15);
-}
-.noticeTitle {
-  margin-top: var(--space-s);
-  font-size: var(--fs-h3);
-  line-height: var(--lh-115);
-  text-wrap: balance;
-}
-.noticeBody {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-body);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-  max-width: var(--measure-error);
-  text-wrap: pretty;
-}
-/* The sent screen's words on what the look is, boxed as a disclaimer. */
-.disclaimer {
-  margin-top: var(--sp-24);
-  border: var(--hairline) solid var(--ink-line);
-  padding: var(--sp-16) var(--sp-20);
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-  max-width: var(--measure-error);
-}
-.noticeActions {
-  margin-top: var(--sp-32);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-12);
-  max-width: var(--measure-button-column);
+/* While the cookie bar asks, the buttons wait at the step's foot, where the page keeps the bar's room. */
+:global(html[data-consent-asking]) .foot {
+  position: static;
 }
 
 /* Turnstile shows only if Cloudflare needs the visitor to act. */
 .turnstile {
-  margin-top: var(--sp-16);
+  margin-bottom: var(--sp-16);
 }
+
 .turnstile:empty {
   display: none;
+}
+
+/* ---- A laptop: the picture, and the step beside it --------------------------------- */
+
+@media (min-width: 761px) {
+  .stage {
+    padding-block: var(--sp-48) var(--sp-64);
+  }
+
+  .foot {
+    position: static;
+    margin: var(--sp-24) 0 0;
+    padding: 0;
+    border-top: 0;
+    background: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, var(--try-picture-w)) minmax(0, var(--try-column-w));
+    justify-content: space-between;
+    align-items: start;
+    column-gap: var(--sp-48);
+  }
 }

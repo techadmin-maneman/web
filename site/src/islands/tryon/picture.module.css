@@ -1,0 +1,51 @@
+/* The try-on's picture (./Picture.tsx): on a phone the ready look alone, above the words; on a laptop each step's, at
+   the boards' 4:3 on the cool ground, the look and the photograph at the boards' own shape. */
+
+.picture {
+  display: none;
+}
+
+.ready {
+  display: block;
+  margin-bottom: calc(var(--sp-16) + var(--sp-2));
+}
+
+/* Two classes, so the shape wins over the teaser band's height (../BeforeAfter.module.css). */
+.ready .compare {
+  height: auto;
+  aspect-ratio: var(--try-look-ratio);
+}
+
+.fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ready .fill {
+  aspect-ratio: var(--try-look-ratio);
+}
+
+.empty {
+  align-items: center;
+  justify-content: center;
+  background: var(--site-band);
+  color: var(--stone);
+}
+
+@media (min-width: 761px) {
+  .picture {
+    display: flex;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--site-band);
+  }
+
+  .ready {
+    display: block;
+    aspect-ratio: auto;
+    margin-bottom: 0;
+    background: none;
+  }
+}

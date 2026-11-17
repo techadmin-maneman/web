@@ -4,8 +4,8 @@
 // 0266). Sign in shows only where the client app answers.
 //
 // On a laptop, /book, the referral landing and /try draw the flow's bar instead (ADR 0265): the lockup, the way back to
-// the site, and on /try the free consultation. On a phone, the booking pages draw their own top bar in its place
-// (islands/invite/FlowFrame.tsx); /try keeps the header until it draws its own.
+// the site, and on /try the free consultation. On a phone, each flow draws its own top bar in its place
+// (islands/invite/FlowFrame.tsx).
 import { buttonLook } from "@maneman/ui/Button";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { header, tryOn } from "../content/site.ts";
@@ -22,8 +22,8 @@ const flow = isFlowPage(path);
 const appOrigin = clientAppOrigin(ENVIRONMENT);
 ---
 
-<div class:list={["space", booking && "framed"]} aria-hidden="true"></div>
-<header class:list={["bar", flow && "flow", booking && "framed"]}>
+<div class:list={["space", flow && "framed"]} aria-hidden="true"></div>
+<header class:list={["bar", flow && "flow", flow && "framed"]}>
   <a class={textLinkLook({ quiet: true, className: "home" })} href="/" aria-label={header.homeLabel}>
     <Lockup size="header" tone="navy" />
   </a>
