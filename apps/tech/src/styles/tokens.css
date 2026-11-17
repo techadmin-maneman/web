@@ -15,6 +15,8 @@
   --tech-box: var(--sp-36); /* a checklist item's box */
   --fs-timer: var(--fs-56); /* the wait timer's count, the technician app's one large number */
   --tech-retake: var(--tech-row); /* the Retake key beside Capture, the one action that is not full width */
+  /* The narrowest of Call ops and WhatsApp ops side by side, "WhatsApp ops" on one line; in em, as it grows with text. */
+  --tech-reach-ops: 10em;
 
   /* The shared parts' room, as the technician app draws them. */
   --check-row-height: var(--tech-row);
