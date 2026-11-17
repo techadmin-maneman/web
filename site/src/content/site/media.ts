@@ -110,4 +110,6 @@ export const founderNote = {
   ],
   name: "Rishabh Gupta",
   signature: "Founder, Mane Man",
+  /** Unfolds the note past its first paragraph (ADR 0263); every word stays in the page. */
+  more: "Read the full note",
 };

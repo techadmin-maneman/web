@@ -1,5 +1,5 @@
 ---
-// The results beneath the hero, on ink: the specialists' count, then one client's before and after at a time on the
+// The results beneath the hero, on white: the specialists' count, then one client's before and after at a time on the
 // shared compare (../../islands/ResultsGallery.tsx). The pictures are optimised here, and the island is handed their
 // addresses.
 import { getImage } from "astro:assets";
@@ -9,8 +9,8 @@ import { isShown } from "../../lib/build.ts";
 import { designImage } from "../../lib/images.ts";
 
 /** The widths the compare is drawn at, at most, once and twice over for a sharp screen. */
-const PICTURE_WIDTHS = [520, 1040];
-const PICTURE_SIZES = "(min-width: 600px) 540px, 100vw";
+const PICTURE_WIDTHS = [560, 1120];
+const PICTURE_SIZES = "(min-width: 761px) 560px, 100vw";
 
 const shown = async (file: string, alt: string) => {
   const image = await getImage({ src: designImage(file), format: "webp", widths: PICTURE_WIDTHS });
@@ -27,18 +27,9 @@ const pairs: ShownPair[] = await Promise.all(
 ---
 
 {isShown(resultPairs) && (
-  <section class="results on-ink" data-section="results" aria-label={results.label}>
-    <div class="container inner">
+  <section class="band ground-white" data-section="results" aria-label={results.label}>
+    <div class="container">
       <ResultsGallery client:visible title={results.title} pairs={pairs} />
     </div>
   </section>
 )}
-
-<style>
-  .results {
-    background: var(--ink-deep);
-  }
-  .inner {
-    padding-block: var(--band-pad);
-  }
-</style>

@@ -24,9 +24,16 @@ const { summary, look, name, open = false } = Astro.props;
 </details>
 
 <style>
+  [data-look="question"] {
+    border-color: var(--site-line);
+  }
   [data-look="question"] > summary {
-    font-size: var(--fs-lead);
+    min-height: var(--site-question-h);
+    padding-block: var(--site-question-pad);
+    font-size: var(--site-fs-lead);
+    font-weight: var(--weight-medium);
     line-height: var(--lh-145);
+    color: var(--site-text);
   }
   [data-look="heading"] > summary {
     font-family: var(--site-font);

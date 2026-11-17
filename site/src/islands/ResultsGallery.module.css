@@ -1,70 +1,62 @@
 /* The results' gallery (./ResultsGallery.tsx). On a phone: the heading, the picture, then its line and the arrows. On
-   a wide screen: the heading, the line and the arrows together, centred beside the picture. */
+   a laptop: the heading, and the line and the arrows under a hairline, centred beside the picture. */
 .gallery {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "title" "picture" "caption" "controls";
-  gap: var(--space-s);
+  grid-template-areas: "title" "picture" "controls";
+  row-gap: var(--site-space-16-24);
 }
 .title {
   grid-area: title;
-  margin: 0 0 var(--space-xs);
-  color: var(--paper);
-  text-wrap: balance;
 }
 .picture {
   grid-area: picture;
   width: 100%;
 }
-.caption {
-  grid-area: caption;
-}
 .controls {
   grid-area: controls;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
 }
 @media (min-width: 761px) {
   .gallery {
-    grid-template-columns: minmax(0, 1fr) minmax(0, var(--result-picture-max));
-    grid-template-rows: 1fr auto auto auto 1fr;
-    grid-template-areas: ". picture" "title picture" "caption picture" "controls picture" ". picture";
-    column-gap: var(--space-2xl);
-    row-gap: var(--space-m);
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-rows: 1fr auto auto 1fr;
+    grid-template-areas: ". picture" "title picture" "controls picture" ". picture";
+    column-gap: var(--site-columns-gap);
+    row-gap: 0;
   }
-  .title {
-    margin: 0;
+  .controls {
+    margin-top: var(--sp-48);
+    padding-top: var(--sp-20);
+    border-top: var(--hairline) solid var(--site-line);
   }
 }
 
 /* The pair at its photographs' own shape, not the teaser's band: two classes, so it wins over the band's height. */
 .picture .compare {
   height: auto;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 638 / 788;
+  max-height: var(--result-picture-max-h);
+}
+
+.words {
+  flex: 1;
+  min-width: 0;
 }
 
 .caption {
   margin: 0;
-  font-family: var(--site-font);
-  font-size: var(--fs-h3);
-  line-height: var(--lh-115);
-  letter-spacing: var(--tracking-heading);
-  color: var(--ink-muted);
-  text-wrap: balance;
-}
-
-.controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--ink-rule);
+  font-size: var(--site-fs-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
 }
 
 .count {
   margin: 0;
-  font-size: var(--fs-15);
-  letter-spacing: var(--tracking-18);
-  color: var(--ink-muted);
+  font-size: var(--site-fs-pager);
+  color: var(--site-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -74,5 +66,8 @@
 }
 
 .arrow {
-  --icon-button-size: var(--result-arrow);
+  --icon-button-size: var(--site-icon-button);
+
+  border-color: var(--site-line);
+  color: var(--site-navy);
 }

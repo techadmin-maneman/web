@@ -150,9 +150,12 @@ export const norwood = {
   /** The last card: a hairline restored, after the five stages. Its picture is media.ts's norwoodRestored. */
   restored: `From these to this in ${visitLength.firstFit}.`,
   book: "Book a free consultation",
+  /** A phone's choice of stage over its picture (ADR 0263), and each option said aloud. */
+  picker: "Choose your stage",
+  pickerOption: "Stage {numeral}, {name}",
 };
 
-/** A comparison cell: text, or a tick (true) or cross (false). */
+/** A comparison cell: text, or true or false, written Yes and No. */
 export type ComparisonCell = string | boolean;
 
 export const comparison = {
