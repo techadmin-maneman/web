@@ -91,7 +91,8 @@ export async function seedNextVisit(): Promise<void> {
   const consulted = indiaDay(-2);
   const firstFit = client("consultation", `${consulted}T08:00:00.000Z`, `${consulted}T09:00:00.000Z`);
   // A first fit is sold only as a package set up in the console (docs/decisions/0211-packages.md): its first fit,
-  // service visit and replacement, and a hair system priced, which with the service visit is Rs. 25,000.
+  // service visit and replacement, and a hair system priced, which with the service visit is Rs. 25,000. Its
+  // replacement is priced too, so a replacement may be changed to it (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md).
   const hairSystem = "hs_essential_8x10_1b";
   sql.push(
     `INSERT OR IGNORE INTO services (kind, tier, name, minutes, sort, updated_by, updated_at) VALUES
@@ -107,6 +108,7 @@ export async function seedNextVisit(): Promise<void> {
        ${sqlRow(hairSystem, "essential", 8, 10, "1B", 0, 100)};`,
     `INSERT OR IGNORE INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES
        ${sqlRow("service", "essential", 200_000, 0, "2026-01-01")},
+       ${sqlRow("replacement", "essential", 1_300_000, 0, "2026-01-01")},
        ${sqlRow("hair_system", hairSystem, 2_300_000, 0, "2026-01-01")};`,
     `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at, product) VALUES
        ${sqlRow(crypto.randomUUID(), firstFit.person, firstFit.visit, "e2e-profile", technician, now, "essential")};`,
