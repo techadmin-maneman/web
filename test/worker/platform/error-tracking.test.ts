@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateStaticConfig } from "../../../src/guard.ts";
 import { parseDsn } from "../../../src/lib/sentry-dsn.ts";
 import { createLogger } from "../../../src/log.ts";
-import { createErrorTracker, eventOf, framesOf } from "../../../src/providers/error-tracking.ts";
+import { createErrorTracker, eventOf, framesOf, releaseOf } from "../../../src/providers/error-tracking.ts";
 import { captureLogs, fakeFetch, NOW } from "../helpers.ts";
 import { production, problemsOf } from "./guard-fixtures.ts";
 
@@ -155,6 +155,13 @@ describe("error tracking", () => {
     // A page's report is the public's to write: a line past any frame's length is not read at all.
     expect(framesOf(`    at ${"a:1:".repeat(400)}1:1`)).toEqual([]);
     expect(framesOf(undefined)).toEqual([]);
+  });
+
+  it("names the release the source maps were uploaded under: the tag, else the bundle's commit, else the version", () => {
+    expect(releaseOf({ tag: "79455a127e46", id: "v-1" }, "79455a127e46")).toBe("79455a127e46");
+    // A secret change publishes an untagged version of the same bundle.
+    expect(releaseOf({ tag: "", id: "v-2" }, "79455a127e46")).toBe("79455a127e46");
+    expect(releaseOf({ tag: "", id: "v-3" }, null)).toBe("v-3");
   });
 
   it("names each frame's file where its uploaded source map is found: a page's by its address, the Worker's as an app's", () => {

@@ -30,6 +30,8 @@ if ((environment !== "staging" && environment !== "production") || release === "
 }
 
 const apps = values.app ?? [];
+/** One upload's longest wait: a stalled one is a warning, not a deploy held until its job times out. */
+const UPLOAD_TIMEOUT_MS = 120_000;
 const sentryCli = createRequire(import.meta.url).resolve("@sentry/cli/bin/sentry-cli");
 
 /** Uploads each map; a failure is a warning, as Sentry is never on a deploy's way. */
@@ -40,7 +42,10 @@ function upload(env: MapsEnvironment): void {
   }
   for (const each of uploadsFor(values.worker, apps)) {
     try {
-      execFileSync(process.execPath, [sentryCli, ...uploadArgs(each, env, release)], { stdio: "inherit" });
+      execFileSync(process.execPath, [sentryCli, ...uploadArgs(each, env, release)], {
+        stdio: "inherit",
+        timeout: UPLOAD_TIMEOUT_MS,
+      });
     } catch {
       console.log(`::warning::Sentry did not take the source maps in ${each.dir}`);
     }

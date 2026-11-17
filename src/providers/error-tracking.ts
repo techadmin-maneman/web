@@ -142,6 +142,13 @@ export function eventOf(
   };
 }
 
+/**
+ * The release an event names, which Sentry finds the source maps by: the version's tag, the commit the deploy uploaded
+ * them under; for the untagged version a secret change publishes, the commit its bundle was built from; else its ID.
+ */
+export const releaseOf = (version: { readonly tag: string; readonly id: string }, commit: string | null): string =>
+  version.tag === "" ? (commit ?? version.id) : version.tag;
+
 /** The envelope Sentry takes: its header, the item's header, and the event. */
 const envelopeOf = (dsn: SentryDsn, event: Record<string, unknown>, now: Date): string =>
   [
