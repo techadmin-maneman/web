@@ -35,18 +35,17 @@ export interface PieceForm {
 
 export const given = (text: string): boolean => text.trim() !== "";
 
-/** A piece on the client's head: fitted and not since replaced, though Care may have marked it failed there. */
-const onTheHead = (piece: ClientPiece): boolean => piece.fitted_at !== null && piece.replaced_at === null;
-
 /**
- * On a replacement, the piece that comes off: the newest on the client's head fitted before this visit's day, failed or
- * not, so one Care marked failed before the visit still comes off and goes back, and a step opened again after its piece
- * landed never names the new one. The card lists the client's pieces newest first. Null for any other visit, or none on
- * the head.
+ * On a replacement, the piece that comes off: the newest fitted before this visit's day, where it is still on the
+ * client's head, not replaced, failed or not. One Care marked failed before the visit still comes off and goes back; a
+ * step opened again after its piece landed finds that piece replaced, and names none, never the new one nor an older
+ * piece that failed long ago, which is never marked replaced. The card lists the client's pieces newest first. Null for
+ * any other visit, or none on the head.
  */
 export function cameOff(job: Pick<Job, "type" | "pieces" | "date">): ClientPiece | null {
   if (job.type !== "replacement") return null;
-  return (job.pieces ?? []).find((piece) => onTheHead(piece) && (piece.fitted_at ?? "") < job.date) ?? null;
+  const newest = (job.pieces ?? []).find((piece) => piece.fitted_at !== null && piece.fitted_at < job.date);
+  return newest?.replaced_at === null ? newest : null;
 }
 
 /**
