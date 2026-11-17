@@ -1,6 +1,7 @@
 // The client app's sheets and the visit's day on Home, held at 390 and 360 px and at 360 with its text at 130%
-// (./text-sizes.ts; docs/prompts/client-redesign.md, "Acceptance"): a note, a low rating's thanks, the invite's card and
-// its preview; and the live card at each stage of the day, its move proposed, its sign-off asked, put in words and sent.
+// (./text-sizes.ts; docs/prompts/client-redesign.md, "Acceptance"): a note, a rating's thanks low and high, the invite's
+// card, its preview and a share that failed; and the live card at each stage of the day, its move proposed, its sign-off
+// asked beside today's after photos, put in words and sent.
 // Every answer that moves the visit through its day is faked, so no test changes what another reads.
 
 import type { Locator, Page } from "@playwright/test";
@@ -30,8 +31,14 @@ const SIGN_OFF_ASKED = {
 /** A fit under way today, at its last step. */
 const FITTING = { type: "replacement", status: "in_progress", stage: "in_progress", latest_update: null } as const;
 
-/** Each stage of the visit's day: the next visit as the API would answer it then, and what Home says of it. */
-function stagesOfTheDay(page: Page): { name: string; visit: (each: Visit) => Visit; says: Locator }[] {
+/**
+ * Each stage of the visit's day: the next visit as the API would answer it then, and what Home says of it. The sign-off
+ * is asked on `photographed`, a visit with after photos, which the panel shows beside its checks.
+ */
+function stagesOfTheDay(
+  page: Page,
+  photographed: string,
+): { name: string; visit: (each: Visit) => Visit; says: Locator }[] {
   const now = Date.now();
   const at = new Date(now).toISOString();
   const today = indiaDate(at);
@@ -84,8 +91,14 @@ function stagesOfTheDay(page: Page): { name: string; visit: (each: Visit) => Vis
     },
     {
       name: "the sign-off asked",
-      visit: (each) => ({ ...each, ...FITTING, step: { index: 5, of: 5, name: "sign_off" }, sign_off: SIGN_OFF_ASKED }),
-      says: page.getByRole("button", { name: live.signOff.happy }),
+      visit: (each) => ({
+        ...each,
+        ...FITTING,
+        id: photographed,
+        step: { index: 5, of: 5, name: "sign_off" },
+        sign_off: SIGN_OFF_ASKED,
+      }),
+      says: page.getByText(live.signOff.photos),
     },
     {
       name: "the sign-off sent back",
@@ -117,7 +130,7 @@ function stagesOfTheDay(page: Page): { name: string; visit: (each: Visit) => Vis
 }
 
 for (const size of SIZES) {
-  test(`a note, a low rating's thanks and the invite hold at ${named(size)}`, async ({ page }) => {
+  test(`a note, a rating's thanks and the invite hold at ${named(size)}`, async ({ page }) => {
     test.setTimeout(120_000);
     const fitted = await signedIn(page);
     // A note already left for the technician, as the sheet opens on it, whatever other tests have left.
@@ -131,18 +144,25 @@ for (const size of SIZES) {
     await expect(page.getByRole("dialog").getByRole("textbox", { name: note.label })).toBeVisible();
     await holds(page, size, "note");
 
-    // A low rating, given in the API's place, and its thanks with the way to say what went wrong.
+    // A rating, given in the API's place, low then high: each one's thanks, the low one's with the way to say what
+    // went wrong. The visit is read unrated again each time, the rating never stored.
     const rating = visits.detail.rating;
-    await page.route(`**/api/visits/${fitted.service.id}/rating`, (route) =>
-      route.fulfill({ status: 201, json: { stars: 3, at: new Date().toISOString(), low: true } }),
-    );
-    await page.goto(`/visits/${fitted.service.id}`);
-    await page
-      .getByRole("group", { name: rating.label })
-      .getByRole("button", { name: rating.star(3) })
-      .click();
-    await expect(page.getByText(rating.low)).toBeVisible();
-    await holds(page, size, "rating");
+    await page.route(`**/api/visits/${fitted.service.id}/rating`, async (route) => {
+      const { stars } = route.request().postDataJSON() as { stars: number };
+      await route.fulfill({ status: 201, json: { stars, at: new Date().toISOString(), low: stars < 4 } });
+    });
+    for (const [stars, thanks] of [
+      [3, rating.low],
+      [5, rating.thanks],
+    ] as const) {
+      await page.goto(`/visits/${fitted.service.id}`);
+      await page
+        .getByRole("group", { name: rating.label })
+        .getByRole("button", { name: rating.star(stars) })
+        .click();
+      await expect(page.getByText(thanks)).toBeVisible();
+      await holds(page, size, `rating of ${String(stars)}`);
+    }
 
     // The invite's card, and its preview with the house card, which writes nothing for this client.
     await page.goto("/rewards");
@@ -155,6 +175,14 @@ for (const size of SIZES) {
     const preview = page.getByRole("dialog", { name: refer.preview.title });
     await expect(preview.getByRole("link", { name: refer.preview.whatsapp })).toBeVisible();
     await holds(page, size, "invite's preview");
+    // A way to send it that fails, as a phone that will not copy: the preview says nothing was sent.
+    await page.evaluate(() => {
+      navigator.clipboard.writeText = () =>
+        Promise.reject(new DOMException("The page may not write to the clipboard.", "NotAllowedError"));
+    });
+    await preview.getByRole("button", { name: refer.preview.copy }).click();
+    await expect(preview.getByRole("alert")).toContainText(refer.preview.failed.line);
+    await holds(page, size, "invite's share failed");
   });
 
   test(`the visit's day on Home holds at ${named(size)}, at every stage`, async ({ page }) => {
@@ -166,8 +194,8 @@ for (const size of SIZES) {
         ? { ...me, next_visit: stage({ ...me.next_visit, date: indiaDate(new Date().toISOString()) }) }
         : me,
     );
-    await signedIn(page);
-    for (const each of stagesOfTheDay(page)) {
+    const fitted = await signedIn(page);
+    for (const each of stagesOfTheDay(page, fitted.service.id)) {
       stage = each.visit;
       await page.reload();
       await expect(each.says).toBeVisible();
