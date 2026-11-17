@@ -138,36 +138,40 @@ test("shows the flat, floor, tower, building and landmark, the way in with Copy,
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("shows the piece on the client’s head and the last visit’s after photograph (board A3)", async ({ page }) => {
+// The prototype's client block for each kind: the piece's record is the hair system step's, and the last visit's
+// photographs are the handoff's and the history's.
+test("heads a service's hair profile with its last visit, and leaves the piece to the hair system step", async ({
+  page,
+}) => {
   const fake = await fakeTech(page);
   fake.pieces = [ROHITS_PIECE];
   fake.lastVisit = true;
+  fake.profile = ROHITS_PROFILE;
   await page.goto(`/jobs/${JOB_ID}`);
 
-  const piece = page.getByRole("region", { name: techCopy.job.piece.title });
-  await expect(piece).toContainText(ROHITS_PIECE.piece_code);
-  await expect(piece).toContainText("PLACEHOLDER_STANDARD");
-  await expect(piece).toContainText("LOT-4417");
-  const photo = page.getByRole("img", { name: techCopy.job.piece.lastVisitImage });
-  await expect(photo).toHaveAttribute("src", `/api/tech/jobs/${JOB_ID}/last-visit-photo`);
-  await expect.poll(() => photo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1);
-  await expect(page.getByText(techCopy.job.piece.lastVisit("22 Aug", "Imran"))).toBeVisible();
+  const block = page.getByRole("region", { name: techCopy.job.profileTitle });
+  await expect(block).toContainText(techCopy.job.lastVisitOn("22 Aug"));
+  for (const label of ["tier", "base", "colour", "fixing", "scalp"] as const) {
+    await expect(block).toContainText(techCopy.profile.card[label]);
+  }
+  await expect(page.getByText(ROHITS_PIECE.piece_code)).toHaveCount(0);
+  await expect(page.getByRole("img", { name: "Last visit’s after photo" })).toHaveCount(0);
 });
 
-test("says what a first fit was paid for, apart from the hair profile, and warns when they differ", async ({
-  page,
-}) => {
+test("heads a first fit's profile as from the consultation, dated, with what the client chose", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "first_fit";
   fake.service = { tier: "natural", name: "Mane Man Natural" };
   fake.profile = ROHITS_PROFILE;
   await page.goto(`/jobs/${JOB_ID}`);
 
-  await expect(page.getByRole("region", { name: techCopy.job.profileTitle })).toContainText("Mane Man Essential");
-  const piece = page.getByRole("region", { name: techCopy.job.piece.title });
-  await expect(piece).toContainText(techCopy.job.piece.rows.paidFor);
-  await expect(piece).toContainText("Mane Man Natural");
-  await expect(piece).toContainText("The hair profile says Mane Man Essential. Check with ops before you fit.");
+  const block = page.getByRole("region", { name: techCopy.job.fromConsultation });
+  await expect(block).toContainText("1 Jul");
+  await expect(block).toContainText(`${techCopy.profile.card.chose}Mane Man Essential`);
+  await expect(block).toContainText(`${techCopy.profile.card.norwood}IV`);
+  await expect(block).not.toContainText(techCopy.profile.card.scalp);
+  // What was paid for, and a profile naming another product, are the hair system step's to say.
+  await expect(page.getByText(techCopy.job.piece.rows.paidFor)).toHaveCount(0);
 });
 
 // Waiting at the door for the client, the job reads so on Today, which the day's list alone never says.
@@ -192,15 +196,25 @@ test("opens a job the phone holds at once on a slow network", async ({ page }) =
   await expect(page.getByRole("link", { name: "Call Rohit" })).toBeVisible({ timeout: 2000 });
 });
 
-test("gives a consultation the hair profile and no piece", async ({ page }) => {
+test("gives a consultation its booking: where it was made and how it is paid, and no hair profile", async ({
+  page,
+}) => {
   const fake = await fakeTech(page);
   fake.type = "consultation";
   fake.profile = ROHITS_PROFILE;
+  fake.bookedVia = "site";
   await page.goto(`/jobs/${JOB_ID}`);
 
-  await expect(page.getByRole("region", { name: techCopy.job.profileTitle })).toBeVisible();
-  await expect(page.getByRole("region", { name: techCopy.job.piece.title })).toHaveCount(0);
-  await expect(page.getByText(techCopy.job.piece.none)).toHaveCount(0);
+  const block = page.getByRole("region", { name: techCopy.job.booking.title });
+  await expect(block).toContainText(`${techCopy.job.booking.bookedVia}${techCopy.job.booking.via.site}`);
+  await expect(block).toContainText(`${techCopy.job.booking.payment}${techCopy.badges.prepaid}`);
+  await expect(page.getByRole("region", { name: techCopy.job.profileTitle })).toHaveCount(0);
+
+  // One booked before the API kept where says only how it is paid.
+  fake.bookedVia = null;
+  await page.reload();
+  await expect(block).not.toContainText(techCopy.job.booking.bookedVia);
+  await expect(block).toContainText(techCopy.job.booking.payment);
 });
 
 test("opens a consultation’s Options: each package and what it costs, and the client’s looks", async ({ page }) => {

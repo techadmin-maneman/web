@@ -8767,6 +8767,22 @@ One of the client's try-on looks, under the card's own unlock, never cached
       ],
       "description": "The technician's open ask that ops move the visit, until it is settled; null for none."
     },
+    "booked_via": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "app",
+            "site",
+            "ops"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where the visit was booked: the client's app, the site, or ops in the console. Null until the day before the visit, and for one booked before this was kept."
+    },
     "sign_off": {
       "anyOf": [
         {
@@ -8856,6 +8872,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "handoff",
     "client_visits",
     "reschedule_asked",
+    "booked_via",
     "sign_off",
     "sent_back"
   ],

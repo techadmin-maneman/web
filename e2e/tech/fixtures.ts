@@ -381,6 +381,7 @@ export interface CardOptions {
   readonly rescheduleAsked?: Card["reschedule_asked"];
   /** The client's earlier visits, counted; none unless a test gives them. */
   readonly clientVisits?: Card["client_visits"];
+  readonly bookedVia?: Card["booked_via"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -448,6 +449,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     reschedule_asked: options.rescheduleAsked ?? null,
     sign_off: options.signOff ?? null,
     client_visits: options.clientVisits ?? { count: 0, first: null },
+    booked_via: options.bookedVia ?? null,
   };
 }
 
@@ -484,6 +486,7 @@ export function lockedCard(date: string): Card {
     reschedule_asked: null,
     sign_off: null,
     client_visits: null,
+    booked_via: null,
   };
 }
 

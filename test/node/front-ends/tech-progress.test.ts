@@ -64,6 +64,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   handoff: null,
   sent_back: [],
   reschedule_asked: null,
+  booked_via: null,
   sign_off: null,
   client_visits: { count: 0, first: null },
   checklist: [],

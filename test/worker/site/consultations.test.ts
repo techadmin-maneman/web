@@ -66,7 +66,7 @@ describe("POST /api/consultation", () => {
     ]);
 
     const booked = await env.DB.prepare(
-      `SELECT p.name, c.purpose, c.notice_version, h.type, h.amount, l.source, l.loss_extent,
+      `SELECT p.name, c.purpose, c.notice_version, h.type, h.amount, h.booked_from, l.source, l.loss_extent,
          l.proposed_visit_date, l.first_choice_window, l.city
        FROM people p
        JOIN consents c ON c.person_id = p.id
@@ -80,6 +80,7 @@ describe("POST /api/consultation", () => {
       notice_version: "site-consultation-v2",
       type: "consultation",
       amount: 0,
+      booked_from: "site",
       source: "form",
       loss_extent: "crown",
       // The date they chose, not a guess, and no rough window: the booking has a real one.

@@ -134,6 +134,7 @@ const card = (id: string, date: string) =>
     reschedule_asked: null,
     sign_off: null,
     client_visits: { count: 0, first: null },
+    booked_via: null,
   }) as Job;
 
 const arrival = {

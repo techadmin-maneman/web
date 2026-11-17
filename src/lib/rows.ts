@@ -1405,6 +1405,7 @@ export interface Rows {
     readonly payment_checked_at: string | null;
     readonly pay_at_visit: number;
     readonly starts_at: string | null;
+    readonly booked_from: string | null;
   };
   readonly slot_times: {
     readonly id: string;

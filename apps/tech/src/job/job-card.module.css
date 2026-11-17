@@ -103,41 +103,8 @@
   text-align: right;
 }
 
-.warn {
-  margin: var(--sp-12) 0 0;
-  font-size: var(--fs-15);
-  font-weight: var(--weight-semibold);
-  color: var(--ui-error);
-}
-
-.none {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-15);
-  color: var(--ui-text-soft);
-}
-
 .rowList {
   margin: var(--sp-24) var(--screen-gutter) 0;
-}
-
-.lastVisit {
-  display: flex;
-  gap: var(--sp-12);
-  align-items: center;
-  padding: var(--sp-24) var(--screen-gutter) 0;
-}
-
-.lastVisitPhoto {
-  width: var(--sp-64);
-  height: var(--sp-64);
-  object-fit: cover;
-  background: var(--placeholder);
-}
-
-.lastVisitLine {
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--ui-text-soft);
 }
 
 .locked {

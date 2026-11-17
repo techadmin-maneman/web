@@ -303,6 +303,22 @@ describe("the card", () => {
     expect((await get(`/api/tech/jobs/${TODAY_JOB}/last-visit-photo`)).status).toBe(404);
   });
 
+  it("says where the visit was booked, from the hold that booked it, and nothing for one booked before it was kept", async () => {
+    expect((await card(TODAY_JOB)).booked_via).toBeNull();
+    const booked = (id: string, from: string | null, at: string) =>
+      env.DB.prepare(
+        `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
+           amount_ex_gst, gst_percent, state, appointment_id, expires_at, created_at, updated_at, booked_from)
+         VALUES (?1, ?2, 'service', '2026-09-21', 'morning', ?3, 0, 0, 0, 18, 'booked', ?4, ?5, ?5, ?5, ?6)`,
+      )
+        .bind(id, PERSON, IMRAN, TODAY_JOB, at, from)
+        .run();
+    await booked("hold-site", "site", "2026-09-10T05:00:00.000Z");
+    // A later hold of the same visit, a move say, leaves where it was first booked.
+    await booked("hold-app", "app", "2026-09-12T05:00:00.000Z");
+    expect((await card(TODAY_JOB)).booked_via).toBe("site");
+  });
+
   it("says whether the day-before WhatsApp reached the client, as the wait screen shows", async () => {
     expect((await card(TODAY_JOB)).reminder).toBeNull();
 

@@ -555,27 +555,25 @@ export const job = localised({
     pastTitle: "Details closed",
     past: "A visit’s client details close the day after it.",
   },
-  // The board draws the profile's rows inside the piece card; they are a section of their own.
+  // The client block, headed as the prototype heads it for each kind of visit.
   profileTitle: "Hair profile",
+  /** "Last visit 12 Oct", at the hair profile's head. */
+  lastVisitOn: (date: string) => `Last visit ${date}`,
+  fromConsultation: "From the consultation",
+  booking: {
+    title: "Booking",
+    bookedVia: "Booked via",
+    via: { app: "App", site: "Website", ops: "Ops" },
+    payment: "Payment",
+  },
+  // What the hair system step says of the piece paid for.
   piece: {
-    title: "The hair system",
-    // The board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
-    // The board draws no "Paid for" row, nor a warning when the hair profile names another product.
     mismatch: (inProfile: string) => `The hair profile says ${inProfile}. Check with ops before you fit.`,
     rows: {
       paidFor: "Paid for",
       // A fit paid by UPI at the visit: nothing is paid yet, and the technician never handles the money.
       bookedAs: "Booked as",
-      piece: "Hair system",
-      base: "Base",
-      lot: "Supplier lot",
-      fitted: "Fitted",
-      due: "Replacement due",
     },
-    none: "No hair system recorded for this client yet.",
-    lastVisit: (date: string, who: string | null) =>
-      who === null ? `Last visit’s after photo · ${date}` : `Last visit’s after photo · ${date} · ${who}`,
-    lastVisitImage: "Last visit’s after photo",
   },
   // The board draws no failure for a job's card.
   failed: "This job’s card didn’t load.",
@@ -1185,12 +1183,14 @@ export const profile = localised({
     year: "The transplant’s year",
     skin: "Skin conditions and allergies",
   },
-  // The card's rows from the profile: the board's Tier, as the hair system, Colour, Adhesive and Scalp, and the base's size.
+  // The card's rows from the profile, as the prototype names them.
   card: {
     tier: "Hair system",
-    baseSize: "Base size",
+    chose: "Chose",
+    norwood: "Norwood stage",
+    base: "Base",
     colour: "Colour",
-    adhesive: "Adhesive",
+    fixing: "Fixing",
     scalp: "Scalp",
     size: (width: number, length: number) => `${String(width)} × ${String(length)} in`,
     shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} · ${String(grey)}% grey`),

@@ -194,9 +194,10 @@ describe("POST /api/holds", () => {
       const rohit = await client();
       const first = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();
       await startPaying(rohit, first.id);
-      const held = await env.DB.prepare("SELECT tier, starts_at, pincode FROM slot_holds WHERE id = ?1")
+      const held = await env.DB.prepare("SELECT tier, starts_at, pincode, booked_from FROM slot_holds WHERE id = ?1")
         .bind(first.id)
-        .first<{ tier: string; starts_at: string; pincode: string }>();
+        .first<{ tier: string; starts_at: string; pincode: string; booked_from: string }>();
+      expect(held?.booked_from).toBe("app");
       const asked = (startsAt: string | undefined, pincode: string) =>
         holdAtCheckout(env.DB, {
           personId: rohit.id,

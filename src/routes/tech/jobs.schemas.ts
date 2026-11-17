@@ -4,7 +4,7 @@ import { SignOffSchema } from "../schemas/sign-off.ts";
 import { RescheduleAskedSchema } from "../schemas/reschedule.ts";
 import { z } from "@hono/zod-openapi";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
-import { REMINDER_STATES } from "../../domain/field/job-card.ts";
+import { BOOKED_VIA, REMINDER_STATES } from "../../domain/field/job-card.ts";
 import { CARD_STEPS, SENT_BACK_KINDS } from "../../policy/in-job-steps.ts";
 import { BasedOnSchema, FitSpecWriteSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
 import { PieceSchema } from "./pieces.ts";
@@ -260,6 +260,11 @@ export const JobDetailSchema = JobSummarySchema.extend({
     }),
   reschedule_asked: z.union([RescheduleAskedSchema, z.null()]).openapi({
     description: "The technician's open ask that ops move the visit, until it is settled; null for none.",
+  }),
+  booked_via: z.union([z.enum(BOOKED_VIA), z.null()]).openapi({
+    description:
+      "Where the visit was booked: the client's app, the site, or ops in the console. Null until the day before the " +
+      "visit, and for one booked before this was kept.",
   }),
   sign_off: z.union([SignOffSchema, z.null()]).openapi({
     description:

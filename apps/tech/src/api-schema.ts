@@ -5516,6 +5516,8 @@ export interface components {
             } | null;
             /** @description The technician's open ask that ops move the visit, until it is settled; null for none. */
             reschedule_asked: components["schemas"]["TechnicianRescheduleAsked"] | null;
+            /** @description Where the visit was booked: the client's app, the site, or ops in the console. Null until the day before the visit, and for one booked before this was kept. */
+            booked_via: ("app" | "site" | "ops") | null;
             /** @description A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed or declined. Null before it is asked, and for a visit that takes none. Outcome's done waits for signed or declined. */
             sign_off: components["schemas"]["SignOff"] | null;
             /** @description The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and leaves this list once it has (ADR 0246). */
