@@ -23,7 +23,7 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
 ---
 
 <div class:list={["space", flow && "framed"]} aria-hidden="true"></div>
-<header class:list={["bar", flow && "flow", flow && "framed"]}>
+<header class:list={["bar", flow && "flow", flow && "framed", appOrigin !== null && "signing"]}>
   <a class={textLinkLook({ quiet: true, className: "home" })} href="/" aria-label={header.homeLabel}>
     <Lockup size="header" tone="navy" />
   </a>
@@ -35,9 +35,9 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
     ))}
   </nav>
   {appOrigin !== null && (
-    <a class={textLinkLook({ quiet: true, className: "signin" })} href={appOrigin}>
+    <a class={textLinkLook({ quiet: true, className: "signin" })} href={appOrigin} aria-label={header.signIn}>
       <Icon name="user" size="sm" class="person" />
-      {header.signIn}
+      <span class="signin-words">{header.signIn}</span>
     </a>
   )}
   {!booking && (
@@ -72,12 +72,15 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
     align-items: center;
     gap: var(--sp-4);
     padding: 0 var(--sp-12) 0 var(--sp-16);
+    container-type: inline-size;
   }
   .home {
     display: flex;
     margin-right: auto;
   }
   .signin {
+    justify-content: center;
+    min-width: var(--tap);
     gap: var(--sp-4);
     padding: 0 var(--sp-4);
     font-size: var(--fs-14);
@@ -106,6 +109,22 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
   @media (max-width: 760px) {
     .wide-only,
     .framed {
+      display: none;
+    }
+  }
+
+  /* Where the lockup, Sign in and the free consultation no longer fit side by side, as on a screen under 357 px or
+     with its text enlarged: the mark alone, and Sign in its icon, a thumb's width and named for a screen reader. The
+     bar's content measures 28 px less than the screen. Without Sign in, the lockup and the consultation fit down to
+     a 279 px screen. */
+  @container (max-width: 328px) {
+    .signing .home :global(.word),
+    .signin-words {
+      display: none;
+    }
+  }
+  @container (max-width: 250px) {
+    .home :global(.word) {
       display: none;
     }
   }

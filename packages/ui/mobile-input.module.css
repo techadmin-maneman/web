@@ -16,7 +16,7 @@
 
   .onInk {
     border: var(--hairline) solid var(--ink-line-strong);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .onPaper:has(.input[aria-invalid="true"]) {

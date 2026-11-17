@@ -92,12 +92,12 @@
   }
 
   .light {
-    background: var(--paper);
+    background: var(--on-ink);
     color: var(--ink);
   }
 
   .light:active:not(:disabled):not([aria-disabled="true"]) {
-    background: var(--paper-shade);
+    background: var(--on-ink-pressed);
   }
 
   .light:disabled,
@@ -197,7 +197,7 @@
 
   .outlineOnInk {
     border-color: var(--edge-on-ink);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .outlineOnInk:active:not(:disabled):not([aria-disabled="true"]) {
@@ -228,7 +228,7 @@
   .dangerOnInk {
     border: var(--rule-strong) solid var(--error-on-ink);
     font-weight: var(--control-weight);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .dangerOnInk:active:not(:disabled):not([aria-disabled="true"]) {
@@ -253,7 +253,7 @@
     }
 
     .light:hover:not(:disabled):not([aria-disabled="true"]) {
-      background: var(--paper-shade);
+      background: var(--on-ink-pressed);
     }
 
     .gold:hover:not(:disabled):not([aria-disabled="true"]) {

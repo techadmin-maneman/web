@@ -283,6 +283,15 @@
   --ui-error: var(--error-on-paper);
   --ui-attention: var(--brass-text);
   --ui-accent: var(--brass); /* a rule or a mark in the brand's metal */
+  /* What the shared parts draw light on the ink, whatever the theme: an onInk look's words and edge, the light button
+     and its pressed shade, a chosen card's words; a choice card's edge, and one that cannot be chosen; the focus ring
+     over a photograph or the camera's view. The public site, which draws no paper, takes its own
+     (site/src/styles/tokens-site.css). */
+  --on-ink: var(--paper);
+  --on-ink-pressed: var(--paper-shade);
+  --choice-edge: var(--paper-control);
+  --choice-off: var(--paper-shade);
+  --focus-over-photo: var(--paper);
 }
 
 [data-ground="ink"] {
