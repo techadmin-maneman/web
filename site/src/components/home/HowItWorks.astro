@@ -20,11 +20,9 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
             <span class="number" aria-hidden="true">
               {step.number}
             </span>
-            <div>
-              <h3 class="title">{step.title}</h3>
-              <p class="body-text body">{step.body}</p>
-              <p class="meta">{step.meta}</p>
-            </div>
+            <h3 class="title">{step.title}</h3>
+            <p class="body-text body">{step.body}</p>
+            <p class="meta">{step.meta}</p>
           </div>
           {showPhotos && step.photo !== undefined && (
             <div class="frame photo">
@@ -63,10 +61,26 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
     aspect-ratio: 644 / 480;
     background: var(--site-band);
   }
+  /* A phone sets the words beside the number; a laptop sets the number beside the title, the words beneath both. */
   .text {
-    display: flex;
-    gap: var(--sp-12);
+    display: grid;
+    grid-template-columns: var(--sp-28) minmax(0, 1fr);
+    grid-template-areas: "number title" "number body" "number meta";
+    align-content: start;
+    column-gap: var(--sp-12);
     margin-top: var(--sp-16);
+  }
+  .number {
+    grid-area: number;
+  }
+  .title {
+    grid-area: title;
+  }
+  .body {
+    grid-area: body;
+  }
+  .meta {
+    grid-area: meta;
   }
   .number,
   .title {
@@ -74,9 +88,6 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
     font-size: var(--site-fs-caption);
     font-weight: var(--weight-semibold);
     color: var(--site-navy);
-  }
-  .number {
-    flex: 0 0 var(--sp-28);
   }
   .body {
     margin-top: var(--sp-8);
@@ -109,11 +120,10 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
       order: 0;
     }
     .text {
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas: "number title" "body body" "meta meta";
       align-items: baseline;
       margin: 0 0 var(--sp-16);
-    }
-    .number {
-      flex: none;
     }
     .body {
       min-height: var(--site-step-body-min);

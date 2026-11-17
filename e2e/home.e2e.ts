@@ -447,7 +447,7 @@ test.describe("home sections", () => {
     await expect(norwood.locator(".row")).toBeHidden();
   });
 
-  test("comparison: seven rows, ticks and crosses read as Yes and No", async ({ page }) => {
+  test("comparison: seven rows, a yes or a no written in words", async ({ page }) => {
     test.skip(narrow(page.viewportSize()?.width), "a phone has the toggles");
     await page.goto("/");
     const table = page.getByRole("table", { name: siteCopy.comparison.title });

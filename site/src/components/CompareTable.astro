@@ -2,10 +2,9 @@
 // A comparison on a laptop (ADR 0263): options across the top, a row for each way they differ, as a table to
 // assistive technology and the board's table to the eye. A phone draws the same rows as toggles
 // (../islands/home/CompareToggle.tsx). Where `ours` is set, the last column, the hair system, stands out on white.
-// A cell is words, or a tick (true) or a cross (false), read as Yes and No.
+// A cell is words, or true or false, written Yes and No as the boards write them.
 import { hiddenLook } from "@maneman/ui/VisuallyHidden";
 import type { ComparisonCell } from "../content/site.ts";
-import Icon from "./Icon.astro";
 
 interface Props {
   /** What a screen reader calls the table, and its first column. */
@@ -41,14 +40,7 @@ const isMark = (cell: ComparisonCell): cell is boolean => typeof cell === "boole
       </div>
       {row.cells.map((cell, at) => (
         <div class:list={["cell", ours && at === last && "ours", ours && at !== last && "theirs"]} role="cell">
-          {isMark(cell) ? (
-            <>
-              <Icon name={cell ? "tick" : "cross"} size="sm" />
-              <span class={hiddenLook}>{cell ? yes : no}</span>
-            </>
-          ) : (
-            <span>{cell}</span>
-          )}
+          <span>{isMark(cell) ? (cell ? yes : no) : cell}</span>
         </div>
       ))}
     </div>

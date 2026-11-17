@@ -8,11 +8,11 @@ export default function FounderNote(props: { paragraphs: readonly string[]; more
   const [first, ...rest] = props.paragraphs;
   return (
     <div>
-      {first !== undefined && <p class={`body-text ${styles.paragraph ?? ""}`}>{first}</p>}
+      {first !== undefined && <p class={styles.paragraph}>{first}</p>}
       {rest.length > 0 && (
-        <Disclosure summary={props.more} className={styles.more} summaryClassName={styles.summary}>
+        <Disclosure summary={props.more} className={styles.more} summaryClassName={styles.summary ?? ""}>
           {rest.map((paragraph) => (
-            <p class={`body-text ${styles.paragraph ?? ""}`} key={paragraph}>
+            <p class={styles.paragraph} key={paragraph}>
               {paragraph}
             </p>
           ))}

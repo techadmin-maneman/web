@@ -3,10 +3,7 @@
 // value. Every option's rows are the page's own, so without scripts the first shows.
 
 import "../refs-as-props.ts";
-import { ICONS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
 import { Segmented } from "@maneman/ui/Segmented";
-import { hiddenLook } from "@maneman/ui/VisuallyHidden";
 import { useState } from "preact/hooks";
 import type { ComparisonCell } from "../../content/site.ts";
 import styles from "./CompareToggle.module.css";
@@ -16,14 +13,10 @@ interface Row {
   readonly cells: readonly ComparisonCell[];
 }
 
+/** A cell's words: a yes or a no said in words, as the boards write them. */
 function Cell({ cell, yes, no }: { cell: ComparisonCell | undefined; yes: string; no: string }) {
   if (typeof cell !== "boolean") return <>{cell ?? ""}</>;
-  return (
-    <>
-      <Icon d={cell ? ICONS.tick : ICONS.cross} size="sm" />
-      <span class={hiddenLook}>{cell ? yes : no}</span>
-    </>
-  );
+  return <>{cell ? yes : no}</>;
 }
 
 export default function CompareToggle(props: {
