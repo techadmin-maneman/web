@@ -5,6 +5,11 @@
   padding-top: var(--sp-24);
 }
 
+/* Client history and how the visit is done: rows inside the gutter, as the prototype draws them. */
+.rows {
+  margin: 0 var(--screen-gutter);
+}
+
 .inset {
   padding: 0 var(--screen-gutter);
 }

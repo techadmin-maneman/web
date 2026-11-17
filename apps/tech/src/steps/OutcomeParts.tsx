@@ -52,8 +52,8 @@ export function Summary({ job }: { job: Job }) {
         {rows.map(([name, value]) =>
           value === null ? null : (
             <div key={name} className={shared.row}>
-              <dt>{name}</dt>
-              <dd>{value}</dd>
+              <dt className={shared.rowKey}>{name}</dt>
+              <dd className={shared.rowValue}>{value}</dd>
             </div>
           ),
         )}

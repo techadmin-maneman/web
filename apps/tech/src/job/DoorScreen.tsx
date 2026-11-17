@@ -233,6 +233,8 @@ function CloseNoShow({ job, who, ready, helper }: { job: Job; who: string; ready
       </div>
       {confirming && (
         <ConfirmSheet
+          onPaper
+          safeLast
           title={copy.confirm.title}
           body={prepaid ? copy.confirm.prepaid(who) : copy.confirm.bodyNothingPaid}
           yes={copy.confirm.yes}

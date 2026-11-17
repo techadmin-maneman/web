@@ -58,3 +58,9 @@ export function nextLine(job: Pick<JobSummary, "leave_by">, state: Where, now: D
   if (minutes <= 0) return copy.next.leaveNow;
   return minutes <= LEAVE_IN_WITHIN ? copy.next.leaveIn(minutes) : copy.next.leaveBy(clock(job.leave_by));
 }
+
+/**
+ * A row's words with each figure kept on one line with the word after it, in either language ("11:05 am", "25 min",
+ * "2 घंटे"), so a narrow row breaks between a length's parts but never inside one.
+ */
+export const keptWhole = (line: string): string => line.replace(/(\d) (?=\p{L})/gu, "$1\u00a0");

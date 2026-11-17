@@ -68,6 +68,7 @@ function RescheduleSheet(props: {
           {REASONS.map((each) => (
             <ToggleButton
               key={each}
+              filled
               pressed={reason === each}
               onClick={() => {
                 setReason(each);
@@ -82,11 +83,18 @@ function RescheduleSheet(props: {
             <Refused problem={problem} />
           </div>
         )}
-        {reason !== null && (
-          <Button variant="primary" size="action" busy={busy} disabled={offline} onClick={() => void send(reason)}>
-            {offline ? copy.needsSignal : copy.send}
-          </Button>
-        )}
+        {/* There from the start, as the prototype draws it, and off until a reason is picked. */}
+        <Button
+          variant="primary"
+          size="action"
+          busy={busy}
+          disabled={offline || reason === null}
+          onClick={() => {
+            if (reason !== null) void send(reason);
+          }}
+        >
+          {offline ? copy.needsSignal : copy.send}
+        </Button>
       </SheetPanel>
     </Sheet>
   );

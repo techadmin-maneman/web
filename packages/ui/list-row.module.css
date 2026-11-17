@@ -31,7 +31,7 @@
     gap: var(--sp-12);
     width: 100%;
     min-height: var(--sp-64);
-    padding: var(--sp-12) var(--row-pad-x);
+    padding: var(--row-pad-y) var(--row-pad-x);
     border: 0;
     background: none;
     color: var(--ui-text);

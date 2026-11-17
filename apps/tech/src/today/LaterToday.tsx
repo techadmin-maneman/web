@@ -3,6 +3,7 @@
 // ink and quieter, with how it closed; then tomorrow, which opens the Schedule.
 
 import { GLYPHS } from "@maneman/brand/icons";
+import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Link } from "@maneman/ui/router";
@@ -13,7 +14,7 @@ import { kindName } from "../lib/kind.ts";
 import type { RowState } from "../lib/progress.ts";
 import type { Queued } from "../store/outbox.ts";
 import type { Heard } from "../store/jobs.ts";
-import { closedAs } from "../lib/today.ts";
+import { closedAs, keptWhole } from "../lib/today.ts";
 import { apiDate, clock, dayAfter, runsOver, todayInIndia } from "../lib/when.ts";
 import styles from "./today.module.css";
 
@@ -53,18 +54,22 @@ function Row(props: {
   return (
     <ListRow
       to={`/jobs/${job.id}`}
-      rule={closed ? "done" : undefined}
       lead={
-        <span className={closed ? styles.quiet : undefined}>
-          <span className={styles.rowTime}>{clock(job.starts_at)}</span>
-          {job.minutes !== null && <span className={styles.rowLength}>{jobCopy.minutes(job.minutes)}</span>}
+        <span className={styles.lead}>
+          <span className={classes(styles.mark, closed && styles.markDone)} />
+          <span className={closed ? styles.quiet : undefined}>
+            <span className={styles.rowTime}>{clock(job.starts_at)}</span>
+            {job.minutes !== null && (
+              <span className={styles.rowLength}>{keptWhole(jobCopy.minutes(job.minutes))}</span>
+            )}
+          </span>
         </span>
       }
       title={<span className={closed ? styles.quiet : undefined}>{props.client ?? kindName(job)}</span>}
       meta={
         <>
-          <span className={styles.rowLine}>{what}</span>
-          {last !== null && <span className={closed ? styles.rowClosed : styles.rowLine}>{last}</span>}
+          <span className={styles.rowLine}>{keptWhole(what)}</span>
+          {last !== null && <span className={closed ? styles.rowClosed : styles.rowLine}>{keptWhole(last)}</span>}
         </>
       }
       end={<Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />}

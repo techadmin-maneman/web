@@ -1,12 +1,5 @@
 /* What ./Outcome.tsx alone draws; what it shares is in ./steps.module.css. */
 
-.reason {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  text-align: left;
-}
-
 /* The note for the next technician and the alert, beneath the choice. */
 .notes {
   display: flex;

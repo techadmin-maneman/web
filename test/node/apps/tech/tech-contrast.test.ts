@@ -297,8 +297,9 @@ describe("what the older screens’ stylesheets use", () => {
   const used = coloursUsed(inkRules());
 
   it("reads every stylesheet’s colours, so the checks below check something", () => {
-    // Fewer as the older screens are redrawn: Schedule, Kit and Leave took theirs to the new look.
-    expect(used.texts.size).toBeGreaterThanOrEqual(4);
+    // Fewer as the older screens are redrawn: Schedule, Kit and Leave took theirs to the new look, and the storage
+    // line its own.
+    expect(used.texts.size).toBeGreaterThanOrEqual(3);
     expect(used.both.length).toBeGreaterThanOrEqual(4);
     expect(used.both).toContainEqual([".gold", "--ink-deep", "--gilt"]);
     const firstSelector = used.both.map(([selector, text, ground]) => [selector.split(",")[0], text, ground]);

@@ -14,8 +14,10 @@ test("asks ops to move the visit, with why, and says so on the card", async ({ p
   await page.goto(`/jobs/${JOB_ID}`);
   await page.getByRole("button", { name: copy.open }).click();
   const sheet = page.getByRole("dialog", { name: copy.open });
-  await expect(sheet.getByRole("button", { name: copy.send })).toHaveCount(0);
+  // There from the start, as the prototype draws it, and off until a reason is picked.
+  await expect(sheet.getByRole("button", { name: copy.send })).toBeDisabled();
   await sheet.getByRole("button", { name: copy.reasons.running_late }).click();
+  await expect(sheet.getByRole("button", { name: copy.send })).toBeEnabled();
   // The way out sits on the sheet's dark ::backdrop, which axe cannot see: it would judge paper's words on paper.
   expect(await axeViolations(page, (axe) => axe.exclude("dialog > button"))).toEqual([]);
   await sheet.getByRole("button", { name: copy.send }).click();

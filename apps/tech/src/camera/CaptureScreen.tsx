@@ -14,8 +14,8 @@ import { useCamera } from "@maneman/ui/useCamera";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
-import { capture as copy, storage, visit as visitCopy } from "../content.ts";
-import { NoSignal } from "../frame/Banners.tsx";
+import { capture as copy, visit as visitCopy } from "../content.ts";
+import { CameraStorageFull } from "../frame/Banners.tsx";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
@@ -23,7 +23,6 @@ import { buzz } from "../lib/haptics.ts";
 import { dayMonth } from "../lib/when.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { go } from "../route.ts";
-import { useOnline } from "../session.ts";
 import { useStep } from "../steps/index.ts";
 import { isStorageFull, onStorageFull } from "../store/db.ts";
 import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } from "../store/outbox.ts";
@@ -186,7 +185,7 @@ function promptOf(missed: "missed" | "blank" | null, angle: Angle | undefined): 
 
 /**
  * The camera's head: the way back to the visit's plan, as from every step, the step's name with the angles taken, and
- * the torch; beneath it, with no signal, the bar that says the photographs are kept.
+ * the torch.
  */
 function CameraHead(props: {
   id: string;
@@ -197,31 +196,27 @@ function CameraHead(props: {
   stream: MediaStream | null;
   heading: (element: HTMLHeadingElement | null) => void;
 }) {
-  const online = useOnline();
   return (
-    <>
-      <header className={styles.top}>
-        <IconButton
-          className={styles.back}
-          d={ICONS.cross}
-          size="lg"
-          label={copy.close}
-          onClick={() => {
-            go(`/jobs/${props.id}/plan`);
-          }}
-        />
-        <div className={styles.titles}>
-          <h1 className={styles.title} ref={props.heading} tabIndex={-1}>
-            {props.title}
-          </h1>
-          <p className={styles.count}>
-            {props.angle === undefined ? copy.of(props.taken) : copy.taking(props.taken + 1, copy.angles[props.angle])}
-          </p>
-        </div>
-        <Torch stream={props.stream} />
-      </header>
-      {!online && <NoSignal />}
-    </>
+    <header className={styles.top}>
+      <IconButton
+        className={styles.back}
+        d={ICONS.cross}
+        size="lg"
+        label={copy.close}
+        onClick={() => {
+          go(`/jobs/${props.id}/plan`);
+        }}
+      />
+      <div className={styles.titles}>
+        <h1 className={styles.title} ref={props.heading} tabIndex={-1}>
+          {props.title}
+        </h1>
+        <p className={styles.count}>
+          {props.angle === undefined ? copy.of(props.taken) : copy.taking(props.taken + 1, copy.angles[props.angle])}
+        </p>
+      </div>
+      <Torch stream={props.stream} />
+    </header>
   );
 }
 
@@ -343,11 +338,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
             </ToggleButton>
           </div>
         )}
-        {full && (
-          <p className={styles.alertBar} role="alert">
-            {storage.title}
-          </p>
-        )}
+        {full && <CameraStorageFull className={styles.alertBar} />}
         {notice !== null && (
           <p className={styles.alertBar} role="alert">
             {notice}

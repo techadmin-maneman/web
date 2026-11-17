@@ -8,7 +8,7 @@
 @layer ui {
   .ruled {
     gap: 0;
-    border-top: var(--hairline) solid var(--text);
+    border-top: var(--choice-rule-top);
   }
 
   .ruled > * {
@@ -20,6 +20,7 @@
   }
 
   .ruled label {
-    font-size: var(--fs-15);
+    font-size: var(--choice-text);
+    font-weight: var(--choice-weight);
   }
 }

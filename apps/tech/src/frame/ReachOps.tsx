@@ -1,7 +1,9 @@
 // The way to ops from anywhere the app tells the technician to ask them: a call to ops' phone, or a WhatsApp to it, which
-// arrives in the console's Care inbox.
+// arrives in the console's Care inbox. On paper each carries its icon, as the prototype draws them.
 
+import { GLYPHS } from "@maneman/brand/icons";
 import { ButtonLink } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
 import { OPS_NUMBER, whatsappChat } from "@maneman/web-kit/whatsapp";
 import { ops as copy } from "../content.ts";
 import { classes } from "@maneman/ui/classes";
@@ -14,7 +16,8 @@ export function ReachOps({ className, onPaper = false }: { readonly className?: 
   return (
     <div className={classes(styles.reach, className)}>
       <ButtonLink variant={variant} size={size} href={`tel:+${OPS_NUMBER}`}>
-        {copy.call}
+        {onPaper && <Icon d={GLYPHS.phone} size="sm" />}
+        <span>{copy.call}</span>
       </ButtonLink>
       <ButtonLink
         variant={variant}
@@ -23,7 +26,8 @@ export function ReachOps({ className, onPaper = false }: { readonly className?: 
         target="_blank"
         rel="noopener noreferrer"
       >
-        {copy.whatsApp}
+        {onPaper && <Icon d={GLYPHS.bubble} size="sm" />}
+        <span>{copy.whatsApp}</span>
       </ButtonLink>
     </div>
   );

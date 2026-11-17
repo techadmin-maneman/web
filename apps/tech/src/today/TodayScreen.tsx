@@ -7,7 +7,6 @@ import { ProblemCard } from "@maneman/ui/ProblemCard";
 import { useCallback, useEffect, useState, type Ref } from "react";
 import type { JobSummary } from "../api.ts";
 import { Bell } from "../alerts/index.ts";
-import { NoSignal } from "../frame/Banners.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
 import { atRisk as atRiskCopy, titles, today as copy } from "../content.ts";
@@ -138,7 +137,7 @@ function LeftOpen(props: {
 }
 
 export function TodayScreen() {
-  const { offline, atRisk } = useSession();
+  const { atRisk } = useSession();
   const date = todayInIndia();
   const tick = useRefreshTick();
   const [day, retry] = useDay(date, tick);
@@ -165,7 +164,6 @@ export function TodayScreen() {
   return (
     <main className={styles.screen} data-look="light">
       <Head date={date} title={titleOf(jobs, states, day.state === "loaded")} heading={heading} />
-      {offline && <NoSignal />}
 
       <div className={styles.problems}>
         <ToFix day={day} queued={waiting.events} names={names} />

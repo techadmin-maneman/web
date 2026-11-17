@@ -14,7 +14,6 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, dayClock, indiaTimeOf, minutesBetween, weekdayName } from "@maneman/web-kit/dates";
 import { useCallback, useId, useRef } from "react";
 import { api, type JobSummary } from "../api.ts";
-import { NoSignal } from "../frame/Banners.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
 import { job as jobCopy, reference, schedule as copy } from "../content.ts";
@@ -225,7 +224,6 @@ function DayView(props: {
 
 export function ScheduleScreen({ date }: { readonly date: string | null }) {
   const today = todayInIndia();
-  const { offline } = useSession();
   const heading = useScreen(copy.title);
   const stripId = useId();
   // Read again as Today is: the app back in front, the phone finding signal, and every few minutes.
@@ -250,7 +248,6 @@ export function ScheduleScreen({ date }: { readonly date: string | null }) {
         </div>
         <SyncLabel />
       </header>
-      {offline && <NoSignal />}
       {loaded.state === "loading" && <Loading onPaper />}
       {loaded.state === "failed" && (
         <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={loaded.requestId} onPaper />

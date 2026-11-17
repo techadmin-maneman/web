@@ -1,5 +1,5 @@
 // Facts as their names over their values: a record's head, "Status · Fitted", "Mobile · +91 98100 04417", in a row
-// that wraps, or a list down the page.
+// that wraps, or a list down the page; or each name at the start of a ruled row and its value at the end (`ends`).
 //
 //   <DescriptionList items={[{ term: copy.status, details: status }]} />
 
@@ -19,8 +19,8 @@ export function DescriptionList({
   className,
 }: {
   readonly items: readonly Description[];
-  /** A row that wraps, as a record's head is; or a list, a name beside each value. */
-  readonly layout?: "row" | "list";
+  /** A row that wraps, as a record's head is; a list, a name beside each value; or ruled rows, name and value apart. */
+  readonly layout?: "row" | "list" | "ends";
   /**
    * Inside a label, as a choice card's, which holds words alone: the same facts in spans, read out as the label's
    * words.

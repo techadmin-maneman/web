@@ -26,5 +26,5 @@
 }
 
 .list {
-  margin-top: var(--sp-16);
+  margin: var(--sp-16) var(--screen-gutter) 0;
 }

@@ -6,6 +6,7 @@
 import { GLYPHS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { HoldButton } from "@maneman/ui/HoldButton";
+import { Icon } from "@maneman/ui/Icon";
 import { IconButton } from "@maneman/ui/IconButton";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
@@ -128,10 +129,12 @@ function SafetySheet({
         )}
         <div className={styles.calls}>
           <ButtonLink variant="outline" size="action" href={`tel:+${OPS_NUMBER}`}>
-            {ops.call}
+            <Icon d={GLYPHS.phone} size="sm" />
+            <span>{ops.call}</span>
           </ButtonLink>
           <ButtonLink variant="outline" size="action" href="tel:112">
-            {copy.call112}
+            <Icon d={GLYPHS.phone} size="sm" />
+            <span>{copy.call112}</span>
           </ButtonLink>
         </div>
       </SheetPanel>

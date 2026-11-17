@@ -1,9 +1,14 @@
 /* Guides (./GuidesScreen.tsx) in the new look: the list of kinds of visit, a guide's steps numbered down the page with
    a step of tasks listing them, and a task read alone. */
 
-/* The rows and their rules inside the gutter, as the design draws them. */
+/* The rows and their rules inside the gutter, as the design draws them, their titles at its 17 px. */
+/* The kinds of visit in the prototype's 64 px rows, the lines at the font's own leading. */
 .rows {
+  --row-title-text: var(--fs-17);
+  --row-pad-y: var(--sp-8);
+
   margin: var(--sp-8) var(--screen-gutter) 0;
+  line-height: var(--lh-130);
 }
 
 .page {
@@ -56,10 +61,10 @@
   color: var(--ui-text-soft);
 }
 
-/* A step's tasks under its name, lighter than the step: the rows' own padding taken back, so their words line up. */
+/* A step's tasks under its name, lighter than the step, their rules ending at the gutter with the step's. */
 .tasks {
   --row-title-text: var(--fs-15);
   --row-title-weight: var(--weight-regular);
 
-  margin: var(--sp-4) calc(-1 * var(--sp-16)) calc(-1 * var(--sp-12));
+  margin: var(--sp-4) 0 calc(-1 * var(--sp-12));
 }

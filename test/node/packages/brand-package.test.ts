@@ -164,6 +164,7 @@ const OFF_THE_SCALE = [
   "--skeleton-card",
   "--tech-row",
   "--tech-time",
+  "--tech-time-today",
 ] as const;
 
 describe("the scale", () => {

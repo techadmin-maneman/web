@@ -5,7 +5,7 @@
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { classes } from "@maneman/ui/classes";
-import { Stopped, StorageFull } from "./frame/Banners.tsx";
+import { NoSignal, Stopped, StorageFull } from "./frame/Banners.tsx";
 import { Interrupted } from "./frame/Interrupted.tsx";
 import { SharePosition } from "./frame/SharePosition.tsx";
 import { update } from "./content.ts";
@@ -112,6 +112,8 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
   return (
     <SessionContext value={session}>
       <OutboxContext value={waiting}>
+        {/* No signal, said once at the very top of every screen, as the prototype draws it. */}
+        {session.offline && <NoSignal />}
         <StorageFull />
         <UpdateReady copy={update} resting={route.page === "today"} onInk={!drawnLight(route.page)} />
         {/* A job's work stopped reaching us, said above every screen; the waiting screen says it job by job. */}

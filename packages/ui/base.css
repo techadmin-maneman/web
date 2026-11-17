@@ -151,15 +151,23 @@
     --document-hover: var(--paper-shade);
     /* A list of rows on a phone (./ListRow.tsx): its edge, and its rows' lead column, title and second line. */
     --list-edge: var(--hairline) solid var(--ui-line);
-    /* How far a row's words sit from the list's sides: none where the list runs the column's width, as the client's. */
+    /* How far a row's words sit from the list's sides: none where the list runs the column's width, as the client's;
+       and from its rules above and below. */
     --row-pad-x: var(--sp-16);
+    --row-pad-y: var(--sp-12);
     --row-lead-text: var(--fs-13);
     --row-lead-colour: var(--ui-text-muted);
     --row-lead-wrap: nowrap;
     --row-lead-align: auto;
     --row-lead-width: calc(var(--sp-64) + var(--sp-16));
-    /* A choice in a ruled list (./choice-list.module.css): a row the tap's height, unless the app's look sets more. */
+    /* A choice in a ruled list (./choice-list.module.css): a row the tap's height, unless the app's look sets more;
+       the rule over its first row, and its words. */
     --choice-row-height: var(--tap);
+    --choice-rule-top: var(--hairline) solid var(--text);
+    --choice-text: var(--fs-15);
+    --choice-weight: var(--weight-regular);
+    /* A fieldset's legend read as a section's title (./Field.tsx). */
+    --legend-title-text: var(--fs-18);
     --row-title-text: var(--fs-14);
     --row-title-weight: var(--weight-medium);
     --row-meta-text: var(--fs-13);

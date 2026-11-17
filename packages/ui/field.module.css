@@ -333,7 +333,7 @@
     margin-bottom: var(--sp-8);
     padding: 0;
     font-family: var(--title-font);
-    font-size: var(--fs-18);
+    font-size: var(--legend-title-text);
     font-weight: var(--title-weight);
   }
 

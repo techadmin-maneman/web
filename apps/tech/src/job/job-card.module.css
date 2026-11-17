@@ -117,7 +117,7 @@
 }
 
 .rowList {
-  margin-top: var(--sp-24);
+  margin: var(--sp-24) var(--screen-gutter) 0;
 }
 
 .lastVisit {

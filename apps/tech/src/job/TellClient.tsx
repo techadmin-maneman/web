@@ -79,6 +79,7 @@ function MessageSheet({
             <ToggleButton
               key={each}
               className={styles.minute}
+              filled
               pressed={each === minutes}
               onClick={() => {
                 setMinutes(each);

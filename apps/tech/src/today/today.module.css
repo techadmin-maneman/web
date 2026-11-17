@@ -148,17 +148,41 @@
   color: var(--ui-text);
 }
 
-/* The rows inside the gutter, as the prototype draws them: a done row's rule on the gutter's line. */
+/*
+ * The rows inside the gutter, as the prototype draws them: 14 px above and below, the lines at the font's own leading,
+ * a 4 px mark on the gutter's line and the time 12 px beside it, in the prototype's 68 px at 15 px — in em, so it grows
+ * with a larger text size rather than break a time over two lines.
+ */
 .rows {
-  --rule: var(--ui-line);
-  --row-lead-width: calc(var(--sp-64) + var(--sp-12));
+  --row-pad-y: calc(var(--sp-12) + var(--sp-2));
+  --row-lead-width: calc(var(--sp-4) + var(--sp-12) + var(--tech-time-today));
+  --row-lead-align: stretch;
 
   border-bottom: var(--hairline) solid var(--ui-line);
+  line-height: var(--lh-130);
+}
+
+/* The mark beside the time, as tall as the row's words, so the marks break at each row's rule. */
+.lead {
+  display: flex;
+  gap: var(--sp-12);
+  height: 100%;
+}
+
+.mark {
+  flex: 0 0 var(--sp-4);
+  background: var(--ui-tint);
+}
+
+/* A job done with: its mark in the ink. */
+.markDone {
+  background: var(--ui-strong);
 }
 
 .rowTime {
   display: block;
   font-weight: var(--weight-semibold);
+  white-space: nowrap;
 }
 
 .rowLength,

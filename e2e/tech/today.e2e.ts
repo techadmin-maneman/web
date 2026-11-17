@@ -296,3 +296,28 @@ test("counts down to leaving while Today stays open", async ({ page }) => {
   await page.clock.fastForward("02:00");
   await expect(nextJob(page)).toContainText(techCopy.today.next.leaveIn(10));
 });
+
+/** The boxes in the rest of the day's rows that cut short what runs past them, by what they hold that they cut. */
+const clipped = (page: Page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('section[aria-labelledby="today-later"] li *')]
+      .filter((box) => getComputedStyle(box).overflowX === "hidden" && box.scrollWidth > box.clientWidth + 1)
+      .map((box) => box.textContent.trim()),
+  );
+
+test("cuts no time or length short at 360 px in Hindi, nor with its text at 130%", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("mm-tech-language", "hi");
+  });
+  await page.setViewportSize({ width: 360, height: 760 });
+  await fakeTech(page);
+  await page.goto("/");
+  // "1 घंटे 30 मिनट" is wider than the time's column: it breaks between its parts, never inside one, and none is cut.
+  await expect(page.locator('section[aria-labelledby="today-later"] li').first()).toBeVisible();
+  expect(await clipped(page)).toEqual([]);
+  // The app's policy refuses a style tag; the property set from script is drawn as zoom draws larger text.
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty("zoom", "1.3");
+  });
+  expect(await clipped(page)).toEqual([]);
+});
