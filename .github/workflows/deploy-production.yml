@@ -14,9 +14,9 @@
 #
 # Secrets, on the GitHub Environment "production":
 #   CLOUDFLARE_API_TOKEN                            production's deploy token (docs/runbook.md)
+#   CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET    Access service token, so the smoke suite gets past Access on the apps' hosts
 # Secret of the repository:
 #   SENTRY_AUTH_TOKEN                               Sentry's organisation token, for source maps (scripts/release/sentry-maps.ts)
-#   CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET    Access service token, so the smoke suite gets past Access on the apps' hosts
 name: deploy-production
 
 on:
