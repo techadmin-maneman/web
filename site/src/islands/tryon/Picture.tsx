@@ -2,7 +2,7 @@
 // boards draw it: the look beside the photograph once it is ready, else the photograph, else where a photo goes. On a
 // phone only the ready look shows, above the step's words.
 
-import { ICONS } from "@maneman/brand/icons";
+import { CLIENT_ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { tryOn, tryOnTeaser } from "../../content/site.ts";
 import BeforeAfter from "../BeforeAfter.tsx";
@@ -42,7 +42,7 @@ export function Picture(props: { photo: string | null; look: string | null }) {
   }
   return (
     <div class={`${styles.picture ?? ""} ${styles.empty ?? ""}`} aria-hidden="true">
-      <Icon d={ICONS.noPhoto} size="xl" />
+      <Icon d={CLIENT_ICONS.camera} size="xl" />
     </div>
   );
 }

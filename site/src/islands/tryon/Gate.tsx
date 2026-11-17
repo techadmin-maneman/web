@@ -35,9 +35,7 @@ function GateSaid({ photoOnItsWay, failure }: { photoOnItsWay: boolean; failure:
   return (
     <div aria-live="polite">
       {photoOnItsWay && <p class={styles.reassurance}>{tryOn.gate.photoOnItsWay}</p>}
-      {failure !== null && (
-        <div class={messageLook({ tone: "error", ground: "ink", className: styles.gateFailure })}>{failure}</div>
-      )}
+      {failure !== null && <div class={messageLook({ tone: "error", className: styles.gateFailure })}>{failure}</div>}
     </div>
   );
 }

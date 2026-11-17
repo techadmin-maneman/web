@@ -57,7 +57,7 @@ function usePhotoWidget(screen: Screen, siteKey: string) {
   const widget = useRef<TurnstileWidget | null>(null);
   useEffect(() => {
     if (screen === "upload" || widget.current !== null || box.current === null) return;
-    widget.current = turnstileWidget(box.current, siteKey, "dark");
+    widget.current = turnstileWidget(box.current, siteKey);
   }, [screen, siteKey]);
   useEffect(
     () => () => {

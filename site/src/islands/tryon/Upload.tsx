@@ -1,5 +1,6 @@
 import "../refs-as-props.ts";
 import { FileInput } from "@maneman/ui/Field";
+import { CLIENT_ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { NoticeLine } from "@maneman/ui/NoticeLine";
@@ -146,6 +147,7 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
           <Button
             variant="primary"
             size="action"
+            icon={CLIENT_ICONS.camera}
             onClick={() => {
               if (blocked) phoneCamera.current?.click();
               else setTaking("camera");
