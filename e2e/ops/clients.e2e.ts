@@ -312,7 +312,7 @@ test("writes a gap where a piece has no supplier lot or replacement date, and of
   await openClient(page, `/clients/${CLIENT.id}/pieces`);
   const live = page.getByRole("row").filter({ hasText: "MM-STD-4417-C" });
   // The piece still in wear has no failure, and offers to mark one in its place
-  // (docs/decisions/0272-why-a-hair-system-failed.md); the one rejected at the fit has no lot and no replacement due.
+  // (docs/decisions/0273-why-a-hair-system-failed.md); the one rejected at the fit has no lot and no replacement due.
   await expect(live.getByRole("cell").last()).toHaveText(opsCopy.clients.pieces.failure.mark);
   await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-A" })).toContainText("—");
 });

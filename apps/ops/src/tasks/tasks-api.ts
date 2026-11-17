@@ -10,7 +10,7 @@ export const tasksApi = {
     client.put("/api/tasks/{group}/{id}/owner", { path: { group, id }, body: { owner } }),
   /**
    * A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. A
-   * guarantee claim's may say why its hair system failed, which marks it failed (ADR 0272).
+   * guarantee claim's may say why its hair system failed, which marks it failed (ADR 0273).
    */
   closeTask: (group: ClosableGroup, id: string, reason: string, failure: string | null = null) =>
     client.post("/api/tasks/{group}/{id}/close", {

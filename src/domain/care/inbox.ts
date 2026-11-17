@@ -232,7 +232,7 @@ export interface Thread {
   readonly close_reason: CloseReason | null;
   /**
    * That report's category where it is about the hair system the client wears, which the close asks whether it failed
-   * (docs/decisions/0272-why-a-hair-system-failed.md); null for none.
+   * (docs/decisions/0273-why-a-hair-system-failed.md); null for none.
    */
   readonly piece_report: PieceReport | null;
 }

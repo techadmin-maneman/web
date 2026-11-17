@@ -165,7 +165,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   lost_reasons:
     "Why a client is not going ahead with a fit after their consultation, as ops set them, one they took off kept as retired; none means the committed list (ADR 0149).",
   failure_reasons:
-    "Why a hair system failed, as ops set them, one they took off kept as retired; none means the committed list (ADR 0272).",
+    "Why a hair system failed, as ops set them, one they took off kept as retired; none means the committed list (ADR 0273).",
   not_fitted_reasons:
     "Why a hair system could not be fitted today, as ops set them, one they took off kept as retired; none means the committed list (ADR 0270).",
   otp_challenges: "Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).",

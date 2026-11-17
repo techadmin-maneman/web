@@ -298,7 +298,7 @@ test.describe("the hair system step", () => {
   });
 
   // Where it came off before it was due: why, from ops' list, one tap and never asked for
-  // (docs/decisions/0272-why-a-hair-system-failed.md).
+  // (docs/decisions/0273-why-a-hair-system-failed.md).
   test("a piece off before it was due may say why from ops’ list, changed or put back, and sends the one picked", async ({
     page,
   }) => {

@@ -1,4 +1,4 @@
-// On a replacement whose piece came off before it was due (docs/decisions/0272-why-a-hair-system-failed.md): a quiet
+// On a replacement whose piece came off before it was due (docs/decisions/0273-why-a-hair-system-failed.md): a quiet
 // link beneath what is expected, then the light sheet "Can't fit today" uses, with the reasons ops keep as chips. One
 // tap, never asked for: the piece that came off is recorded as failed for the reason picked, and as replaced with none.
 // A chip tapped again is put back, and Done then says nothing.

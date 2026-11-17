@@ -72,7 +72,7 @@ describe("failure rates", () => {
     expect(rates.by_technician).toMatchObject([{ name: "Imran Qureshi", fitted: 2, failed: 1 }]);
   });
 
-  // Of every piece fitted, how many failed for each reason (docs/decisions/0272-why-a-hair-system-failed.md).
+  // Of every piece fitted, how many failed for each reason (docs/decisions/0273-why-a-hair-system-failed.md).
   it("count of every piece fitted those that failed for each reason, a reworded one once and one with none left out", async () => {
     const failures: [string | null, string | null][] = [
       ["edges_lifting", "Edges lifting at the front"],

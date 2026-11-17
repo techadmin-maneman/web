@@ -1,5 +1,5 @@
 // A hair system marked failed by Care, or its failure taken back, on the client's Hair systems tab, and a guarantee
-// claim closed with whether its hair system was at fault (docs/decisions/0272-why-a-hair-system-failed.md).
+// claim closed with whether its hair system was at fault (docs/decisions/0273-why-a-hair-system-failed.md).
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";

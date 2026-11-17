@@ -1,6 +1,6 @@
 // Close chat where the chat's open report is about the hair system the client wears: it asks whether the hair system
 // was at fault, starting at No, and sends why where Care say it was (apps/ops/src/care/Composer.tsx,
-// docs/decisions/0272-why-a-hair-system-failed.md).
+// docs/decisions/0273-why-a-hair-system-failed.md).
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";

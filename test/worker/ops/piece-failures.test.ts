@@ -1,5 +1,5 @@
 // A hair system marked failed by Care, or its failure taken back, and the closes that ask whether it was at fault
-// (src/domain/inventory/piece-failures.ts; docs/decisions/0272-why-a-hair-system-failed.md).
+// (src/domain/inventory/piece-failures.ts; docs/decisions/0273-why-a-hair-system-failed.md).
 // NOW is Monday 21 September 2026, 12 noon in India. Every name, number and message here is made up.
 
 import { env } from "cloudflare:workers";

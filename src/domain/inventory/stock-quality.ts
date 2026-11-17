@@ -1,7 +1,7 @@
 // Failure rates and value at risk (docs/decisions/0188-failure-rates-and-value-at-risk.md), read on demand for the
 // Quality page. Failure rates: the labelled pieces fitted in the last year, and how many failed, by stock code, lot,
 // supplier and the technician who fitted them, and of all of them how many failed for each reason
-// (docs/decisions/0272-why-a-hair-system-failed.md). Value at risk: each lot a place holds, against how fast the place
+// (docs/decisions/0273-why-a-hair-system-failed.md). Value at risk: each lot a place holds, against how fast the place
 // lets the item go, and what of it will still be there when it expires, valued at the lot's landed cost.
 
 import { failureRatePercent, unusedByExpiry } from "../../policy/stock-quality.ts";

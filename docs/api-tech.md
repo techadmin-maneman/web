@@ -8454,7 +8454,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "items": {
         "$ref": "#/components/schemas/JobSheetItem"
       },
-      "description": "On a replacement, why the piece that came off may have failed, as ops set them, in their order: what the technician picks from where it came off before it was due (ADR 0272). Empty for any other visit."
+      "description": "On a replacement, why the piece that came off may have failed, as ops set them, in their order: what the technician picks from where it came off before it was due (ADR 0273). Empty for any other visit."
     },
     "consumables": {
       "type": "array",
@@ -10749,7 +10749,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "piece_code"
       ],
       "additionalProperties": false,
-      "description": "On a replacement: the piece that came off, and why it failed where it did, by a code of the card's failure_reasons or in words; with no reason, it was due and is replaced (ADR 0272)."
+      "description": "On a replacement: the piece that came off, and why it failed where it did, by a code of the card's failure_reasons or in words; with no reason, it was due and is replaced (ADR 0273)."
     },
     "product": {
       "type": "string",

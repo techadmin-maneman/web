@@ -1,6 +1,6 @@
 // Failure rates on the Quality page (docs/decisions/0188-failure-rates-and-value-at-risk.md): the pieces fitted in the
 // last year and how many failed, grouped one way at a time; by reason, of all of them, how many failed for each
-// (docs/decisions/0272-why-a-hair-system-failed.md).
+// (docs/decisions/0273-why-a-hair-system-failed.md).
 
 import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";

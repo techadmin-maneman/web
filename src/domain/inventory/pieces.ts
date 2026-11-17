@@ -167,7 +167,7 @@ export function fittedPieceStatement(db: D1Database, piece: FittedPiece): D1Prep
 
 /**
  * Records the client's piece that failed, with its reason's words and, where it is one of the failure list's, its code
- * (docs/decisions/0272-why-a-hair-system-failed.md). The first failure recorded stands.
+ * (docs/decisions/0273-why-a-hair-system-failed.md). The first failure recorded stands.
  */
 export function failedPieceStatement(
   db: D1Database,

@@ -143,7 +143,7 @@ describe("the piece", () => {
   });
 
   // The technician's "Came off early? Say why" sends the reason by the failure list's code
-  // (docs/decisions/0272-why-a-hair-system-failed.md).
+  // (docs/decisions/0273-why-a-hair-system-failed.md).
   it("keeps a reason sent by the failure list's code in its words, with the code, and its hand-back's too", async () => {
     await upToThePiece(minutesAfterStart(60));
     const answer = await postAt(
@@ -158,7 +158,9 @@ describe("the piece", () => {
       "SELECT failure_reason, failure_code, failed_at IS NOT NULL AS failed FROM pieces WHERE id = 'piece-old'",
     ).first();
     expect(old).toEqual({ failure_reason: "Edges lifting", failure_code: "edges_lifting", failed: 1 });
-    const returned = await env.DB.prepare("SELECT reason FROM piece_returns WHERE piece_code = 'MM-STD-4417-B'").first();
+    const returned = await env.DB.prepare(
+      "SELECT reason FROM piece_returns WHERE piece_code = 'MM-STD-4417-B'",
+    ).first();
     expect(returned).toEqual({ reason: "Edges lifting" });
   });
 

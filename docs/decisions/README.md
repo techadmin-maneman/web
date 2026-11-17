@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0273. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0274. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -152,7 +152,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0268](0268-the-visits-design-check.md) The visit's design check
 - [0270](0270-the-design-checks-api-side.md) The design check's API side
 - [0271](0271-the-technician-follow-ups.md) The technician follow-ups
-- [0272](0272-why-a-hair-system-failed.md) Why a hair system failed
+- [0273](0273-why-a-hair-system-failed.md) Why a hair system failed
 
 ### Money and Books
 
@@ -477,7 +477,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0166](0166-purchase-orders.md) | Purchase orders | 2026-10-12 | accepted |  |
 | [0167](0167-receipts-and-landed-cost.md) | Receipts and landed cost | 2026-10-12 | accepted |  |
 | [0168](0168-bills-in-books.md) | Bills in Books | 2026-10-12 | accepted |  |
-| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md), [0272](0272-why-a-hair-system-failed.md) |
+| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md), [0273](0273-why-a-hair-system-failed.md) |
 | [0170](0170-stock-photos.md) | Photographs of stock | 2026-10-12 | accepted |  |
 | [0171](0171-vendor-credits.md) | Vendor credits | 2026-10-12 | accepted |  |
 | [0172](0172-supplier-scorecard.md) | Supplier scorecard | 2026-10-12 | accepted |  |
@@ -496,7 +496,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0185](0185-cycle-counts.md) | Cycle counts | 2026-10-12 | accepted |  |
 | [0186](0186-usage-and-shrinkage.md) | Usage against expected, and shrinkage | 2026-10-12 | accepted |  |
 | [0187](0187-recalls.md) | Recalls | 2026-10-12 | accepted |  |
-| [0188](0188-failure-rates-and-value-at-risk.md) | Failure rates and value at risk | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md), [0272](0272-why-a-hair-system-failed.md) |
+| [0188](0188-failure-rates-and-value-at-risk.md) | Failure rates and value at risk | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md), [0273](0273-why-a-hair-system-failed.md) |
 | [0189](0189-the-staff-list-on-by-default.md) | The Staff list on by default | 2026-10-13 | accepted |  |
 | [0190](0190-foreign-orders-judged-at-a-rate.md) | Foreign orders judged at a rate | 2026-10-13 | accepted |  |
 | [0191](0191-a-replaced-piece-comes-off.md) | A replaced piece comes off | 2026-10-13 | accepted |  |
@@ -577,8 +577,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0266](0266-the-sites-header-book-and-focus-ring.md) | The site's header Book and focus ring | 2026-11-17 | accepted |  |
 | [0267](0267-the-technician-design-check.md) | The technician app's design check | 2026-11-17 | accepted | [0268](0268-the-visits-design-check.md), [0270](0270-the-design-checks-api-side.md) |
 | [0268](0268-the-visits-design-check.md) | The visit's design check | 2026-11-17 | accepted |  |
-| [0269](0269-the-one-visits-note-on-book.md) | The one visit's note on `/book` | 2026-11-17 | accepted | [0272](0272-why-a-hair-system-failed.md) |
-| [0270](0270-the-design-checks-api-side.md) | The design check's API side | 2026-11-17 | accepted | [0271](0271-the-technician-follow-ups.md), [0272](0272-why-a-hair-system-failed.md) |
+| [0269](0269-the-one-visits-note-on-book.md) | The one visit's note on `/book` | 2026-11-17 | accepted | [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) |
+| [0270](0270-the-design-checks-api-side.md) | The design check's API side | 2026-11-17 | accepted | [0271](0271-the-technician-follow-ups.md), [0273](0273-why-a-hair-system-failed.md) |
 | [0271](0271-the-technician-follow-ups.md) | The technician follow-ups | 2026-11-17 | accepted |  |
 | [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) | The one visit is paid through Razorpay only | 2026-11-17 | accepted |  |
-| [0272](0272-why-a-hair-system-failed.md) | Why a hair system failed | 2026-11-18 | accepted |  |
+| [0273](0273-why-a-hair-system-failed.md) | Why a hair system failed | 2026-11-18 | accepted |  |

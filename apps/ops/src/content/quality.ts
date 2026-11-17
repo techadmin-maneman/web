@@ -36,7 +36,7 @@ export const quality = {
   failuresPeriod: "Last 12 months",
   noFailures: "No pieces fitted from labelled stock yet.",
   failuresBy: "Group by",
-  /** Reason: of every piece fitted, how many failed for each (docs/decisions/0272-why-a-hair-system-failed.md). */
+  /** Reason: of every piece fitted, how many failed for each (docs/decisions/0273-why-a-hair-system-failed.md). */
   ways: { code: "Stock code", lot: "Lot", supplier: "Supplier", technician: "Technician", reason: "Reason" },
   failureColumns: ["", "Fitted", "Failed", "Rate"] as const,
   /** "12.5%", or a dash */

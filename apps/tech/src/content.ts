@@ -855,7 +855,7 @@ export const steps = localised({
     },
     /**
      * On a replacement whose piece came off before it was due: why, from the reasons ops keep, one tap and never asked
-     * for (docs/decisions/0272-why-a-hair-system-failed.md). Our words: the prototype draws no such line.
+     * for (docs/decisions/0273-why-a-hair-system-failed.md). Our words: the prototype draws no such line.
      */
     cameOffEarly: {
       action: "Came off early? Say why",

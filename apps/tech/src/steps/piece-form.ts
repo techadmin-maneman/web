@@ -50,7 +50,7 @@ export function cameOff(job: Pick<Job, "type" | "pieces" | "date">): ClientPiece
 
 /**
  * Whether the piece a replacement takes off came off before it was due, which asks, never requires, why
- * (docs/decisions/0272-why-a-hair-system-failed.md).
+ * (docs/decisions/0273-why-a-hair-system-failed.md).
  */
 export function cameOffEarly(job: Pick<Job, "type" | "pieces" | "date">): boolean {
   const due = cameOff(job)?.replacement_due_at ?? null;

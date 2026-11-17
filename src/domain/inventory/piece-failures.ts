@@ -1,4 +1,4 @@
-// A client's hair system marked failed by ops, or a failure taken back (docs/decisions/0272-why-a-hair-system-failed.md):
+// A client's hair system marked failed by ops, or a failure taken back (docs/decisions/0273-why-a-hair-system-failed.md):
 // from the client's Hair systems tab, or as Care close a claim or a chat about one. A failure is kept as the
 // technician's piece step keeps it, in its reason's words with the failure list's code, so the client is owed a
 // replacement as they are for one the technician recorded (src/domain/booking/remakes.ts), and its return, still to be

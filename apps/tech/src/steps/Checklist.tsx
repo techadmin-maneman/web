@@ -56,7 +56,7 @@ function Tasks({
 }) {
   // The list it opened with, while it is open, but for the client's no heard since, which only shortens it: the choice
   // is made at the piece step, before it, so the moment between that step leaving the phone and the card being read
-  // again never draws the other list for long (docs/decisions/0272-why-a-hair-system-failed.md).
+  // again never draws the other list for long (docs/decisions/0273-why-a-hair-system-failed.md).
   const [shownDeclined, showDeclined] = useState(declined);
   if (declined && !shownDeclined) showDeclined(true);
   const items = shownDeclined ? job.checklist_if_declined : job.checklist;

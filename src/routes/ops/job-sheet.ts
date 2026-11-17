@@ -64,7 +64,7 @@ const JobSheetSchema = z
       .openapi({
         description:
           "Why a hair system failed, picked by the technician on a replacement it came off early for and by ops as " +
-          "they mark one failed (ADR 0272).",
+          "they mark one failed (ADR 0273).",
       }),
     max_checklist_items: z.number().int(),
     max_partial_reasons: z.number().int(),

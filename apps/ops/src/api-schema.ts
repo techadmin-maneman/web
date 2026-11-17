@@ -28170,7 +28170,7 @@ export interface components {
                 failed: number;
                 rate_percent: number | null;
             }[];
-            /** @description Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0272); fitted is all of them. */
+            /** @description Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0273); fitted is all of them. */
             by_reason: {
                 name: string;
                 fitted: number;
@@ -28327,7 +28327,7 @@ export interface components {
             items: components["schemas"]["ThreadItem"][];
             /** @description The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none. */
             close_reason: ("booking" | "move_or_cancel" | "fit_problem" | "aftercare" | "billing" | "sign_in" | "try_on" | "data_request" | "other") | null;
-            /** @description That report's category where it is about the hair system the client wears, which the close asks whether it failed (ADR 0272); null for none. */
+            /** @description That report's category where it is about the hair system the client wears, which the close asks whether it failed (ADR 0273); null for none. */
             piece_report: ("edges_lifting" | "shedding" | "colour") | null;
         };
         Conversation: {
@@ -28389,7 +28389,7 @@ export interface components {
         ChatClose: {
             /** @enum {string} */
             reason: "booking" | "move_or_cancel" | "fit_problem" | "aftercare" | "billing" | "sign_in" | "try_on" | "data_request" | "other";
-            /** @description Where the hair system the client wears was at fault: why it failed, by a code of the job sheet's failure_reasons; it is marked failed today (ADR 0272). Left out where it was not. */
+            /** @description Where the hair system the client wears was at fault: why it failed, by a code of the job sheet's failure_reasons; it is marked failed today (ADR 0273). Left out where it was not. */
             failure_reason?: string;
         };
         Conversations: {
@@ -29294,7 +29294,7 @@ export interface components {
         };
         ClientPieces: {
             pieces: components["schemas"]["Piece"][];
-            /** @description Why a hair system may have failed, as ops set them, in their order (ADR 0272). */
+            /** @description Why a hair system may have failed, as ops set them, in their order (ADR 0273). */
             failure_reasons: {
                 code: string;
                 label: string;
@@ -29879,7 +29879,7 @@ export interface components {
         TaskClosing: {
             /** @description Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased. */
             reason: string;
-            /** @description A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0272). */
+            /** @description A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0273). */
             failure_reason?: string;
         };
         OpenAlerts: {
@@ -30880,7 +30880,7 @@ export interface components {
                 set_by: string | null;
                 set_at: string | null;
             };
-            /** @description Why a hair system failed, picked by the technician on a replacement it came off early for and by ops as they mark one failed (ADR 0272). */
+            /** @description Why a hair system failed, picked by the technician on a replacement it came off early for and by ops as they mark one failed (ADR 0273). */
             failure_reasons: {
                 /** @description What the technician is offered, in order. */
                 items: {

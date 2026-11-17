@@ -248,7 +248,7 @@ const closeRoute = opsRoute({
               .openapi({
                 description:
                   "A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job " +
-                  "sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0272).",
+                  "sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0273).",
               }),
           })
           .strict()

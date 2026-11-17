@@ -1,4 +1,4 @@
-// A hair system marked failed by Care, or its failure taken back (docs/decisions/0272-why-a-hair-system-failed.md), in
+// A hair system marked failed by Care, or its failure taken back (docs/decisions/0273-why-a-hair-system-failed.md), in
 // the Hair systems tab's last column. Marking asks why, from the job sheet's list, and the day, in a drawer beside the
 // page; the client is then owed a replacement as for one the technician recorded. Undo takes it back at once.
 

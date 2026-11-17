@@ -97,7 +97,7 @@ export const NOT_FITTED_REASONS: readonly JobSheetItem[] = [
 
 /**
  * Why a hair system failed: picked by the technician on a replacement it came off early for, and by ops as they mark
- * one failed or close a claim on one (docs/decisions/0272-why-a-hair-system-failed.md). Ops keep the list; these stand
+ * one failed or close a claim on one (docs/decisions/0273-why-a-hair-system-failed.md). Ops keep the list; these stand
  * until they save their own.
  */
 export const FAILURE_REASONS: readonly JobSheetItem[] = [

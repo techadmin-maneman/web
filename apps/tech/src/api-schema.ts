@@ -5377,7 +5377,7 @@ export interface components {
             lost_reasons: components["schemas"]["JobSheetItem"][];
             /** @description On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0270). Empty for any other visit. */
             not_fitted_reasons: components["schemas"]["JobSheetItem"][];
-            /** @description On a replacement, why the piece that came off may have failed, as ops set them, in their order: what the technician picks from where it came off before it was due (ADR 0272). Empty for any other visit. */
+            /** @description On a replacement, why the piece that came off may have failed, as ops set them, in their order: what the technician picks from where it came off before it was due (ADR 0273). Empty for any other visit. */
             failure_reasons: components["schemas"]["JobSheetItem"][];
             /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
             consumables: components["schemas"]["TechnicianConsumable"][];
@@ -5852,7 +5852,7 @@ export interface components {
             /** @description The hair system fitted, by the stock code the card's kit list gives it, which comes out of the technician's kit; none for a piece from elsewhere. */
             stock_code?: string | null;
             failure_reason?: string | null;
-            /** @description On a replacement: the piece that came off, and why it failed where it did, by a code of the card's failure_reasons or in words; with no reason, it was due and is replaced (ADR 0272). */
+            /** @description On a replacement: the piece that came off, and why it failed where it did, by a code of the card's failure_reasons or in words; with no reason, it was due and is replaced (ADR 0273). */
             old_piece?: {
                 piece_code: string;
                 failure_reason?: string;

@@ -1,5 +1,5 @@
 // "Was the hair system at fault?", as Care close a guarantee claim or a chat about the hair system the client wears
-// (docs/decisions/0272-why-a-hair-system-failed.md): No, or why it failed, from the reasons ops keep, which the
+// (docs/decisions/0273-why-a-hair-system-failed.md): No, or why it failed, from the reasons ops keep, which the
 // client's Hair systems tab is read with. No is where it starts, so nothing is marked failed unless Care say so.
 
 import { Field, Select } from "@maneman/ui/Field";

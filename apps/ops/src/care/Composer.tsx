@@ -148,7 +148,7 @@ export function Composer(props: {
 
 /**
  * Close chat, in the chat's head: what it was about, opening on the latest open report's, then Close, in a drawer.
- * Where that report is about the hair system the client wears, whether it was at fault (ADR 0272).
+ * Where that report is about the hair system the client wears, whether it was at fault (ADR 0273).
  */
 export function CloseChat(props: {
   readonly conversationId: string;

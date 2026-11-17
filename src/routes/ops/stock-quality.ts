@@ -37,7 +37,7 @@ const failuresRoute = opsRoute({
             by_technician: z.array(Group),
             by_reason: z.array(Group).openapi({
               description:
-                "Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0272); " +
+                "Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0273); " +
                 "fitted is all of them.",
             }),
           })

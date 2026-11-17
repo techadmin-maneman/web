@@ -1,4 +1,4 @@
-# 0272. Why a hair system failed
+# 0273. Why a hair system failed
 
 - Status: accepted
 - Date: 2026-11-18

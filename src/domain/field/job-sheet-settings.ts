@@ -3,7 +3,7 @@
 // a job may be left partly done, why a client is not going ahead after a
 // consultation (docs/decisions/0149-lost-reasons.md), why a hair system could not be fitted
 // (docs/decisions/0270-the-design-checks-api-side.md), and why one failed
-// (docs/decisions/0272-why-a-hair-system-failed.md). The technician app reads them with the job, and
+// (docs/decisions/0273-why-a-hair-system-failed.md). The technician app reads them with the job, and
 // keeps them on the phone with it, so a job opened in a basement shows the list
 // it was given (ADR 0053).
 //

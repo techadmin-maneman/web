@@ -1,6 +1,6 @@
 // Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): the technician's checklists, why a job is left
 // partly done, why a client does not go ahead (ADR 0149), why a hair system was not fitted (ADR 0270) and why one
-// failed (ADR 0272). A phone keeps the list it got with the job and an item taken off is kept, so older records still
+// failed (ADR 0273). A phone keeps the list it got with the job and an item taken off is kept, so older records still
 // read. Until ops save a list, src/config/job-sheet.ts's stands.
 
 import { Field, Select } from "@maneman/ui/Field";

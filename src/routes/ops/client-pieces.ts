@@ -1,5 +1,5 @@
 // The pieces tab of a client's page (./field.ts): every piece fitted to them, with its lot, and the reasons one may have
-// failed for, which Care mark one failed with, or take a failure back (docs/decisions/0272-why-a-hair-system-failed.md).
+// failed for, which Care mark one failed with, or take a failure back (docs/decisions/0273-why-a-hair-system-failed.md).
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
@@ -19,7 +19,7 @@ const ClientPiecesSchema = z
     pieces: z.array(PieceSchema),
     failure_reasons: z
       .array(z.object({ code: z.string(), label: z.string() }).strict())
-      .openapi({ description: "Why a hair system may have failed, as ops set them, in their order (ADR 0272)." }),
+      .openapi({ description: "Why a hair system may have failed, as ops set them, in their order (ADR 0273)." }),
   })
   .strict()
   .openapi("ClientPieces");

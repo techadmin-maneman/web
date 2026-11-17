@@ -37,7 +37,7 @@ export const careApi = {
     client.post("/api/conversations/{id}/replies", { path: { id }, body: { text } }),
   noteChat: (id: string, text: string) =>
     client.post("/api/conversations/{id}/notes", { path: { id }, body: { text } }),
-  /** Closed with what it was about, and, where the client's hair system was at fault, why it failed (ADR 0272). */
+  /** Closed with what it was about, and, where the client's hair system was at fault, why it failed (ADR 0273). */
   closeChat: (id: string, reason: CloseReason, failure: string | null = null) =>
     client.post("/api/conversations/{id}/close", {
       path: { id },

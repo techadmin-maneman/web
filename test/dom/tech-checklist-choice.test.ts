@@ -103,7 +103,7 @@ describe("a declined one visit's checklist", () => {
   });
 
   // Opened in that moment with the full list, it takes the consultation's once the client's no is heard
-  // (docs/decisions/0272-why-a-hair-system-failed.md).
+  // (docs/decisions/0273-why-a-hair-system-failed.md).
   it("opened as the full list before the card knows, takes the consultation's once the choice is heard", () => {
     standing.queued = [];
     draw();

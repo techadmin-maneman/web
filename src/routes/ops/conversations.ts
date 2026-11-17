@@ -92,7 +92,7 @@ const ThreadSchema = z
     piece_report: z.union([z.enum(PIECE_REPORTS), z.null()]).openapi({
       description:
         "That report's category where it is about the hair system the client wears, which the close asks whether it " +
-        "failed (ADR 0272); null for none.",
+        "failed (ADR 0273); null for none.",
     }),
   })
   .strict()
@@ -195,7 +195,7 @@ const closeRoute = opsRoute({
               .openapi({
                 description:
                   "Where the hair system the client wears was at fault: why it failed, by a code of the job sheet's " +
-                  "failure_reasons; it is marked failed today (ADR 0272). Left out where it was not.",
+                  "failure_reasons; it is marked failed today (ADR 0273). Left out where it was not.",
               }),
           })
           .strict()

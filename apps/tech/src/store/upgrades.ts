@@ -380,7 +380,7 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
     });
   },
   // Version 15: a replacement's card carries why its piece may have failed
-  // (docs/decisions/0272-why-a-hair-system-failed.md). One kept before offers none until it is read again, so the piece
+  // (docs/decisions/0273-why-a-hair-system-failed.md). One kept before offers none until it is read again, so the piece
   // that came off early is replaced with no reason asked, as it was.
   (_db, upgrade) => {
     eachAgain(upgrade.objectStore("cards"), (value) => {

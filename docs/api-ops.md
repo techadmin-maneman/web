@@ -44319,7 +44319,7 @@ Request body:
           "rate_percent"
         ]
       },
-      "description": "Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0272); fitted is all of them."
+      "description": "Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0273); fitted is all of them."
     }
   },
   "required": [
@@ -44984,7 +44984,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "That report's category where it is about the hair system the client wears, which the close asks whether it failed (ADR 0272); null for none."
+      "description": "That report's category where it is about the hair system the client wears, which the close asks whether it failed (ADR 0273); null for none."
     }
   },
   "required": [
@@ -45333,7 +45333,7 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 64,
-      "description": "Where the hair system the client wears was at fault: why it failed, by a code of the job sheet's failure_reasons; it is marked failed today (ADR 0272). Left out where it was not."
+      "description": "Where the hair system the client wears was at fault: why it failed, by a code of the job sheet's failure_reasons; it is marked failed today (ADR 0273). Left out where it was not."
     }
   },
   "required": [
@@ -49520,7 +49520,7 @@ Request body:
         ],
         "additionalProperties": false
       },
-      "description": "Why a hair system may have failed, as ops set them, in their order (ADR 0272)."
+      "description": "Why a hair system may have failed, as ops set them, in their order (ADR 0273)."
     }
   },
   "required": [
@@ -51981,7 +51981,7 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 64,
-      "description": "A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0272)."
+      "description": "A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0273)."
     }
   },
   "required": [
@@ -56614,7 +56614,7 @@ Request body:
         "set_at"
       ],
       "additionalProperties": false,
-      "description": "Why a hair system failed, picked by the technician on a replacement it came off early for and by ops as they mark one failed (ADR 0272)."
+      "description": "Why a hair system failed, picked by the technician on a replacement it came off early for and by ops as they mark one failed (ADR 0273)."
     },
     "max_checklist_items": {
       "type": "integer"
