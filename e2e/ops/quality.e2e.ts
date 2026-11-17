@@ -42,6 +42,7 @@ const RATES = {
   by_lot: [{ ...GROUP, name: "Essential 8x10 · BAD-0921" }],
   by_supplier: [],
   by_technician: [{ ...GROUP, name: "Imran Qureshi" }],
+  by_reason: [{ ...GROUP, name: "Edges lifting" }],
 } satisfies OpsReply<"/api/quality/failures">;
 
 const RISK = {

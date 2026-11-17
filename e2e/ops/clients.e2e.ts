@@ -306,15 +306,18 @@ test("lists the pieces in the board’s columns", async ({ page }) => {
   await expect(piece).toContainText("24 Jun 2027 · base split at crown");
 });
 
-test("writes a gap where a piece has no supplier lot, replacement date or failure", async ({ page }) => {
+test("writes a gap where a piece has no supplier lot or replacement date, and offers Mark failed for one in wear", async ({
+  page,
+}) => {
   await openClient(page, `/clients/${CLIENT.id}/pieces`);
   const live = page.getByRole("row").filter({ hasText: "MM-STD-4417-C" });
-  // The piece still in wear has no failure; the one rejected at the fit has no lot and no replacement due.
-  await expect(live).toContainText("—");
+  // The piece still in wear has no failure, and offers to mark one in its place
+  // (docs/decisions/0273-why-a-hair-system-failed.md); the one rejected at the fit has no lot and no replacement due.
+  await expect(live.getByRole("cell").last()).toHaveText(opsCopy.clients.pieces.failure.mark);
   await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-A" })).toContainText("—");
 });
 
 test("says so when the client has no piece yet", async ({ page }) => {
-  await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_PIECES]: json({ pieces: [] }) });
+  await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_PIECES]: json({ pieces: [], failure_reasons: [] }) });
   await expect(page.getByText(opsCopy.clients.pieces.empty)).toBeVisible();
 });

@@ -1,5 +1,5 @@
-// Every piece the client has been fitted with, read only, since the technician's phone records them
-// (src/routes/ops/client-pieces.ts). Beneath them the hair profile (./HairProfile.tsx), the stock it matches
+// Every piece the client has been fitted with, as the technician's phone records them (src/routes/ops/client-pieces.ts);
+// Care mark one failed, or take a failure back, where it came off (./PieceFailure.tsx). Beneath them the hair profile (./HairProfile.tsx), the stock it matches
 // (./StockMatch.tsx) and custom orders (./CustomOrders.tsx), each loaded when the tab first opens. Only the live
 // piece's replacement date is in brass.
 
@@ -11,13 +11,14 @@ import { classes } from "@maneman/ui/classes";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useState, type ReactNode } from "react";
 import { type Piece } from "../api.ts";
 import { clients } from "../content.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./clients.module.css";
 import styles from "./pieces.module.css";
 import { clientsApi } from "./clients-api.ts";
+import { PieceFailure, type ClientPieces } from "./PieceFailure.tsx";
 
 const HairProfile = lazyScreen(() => import("./HairProfile.tsx").then((module) => module.HairProfile));
 
@@ -37,7 +38,7 @@ function cameOff(piece: Piece): string {
   return piece.replaced_at === null ? clients.unknown : copy.replaced(longDate(piece.replaced_at));
 }
 
-function PieceRow({ piece }: { piece: Piece }) {
+function PieceRow({ piece, failure }: { piece: Piece; failure: ReactNode }) {
   const live = piece.failed_at === null && piece.replaced_at === null;
   return (
     <tr>
@@ -48,7 +49,7 @@ function PieceRow({ piece }: { piece: Piece }) {
       <td className={styles.fitted}>{dateOf(piece.fitted_at)}</td>
       <td className={styles.lot}>{piece.supplier_lot ?? clients.unknown}</td>
       <td className={classes(styles.due, live && styles.dueSoon)}>{dateOf(piece.replacement_due_at)}</td>
-      <td className={styles.failure}>{cameOff(piece)}</td>
+      <td className={styles.failure}>{failure}</td>
     </tr>
   );
 }
@@ -69,11 +70,12 @@ export function Pieces({ clientId }: { clientId: string }) {
 function PieceTable({ clientId }: { clientId: string }) {
   const load = useCallback(() => clientsApi.clientPieces(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
+  const [changed, setChanged] = useState<ClientPieces | null>(null);
 
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const { pieces } = loaded.value;
+  const { pieces, failure_reasons: reasons } = changed ?? loaded.value;
   return (
     <Panel titleId="client-pieces" title={copy.title}>
       {pieces.length === 0 ? (
@@ -91,7 +93,19 @@ function PieceTable({ clientId }: { clientId: string }) {
           </thead>
           <tbody>
             {pieces.map((piece) => (
-              <PieceRow key={piece.piece_code} piece={piece} />
+              <PieceRow
+                key={piece.piece_code}
+                piece={piece}
+                failure={
+                  <PieceFailure
+                    clientId={clientId}
+                    piece={piece}
+                    reasons={reasons}
+                    said={cameOff(piece)}
+                    onChanged={setChanged}
+                  />
+                }
+              />
             ))}
           </tbody>
         </Table>

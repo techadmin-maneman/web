@@ -96,6 +96,20 @@ export const NOT_FITTED_REASONS: readonly JobSheetItem[] = [
 ];
 
 /**
+ * Why a hair system failed: picked by the technician on a replacement it came off early for, and by ops as they mark
+ * one failed or close a claim on one (docs/decisions/0273-why-a-hair-system-failed.md). Ops keep the list; these stand
+ * until they save their own.
+ */
+export const FAILURE_REASONS: readonly JobSheetItem[] = [
+  { id: "edges_lifting", label: "Edges lifting" },
+  { id: "shedding", label: "Shedding" },
+  { id: "base_torn", label: "Base torn" },
+  { id: "colour_faded", label: "Colour faded" },
+  { id: "client_damage", label: "Damaged by the client" },
+  { id: "other", label: "Other" },
+];
+
+/**
  * What ops may set a list to. A checklist the technician cannot finish, or a
  * Partial with no reason to pick, would strand a job, so a list is never
  * empty; the checklist route takes twenty ticked at most; and a label is read
@@ -106,5 +120,6 @@ export const JOB_SHEET_BOUNDS = {
   maxPartialReasons: 12,
   maxLostReasons: 12,
   maxNotFittedReasons: 12,
+  maxFailureReasons: 12,
   maxLabel: 80,
 } as const;

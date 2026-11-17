@@ -259,3 +259,27 @@ export function thirteenthRelease(cards: readonly object[]): Promise<void> {
     };
   });
 }
+
+/** The cards the fourteenth release kept, before a replacement's card said why its piece may have failed. */
+export function fourteenthRelease(cards: readonly object[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE, 14);
+    request.onupgradeneeded = (event) => {
+      const upgrade = request.transaction;
+      if (upgrade === null) return;
+      for (const step of UPGRADES.slice(event.oldVersion, 14)) step(request.result, upgrade);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction("cards", "readwrite");
+      for (const card of cards) transaction.objectStore("cards").put(card);
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onabort = () => {
+        reject(new Error("could not seed the fourteenth release’s records"));
+      };
+    };
+  });
+}

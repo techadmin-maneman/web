@@ -853,6 +853,19 @@ export const steps = localised({
       pickFirst: "Pick a reason",
       dismiss: "Close",
     },
+    /**
+     * On a replacement whose piece came off before it was due: why, from the reasons ops keep, one tap and never asked
+     * for (docs/decisions/0273-why-a-hair-system-failed.md). Our words: the prototype draws no such line.
+     */
+    cameOffEarly: {
+      action: "Came off early? Say why",
+      title: "Why did it come off early?",
+      done: "Done",
+      dismiss: "Close",
+      /** The reason picked: "Came off early · Edges lifting". */
+      said: (reason: string) => `Came off early · ${reason}`,
+      change: "Change",
+    },
     confirmed: {
       profile: "Profile",
       match: "Match",

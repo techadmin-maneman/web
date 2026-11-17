@@ -175,6 +175,7 @@ const REASON_LISTS: Readonly<Partial<Record<string, string>>> = {
   partial_reasons: "Partial reasons",
   lost_reasons: "Reasons not going ahead",
   not_fitted_reasons: "Reasons not fitted",
+  failure_reasons: "Reasons a hair system failed",
 };
 
 /** The late fees the price book keeps beside the services, as the console names them. */

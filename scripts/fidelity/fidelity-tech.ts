@@ -166,6 +166,9 @@ const NOTHING_DONE: Progress = {
   outcome: null,
 };
 
+/** The card's lists the boards draw none of. */
+const NONE_DRAWN = { checklist_if_declined: [], lost_reasons: [], not_fitted_reasons: [], failure_reasons: [] };
+
 /** Board A3's piece, as the card carries the client's pieces. */
 const PIECE = {
   piece_code: "MM-STD-4417-B",
@@ -210,10 +213,8 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     reminder: { state: "delivered", delivered_at: `${DAY}T04:03:00.000Z` },
     steps: cardStepsFor(summary.type ?? "service"),
     checklist: CHECKLIST,
-    checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
-    lost_reasons: [],
-    not_fitted_reasons: [],
+    ...NONE_DRAWN,
     consumables: CONSUMABLES,
     kit_hair_systems: [],
     products: [],

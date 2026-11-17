@@ -36,12 +36,12 @@ describe("a refused checklist", () => {
 });
 
 describe("a refused piece", () => {
-  it("starts with the label, base and lot; the piece that came off is the card's, so is not taken from it", () => {
+  it("starts with the label, base, lot and why the piece that came off failed; that piece is the card's", () => {
     const sent = refused("piece", {
       piece_code: "MM-STD-7193 C",
       base: "Lace",
       supplier_lot: "LOT-5120",
-      old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "Lifted at the front" },
+      old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "edges_lifting" },
     });
     expect(pieceSent(sent)).toEqual({
       declined: false,
@@ -51,6 +51,7 @@ describe("a refused piece", () => {
       base: "Lace",
       lot: "LOT-5120",
       stock: null,
+      failure: "edges_lifting",
     });
   });
 

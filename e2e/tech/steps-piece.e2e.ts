@@ -296,6 +296,64 @@ test.describe("the hair system step", () => {
       old_piece: { piece_code: "MM-STD-4417-B" },
     });
   });
+
+  // Where it came off before it was due: why, from ops' list, one tap and never asked for
+  // (docs/decisions/0273-why-a-hair-system-failed.md).
+  test("a piece off before it was due may say why from ops’ list, changed or put back, and sends the one picked", async ({
+    page,
+  }) => {
+    const fake = await onThePiece(page);
+    const words = techCopy.steps.piece.cameOffEarly;
+    await page.getByRole("button", { name: words.action }).click();
+    const asked = page.getByRole("dialog", { name: words.title });
+    expect(await axeViolations(page, (axe) => axe.exclude("dialog > button"))).toEqual([]);
+    await asked.getByRole("button", { name: "Shedding" }).click();
+    await asked.getByRole("button", { name: words.done }).click();
+    await expect(asked).toHaveCount(0);
+    await expect(page.getByText(words.said("Shedding"), { exact: true })).toBeVisible();
+
+    // Changed: the one picked shows pressed, and another taken instead.
+    await page.getByRole("button", { name: words.change }).click();
+    await expect(asked.getByRole("button", { name: "Shedding" })).toHaveAttribute("aria-pressed", "true");
+    await asked.getByRole("button", { name: "Edges lifting" }).click();
+    await asked.getByRole("button", { name: words.done }).click();
+    await expect(page.getByText(words.said("Edges lifting"), { exact: true })).toBeVisible();
+
+    await typeCode(page, "MM-STD-5120-A");
+    await stepAction(page).click();
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toMatchObject({
+      old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "edges_lifting" },
+    });
+  });
+
+  test("a piece put back unsaid sends no why", async ({ page }) => {
+    const fake = await onThePiece(page);
+    const words = techCopy.steps.piece.cameOffEarly;
+    await page.getByRole("button", { name: words.action }).click();
+    const asked = page.getByRole("dialog", { name: words.title });
+    await asked.getByRole("button", { name: "Shedding" }).click();
+    // Tapped again, it is put back, and Done says nothing.
+    await asked.getByRole("button", { name: "Shedding" }).click();
+    await asked.getByRole("button", { name: words.done }).click();
+    await expect(page.getByRole("button", { name: words.action })).toBeVisible();
+    await typeCode(page, "MM-STD-5120-A");
+    await stepAction(page).click();
+    await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
+    expect(writesTo(fake, "piece")[0]?.body).toMatchObject({ old_piece: { piece_code: "MM-STD-4417-B" } });
+    expect(JSON.stringify(writesTo(fake, "piece")[0]?.body)).not.toContain("failure_reason");
+  });
+
+  test("a piece off on or after its due day asks nothing", async ({ page }) => {
+    const words = techCopy.steps.piece.cameOffEarly;
+    const due = await fakeTech(page);
+    due.type = "replacement";
+    due.pieces = [{ ...WORN, replacement_due_at: "2020-12-29" }];
+    startedThrough(due, "before_photos");
+    await page.goto(`/jobs/${JOB_ID}/piece`);
+    await expect(page.getByText(techCopy.steps.piece.listed("MM-STD-4417-B", "2 Jul"))).toBeVisible();
+    await expect(page.getByRole("button", { name: words.action })).toHaveCount(0);
+  });
 });
 
 // A consultation and fit in one visit, which no board draws: the client chooses the product with the technician at

@@ -128,6 +128,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/clients/{id}/consents": inOwnPlaces("customer_care", "view"),
   "GET /api/clients/{id}/export.html": inOwnPlaces("customer_care", "manage"),
   "GET /api/clients/{id}/pieces": inOwnPlaces("customer_care", "view"),
+  "POST /api/clients/{id}/pieces/{code}/failure": inOwnPlaces("customer_care", "act"),
+  "DELETE /api/clients/{id}/pieces/{code}/failure": inOwnPlaces("customer_care", "act"),
   "GET /api/clients/{id}/hair-profile": inOwnPlaces("customer_care", "view"),
   "GET /api/clients/{id}/notes": inOwnPlaces("customer_care", "view"),
   "POST /api/clients/{id}/notes": inOwnPlaces("customer_care", "act"),
@@ -344,6 +346,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/job-sheet/partial-reasons": need("admin", "manage"),
   "POST /api/job-sheet/lost-reasons": need("admin", "manage"),
   "POST /api/job-sheet/not-fitted-reasons": need("admin", "manage"),
+  "POST /api/job-sheet/failure-reasons": need("admin", "manage"),
   "GET /api/storage": need("admin", "view"),
   "GET /api/staff": inOwnPlaces("admin", "view"),
   // The audit log: what everyone did, everywhere, so a national grant (src/routes/ops/activity.ts).

@@ -126,6 +126,7 @@ export function registerTechJobReads(app: App): void {
         partial_reasons: [...sheet.partialReasons.items],
         lost_reasons: type === "consultation" || job.one_visit ? [...sheet.lostReasons.items] : [],
         not_fitted_reasons: job.steps.includes("piece") ? [...sheet.notFittedReasons.items] : [],
+        failure_reasons: type === "replacement" ? [...sheet.failureReasons.items] : [],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), {
           today: job.date,
           kit: technicianId,

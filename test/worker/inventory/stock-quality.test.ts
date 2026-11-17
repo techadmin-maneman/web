@@ -23,33 +23,39 @@ beforeEach(async () => {
     .run();
 });
 
+/** Four labelled pieces of one hair system taken in on lot L1, by their labels. */
+async function labelledStock(): Promise<string[]> {
+  const added = await job.opsPost("/api/hair-systems", {
+    product: "essential",
+    base_width_in: 8,
+    base_length_in: 10,
+    colour: "1B",
+    grey_percent: 20,
+    density_percent: 100,
+    unit_cost: 1_200_000,
+  });
+  const code = (await added.json<{ code: string }>()).code;
+  await job.opsPost("/api/stock/deliveries", {
+    consumable_code: code,
+    quantity: 4,
+    lot_code: "L1",
+    expires_on: "2028-03-31",
+  });
+  const labels = await env.DB.prepare("SELECT code FROM stock_units ORDER BY code").all<{ code: string }>();
+  return labels.results.map((unit) => unit.code);
+}
+
 describe("failure rates", () => {
   it("count the pieces fitted from labelled stock, and those that failed, by code, lot and technician", async () => {
-    const added = await job.opsPost("/api/hair-systems", {
-      product: "essential",
-      base_width_in: 8,
-      base_length_in: 10,
-      colour: "1B",
-      grey_percent: 20,
-      density_percent: 100,
-      unit_cost: 1_200_000,
-    });
-    const code = (await added.json<{ code: string }>()).code;
-    await job.opsPost("/api/stock/deliveries", {
-      consumable_code: code,
-      quantity: 3,
-      lot_code: "L1",
-      expires_on: "2028-03-31",
-    });
-    const labels = await env.DB.prepare("SELECT code FROM stock_units ORDER BY code LIMIT 2").all<{ code: string }>();
+    const labels = (await labelledStock()).slice(0, 2);
     await env.DB.batch(
-      labels.results.flatMap((unit, index) => [
-        env.DB.prepare("UPDATE stock_units SET state = 'fitted', place = NULL WHERE code = ?1").bind(unit.code),
+      labels.flatMap((label, index) => [
+        env.DB.prepare("UPDATE stock_units SET state = 'fitted', place = NULL WHERE code = ?1").bind(label),
         env.DB.prepare(
           `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, appointment_id, failed_at,
              synced_at)
            VALUES (?1, ?1, ?2, ?3, '2026-08-01', '2027-02-01', ?4, ?5, ?6)`,
-        ).bind(`piece-${String(index)}`, PERSON, unit.code, JOB, index === 0 ? "2026-09-01" : null, NOW.toISOString()),
+        ).bind(`piece-${String(index)}`, PERSON, label, JOB, index === 0 ? "2026-09-01" : null, NOW.toISOString()),
       ]),
     );
     const rates = await (
@@ -64,6 +70,35 @@ describe("failure rates", () => {
     expect(rates.by_lot[0]?.name).toContain("L1");
     expect(rates.by_supplier).toEqual([]);
     expect(rates.by_technician).toMatchObject([{ name: "Imran Qureshi", fitted: 2, failed: 1 }]);
+  });
+
+  // Of every piece fitted, how many failed for each reason (docs/decisions/0273-why-a-hair-system-failed.md).
+  it("count of every piece fitted those that failed for each reason, a reworded one once and one with none left out", async () => {
+    const failures: [string | null, string | null][] = [
+      ["edges_lifting", "Edges lifting at the front"],
+      ["edges_lifting", "Edges lifting"],
+      [null, "Torn at the crown"],
+      // One failed with no reason kept, from before reasons were asked.
+      [null, null],
+    ];
+    const labels = await labelledStock();
+    await env.DB.batch(
+      labels.flatMap((label, index) => [
+        env.DB.prepare("UPDATE stock_units SET state = 'fitted', place = NULL WHERE code = ?1").bind(label),
+        env.DB.prepare(
+          `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, appointment_id, failed_at,
+             failure_code, failure_reason, synced_at)
+           VALUES (?1, ?1, ?2, ?3, '2026-08-01', '2027-02-01', ?4, '2026-09-01', ?5, ?6, ?7)`,
+        ).bind(`piece-${String(index)}`, PERSON, label, JOB, ...(failures[index] ?? [null, null]), NOW.toISOString()),
+      ]),
+    );
+    const rates = await (
+      await request(job.ops, "/api/quality/failures")
+    ).json<{ by_reason: { name: string; fitted: number; failed: number }[] }>();
+    expect(rates.by_reason).toMatchObject([
+      { name: "Edges lifting", fitted: 4, failed: 2 },
+      { name: "Torn at the crown", fitted: 4, failed: 1 },
+    ]);
   });
 });
 

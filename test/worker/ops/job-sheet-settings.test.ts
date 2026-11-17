@@ -26,6 +26,7 @@ interface Sheet {
   partial_reasons: List;
   lost_reasons: List;
   not_fitted_reasons: List;
+  failure_reasons: List;
 }
 
 let job: Working;
@@ -235,6 +236,43 @@ describe("the lost reasons ops keep", () => {
   it("are none on any visit but a consultation's", async () => {
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ lost_reasons: unknown }>();
     expect(card.lost_reasons).toEqual([]);
+  });
+});
+
+describe("the reasons a hair system failed, as ops keep them", () => {
+  it("stand at the six committed until saved, and reach a replacement's card alone", async () => {
+    expect((await sheet()).failure_reasons.items.map((reason) => reason.code)).toEqual([
+      "edges_lifting",
+      "shedding",
+      "base_torn",
+      "colour_faded",
+      "client_damage",
+      "other",
+    ]);
+    const saved = await job.opsPost("/api/job-sheet/failure-reasons", {
+      items: [{ code: "edges_lifting", label: "Edges lifting at the front" }, { label: "Knots slipping" }],
+    });
+    const list = (await saved.json<Sheet>()).failure_reasons;
+    expect(list.items).toEqual([
+      { code: "edges_lifting", label: "Edges lifting at the front" },
+      { code: "knots_slipping", label: "Knots slipping" },
+    ]);
+    expect(list.retired.map((reason) => reason.code)).toEqual([
+      "shedding",
+      "base_torn",
+      "colour_faded",
+      "client_damage",
+      "other",
+    ]);
+
+    const service = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ failure_reasons: unknown }>();
+    expect(service.failure_reasons).toEqual([]);
+    await env.DB.prepare("UPDATE appointments SET type = 'replacement' WHERE id = ?1").bind(JOB).run();
+    const replacement = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ failure_reasons: unknown }>();
+    expect(replacement.failure_reasons).toEqual([
+      { id: "edges_lifting", label: "Edges lifting at the front" },
+      { id: "knots_slipping", label: "Knots slipping" },
+    ]);
   });
 });
 

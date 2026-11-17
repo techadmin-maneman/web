@@ -5,6 +5,7 @@ import type { Queued } from "../../../apps/tech/src/store/outbox.ts";
 import { steps as copy, oneVisit } from "../../../apps/tech/src/content.ts";
 import {
   cameOff,
+  cameOffEarly,
   DECLINED,
   kitChoices,
   labelTaken,
@@ -21,6 +22,7 @@ const EMPTY: PieceForm = {
   lot: "",
   stock: null,
   oldCode: "",
+  failure: null,
   choice: null,
   later: false,
 };
@@ -244,10 +246,10 @@ describe("the piece that comes off a replacement", () => {
     base: null,
     supplier_lot: null,
     fitted_at: fitted,
-    replacement_due_at: null,
-    failed_at: null,
+    replacement_due_at: null as string | null,
+    failed_at: null as string | null,
     failure_reason: null,
-    replaced_at: null,
+    replaced_at: null as string | null,
   });
   const job = (pieces: ReturnType<typeof piece>[]) =>
     ({ type: "replacement", date: "2026-11-17", pieces }) as unknown as Parameters<typeof cameOff>[0];
@@ -261,5 +263,42 @@ describe("the piece that comes off a replacement", () => {
   it("is none where nothing is on the head, and on any other visit", () => {
     expect(cameOff(job([]))).toBeNull();
     expect(cameOff({ ...job([piece("MM-STD-4417-B", "2026-07-02")]), type: "first_fit" })).toBeNull();
+  });
+
+  it("is none on a step opened again after it landed, never an older piece that failed long ago", () => {
+    const fitted = piece("MM-STD-5520-A", "2026-11-17");
+    const replaced = { ...piece("MM-STD-4417-B", "2026-07-02"), replaced_at: "2026-11-17T08:00:00.000Z" };
+    const failedLongAgo = { ...piece("MM-STD-1201-A", "2026-01-10"), failed_at: "2026-07-02T08:00:00.000Z" };
+    expect(cameOff(job([fitted, replaced, failedLongAgo]))).toBeNull();
+    // Worn over an older failure, the worn one comes off.
+    const worn = piece("MM-STD-4417-B", "2026-07-02");
+    expect(cameOff(job([worn, failedLongAgo]))?.piece_code).toBe("MM-STD-4417-B");
+  });
+
+  it("is one Care marked failed before the visit, which then asks no why of its own", () => {
+    const marked = {
+      ...piece("MM-STD-4417-B", "2026-07-02"),
+      replacement_due_at: "2027-01-02",
+      failed_at: "2026-11-10",
+    };
+    expect(cameOff(job([marked]))?.piece_code).toBe("MM-STD-4417-B");
+    expect(cameOffEarly(job([marked]))).toBe(false);
+  });
+
+  it("came off early where it was due after the visit's day, and not on or after its due day", () => {
+    const due = (on: string | null) => job([{ ...piece("MM-STD-4417-B", "2026-07-02"), replacement_due_at: on }]);
+    expect(cameOffEarly(due("2027-01-02"))).toBe(true);
+    expect(cameOffEarly(due("2026-11-17"))).toBe(false);
+    expect(cameOffEarly(due("2026-10-02"))).toBe(false);
+    expect(cameOffEarly(due(null))).toBe(false);
+    expect(cameOffEarly(job([]))).toBe(false);
+  });
+
+  it("is sent with why it failed where the technician said", () => {
+    const off = { ...EMPTY, code: LABEL, oldCode: "MM-STD-1201-A", failure: "edges_lifting" };
+    expect(pieceBody(off, FIRST_FIT)).toEqual({
+      piece_code: LABEL,
+      old_piece: { piece_code: "MM-STD-1201-A", failure_reason: "edges_lifting" },
+    });
   });
 });

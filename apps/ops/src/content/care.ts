@@ -322,6 +322,7 @@ export const care = {
   },
   errors: {
     text: "Write something first.",
+    failure_reason: changed("That reason is no longer listed, or they wear no hair system now."),
     unavailable: "Replies can’t go from the console yet. Reply on the office WhatsApp.",
     /** WhatsApp lets our own words through only within 24 hours of the client's last message. */
     window_closed:

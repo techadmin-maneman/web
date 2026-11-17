@@ -101,4 +101,17 @@ describe("a declined one visit's checklist", () => {
     expect(page.textContent).toContain(visit.task(1, 3));
     expect(page.textContent).not.toContain(visit.task(1, 9));
   });
+
+  // Opened in that moment with the full list, it takes the consultation's once the client's no is heard
+  // (docs/decisions/0273-why-a-hair-system-failed.md).
+  it("opened as the full list before the card knows, takes the consultation's once the choice is heard", () => {
+    standing.queued = [];
+    draw();
+    expect(page.textContent).toContain(visit.task(1, 9));
+
+    standing.queued = [DECLINED];
+    draw();
+    expect(page.querySelector("h1")?.textContent).toBe(copy.checklistTitles.consultation);
+    expect(page.textContent).toContain(visit.task(1, 3));
+  });
 });

@@ -1,11 +1,13 @@
 // Failure rates and value at risk (docs/decisions/0188-failure-rates-and-value-at-risk.md), read on demand for the
 // Quality page. Failure rates: the labelled pieces fitted in the last year, and how many failed, by stock code, lot,
-// supplier and the technician who fitted them. Value at risk: each lot a place holds, against how fast the place
+// supplier and the technician who fitted them, and of all of them how many failed for each reason
+// (docs/decisions/0273-why-a-hair-system-failed.md). Value at risk: each lot a place holds, against how fast the place
 // lets the item go, and what of it will still be there when it expires, valued at the lot's landed cost.
 
 import { failureRatePercent, unusedByExpiry } from "../../policy/stock-quality.ts";
 import { allPlaces, type Place } from "./stock-places.ts";
 import { read, readAll } from "../../lib/read-all.ts";
+import type { JobSheetItem } from "../../config/job-sheet.ts";
 
 export interface FailureGroup {
   readonly name: string;
@@ -19,10 +21,13 @@ export interface FailureRates {
   readonly byLot: FailureGroup[];
   readonly bySupplier: FailureGroup[];
   readonly byTechnician: FailureGroup[];
+  readonly byReason: FailureGroup[];
 }
 
 type FitRow = {
   failed: number;
+  failure_code: string | null;
+  failure_reason: string | null;
   name: string;
   lot_code: string | null;
   supplier: string | null;
@@ -42,11 +47,37 @@ function grouped(rows: readonly FitRow[], nameOf: (row: FitRow) => string | null
     .sort((a, b) => b.failed - a.failed || (b.ratePercent ?? 0) - (a.ratePercent ?? 0) || a.name.localeCompare(b.name));
 }
 
-/** The labelled pieces fitted since the day, and how many failed, four ways. */
-export async function failureRates(db: D1Database, since: string): Promise<FailureRates> {
+/**
+ * Of every piece fitted, how many failed for each reason: by the failure list's words for its code, so a reason ops
+ * have since reworded counts once; a failure kept in words alone, by those words. One kept with no reason is left out.
+ */
+function byReason(rows: readonly FitRow[], reasons: readonly JobSheetItem[]): FailureGroup[] {
+  const words = new Map(reasons.map((item) => [item.id, item.label]));
+  const reasonOf = (row: FitRow) =>
+    (row.failure_code === null ? undefined : words.get(row.failure_code)) ?? row.failure_reason ?? "";
+  const counts = Map.groupBy(
+    rows.filter((row) => row.failed === 1 && reasonOf(row) !== ""),
+    reasonOf,
+  );
+  return [...counts]
+    .map(([name, failed]) => ({
+      name,
+      fitted: rows.length,
+      failed: failed.length,
+      ratePercent: failureRatePercent(failed.length, rows.length),
+    }))
+    .sort((a, b) => b.failed - a.failed || a.name.localeCompare(b.name));
+}
+
+/** The labelled pieces fitted since the day, and how many failed, five ways. */
+export async function failureRates(
+  db: D1Database,
+  since: string,
+  reasons: readonly JobSheetItem[],
+): Promise<FailureRates> {
   const { results } = await db
     .prepare(
-      `SELECT p.failed_at IS NOT NULL AS failed, c.name, l.lot_code,
+      `SELECT p.failed_at IS NOT NULL AS failed, p.failure_code, p.failure_reason, c.name, l.lot_code,
          (SELECT s.name FROM receipt_lines rl JOIN po_lines pl ON pl.id = rl.po_line_id
             JOIN purchase_orders o ON o.id = pl.po_id JOIN suppliers s ON s.id = o.supplier_id
           WHERE rl.lot_code = l.lot_code AND pl.consumable_code = l.consumable_code LIMIT 1) AS supplier,
@@ -63,6 +94,7 @@ export async function failureRates(db: D1Database, since: string): Promise<Failu
     byLot: grouped(results, (row) => (row.lot_code === null ? null : `${row.name} · ${row.lot_code}`)),
     bySupplier: grouped(results, (row) => row.supplier),
     byTechnician: grouped(results, (row) => row.technician),
+    byReason: byReason(results, reasons),
   };
 }
 

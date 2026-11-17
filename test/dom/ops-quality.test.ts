@@ -47,6 +47,7 @@ const RATES = {
   by_lot: [{ ...GROUP, name: "Essential 8x10 · BAD-0921" }],
   by_supplier: [{ ...GROUP, name: "Lumina Hair Co" }],
   by_technician: [{ ...GROUP, name: "Imran Qureshi" }],
+  by_reason: [{ ...GROUP, name: "Edges lifting" }],
 };
 const RISK = {
   total_value: 335000,
@@ -167,5 +168,11 @@ describe("the Quality page", () => {
     expect(page.textContent).toContain("Imran Qureshi");
     expect(page.textContent).toContain(copy.moveTo("Imran Qureshi"));
     expect(page.textContent).toContain("Warehouse");
+    act(() => {
+      if (select === undefined) return;
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(select, "reason");
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(page.textContent).toContain("Edges lifting");
   });
 });

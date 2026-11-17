@@ -79,6 +79,12 @@ export const clientsApi = {
   clientConsents: (id: string) => client.get("/api/clients/{id}/consents", { path: { id } }),
   /** The client's pieces. */
   clientPieces: (id: string) => client.get("/api/clients/{id}/pieces", { path: { id } }),
+  /** Marks one of the client's hair systems failed on a day, for a reason on the job sheet's list. */
+  markPieceFailed: (id: string, code: string, failure: { failure_reason: string; failed_on: string }) =>
+    client.post("/api/clients/{id}/pieces/{code}/failure", { path: { id, code }, body: failure }),
+  /** Takes one of the client's hair systems' failure back. */
+  undoPieceFailure: (id: string, code: string) =>
+    client.delete("/api/clients/{id}/pieces/{code}/failure", { path: { id, code } }),
   /** Puts the client on a package; their next service visit and replacement follow it. */
   setPackage: (id: string, code: string) =>
     client.post("/api/clients/{id}/package", { path: { id }, body: { package: code } }),

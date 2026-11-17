@@ -42,7 +42,8 @@ const PieceFittedSchema = z
       .optional()
       .openapi({
         description:
-          "On a replacement: the piece that came off, and why it failed where it did; with no reason, it was due and is replaced.",
+          "On a replacement: the piece that came off, and why it failed where it did, by a code of the card's " +
+          "failure_reasons or in words; with no reason, it was due and is replaced (ADR 0273).",
       }),
     product: z.string().min(1).max(32).optional().openapi({
       description:

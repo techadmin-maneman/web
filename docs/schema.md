@@ -37,7 +37,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `not_fitted_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `not_fitted_reasons`, `failure_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, and a fit's stock risk is found or cleared again within the hour | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -102,6 +102,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [discount_codes](#discount_codes): The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
+- [failure_reasons](#failure_reasons): Why a hair system failed, as ops set them, one they took off kept as retired; none means the committed list (ADR 0273).
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form no longer asks for one (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
 - [fit_sign_offs](#fit_sign_offs): The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app, or declined with the technician's why, which opens a Tasks row (ADR 0254).
 - [forecast_accuracy](#forecast_accuracy): How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).
@@ -1289,6 +1290,21 @@ Indexes:
 - `events_by_name`: on (`name`, `created_at`)
 - `events_utilisation_by_day`: on (`subject_id`), where `name = 'dispatch_utilisation'`
 
+## failure_reasons
+
+Why a hair system failed, as ops set them, one they took off kept as retired; none means the committed list (ADR 0273).
+
+Made by `0219_failure_reasons.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |  |
+| `label` | TEXT | no |  |  |  |
+| `position` | INTEGER | no |  |  |  |
+| `retired_at` | TEXT | yes |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
+
 ## first_fit_requests
 
 A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form no longer asks for one (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
@@ -2282,7 +2298,7 @@ Indexes:
 
 Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`, `0156_pieces_replaced.sql`, `0213_replacement_booked_from_its_month.sql`.
+Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`, `0156_pieces_replaced.sql`, `0213_replacement_booked_from_its_month.sql`, `0219_failure_reasons.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2301,6 +2317,7 @@ Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `015
 | `deleted_at` | TEXT | yes |  |  | Set when FSM no longer has the asset. |
 | `replacement_booked` | INTEGER | no | `0` |  | Whether a replacement is booked for the piece: a replacement visit of its client's, not cancelled, on or after the day the piece fell due. |
 | `replaced_at` | TEXT | yes |  |  | A piece taken off at a replacement is marked replaced, apart from one that failed, so it no longer reads as worn; a worn piece with a later one fitted for the same client is marked replaced as that one was recorded (docs/decisions/0191-a-replaced-piece-comes-off.md). A piece's recalls are found by the piece, for what a client is owed free (docs/decisions/0192-free-remakes.md). |
+| `failure_code` | TEXT | yes |  |  |  |
 
 Indexes:
 

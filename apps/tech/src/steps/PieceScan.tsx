@@ -16,7 +16,8 @@ import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
 import type { Looked } from "./PieceFields.tsx";
-import { cameOff, given, type Choice } from "./piece-form.ts";
+import { cameOff, cameOffEarly, given, type Choice } from "./piece-form.ts";
+import { CameOffEarly } from "./CameOffEarly.tsx";
 import styles from "./piece-scan.module.css";
 
 const copy = steps.piece;
@@ -59,8 +60,18 @@ function Row({ name, last = false, children }: { name: string; last?: boolean; c
   );
 }
 
-/** What is expected: the product, the spec it is made to, and on a replacement the piece it replaces. */
-export function Expected({ job, fit, choice }: { job: Job; fit: MatchFit | null; choice: Choice }) {
+/**
+ * What is expected: the product, the spec it is made to, and on a replacement the piece it replaces, with why it came
+ * off where that was before it was due.
+ */
+export function Expected(props: {
+  job: Job;
+  fit: MatchFit | null;
+  choice: Choice;
+  failure: string | null;
+  onFailure: (reason: string | null) => void;
+}) {
+  const { job, fit, choice } = props;
   const product = productName(job, choice);
   const spec = fit === null ? "" : specOf(fit);
   const old = cameOff(job);
@@ -77,6 +88,9 @@ export function Expected({ job, fit, choice }: { job: Job; fit: MatchFit | null;
           </Row>
         )}
       </dl>
+      {cameOffEarly(job) && (
+        <CameOffEarly reasons={job.failure_reasons} picked={props.failure} onPick={props.onFailure} />
+      )}
       {inProfile !== null && (
         <p className={styles.warn} role="alert">
           {jobCopy.piece.mismatch(inProfile)}

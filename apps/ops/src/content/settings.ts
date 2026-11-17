@@ -716,6 +716,8 @@ export const settings = {
     lostReasons: "Reasons not going ahead",
     /** Why a hair system could not be fitted today (docs/decisions/0270-the-design-checks-api-side.md). */
     notFittedReasons: "Reasons not fitted",
+    /** Why a hair system failed (docs/decisions/0273-why-a-hair-system-failed.md). */
+    failureReasons: "Reasons a hair system failed",
     item: (position: number) => `Item ${String(position)}`,
     clientWords: (position: number) => `Item ${String(position)}, as the client reads it`,
     clientNote:

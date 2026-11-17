@@ -276,6 +276,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('moving_abroad', 'Moving abroad', 1, 'ops@example.com', '${AT}')`,
   `INSERT INTO not_fitted_reasons (code, label, position, set_by, set_at)
      VALUES ('piece_torn', 'Piece torn', 1, 'ops@example.com', '${AT}')`,
+  `INSERT INTO failure_reasons (code, label, position, set_by, set_at)
+     VALUES ('knots_slipping', 'Knots slipping', 1, 'ops@example.com', '${AT}')`,
   `INSERT INTO stored_objects (key, bytes) VALUES ('visits/ap1/after-front.jpg', 1000)`,
   `UPDATE storage_meter SET bytes = 1000 WHERE id = 1`,
   `INSERT INTO task_owners (task_group, subject_id, episode, owner, assigned_by, assigned_at)

@@ -26,6 +26,8 @@ export interface PieceForm {
   readonly stock: string | null;
   /** On a replacement, the piece on the client's head, from the card; empty for none. */
   readonly oldCode: string;
+  /** Why that piece came off before it was due, by a code of the card's failure_reasons; null where not said. */
+  readonly failure: string | null;
   readonly choice: Choice;
   /** On a one visit, a product chosen with its fit booked for another day (docs/decisions/0247-the-steps-left.md). */
   readonly later: boolean;
@@ -33,17 +35,27 @@ export interface PieceForm {
 
 export const given = (text: string): boolean => text.trim() !== "";
 
-/** A piece on the client's head now, which is the one a replacement takes off. */
-const onTheHead = (piece: ClientPiece): boolean =>
-  piece.fitted_at !== null && piece.failed_at === null && piece.replaced_at === null;
-
 /**
- * On a replacement, the piece that comes off: the newest on the client's head fitted before this visit's day, so a step
- * opened again after its piece landed never names the new one. Null for any other visit, or none on the head.
+ * On a replacement, the piece that comes off: the newest fitted before this visit's day, where it is still on the
+ * client's head, not replaced, failed or not. One Care marked failed before the visit still comes off and goes back; a
+ * step opened again after its piece landed finds that piece replaced, and names none, never the new one nor an older
+ * piece that failed long ago, which is never marked replaced. The card lists the client's pieces newest first. Null for
+ * any other visit, or none on the head.
  */
 export function cameOff(job: Pick<Job, "type" | "pieces" | "date">): ClientPiece | null {
   if (job.type !== "replacement") return null;
-  return (job.pieces ?? []).find((piece) => onTheHead(piece) && (piece.fitted_at ?? "") < job.date) ?? null;
+  const newest = (job.pieces ?? []).find((piece) => piece.fitted_at !== null && piece.fitted_at < job.date);
+  return newest?.replaced_at === null ? newest : null;
+}
+
+/**
+ * Whether the piece a replacement takes off came off before it was due, which asks, never requires, why
+ * (docs/decisions/0273-why-a-hair-system-failed.md). One already marked failed has its reason, and is not asked.
+ */
+export function cameOffEarly(job: Pick<Job, "type" | "pieces" | "date">): boolean {
+  const old = cameOff(job);
+  const due = old?.failed_at === null ? old.replacement_due_at : null;
+  return due !== null && due > job.date;
 }
 
 /** The product a piece is fitted as: chosen on a one visit, paid for on a first fit, the profile's on a replacement. */
@@ -262,6 +274,10 @@ export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit" | "kit_hai
     ...(base === undefined ? {} : { base }),
     ...(given(form.lot) ? { supplier_lot: form.lot.trim() } : {}),
     ...(form.stock === null ? {} : { stock_code: form.stock }),
-    ...(given(form.oldCode) ? { old_piece: { piece_code: form.oldCode } } : {}),
+    ...(given(form.oldCode) ? { old_piece: oldPieceOf(form) } : {}),
   };
 }
+
+/** The piece that came off, with why where the technician said it failed. */
+const oldPieceOf = (form: PieceForm) =>
+  form.failure === null ? { piece_code: form.oldCode } : { piece_code: form.oldCode, failure_reason: form.failure };

@@ -8,9 +8,15 @@ export const tasksApi = {
   /** A task made a member of staff's, by their Access e-mail, or nobody's with null (ADR 0092). */
   setTaskOwner: (group: TaskGroup["group"], id: string, owner: string | null) =>
     client.put("/api/tasks/{group}/{id}/owner", { path: { group, id }, body: { owner } }),
-  /** A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. */
-  closeTask: (group: ClosableGroup, id: string, reason: string) =>
-    client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
+  /**
+   * A visit left partly done, closed without a follow-up; the reason is kept with it, under the caller's name. A
+   * guarantee claim's may say why its hair system failed, which marks it failed (ADR 0273).
+   */
+  closeTask: (group: ClosableGroup, id: string, reason: string, failure: string | null = null) =>
+    client.post("/api/tasks/{group}/{id}/close", {
+      path: { group, id },
+      body: failure === null ? { reason } : { reason, failure_reason: failure },
+    }),
   /** A one visit's payment link, texted to the client again by Razorpay, or made now where it never was. */
   resendPaymentLink: (linkId: string) => client.post("/api/payment-links/{id}/resend", { path: { id: linkId } }),
   /** A UPI payment taken at the visit, recorded under its UTR once it is in the account; the client is sent a receipt. */

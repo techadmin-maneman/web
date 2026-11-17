@@ -271,6 +271,16 @@ export const NOT_FITTED_REASONS: Card["not_fitted_reasons"] = [
   { id: "scalp_not_ready", label: "Scalp not ready" },
 ];
 
+/** Why a hair system may have failed, as the job sheet's committed list words them. */
+export const FAILURE_REASONS: Card["failure_reasons"] = [
+  { id: "edges_lifting", label: "Edges lifting" },
+  { id: "shedding", label: "Shedding" },
+  { id: "base_torn", label: "Base torn" },
+  { id: "colour_faded", label: "Colour faded" },
+  { id: "client_damage", label: "Damaged by the client" },
+  { id: "other", label: "Other" },
+];
+
 /** Why a client may not go ahead after a consultation: the committed list, in src/config/job-sheet.ts's words. */
 const LOST_REASONS: Card["lost_reasons"] = [
   { id: "price", label: "The price" },
@@ -442,6 +452,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     partial_reasons: PARTIAL_REASONS,
     lost_reasons: options.lostReasons ?? (oneVisit || type === "consultation" ? LOST_REASONS : []),
     not_fitted_reasons: oneVisit || type === "first_fit" || type === "replacement" ? NOT_FITTED_REASONS : [],
+    failure_reasons: type === "replacement" ? FAILURE_REASONS : [],
     consumables: CONSUMABLES,
     kit_hair_systems: [...(options.kitHairSystems ?? [])],
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
@@ -480,6 +491,7 @@ export function lockedCard(date: string): Card {
     partial_reasons: PARTIAL_REASONS,
     lost_reasons: [],
     not_fitted_reasons: [],
+    failure_reasons: [],
     consumables: CONSUMABLES,
     kit_hair_systems: [],
     products: [],

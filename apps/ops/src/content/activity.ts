@@ -126,6 +126,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "consumable.restore": "Consumable restored",
   "consumable.usage": "Usage set",
   "job_sheet.set": "Job sheet set",
+  "piece.failed": "Hair system marked failed",
+  "piece.failure_undone": "Hair system failure undone",
   "stock.receive": "Stock received",
   "stock.transfer": "Stock moved",
   "stock.count": "Stock counted",

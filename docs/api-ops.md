@@ -8603,7 +8603,7 @@ A recall closed once its stock and pieces are dealt with; the lot stays blocked
 
 ### GET /api/quality/failures
 
-The labelled pieces fitted in the last year and how many failed, four ways
+The labelled pieces fitted in the last year and how many failed, five ways
 
 **200**: Failure rates
 
@@ -10449,7 +10449,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: failure_reason is not on the failure list, or the client on the chat's number wears no hair system
 
 ```json
 {
@@ -17720,7 +17720,7 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
 }
 ```
 
-**404**: not_found: no such client, or the client is outside the caller's cities
+**404**: not_found: no such client or piece of theirs, or the client is outside the caller's cities
 
 ```json
 {
@@ -17738,6 +17738,322 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
               "type": "string",
               "enum": [
                 "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/pieces/{code}/failure
+
+Mark a client's hair system failed, on a day, for a reason on the failure list
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PieceFailure"
+}
+```
+
+**200**: The pieces, newest fit first
+
+```json
+{
+  "$ref": "#/components/schemas/ClientPieces"
+}
+```
+
+**400**: invalid_request: failure_reason not on the failure list, or failed_on before the fit or after today
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client or piece of theirs, or the client is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: not_changeable: the piece is marked failed already
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_changeable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### DELETE /api/clients/{id}/pieces/{code}/failure
+
+Take back a client's hair system's failure; one fitted over since is replaced when it came off
+
+**204**: Taken back
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client or piece of theirs, or the client is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: not_changeable: the piece is not marked failed
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_changeable"
               ]
             }
           },
@@ -19198,7 +19514,7 @@ Request body:
 
 **204**: Closed, under the member of staff who closed it
 
-**400**: invalid_request: no reason, or a group whose tasks close only when their thing is done
+**400**: invalid_request: no reason, a group whose tasks close only when their thing is done, or a failure_reason on a task not a guarantee claim, not on the failure list, or for a fit with no hair system on record
 
 ```json
 {
@@ -28824,6 +29140,99 @@ Request body:
 ### POST /api/job-sheet/not-fitted-reasons
 
 Why a hair system could not be fitted today, the whole list in its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheetListChange"
+}
+```
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/job-sheet/failure-reasons
+
+Why a hair system failed, the whole list in its order
 
 Request body:
 
@@ -43881,6 +44290,36 @@ Request body:
           "rate_percent"
         ]
       }
+    },
+    "by_reason": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      },
+      "description": "Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0273); fitted is all of them."
     }
   },
   "required": [
@@ -43888,7 +44327,8 @@ Request body:
     "by_code",
     "by_lot",
     "by_supplier",
-    "by_technician"
+    "by_technician",
+    "by_reason"
   ]
 }
 ```
@@ -44529,12 +44969,29 @@ Request body:
         }
       ],
       "description": "The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none."
+    },
+    "piece_report": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "edges_lifting",
+            "shedding",
+            "colour"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "That report's category where it is about the hair system the client wears, which the close asks whether it failed (ADR 0273); null for none."
     }
   },
   "required": [
     "conversation",
     "items",
-    "close_reason"
+    "close_reason",
+    "piece_report"
   ],
   "additionalProperties": false
 }
@@ -44871,6 +45328,12 @@ Request body:
         "data_request",
         "other"
       ]
+    },
+    "failure_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Where the hair system the client wears was at fault: why it failed, by a code of the job sheet's failure_reasons; it is marked failed today (ADR 0273). Left out where it was not."
     }
   },
   "required": [
@@ -47254,6 +47717,8 @@ Request body:
         "consumable.delete",
         "consumable.usage",
         "job_sheet.set",
+        "piece.failed",
+        "piece.failure_undone",
         "stock.receive",
         "stock.transfer",
         "stock.count",
@@ -49036,10 +49501,31 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/Piece"
       }
+    },
+    "failure_reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Why a hair system may have failed, as ops set them, in their order (ADR 0273)."
     }
   },
   "required": [
-    "pieces"
+    "pieces",
+    "failure_reasons"
   ],
   "additionalProperties": false
 }
@@ -49139,6 +49625,32 @@ Request body:
     "failed_at",
     "failure_reason",
     "replaced_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PieceFailure
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "failure_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "By a code of the job sheet's failure_reasons."
+    },
+    "failed_on": {
+      "type": "string",
+      "format": "date",
+      "description": "The day in India it failed: not before its fit, nor after today."
+    }
+  },
+  "required": [
+    "failure_reason",
+    "failed_on"
   ],
   "additionalProperties": false
 }
@@ -51464,6 +51976,12 @@ Request body:
       "minLength": 1,
       "maxLength": 300,
       "description": "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased."
+    },
+    "failure_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0273)."
     }
   },
   "required": [
@@ -56023,6 +56541,81 @@ Request body:
       "additionalProperties": false,
       "description": "Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0270)."
     },
+    "failure_reasons": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "What the technician is offered, in order."
+        },
+        "retired": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Taken off by ops, and still understood: a phone may have queued one before it knew."
+        },
+        "set_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null while the committed list stands."
+        },
+        "set_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "retired",
+        "set_by",
+        "set_at"
+      ],
+      "additionalProperties": false,
+      "description": "Why a hair system failed, picked by the technician on a replacement it came off early for and by ops as they mark one failed (ADR 0273)."
+    },
     "max_checklist_items": {
       "type": "integer"
     },
@@ -56035,6 +56628,9 @@ Request body:
     "max_not_fitted_reasons": {
       "type": "integer"
     },
+    "max_failure_reasons": {
+      "type": "integer"
+    },
     "max_label": {
       "type": "integer"
     }
@@ -56044,10 +56640,12 @@ Request body:
     "partial_reasons",
     "lost_reasons",
     "not_fitted_reasons",
+    "failure_reasons",
     "max_checklist_items",
     "max_partial_reasons",
     "max_lost_reasons",
     "max_not_fitted_reasons",
+    "max_failure_reasons",
     "max_label"
   ],
   "additionalProperties": false

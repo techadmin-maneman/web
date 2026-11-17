@@ -319,6 +319,11 @@ export const PIECES = {
       replaced_at: null,
     },
   ],
+  failure_reasons: [
+    { code: "edges_lifting", label: "Edges lifting" },
+    { code: "shedding", label: "Shedding" },
+    { code: "base_torn", label: "Base torn" },
+  ],
 } satisfies OpsReply<"/api/clients/{id}/pieces">;
 
 type HairProfilePage = OpsReply<"/api/clients/{id}/hair-profile">;

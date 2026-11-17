@@ -142,6 +142,54 @@ describe("the piece", () => {
     expect(old).toEqual({ failure_reason: "Torn at the crown", replaced_at: null });
   });
 
+  // The technician's "Came off early? Say why" sends the reason by the failure list's code
+  // (docs/decisions/0273-why-a-hair-system-failed.md).
+  it("keeps a reason sent by the failure list's code in its words, with the code, and its hand-back's too", async () => {
+    await upToThePiece(minutesAfterStart(60));
+    const answer = await postAt(
+      minutesAfterStart(60),
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "edges_lifting" } },
+      uuidv7At(50),
+    );
+    expect(answer.status).toBe(202);
+
+    const old = await env.DB.prepare(
+      "SELECT failure_reason, failure_code, failed_at IS NOT NULL AS failed FROM pieces WHERE id = 'piece-old'",
+    ).first();
+    expect(old).toEqual({ failure_reason: "Edges lifting", failure_code: "edges_lifting", failed: 1 });
+    const returned = await env.DB.prepare(
+      "SELECT reason FROM piece_returns WHERE piece_code = 'MM-STD-4417-B'",
+    ).first();
+    expect(returned).toEqual({ reason: "Edges lifting" });
+  });
+
+  // Care may mark the worn piece failed before its replacement (docs/decisions/0273-why-a-hair-system-failed.md).
+  it("takes off a piece Care marked failed before the visit, its hand-back carrying that failure's words", async () => {
+    await env.DB.prepare(
+      "UPDATE pieces SET failed_at = ?1, failure_reason = 'Shedding', failure_code = 'shedding' WHERE id = 'piece-old'",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await upToThePiece(minutesAfterStart(60));
+    const answer = await postAt(
+      minutesAfterStart(60),
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", old_piece: { piece_code: "MM-STD-4417-B" } },
+      uuidv7At(50),
+    );
+    expect(answer.status).toBe(202);
+
+    const old = await env.DB.prepare(
+      "SELECT failure_reason, failure_code, replaced_at FROM pieces WHERE id = 'piece-old'",
+    ).first();
+    expect(old).toEqual({ failure_reason: "Shedding", failure_code: "shedding", replaced_at: null });
+    const returned = await env.DB.prepare(
+      "SELECT reason FROM piece_returns WHERE piece_code = 'MM-STD-4417-B'",
+    ).first();
+    expect(returned).toEqual({ reason: "Shedding" });
+  });
+
   it("refuses a label that is not a piece's, for the old piece as for the new", async () => {
     await upToThePiece(minutesAfterStart(60));
     const answer = await postAt(
