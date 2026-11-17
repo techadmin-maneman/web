@@ -4,11 +4,20 @@
 import { expect, test } from "./support.ts";
 import { referral } from "../site/src/content/referral.ts";
 
-// Every page with a form among them: /book, /try, the invite and /stop.
+// Every page with a form among them: /book, /try, the invite and /stop; and, with no footer on a flow (ADR 0265), every
+// screen of /book and the try-on past the first, each opened as its ?state= preview.
 for (const path of [
   "/",
   "/book",
+  "/book?state=served",
+  "/book?state=unserved",
+  "/book?state=booked",
+  "/book?state=listed",
   "/try",
+  "/try?state=looks",
+  "/try?state=gate",
+  "/try?state=sent",
+  "/try?state=error",
   "/guides",
   "/guides/what-is-a-hair-system",
   "/areas",

@@ -10,6 +10,7 @@ import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
 import { TextLink } from "@maneman/ui/TextLink";
+import { LegalLinks } from "../LegalLinks.tsx";
 import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
 import { windowSpan } from "@rules/config/scheduling.ts";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
@@ -156,6 +157,7 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
           {result.invite === "expired" && <Expired reward={props.reward} />}
           {booked && <AddToCalendar result={result} ready={ready} />}
           {app !== null && <p class={`${styles.line} ${styles.appHint}`}>{referral.booked.appHint}</p>}
+          <LegalLinks alone={styles.legal} onInk />
         </div>
         <div class={styles.actions}>
           {app !== null && (

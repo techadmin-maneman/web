@@ -32,6 +32,7 @@ import { Gate } from "./Gate.tsx";
 import { useReleased, useRenderWatch, useScreenHistory } from "./hooks.ts";
 import { Looks } from "./Looks.tsx";
 import { Picture } from "./Picture.tsx";
+import { LegalLinks } from "../LegalLinks.tsx";
 import { backFrom, screenNamed, START, step, type Screen, type TryOnState } from "./machine.ts";
 import { Sent } from "./Sent.tsx";
 import styles from "./TryOn.module.css";
@@ -223,6 +224,8 @@ function TryOnFlow(props: Props) {
               }}
             />
           )}
+          {/* The terms and the privacy notice, from every screen as from the first, which links them itself. */}
+          {screen !== "upload" && <LegalLinks alone={styles.legal} />}
         </div>
       </div>
     </div>

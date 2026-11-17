@@ -18,3 +18,8 @@
 .legal a {
   padding-block: var(--sp-12);
 }
+
+/* On the booked screen's navy. */
+.onInk {
+  color: var(--site-on-navy-muted);
+}

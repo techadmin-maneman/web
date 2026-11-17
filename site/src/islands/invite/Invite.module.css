@@ -239,6 +239,12 @@
   color: var(--site-on-navy-muted);
 }
 
+/* /book's line that the terms and the privacy notice apply, beneath each step past the first. */
+.flowLegal {
+  order: 9;
+  margin-top: var(--sp-16);
+}
+
 /* The landing's line that the terms and the privacy notice apply, beneath the pincode until its answer. */
 .arrivalLegal {
   order: 7;

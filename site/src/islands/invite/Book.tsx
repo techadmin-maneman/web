@@ -6,6 +6,7 @@
 // the four steps (FlowFrame.tsx, ADR 0265). Outside production, ?state= opens each state directly (preview.ts).
 
 import { hiddenOnPhoneLook } from "@maneman/ui/VisuallyHidden";
+import { LegalLinks } from "../LegalLinks.tsx";
 import { booking } from "../../content/site.ts";
 import type { PincodeAnswer } from "../../lib/api.ts";
 import { IslandBoundary } from "../IslandBoundary.tsx";
@@ -100,6 +101,8 @@ function BookPage(props: Props) {
           </div>
           {answer === null && <StepLine at={2} name={booking.steps.area} focus={false} />}
           <PincodeAndForm page={page} form={form} stage={step === "address" ? "address" : "visit"} />
+          {/* The terms and the privacy notice, which the first step's agreement and the list's form link themselves. */}
+          {answer?.served !== false && <LegalLinks alone={styles.flowLegal} />}
         </>
       )}
     </Arrival>

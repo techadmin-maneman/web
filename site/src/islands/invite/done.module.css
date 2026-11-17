@@ -204,3 +204,8 @@
     min-width: var(--flow-action-min);
   }
 }
+
+/* The terms and the privacy notice, which a flow with no footer links from every screen. */
+.legal {
+  margin-top: var(--sp-20);
+}
