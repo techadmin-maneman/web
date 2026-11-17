@@ -661,13 +661,30 @@ test.describe("the home page's choices without scripts", () => {
     for (const stage of siteCopy.norwood.stages) {
       await expect(norwood.getByText(stage.name, { exact: true }).filter({ visible: true })).toBeVisible();
     }
-    await expect(norwood.getByRole("group", { name: siteCopy.norwood.picker })).toHaveCount(0);
+    await expect(norwood.getByRole("group", { name: siteCopy.norwood.picker })).toBeHidden();
     const comparison = page.locator('[data-section="comparison"]');
     await expect(comparison.getByText("Surgical risks").filter({ visible: true })).toBeVisible();
     await expect(comparison.getByText("Long-term side effects").filter({ visible: true })).toBeVisible();
     const range = page.locator('[data-section="range"]');
     await expect(range.getByText("Twice a month").filter({ visible: true })).toBeVisible();
   });
+});
+
+// A phone that arrives at a section from another page, as the footer's and the guides' links send it, stops at the
+// section: the choices take their one-option shape from the first paint, so nothing above it shrinks as the page runs.
+test.describe("arriving at a section on a phone", () => {
+  for (const id of ["faq", "range"]) {
+    test(`/#${id} stops just under the header`, async ({ page }) => {
+      test.skip(!narrow(page.viewportSize()?.width), "the choices are a phone's");
+      await page.goto(`/#${id}`);
+      const top = () =>
+        page.evaluate((section) => Math.round(document.getElementById(section)?.getBoundingClientRect().top ?? 0), id);
+      await expect.poll(top).toBe(60);
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1_000);
+      expect(await top()).toBe(60);
+    });
+  }
 });
 
 test.describe("WCAG on the home page", () => {

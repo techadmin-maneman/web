@@ -101,7 +101,7 @@ const restoredPicture = showRestored ? await picture(norwoodRestored.image.file,
     {showPhotos && (
       <div class="phone">
         <NorwoodPicker
-          client:idle
+          client:media="(max-width: 760px)"
           stages={pickerStages}
           restored={restoredPicture}
           illustration={norwoodRestored.illustration}

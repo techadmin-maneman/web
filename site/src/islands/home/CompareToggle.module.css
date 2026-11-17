@@ -53,7 +53,21 @@
   color: var(--site-navy);
 }
 
-/* An option's name over its rows, before the toggles are drawn. */
+/* Where scripts run, the option chosen alone from the first paint, its name on its toggle; where they never do, every
+   option under its name and no toggles. */
+@media (scripting: enabled) {
+  [data-chosen="false"],
+  .option {
+    display: none;
+  }
+}
+@media (scripting: none) {
+  .choices {
+    display: none;
+  }
+}
+
+/* An option's name over its rows, where the toggles are not drawn. */
 .option {
   margin: var(--sp-16) 0 0;
   font-size: var(--site-fs-label);

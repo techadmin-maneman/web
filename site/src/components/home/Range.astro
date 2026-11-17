@@ -15,7 +15,7 @@ const columns = range.products.map((product) => product.short);
     <CompareTable label={range.title} columns={columns} rows={range.rows} yes={comparison.yes} no={comparison.no} />
     <div class="phone">
       <CompareToggle
-        client:idle
+        client:media="(max-width: 760px)"
         label={range.title}
         columns={columns}
         rows={range.rows}

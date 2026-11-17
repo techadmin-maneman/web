@@ -1,6 +1,7 @@
 // A phone's Norwood scale (ADR 0263): the five stages we fit as a choice above two pictures, the stage chosen and the
-// restored hairline beside it. Choosing a stage changes only its own picture. Until the page's script runs, or where
-// it never does, every stage shows, two to a row, and the choice is not drawn.
+// restored hairline beside it. Choosing a stage changes only its own picture. The page draws the choice and every
+// stage; where scripts run, the stages not chosen are hidden from the first paint, so the page does not shrink when
+// this runs; where they never run, every stage shows, two to a row, and the choice is not drawn.
 
 import "../refs-as-props.ts";
 import { Segmented } from "@maneman/ui/Segmented";
@@ -37,9 +38,19 @@ function Picture({ picture }: { picture: PickerPicture }) {
   );
 }
 
-function StageTile({ stage, placeholder }: { stage: PickerStage; placeholder: string | null }) {
+function StageTile({
+  stage,
+  placeholder,
+  chosen,
+  running,
+}: {
+  stage: PickerStage;
+  placeholder: string | null;
+  chosen: boolean;
+  running: boolean;
+}) {
   return (
-    <figure class={styles.tile}>
+    <figure class={styles.tile} data-chosen={String(chosen)} hidden={running && !chosen}>
       <div class={styles.frame}>
         <Picture picture={stage.picture} />
         <span class={`label ${styles.numeral ?? ""}`}>{stage.numeral}</span>
@@ -74,11 +85,10 @@ export default function NorwoodPicker(props: {
       fill(norwood.pickerOption, { numeral: each.numeral, name: each.name }),
     ]),
   );
-  const shown = running ? [stage] : props.stages;
 
   return (
     <div class={styles.picker}>
-      {running && (
+      <div class={styles.choices}>
         <Segmented
           pressed
           label={norwood.picker}
@@ -87,10 +97,16 @@ export default function NorwoodPicker(props: {
           value={at}
           onChange={setAt}
         />
-      )}
+      </div>
       <div class={styles.tiles}>
-        {shown.map((each) => (
-          <StageTile stage={each} placeholder={props.placeholder} key={each.numeral} />
+        {props.stages.map((each) => (
+          <StageTile
+            stage={each}
+            placeholder={props.placeholder}
+            chosen={each === stage}
+            running={running}
+            key={each.numeral}
+          />
         ))}
         {props.restored !== null && (
           <figure class={styles.tile}>

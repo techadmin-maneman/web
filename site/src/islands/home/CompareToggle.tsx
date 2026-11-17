@@ -1,7 +1,8 @@
 // A phone's comparison or range (ADR 0263): the options as toggles above their rows. Against ("versus") shows the
 // option chosen beside the last column, the hair system, a row at a time; otherwise each row is the chosen option's
-// value. Until the page's script runs, or where it never does, every option's rows show one after another, each under
-// its name, and the toggles are not drawn.
+// value. The page draws the toggles and every option's rows; where scripts run, the options not chosen are hidden from
+// the first paint, so the page does not shrink when this runs; where they never run, every option's rows show one
+// after another, each under its name, and the toggles are not drawn.
 
 import "../refs-as-props.ts";
 import { Segmented } from "@maneman/ui/Segmented";
@@ -37,11 +38,10 @@ export default function CompareToggle(props: {
   useEffect(() => {
     setRunning(true);
   }, []);
-  const shown = running ? [Number(at)] : choices.map((_, index) => index);
 
   return (
     <div class={styles.toggle}>
-      {running && (
+      <div class={styles.choices}>
         <Segmented
           pressed
           label={props.label}
@@ -49,11 +49,12 @@ export default function CompareToggle(props: {
           value={at}
           onChange={setAt}
         />
-      )}
-      {shown.map((chosen) => {
-        const name = choices[chosen] ?? "";
+      </div>
+      {choices.map((name, chosen) => {
+        const isChosen = String(chosen) === at;
+        const shown = { "data-chosen": String(isChosen), hidden: running && !isChosen };
         return props.versus ? (
-          <div class={styles.versus} key={name}>
+          <div class={styles.versus} key={name} {...shown}>
             <div class={styles.head}>
               <span>{name}</span>
               <span>{oursName}</span>
@@ -75,8 +76,8 @@ export default function CompareToggle(props: {
             ))}
           </div>
         ) : (
-          <div key={name}>
-            {!running && <p class={styles.option}>{name}</p>}
+          <div key={name} {...shown}>
+            <p class={styles.option}>{name}</p>
             <dl class={styles.list}>
               {props.rows.map((row) => (
                 <div class={styles.row} key={row.label}>

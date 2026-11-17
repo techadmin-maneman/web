@@ -10,9 +10,19 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-12);
 }
-/* Beneath the choice, once it is drawn. */
-.picker > :global([role="group"]) + .tiles {
-  margin-top: var(--sp-16);
+.choices {
+  margin-bottom: var(--sp-16);
+}
+/* Where scripts run, the stage chosen alone from the first paint; where they never do, every stage and no choice. */
+@media (scripting: enabled) {
+  .tile[data-chosen="false"] {
+    display: none;
+  }
+}
+@media (scripting: none) {
+  .choices {
+    display: none;
+  }
 }
 .tile {
   margin: 0;

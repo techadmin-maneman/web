@@ -20,7 +20,7 @@ import { comparison } from "../../content/site.ts";
     />
     <div class="phone">
       <CompareToggle
-        client:idle
+        client:media="(max-width: 760px)"
         label={comparison.title}
         columns={comparison.columns}
         rows={comparison.rows}
