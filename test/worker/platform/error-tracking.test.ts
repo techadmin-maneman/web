@@ -157,6 +157,22 @@ describe("error tracking", () => {
     expect(framesOf(undefined)).toEqual([]);
   });
 
+  it("names each frame's file where its uploaded source map is found: a page's by its address, the Worker's as an app's", () => {
+    const frames = framesOf(
+      [
+        "TypeError: x is undefined",
+        "    at visitOf (index.js:4120:17)",
+        "render@https://app.maneman.in/assets/Home-1a2b.js:3:1406",
+        "    at process (node:internal/process/task_queues:95:5)",
+      ].join("\n"),
+    );
+    expect(frames.map((frame) => frame.abs_path)).toEqual([
+      "node:internal/process/task_queues",
+      "https://app.maneman.in/assets/Home-1a2b.js",
+      "app:///index.js",
+    ]);
+  });
+
   it("sends the same error once a minute, and at most twenty a minute, inside the free plan", async () => {
     captureLogs();
     const http = fakeFetch({ [ENVELOPE_URL]: () => new Response(null, { status: 200 }) });

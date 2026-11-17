@@ -64,6 +64,14 @@ function frameOf(line: string): { name: string; file: string; row: number; colum
 }
 
 /**
+ * Where Sentry finds a frame's source map: a page's file by its address, and the Worker's bundle, which its stack names
+ * bare ("index.js"), as an app's file, so the map uploaded at deploy as "~/index.js" matches it
+ * (scripts/release/sentry-maps.ts).
+ */
+const absPathOf = (file: string): string =>
+  file.includes("://") || file.startsWith("node:") ? file : `app:///${file}`;
+
+/**
  * A stack as Sentry's frames, the outermost call first and the throw last, as Sentry reads them; a line that names no
  * place, as "at <anonymous>", is left out. A frame in a dependency or the runtime is not the app's own.
  */
@@ -76,6 +84,7 @@ export function framesOf(stack: unknown): Record<string, unknown>[] {
       {
         function: frame.name === "" ? "?" : frame.name,
         filename: frame.file,
+        abs_path: absPathOf(frame.file),
         lineno: frame.row,
         colno: frame.column,
         in_app: !frame.file.includes("node_modules") && !frame.file.startsWith("node:"),

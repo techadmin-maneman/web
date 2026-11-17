@@ -87,6 +87,8 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       SHA: ${{ inputs.sha }}
+      # Each app's build keeps hidden source maps for Sentry, deleted before it ships (scripts/release/sentry-maps.ts).
+      MM_SOURCE_MAPS: "1"
       CANARY: ${{ inputs.canary_percent }}
       SOAK: ${{ inputs.soak_seconds }}
       ACCEPT_UNJUDGED: ${{ inputs.accept_unjudged_soak }}
@@ -142,8 +144,14 @@ jobs:
       - name: Upload the new mm-api version (no traffic yet)
         id: api
         run: |
-          version=$(node scripts/release/release.ts upload --worker mm-api --env production --tag "$SHA")
+          version=$(node scripts/release/release.ts upload --worker mm-api --env production --tag "$SHA"             --outdir "$RUNNER_TEMP/mm-api-bundle")
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Under the commit, the release mm-api reports its errors with; a warning at most, never a failed release.
+      - name: mm-api's source map to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: node scripts/release/sentry-maps.ts --env production --release "$SHA" --worker "$RUNNER_TEMP/mm-api-bundle"
 
       - name: Migrate the production database
         run: |
@@ -209,20 +217,29 @@ jobs:
       # there is nothing to build or deploy; the production build refuses their placeholder copy anyway.
       - name: Deploy mm-app
         if: steps.before.outputs.app != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           npm run build:app -- --env production
+          node scripts/release/sentry-maps.ts --env production --release "$SHA" --app apps/app/dist/production
           node scripts/release/release.ts ship --worker mm-app --env production --tag "$SHA" --message "release $SHA"
 
       - name: Deploy mm-ops
         if: steps.before.outputs.ops != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           npm run build:ops -- --env production
+          node scripts/release/sentry-maps.ts --env production --release "$SHA" --app apps/ops/dist/production
           node scripts/release/release.ts ship --worker mm-ops --env production --tag "$SHA" --message "release $SHA"
 
       - name: Deploy mm-tech
         if: steps.before.outputs.tech != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           npm run build:tech -- --env production
+          node scripts/release/sentry-maps.ts --env production --release "$SHA" --app apps/tech/dist/production
           node scripts/release/release.ts ship --worker mm-tech --env production --tag "$SHA" --message "release $SHA"
 
       - name: Final smoke

@@ -46,6 +46,8 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       SHA: ${{ github.sha }}
+      # Each app's build keeps hidden source maps for Sentry, deleted before it ships (scripts/release/sentry-maps.ts).
+      MM_SOURCE_MAPS: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,8 +70,14 @@ jobs:
       - name: Upload mm-api (no traffic yet)
         id: api
         run: |
-          version=$(node scripts/release/release.ts upload --worker mm-api --env staging --tag "$SHA")
+          version=$(node scripts/release/release.ts upload --worker mm-api --env staging --tag "$SHA"             --outdir "$RUNNER_TEMP/mm-api-bundle")
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Under the commit, the release mm-api reports its errors with; a warning at most, never a failed deploy.
+      - name: mm-api's source map to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: node scripts/release/sentry-maps.ts --env staging --release "$SHA" --worker "$RUNNER_TEMP/mm-api-bundle"
 
       - name: Migrate the staging database
         run: |
@@ -100,17 +108,29 @@ jobs:
       - name: Build the client app (staging)
         run: npm run build:app -- --env staging
       - name: Deploy mm-app
-        run: node scripts/release/release.ts ship --worker mm-app --env staging --tag "$SHA" --message "staging $SHA"
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          node scripts/release/sentry-maps.ts --env staging --release "$SHA" --app apps/app/dist/staging
+          node scripts/release/release.ts ship --worker mm-app --env staging --tag "$SHA" --message "staging $SHA"
 
       - name: Build the ops console (staging)
         run: npm run build:ops -- --env staging
       - name: Deploy mm-ops
-        run: node scripts/release/release.ts ship --worker mm-ops --env staging --tag "$SHA" --message "staging $SHA"
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          node scripts/release/sentry-maps.ts --env staging --release "$SHA" --app apps/ops/dist/staging
+          node scripts/release/release.ts ship --worker mm-ops --env staging --tag "$SHA" --message "staging $SHA"
 
       - name: Build the technician app (staging)
         run: npm run build:tech -- --env staging
       - name: Deploy mm-tech
-        run: node scripts/release/release.ts ship --worker mm-tech --env staging --tag "$SHA" --message "staging $SHA"
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          node scripts/release/sentry-maps.ts --env staging --release "$SHA" --app apps/tech/dist/staging
+          node scripts/release/release.ts ship --worker mm-tech --env staging --tag "$SHA" --message "staging $SHA"
 
       - name: Smoke-test staging
         env:
