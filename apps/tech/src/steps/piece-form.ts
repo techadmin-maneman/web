@@ -33,11 +33,8 @@ export interface PieceForm {
 
 export const given = (text: string): boolean => text.trim() !== "";
 
-/** A piece still to be fitted, which is the new one on a first fit or a replacement. */
-export const toFit = (piece: ClientPiece): boolean =>
-  piece.fitted_at === null && piece.failed_at === null && piece.replaced_at === null;
 /** A piece on the client's head now, which is the one a replacement takes off. */
-export const onTheHead = (piece: ClientPiece): boolean =>
+const onTheHead = (piece: ClientPiece): boolean =>
   piece.fitted_at !== null && piece.failed_at === null && piece.replaced_at === null;
 
 /**
@@ -171,7 +168,7 @@ export function labelWarning(job: Matched & Pick<Job, "date">, form: PieceForm):
  * What a new label sets: a kit piece's hair system, and the lot a kit piece fills in, which follows the label. A lot the
  * technician typed stays; the step's own label passes none, as lots are no longer typed.
  */
-export function afterLabel(
+function afterLabel(
   job: Pick<Job, "kit_hair_systems">,
   was: { readonly code: string; readonly lot: string },
   label: string,

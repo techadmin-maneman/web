@@ -25,7 +25,7 @@ type Fit = NonNullable<Job["profile"]>["fit"];
 type MatchFit = Pick<Fit, "base_width_in" | "base_length_in" | "colour" | "grey_percent" | "density_percent">;
 
 /** The spec a hair system is made to: "8 × 10 in · #1B · 20% grey · 120% density", each part only where it is known. */
-export function specOf(fit: MatchFit): string {
+function specOf(fit: MatchFit): string {
   const rows = profileCopy.card;
   return [
     fit.base_width_in === null || fit.base_length_in === null ? null : rows.size(fit.base_width_in, fit.base_length_in),
@@ -37,7 +37,7 @@ export function specOf(fit: MatchFit): string {
 }
 
 /** The product fitted, by name: chosen on a one visit, paid for on a first fit, the profile's on a replacement. */
-export function productName(job: Job, choice: Choice): string | null {
+function productName(job: Job, choice: Choice): string | null {
   if (job.one_visit) return job.products.find((product) => product.tier === choice)?.name ?? null;
   if (job.type === "replacement") return job.profile?.fit.product_name ?? paidFor(job);
   return paidFor(job) ?? job.profile?.fit.product_name ?? null;
