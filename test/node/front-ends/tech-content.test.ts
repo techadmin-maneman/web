@@ -107,10 +107,14 @@ describe("a job ops gave to another technician", () => {
     expect(givenAway({ technician: "Sameer", at: null })).toBe("Ops moved this job to Sameer.");
   });
 
-  it("names nobody where the API named nobody, and says a cancelled job was cancelled", () => {
+  it("ends the sentence once after a name that ends in a full stop", () => {
+    expect(givenAway({ technician: "Imran K.", at: null })).toBe("Ops moved this job to Imran K.");
+  });
+
+  it("names nobody where the API named nobody, and says ops cancelled a cancelled job, offline or not", () => {
     expect(givenAway(null)).toBe("This job is someone else’s now.");
     expect(whatStopped({ note: "superseded", fields: ["status", "technician"], moved: null }, NOW)).toBe(
-      "This job was cancelled while the phone was offline.",
+      "Ops cancelled this job.",
     );
   });
 });

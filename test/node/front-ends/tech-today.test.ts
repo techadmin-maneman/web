@@ -39,9 +39,11 @@ describe("the job Today puts first, and its title", () => {
       ["c", c],
     ]);
 
-  it("is the first job still to do, and the count is of those still to do", () => {
+  it("is the first job still to do, and the count is of the day's jobs, then of those left once one has closed", () => {
     expect(nextOf(jobs, states("closed", null))?.id).toBe("b");
-    expect(titleOf(jobs, states("closed", null), true)).toBe(copy.jobs(2));
+    expect(titleOf(jobs, states(null, null, null), true)).toBe(copy.jobs(3));
+    expect(titleOf(jobs, states("closed", null), true)).toBe(copy.left(2));
+    expect(titleOf(jobs, states("closed", "closed"), true)).toBe(copy.left(1));
   });
 
   it("is one under way or at its door, ahead of an earlier one never closed", () => {
@@ -53,8 +55,8 @@ describe("the job Today puts first, and its title", () => {
     expect(nextOf(jobs, states("closed", "closed", "closed"))).toBeUndefined();
     expect(titleOf(jobs, states("closed", "closed", "closed"), true)).toBe(copy.allDone);
     expect(titleOf([], new Map(), true)).toBe(copy.noJobs);
-    // Before the list loads, nothing is said to be done.
-    expect(titleOf([], new Map(), false)).toBe(copy.jobs(0));
+    // Before the list loads, or when it failed to, nothing is counted and nothing said to be done.
+    expect(titleOf([], new Map(), false)).toBe(copy.title);
   });
 });
 

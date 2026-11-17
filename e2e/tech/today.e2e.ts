@@ -38,7 +38,7 @@ test("puts the next job first with the way there, then the rest of the day, with
   );
   // Message and Call, once the card the phone keeps names the client's number.
   await expect(next.getByRole("link", { name: techCopy.today.call("Rohit") })).toHaveAttribute("href", /^tel:/);
-  await expect(next.getByRole("link", { name: techCopy.today.message("Rohit") })).toBeVisible();
+  await expect(next.getByRole("button", { name: techCopy.today.message("Rohit") })).toBeVisible();
 
   // The rest of the day: each with its drive and when to leave, the locked one by its kind.
   const rows = laterRows(page);
@@ -66,10 +66,14 @@ test("a job closed out on another phone is done with on Today, and the next is t
   };
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1, name: "2 jobs today" })).toBeVisible();
+  // Once one has closed, the title counts those left, as the prototype words it.
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.today.left(2) })).toBeVisible();
   await expect(nextJob(page)).toContainText("Vikram S.");
+  // A row done with: its time over how it closed, and its visit with it, with no drive.
   const closed = laterRows(page).first();
   await expect(closed).toContainText(techCopy.today.closed.partial);
+  await expect(closed).toContainText(`Service visit · ${techCopy.today.closedAfter.partial}`);
+  await expect(closed).not.toContainText("min drive");
   await closed.click();
   await expect(page.getByText("Closed out · partly done")).toBeVisible();
 });
@@ -320,4 +324,23 @@ test("cuts no time or length short at 360 px in Hindi, nor with its text at 130%
     document.documentElement.style.setProperty("zoom", "1.3");
   });
   expect(await clipped(page)).toEqual([]);
+});
+
+test("Message on the next job opens the job's own sheet, and sends the client the word from there", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  await page.goto("/");
+  await nextJob(page)
+    .getByRole("button", { name: techCopy.today.message("Rohit") })
+    .click();
+
+  const sheet = page.getByRole("dialog", { name: techCopy.job.tell.title("Rohit") });
+  await sheet.getByRole("button", { name: techCopy.job.tell.late(20) }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/updates")).length).toBe(1);
+  expect(fake.writes.find((write) => write.path.endsWith("/updates"))?.body).toEqual({
+    preset: "running_late",
+    minutes: 20,
+  });
 });

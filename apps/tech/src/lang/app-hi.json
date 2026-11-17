@@ -182,8 +182,9 @@
     "Old hair system removed": "पुराना हेयर सिस्टम उतारा",
     "Opening the camera…": "कैमरा खुल रहा है…",
     "Ops are told nobody was home. Close only if no one has answered.": "ऑप्स को बताया जाएगा कि घर पर कोई नहीं था। तभी बंद करें जब किसी ने जवाब न दिया हो।",
+    "Ops cancelled this job.": "ऑप्स ने यह जॉब रद्द किया।",
     "Ops cancelled this visit.": "ऑप्स ने यह विज़िट रद्द की।",
-    "Ops cancelled this visit. What you recorded is kept on this phone, in Pending uploads.": "ऑप्स ने यह विज़िट रद्द की। आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।",
+    "Ops changed this job.": "ऑप्स ने यह जॉब बदल दिया।",
     "Ops gave this visit to another technician.": "ऑप्स ने यह विज़िट किसी और टेक्नीशियन को दी।",
     "Ops have stopped sign-in on your number. Ask them to let you back in.": "ऑप्स ने आपके नंबर पर साइन इन रोका है। उनसे दोबारा चालू करवाएँ।",
     "Ops know you’re safe.": "ऑप्स को पता है कि आप सुरक्षित हैं।",
@@ -312,7 +313,6 @@
     "This goes to ops.": "यह ऑप्स को जाएगा।",
     "This hair system has expired. Hand it in and use another.": "यह हेयर सिस्टम एक्सपायर हो चुका है। इसे लौटाएँ और दूसरा इस्तेमाल करें।",
     "This job changed": "यह जॉब बदल गया",
-    "This job changed while the phone was offline.": "फ़ोन ऑफ़लाइन था तब यह जॉब बदल गया।",
     "This job is closed.": "यह जॉब बंद है।",
     "This job is no longer on your list.": "यह जॉब अब आपकी सूची में नहीं है।",
     "This job is no longer on your schedule.": "यह जॉब अब आपके शेड्यूल में नहीं है।",
@@ -322,7 +322,6 @@
     "This job isn’t closed yet.": "यह जॉब अभी बंद नहीं हुआ।",
     "This job isn’t on your list.": "यह जॉब आपकी सूची में नहीं है।",
     "This job isn’t today’s. Arrive and start it on its day.": "यह जॉब आज का नहीं है। उसी दिन पहुँचकर शुरू करें।",
-    "This job was cancelled while the phone was offline.": "फ़ोन ऑफ़लाइन था तब यह जॉब रद्द हो गया।",
     "This job was started, so it can’t close as a no-show.": "यह जॉब शुरू हो चुका है, इसलिए नो-शो के तौर पर बंद नहीं हो सकता।",
     "This job’s card didn’t load.": "इस जॉब का कार्ड लोड नहीं हुआ।",
     "This job’s checklist changed. Open the job again.": "इस जॉब की चेकलिस्ट बदल गई। जॉब फिर से खोलें।",
@@ -335,7 +334,7 @@
     "This visit already has a code.": "इस विज़िट पर पहले से कोड है।",
     "This visit is closed or called off.": "यह विज़िट बंद या रद्द हो चुकी है।",
     "This visit isn’t yours any more.": "यह विज़िट अब आपकी नहीं है।",
-    "This visit was closed. What you recorded is kept on this phone, in Pending uploads.": "यह विज़िट बंद हो गई। आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।",
+    "This visit was closed.": "यह विज़िट बंद हो गई।",
     "Thursday": "गुरुवार",
     "To do": "करना है",
     "Today’s jobs and cards are on the phone.": "आज के जॉब और कार्ड फ़ोन में हैं।",
@@ -369,6 +368,7 @@
     "We couldn’t record this step as it was. Correct it and tap Next.": "यह स्टेप जैसा था वैसा दर्ज नहीं हो सका। ठीक करें और आगे दबाएँ।",
     "We couldn’t record this. Tap Retry, or call ops.": "यह दर्ज नहीं हो सका। फिर से भेजें दबाएँ, या ऑप्स को कॉल करें।",
     "Wednesday": "बुधवार",
+    "What you recorded is kept on this phone, in Pending uploads.": "आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।",
     "WhatsApp ops": "ऑप्स को WhatsApp",
     "Why": "क्यों",
     "Why didn’t they sign?": "उन्होंने साइन क्यों नहीं किया?",
@@ -385,6 +385,7 @@
     "You’re offline. Reconnect, then sign in.": "आप ऑफ़लाइन हैं। नेटवर्क जोड़ें, फिर साइन इन करें।",
     "before": "पहले वाली",
     "close in, sharp focus": "पास से, साफ़ फ़ोकस",
+    "closed": "बंद",
     "ear in the centre": "कान बीच में",
     "fit to book": "फ़िट बुक करना है",
     "free consultation": "फ़्री कंसल्टेशन",
@@ -671,6 +672,10 @@
       "hi": "ऑप्स ने यह जॉब $1 पर कर दिया।"
     },
     {
+      "match": "^Ops moved this job to ([^·]* [A-Z]\\.)$",
+      "hi": "ऑप्स ने यह जॉब $1 को दिया।"
+    },
+    {
       "match": "^Ops moved this job to ([^·]+)\\.$",
       "hi": "ऑप्स ने यह जॉब $1 को दिया।"
     },
@@ -749,6 +754,10 @@
     {
       "match": "^([^·]+) was cancelled$",
       "hi": "$1 रद्द हुई"
+    },
+    {
+      "match": "^(.+)’s visit moved to ([^·]+)$",
+      "hi": "$1 की विज़िट $2 को दी गई"
     },
     {
       "match": "^([^·]+) moved to ([^·]+)$",
@@ -847,12 +856,16 @@
       "hi": "$1 खोलें"
     },
     {
-      "match": "^Ops gave this visit to ([^·]+)\\. What you recorded is kept on this phone, in Pending uploads\\.$",
-      "hi": "ऑप्स ने यह विज़िट $1 को दी। आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।"
+      "match": "^Ops couldn’t accept ([^·]+) steps$",
+      "hi": "ऑप्स $1 स्टेप नहीं ले पाए"
     },
     {
-      "match": "^Ops sent back ([^·]+)\\.$",
-      "hi": "ऑप्स ने $1 वापस भेजा।"
+      "match": "^([^·]+) jobs? left$",
+      "hi": "$1 जॉब बाकी"
+    },
+    {
+      "match": "^([^·]+) · ([^·]+)\\. Tap to fix\\.$",
+      "hi": "$1 · $2। ठीक करने के लिए टैप करें।"
     },
     {
       "match": "^Ops sent this back: ([^·]+)$",
@@ -1037,6 +1050,22 @@
     {
       "match": "^Client rating, ([^·]+) days$",
       "hi": "क्लाइंट रेटिंग, $1 दिन"
+    },
+    {
+      "match": "^(.+)’s visit was closed$",
+      "hi": "$1 की विज़िट बंद हुई"
+    },
+    {
+      "match": "^(.+)’s visit was given to another technician$",
+      "hi": "$1 की विज़िट किसी और टेक्नीशियन को दी गई"
+    },
+    {
+      "match": "^Ops cancelled it at ([^·]+)\\.$",
+      "hi": "ऑप्स ने $1 पर रद्द किया।"
+    },
+    {
+      "match": "^Ops reassigned it at ([^·]+)\\.$",
+      "hi": "ऑप्स ने $1 पर किसी और को दिया।"
     }
   ],
   "dateTokens": {

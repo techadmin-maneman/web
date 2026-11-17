@@ -1,18 +1,18 @@
 // Today's next job (docs/prompts/tech-redesign.md, "Today"): where the technician is with it, or when to leave; its
 // time and length, the client, the visit and how it is paid, where it is and the drive there; then Navigate, and
-// Message and Call once the card the phone kept names the client.
+// Message and Call once the card the phone kept names the client. Message opens the job's own sheet of words to send.
 
 import { GLYPHS } from "@maneman/brand/icons";
-import { ButtonLink } from "@maneman/ui/Button";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { given } from "@maneman/web-kit/address";
-import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { firstNameOf } from "@rules/lib/names.ts";
-import { useCallback } from "react";
-import type { JobSummary } from "../api.ts";
+import { useCallback, useState } from "react";
+import type { Job, JobSummary } from "../api.ts";
 import { badgesLower, job as jobCopy, today as copy } from "../content.ts";
+import { MessageSheet, takesUpdates, type Sent } from "../job/TellClient.tsx";
 import { kindName } from "../lib/kind.ts";
 import { callLink, wayTo } from "../lib/navigate.ts";
 import type { RowState } from "../lib/progress.ts";
@@ -26,10 +26,79 @@ import styles from "./today.module.css";
 const placeOf = (address: NonNullable<JobSummary["address"]>): string =>
   [address.tower, address.building ?? address.line1, address.locality].filter(given).join(", ");
 
-/** The client's mobile from the card the phone kept, for Message and Call; null until there is one. */
-function useMobile(id: string, cards: number): string | null {
-  const read = useCallback(async () => (await keptJob(id))?.client?.mobile ?? null, [id]);
+/** The card the phone kept, for Message and Call; null until there is one. */
+function useCard(id: string, cards: number): Job | null {
+  const read = useCallback(async () => (await keptJob(id)) ?? null, [id]);
   return valueOr(useAsync(read, cards)[0], null);
+}
+
+/** Navigate, then Message and Call once the kept card names the client; Message opens the sheet of words to send. */
+function NextActions(props: { readonly job: JobSummary; readonly first: string | null; readonly cards: number }) {
+  const { job, first } = props;
+  const card = useCard(job.id, props.cards);
+  const mobile = card?.client?.mobile ?? null;
+  const [messaging, setMessaging] = useState(false);
+  const [sent, setSent] = useState<Sent>({});
+  return (
+    <>
+      <div className={styles.nextActions}>
+        {job.address !== null && (
+          // A new tab, so a technician who has taken the route back still has the app open behind it.
+          <ButtonLink
+            variant="primary"
+            size="action"
+            className={styles.navigate}
+            href={wayTo(job.address)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon d={GLYPHS.navigate} size="md" />
+            <span>{jobCopy.navigate}</span>
+          </ButtonLink>
+        )}
+        {mobile !== null && first !== null && (
+          <>
+            {card !== null && takesUpdates(card) && (
+              <Button
+                variant="outline"
+                size="action"
+                className={styles.square}
+                aria-label={copy.message(first)}
+                onClick={() => {
+                  setMessaging(true);
+                }}
+              >
+                <Icon d={GLYPHS.bubble} size="md" />
+              </Button>
+            )}
+            <ButtonLink
+              variant="outline"
+              size="action"
+              className={styles.square}
+              href={callLink(mobile)}
+              aria-label={copy.call(first)}
+            >
+              <Icon d={GLYPHS.phone} size="md" />
+            </ButtonLink>
+          </>
+        )}
+      </div>
+      {messaging && card !== null && first !== null && (
+        <MessageSheet
+          job={card}
+          who={first}
+          sent={sent}
+          onSent={(preset, words) => {
+            setSent((was) => ({ ...was, [preset]: { words, at: new Date().toISOString() } }));
+            setMessaging(false);
+          }}
+          onClose={() => {
+            setMessaging(false);
+          }}
+        />
+      )}
+    </>
+  );
 }
 
 export function NextJob(props: {
@@ -42,7 +111,6 @@ export function NextJob(props: {
   readonly cards: number;
 }) {
   const { job, state, client } = props;
-  const mobile = useMobile(job.id, props.cards);
   const now = useMinute();
   const first = client === undefined ? null : firstNameOf(client);
   const where = job.address === null ? job.sector : placeOf(job.address);
@@ -67,46 +135,7 @@ export function NextJob(props: {
         {where !== null && <span className={styles.nextWhere}>{[where, drive].filter(given).join(" · ")}</span>}
       </Link>
       {over !== null && <p className={styles.nextOver}>{over}</p>}
-      <div className={styles.nextActions}>
-        {job.address !== null && (
-          // A new tab, so a technician who has taken the route back still has the app open behind it.
-          <ButtonLink
-            variant="primary"
-            size="action"
-            className={styles.navigate}
-            href={wayTo(job.address)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Icon d={GLYPHS.navigate} size="md" />
-            <span>{jobCopy.navigate}</span>
-          </ButtonLink>
-        )}
-        {mobile !== null && first !== null && (
-          <>
-            <ButtonLink
-              variant="outline"
-              size="action"
-              className={styles.square}
-              href={whatsappChat(mobile)}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={copy.message(first)}
-            >
-              <Icon d={GLYPHS.bubble} size="md" />
-            </ButtonLink>
-            <ButtonLink
-              variant="outline"
-              size="action"
-              className={styles.square}
-              href={callLink(mobile)}
-              aria-label={copy.call(first)}
-            >
-              <Icon d={GLYPHS.phone} size="md" />
-            </ButtonLink>
-          </>
-        )}
-      </div>
+      <NextActions job={job} first={first} cards={props.cards} />
     </section>
   );
 }

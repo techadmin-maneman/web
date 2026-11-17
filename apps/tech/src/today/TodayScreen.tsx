@@ -104,12 +104,15 @@ function ToFix(props: {
     return (
       <ProblemCard
         key={visit.id}
-        title={copy.toFix(clock(visit.starts_at), who)}
+        title={copy.toFix(steps.length)}
         onOpen={() => {
           go(`/jobs/${visit.id}`);
         }}
       >
-        {copy.toFixBody(steps.map((step) => copy.toFixSteps[step]))}
+        {copy.toFixBody(
+          who,
+          steps.map((step) => copy.toFixSteps[step]),
+        )}
       </ProblemCard>
     );
   });
@@ -185,8 +188,19 @@ export function TodayScreen() {
           cards={round}
         />
       )}
+      {/* Every job closed: said under the title, where the next job would be. */}
+      {day.state === "loaded" && next === undefined && jobs.length > 0 && (
+        <p className={styles.allDone}>{copy.noMore}</p>
+      )}
       {day.state === "loaded" && (
-        <LaterToday jobs={rest} states={states} names={names} queued={waiting.events} heard={heard} />
+        <LaterToday
+          jobs={rest}
+          allDone={next === undefined}
+          states={states}
+          names={names}
+          queued={waiting.events}
+          heard={heard}
+        />
       )}
       <Tomorrow jobs={tomorrowJobs} loaded={tomorrow.state === "loaded"} />
     </main>

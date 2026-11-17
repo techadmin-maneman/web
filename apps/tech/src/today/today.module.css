@@ -134,6 +134,15 @@
   padding: 0;
 }
 
+/* Every job closed: the prototype's line under the title, where the next job would be. */
+.allDone {
+  margin: 0;
+  padding: var(--sp-20) var(--screen-gutter) 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
 /* The rest of the day: the section's head with Day view, then the rows across the column's width. */
 .later {
   padding: 0 var(--screen-gutter);
@@ -193,13 +202,6 @@
 
 .rowLength {
   font-size: var(--fs-14);
-}
-
-/* How a job closed, in the ink, beside its rule. */
-.rowClosed {
-  display: block;
-  font-weight: var(--weight-semibold);
-  color: var(--ui-strong);
 }
 
 /* A job done with: its time and name quieter, so the eye goes to what is left. */

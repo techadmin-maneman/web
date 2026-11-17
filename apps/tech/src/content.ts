@@ -52,9 +52,12 @@ export const signIn = localised({
 } as const);
 
 export const today = localised({
-  /** The jobs still to do today: the count falls as each closes. */
+  /** The jobs today, before any has closed; then those still to do, as each closes. */
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
+  left: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} left`,
   allDone: "All done today",
+  /** The day's own name: its title before its jobs load, and its list's head once none is left to do. */
+  title: "Today",
   sync: {
     synced: "Synced",
     offline: (saved: number) => (saved > 0 ? `Offline · ${String(saved)} saved` : "Offline"),
@@ -77,8 +80,9 @@ export const today = localised({
   call: (first: string) => `Call ${first}`,
   later: "Later today",
   dayView: "Day view",
-  /** A job done with, by how it closed. */
+  /** A job done with, by how it closed: under its time, and after its kind of visit. */
   closed: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
+  closedAfter: { done: "done", partial: "partly done", no_show: "no-show", other: "closed" },
   /** A job under way that runs into the next: when to be done to reach it on time. */
   runsOver: (finishBy: string, next: string) => `Running over · finish by ${finishBy} for the ${next} job`,
   noMore: "No more jobs today.",
@@ -90,13 +94,13 @@ export const today = localised({
   leftOpen: (time: string, who: string) => `Still open from yesterday · ${time} · ${who}`,
   leftOpenBody: "Finish it and send it.",
   /** A visit with steps ops sent back, from whatever day, until they are done again (docs/decisions/0246-closed-and-sent-back.md). */
-  toFix: (time: string, who: string) => `Needs a fix · ${time} · ${who}`,
-  toFixBody: (steps: readonly string[]) => `Ops sent back ${listed(steps)}.`,
+  toFix: (count: number) => (count === 1 ? "Ops couldn’t accept a step" : `Ops couldn’t accept ${String(count)} steps`),
+  toFixBody: (who: string, steps: readonly string[]) => `${who} · ${listed(steps)}. Tap to fix.`,
   toFixSteps: {
-    before_photos: "the before photos",
-    checklist: "the tasks",
-    consumables: "the consumables",
-    after_photos: "the after photos",
+    before_photos: "before photos",
+    checklist: "checklist",
+    consumables: "consumables",
+    after_photos: "after photos",
   },
   offline: {
     title: "No signal",
@@ -318,10 +322,10 @@ export const queue = localised({
 const stopped: Readonly<Record<string, string>> = {
   // The 409 names the fields that moved and never their values. The new time, once the card read again
   // carries it, and whom a job went to are named by whatStopped below.
-  superseded: "This job changed while the phone was offline.",
+  superseded: "Ops changed this job.",
   technician: "This job is someone else’s now.",
   time: "Ops moved this job to another time.",
-  status: "This job was cancelled while the phone was offline.",
+  status: "Ops cancelled this job.",
   out_of_order: "Steps arrived out of order. Open the job again.",
   not_today: "This job is on another day. Arrive and start it on the day.",
   too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
@@ -348,8 +352,10 @@ const stopped: Readonly<Record<string, string>> = {
  * recorded has none.
  */
 function movedTo(moved: Moved, now: Date): string {
-  // The prompt's example has a time on the day; the line without one, and the one with a day, are ours.
-  if (moved.at === null) return `Ops moved this job to ${moved.technician}.`;
+  // The prompt's example has a time on the day; the line without one, and the one with a day, are ours. A name that
+  // ends in a full stop, "Imran K.", ends the sentence itself.
+  if (moved.at === null)
+    return `Ops moved this job to ${moved.technician}${/[.!?]$/.test(moved.technician) ? "" : "."}`;
   const day = todayInIndia(new Date(moved.at));
   const time = clock(moved.at);
   if (day === todayInIndia(now)) return `Ops moved this job to ${moved.technician} at ${time}.`;
@@ -400,17 +406,22 @@ function whatStoppedEn(why: Why, now: Date = apiDate(), startsNow: string | null
  * showing. What was recorded stays in Pending uploads.
  */
 export const interrupted = localised({
+  /** Whose visit, as the prototype says it, where the phone knows the client; else the job by its time and kind. */
+  cancelledOf: (name: string) => `${name}’s visit was cancelled`,
   cancelled: (job: string) => `${job}: cancelled`,
+  closedOf: (name: string) => `${name}’s visit was closed`,
   closed: (job: string) => `${job}: closed`,
-  closedBody: "This visit was closed. What you recorded is kept on this phone, in Pending uploads.",
+  movedOf: (name: string, to: string) => `${name}’s visit moved to ${to}`,
   moved: (job: string, to: string) => `${job}: moved to ${to}`,
   /** From a push, which names no one: given to another technician, or called off. */
+  reassignedOf: (name: string) => `${name}’s visit was given to another technician`,
   reassigned: (job: string) => `${job}: given to another technician`,
-  reassignedBody: "Ops gave this visit to another technician.",
-  cancelledAlert: "Ops cancelled this visit.",
-  cancelledBody: "Ops cancelled this visit. What you recorded is kept on this phone, in Pending uploads.",
-  movedBody: (to: string) =>
-    `Ops gave this visit to ${to}. What you recorded is kept on this phone, in Pending uploads.`,
+  /** When ops did it, where the API says; and, where the phone recorded any of it, that it is kept. */
+  cancelledAt: (time: string | null) => (time === null ? "Ops cancelled this visit." : `Ops cancelled it at ${time}.`),
+  reassignedAt: (time: string | null) =>
+    time === null ? "Ops gave this visit to another technician." : `Ops reassigned it at ${time}.`,
+  closedBody: "This visit was closed.",
+  kept: "What you recorded is kept on this phone, in Pending uploads.",
   today: "Back to Today",
 } as const);
 
@@ -690,6 +701,9 @@ export const visit = localised({
   },
   /** Above a step ops sent back: what they said to fix, as they wrote it. */
   sentBack: (reason: string) => `Ops sent this back: ${reason}`,
+  /** The same at the head of the step, as the prototype words it: that ops refused it, their reason, and the way on. */
+  refused: "Ops couldn’t accept this step",
+  fixIt: (reason: string) => `${reason} Fix it and tap Next.`,
 } as const);
 
 export const capture = localised({
