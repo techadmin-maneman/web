@@ -114,7 +114,7 @@ test("the close-out says what was decided in Hindi around ops' own reason, which
   fake.lostReasons = [{ id: "moved_away", label: "Client moved to another city" }];
   startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
-  await page.getByRole("button", { name: /^Mane Man Essential/ }).click();
+  await page.getByRole("radio", { name: /^Mane Man Essential/ }).click();
   await stepAction(page).click();
   await page.getByRole("radio", { name: techCopy.steps.outcome.notNow, exact: true }).click();
   await page.getByRole("button", { name: "Client moved to another city" }).click();

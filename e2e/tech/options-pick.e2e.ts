@@ -12,7 +12,7 @@ import * as techCopy from "../../apps/tech/src/content.ts";
 
 const { steps, options } = techCopy;
 
-const natural = (page: Page) => page.getByRole("button", { name: /^Mane Man Natural/ });
+const natural = (page: Page) => page.getByRole("radio", { name: /^Mane Man Natural/ });
 
 async function atTheOutcome(page: Page) {
   const fake = await fakeTech(page);
@@ -26,22 +26,22 @@ async function atTheOutcome(page: Page) {
 test("a pick stays through leaving the step and a reload", async ({ page }) => {
   await atTheOutcome(page);
   await natural(page).click();
-  await expect(natural(page)).toHaveAttribute("aria-pressed", "true");
+  await expect(natural(page)).toBeChecked();
   // Kept on the phone before the page goes: a load straight after the tap can come before the write.
   await expect.poll(() => deviceRecordOnPhone(page, "options_draft")).toContain('"picked":"');
 
   await page.goto(`/jobs/${JOB_ID}`);
   await page.goto(`/jobs/${JOB_ID}/outcome`);
-  await expect(natural(page)).toHaveAttribute("aria-pressed", "true");
+  await expect(natural(page)).toBeChecked();
   await page.reload();
-  await expect(natural(page)).toHaveAttribute("aria-pressed", "true");
+  await expect(natural(page)).toBeChecked();
 
   // A second tap undoes it, and the phone lets it go.
   await natural(page).click();
-  await expect(natural(page)).toHaveAttribute("aria-pressed", "false");
+  await expect(natural(page)).not.toBeChecked();
   await expect.poll(() => deviceRecordOnPhone(page, "options_draft")).toBeNull();
   await page.reload();
-  await expect(natural(page)).toHaveAttribute("aria-pressed", "false");
+  await expect(natural(page)).not.toBeChecked();
 });
 
 test("a pick of a product the card no longer offers is never sent", async ({ page }) => {
@@ -99,5 +99,5 @@ test("a refused close opens on the close, with the pick it sent", async ({ page 
   await expect(page.getByText(steps.outcome.picked("Mane Man Natural"))).toBeVisible();
   // Back is Options, with the pick it sent.
   await page.getByRole("button", { name: steps.back }).click();
-  await expect(natural(page)).toHaveAttribute("aria-pressed", "true");
+  await expect(natural(page)).toBeChecked();
 });

@@ -210,7 +210,7 @@ test("opens a consultation’s Options: each package and what it costs, and the 
   await page.getByRole("link", { name: techCopy.options.link }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.options.title })).toBeVisible();
-  const essential = page.getByRole("region", { name: "Mane Man Essential" });
+  const essential = page.getByRole("listitem").filter({ hasText: "Mane Man Essential" });
   await expect(essential.getByRole("term")).toHaveText([
     techCopy.options.firstFit,
     techCopy.options.service(30),

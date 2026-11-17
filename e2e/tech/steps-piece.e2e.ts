@@ -310,11 +310,8 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(stepAction(page)).toBeDisabled();
     expect(await axeViolations(page)).toEqual([]);
 
-    await page.getByRole("button", { name: "Mane Man Natural", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Mane Man Natural", exact: true })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await page.getByRole("radio", { name: "Mane Man Natural", exact: true }).click();
+    await expect(page.getByRole("radio", { name: "Mane Man Natural", exact: true })).toBeChecked();
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
     await stepAction(page).click();
 
@@ -329,7 +326,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("records that the client decided against it, and asks for no label", async ({ page }) => {
     const fake = await onTheChoice(page);
-    await page.getByRole("button", { name: techCopy.oneVisit.declined, exact: true }).click();
+    await page.getByRole("radio", { name: techCopy.oneVisit.declined, exact: true }).click();
     await expect(page.getByText(techCopy.oneVisit.declinedNote)).toBeVisible();
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
     await expect(stepAction(page)).toHaveText(techCopy.visit.next(techCopy.steps.checklistTitles.consultation));
@@ -344,7 +341,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   // The fit's items are never asked of a technician who fitted nothing.
   test("runs the consultation’s checklist alone once the client decided against the fit", async ({ page }) => {
     const fake = await onTheChoice(page);
-    await page.getByRole("button", { name: techCopy.oneVisit.declined, exact: true }).click();
+    await page.getByRole("radio", { name: techCopy.oneVisit.declined, exact: true }).click();
     await stepAction(page).click();
 
     await expect(
@@ -363,7 +360,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("runs the consultation’s checklist and the fit’s for a client being fitted", async ({ page }) => {
     await onTheChoice(page);
-    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    await page.getByRole("radio", { name: "Mane Man Natural" }).click();
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
     await stepAction(page).click();
 
@@ -374,15 +371,12 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   // A fit today needs the hair system in the kit (docs/prompts/tech-redesign.md, "Outcome").
   test("books the fit for later for a hair system the kit does not hold, and offers no fit today", async ({ page }) => {
     await onTheChoice(page);
-    await page.getByRole("button", { name: "Mane Man Essential", exact: true }).click();
+    await page.getByRole("radio", { name: "Mane Man Essential", exact: true }).click();
 
-    const today = page.getByRole("button", { name: new RegExp(`^${techCopy.oneVisit.fitToday}`) });
+    const today = page.getByRole("radio", { name: new RegExp(`^${techCopy.oneVisit.fitToday}`) });
     await expect(today).toBeDisabled();
-    await expect(today).toContainText(techCopy.oneVisit.notInKit("Mane Man Essential"));
-    await expect(page.getByRole("button", { name: new RegExp(techCopy.oneVisit.bookLater) })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await expect(page.getByText(techCopy.oneVisit.notInKit("Mane Man Essential"))).toBeVisible();
+    await expect(page.getByRole("radio", { name: new RegExp(techCopy.oneVisit.bookLater) })).toBeChecked();
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
   });
@@ -392,13 +386,10 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     page,
   }) => {
     const fake = await onTheChoice(page);
-    await page.getByRole("button", { name: "Mane Man Natural" }).click();
+    await page.getByRole("radio", { name: "Mane Man Natural" }).click();
     // Fit today, unless the client books it for later.
-    await expect(page.getByRole("button", { name: new RegExp(`^${techCopy.oneVisit.fitToday}`) })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    await page.getByRole("button", { name: new RegExp(techCopy.oneVisit.bookLater) }).click();
+    await expect(page.getByRole("radio", { name: new RegExp(`^${techCopy.oneVisit.fitToday}`) })).toBeChecked();
+    await page.getByRole("radio", { name: new RegExp(techCopy.oneVisit.bookLater) }).click();
     await expect(page.getByText(techCopy.oneVisit.laterNote)).toBeVisible();
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
     // Nothing is fitted today: the consultation's checklist is next, and there is no fit to give up on.

@@ -1112,8 +1112,8 @@ type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, st
 export const profile = localised({
   sections: {
     stage: "Norwood stage",
-    head: "Head (in)",
-    base: "Base (in)",
+    head: "Head, inches",
+    base: "Base, inches",
     colour: "Colour",
     grey: "Grey (%)",
     density: "Density",
@@ -1169,6 +1169,11 @@ export const profile = localised({
   checkFigure: (figure: string) => `${figure.replace(/ \(.*\)$/, "")} is out of range`,
   // The fit spec's second page: what the hair system is matched to.
   match: { title: "Colour and style" },
+  /** Each page's head, as the prototype draws them, the measure's with where the profile came from at its end. */
+  measureHead: "Measure",
+  matchHead: "Match",
+  newClient: "New client",
+  fromConsultation: (date: string) => `From consultation, ${date}`,
   history: {
     title: "History",
     remedies: "Remedies tried",

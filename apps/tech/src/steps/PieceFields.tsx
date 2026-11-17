@@ -4,7 +4,7 @@
 
 import { sayKnown, theirs } from "../lang/index.ts";
 import { GLYPHS } from "@maneman/brand/icons";
-import { Field, TextInput, type FieldControl } from "@maneman/ui/Field";
+import { ChoiceGroup, Field, Radio, TextInput, type FieldControl } from "@maneman/ui/Field";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -62,27 +62,24 @@ export function ChoiceList({
   ];
   return (
     <>
-      <section className={shared.field} aria-labelledby="client-choice-title">
-        <h2 className={capsLook(shared.fieldTitle)} id="client-choice-title">
-          {oneVisit.choice}
-        </h2>
-        {products.length === 0 && <p className={shared.note}>{oneVisit.noProducts}</p>}
-        <div className={shared.choiceList}>
+      {/* The client's choice as radio rows, as the prototype draws it. */}
+      <div className={shared.field}>
+        <ChoiceGroup legend={oneVisit.choice} legendLook="caps" ruled>
           {options.map((option) => (
-            <ToggleButton
+            <Radio
               key={option.id}
-              className={shared.choice}
-              pressed={choice === option.id}
-              onClick={() => {
+              name="client-choice"
+              label={sayKnown(option.label)}
+              checked={choice === option.id}
+              onChange={() => {
                 onChoose(option.id);
               }}
-            >
-              {sayKnown(option.label)}
-            </ToggleButton>
+            />
           ))}
-        </div>
-        {choice === DECLINED && <p className={shared.note}>{oneVisit.declinedNote}</p>}
-      </section>
+        </ChoiceGroup>
+        {products.length === 0 && <p className={shared.ruledNote}>{oneVisit.noProducts}</p>}
+        {choice === DECLINED && <p className={shared.ruledNote}>{oneVisit.declinedNote}</p>}
+      </div>
       {choice !== null && choice !== DECLINED && (
         <When
           product={products.find((product) => product.tier === choice)?.name ?? choice}

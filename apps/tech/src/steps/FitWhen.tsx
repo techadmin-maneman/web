@@ -1,15 +1,14 @@
 // When a one visit's chosen hair system is fitted (docs/decisions/0247-the-steps-left.md): today, or another day ops
 // book with the client, which closes the visit as a consultation going ahead, with nothing to pay now.
 
-import { ToggleButton } from "@maneman/ui/ToggleButton";
-import { capsLook } from "@maneman/ui/Caps";
+import { ChoiceGroup, Radio } from "@maneman/ui/Field";
 import { oneVisit } from "../content.ts";
 import shared from "./steps.module.css";
 import { theirs } from "../lang/index.ts";
 
 /**
  * When the chosen hair system is fitted: today, only where the kit holds one, or another day ops book with the
- * client.
+ * client; radio rows with their second lines, as the prototype draws them.
  */
 export function When({
   product,
@@ -23,34 +22,29 @@ export function When({
   onLater: (later: boolean) => void;
 }) {
   return (
-    <section className={shared.field} aria-labelledby="client-when-title">
-      <h2 className={capsLook(shared.fieldTitle)} id="client-when-title">
-        {oneVisit.when}
-      </h2>
-      <div className={shared.choiceList}>
-        <ToggleButton
-          className={shared.choice}
-          pressed={!later}
+    <div className={shared.field}>
+      <ChoiceGroup legend={oneVisit.when} legendLook="caps" ruled>
+        <Radio
+          name="when"
+          label={oneVisit.fitToday}
+          detail={canFitToday ? oneVisit.inKit(theirs(product)) : oneVisit.notInKit(theirs(product))}
+          checked={!later}
           disabled={!canFitToday}
-          sub={canFitToday ? oneVisit.inKit(theirs(product)) : oneVisit.notInKit(theirs(product))}
-          onClick={() => {
+          onChange={() => {
             onLater(false);
           }}
-        >
-          {oneVisit.fitToday}
-        </ToggleButton>
-        <ToggleButton
-          className={shared.choice}
-          pressed={later}
-          sub={oneVisit.bookLaterSub}
-          onClick={() => {
+        />
+        <Radio
+          name="when"
+          label={oneVisit.bookLater}
+          detail={oneVisit.bookLaterSub}
+          checked={later}
+          onChange={() => {
             onLater(true);
           }}
-        >
-          {oneVisit.bookLater}
-        </ToggleButton>
-      </div>
-      {later && <p className={shared.note}>{oneVisit.laterNote}</p>}
-    </section>
+        />
+      </ChoiceGroup>
+      {later && <p className={shared.ruledNote}>{oneVisit.laterNote}</p>}
+    </div>
   );
 }
