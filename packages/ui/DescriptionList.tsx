@@ -15,15 +15,34 @@ export interface Description {
 export function DescriptionList({
   items,
   layout = "row",
+  inLabel = false,
   className,
 }: {
   readonly items: readonly Description[];
   /** A row that wraps, as a record's head is; or a list, a name beside each value. */
   readonly layout?: "row" | "list";
+  /**
+   * Inside a label, as a choice card's, which holds words alone: the same facts in spans, read out as the label's
+   * words.
+   */
+  readonly inLabel?: boolean;
   readonly className?: string | undefined;
 }) {
+  const look = classes(styles.facts, styles[layout], className);
+  if (inLabel) {
+    return (
+      <span className={look}>
+        {items.map((item) => (
+          <span key={item.term} className={styles.item}>
+            <span className={styles.term}>{item.term}</span>
+            <span className={styles.details}>{item.details}</span>
+          </span>
+        ))}
+      </span>
+    );
+  }
   return (
-    <dl className={classes(styles.facts, styles[layout], className)}>
+    <dl className={look}>
       {items.map((item) => (
         <div key={item.term} className={styles.item}>
           <dt className={styles.term}>{item.term}</dt>

@@ -66,6 +66,7 @@ const step = (picked: string | null) =>
     onClose: () => undefined,
     availability: AVAILABILITY,
     moveNotice: null,
+    stockNote: null,
     offered: null,
     date: DAY.date,
     chosenStart: picked,

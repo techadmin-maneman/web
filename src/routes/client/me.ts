@@ -159,7 +159,11 @@ function promisesOf(inputs: OpsInputs) {
   };
 }
 
-/** Their package's service visit and replacement, and each first fit priced for the hair system made to them. */
+/**
+ * Their package's service visit, every replacement on sale, which the client chooses among as they book it
+ * (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md), and each first fit priced for the hair
+ * system made to them.
+ */
 async function offeredServices(
   db: D1Database,
   of: {
@@ -170,7 +174,9 @@ async function offeredServices(
     readonly onPackage: string | null;
   },
 ) {
-  const services = forPackage(offeredAmong(of.sold.services, of.tomorrow, of.types), of.onPackage);
+  const onSale = offeredAmong(of.sold.services, of.tomorrow, of.types);
+  const theirs = new Set(forPackage(onSale, of.onPackage));
+  const services = onSale.filter((service) => service.kind === "replacement" || theirs.has(service));
   const priced = await pricedFor(db, services, { personId: of.personId, on: of.tomorrow, city: of.sold.city });
   return priced.map((service) => ({
     type: service.kind,

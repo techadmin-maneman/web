@@ -23,6 +23,38 @@ export const booking = {
     free: "Free",
     continue: "Continue",
   },
+  /**
+   * A replacement's choice of hair system (design/client-redesign, "Choose your next hair system"; ADR 0253): keep the
+   * one worn or change its base, each marked by how it compares, with what the change means beneath.
+   */
+  tier: {
+    head: "Book your replacement",
+    title: "Choose your next hair system",
+    /** "Your Mane Man Active hair system is due on 6 Dec. Keep it or change the base." */
+    due: (worn: string, date: string) => `Your ${worn} hair system is due on ${date}. Keep it or change the base.`,
+    /** Once its day has passed: a replacement may still be booked. */
+    wasDue: (worn: string, date: string) => `Your ${worn} hair system was due on ${date}. Keep it or change the base.`,
+    /** Under Choose a date, until one is chosen. */
+    missing: "Choose a hair system first.",
+    keep: "Keep it",
+    upgrade: "Upgrade",
+    downgrade: "Downgrade",
+    change: "Switch",
+    /** "Upgrade from Mane Man Active to Mane Man Natural". */
+    from: (how: string, worn: string, chosen: string) => `${how} from ${worn} to ${chosen}`,
+    /** "Rs. 18,000 with its fitting, lasts 6 months." */
+    costs: (amount: string, months: number) => `${amount} with its fitting, lasts ${String(months)} months.`,
+    serviceStays: (amount: string, every: string) => `Service stays ${amount} ${every}.`,
+    serviceChanges: (was: string, wasEvery: string, now: string, nowEvery: string) =>
+      `Service changes from ${was} ${wasEvery} to ${now} ${nowEvery}, from your first service after the fitting.`,
+    /** The old package's hair system is stock, for any client it fits, and nobody pays for it. */
+    oldBack: (worn: string) => `Any ${worn} hair system ordered for you goes back to stock, at no cost to you.`,
+    carries: "Your colour, density and hairline carry over.",
+    ask: "Not sure? Ask us",
+    /** The WhatsApp message "Ask us" opens with. */
+    asking: "I’d like help choosing my next hair system.",
+    next: "Choose a date",
+  },
   /** A first fit while ops offer no hair system in the console. */
   firstFitNotYet: "First fits aren’t open to book yet.",
   /** A paid visit, booked with ops on WhatsApp while online payment is off: what to expect. */
@@ -99,6 +131,9 @@ export const booking = {
     // The day offered being full, and the days past the first fortnight.
     offeredFull: (day: string) => `${day} is full. We’ve picked the next open day.`,
     offeredFullPickAnother: (day: string) => `${day} is full. Pick another day.`,
+    /** A replacement's hair system not held in the client's size: its days open once one can be there. */
+    notInStock: (date: string) =>
+      `Your next hair system isn’t in stock in your size yet. The earliest fitting is ${date}.`,
     later: "Later dates",
     laterFailed: "Those dates didn’t load. Try again.",
   },

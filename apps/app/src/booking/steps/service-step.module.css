@@ -19,3 +19,59 @@
   font-size: var(--fs-13);
   color: var(--brass-text);
 }
+
+/* A replacement's choice of hair system (./TierStep.tsx), as the design draws its tiers. */
+/* Among the choices, under their title, spaced as they are. */
+.tierDue {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ink-500);
+}
+
+/* Each hair system a card, the whole of it the choice (packages/ui ChoiceCard, its ticked look), its words spaced. */
+.tier {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: var(--sp-8);
+  padding: var(--sp-16);
+}
+
+.tierHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+}
+
+/* What ops wrote of it, beneath its name. */
+.tierWords {
+  font-size: var(--fs-14);
+  color: var(--ink-500);
+}
+
+.tierName {
+  flex: 1;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+}
+
+/* What a change means, on the wash beneath the choices. */
+.tierChange {
+  margin: var(--sp-4) 0 var(--sp-12);
+  padding: var(--sp-12) var(--sp-16);
+  background: var(--wash-100);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+.tierChangeTitle {
+  display: block;
+}
+
+.tierNote {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+  color: var(--ink-500);
+}
