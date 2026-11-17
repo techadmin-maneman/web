@@ -165,6 +165,9 @@ const HISTORY = [
    SELECT 'cr-' || i, i, 'p-' || i, 'other', 'Something is wrong.', '${AGO}' FROM n`,
   `INSERT INTO client_report_photos (report_id, n, object_key, bytes, created_at)
    SELECT 'cr-' || i, 1, 'reports/p-' || i || '/cr-' || i || '/1.jpg', 250000, '${AGO}' FROM n`,
+  // Each client's ask for a hair system made to order, closed by ops long ago (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md).
+  `INSERT INTO made_to_order_asks (id, person_id, kind, tier, requested_at, settled_at)
+   SELECT 'mto-' || i, 'p-' || i, 'replacement', 'essential', '${AGO}', '${AGO}' FROM n`,
   // Each client's alerts in their app, pushed and read; and a browser of theirs that takes the pushes.
   `INSERT INTO client_app_alerts (id, person_id, kind, subject_kind, subject_id, once_key, written_at, pushed_at, read_at)
    SELECT 'cal-' || i, 'p-' || i, 'visit_reminder', 'appointment', 'a-' || i, 'message:history-' || i, '${HOURS_AGO}',

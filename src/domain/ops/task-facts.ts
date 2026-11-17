@@ -32,6 +32,7 @@ export type TaskFacts =
       readonly first_fit: { readonly window: BookingWindow | null } | null;
     }
   | { readonly group: "replacement_order"; readonly piece_code: string; readonly due_on: Day }
+  | { readonly group: "made_to_order_ask"; readonly kind: "first_fit" | "replacement"; readonly name: string }
   | { readonly group: "recall_call"; readonly piece_codes: string[] }
   | { readonly group: "stock_at_risk"; readonly consumable_code: string | null; readonly name: string | null }
   | { readonly group: "referral_review"; readonly signal: string | null }

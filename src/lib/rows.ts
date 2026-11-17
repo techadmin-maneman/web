@@ -744,6 +744,14 @@ export interface Rows {
     readonly set_by: string;
     readonly set_at: string;
   };
+  readonly made_to_order_asks: {
+    readonly id: string;
+    readonly person_id: string;
+    readonly kind: string;
+    readonly tier: string;
+    readonly requested_at: string;
+    readonly settled_at: string | null;
+  };
   readonly maintenance: {
     readonly id: number;
     readonly reason: string;

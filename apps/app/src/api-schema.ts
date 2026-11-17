@@ -2563,6 +2563,100 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/made-to-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask ops to order a hair system made to the client's size */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MadeToOrderAsk"];
+                };
+            };
+            responses: {
+                /** @description Kept, or already open: ops order it and message the client */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MadeToOrderAsked"];
+                    };
+                };
+                /** @description invalid_request: see error.fields */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_made_to_order: booking the visit would not say it is made to order: the client may not book it now, no such package is on sale, or their size of it is in stock */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_made_to_order";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/alerts": {
         parameters: {
             query?: never;
@@ -5582,7 +5676,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "made_to_order" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "already_rated" | "visit_not_done" | "rating_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "made_to_order" | "not_made_to_order" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "already_rated" | "visit_not_done" | "rating_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -6499,6 +6593,22 @@ export interface components {
         };
         RateVisit: {
             stars: number;
+        };
+        MadeToOrderAsked: {
+            /**
+             * Format: date-time
+             * @description When it was first asked.
+             */
+            requested_at: string;
+        };
+        MadeToOrderAsk: {
+            /**
+             * @description The visit it is asked at.
+             * @enum {string}
+             */
+            type: "first_fit" | "replacement";
+            /** @description The package whose hair system it is. */
+            tier: string;
         };
         ClientAlerts: {
             /** @description The last 30 days', newest first. */

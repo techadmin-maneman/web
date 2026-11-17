@@ -321,7 +321,7 @@ function BeforeTheDays(props: {
       // The service picked, else the one there is.
       return (
         <MadeToOrderStep
-          name={(props.picked ?? props.services[0])?.name ?? null}
+          service={props.picked ?? props.services[0] ?? null}
           onBack={props.onBack}
           onClose={props.onClose}
         />

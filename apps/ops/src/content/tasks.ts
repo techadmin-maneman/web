@@ -98,6 +98,7 @@ export const tasks = {
     // A group the board does not draw (docs/decisions/0086-the-next-visit-is-offered.md).
     first_fit_to_book: "First fit to book",
     replacement_order: "Replacement order",
+    made_to_order_ask: "Made to order",
     stock_at_risk: "Stock at risk",
     at_risk_client: "At-risk client",
     // A group the board does not draw.
@@ -245,6 +246,8 @@ export const tasks = {
      */
     replacement_order: (piece: string, orderBy: string, due: string) =>
       `${piece} · order by ${orderBy}, replace by ${due}`,
+    /** "Mane Man Essential · Replacement": the hair system to order in the client's size, and the visit it is for. */
+    made_to_order_ask: (hairSystem: string, visit: string) => `${hairSystem} · ${visit}`,
     /**
      * "The piece was not ready · 20 Sep": book the visit that finishes it. The reason is in the
      * words the job sheet gives it, which ops set in Settings (docs/decisions/0087-consumables-and-stock.md).
@@ -385,6 +388,8 @@ export const tasks = {
     kitRequest: { open: "Sent", label: "What was sent" },
     /** A technician's ask to move a visit closes with what was agreed with the client. */
     reschedule: { open: "Close", label: "What was agreed" },
+    /** A hair system made to order closes once it is ordered, paid for and the fitting booked with the client. */
+    madeToOrder: { open: "Ordered", label: "What was ordered and booked" },
     confirm: "Close task",
     closing: "Closing…",
     errors: {

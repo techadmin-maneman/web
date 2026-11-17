@@ -150,6 +150,7 @@ describe("restoring the whole database", () => {
       "reschedule_requests",
       "tech_alerts",
       "client_app_alerts",
+      "made_to_order_asks",
     ]);
   });
 });

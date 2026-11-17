@@ -79,6 +79,8 @@ export const EXPORT_QUERIES = {
   // The issues they reported from the app (docs/decisions/0259-the-issue-log.md).
   client_reports: `SELECT number, category, text, created_at, closed_at, sorted_at, reopened_at
     FROM client_reports WHERE person_id = ?1 ORDER BY created_at`,
+  // Their asks for a hair system made to their size (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md).
+  made_to_order_asks: `SELECT kind, tier, requested_at FROM made_to_order_asks WHERE person_id = ?1 ORDER BY requested_at`,
   // Their stars for their visits (docs/decisions/0260-ratings.md).
   visit_ratings: `SELECT a.window_start AS visit, r.stars, r.created_at
     FROM visit_ratings r JOIN appointments a ON a.id = r.appointment_id

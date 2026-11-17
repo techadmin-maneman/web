@@ -1,6 +1,6 @@
 // The readable copy's part for a client's custom orders (./my-data.ts; docs/decisions/0174-custom-orders.md).
 
-import { code, day, money, text, time, words, type Part } from "./my-data-fields.ts";
+import { code, day, money, named, text, time, words, type Part } from "./my-data-fields.ts";
 
 export const CUSTOM_ORDERS_PART: Part = {
   title: "Hair systems made for you",
@@ -24,5 +24,15 @@ export const CUSTOM_ORDERS_PART: Part = {
     refunded_at: time("Refunded"),
     raised_at: time("Ordered"),
     updated_at: time("Last changed"),
+  },
+};
+
+/** Their asks for a hair system made to their size, which ops order (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md). */
+export const MADE_TO_ORDER_PART: Part = {
+  title: "Your asks for a hair system made to your size",
+  fields: {
+    kind: named("For", { first_fit: "First fit", replacement: "Replacement" }),
+    tier: text("Hair system"),
+    requested_at: time("Asked"),
   },
 };

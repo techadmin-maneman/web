@@ -45,6 +45,7 @@ import { registerTechOptions } from "./routes/tech/options.ts";
 import { registerClientDisputes } from "./routes/client/disputes.ts";
 import { registerClientSignOff } from "./routes/client/sign-offs.ts";
 import { registerClientRatings } from "./routes/client/ratings.ts";
+import { registerClientMadeToOrder } from "./routes/client/made-to-order.ts";
 import { registerClientAppAlerts } from "./routes/client/app-alerts.ts";
 import { registerClientProblemLog } from "./routes/client/problem-log.ts";
 import { registerClientPackages } from "./routes/client/packages.ts";
@@ -142,6 +143,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     // The client signs off a fit (docs/decisions/0254-client-signs-off-the-fit.md).
     registerClientSignOff,
     registerClientRatings,
+    registerClientMadeToOrder,
     // The client's alerts and pushes (docs/decisions/0255-client-alerts-and-push.md).
     registerClientAppAlerts,
     registerClientProblems,

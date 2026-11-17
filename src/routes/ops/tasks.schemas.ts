@@ -36,6 +36,10 @@ export const TaskFactsSchema = z
       }),
     }),
     facts("replacement_order", { piece_code: z.string(), due_on: day }),
+    facts("made_to_order_ask", {
+      kind: z.enum(["first_fit", "replacement"]).openapi({ description: "The visit it was asked at." }),
+      name: z.string().openapi({ description: "The hair system, by its package's name." }),
+    }),
     facts("recall_call", { piece_codes: z.array(z.string()) }),
     facts("stock_at_risk", { consumable_code: z.string().nullable(), name: z.string().nullable() }),
     facts("referral_review", { signal: z.string().nullable().openapi({ description: "The first fraud rule met." }) }),

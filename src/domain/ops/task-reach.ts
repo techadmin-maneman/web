@@ -21,6 +21,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   consultation_request: "consultation_request",
   first_fit_to_book: "client",
   replacement_order: "piece",
+  made_to_order_ask: "made_to_order_ask",
   recall_call: "client",
   stock_at_risk: "visit",
   at_risk_client: "visit",

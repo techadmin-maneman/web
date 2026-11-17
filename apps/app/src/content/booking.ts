@@ -100,10 +100,17 @@ export const booking = {
   /** A fit whose hair system no stock code is made to the client's size: ops order it and book it on WhatsApp. */
   madeToOrder: {
     title: "Made to order in your size",
+    /** Once ops have the ask. */
+    ordering: "We’ll order it in your size and message you on WhatsApp to book your fitting.",
+    /** Where the ask could not reach us: the client asks on WhatsApp instead. */
     line: "Ask us and we’ll order it, then message you to book your fitting.",
     ask: "Ask us on WhatsApp",
+    done: "Done",
+    questions: "Questions? Ask us",
     /** The WhatsApp message "Ask us" opens with: "Please order my Mane Man Essential replacement in my size." */
     asking: (visit: string | null) => `Please order my ${visit ?? "hair system"} in my size.`,
+    /** The WhatsApp message "Questions? Ask us" opens with, once ops have the ask. */
+    about: (visit: string | null) => `About my ${visit ?? "hair system"} made to order: `,
   },
   /**
    * The day and the time on it, on one screen (design/client-redesign, "Pick a time"): the earliest open time to take

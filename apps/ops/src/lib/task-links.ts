@@ -13,6 +13,7 @@ type Group = TaskGroup["group"];
 /** The groups about something other than the client's visits, and the tab of their page each is about. */
 const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   replacement_order: "pieces",
+  made_to_order_ask: "pieces",
   draft_invoice: "payments",
   payment_owed: "payments",
   payment_to_refund: "payments",

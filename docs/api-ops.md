@@ -35286,6 +35286,7 @@ Request body:
             "no_product",
             "no_profile",
             "made_to_order",
+            "not_made_to_order",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -39590,6 +39591,7 @@ Request body:
             "no_product",
             "no_profile",
             "made_to_order",
+            "not_made_to_order",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -49997,6 +49999,7 @@ Request body:
               "consultation_request",
               "first_fit_to_book",
               "replacement_order",
+              "made_to_order_ask",
               "stock_at_risk",
               "at_risk_client",
               "partial_visit",
@@ -50384,6 +50387,35 @@ Request body:
         "group",
         "piece_code",
         "due_on"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "made_to_order_ask"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "first_fit",
+            "replacement"
+          ],
+          "description": "The visit it was asked at."
+        },
+        "name": {
+          "type": "string",
+          "description": "The hair system, by its package's name."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "name"
       ],
       "additionalProperties": false
     },

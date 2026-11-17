@@ -47,5 +47,9 @@ replacement_opens_on}`, from the piece in wear and the package it was fitted und
    some place holds opens as usual, ops moving it. A size no stock code matches is made to order: ops order it, take
    its payment and book the fitting on WhatsApp (the owner's ruling of 16 November), with no custom-order step in the
    app. A first fit or a replacement of a package no code is made to the client's complete profile in is refused
-   `made_to_order`, its days and its hold alike (`madeToOrder`, through `bookable`), and the app says so, with a way to
-   ask on WhatsApp. Once ADR 0174's custom order is paid, its code matches, and the visit books as usual.
+   `made_to_order`, its days and its hold alike (`madeToOrder`, through `bookable`). The app says so and sends the ask
+   itself (`POST /api/me/made-to-order`, kept once a client, visit and package while open, migration 0215), which is a
+   Made to order task on Operations' board until ops close it with what was ordered and booked, or a visit of its kind
+   is booked for the client (the owner's ruling of 17 November); the API keeps an ask only where booking would answer
+   `made_to_order`; the app then says we will order it and message them, and where the ask cannot reach us, asks the client to
+   send it on WhatsApp. Once ADR 0174's custom order is paid, its code matches, and the visit books as usual.
