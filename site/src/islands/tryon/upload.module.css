@@ -41,3 +41,8 @@
 .blocked {
   margin: 0;
 }
+
+/* The terms and the privacy notice, which a flow with no footer links from its first screen. */
+.legal {
+  margin-top: var(--sp-16);
+}

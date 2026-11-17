@@ -9,6 +9,7 @@ import { lightOf } from "@maneman/web-kit/small-jpeg";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { notices, tryOn } from "../../content/site.ts";
 import { useReleased } from "./hooks.ts";
+import { LegalLinks } from "../LegalLinks.tsx";
 import { Title, type HeadingRef } from "./Title.tsx";
 import shared from "./TryOn.module.css";
 import styles from "./upload.module.css";
@@ -139,6 +140,7 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
   return (
     <div>
       <Guidelines heading={props.heading} />
+      <LegalLinks alone={styles.legal} />
       <div class={`${shared.foot ?? ""} ${styles.actions ?? ""}`}>
         {hasCamera && (
           <Button
