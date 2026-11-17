@@ -2,7 +2,7 @@
 
 The brief is `docs/prompts/site-redesign.md`; the prototype is `design/site-redesign/` (24 boards, 60 screens, 17
 November 2026). This plan maps every board and state to what builds it, every asset to the file that fills it, the token
-changes, and the departures expected. ADRs 0262 to 0265 hold the decisions; each lands before the code it governs.
+changes, and the departures expected. ADRs 0262 to 0266 hold the decisions; each lands before the code it governs.
 The boards and the README are committed; the 60 screens (23.6 MB of PNGs) stay out of git and on the build machine,
 since `design/` holds no PNGs and they would add nearly a third to every clone. The fidelity check reads the boards.
 
@@ -53,15 +53,18 @@ control with `aria-pressed`. Without JavaScript the first option shows, and ever
 
 ### Header, footer, sticky bar, flow frame
 
-- **Header** (`Header.astro`): phone, the lockup, "Sign in" and "Free consultation" filled navy; laptop, the lockup, the
-  three section links, "Sign in" and "Book a free consultation" filled navy. The "Delhi NCR" tag goes (it moves to the
+- **Header** (`Header.astro`): phone, the lockup, "Sign in" and "Free consultation"; laptop, the lockup, the three
+  section links, "Sign in" and "Book a free consultation". The Book is an outline, where the boards draw it filled
+  (ADR 0266). The "Delhi NCR" tag goes (it moves to the
   hero). "Sign in" opens the client app (`lib/app-link.ts`, `clientAppOrigin`); where the app is not switched on, as in
   production until its release, the link is left out rather than pointing at a host that does not answer.
 - **Footer** (`Footer.astro`, `SlimFooter.astro`): as live, navy, a `navy-700` rule above it, without its Book button.
-- **Sticky bar** (`StickyBar.astro`): as live, WhatsApp and Book, shown on phones once the hero has passed.
-- **Flow frame** (new, `layouts/Flow.astro`): `/book` and `/try` on a phone are full-screen flows with the client app's
-  top bar (back, title, close) and step bar, no site header or footer. On a laptop: the lockup, "Back to the site" (and
-  on `/try`, "Free consultation" as an outline), then the flow, no footer. ADR 0265.
+- **Sticky bar** (`StickyBar.astro`): white under a hairline, WhatsApp and the filled Book, on phones once the hero has
+  passed; it steps down while a section's own filled button (`data-filled`) is on the screen (ADR 0266).
+- **Flow frame.** On a laptop (PR 2, in `Header.astro` and `SlimFooter.astro`, for `isFlowPage`): the lockup, "Back to
+  the site" (and on `/try`, "Free consultation" as an outline), then the flow, no footer. On a phone (PRs 5 and 6, with
+  each flow's top bar): `/book` and `/try` fill the screen under the client app's top bar (back, title, close) and step
+  bar, with no site header or footer; until then a phone keeps the site header and slim footer there. ADR 0265.
 
 ### `/book` states (ADR 0081, 0116, 0118, 0217)
 
@@ -150,7 +153,8 @@ The flow frame's other words are live strings, reused by key: "Free consultation
    swipeable cards (#783). The prototype draws segmented toggles; the prototype wins on look, so the cards become
    toggles.
 2. **The header's Book is an outline.** The boards draw it filled beside every section's own filled button; the owner
-   ruled on 17 November 2026 that it is an outline everywhere, so each screen keeps one filled button (ADR 0266).
+   ruled on 17 November 2026 that it is an outline everywhere, so each screen keeps one filled button. On a phone the
+   sticky bar's filled Book steps down while a section's own is on the screen (ADR 0266).
 3. **Board stand-ins**: one results pair, grey look thumbnails, guide photographs, "Prototype:" lines and the stubbed
    clauses in privacy and terms are not built; the real content is.
 4. **The one visit's length** reads as the API gives it; the board's "2.5 hours" shows only if ops set it.
@@ -170,10 +174,10 @@ where touched) for `ui-guard`.
 ## PRs
 
 1. Fidelity on `design/site-redesign/boards`; tokens (palette, Plex, type and space scale); the old fonts out.
-2. Header, footer, sticky bar, slim header and footer, the flow frame.
+2. Header, footer, sticky bar, slim footer, and the laptop's flow bar.
 3. Hero.
 4. Home sections 2 to 11, with the bands, the picker and the toggles.
-5. `/book` on the client app's parts, phone and laptop.
-6. `/try` on the client app's parts, phone and laptop.
+5. `/book` on the client app's parts, phone and laptop, with the phone's flow frame.
+6. `/try` on the client app's parts, phone and laptop, with the phone's flow frame.
 7. Guides, areas and the text pages.
 8. 360, 768, 130% text, reduced motion, Save-Data; Lighthouse; `REPORT.md`.

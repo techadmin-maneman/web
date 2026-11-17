@@ -4,7 +4,6 @@
 - Date: 2026-11-17
 - Topic: The site
 - Amends [0262](0262-the-sites-typeface-and-palette.md): decisions 3 and 4
-- Amends [0263](0263-the-home-pages-order-and-bands.md): decision 6
 
 ## Context
 
@@ -15,7 +14,8 @@ on white (3.0:1) and on the cool ground (2.8:1), so PR 1 drew gold-700 there. Th
 ## Decision
 
 1. **The header's Book is an outline**, on a phone and a laptop alike, so a screen's one filled button is the page's own:
-   a section's, or on a phone the sticky bar's.
+   a section's, or on a phone the sticky bar's. The sticky bar steps down while a section's own filled button is on the
+   screen, so the two never show together.
 2. **The focus ring is brass on every ground**, as the brief gives it: 5.1:1 on navy, and under 3:1 on white and cool,
    which the owner accepted.
 

@@ -74,7 +74,7 @@
     appearance: none;
   }
 
-  /* Keyboard focus: a brass ring on every ground (ADR 0262). */
+  /* Keyboard focus: a brass ring on every ground (ADR 0266). */
   :focus-visible {
     outline: var(--focus-width) solid var(--focus-colour, var(--site-focus));
     outline-offset: var(--focus-offset);

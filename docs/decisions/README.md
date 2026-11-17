@@ -564,7 +564,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0260](0260-ratings.md) | Ratings | 2026-11-16 | accepted |  |
 | [0261](0261-razorpay-money-in-books.md) | Razorpay's money in Books, from payment to the bank | 2026-11-17 | accepted |  |
 | [0262](0262-the-sites-typeface-and-palette.md) | The site's typeface and palette | 2026-11-17 | accepted | [0266](0266-the-sites-header-book-and-focus-ring.md) |
-| [0263](0263-the-home-pages-order-and-bands.md) | The home page's order and bands | 2026-11-17 | accepted | [0266](0266-the-sites-header-book-and-focus-ring.md) |
+| [0263](0263-the-home-pages-order-and-bands.md) | The home page's order and bands | 2026-11-17 | accepted |  |
 | [0264](0264-the-hero-restyled.md) | The hero, restyled | 2026-11-17 | accepted |  |
 | [0265](0265-book-and-try-on-the-client-apps-look.md) | `/book` and `/try` on the client app's look | 2026-11-17 | accepted |  |
 | [0266](0266-the-sites-header-book-and-focus-ring.md) | The site's header Book and focus ring | 2026-11-17 | accepted |  |

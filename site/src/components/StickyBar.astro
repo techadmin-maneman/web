@@ -1,7 +1,7 @@
 ---
 // The bar fixed to the foot of a phone's home page, white under a hairline (ADR 0263): WhatsApp beside the free
-// consultation, which is the one filled button on the screen while it shows. It rises once the hero has gone by; where
-// scripts do not run it is there from the start. On a wider screen the header's own button books.
+// consultation, the one filled button on the screen while it shows. A section's own filled button carries
+// data-filled, which the script beneath watches for. On a wider screen the header's own button books.
 import { stickyBar, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -27,22 +27,27 @@ import { iconButtonLook } from "@maneman/ui/IconButton";
   </div>
 </nav>
 <script is:inline>
-  // Below the screen from the first paint, where the script beneath can bring it up.
-  if ("IntersectionObserver" in window) document.currentScript.previousElementSibling.dataset.waiting = "";
-</script>
-
-<script>
-  // Up once the hero has scrolled away, and down again when it comes back.
-  const bar = document.querySelector<HTMLElement>("[data-sticky-bar]");
-  const hero = document.querySelector('[data-section="hero"]');
-  if (bar !== null && hero !== null && "IntersectionObserver" in window) {
-    new IntersectionObserver(([entry]) => {
-      if (entry === undefined) return;
-      const gone = !entry.isIntersecting && entry.boundingClientRect.top < 0;
-      if (gone) delete bar.dataset.waiting;
+  // Up once the hero has scrolled away, and down while a section's own filled button is on the screen, so one filled
+  // button shows at a time (ADR 0266). Where scripts do not run, it is there from the start.
+  (() => {
+    const bar = document.currentScript.previousElementSibling;
+    const hero = document.querySelector('[data-section="hero"]');
+    if (bar === null || hero === null || !("IntersectionObserver" in window)) return;
+    const filled = new Set();
+    let heroGone = false;
+    bar.dataset.waiting = "";
+    const watch = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === hero) heroGone = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+        else if (entry.isIntersecting) filled.add(entry.target);
+        else filled.delete(entry.target);
+      }
+      if (heroGone && filled.size === 0) delete bar.dataset.waiting;
       else bar.dataset.waiting = "";
-    }).observe(hero);
-  }
+    });
+    watch.observe(hero);
+    for (const button of document.querySelectorAll("main [data-filled]")) watch.observe(button);
+  })();
 </script>
 
 <style>

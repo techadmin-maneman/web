@@ -19,7 +19,7 @@
   --site-navy-rule: var(--navy-700); /* rules and edges on navy: the footer's top */
   --site-gold: var(--gilt); /* the one filled button on navy */
   --site-gold-hover: var(--gilt-hover);
-  --site-focus: var(--brass); /* the focus ring, on every ground (ADR 0262) */
+  --site-focus: var(--brass); /* the focus ring, on every ground (ADR 0266) */
   --site-line: var(--line-200);
   --site-text: var(--ink-900);
   --site-text-muted: var(--ink-500);

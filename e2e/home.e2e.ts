@@ -108,6 +108,26 @@ test.describe("the flow's bar", () => {
   });
 });
 
+// While the cookie bar asks, a laptop's flow keeps its room beneath the form, which has no footer below it.
+test.describe("the cookie bar on a flow", () => {
+  test.use({ consentBarAsks: true });
+
+  test("leaves the form's last button above it", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === "390", "a phone's flow keeps its slim foot");
+    await visit(page, "/book");
+    const bar = page.getByRole("region", { name: siteCopy.consentBar.label });
+    await expect(bar).toBeVisible();
+    // At once: the site scrolls smoothly, and the measure would be taken mid-way.
+    await page.evaluate(() => {
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
+    });
+    const form = page.locator("main form").last();
+    const formBottom = await form.evaluate((element) => element.getBoundingClientRect().bottom);
+    const barTop = await bar.evaluate((element) => element.getBoundingClientRect().top);
+    expect(formBottom).toBeLessThanOrEqual(barTop);
+  });
+});
+
 test.describe("sticky bar and footer: the home page only", () => {
   // The bar is a phone's: on a wider screen the header's own button books.
   test("appear on the home page, the bar on a phone once the hero has gone by", async ({ page }, testInfo) => {
@@ -119,6 +139,16 @@ test.describe("sticky bar and footer: the home page only", () => {
     });
     if (testInfo.project.name === "390") await expect(bar).toBeVisible();
     else await expect(bar).toBeHidden();
+    if (testInfo.project.name === "390") {
+      // A section's own filled button on the screen sends the bar down, so one filled button shows (ADR 0266).
+      await page
+        .locator("main [data-filled]")
+        .first()
+        .evaluate((button) => {
+          button.scrollIntoView({ block: "center" });
+        });
+      await expect(bar).toBeHidden();
+    }
     await page.evaluate(() => {
       window.scrollTo(0, 0);
     });
@@ -134,10 +164,13 @@ test.describe("sticky bar and footer: the home page only", () => {
     await expect(page.locator('footer a[href="/book"]')).toHaveCount(0);
   });
 
-  // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms.
+  // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms. A laptop's /try and
+  // /book have no foot at all (the flow's bar, above).
   for (const path of ["/try", "/book", "/privacy"]) {
-    test(`are absent from ${path}, which keeps the slim foot`, async ({ page }) => {
+    test(`are absent from ${path}, which keeps the slim foot`, async ({ page }, testInfo) => {
+      test.skip(path !== "/privacy" && testInfo.project.name !== "390", "a laptop's flow has no foot");
       await page.goto(path);
+      await expect(page.locator("footer")).toBeVisible();
       await expect(page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel })).toHaveCount(0);
       await expect(page.locator("footer")).toHaveCount(1);
       await expect(page.locator("footer")).not.toContainText(siteCopy.footer.area);
