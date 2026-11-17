@@ -56,7 +56,7 @@ describe("the next visit card's money line", () => {
   const visit = { pay_at_visit: null, prepaid: false, type: "service" } as const;
 
   it("says what is left to pay at the visit, that it is paid ahead, or a consultation's nothing", () => {
-    expect(paidLine({ ...visit, pay_at_visit: 220000 })).toBe("Pay Rs. 2,200 by UPI at the visit");
+    expect(paidLine({ ...visit, pay_at_visit: 220000 })).toBe("Pay Rs. 2,200 by the Razorpay link we send you");
     expect(paidLine({ ...visit, prepaid: true })).toBe("Paid");
     expect(paidLine({ ...visit, type: "consultation" })).toBe("Free");
   });

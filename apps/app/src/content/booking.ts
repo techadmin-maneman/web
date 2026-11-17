@@ -58,7 +58,7 @@ export const booking = {
   /** A first fit while ops offer no hair system in the console. */
   firstFitNotYet: "First fits aren’t open to book yet.",
   /** A paid visit, booked with ops on WhatsApp while online payment is off: what to expect. */
-  withOps: (price: string) => `We book it with you on WhatsApp. You pay ${price} by UPI at the visit.`,
+  withOps: (price: string) => `We book it with you on WhatsApp. You pay ${price} through a Razorpay link we send you.`,
   /** Request mode (design/client-redesign, "Ask for a time"): while booking with ops, the pick goes to them on WhatsApp. */
   request: {
     title: "Ask for a time",

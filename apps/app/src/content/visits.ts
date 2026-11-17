@@ -12,8 +12,11 @@ export const visits = {
   /** Visits: a visit paid for ahead, or covered by a credit; a consultation, which costs nothing. */
   paid: "Paid",
   free: "Free",
-  /** A visit paid by UPI at the visit while online payment is off (ADR 0209): "Pay Rs. 2,200 by UPI at the visit". */
-  payAtVisit: (amount: string) => `Pay ${amount} by UPI at the visit`,
+  /**
+   * A visit still to pay while online payment is off (ADR 0209), through the Razorpay link sent for it, never UPI at the
+   * visit (ADR 0270): "Pay Rs. 2,200 by the Razorpay link we send you".
+   */
+  payAtVisit: (amount: string) => `Pay ${amount} by the Razorpay link we send you`,
   /** A consultation asked for on the site, which ops have yet to confirm. */
   requested: "Requested",
   // A visit that is not this client's, or no longer exists.
