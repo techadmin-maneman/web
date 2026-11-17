@@ -1,6 +1,6 @@
 ---
-// Questions: ten disclosures, the first open, one open at a time. <details>
-// sharing a `name` behave as one group, so this needs no script.
+// Questions, on the cool ground (ADR 0263): ten disclosures, the first open, one open at a time. <details> sharing a
+// `name` behave as one group, so this needs no script.
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { faq, whatsapp } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
@@ -11,65 +11,60 @@ import Disclosure from "../Disclosure.astro";
 const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
 ---
 
-<section id="faq" class="container faq" data-section="faq">
-  <div class="intro">
-    <h2 class="section-title">{faq.title}</h2>
-    <p>
-      {[
-        faq.intro.before,
-        link === null ? (
-          faq.intro.link
-        ) : (
-          <a class={textLinkLook({ inline: true })} href={link}>
-            {faq.intro.link}
-          </a>
-        ),
-        faq.intro.after,
-      ]}
-    </p>
-  </div>
-  <div class="list">
-    {faq.items.map((item, index) => (
-      <Disclosure summary={item.q} look="question" name="faq" open={index === 0}>
-        {"cities" in item ? (
-          <p class="answer" data-cities={item.cities}>
-            {item.a}
-          </p>
-        ) : (
-          <p class="answer">{item.a}</p>
-        )}
-      </Disclosure>
-    ))}
+<section id="faq" class="band ground-cool" data-section="faq">
+  <div class="container faq">
+    <div class="intro">
+      <h2 class="section-title">{faq.title}</h2>
+      <p class="lead">
+        {[
+          faq.intro.before,
+          link === null ? (
+            faq.intro.link
+          ) : (
+            <a class={textLinkLook({ inline: true })} href={link}>
+              {faq.intro.link}
+            </a>
+          ),
+          faq.intro.after,
+        ]}
+      </p>
+    </div>
+    <div class="list">
+      {faq.items.map((item, index) => (
+        <Disclosure summary={item.q} look="question" name="faq" open={index === 0}>
+          {"cities" in item ? (
+            <p class="answer" data-cities={item.cities}>
+              {item.a}
+            </p>
+          ) : (
+            <p class="answer">{item.a}</p>
+          )}
+        </Disclosure>
+      ))}
+    </div>
   </div>
 </section>
 
 <style>
   .faq {
-    padding-top: var(--section-gap);
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min)), 1fr));
-    gap: var(--space-xl);
-    align-items: start;
-  }
-  .intro {
-    max-width: var(--faq-intro-max);
-  }
-  .intro p {
-    margin: var(--sp-24) 0 0;
-    font-size: var(--fs-17);
-    line-height: var(--lh-160);
-    color: var(--text-muted);
-    text-wrap: pretty;
+    gap: var(--site-gap-list);
   }
   .list {
-    border-top: var(--hairline) solid var(--text);
+    border-top: var(--hairline) solid var(--site-line);
   }
   .answer {
-    margin: 0 0 var(--sp-24);
-    font-size: var(--fs-17);
-    line-height: var(--lh-160);
-    color: var(--text-soft);
-    max-width: var(--measure-note);
-    text-wrap: pretty;
+    margin: 0;
+    padding: 0 var(--site-space-28-60) var(--site-gap-block) 0;
+    font-size: var(--site-fs-body);
+    line-height: var(--lh-155);
+    color: var(--site-text-muted);
+  }
+  @media (min-width: 761px) {
+    .faq {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      gap: var(--site-columns-gap);
+      align-items: start;
+    }
   }
 </style>

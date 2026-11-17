@@ -116,6 +116,21 @@
   padding-inline: var(--gutter);
 }
 
+/* A home section's ground and its frame, white, cool and navy in turn (ADR 0263). */
+.band {
+  padding-block: var(--site-section-y);
+}
+.ground-white {
+  background: var(--site-ground);
+}
+.ground-cool {
+  background: var(--site-band);
+}
+.ground-navy {
+  background: var(--site-navy);
+  color: var(--site-on-navy);
+}
+
 /* ---- Type ----------------------------------------------------------------- */
 
 .serif {
@@ -126,26 +141,58 @@
   margin: 0;
   font-family: var(--site-font);
   font-weight: var(--weight-semibold);
-  font-size: var(--fs-h2);
-  line-height: var(--lh-115);
-  letter-spacing: var(--tracking-heading);
+  font-size: var(--site-fs-section);
+  line-height: var(--site-lh-section);
+  letter-spacing: var(--site-tracking-section);
+  color: var(--site-navy);
+}
+.ground-navy .section-title {
+  color: var(--site-on-navy);
 }
 
 .lead {
-  font-size: var(--fs-lead);
-  line-height: var(--lh-160);
+  margin: var(--site-gap-lede) 0 0;
+  font-size: var(--site-fs-lead);
+  line-height: var(--lh-150);
   color: var(--site-text-muted);
-  max-width: var(--measure-lead);
-  text-wrap: pretty;
+}
+.ground-navy .lead {
+  color: var(--site-on-navy-muted);
+}
+
+/* A section's small heading: "The guarantee", "Try-on". */
+.eyebrow {
+  margin: 0;
+  font-size: var(--site-fs-label);
+  font-weight: var(--weight-semibold);
+  color: var(--site-text-muted);
+}
+.ground-navy .eyebrow {
+  color: var(--site-on-navy-muted);
+}
+
+.body-text {
+  margin: 0;
+  font-size: var(--site-fs-body);
+  line-height: var(--lh-155);
+}
+
+/* A section's closing statement under a navy rule. */
+.statement {
+  margin: 0;
+  border-top: var(--rule-strong) solid var(--site-navy);
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
 }
 
 /* ---- Labels on images: tags, numerals, Before and After ---------------- */
 
 .label {
   background: var(--site-navy);
-  padding: var(--sp-8) var(--sp-12);
+  padding: var(--site-tag-pad-y) var(--site-tag-pad-x);
   font-size: var(--site-fs-label);
   font-weight: var(--weight-semibold);
+  line-height: var(--lh-100);
   color: var(--site-on-navy);
   white-space: nowrap;
 }

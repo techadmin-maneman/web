@@ -1,0 +1,81 @@
+/* A phone's Norwood picker (./NorwoodPicker.tsx): the choice of stage, then its picture beside the restored hairline. */
+.picker {
+  /* Each choice a finger's 44 px, inside the track's 2 px either side. */
+  --control-height: calc(var(--tap) + 2 * var(--sp-2));
+
+  margin-top: var(--site-gap-list);
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-12);
+}
+.choices {
+  margin-bottom: var(--sp-16);
+}
+/* Where scripts run, the stage chosen alone from the first paint; where they never do, every stage and no choice. */
+@media (scripting: enabled) {
+  .tile[data-chosen="false"] {
+    display: none;
+  }
+}
+@media (scripting: none) {
+  .choices {
+    display: none;
+  }
+}
+.tile {
+  margin: 0;
+}
+.frame {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  background: var(--site-band);
+  overflow: hidden;
+}
+.restored {
+  background: var(--site-navy);
+}
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+}
+.numeral {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--site-numeral-w);
+  height: var(--site-numeral-h);
+}
+/* The band across a picture's foot that says what it is: an illustration, or a placeholder. */
+.band {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: var(--sp-8) var(--site-tag-pad-x);
+  background: var(--site-navy-veil);
+  font-size: var(--site-fs-label);
+  font-weight: var(--weight-medium);
+  color: var(--site-on-navy);
+}
+.caption {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--sp-8);
+}
+.name {
+  font-size: var(--site-fs-body);
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
+}
+.sub {
+  font-size: var(--site-fs-label);
+  color: var(--site-text-muted);
+}

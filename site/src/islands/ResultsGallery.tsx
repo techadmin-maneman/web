@@ -1,11 +1,10 @@
-// The results beneath the hero: one client's before and after at a time, large, on the shared compare. On a wide
-// screen the section's heading, the pair's line, where it stands among the rest and the arrows to the next stand
-// together beside it; on a phone the heading comes first and the rest beneath the picture. The page draws no swipe of its own, since a
+// The results beneath the hero: one client's before and after at a time, large, on the shared compare. On a laptop the
+// section's heading, and beneath it the pair's line, where it stands among the rest and the arrows to the next, stand
+// beside it; on a phone the heading comes first and the rest beneath the picture (ADR 0263). The page draws no swipe of its own, since a
 // drag on the picture moves the compare's divider. A pair made by AI says so on the picture.
 
 import "./refs-as-props.ts";
-import { capsLook } from "@maneman/ui/Caps";
-import { ICONS } from "@maneman/brand/icons";
+import { GLYPHS, ICONS } from "@maneman/brand/icons";
 import { IconButton } from "@maneman/ui/IconButton";
 import { useState } from "preact/hooks";
 import { illustrationTag, results, tryOnTeaser } from "../content/site.ts";
@@ -71,14 +70,16 @@ export default function ResultsGallery(props: { title: string; pairs: readonly S
           after={<Shown picture={pair.after} />}
         />
       </div>
-      <p class={styles.caption} aria-live="polite">
-        {pair.caption}
-      </p>
       <div class={styles.controls}>
-        <p class={capsLook(styles.count)}>{fill(results.count, { at: String(at + 1), count: String(count) })}</p>
+        <div class={styles.words}>
+          <p class={styles.caption} aria-live="polite">
+            {pair.caption}
+          </p>
+          <p class={styles.count}>{fill(results.count, { at: String(at + 1), count: String(count) })}</p>
+        </div>
         <div class={styles.arrows}>
           <IconButton
-            d={ICONS.handleLeft}
+            d={ICONS.back}
             size="md"
             edged
             label={results.previous}
@@ -88,7 +89,7 @@ export default function ResultsGallery(props: { title: string; pairs: readonly S
             }}
           />
           <IconButton
-            d={ICONS.handleRight}
+            d={GLYPHS.chevron}
             size="md"
             edged
             label={results.next}

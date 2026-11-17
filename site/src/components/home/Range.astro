@@ -1,29 +1,36 @@
 ---
-// The range: the four hair systems side by side, as the product guide compares them, with no price.
+// The range, on the cool ground: the four hair systems side by side, as the product guide compares them, with no
+// price; a table on a laptop and a toggle of four on a phone (ADR 0263).
 import CompareTable from "../CompareTable.astro";
+import CompareToggle from "../../islands/home/CompareToggle.tsx";
 import { comparison, range } from "../../content/site.ts";
+
+const columns = range.products.map((product) => product.short);
 ---
 
-<section id="range" class="container range" data-section="range">
-  <h2 class="section-title">{range.title}</h2>
-  <p class="lead intro">{range.intro}</p>
-  <CompareTable
-    label={range.title}
-    columns={range.products.map((product) => product.short)}
-    rows={range.rows}
-    yes={comparison.yes}
-    no={comparison.no}
-  />
+<section id="range" class="band ground-cool" data-section="range">
+  <div class="container">
+    <h2 class="section-title">{range.title}</h2>
+    <p class="lead">{range.intro}</p>
+    <CompareTable label={range.title} columns={columns} rows={range.rows} yes={comparison.yes} no={comparison.no} />
+    <div class="phone">
+      <CompareToggle
+        client:media="(max-width: 760px)"
+        label={range.title}
+        columns={columns}
+        rows={range.rows}
+        yes={comparison.yes}
+        no={comparison.no}
+        versus={false}
+      />
+    </div>
+  </div>
 </section>
 
 <style>
-  .range {
-    padding-top: var(--section-gap);
-  }
-  .section-title {
-    margin-bottom: var(--sp-12);
-  }
-  .intro {
-    margin: 0 0 var(--space-l);
+  @media (min-width: 761px) {
+    .phone {
+      display: none;
+    }
   }
 </style>

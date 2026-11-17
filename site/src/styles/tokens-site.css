@@ -18,7 +18,6 @@
   --site-navy-hover: var(--navy-800);
   --site-navy-rule: var(--navy-700); /* rules and edges on navy: the footer's top */
   --site-gold: var(--gilt); /* the one filled button on navy */
-  --site-gold-hover: var(--gilt-hover);
   --site-focus: var(--brass); /* the focus ring, on every ground (ADR 0266) */
   --site-line: var(--line-200);
   --site-text: var(--ink-900);
@@ -33,11 +32,10 @@
   --site-fs-turning: clamp(40px, calc(25.14px + 3.81vw), 80px); /* the hero's turning line */
   --site-fs-hero-title: clamp(20px, calc(17.77px + 0.571vw), 26px);
   --site-fs-section: clamp(26px, calc(19.31px + 1.714vw), 44px); /* a section's or a page's title */
-  --site-fs-statement: clamp(20px, calc(14.8px + 1.333vw), 34px); /* "at your own table" */
+  --site-fs-statement: clamp(20px, calc(14.8px + 1.333vw), 34px); /* What it is's line, and the guarantee */
   --site-fs-lead: clamp(16px, calc(15.26px + 0.19vw), 18px);
   --site-fs-body: var(--fs-16);
   --site-fs-label: var(--fs-14);
-  --site-fs-small: var(--fs-13); /* the smallest anywhere; the home page keeps to 14 and up */
   --site-fs-button: var(--fs-16);
 
   /* ---- Space ----------------------------------------------------------------------------- */
@@ -55,6 +53,39 @@
   --consent-reserve: var(
     --site-none
   ); /* the cookie bar's room at the page's foot while it asks (components/ConsentBar.astro) */
+
+  /* ---- The home page's sections (ADR 0263), each from its phone board's value at 390 to its laptop's at 1440 ---- */
+  --site-lh-section: clamp(31.2px, calc(23.99px + 1.848vw), 50.6px); /* 1.2 of 26, then 1.15 of 44 */
+  --site-tracking-section: clamp(-0.5px, calc(-0.0886px - 0.02857vw), -0.2px);
+  --site-tracking-statement: clamp(-0.4px, calc(0.149px - 0.0381vw), 0px);
+  --site-fs-statement-how: clamp(22px, calc(17.54px + 1.143vw), 34px); /* "at your own table" */
+  --site-fs-closing: clamp(26px, calc(23.03px + 0.762vw), 34px);
+  --site-fs-caption: clamp(20px, calc(18.51px + 0.381vw), 24px); /* a result's caption, a step's title */
+  --site-fs-pager: clamp(14px, calc(13.26px + 0.19vw), 16px);
+  --site-gap-lede: clamp(8px, calc(6.51px + 0.381vw), 12px); /* a title to its lede */
+  --site-gap-block: clamp(16px, calc(14.51px + 0.381vw), 20px); /* a rule to its words */
+  --site-gap-list: clamp(18px, calc(9.83px + 2.095vw), 40px); /* a section's head to its toggle, table or tiles */
+  --site-columns-gap: 96px; /* a laptop's two columns */
+  --site-tag-pad-y: clamp(6px, calc(5.63px + 0.0952vw), 7px); /* Before, After, a stage's numeral */
+  --site-tag-pad-x: clamp(9px, calc(8.63px + 0.0952vw), 10px);
+  --site-icon-button: clamp(44px, calc(42.51px + 0.381vw), 48px); /* a result's previous and next */
+  --site-compare-handle: clamp(40px, calc(38.51px + 0.381vw), 44px);
+  --site-teaser-pad-top: clamp(44px, calc(24.69px + 4.952vw), 96px); /* the try-on teaser's band */
+  --site-teaser-pad-bottom: clamp(40px, calc(19.2px + 5.333vw), 96px);
+  --site-space-32-56: clamp(32px, calc(23.09px + 2.286vw), 56px);
+  --site-space-28-60: clamp(28px, calc(16.11px + 3.048vw), 60px); /* an answer kept clear of the sign beside it */
+  --site-question-h: clamp(60px, calc(58.51px + 0.381vw), 64px); /* a question's row */
+  --site-question-pad: clamp(14px, calc(13.26px + 0.19vw), 16px);
+  --site-closing-pad: clamp(48px, calc(33.14px + 3.81vw), 88px); /* the closing band */
+  --site-closing-max: var(--measure-hero-body); /* the closing line, as wide as the hero's words */
+  --site-step-body-min: 75px; /* a laptop's step, so the three pictures line up beneath their words */
+  --site-statement-max: 800px;
+  --site-numeral-w: clamp(44px, calc(46.74px - 0.19vw), 46px); /* a Norwood stage's numeral, on its picture */
+  --site-numeral-h: clamp(38px, calc(40.74px - 0.19vw), 40px);
+  --site-navy-veil: rgba(22, 35, 58, 0.9); /* the band across a picture's foot that says what it is */
+  --site-lh-statement: clamp(26px, calc(20.5px + 1.41vw), 40.8px); /* 1.3 of 20, then 1.2 of 34 */
+  --site-space-12-20: clamp(12px, calc(9.03px + 0.762vw), 20px);
+  --site-space-16-24: clamp(16px, calc(13.03px + 0.762vw), 24px);
 
   /* ---- The lockup (components/Lockup.astro), as design/brand/lockup-navy.svg draws it at 40 px: a 14.84 px small
      cut, 12.9 px from the mark ------------------------------------------------------------------------------ */
@@ -118,6 +149,27 @@
   --caps-variant: normal;
   --caps-tracking: normal;
   --focus-colour: var(--site-focus);
+  /* A choice of views (packages/ui Segmented), as the client app draws it: an edged track the column's width, the
+     chosen one filled in navy. */
+  --segmented-display: flex;
+  --segmented-grow: 1 1 0;
+  --segmented-edge: var(--site-line);
+  --segmented-track: transparent; /* the section's own ground shows through, as the boards draw it */
+  --segmented-weight: var(--weight-medium);
+  --segmented-on: var(--site-navy);
+  --segmented-on-edge: var(--site-navy);
+  --segmented-on-text: var(--site-on-navy);
+  --segmented-count: var(--site-band);
+  --segmented-count-text: var(--site-navy);
+  --segmented-on-count: var(--site-gold);
+  /* A before and after (packages/ui Compare): a white line and a square white handle with navy arrows, over the cool
+     ground while its pictures load. */
+  --compare-ground: var(--site-band);
+  --compare-line: var(--site-on-navy);
+  --compare-knob: var(--site-on-navy);
+  --compare-knob-edge: var(--site-line);
+  --compare-knob-text: var(--site-navy);
+  --compare-knob-radius: 0;
 }
 
 /* On navy, words are white and their quieter lines mist; nothing is paper. */
@@ -140,12 +192,9 @@
   /* The hero's turning line, at the scale's size: on a phone its longer phrases take two lines, as the board draws
      them (ADR 0264). */
   --fs-hero-line: var(--fs-hero);
-  --fs-band: var(--site-fs-statement);
-  --fs-step-number: clamp(40px, 5vw, 72px);
   --fs-h1: var(--site-fs-section);
   --fs-h2: var(--site-fs-section);
   --fs-h3: clamp(28px, 3.4vw, 44px);
-  --fs-h4: clamp(24px, 2.8vw, 38px);
   --fs-h5: clamp(20px, 2vw, 26px);
   --fs-lead: var(--site-fs-lead);
   --fs-body: var(--site-fs-body);
@@ -166,21 +215,18 @@
   --page-pad-top: clamp(40px, 6vw, 88px);
   --page-max: var(--site-column); /* the column, its gutters inside it: 1120 px of words at 1440, as the boards' wrap */
   --gutter: var(--site-gutter);
-  --header-gap: clamp(16px, 2.5vw, 34px);
   --bar-h: calc(
     var(--site-bar-pad-top) + var(--site-button-h) + var(--site-bar-pad-bottom)
   ); /* the phone's sticky bar */
   --bar-reserve: var(--sp-72); /* the space the home page keeps for the sticky bar */
   --foot-bar-h: var(--site-none); /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
   --section-gap: var(--site-section-y);
-  --band-pad: clamp(48px, 7vw, 96px);
   --split-min: 300px;
   --split-min-mid: 340px;
   --split-min-wide: 360px;
 
   /* ---- Line lengths ------------------------------------------------------ */
   --measure-hero: 900px;
-  --measure-lead: 620px;
   --measure-hero-body: 600px;
   --measure-note: 560px;
   --measure-closing: 520px;
@@ -199,33 +245,18 @@
   --hero-title-gap: clamp(18px, calc(15.77px + 0.571vw), 24px); /* the turning line to the title */
   --hero-actions-gap: clamp(24px, calc(19.54px + 1.143vw), 36px); /* the words to the buttons */
 
-  /* The results' before and after at its widest, and its arrows. */
-  --result-picture-max: 540px;
-  --result-arrow: var(--sp-48);
-  --norwood-flow-basis: 150px;
-  --norwood-flow-max: 210px;
-  /* Six cards at their widest, the five stages and the restored hairline: the row's width, from the left edge. */
-  --norwood-flow-row-max: calc(6 * var(--norwood-flow-max) + 5 * var(--space-2xs));
-  /* A phone's Norwood card: the picture's width beside its words. */
-  --norwood-thumb: 104px;
+  /* The results' before and after at its tallest. */
+  --result-picture-max-h: 680px; /* a laptop's result at its tallest, as the board draws it */
 
-  --comparison-label-w: 260px;
-  --compare-card-w: 82%; /* a phone card, the next one showing at the edge */
+  --comparison-label-w: var(
+    --stage-min
+  ); /* a laptop table's first column, the rows' names: 220 px, which the
+                                            try-on's --stage-min also is; moving one moves both */
 
   --teaser-frame-h: clamp(280px, 42vw, 420px);
   /* The try-on's look beside its photograph, on the sent screen. */
   --look-frame-max: 420px;
 
-  --band-max: 1100px;
-  --discretion-pad-y: clamp(64px, 10vw, 144px);
-  --discretion-pad-x: clamp(24px, 5vw, 64px);
-
-  --faq-intro-max: 380px;
-
-  --closing-pad-y: clamp(40px, 6vw, 72px);
-
-  --footer-pad-top: clamp(40px, 5vw, 64px);
-  --footer-pad-bottom: 96px;
   --column-min-narrow: 140px; /* a column of short links or names, two to a phone */
 
   /* ---- Try-on ------------------------------------------------------------ */
