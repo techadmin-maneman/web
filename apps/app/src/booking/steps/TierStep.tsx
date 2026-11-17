@@ -10,6 +10,7 @@ import { ChoiceGroup } from "@maneman/ui/Field";
 import { describedBy, Missing } from "@maneman/ui/Missing";
 import { TextLink } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
+import { apiNow } from "@maneman/web-kit/clock";
 import { shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type OfferedService } from "../../api.ts";
@@ -40,6 +41,19 @@ export function wornOf(
   const onSale = services.find((service) => service.tier === worn.package)?.price.amount;
   const listed = packages?.find((each) => each.code === worn.package)?.replacement?.amount;
   return { tier: worn.package, name: worn.name, price: onSale ?? listed ?? null };
+}
+
+/**
+ * A hair system's name as clients read it, its package's: the one worn's own, else the packages' figures', else its
+ * replacement visit's, "Mane Man Essential replacement", where neither says it.
+ */
+export function hairSystemName(
+  offered: OfferedService,
+  worn: Worn | null,
+  packages: readonly Package[] | null,
+): string {
+  if (worn !== null && offered.tier === worn.tier) return worn.name;
+  return packages?.find((each) => each.code === offered.tier)?.name ?? offered.name;
 }
 
 /** How a hair system on sale compares with the one worn: kept, or a change up, down or across, by its price. */
@@ -91,7 +105,7 @@ function TierChoice(props: {
     >
       <span className={styles.tierHead}>
         <TickBox checked={props.checked} />
-        <span className={styles.tierName}>{offered.name}</span>
+        <span className={styles.tierName}>{hairSystemName(offered, worn, props.packages)}</span>
         {how !== null && <Badge tone={how === copy.keep ? "neutral" : "attention"}>{how}</Badge>}
       </span>
       {offered.description !== null && <span className={styles.tierWords}>{offered.description}</span>}
@@ -147,7 +161,7 @@ export function TierChoices(props: {
       {chosen !== null && worn !== null && chosen.tier !== worn.tier && (
         <p className={styles.tierChange} role="status">
           <strong className={styles.tierChangeTitle}>
-            {copy.from(howItCompares(chosen, worn), worn.name, chosen.name)}
+            {copy.from(howItCompares(chosen, worn), worn.name, hairSystemName(chosen, worn, packages))}
           </strong>
           {changeLine(chosen, worn, packages ?? [])}
         </p>
@@ -201,7 +215,7 @@ export function TierStep(props: {
         worn={me.hair_system}
         packages={packages}
         chosen={props.chosen}
-        today={todayInIndia(Date.now())}
+        today={todayInIndia(apiNow())}
         onChoose={props.onChoose}
       />
     </Frame>

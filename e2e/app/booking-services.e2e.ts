@@ -263,10 +263,18 @@ test("offers a replacement's hair systems, the one worn chosen to keep, and open
   // The API's own two replacements, the one worn chosen as the sheet opens.
   await expect(tiers.getByRole("radio")).toHaveCount(2);
   await expect(tiers.getByRole("radio", { checked: true })).toHaveCount(1);
+  await expect(tiers.getByRole("radio", { name: new RegExp(WORN.name) })).toBeChecked();
   await expect(tiers.getByText(appCopy.booking.tier.keep, { exact: true })).toBeVisible();
+  // Each by its hair system's name, not its replacement visit's.
+  await expect(tiers.getByText(WORN.name, { exact: true })).toBeVisible();
+  await expect(tiers.getByText(CHEAPER.name, { exact: true })).toBeVisible();
   await tiers.getByRole("radio", { name: new RegExp(CHEAPER.name) }).check();
   await expect(tiers.getByText(appCopy.booking.tier.downgrade, { exact: true })).toBeVisible();
-  await expect(tiers.getByRole("status")).toContainText(appCopy.booking.tier.oldBack(WORN.name));
+  const { downgrade, from, oldBack } = appCopy.booking.tier;
+  await expect(
+    tiers.getByRole("status").getByText(from(downgrade, WORN.name, CHEAPER.name), { exact: true }),
+  ).toBeVisible();
+  await expect(tiers.getByRole("status")).toContainText(oldBack(WORN.name));
   await scanOf(page);
 
   const days = page.waitForResponse((answer) => {

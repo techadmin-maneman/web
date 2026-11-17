@@ -10,6 +10,7 @@ import type { Availability, OfferedService } from "../../apps/app/src/api.ts";
 import { stockNoteOf } from "../../apps/app/src/booking/BookingSheet.tsx";
 import {
   changeLine,
+  hairSystemName,
   howItCompares,
   TierChoices,
   wornOf,
@@ -24,7 +25,7 @@ const price = (rupees: number) => ({ amount_ex_gst: rupees * 100, amount: rupees
 const offered = (tier: string, name: string, rupees: number): OfferedService => ({
   type: "replacement",
   tier,
-  name,
+  name: `${name} replacement`,
   description: null,
   minutes: 135,
   price: price(rupees),
@@ -37,7 +38,7 @@ const PREMIUM = offered("premium", "Mane Man Premium", 15_000);
 
 const pack = (code: string, months: number, service: number, every: number, replacement: number | null = null) => ({
   code,
-  name: code,
+  name: `Mane Man ${code.charAt(0).toUpperCase()}${code.slice(1)}`,
   description: null,
   first_fit: price(30_000),
   service: price(service),
@@ -111,6 +112,15 @@ describe("a replacement's choice of hair system", () => {
     expect(howItCompares(ACTIVE, { ...worn, price: null })).toBe(copy.change);
   });
 
+  it("names each hair system by its package, the one worn by its own name, else by its replacement visit's", () => {
+    expect(hairSystemName(NATURAL, WORN, PACKAGES)).toBe("Mane Man Natural");
+    expect(hairSystemName(ACTIVE, { ...WORN, name: "Mane Man Active, as worn" }, PACKAGES)).toBe(
+      "Mane Man Active, as worn",
+    );
+    expect(hairSystemName(NATURAL, WORN, null)).toBe("Mane Man Natural replacement");
+    expect(hairSystemName(PREMIUM, null, PACKAGES)).toBe("Mane Man Premium replacement");
+  });
+
   it("says when the one worn is due, and offers each as a card to choose, with its tag and facts", () => {
     draw(ACTIVE);
     expect(page.textContent).toContain(copy.due("Mane Man Active", "Sun 6 Dec"));
@@ -118,6 +128,7 @@ describe("a replacement's choice of hair system", () => {
     expect(radios.map((radio) => radio.checked)).toEqual([true, false, false]);
     // The whole card is the choice: its facts are in its label.
     expect(radios[1]?.closest("label")?.textContent).toContain("6 months");
+    expect(page.textContent).not.toContain(" replacement");
     expect(page.textContent).toContain(copy.keep);
     expect(page.textContent).toContain(copy.upgrade);
     expect(page.textContent).toContain(copy.downgrade);
@@ -166,7 +177,7 @@ describe("a replacement's days opening late", () => {
   it("says the hair system is not in stock in the client's size, and its earliest fitting", () => {
     const late = addDays(tomorrow, 9);
     expect(stockNoteOf(days("replacement", late), { ...WORN_ME, replacement_opens_on: tomorrow })).toBe(
-      booking.when.notInStock("Mane Man Natural", shortDate(late)),
+      booking.when.notInStock(shortDate(late)),
     );
   });
 
@@ -174,6 +185,8 @@ describe("a replacement's days opening late", () => {
     const opens = addDays(tomorrow, 3);
     expect(stockNoteOf(days("replacement", opens), { ...WORN_ME, replacement_opens_on: opens })).toBeNull();
     expect(stockNoteOf(days("replacement", tomorrow), null)).toBeNull();
+    // Nor without the hair system worn on record, whose due month the days may open from.
+    expect(stockNoteOf(days("replacement", addDays(tomorrow, 9)), null)).toBeNull();
     expect(stockNoteOf(days("service", addDays(tomorrow, 9)), WORN_ME)).toBeNull();
   });
 });

@@ -132,8 +132,8 @@ export const booking = {
     offeredFull: (day: string) => `${day} is full. We’ve picked the next open day.`,
     offeredFullPickAnother: (day: string) => `${day} is full. Pick another day.`,
     /** A replacement's hair system not held in the client's size: its days open once one can be there. */
-    notInStock: (name: string, date: string) =>
-      `${name} isn’t in stock in your size yet. The earliest fitting is ${date}.`,
+    notInStock: (date: string) =>
+      `Your next hair system isn’t in stock in your size yet. The earliest fitting is ${date}.`,
     later: "Later dates",
     laterFailed: "Those dates didn’t load. Try again.",
   },

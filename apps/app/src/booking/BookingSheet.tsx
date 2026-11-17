@@ -6,6 +6,7 @@
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { classes } from "@maneman/ui/classes";
 import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
+import { apiNow } from "@maneman/web-kit/clock";
 import { addDays, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
@@ -86,11 +87,12 @@ function whenTitle(type: BookableType, moving: MoveTerms | undefined): string {
  * system not in stock in the client's size, the days opening once one can be there (ADR 0253, decision 6).
  */
 export function stockNoteOf(availability: Availability, worn: Me["hair_system"]): string | null {
-  if (availability.type !== "replacement") return null;
-  const tomorrow = addDays(todayInIndia(Date.now()), 1);
-  const opens = worn === null || worn.replacement_opens_on < tomorrow ? tomorrow : worn.replacement_opens_on;
+  // Without the hair system worn, its replacement's own first day is not known here, so nothing is said.
+  if (availability.type !== "replacement" || worn === null) return null;
+  const tomorrow = addDays(todayInIndia(apiNow()), 1);
+  const opens = worn.replacement_opens_on < tomorrow ? tomorrow : worn.replacement_opens_on;
   if (availability.opens <= opens) return null;
-  return booking.when.notInStock(availability.service.name, shortDate(availability.opens));
+  return booking.when.notInStock(shortDate(availability.opens));
 }
 
 /** The day, and the start on it, which is held as the client goes on. */
