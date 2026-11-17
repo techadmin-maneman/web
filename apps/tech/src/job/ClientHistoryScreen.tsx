@@ -6,6 +6,7 @@
 
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
+import { amountOf, isMeasure } from "@maneman/web-kit/figures";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
 import { api } from "../api.ts";
@@ -13,7 +14,8 @@ import type { components } from "../api-schema.ts";
 import { clientRecord as copy } from "../content.ts";
 import { CardFrame } from "../frame/CardFrame.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
-import { sayKnown } from "../lang/index.ts";
+import { sayKnown, sayNow, useLanguage } from "../lang/index.ts";
+import { countOf, midSentence, namesItsUnit } from "../lib/amounts.ts";
 import { kindName } from "../lib/kind.ts";
 import { dayMonth } from "../lib/when.ts";
 import { keptJob } from "../store/jobs.ts";
@@ -27,15 +29,30 @@ type Visit = components["schemas"]["TechnicianHistoryVisit"];
 const resultOf = (result: string | null): string =>
   result === "done" || result === "partial" || result === "no_show" ? copy.results[result] : copy.results.other;
 
+/**
+ * What a visit used, as the prototype writes it: "5 tape strips", "10 ml solvent". In Hindi ops' name follows its
+ * amount, in Hindi where a catalog holds it; a thing used before the stock had codes has its count after its name.
+ */
+function usedOf({ name, quantity, unit }: Visit["consumables"][number], english: boolean): string {
+  if (unit === null) return `${sayKnown(name)} × ${String(quantity)}`;
+  const measured = isMeasure(unit);
+  if (english) return measured ? `${amountOf(quantity, unit)} ${midSentence(name)}` : countOf(quantity, unit, name);
+  const amount = measured || !namesItsUnit(name, unit) ? sayNow(amountOf(quantity, unit)) : String(quantity);
+  return `${amount} ${sayKnown(name)}`;
+}
+
 function VisitEntry({ visit }: { visit: Visit }) {
-  const used = visit.consumables.map((each) => `${sayKnown(each.name)} × ${String(each.quantity)}`).join(" · ");
+  const english = useLanguage() === "en";
+  const used = visit.consumables.map((each) => usedOf(each, english)).join(" · ");
   return (
     <li className={styles.visit}>
       <div className={styles.visitTop}>
         <h3 className={styles.kind}>{kindName({ type: visit.type, one_visit: false })}</h3>
         <span className={styles.date}>{dayMonth(visit.date)}</span>
       </div>
-      <p className={styles.meta}>{copy.byAndResult(visit.technician, resultOf(visit.result))}</p>
+      <p className={styles.meta}>
+        {copy.byAndResult(visit.yours ? copy.you : visit.technician, resultOf(visit.result))}
+      </p>
       {visit.note !== null && <p className={styles.note}>{visit.note}</p>}
       {visit.photos.length > 0 && <PhotoTiles photos={visit.photos} alt={copy.photo} />}
       {used !== "" && <p className={styles.detail}>{used}</p>}

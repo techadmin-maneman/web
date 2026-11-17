@@ -123,6 +123,8 @@ interface JobDetail extends JobSummary {
   readonly sent_back: SentBack[];
   /** The technician's open ask that ops move the visit; null for none. */
   readonly reschedule_asked: RescheduleAsked | null;
+  /** Where the visit was booked: the client's app, the site, or ops; null while locked, or booked before it was kept. */
+  readonly booked_via: BookedVia | null;
   /** A fit's sign-off as it stands (docs/decisions/0254-client-signs-off-the-fit.md); null before it is asked. */
   readonly sign_off: SignOff | null;
 }
@@ -221,6 +223,7 @@ export async function jobDetail(
     client_visits: null,
     sent_back: sentBack,
     reschedule_asked: await rescheduleAskedOf(db, row.id),
+    booked_via: null,
     ...(await stepsOf(db, { id: row.id, type, oneVisit }, options.clientSignOff)),
   };
   if (unlockedParts === null) return locked;
@@ -241,18 +244,36 @@ export async function jobDetail(
   };
 }
 
+/** Where a visit was made: the first hold booked as it, by where it was held. */
+export const BOOKED_VIA = ["app", "site", "ops"] as const;
+type BookedVia = (typeof BOOKED_VIA)[number];
+
+async function bookedViaOf(db: D1Database, visitId: string): Promise<BookedVia | null> {
+  const row = await db
+    .prepare(
+      `SELECT booked_from FROM slot_holds WHERE appointment_id = ?1 AND state = 'booked'
+       ORDER BY created_at, rowid LIMIT 1`,
+    )
+    .bind(visitId)
+    .first<{ booked_from: BookedVia | null }>();
+  return row?.booked_from ?? null;
+}
+
 /**
  * What only an unlocked card carries beyond the job's own row: the client's pieces, profile and alerts, their last
- * visit, and the note left for this one.
+ * visit, the note left for this one, and where it was booked.
  */
 async function unlockedPartsOf(
   db: D1Database,
   row: JobRow,
 ): Promise<
-  Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile" | "client_alerts" | "handoff" | "client_visits">
+  Pick<
+    JobDetail,
+    "pieces" | "last_visit" | "reminder" | "profile" | "client_alerts" | "handoff" | "client_visits" | "booked_via"
+  >
 > {
   const job = { personId: row.person_id, id: row.id, startsAt: row.window_start };
-  const [pieces, lastVisit, reminder, profile, alerts, handoff, visits] = await Promise.all([
+  const [pieces, lastVisit, reminder, profile, alerts, handoff, visits, bookedVia] = await Promise.all([
     piecesOf(db, row.person_id),
     lastVisitOf(db, row),
     reminderOf(db, row.id),
@@ -260,6 +281,7 @@ async function unlockedPartsOf(
     alertsForTechnician(db, row.person_id),
     handoffFor(db, job),
     historyCountOf(db, job),
+    bookedViaOf(db, row.id),
   ]);
   return {
     pieces: pieces.map(cardPiece),
@@ -269,6 +291,7 @@ async function unlockedPartsOf(
     client_alerts: alerts,
     handoff: handoff === null ? null : { ...handoff, photos: await afterPhotosOf(db, row.id, handoff.visit_id) },
     client_visits: visits,
+    booked_via: bookedVia,
   };
 }
 

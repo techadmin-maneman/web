@@ -80,7 +80,7 @@ describe("POST /api/visits: what is booked at once", () => {
       price: { amount: 0 },
     });
     const hold = await holdOf(body.hold_id);
-    expect(hold).toMatchObject({ state: "booked", type: "consultation", pay_by_link: 0 });
+    expect(hold).toMatchObject({ state: "booked", type: "consultation", pay_by_link: 0, booked_from: "ops" });
     expect(hold?.confirmed_at).toBe(NOW.toISOString());
 
     const audit = await env.DB.prepare("SELECT subject_id, detail FROM audit_log WHERE action = 'visit.book'").first<{

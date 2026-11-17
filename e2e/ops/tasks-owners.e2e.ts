@@ -105,6 +105,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
               kind: "service",
               reason_code: "client_unwell",
               reason: "Client unwell",
+              not_fitted: null,
               ask: null,
             },
             detail: "service Client unwell",
@@ -120,6 +121,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
               kind: "service",
               reason_code: "piece_not_ready",
               reason: "The piece was not ready",
+              not_fitted: null,
               ask: null,
             },
             detail: "The piece was not ready",
@@ -152,6 +154,44 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
   await expect(rows(page)).toHaveCount(1);
   await expect(list(page).getByRole("heading", { name: opsCopy.tasks.title })).toBeFocused();
   expect(reasons).toEqual([{ reason: "Moving to Pune; wants no more visits." }]);
+});
+
+// A fit closed with "Can't fit today" said "No piece to fit", never why (docs/decisions/0270-the-design-checks-api-side.md).
+test("says why a fit closed with Can’t fit today was not fitted", async ({ page }) => {
+  const board: OpsReply<"/api/tasks"> = {
+    overdue: 0,
+    truncated: false,
+    low_stock_places: 0,
+    lapsed: 0,
+    staff: [],
+    groups: [
+      {
+        group: "partial_visit",
+        count: 1,
+        closable: true,
+        tasks: [
+          {
+            id: "98000000-0000-4000-8000-000000000003",
+            person: { id: "22000000-0000-4000-8000-000000000016", name: "Sameer Jain" },
+            facts: {
+              group: "partial_visit",
+              kind: "first_fit",
+              reason_code: "no_piece",
+              reason: null,
+              not_fitted: "Piece damaged",
+              ask: null,
+            },
+            detail: "first_fit Piece damaged",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-23T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  };
+  await open(page, board);
+  await expect(rows(page).first()).toContainText(opsCopy.tasks.subs.notFitted("Piece damaged"));
 });
 
 // The call about a move was recorded only from a block ops had to find on the board, and both of the

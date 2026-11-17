@@ -163,6 +163,12 @@
     --row-min-height: var(--sp-64);
     /* Where one thing of a list stands (./StepMark.tsx): its disc or ring, which a list of steps sets larger. */
     --step-mark-size: var(--sp-24);
+    /* A scanner's aim (./ScanField.tsx): the frame a label is held in, the prototype's 230 by 66. */
+    --scan-frame-width: calc(var(--sp-72) * 3 + var(--sp-12) + var(--sp-2));
+    --scan-frame-height: calc(var(--sp-64) + var(--sp-2));
+    /* The picture's height and its ground before it shows: 4:3 on the ink, unless a screen sets its own. */
+    --scan-height: auto;
+    --scan-ground: var(--ink);
     /* A button held to act (./HoldButton.tsx): its ground, and the fill that crosses it as it is held. */
     --hold-ground: var(--error);
     --hold-fill: var(--error-on-paper);

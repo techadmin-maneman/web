@@ -509,3 +509,19 @@ export async function visitOutcomes(
     .all<{ appointment_id: string; outcome: VisitOutcome }>();
   return new Map(results.map((row) => [row.appointment_id, row.outcome]));
 }
+
+/** Why each of these visits closed with "Can't fit today" was not fitted, by its code, where the phone said. */
+export async function notFittedReasonsOf(
+  db: D1Database,
+  appointmentIds: readonly string[],
+): Promise<Map<string, string>> {
+  if (appointmentIds.length === 0) return new Map();
+  const { results } = await db
+    .prepare(
+      `SELECT appointment_id, not_fitted_reason FROM visit_outcomes
+       WHERE not_fitted_reason IS NOT NULL AND appointment_id IN (SELECT value FROM json_each(?1))`,
+    )
+    .bind(JSON.stringify(appointmentIds))
+    .all<{ appointment_id: string; not_fitted_reason: string }>();
+  return new Map(results.map((row) => [row.appointment_id, row.not_fitted_reason]));
+}

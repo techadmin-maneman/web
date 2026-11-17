@@ -9,6 +9,7 @@ import * as techCopy from "../../apps/tech/src/content.ts";
 
 const copy = techCopy.clientRecord;
 const EARLIER = "22222222-2222-4222-8222-222222222299";
+const OLDER = "22222222-2222-4222-8222-222222222298";
 const PHOTO = "44444444-4444-4444-8444-444444444441";
 const ALERT = "55555555-5555-4555-8555-555555555551";
 
@@ -73,11 +74,27 @@ test("lists each earlier visit with who did it, how it closed, its note, photogr
         date: "2026-09-01",
         type: "service",
         technician: "Imran",
+        yours: false,
         result: "done",
         note: "Edge lifting at the left temple.",
         photos: [{ angle: "front", url: `/api/tech/jobs/${JOB_ID}/history-photos/${PHOTO}` }],
-        consumables: [{ name: "Walker tape", quantity: 2 }],
+        consumables: [{ name: "Walker tape", quantity: 2, unit: null }],
         piece: "MM-0042",
+      },
+      {
+        id: OLDER,
+        date: "2026-08-01",
+        type: "service",
+        technician: "Sameer",
+        yours: true,
+        result: "done",
+        note: null,
+        photos: [],
+        consumables: [
+          { name: "Tape strips", quantity: 5, unit: "strip" },
+          { name: "Solvent", quantity: 10, unit: "ml" },
+        ],
+        piece: null,
       },
     ],
   };
@@ -92,6 +109,9 @@ test("lists each earlier visit with who did it, how it closed, its note, photogr
   await expect(page.getByRole("heading", { level: 2, name: copy.clientAlerts })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: copy.visits })).toBeVisible();
   await expect(page.getByText("Walker tape × 2", { exact: true })).toBeVisible();
+  // A visit of the technician's own is theirs, and what it used reads in the units the stock counts.
+  await expect(page.getByText(copy.byAndResult(copy.you, copy.results.done))).toBeVisible();
+  await expect(page.getByText("5 tape strips · 10 ml solvent", { exact: true })).toBeVisible();
   await expect(page.getByText(copy.piece("MM-0042"))).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 

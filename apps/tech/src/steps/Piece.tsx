@@ -1,89 +1,55 @@
-// Step 4, the piece, for a replacement and a first fit only: its label scanned, typed or picked from the kit, and on a
-// replacement the piece that came off (docs/decisions/0163-pieces-scanned-from-the-kit.md). A consultation and fit in
-// one visit asks first for the client's choice (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// Step 4, the hair system, for a replacement and a first fit only, scan-first as the prototype draws it
+// (docs/decisions/0270-the-design-checks-api-side.md): what is expected, then its label read by the camera or typed, and
+// the piece confirmed; on a replacement the piece that came off is the one the card has on the client's head
+// (docs/decisions/0163-pieces-scanned-from-the-kit.md). A consultation and fit in one visit asks first for the client's
+// choice (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). "Can't fit today" closes the fit from here.
 
-import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
-import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { steps as copy, visit } from "../content.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import type { Queued } from "../store/outbox.ts";
+import { CannotFit } from "./CannotFit.tsx";
 import {
   choiceSent,
   DECLINED,
   inKit,
   fitsNothingToday,
-  afterLabel,
+  cameOff,
   labelWarning,
   given,
   kitChoices,
+  kitMatch,
+  labelTaken,
+  leftAfter,
   profileToMatch,
   noticeFor,
-  onTheHead,
   pieceBody,
   stillMissing,
-  toFit,
   type Choice,
   type LabelChecked,
-  type ClientPiece,
   type PieceForm,
 } from "./piece-form.ts";
-import {
-  BaseAndLot,
-  ChoiceList,
-  KitPieces,
-  LabelField,
-  NOT_LOOKED,
-  OldPiece,
-  PaidFor,
-  type Looked,
-} from "./PieceFields.tsx";
+import { ChoiceList, KitPieces, NOT_LOOKED, type Looked } from "./PieceFields.tsx";
+import { Confirmed, Expected, lineOf, Scanner } from "./PieceScan.tsx";
 import { isLabel } from "./label.ts";
 import { pieceSent, type PieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
-import styles from "./piece.module.css";
+import styles from "./piece-scan.module.css";
 
-/** The outcome "Can't fit today" closes a fit with: partly done, no piece of the client's spec to fit. */
-const CANNOT_FIT: EventBody<"outcome"> = { outcome: "partial", reason: "no_piece", cannot_fit: true };
-const CANNOT_FIT_TODAY = "cannot_fit";
+/** How the step ends: the piece step sent, or the fit closed with "Can't fit today", with why where it was asked. */
+type Finish = { readonly piece: EventBody<"piece"> } | { readonly cannotFit: string | null };
 
-/** "Can't fit today": asked first, then the job closed as partly done from here (useStep's closeWith). */
-function CannotFit({ onClose }: { onClose: (why: typeof CANNOT_FIT_TODAY) => void }) {
-  const [asking, setAsking] = useState(false);
-  const words = copy.piece.cannotFit;
-  return (
-    <>
-      <Button
-        variant="outline"
-        size="control"
-        className={styles.wayOut}
-        onClick={() => {
-          setAsking(true);
-        }}
-      >
-        {words.action}
-      </Button>
-      {asking && (
-        <ConfirmSheet
-          title={words.title}
-          body={words.body}
-          yes={words.yes}
-          no={words.no}
-          onYes={() => {
-            onClose(CANNOT_FIT_TODAY);
-          }}
-          onNo={() => {
-            setAsking(false);
-          }}
-        />
-      )}
-    </>
-  );
-}
+/** "Can't fit today": partly done, with no piece of the client's spec to fit, and why. */
+const cannotFitClose = (why: string | null): EventBody<"outcome"> => ({
+  outcome: "partial",
+  reason: "no_piece",
+  cannot_fit: true,
+  ...(why === null ? {} : { not_fitted_reason: why }),
+});
 
 /** The label checked against the pieces we know: a client's fills in its base and lot where none is typed. */
 function useLookup(
@@ -137,9 +103,9 @@ function useDecision(sent: PieceSent | null) {
 
 type Decision = ReturnType<typeof useDecision>;
 
-/** What the step asks first: a one visit's client's choice and when it is fitted, or what any other fit was paid for. */
+/** A one visit's client's choice and when it is fitted, asked first. */
 function Asked({ job, decided, decide }: { job: Job; decided: Decision[0]; decide: Decision[1] }) {
-  return job.one_visit ? (
+  return (
     <ChoiceList
       products={job.products}
       choice={decided.choice}
@@ -152,8 +118,6 @@ function Asked({ job, decided, decide }: { job: Job; decided: Decision[0]; decid
       }}
       onLater={decide.later}
     />
-  ) : (
-    <PaidFor job={job} />
   );
 }
 
@@ -161,7 +125,11 @@ function Asked({ job, decided, decide }: { job: Job; decided: Decision[0]; decid
 const checkedOf = (looked: Looked): LabelChecked =>
   looked.state === "found" && !looked.found.belongs_to_this_job ? "another_client" : looked.state;
 
-/** The step once the job is in hand: a refused piece starts as it was sent, so nothing is typed twice. */
+/** The kit's hair systems whose pieces carry no labels, which a scan cannot find: picked, the label on the piece typed. */
+const unlabelledOf = (choices: ReturnType<typeof kitChoices>) =>
+  choices.filter(({ hairSystem }) => hairSystem.units.length === 0);
+
+/** The step once the job is in hand: a refused piece starts as it was sent, so nothing is read twice. */
 function Fitting({
   job,
   matchTo,
@@ -173,7 +141,7 @@ function Fitting({
   /** The profile the kit is matched to: the one the phone holds, else the card's. */
   matchTo: ReturnType<typeof profileToMatch>;
   refused: Queued | null;
-  onFinish: (body: EventBody<"piece"> | typeof CANNOT_FIT_TODAY) => void;
+  onFinish: (finish: Finish) => void;
   onBack: () => void;
 }) {
   const sent = pieceSent(refused);
@@ -182,32 +150,23 @@ function Fitting({
   const [lot, setLot] = useState(sent?.lot ?? "");
   const [stock, setStock] = useState<string | null>(sent?.stock ?? null);
   const { looked, setLooked, looking, look } = useLookup(job, { code, base, lot }, { base: setBase, lot: setLot });
-  const [oldCode, setOldCode] = useState(sent?.oldCode ?? "");
-  const [oldReason, setOldReason] = useState(sent?.oldReason ?? "");
-  const [picking, setPicking] = useState<"new" | "old" | null>(null);
   const [{ choice, later }, decide] = useDecision(sent);
+  // The piece that comes off is the one the card has on the client's head from before today.
+  const oldCode = cameOff(job)?.piece_code ?? "";
 
-  const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice, later };
+  const form: PieceForm = { code, base, lot, stock, oldCode, choice, later };
   const missing = stillMissing(form, job, checkedOf(looked));
-  /** A label typed or scanned: one of the kit's pieces picks its hair system and fills in its lot. */
+  /** A label read or typed, with what follows it (piece-form's labelTaken). */
   const takeLabel = (label: string) => {
-    const next = afterLabel(job, { code, lot }, label);
+    const next = labelTaken(job, stock, label);
     setCode(label);
     setLooked(NOT_LOOKED);
-    if (next.stock !== null) setStock(next.stock);
+    setStock(next.stock);
+    setBase(next.base);
     setLot(next.lot);
   };
-
-  const pickNew = (piece: ClientPiece) => {
-    setCode(piece.piece_code);
-    setBase(piece.base ?? "");
-    setLot(piece.supplier_lot ?? "");
-    setLooked({ state: "found", found: { piece, belongs_to_this_job: true, in_kit: false } });
-    setPicking(null);
-  };
-  const toggle = (list: "new" | "old") => () => {
-    setPicking(picking === list ? null : list);
-  };
+  const matched = { ...job, profile: matchTo };
+  const fitsToday = !fitsNothingToday(form, job) && (!job.one_visit || choice !== null);
 
   return (
     <StepFrame
@@ -218,44 +177,45 @@ function Fitting({
       notice={refused === null ? null : noticeFor(refused.fields)}
       onBack={onBack}
       onAction={() => {
-        onFinish(pieceBody(form, job));
+        onFinish({ piece: pieceBody(form, job) });
       }}
     >
-      <Asked job={job} decided={{ choice, later }} decide={decide} />
-      {!fitsNothingToday(form, job) && (
-        <>
-          <KitPieces choices={kitChoices({ ...job, profile: matchTo }, choice)} stock={stock} onStock={setStock} />
-          <LabelField
-            code={code}
-            looked={looked}
-            looking={looking}
-            warning={labelWarning({ ...job, profile: matchTo }, form)}
-            pieces={(job.pieces ?? []).filter(toFit)}
-            picking={picking === "new"}
-            onCode={takeLabel}
-            onLook={() => void look()}
-            onTogglePicking={toggle("new")}
-            onPick={pickNew}
-          />
-          <BaseAndLot base={base} lot={lot} onBase={setBase} onLot={setLot} />
-          {job.type === "replacement" && (
-            <OldPiece
-              code={oldCode}
-              reason={oldReason}
-              pieces={(job.pieces ?? []).filter(onTheHead)}
-              picking={picking === "old"}
-              onCode={setOldCode}
-              onReason={setOldReason}
-              onTogglePicking={toggle("old")}
-              onPick={(piece) => {
-                setOldCode(piece.piece_code);
-                setPicking(null);
+      {job.one_visit && <Asked job={job} decided={{ choice, later }} decide={decide} />}
+      {fitsToday && (
+        <div className={styles.scan}>
+          <Expected job={job} fit={matchTo?.fit ?? null} choice={choice} />
+          {/* Confirmed once it is known: with no signal to check it, it stays as typed, saying so. */}
+          {missing === null && isLabel(code) && looked.state !== "offline" ? (
+            <Confirmed
+              code={code}
+              line={lineOf(job, { choice, stock, fit: matchTo?.fit ?? null })}
+              matches={kitMatch(matched, choice, stock)}
+              left={leftAfter(job, stock)}
+              onRescan={() => {
+                takeLabel("");
               }}
             />
+          ) : (
+            <Scanner
+              code={code}
+              looked={looked}
+              looking={looking}
+              warning={labelWarning(matched, form)}
+              cannotFit={
+                <CannotFit
+                  reasons={job.not_fitted_reasons}
+                  onClose={(why) => {
+                    onFinish({ cannotFit: why });
+                  }}
+                />
+              }
+              onCode={takeLabel}
+              onLook={() => void look()}
+            />
           )}
-          <CannotFit onClose={onFinish} />
-        </>
+        </div>
       )}
+      {fitsToday && <KitPieces choices={unlabelledOf(kitChoices(matched, choice))} stock={stock} onStock={setStock} />}
     </StepFrame>
   );
 }
@@ -267,8 +227,8 @@ export function Piece({ id }: { id: string }) {
   if (loaded.state === "failed") {
     return <JobFailed failed={loaded} onRetry={retry} />;
   }
-  const finishing = (body: EventBody<"piece"> | typeof CANNOT_FIT_TODAY) =>
-    void (body === CANNOT_FIT_TODAY ? closeWith(CANNOT_FIT) : finish(body));
+  const finishing = (done: Finish) =>
+    void ("piece" in done ? finish(done.piece) : closeWith(cannotFitClose(done.cannotFit)));
   const job = loaded.value;
   return (
     <Fitting job={job} matchTo={profileToMatch(job, queued)} refused={refused} onFinish={finishing} onBack={back} />

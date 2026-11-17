@@ -714,6 +714,8 @@ export const settings = {
     reasons: "Partial reasons",
     /** Why a client is not going ahead after a consultation (docs/decisions/0149-lost-reasons.md). */
     lostReasons: "Reasons not going ahead",
+    /** Why a hair system could not be fitted today (docs/decisions/0270-the-design-checks-api-side.md). */
+    notFittedReasons: "Reasons not fitted",
     item: (position: number) => `Item ${String(position)}`,
     clientWords: (position: number) => `Item ${String(position)}, as the client reads it`,
     clientNote:

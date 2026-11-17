@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 import type { Queued } from "../../../apps/tech/src/store/outbox.ts";
 import { steps as copy, oneVisit } from "../../../apps/tech/src/content.ts";
 import {
+  cameOff,
   DECLINED,
   kitChoices,
+  labelTaken,
   pieceBody,
   profileToMatch,
   stillMissing,
@@ -19,7 +21,6 @@ const EMPTY: PieceForm = {
   lot: "",
   stock: null,
   oldCode: "",
-  oldReason: "",
   choice: null,
   later: false,
 };
@@ -55,10 +56,9 @@ describe("the piece step", () => {
     expect(stillMissing({ ...typed, stock: "hs_exact" }, unlabelledKit, "unknown")).toBeNull();
   });
 
-  it("takes the piece that came off with or without why it failed, as a due one has no failure", () => {
+  it("takes the piece that came off, the one on the client's head, with no why: the step no longer asks it", () => {
     const off = { ...EMPTY, code: LABEL, oldCode: "MM-STD-1201-A" };
     expect(stillMissing(off, FIRST_FIT, "found")).toBeNull();
-    expect(stillMissing({ ...off, oldReason: "lifted at the front" }, FIRST_FIT, "found")).toBeNull();
     expect(stillMissing({ ...off, oldCode: "MM-STD-12" }, FIRST_FIT, "found")).toBe(copy.piece.checkFirst);
     expect(pieceBody(off, FIRST_FIT)).toEqual({ piece_code: LABEL, old_piece: { piece_code: "MM-STD-1201-A" } });
   });
@@ -100,11 +100,11 @@ describe("the piece step", () => {
       product: "natural",
       base: "Lace",
     });
-    const replaced = { ...EMPTY, code: LABEL, lot: "L-7", oldCode: "MM-STD-1201-A", oldReason: " lifted " };
+    const replaced = { ...EMPTY, code: LABEL, lot: "L-7", oldCode: "MM-STD-1201-A" };
     expect(pieceBody(replaced, FIRST_FIT)).toEqual({
       piece_code: LABEL,
       supplier_lot: "L-7",
-      old_piece: { piece_code: "MM-STD-1201-A", failure_reason: "lifted" },
+      old_piece: { piece_code: "MM-STD-1201-A" },
     });
   });
 
@@ -175,5 +175,66 @@ describe("the kit’s hair systems", () => {
       type: "first_fit",
     } as unknown as Parameters<typeof kitChoices>[0];
     expect(kitChoices(job, null)[0]?.hairSystem.code).toBe("denser");
+  });
+});
+
+describe("a label taken", () => {
+  const unit = (code: string, lot: string | null) => ({ code, lot_code: lot, expires_on: null });
+  const kit = {
+    kit_hair_systems: [
+      { code: "hs_a", name: "Mane Man Essential · 8 × 10 in", units: [unit("MM-ESS-0000001-A", "LOT-A")] },
+      { code: "hs_b", name: "Mane Man Natural · 7 × 9 in", units: [unit("MM-NAT-0000002-B", "LOT-B")] },
+      { code: "hs_old", name: "Mane Man Essential, before labels", units: [] },
+    ],
+  } as unknown as Parameters<typeof labelTaken>[0];
+
+  it("takes a kit piece's hair system, its name as the base and its lot, with or without signal", () => {
+    expect(labelTaken(kit, null, "MM-ESS-0000001-A")).toEqual({
+      stock: "hs_a",
+      base: "Mane Man Essential · 8 × 10 in",
+      lot: "LOT-A",
+    });
+  });
+
+  it("keeps nothing of the label before it, so a piece read again is sent as itself", () => {
+    expect(labelTaken(kit, "hs_a", "MM-NAT-0000002-B")).toEqual({
+      stock: "hs_b",
+      base: "Mane Man Natural · 7 × 9 in",
+      lot: "LOT-B",
+    });
+    // A piece from outside the kit after one of it: no hair system, base or lot left from the kit's.
+    expect(labelTaken(kit, "hs_a", "MM-STD-4417-B")).toEqual({ stock: null, base: "", lot: "" });
+    // Rescan: nothing at all.
+    expect(labelTaken(kit, "hs_a", "")).toEqual({ stock: null, base: "", lot: "" });
+  });
+
+  it("keeps kit stock with no labels picked, for the label on its piece", () => {
+    expect(labelTaken(kit, "hs_old", "MM-ESS-0000999-Z")).toEqual({ stock: "hs_old", base: "", lot: "" });
+  });
+});
+
+describe("the piece that comes off a replacement", () => {
+  const piece = (code: string, fitted: string | null) => ({
+    piece_code: code,
+    base: null,
+    supplier_lot: null,
+    fitted_at: fitted,
+    replacement_due_at: null,
+    failed_at: null,
+    failure_reason: null,
+    replaced_at: null,
+  });
+  const job = (pieces: ReturnType<typeof piece>[]) =>
+    ({ type: "replacement", date: "2026-11-17", pieces }) as unknown as Parameters<typeof cameOff>[0];
+
+  it("is the one on the head from before the visit's day, never the one this visit fitted", () => {
+    const today = piece("MM-ESS-0000779-S", "2026-11-17");
+    const worn = piece("MM-STD-4417-B", "2026-07-02");
+    expect(cameOff(job([today, worn]))?.piece_code).toBe("MM-STD-4417-B");
+  });
+
+  it("is none where nothing is on the head, and on any other visit", () => {
+    expect(cameOff(job([]))).toBeNull();
+    expect(cameOff({ ...job([piece("MM-STD-4417-B", "2026-07-02")]), type: "first_fit" })).toBeNull();
   });
 });

@@ -70,12 +70,23 @@ const HistoryVisitSchema = z
     date: z.iso.date(),
     type: z.enum(VISIT_TYPES),
     technician: z.union([z.string(), z.null()]),
+    yours: z.boolean().openapi({ description: "Whether the technician asking did it." }),
     result: z
       .union([z.string(), z.null()])
       .openapi({ description: "done, partial or no_show; null where ops closed it with no outcome." }),
     note: z.union([z.string(), z.null()]).openapi({ description: "The note its technician left for the next." }),
     photos: PhotosSchema,
-    consumables: z.array(z.object({ name: z.string(), quantity: z.number() }).strict()),
+    consumables: z.array(
+      z
+        .object({
+          name: z.string(),
+          quantity: z.number(),
+          unit: z
+            .union([z.string(), z.null()])
+            .openapi({ description: "Its unit, as ml or strip; null for one used before the stock had codes." }),
+        })
+        .strict(),
+    ),
     piece: z.union([z.string(), z.null()]).openapi({ description: "The label of the piece fitted at it." }),
   })
   .strict()

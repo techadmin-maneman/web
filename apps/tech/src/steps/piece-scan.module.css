@@ -1,0 +1,137 @@
+/* The hair system step scan-first (./PieceScan.tsx), at the prototype's sizes: its head, the rows of what is expected,
+   the scanner's band with its links beneath, and the piece once read. */
+
+.scan {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--screen-gutter);
+}
+
+.title {
+  margin: 0;
+  padding-top: var(--sp-20);
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-strong);
+}
+
+.rows {
+  margin: 0;
+}
+
+/* A row of the prototype's: 11 px above and below its 15 px line, ruled beneath but for the last. */
+.row,
+.lastRow {
+  display: flex;
+  gap: var(--sp-16);
+  justify-content: space-between;
+  padding: calc(var(--sp-12) - var(--hairline)) 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+}
+
+.row {
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.key {
+  color: var(--ui-text-soft);
+}
+
+.value {
+  margin: 0;
+  color: var(--ui-text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The scanner's band, 160 px high, its links beneath. */
+.scanner {
+  --scan-height: calc(var(--sp-72) * 2 + var(--sp-16));
+  --scan-ground: var(--camera-700);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+
+.links {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* The links beneath the scanner, and Rescan: the prototype's 15 px at the semibold weight, a gloved tap high. */
+.link {
+  min-height: var(--tech-min);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.typedLabel {
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
+}
+
+.note,
+.warn {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+.note {
+  color: var(--ui-text-soft);
+}
+
+.warn {
+  color: var(--ui-error);
+}
+
+/* The piece read, under the strong rule: its disc and label, then its rows and Rescan. */
+.confirmed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: var(--sp-16);
+  padding-top: var(--sp-12);
+  border-top: var(--rule-strong) solid var(--ui-strong);
+}
+
+.confirmed .rows {
+  align-self: stretch;
+}
+
+.read {
+  --step-mark-size: calc(var(--sp-24) + var(--sp-2));
+
+  display: flex;
+  gap: var(--sp-12);
+}
+
+.code {
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.line {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+.match {
+  font-weight: var(--weight-semibold);
+  color: var(--ui-strong);
+}
+
+.mismatch {
+  color: var(--ui-error);
+}
+
+.rescan {
+  margin-top: var(--sp-8);
+}

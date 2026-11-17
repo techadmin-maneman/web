@@ -6,7 +6,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { card, JOB_ID, jobsToday, NOTHING_DONE, ROHITS_PIECE, SECOND_JOB_ID, todayInIndia } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { keptOnPhone, leftOnPhone } from "./on-phone.ts";
+import { keptOnPhone, leftOnPhone, queuedOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 /** The rest of the day, under Later today. */
@@ -361,4 +361,25 @@ test("Message on the next job opens the job's own sheet, and sends the client th
     preset: "running_late",
     minutes: 20,
   });
+});
+
+// A photo set the API stopped showed only as the sync label's count: the prototype draws it a card of its own.
+test("a photo set the API stopped is a card on Today, opening Pending uploads to send it again", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "3 jobs today" })).toBeVisible();
+  await queuedOnPhone(page, [
+    {
+      id: "01000000-0000-7000-8000-000000000031",
+      kind: "before_photos",
+      route: "before-photos",
+      body: {},
+      refused: { note: "photo_invalid_file", fields: [] },
+    },
+  ]);
+  await page.reload();
+  const card = page.getByRole("button").filter({ hasText: techCopy.today.setFailed });
+  await expect(card).toContainText(techCopy.today.setFailedBody("Rohit M.", techCopy.today.toFixSteps.before_photos));
+  await card.click();
+  await expect(page).toHaveURL(/\/waiting$/);
 });

@@ -821,6 +821,14 @@ export interface Rows {
     readonly settled_at: string | null;
     readonly razorpay_refund_id: string | null;
   };
+  readonly not_fitted_reasons: {
+    readonly code: string;
+    readonly label: string;
+    readonly position: number;
+    readonly retired_at: string | null;
+    readonly set_by: string;
+    readonly set_at: string;
+  };
   readonly number_change_requests: {
     readonly id: string;
     readonly person_id: string;
@@ -1405,6 +1413,7 @@ export interface Rows {
     readonly payment_checked_at: string | null;
     readonly pay_at_visit: number;
     readonly starts_at: string | null;
+    readonly booked_from: string | null;
   };
   readonly slot_times: {
     readonly id: string;
@@ -1891,6 +1900,7 @@ export interface Rows {
     readonly finish_ask: string | null;
     readonly finish_asked_at: string | null;
     readonly picked_tier: string | null;
+    readonly not_fitted_reason: string | null;
   };
   readonly visit_pay_rates: {
     readonly id: string;

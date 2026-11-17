@@ -28,12 +28,15 @@ export interface HistoryVisit {
   readonly type: VisitType;
   /** Who did it, by first name. */
   readonly technician: string | null;
+  /** Whether the technician asking did it, so their phone says "You". */
+  readonly yours: boolean;
   /** How it closed: done, partial or no_show; null where no outcome landed, as a visit closed by ops. */
   readonly result: string | null;
   /** The note its technician left for the next. */
   readonly note: string | null;
   readonly photos: HistoryPhoto[];
-  readonly consumables: { readonly name: string; readonly quantity: number }[];
+  /** What its last consumables step used, each in its unit; null for a row older than the stock's codes. */
+  readonly consumables: { readonly name: string; readonly quantity: number; readonly unit: string | null }[];
   /** The label of the piece its last piece step fitted. */
   readonly piece: string | null;
 }
@@ -42,8 +45,11 @@ interface VisitRow {
   id: string;
   window_start: string;
   type: VisitType;
+  technician_id: string | null;
   technician: string | null;
 }
+
+type UsedRow = HistoryVisit["consumables"][number] & { appointment_id: string };
 
 /** How many of the client's visits closed before the job, and the day in India of the first, as the job's row says. */
 export interface HistoryCount {
@@ -68,14 +74,14 @@ export async function historyCountOf(
   return { count: row?.count ?? 0, first: first === null ? null : indiaDate(new Date(first)) };
 }
 
-/** The client's visits closed before the job, newest first, each as the history shows it. */
+/** The client's visits closed before the job, newest first, each as the history shows it to the job's technician. */
 export async function clientHistory(
   db: D1Database,
-  job: { readonly id: string; readonly personId: string; readonly startsAt: string },
+  job: { readonly id: string; readonly personId: string; readonly startsAt: string; readonly technicianId: string },
 ): Promise<HistoryVisit[]> {
   const { results: visits } = await db
     .prepare(
-      `SELECT a.id, a.window_start, a.type, t.name AS technician FROM appointments a
+      `SELECT a.id, a.window_start, a.type, a.technician_id, t.name AS technician FROM appointments a
        LEFT JOIN technicians t ON t.id = a.technician_id
        WHERE a.person_id = ?1 AND a.id <> ?2 AND a.deleted_at IS NULL AND a.window_start < ?3
          AND ${statusIn("a.status", VISIT_ENDED)}
@@ -106,7 +112,8 @@ export async function clientHistory(
       .bind(ids),
     db
       .prepare(
-        `SELECT u.appointment_id, u.name, u.quantity FROM consumables_used u
+        `SELECT u.appointment_id, u.name, u.quantity, c.unit FROM consumables_used u
+         LEFT JOIN consumables c ON c.code = u.consumable_code
          WHERE u.appointment_id IN (SELECT value FROM json_each(?1))
            AND u.job_event_id = (SELECT e.id FROM job_events e
              WHERE e.appointment_id = u.appointment_id AND e.kind = 'consumables' AND e.superseded = 0
@@ -131,6 +138,7 @@ export async function clientHistory(
     date: indiaDate(new Date(visit.window_start)),
     type: visit.type,
     technician: visit.technician === null ? null : firstNameOf(visit.technician),
+    yours: visit.technician_id === job.technicianId,
     result: stateOf(
       of<{ appointment_id: string; kind: "start" | "outcome"; body: string; occurred_at: string }>(
         events?.results,
@@ -142,9 +150,7 @@ export async function clientHistory(
       angle: photo.angle,
       url: photoUrl(job.id, photo.id),
     })),
-    consumables: of<{ appointment_id: string; name: string; quantity: number }>(used?.results, visit.id).map(
-      ({ name, quantity }) => ({ name, quantity }),
-    ),
+    consumables: of<UsedRow>(used?.results, visit.id).map(({ name, quantity, unit }) => ({ name, quantity, unit })),
     piece: of<{ appointment_id: string; piece_code: string }>(pieces?.results, visit.id)[0]?.piece_code ?? null,
   }));
 }

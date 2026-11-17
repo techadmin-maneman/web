@@ -4,7 +4,7 @@ import { SignOffSchema } from "../schemas/sign-off.ts";
 import { RescheduleAskedSchema } from "../schemas/reschedule.ts";
 import { z } from "@hono/zod-openapi";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
-import { REMINDER_STATES } from "../../domain/field/job-card.ts";
+import { BOOKED_VIA, REMINDER_STATES } from "../../domain/field/job-card.ts";
 import { CARD_STEPS, SENT_BACK_KINDS } from "../../policy/in-job-steps.ts";
 import { BasedOnSchema, FitSpecWriteSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
 import { PieceSchema } from "./pieces.ts";
@@ -175,6 +175,11 @@ export const JobDetailSchema = JobSummarySchema.extend({
       "On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their " +
       "order (ADR 0149). Empty for any other visit.",
   }),
+  not_fitted_reasons: z.array(JobSheetItemSchema).openapi({
+    description:
+      "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0270). " +
+      "Empty for any other visit.",
+  }),
   consumables: z.array(OfferedSchema).openapi({
     description:
       "Every consumable the technician may record, those this job's service is expected to use first, " +
@@ -260,6 +265,11 @@ export const JobDetailSchema = JobSummarySchema.extend({
     }),
   reschedule_asked: z.union([RescheduleAskedSchema, z.null()]).openapi({
     description: "The technician's open ask that ops move the visit, until it is settled; null for none.",
+  }),
+  booked_via: z.union([z.enum(BOOKED_VIA), z.null()]).openapi({
+    description:
+      "Where the visit was booked: the client's app, the site, or ops in the console. Null until the day before the " +
+      "visit, and for one booked before this was kept.",
   }),
   sign_off: z.union([SignOffSchema, z.null()]).openapi({
     description:

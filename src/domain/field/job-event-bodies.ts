@@ -169,6 +169,16 @@ export const OutcomeRequestSchema = z
               "Can't fit today: a fit closed from its piece step with no piece of the client's spec to fit, its reason " +
               "`no_piece`. It follows the step before the piece, and ops are given the refit to book.",
           }),
+        not_fitted_reason: z
+          .string()
+          .min(1)
+          .max(64)
+          .optional()
+          .openapi({
+            description:
+              "With cannot_fit, why: one of the card's not_fitted_reasons, by its id; one ops have since taken off is " +
+              "still taken. Left out by a phone on a build before it was asked (ADR 0270).",
+          }),
         ...CLOSE_NOTES,
       })
       .strict(),

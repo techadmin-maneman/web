@@ -41,4 +41,6 @@ export const settingsApi = {
     client.post("/api/job-sheet/partial-reasons", { body: { items: [...items] } }),
   setLostReasons: (items: readonly JobSheetItemSent[]) =>
     client.post("/api/job-sheet/lost-reasons", { body: { items: [...items] } }),
+  setNotFittedReasons: (items: readonly JobSheetItemSent[]) =>
+    client.post("/api/job-sheet/not-fitted-reasons", { body: { items: [...items] } }),
 };

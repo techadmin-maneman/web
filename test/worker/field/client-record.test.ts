@@ -173,6 +173,7 @@ describe("the client's history", () => {
           date: "2026-09-01",
           type: "service",
           technician: "Imran",
+          yours: true,
           note: "Edge lifting at the left temple.",
           photos: [{ angle: "front", url: `/api/tech/jobs/${JOB}/history-photos/${PHOTO}` }],
           consumables: [],
@@ -183,6 +184,16 @@ describe("the client's history", () => {
     const photo = await job.get(`/api/tech/jobs/${JOB}/history-photos/${PHOTO}`);
     expect(photo.status).toBe(200);
     expect(photo.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+
+  it("says which visits were another technician's, for the phone to name them", async () => {
+    const job = await working("service");
+    await anEarlierVisit();
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(EARLIER, SAMEER).run();
+    const { visits } = await (
+      await job.get(`/api/tech/jobs/${JOB}/client-history`)
+    ).json<{ visits: { technician: string; yours: boolean }[] }>();
+    expect(visits).toMatchObject([{ technician: "Sameer", yours: false }]);
   });
 
   it("is not found for a job ops gave to another technician, nor its photographs", async () => {
@@ -231,7 +242,41 @@ describe("the client's history", () => {
 
     const answer = await job.get(`/api/tech/jobs/${LATER}/client-history`);
     expect(await answer.json()).toMatchObject({
-      visits: [{ id: JOB, result: "done", consumables: [{ name: "Walker tape", quantity: 3 }] }],
+      visits: [{ id: JOB, result: "done", consumables: [{ name: "Walker tape", quantity: 3, unit: null }] }],
+    });
+  });
+
+  it("gives each thing used in the unit the stock counts it in", async () => {
+    const job = await working("service");
+    for (const consumable of [
+      { name: "Tape strips", unit: "strip", unit_cost: 1200 },
+      { name: "Solvent", unit: "ml", unit_cost: 50 },
+    ]) {
+      expect((await job.opsPost("/api/consumables", consumable)).status).toBe(200);
+    }
+    await job.workTo("consumables");
+    const items = [
+      { code: "tape_strips", quantity: 5 },
+      { code: "solvent", quantity: 10 },
+    ];
+    expect((await job.post(`/api/tech/jobs/${JOB}/consumables`, { items }, "event-consumables-01")).status).toBe(202);
+    await job.post(`/api/tech/jobs/${JOB}/photos`, { phase: "after" }, "event-afterphotos-01");
+    expect((await outcome(job, { outcome: "done" })).status).toBe(202);
+    await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(JOB).run();
+    await aVisit({ id: LATER, person_id: PERSON, window_start: "2026-09-21T10:30:00.000Z", technician_id: IMRAN });
+
+    const answer = await job.get(`/api/tech/jobs/${LATER}/client-history`);
+    expect(await answer.json()).toMatchObject({
+      visits: [
+        {
+          id: JOB,
+          yours: true,
+          consumables: [
+            { name: "Tape strips", quantity: 5, unit: "strip" },
+            { name: "Solvent", quantity: 10, unit: "ml" },
+          ],
+        },
+      ],
     });
   });
 

@@ -263,6 +263,14 @@ export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
   { id: "aftercare_explained", label: "Aftercare explained" },
 ];
 
+/** Why a fit may not be fitted today, as the job sheet's committed list words them. */
+export const NOT_FITTED_REASONS: Card["not_fitted_reasons"] = [
+  { id: "piece_damaged", label: "Piece damaged" },
+  { id: "wrong_piece", label: "Wrong piece" },
+  { id: "client_changed_mind", label: "Client changed mind" },
+  { id: "scalp_not_ready", label: "Scalp not ready" },
+];
+
 /** Why a client may not go ahead after a consultation: the committed list, in src/config/job-sheet.ts's words. */
 const LOST_REASONS: Card["lost_reasons"] = [
   { id: "price", label: "The price" },
@@ -381,6 +389,7 @@ export interface CardOptions {
   readonly rescheduleAsked?: Card["reschedule_asked"];
   /** The client's earlier visits, counted; none unless a test gives them. */
   readonly clientVisits?: Card["client_visits"];
+  readonly bookedVia?: Card["booked_via"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
@@ -435,6 +444,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     checklist_if_declined: oneVisit ? CONSULTATION_CHECKLIST : [],
     partial_reasons: PARTIAL_REASONS,
     lost_reasons: options.lostReasons ?? (oneVisit || type === "consultation" ? LOST_REASONS : []),
+    not_fitted_reasons: oneVisit || type === "first_fit" || type === "replacement" ? NOT_FITTED_REASONS : [],
     consumables: CONSUMABLES,
     kit_hair_systems: [...(options.kitHairSystems ?? [])],
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
@@ -448,6 +458,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     reschedule_asked: options.rescheduleAsked ?? null,
     sign_off: options.signOff ?? null,
     client_visits: options.clientVisits ?? { count: 0, first: null },
+    booked_via: options.bookedVia ?? null,
   };
 }
 
@@ -471,6 +482,7 @@ export function lockedCard(date: string): Card {
     checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
     lost_reasons: [],
+    not_fitted_reasons: [],
     consumables: CONSUMABLES,
     kit_hair_systems: [],
     products: [],
@@ -484,6 +496,7 @@ export function lockedCard(date: string): Card {
     reschedule_asked: null,
     sign_off: null,
     client_visits: null,
+    booked_via: null,
   };
 }
 

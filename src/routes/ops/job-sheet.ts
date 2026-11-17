@@ -55,9 +55,13 @@ const JobSheetSchema = z
     lost_reasons: z.object(LIST).strict().openapi({
       description: "Why a client is not going ahead with a fit after their consultation (ADR 0149).",
     }),
+    not_fitted_reasons: z.object(LIST).strict().openapi({
+      description: "Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0270).",
+    }),
     max_checklist_items: z.number().int(),
     max_partial_reasons: z.number().int(),
     max_lost_reasons: z.number().int(),
+    max_not_fitted_reasons: z.number().int(),
     max_label: z.number().int(),
   })
   .strict()
@@ -84,6 +88,7 @@ const MOST = Math.max(
   JOB_SHEET_BOUNDS.maxChecklistItems,
   JOB_SHEET_BOUNDS.maxPartialReasons,
   JOB_SHEET_BOUNDS.maxLostReasons,
+  JOB_SHEET_BOUNDS.maxNotFittedReasons,
 );
 
 const ListChangeSchema = z
@@ -155,6 +160,14 @@ const lostReasonsRoute = opsRoute({
   responses: { 200: SHEET, 400: REFUSED },
 });
 
+const notFittedReasonsRoute = opsRoute({
+  method: "post",
+  path: "/api/job-sheet/not-fitted-reasons",
+  summary: "Why a hair system could not be fitted today, the whole list in its order",
+  request: { body: { required: true, ...json(ListChangeSchema) } },
+  responses: { 200: SHEET, 400: REFUSED },
+});
+
 const listBody = (list: JobSheetList) => ({
   items: list.items.map((item) => ({ code: item.id, label: item.label })),
   retired: list.retired.map((item) => ({ code: item.id, label: item.label })),
@@ -175,9 +188,11 @@ const sheetBody = (sheet: JobSheet) => ({
   checklists: VISIT_TYPES.map((type) => ({ visit_type: type, ...checklistBody(sheet.checklists[type]) })),
   partial_reasons: listBody(sheet.partialReasons),
   lost_reasons: listBody(sheet.lostReasons),
+  not_fitted_reasons: listBody(sheet.notFittedReasons),
   max_checklist_items: JOB_SHEET_BOUNDS.maxChecklistItems,
   max_partial_reasons: JOB_SHEET_BOUNDS.maxPartialReasons,
   max_lost_reasons: JOB_SHEET_BOUNDS.maxLostReasons,
+  max_not_fitted_reasons: JOB_SHEET_BOUNDS.maxNotFittedReasons,
   max_label: JOB_SHEET_BOUNDS.maxLabel,
 });
 
@@ -204,4 +219,6 @@ export function registerOpsJobSheet(app: App): void {
   app.openapi(reasonsRoute, (c) => save(c, { list: "partial_reason" }, c.req.valid("json").items));
 
   app.openapi(lostReasonsRoute, (c) => save(c, { list: "lost_reason" }, c.req.valid("json").items));
+
+  app.openapi(notFittedReasonsRoute, (c) => save(c, { list: "not_fitted_reason" }, c.req.valid("json").items));
 }

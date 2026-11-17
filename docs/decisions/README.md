@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0270. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0271. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -150,6 +150,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0258](0258-the-technician-design-pass.md) The technician app's design pass
 - [0267](0267-the-technician-design-check.md) The technician app's design check
 - [0268](0268-the-visits-design-check.md) The visit's design check
+- [0270](0270-the-design-checks-api-side.md) The design check's API side
 
 ### Money and Books
 
@@ -359,7 +360,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0050](0050-crm-in-the-real-org.md) | The CRM moves to the real Zoho org | 2026-09-22 | accepted | [0059](0059-a-clients-history.md), [0070](0070-vendor-correctness.md) |
 | [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md), [0086](0086-the-next-visit-is-offered.md), [0089](0089-an-invite-is-not-lost.md), [0116](0116-book-asks-for-the-name-and-number-first.md) |
 | [0052](0052-technician-sessions.md) | Technician sessions, devices and the day-before unlock | 2026-09-23 | accepted |  |
-| [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted | [0251](0251-hindi-and-the-sign-in.md) |
+| [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted | [0251](0251-hindi-and-the-sign-in.md), [0270](0270-the-design-checks-api-side.md) |
 | [0054](0054-address-capture.md) | Capturing an address: the fields, the pin, and the way to the door | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md), [0098](0098-the-door-in-fsms-address.md) |
 | [0055](0055-invoices.md) | The invoice for a finished job | 2026-09-23 | accepted | [0056](0056-issuing-the-invoice.md) |
 | [0056](0056-issuing-the-invoice.md) | The invoice is issued, and shown beside the visit | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md) |
@@ -410,7 +411,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted | [0213](0213-the-sites-second-copy-round.md), [0215](0215-the-range-as-a-table.md) |
 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 | [0214](0214-from-the-site-into-the-app.md), [0217](0217-the-try-ons-photo-taken-and-looked-at.md), [0219](0219-one-line-consents.md) |
 | [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length |  |
-| [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 | [0240](0240-consultation-rules-and-inches.md) |
+| [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 | [0240](0240-consultation-rules-and-inches.md), [0270](0270-the-design-checks-api-side.md) |
 | [0107](0107-referral-rewards-in-the-console.md) | What a referral earns, set in the console, each side apart | 2026-10-01 | accepted, on the owner's ruling of 1 October 2026 |  |
 | [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
 | [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 | [0198](0198-cities-as-data.md), [0208](0208-the-console-redesigned.md) |
@@ -473,7 +474,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0166](0166-purchase-orders.md) | Purchase orders | 2026-10-12 | accepted |  |
 | [0167](0167-receipts-and-landed-cost.md) | Receipts and landed cost | 2026-10-12 | accepted |  |
 | [0168](0168-bills-in-books.md) | Bills in Books | 2026-10-12 | accepted |  |
-| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted |  |
+| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md) |
 | [0170](0170-stock-photos.md) | Photographs of stock | 2026-10-12 | accepted |  |
 | [0171](0171-vendor-credits.md) | Vendor credits | 2026-10-12 | accepted |  |
 | [0172](0172-supplier-scorecard.md) | Supplier scorecard | 2026-10-12 | accepted |  |
@@ -492,7 +493,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0185](0185-cycle-counts.md) | Cycle counts | 2026-10-12 | accepted |  |
 | [0186](0186-usage-and-shrinkage.md) | Usage against expected, and shrinkage | 2026-10-12 | accepted |  |
 | [0187](0187-recalls.md) | Recalls | 2026-10-12 | accepted |  |
-| [0188](0188-failure-rates-and-value-at-risk.md) | Failure rates and value at risk | 2026-10-12 | accepted |  |
+| [0188](0188-failure-rates-and-value-at-risk.md) | Failure rates and value at risk | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md) |
 | [0189](0189-the-staff-list-on-by-default.md) | The Staff list on by default | 2026-10-13 | accepted |  |
 | [0190](0190-foreign-orders-judged-at-a-rate.md) | Foreign orders judged at a rate | 2026-10-13 | accepted |  |
 | [0191](0191-a-replaced-piece-comes-off.md) | A replaced piece comes off | 2026-10-13 | accepted |  |
@@ -571,6 +572,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0264](0264-the-hero-restyled.md) | The hero, restyled | 2026-11-17 | accepted |  |
 | [0265](0265-book-and-try-on-the-client-apps-look.md) | `/book` and `/try` on the client app's look | 2026-11-17 | accepted | [0269](0269-the-one-visits-note-on-book.md) |
 | [0266](0266-the-sites-header-book-and-focus-ring.md) | The site's header Book and focus ring | 2026-11-17 | accepted |  |
-| [0267](0267-the-technician-design-check.md) | The technician app's design check | 2026-11-17 | accepted | [0268](0268-the-visits-design-check.md) |
+| [0267](0267-the-technician-design-check.md) | The technician app's design check | 2026-11-17 | accepted | [0268](0268-the-visits-design-check.md), [0270](0270-the-design-checks-api-side.md) |
 | [0268](0268-the-visits-design-check.md) | The visit's design check | 2026-11-17 | accepted |  |
 | [0269](0269-the-one-visits-note-on-book.md) | The one visit's note on `/book` | 2026-11-17 | accepted |  |
+| [0270](0270-the-design-checks-api-side.md) | The design check's API side | 2026-11-17 | accepted |  |

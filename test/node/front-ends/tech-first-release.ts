@@ -235,3 +235,27 @@ export function twelfthRelease(cards: readonly object[], days: readonly object[]
     };
   });
 }
+
+/** The cards the thirteenth release kept, before a card said where the visit was booked or why a fit may not be. */
+export function thirteenthRelease(cards: readonly object[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE, 13);
+    request.onupgradeneeded = (event) => {
+      const upgrade = request.transaction;
+      if (upgrade === null) return;
+      for (const step of UPGRADES.slice(event.oldVersion, 13)) step(request.result, upgrade);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction("cards", "readwrite");
+      for (const card of cards) transaction.objectStore("cards").put(card);
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onabort = () => {
+        reject(new Error("could not seed the thirteenth release’s records"));
+      };
+    };
+  });
+}

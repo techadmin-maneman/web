@@ -3,7 +3,7 @@
 
 import type { ShortReason } from "../../policy/consumable-shortfall.ts";
 import type { FinishAsk } from "../../policy/finish-the-work.ts";
-import { PARTIAL_REASONS } from "../../config/job-sheet.ts";
+import { NOT_FITTED_REASONS, PARTIAL_REASONS } from "../../config/job-sheet.ts";
 import type { BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import type { RescheduleReason } from "../dispatch/reschedule-requests.ts";
@@ -72,6 +72,8 @@ export type TaskFacts =
       readonly reason_code: string | null;
       /** The reason in the words ops gave it, or the job sheet's. */
       readonly reason: string | null;
+      /** A fit closed with "Can't fit today", why, in the job sheet's words; null for any other close (ADR 0270). */
+      readonly not_fitted: string | null;
       /** How the technician suggested finishing it (docs/decisions/0246-closed-and-sent-back.md); null for none. */
       readonly ask: FinishAsk | null;
     }
@@ -165,7 +167,9 @@ export function factsOf(row: FactsRow, schedule: SlotSchedule): TaskFacts {
   if (row.group === "partial_visit") {
     const code = typeof written.reason_code === "string" ? written.reason_code : null;
     const label = PARTIAL_REASONS.find((each) => each.id === code)?.label ?? code;
-    return { ...written, reason: written.reason ?? label } as TaskFacts;
+    const notFitted = typeof written.not_fitted === "string" ? written.not_fitted : null;
+    const notFittedLabel = NOT_FITTED_REASONS.find((each) => each.id === notFitted)?.label ?? notFitted;
+    return { ...written, reason: written.reason ?? label, not_fitted: notFittedLabel } as TaskFacts;
   }
   if (row.group === "first_fit_to_book" && typeof written.consulted_at === "string") {
     const window = offeredWindow("first_fit", schedule.at(written.consulted_at).window);

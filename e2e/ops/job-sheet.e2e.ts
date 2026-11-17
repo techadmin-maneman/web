@@ -133,6 +133,23 @@ test("sets the partial reasons the Tasks board reads", async ({ page }) => {
   });
 });
 
+test("sets the reasons a fit is not fitted, which the technician picks from at Can’t fit today", async ({ page }) => {
+  await open(page, { "POST /api/job-sheet/not-fitted-reasons": json(JOB_SHEET) });
+  const reasons = page.getByRole("region", { name: copy.notFittedReasons });
+  await reasons.getByRole("button", { name: copy.addReason }).click();
+  const add = reasons.getByRole("group", { name: copy.addReason });
+  await add.getByLabel(copy.reason(3)).fill("Base too small");
+  const sent = posted(page, "/api/job-sheet/not-fitted-reasons");
+  await add.getByRole("button", { name: copy.addButton, exact: true }).click();
+  expect((await sent).postDataJSON()).toEqual({
+    items: [
+      { code: "piece_damaged", label: "Piece damaged" },
+      { code: "wrong_piece", label: "Wrong piece" },
+      { label: "Base too small" },
+    ],
+  });
+});
+
 test("meets WCAG 2.2 AA, with an item being changed as well", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);

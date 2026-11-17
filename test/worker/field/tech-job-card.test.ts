@@ -3,7 +3,7 @@
 // client. NOW is Monday 21 September 2026, 12 noon in India. Everyone here is
 // made up.
 
-import { aPackage } from "../fixtures/index.ts";
+import { aHold, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
@@ -301,6 +301,23 @@ describe("the card", () => {
   it("has no last visit for a client seen for the first time", async () => {
     expect((await card(TODAY_JOB)).last_visit).toBeNull();
     expect((await get(`/api/tech/jobs/${TODAY_JOB}/last-visit-photo`)).status).toBe(404);
+  });
+
+  it("says where the visit was booked, from the hold that booked it, and nothing for one booked before it was kept", async () => {
+    expect((await card(TODAY_JOB)).booked_via).toBeNull();
+    const booked = (from: "site" | "app", at: string) =>
+      aHold({
+        person_id: PERSON,
+        technician_id: IMRAN,
+        state: "booked",
+        appointment_id: TODAY_JOB,
+        booked_from: from,
+        created_at: at,
+      });
+    await booked("site", "2026-09-10T05:00:00.000Z");
+    // A later hold of the same visit, a move say, leaves where it was first booked.
+    await booked("app", "2026-09-12T05:00:00.000Z");
+    expect((await card(TODAY_JOB)).booked_via).toBe("site");
   });
 
   it("says whether the day-before WhatsApp reached the client, as the wait screen shows", async () => {

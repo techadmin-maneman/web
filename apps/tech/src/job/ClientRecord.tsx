@@ -47,6 +47,8 @@ export function ClientRecord({ job }: { job: Job }) {
   // A client with no visits before has no history to open (the card says none, or names no first).
   const newClient = job.client_visits !== null && job.client_visits.count === 0;
   const visits = visitsOf(job);
+  // Nothing to say of a new client with no alerts and no note left: no section, so no gap where it would be.
+  if (newClient && job.client_alerts.length === 0 && job.handoff === null) return null;
   return (
     <section className={styles.record}>
       {job.client_alerts.length > 0 && (
