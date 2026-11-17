@@ -379,7 +379,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
 
   // Deleting never throws away photographs on one tap, and the question opens on the safe answer.
   await page.getByRole("button", { name: techCopy.queue.forget.open }).click();
-  await expect(page.getByText("This deletes 5 photos and 1 action from this phone.")).toBeVisible();
+  await expect(page.getByText("This deletes 5 photos from this phone.")).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.queue.forget.keep })).toBeFocused();
   await page.keyboard.press("Enter");
   expect(await heldOnPhone(page)).toMatchObject({ frames: 5 });
@@ -406,7 +406,14 @@ test("counts a set as sent only as its photographs go up", async ({ page, contex
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
+
+  // The set is one upload wherever it is counted, beside the start that waits with it: its own write is not another.
+  await askToSignOut(page);
+  await expect(page.getByRole("dialog")).toContainText(techCopy.me.sheet.lost(2));
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.me.sheet.cancel }).click();
+  await expect(page.getByText(techCopy.today.sync.offline(2))).toBeVisible();
   await openPending(page);
+  await expect(page.getByText(techCopy.queue.events(1), { exact: true })).toBeVisible();
 
   // The line counts what reached us, and says so to a screen reader.
   await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuetext", techCopy.queue.sentOf(0, 5));

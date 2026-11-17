@@ -63,12 +63,7 @@ export function ConfirmSheet({
         {onPaper ? (
           <div className={styles.answers}>
             {!safeLast && keep}
-            <Button
-              variant="danger"
-              size="action"
-              className={classes(styles.yes, quietYes && styles.quietYes)}
-              onClick={onYes}
-            >
+            <Button variant={quietYes ? "dangerQuiet" : "danger"} size="action" className={styles.yes} onClick={onYes}>
               {yes}
             </Button>
             {safeLast && keep}

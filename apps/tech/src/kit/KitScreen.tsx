@@ -57,17 +57,24 @@ function heldLines(item: Held, today: string, coming: boolean): string[] {
   ];
 }
 
-/** Why an item is low: ops told, or more on its way; or low only for stock to hand back, which tells ops once back. */
+/**
+ * Why an item is low: ops told, or more on its way; or low only for stock to hand back, which tells ops once back. Ops'
+ * count never tells them of a hair system, so one with nothing to hand back says only that it is low.
+ */
 function lowLine(item: Held, coming: boolean): string {
   if (coming) return copy.held.low(true);
-  return item.ops_told ? copy.held.low(false) : copy.held.lowUntilBack;
+  if (item.ops_told) return copy.held.low(false);
+  return toHandBack(item) ? copy.held.lowUntilBack : copy.held.lowAlone;
 }
 
 /** The same for an item out, and how far short where more was used than it held. */
 function outLine(item: Held, short: string | null, coming: boolean): string {
   if (coming || item.ops_told) return copy.held.out(short, coming);
-  return copy.held.outUntilBack(short);
+  return toHandBack(item) ? copy.held.outUntilBack(short) : copy.held.outAlone(short);
 }
+
+/** Whether it holds expired or recalled stock, which goes back to ops. */
+const toHandBack = (item: Held): boolean => item.quantity > item.usable;
 
 /** An item's figure, what it holds fit to use: out in red, low in the metal's words, otherwise quiet. */
 function amountLook(item: Held): string | undefined {
@@ -199,6 +206,11 @@ export function KitScreen() {
     setSettled(false);
   };
   const kit = after ?? (loaded.state === "loaded" ? loaded.value : null);
+  // Ops are the way on only where the kit shows nothing: empty, with nothing coming or to hand back, or not read.
+  const askOps =
+    kit === null
+      ? loaded.state === "failed"
+      : kit.held.length === 0 && kit.coming.length === 0 && kit.returned.length === 0;
   // When the kit was last read, so a phone without signal shows how old its figures are.
   const [readAt, setReadAt] = useState<string | null>(null);
   useEffect(() => {
@@ -240,10 +252,7 @@ export function KitScreen() {
           <InKit kit={kit} />
         </>
       )}
-      {/* Only a kit with nothing in it, nothing coming and nothing to hand back asks ops (ADR 0258 decision 2). */}
-      {kit !== null && kit.held.length === 0 && kit.coming.length === 0 && kit.returned.length === 0 && (
-        <ReachOps className={styles.reach} onPaper />
-      )}
+      {askOps && <ReachOps className={styles.reach} onPaper />}
     </main>
   );
 }

@@ -230,12 +230,26 @@ test("says an item is out, and how far short, rather than a count below nought",
   const fake = await fakeTech(page);
   withAKit(fake);
   const [solvent] = fake.kit.held;
-  if (solvent !== undefined) fake.kit = { ...fake.kit, held: [{ ...solvent, quantity: -4, usable: -4, lots: [] }] };
-  await page.goto("/kit");
+  if (solvent === undefined) throw new Error("the kit holds solvent");
   const held = page.getByRole("region", { name: copy.held.title });
-  // As the prototype draws one out: nought in its figure, and beneath, how far short and who knows.
-  const told = solvent?.ops_told === true ? copy.held.out("4 ml", false) : copy.held.outUntilBack("4 ml");
-  await expect(held.getByRole("listitem")).toContainText(["Solvent" + told + "0 ml"]);
+  const expired = { lot_code: "SV-1", expires_on: "2020-01-31", quantity: 10, use_first: false, recalled: false };
+  const cases = [
+    // Nothing to hand back, and ops' count not told of it, as for a hair system: only how far short.
+    { item: { ...solvent, quantity: -4, usable: -4, ops_told: false, lots: [] }, says: copy.held.outAlone("4 ml") },
+    // Expired stock to hand back, which tells ops once it is back.
+    {
+      item: { ...solvent, quantity: 6, usable: -4, ops_told: false, lots: [expired] },
+      says: copy.held.outUntilBack("4 ml"),
+    },
+    // Ops' own count finds it low: they know.
+    { item: { ...solvent, quantity: -4, usable: -4, ops_told: true, lots: [] }, says: copy.held.out("4 ml", false) },
+  ];
+  for (const { item, says } of cases) {
+    fake.kit = { ...fake.kit, held: [item] };
+    await page.goto("/kit");
+    // As the prototype draws one out: nought in its figure, and beneath, how far short and who knows.
+    await expect(held.getByRole("listitem")).toContainText(["Solvent" + says + "0 ml"]);
+  }
 });
 
 test("hands back the pieces that came off, and the expired stock", async ({ page }) => {
@@ -314,10 +328,43 @@ test("says nothing's short now where the API finds the kit short of nothing, and
   });
   await page.goto("/kit");
   const days = page.getByRole("region", { name: copy.forecast.title });
-  await days.getByRole("button", { name: copy.forecast.requestOne("6 Shampoo sachets") }).click();
+  // A common name reads in lower case mid-sentence.
+  await days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets"), exact: true }).click();
   await expect(days.getByRole("alert")).toHaveText(copy.forecast.nothingShort);
   await expect(days.getByRole("row", { name: /Shampoo sachet/ })).toContainText(copy.forecast.enough);
-  await expect(days.getByRole("button", { name: copy.forecast.requestOne("6 Shampoo sachets") })).toHaveCount(0);
+  await expect(days.getByRole("button", { name: copy.forecast.requestOne("6 shampoo sachets") })).toHaveCount(0);
+});
+
+test("names a hair system's pieces by its tier in the forecast", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  fake.kit = { ...fake.kit, pieces: [{ product: "hs_essential", name: "Mane Man Essential", need: 2, have: 1 }] };
+  await page.goto("/kit");
+  const days = page.getByRole("region", { name: copy.forecast.title });
+  await expect(days.getByRole("row", { name: new RegExp(`^${copy.forecast.pieces("Essential")}`) })).toContainText(
+    copy.forecast.short(1),
+  );
+});
+
+test("offers ops' call and WhatsApp only where the kit shows nothing", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  const call = page.getByRole("link", { name: techCopy.ops.call });
+  await page.goto("/kit");
+  await expect(page.getByRole("region", { name: copy.held.title })).toBeVisible();
+  await expect(call).toHaveCount(0);
+
+  // Empty, with nothing coming and nothing to hand back: the way to ops is all there is.
+  fake.kit = { ...fake.kit, held: [], coming: [], returned: [] };
+  await page.goto("/kit");
+  await expect(page.getByText(copy.held.none)).toBeVisible();
+  await expect(call).toBeVisible();
+
+  // And where the kit did not load.
+  await page.route("**/api/tech/kit", (route) => route.abort("failed"));
+  await page.goto("/kit");
+  await expect(page.getByText(copy.failed)).toBeVisible();
+  await expect(call).toBeVisible();
 });
 
 test("weighs the next seven days' need against the kit, a shortfall in red", async ({ page }) => {

@@ -24,7 +24,7 @@ import { go, STEP_PATHS, stepPath, type InJobStep } from "../route.ts";
 import { useSession } from "../session.ts";
 import { account, forget, replay, sendAgain, STUCK, type EventKind, type JobAccount } from "../store/outbox.ts";
 import { Progress } from "./Progress.tsx";
-import { IN_A_SET, photoSets, sentOf, type PhotoSet } from "../lib/sets.ts";
+import { IN_A_SET, isSetWrite, photoSets, sentOf, type PhotoSet } from "../lib/sets.ts";
 import styles from "./waiting.module.css";
 
 const PHOTO_STEPS: ReadonlySet<InJobStep> = new Set(["before_photos", "after_photos"]);
@@ -116,6 +116,8 @@ function WaitingJob(props: {
   name: string;
   line: JobAccount | undefined;
   sets: readonly PhotoSet[];
+  /** The job's writes still waiting to go, beside its sets' own. */
+  actions: number;
   since: number | null;
   startsAt: string | null;
   offline: boolean;
@@ -125,7 +127,7 @@ function WaitingJob(props: {
   const stopped = line?.stopped ?? null;
   const failed = stopped !== null;
   const state = stateOf(failed, offline);
-  const actions = line?.waiting ?? 0;
+  const { actions } = props;
   return (
     <li className={styles.job}>
       {props.sets.map((set) => (
@@ -197,7 +199,10 @@ export function WaitingScreen() {
   };
 
   const photosOf = (id: string) => waiting.frames.filter((frame) => frame.job_id === id).length;
-  const actionsOf = (id: string) => waiting.events.filter((event) => event.job_id === id).length;
+  // A set's own write is the set: the actions are the job's other writes.
+  const actionsOf = (id: string) => waiting.events.filter((event) => event.job_id === id && !isSetWrite(event)).length;
+  const actionsWaiting = (id: string) =>
+    waiting.events.filter((event) => event.job_id === id && event.state === "waiting" && !isSetWrite(event)).length;
 
   return (
     <CardFrame
@@ -218,6 +223,7 @@ export function WaitingScreen() {
                 name={name(id)}
                 line={held.find((entry) => entry.job_id === id)}
                 sets={sets.filter((set) => set.job === id)}
+                actions={actionsWaiting(id)}
                 since={since(id)}
                 startsAt={kept.get(id)?.starts_at ?? null}
                 offline={offline}

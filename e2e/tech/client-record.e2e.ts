@@ -43,6 +43,8 @@ test("puts the client's alerts and the last technician's note on the card, and o
   const photo = page.getByRole("img", { name: copy.photo("front") });
   await expect(photo).toBeVisible();
   expect(await photo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  // The tiles say whose they are: the last visit's after photos.
+  await expect(page.getByText(copy.afterPhotos("1 Sep"), { exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: copy.history }).click();
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}/history$`));
@@ -95,6 +97,13 @@ test("lists each earlier visit with who did it, how it closed, its note, photogr
 
   await page.getByRole("button", { name: techCopy.job.back }).click();
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
+});
+
+test("offers no history on the card of a client with no visit before", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
+  await expect(page.getByRole("link", { name: copy.history })).toHaveCount(0);
 });
 
 test("says when the client has no earlier visit", async ({ page }) => {

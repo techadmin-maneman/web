@@ -1342,7 +1342,7 @@ export const reschedule = localised({
   failed: "That didn’t reach ops. Try again.",
   closed: "This visit is closed or called off.",
   gone: "This visit isn’t yours any more.",
-  /** "Reschedule asked 9:05 am · Client asked · ops will confirm with the client" */
+  /** "Reschedule asked 9:05 am · client asked · ops will confirm with the client" */
   asked: (time: string, reason: string) => `Reschedule asked ${time} · ${reason} · ops will confirm with the client`,
 } as const);
 
@@ -1463,6 +1463,8 @@ export const kit = localised({
       `${short === null ? "Out" : `Out, ${short} short`} · ${coming ? "more on its way" : "ops notified"}`,
     outUntilBack: (short: string | null) =>
       `${short === null ? "Out" : `Out, ${short} short`} · hand back the expired stock and ops are told`,
+    /** Out with no stock to hand back, and ops' count not told of it, as for a hair system. */
+    outAlone: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
     /** A lot and when it expires, as the prototype writes it: "TS-2611 · expires 31 May 2027". */
     expires: (lot: string, date: string) => `${lot} · expires ${date}`,
     /** A lot inside the days ops are warned before it expires. */
@@ -1474,6 +1476,7 @@ export const kit = localised({
     low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops notified"),
     /** Low only for stock that goes back: ops' count sees it until it does. */
     lowUntilBack: "Low · hand back the expired stock and ops are told",
+    lowAlone: "Low",
   },
   returned: {
     title: "Return to ops",

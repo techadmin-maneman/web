@@ -2,6 +2,7 @@
 // (./mine.e2e.ts), leave, what waits to send, ops, and signing out, which the shell's own test runs through
 // (e2e/tech/shell.e2e.ts).
 
+import { randomUUID } from "node:crypto";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fakeTech } from "./fake-tech.ts";
@@ -9,13 +10,25 @@ import { tab } from "./tabs.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 test("opens from its tab, and lists leave, what waits to send, and the way to ops", async ({ page }) => {
-  await fakeTech(page);
+  const fake = await fakeTech(page);
+  // Two asks still with ops and one ops answered: the row counts the two.
+  const ask = (state: "asked" | "approved") => ({
+    id: randomUUID(),
+    from: "2030-08-04",
+    to: "2030-08-05",
+    note: null,
+    state,
+    requested_at: "2030-07-01T05:00:00.000Z",
+  });
+  fake.leave = { requests: [ask("asked"), ask("asked"), ask("approved")] };
   await page.goto("/");
   await tab(page, techCopy.tabs.me).click();
 
   await expect(page.getByRole("heading", { level: 1, name: techCopy.me.title })).toBeVisible();
   await expect(tab(page, techCopy.tabs.me)).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { name: new RegExp(`^${techCopy.me.leave}`) })).toHaveAttribute("href", "/leave");
+  const leave = page.getByRole("link", { name: new RegExp(`^${techCopy.me.leave}`) });
+  await expect(leave).toHaveAttribute("href", "/leave");
+  await expect(leave).toContainText(techCopy.me.withOps(2));
   await expect(page.getByRole("link", { name: new RegExp(`^${techCopy.me.pending}`) })).toContainText(
     techCopy.me.nothingPending,
   );

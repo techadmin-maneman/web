@@ -28,6 +28,8 @@ export const BUTTON_VARIANTS = [
   "dangerOnInk",
   /** An action that takes something away that can be put back or made again, on paper: oxblood edge and words. */
   "danger",
+  /** The same said quietly, as the technician's Sign out: oxblood words on a control's own edge. */
+  "dangerQuiet",
   /** One that cannot be undone, as deleting, erasing or refunding: oxblood, with paper words. */
   "destructive",
 ] as const;

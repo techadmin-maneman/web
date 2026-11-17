@@ -4,7 +4,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { card, JOB_ID, NOTHING_DONE, ROHITS_PIECE, SECOND_JOB_ID, todayInIndia } from "./fixtures.ts";
+import { card, JOB_ID, jobsToday, NOTHING_DONE, ROHITS_PIECE, SECOND_JOB_ID, todayInIndia } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { keptOnPhone, leftOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
@@ -86,6 +86,24 @@ test("says when a job under way runs into the next", async ({ page }) => {
   await page.goto("/");
   await expect(nextJob(page)).toContainText(techCopy.today.next.inProgress);
   await expect(nextJob(page)).toContainText(techCopy.today.runsOver("11 am", "11:30 am"));
+});
+
+test("says there are no more jobs under the title once every job has closed, the list headed Today", async ({
+  page,
+}) => {
+  await fakeTech(page);
+  const today = todayInIndia();
+  const closed = jobsToday(today).map((job) => ({ ...job, status: "completed" as const }));
+  // Registered after the fake, so it answers first: today's three jobs, each closed.
+  await page.route(
+    (url) => url.pathname === "/api/tech/jobs" && url.searchParams.get("date") === today,
+    (route) => route.fulfill({ json: { date: today, jobs: closed, sent_back: [] } }),
+  );
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.today.allDone })).toBeVisible();
+  await expect(page.getByText(techCopy.today.noMore, { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: techCopy.today.title, exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: techCopy.today.later, exact: true })).toHaveCount(0);
 });
 
 test("says there are no jobs when the day is empty", async ({ page }) => {
