@@ -25,6 +25,7 @@ interface Sheet {
   checklists: (List & { visit_type: string })[];
   partial_reasons: List;
   lost_reasons: List;
+  not_fitted_reasons: List;
 }
 
 let job: Working;
@@ -234,6 +235,76 @@ describe("the lost reasons ops keep", () => {
   it("are none on any visit but a consultation's", async () => {
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ lost_reasons: unknown }>();
     expect(card.lost_reasons).toEqual([]);
+  });
+});
+
+describe("the not fitted reasons ops keep", () => {
+  it("reach a fit's card, and the one picked as Can't fit today closes it is ops' task to rebook", async () => {
+    await env.DB.prepare("UPDATE appointments SET type = 'first_fit', tier = 'essential' WHERE id = ?1")
+      .bind(JOB)
+      .run();
+    const saved = await job.opsPost("/api/job-sheet/not-fitted-reasons", {
+      items: [{ code: "piece_damaged", label: "Piece damaged" }, { label: "Base too small" }],
+    });
+    expect((await saved.json<Sheet>()).not_fitted_reasons.items.map((reason) => reason.code)).toEqual([
+      "piece_damaged",
+      "base_too_small",
+    ]);
+    const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ not_fitted_reasons: unknown }>();
+    expect(card.not_fitted_reasons).toEqual([
+      { id: "piece_damaged", label: "Piece damaged" },
+      { id: "base_too_small", label: "Base too small" },
+    ]);
+
+    await job.workTo("piece");
+    const closed = await job.post(
+      `/api/tech/jobs/${JOB}/outcome`,
+      { outcome: "partial", reason: "no_piece", cannot_fit: true, not_fitted_reason: "base_too_small" },
+      "event-outcome-01",
+    );
+    expect(closed.status).toBe(202);
+    const board = await (
+      await job.opsGet("/api/tasks")
+    ).json<{
+      groups: { group: string; tasks: { facts: { not_fitted: string | null } }[] }[];
+    }>();
+    const [task] = board.groups.find((each) => each.group === "partial_visit")?.tasks ?? [];
+    expect(task?.facts.not_fitted).toBe("Base too small");
+  });
+
+  it("name the reason in the committed list's words before ops save one, on the task and the client's page", async () => {
+    await env.DB.prepare("UPDATE appointments SET type = 'first_fit', tier = 'essential' WHERE id = ?1")
+      .bind(JOB)
+      .run();
+    await job.workTo("piece");
+    const closed = await job.post(
+      `/api/tech/jobs/${JOB}/outcome`,
+      { outcome: "partial", reason: "no_piece", cannot_fit: true, not_fitted_reason: "piece_damaged" },
+      "event-outcome-01",
+    );
+    expect(closed.status).toBe(202);
+    const board = await (
+      await job.opsGet("/api/tasks")
+    ).json<{
+      groups: { group: string; tasks: { facts: { not_fitted: string | null } }[] }[];
+    }>();
+    const [task] = board.groups.find((each) => each.group === "partial_visit")?.tasks ?? [];
+    expect(task?.facts.not_fitted).toBe("Piece damaged");
+    const client = await (
+      await job.opsGet(`/api/clients/${PERSON}`)
+    ).json<{
+      visits: {
+        upcoming: { id: string; not_fitted_reason: unknown }[];
+        past: { id: string; not_fitted_reason: unknown }[];
+      };
+    }>();
+    const visit = [...client.visits.upcoming, ...client.visits.past].find((each) => each.id === JOB);
+    expect(visit?.not_fitted_reason).toEqual({ code: "piece_damaged", label: "Piece damaged" });
+  });
+
+  it("are none on a visit that fits nothing", async () => {
+    const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ not_fitted_reasons: unknown }>();
+    expect(card.not_fitted_reasons).toEqual([]);
   });
 });
 

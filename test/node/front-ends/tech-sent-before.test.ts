@@ -36,7 +36,7 @@ describe("a refused checklist", () => {
 });
 
 describe("a refused piece", () => {
-  it("starts with the label, base, lot and the piece that came off", () => {
+  it("starts with the label, base and lot; the piece that came off is the card's, so is not taken from it", () => {
     const sent = refused("piece", {
       piece_code: "MM-STD-7193 C",
       base: "Lace",
@@ -51,8 +51,6 @@ describe("a refused piece", () => {
       base: "Lace",
       lot: "LOT-5120",
       stock: null,
-      oldCode: "MM-STD-4417-B",
-      oldReason: "Lifted at the front",
     });
   });
 

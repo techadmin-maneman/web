@@ -199,4 +199,5 @@ In D1, each row from a day on, so a document already issued keeps what was true 
 | `checklist_items` | The job sheet's checklist, in the technician's and the client's words | Settings · Job sheet |
 | `partial_reasons` | Why a visit is left partly done | Settings · Job sheet |
 | `lost_reasons` | Why a lead is lost | Settings · Job sheet |
+| `not_fitted_reasons` | Why a hair system could not be fitted today | Settings · Job sheet |
 | `word_versions` | The words the site and the apps show, as ops edit them | Words |

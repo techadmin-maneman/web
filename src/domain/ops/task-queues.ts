@@ -297,11 +297,14 @@ export const QUEUES: readonly Queue[] = [
   {
     group: "partial_visit",
     sql: `SELECT 'partial_visit' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         a.type || ' ' || COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason),
+         a.type || ' ' || COALESCE((SELECT n.label FROM not_fitted_reasons n WHERE n.code = v.not_fitted_reason),
+           (SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason),
            v.partial_reason, v.close_reason, '') AS detail,
          json_object('kind', a.type, 'reason_code', COALESCE(v.partial_reason, v.close_reason),
            'reason', COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason),
              CASE WHEN v.partial_reason IS NULL THEN v.close_reason END),
+           'not_fitted', COALESCE((SELECT n.label FROM not_fitted_reasons n WHERE n.code = v.not_fitted_reason),
+             v.not_fitted_reason),
            'ask', v.finish_ask) AS facts,
          COALESCE(v.ended_at, a.window_end, v.updated_at) AS since, NULL AS due_by, '' AS episode
     FROM visit_outcomes v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id

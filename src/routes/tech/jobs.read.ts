@@ -66,12 +66,20 @@ async function kitOf(db: D1Database, technicianId: string, job: { readonly id: s
  * The client's record for a job open on the phone: this technician's own job, unlocked, as its card is; null for any
  * other. A job given to another technician gives its record to them.
  */
-async function recordedJob(c: Ctx, id: string): Promise<{ id: string; personId: string; startsAt: string } | null> {
+async function recordedJob(
+  c: Ctx,
+  id: string,
+): Promise<{ id: string; personId: string; startsAt: string; technicianId: string } | null> {
   const job = await workableJob(c.env.DB, id);
   if (job?.technicianId !== technicianOf(c).technicianId) return null;
   const { addressUnlockHour } = await opsInputs(c);
   if (!unlocked(job.windowStart, c.var.deps.now(), addressUnlockHour)) return null;
-  return { id: job.id, personId: job.personId, startsAt: job.windowStart.toISOString() };
+  return {
+    id: job.id,
+    personId: job.personId,
+    startsAt: job.windowStart.toISOString(),
+    technicianId: job.technicianId,
+  };
 }
 
 /** A checklist as the phone shows it: the technician's words, not the client's. */
@@ -124,6 +132,7 @@ export function registerTechJobReads(app: App): void {
         checklist_if_declined: job.one_visit ? forThePhone(declinedChecklistOf(sheet).items) : [],
         partial_reasons: [...sheet.partialReasons.items],
         lost_reasons: type === "consultation" || job.one_visit ? [...sheet.lostReasons.items] : [],
+        not_fitted_reasons: job.steps.includes("piece") ? [...sheet.notFittedReasons.items] : [],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), {
           today: job.date,
           kit: technicianId,

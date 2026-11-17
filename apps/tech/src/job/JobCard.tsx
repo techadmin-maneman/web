@@ -1,11 +1,8 @@
 // The job in the new look (docs/prompts/tech-redesign.md, "Job"; docs/decisions/0243-job-and-the-door.md): the map's
 // place, the address and its landmark, the way in with Copy, the client's note, then Navigate, Call and Message; the
-// client's record; their hair profile, and the piece on their head or a consultation's options; and the last visit's
-// after photograph. A job further out has none of it: the API withholds the address and the client until the day
-// before, so the job says when they open.
-//
-// The last visit's photograph is fetched each time the job is open and never kept: the API answers it `no-store`, and
-// the service worker leaves it alone.
+// client's record; the client block the prototype draws for the kind of visit (docs/decisions/0270-the-design-checks-
+// api-side.md), and a consultation's options. A job further out has none of it: the API withholds the address and the
+// client until the day before, so the job says when they open.
 
 import { GLYPHS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
@@ -17,10 +14,9 @@ import { addressLine } from "@maneman/web-kit/address";
 import { firstNameOf } from "@rules/lib/names.ts";
 import { useCallback, useState } from "react";
 import type { HairProfile, Job } from "../api.ts";
-import { job as copy, options as optionsCopy, profile as profileCopy } from "../content.ts";
-import { sayNow, theirs } from "../lang/index.ts";
-import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
-import { dayMonth, where } from "../lib/when.ts";
+import { badges, job as copy, options as optionsCopy, profile as profileCopy } from "../content.ts";
+import { theirs } from "../lang/index.ts";
+import { dayMonth, todayInIndia, where } from "../lib/when.ts";
 import { keptDay } from "../store/jobs.ts";
 import { HowDone } from "../guides/index.ts";
 import { screensOf } from "../visit/index.ts";
@@ -30,48 +26,65 @@ import { TellClient } from "./TellClient.tsx";
 import styles from "./job-card.module.css";
 import { Chevron } from "../frame/Chevron.tsx";
 
-type Piece = NonNullable<Job["pieces"]>[number];
-
-/** The piece on the client's head: the newest fitted one that has not failed or been replaced. */
-const onTheHead = (pieces: readonly Piece[]): Piece | null =>
-  pieces.find((piece) => piece.fitted_at !== null && piece.failed_at === null && piece.replaced_at === null) ?? null;
-
 interface Line {
   readonly key: string;
   readonly value: string;
 }
 
-/** The profile's rows, each only where it is recorded. */
-function profileLines(profile: HairProfile | null): Line[] {
-  if (profile === null) return [];
-  const { fit, history } = profile;
-  const scalp = history?.skin_and_allergies ?? null;
+/** The base's size, the colour and how the hair system is fixed, each only where the profile records it. */
+function fitLines(fit: HairProfile["fit"]): (Line | null)[] {
   const rows = profileCopy.card;
-  const lines: (Line | null)[] = [
-    fit.product_name === null ? null : { key: rows.tier, value: fit.product_name },
+  return [
     fit.base_width_in === null || fit.base_length_in === null
       ? null
-      : { key: rows.baseSize, value: rows.size(fit.base_width_in, fit.base_length_in) },
+      : { key: rows.base, value: rows.size(fit.base_width_in, fit.base_length_in) },
     fit.colour === null
       ? null
       : { key: rows.colour, value: rows.shade(profileCopy.colours[fit.colour], fit.grey_percent) },
-    fit.attachment === null ? null : { key: rows.adhesive, value: profileCopy.attachments[fit.attachment] },
-    scalp === null ? null : { key: rows.scalp, value: scalp },
+    fit.attachment === null ? null : { key: rows.fixing, value: profileCopy.attachments[fit.attachment] },
   ];
+}
+
+/**
+ * The profile's rows as the prototype lists them: on a first fit what the consultation chose and the Norwood stage,
+ * then the fit; on any other visit the hair system, the fit and the scalp.
+ */
+function profileLines({ fit, history }: HairProfile, firstFit: boolean): Line[] {
+  const rows = profileCopy.card;
+  const product =
+    fit.product_name === null ? null : { key: firstFit ? rows.chose : rows.tier, value: fit.product_name };
+  const scalp = history?.skin_and_allergies ?? null;
+  const lines = firstFit
+    ? [product, fit.norwood_stage === null ? null : { key: rows.norwood, value: fit.norwood_stage }, ...fitLines(fit)]
+    : [product, ...fitLines(fit), scalp === null ? null : { key: rows.scalp, value: scalp }];
   return lines.filter((line) => line !== null);
 }
 
-/** The piece's rows: what it is, its base and lot, and when it was fitted and is due to be replaced. */
-function pieceLines(piece: Piece): Line[] {
-  const rows = copy.piece.rows;
-  const lines: (Line | null)[] = [
-    { key: rows.piece, value: piece.piece_code },
-    piece.base === null ? null : { key: rows.base, value: piece.base },
-    piece.supplier_lot === null ? null : { key: rows.lot, value: piece.supplier_lot },
-    piece.fitted_at === null ? null : { key: rows.fitted, value: sayNow(dayMonth(piece.fitted_at)) },
-    piece.replacement_due_at === null ? null : { key: rows.due, value: sayNow(dayMonth(piece.replacement_due_at)) },
-  ];
-  return lines.filter((line) => line !== null);
+interface Block {
+  readonly title: string;
+  readonly meta: string | null;
+  readonly lines: Line[];
+}
+
+/**
+ * The client block the prototype draws for the kind of visit: a consultation's booking, where it was made and how it
+ * is paid; a first fit's profile from the consultation, dated; any other visit's hair profile, with its last visit.
+ */
+function blockOf(job: Job): Block | null {
+  if (job.type === "consultation") {
+    const words = copy.booking;
+    const via = job.booked_via === null ? null : { key: words.bookedVia, value: words.via[job.booked_via] };
+    const paid = { key: words.payment, value: badges[job.badge] };
+    return { title: words.title, meta: null, lines: via === null ? [paid] : [via, paid] };
+  }
+  const profile = job.profile;
+  if (profile === null) return null;
+  if (job.type === "first_fit") {
+    const recorded = dayMonth(todayInIndia(new Date(profile.recorded_at)));
+    return { title: copy.fromConsultation, meta: recorded, lines: profileLines(profile, true) };
+  }
+  const last = job.last_visit === null ? null : copy.lastVisitOn(dayMonth(job.last_visit.date));
+  return { title: copy.profileTitle, meta: last, lines: profileLines(profile, false) };
 }
 
 function Rows({ lines }: { lines: readonly Line[] }) {
@@ -132,37 +145,18 @@ function WayIn({ notes }: { notes: string }) {
   );
 }
 
-function ProfileSection({ profile }: { profile: HairProfile | null }) {
-  const lines = profileLines(profile);
-  if (lines.length === 0) return null;
+function ClientBlock({ job }: { job: Job }) {
+  const block = blockOf(job);
+  if (block === null || block.lines.length === 0) return null;
   return (
-    <section className={styles.section} aria-labelledby="profile-title">
-      <SectionHead title={copy.profileTitle} size="list" id="profile-title" />
-      <Rows lines={lines} />
-    </section>
-  );
-}
-
-/** What the client paid for, a warning where the profile names another product, and the piece on their head. */
-function PieceSection({ job }: { job: Job }) {
-  const piece = onTheHead(job.pieces ?? []);
-  const paid = paidFor(job);
-  const inProfile = profileNamesAnother(job);
-  return (
-    <section className={styles.section} aria-labelledby="piece-title">
-      <SectionHead title={copy.piece.title} size="list" id="piece-title" />
-      {paid !== null && <Rows lines={[{ key: copy.piece.rows.paidFor, value: paid }]} />}
-      {inProfile !== null && <p className={styles.warn}>{copy.piece.mismatch(inProfile)}</p>}
-      {piece === null ? <p className={styles.none}>{copy.piece.none}</p> : <Rows lines={pieceLines(piece)} />}
-    </section>
-  );
-}
-
-function LastVisit({ last }: { last: NonNullable<Job["last_visit"]> }) {
-  return (
-    <section className={styles.lastVisit}>
-      <img className={styles.lastVisitPhoto} src={last.photo_url} alt={copy.piece.lastVisitImage} />
-      <p className={styles.lastVisitLine}>{copy.piece.lastVisit(dayMonth(last.date), last.technician)}</p>
+    <section className={styles.section} aria-labelledby="client-block-title">
+      <SectionHead
+        title={block.title}
+        size="list"
+        id="client-block-title"
+        {...(block.meta === null ? {} : { end: block.meta })}
+      />
+      <Rows lines={block.lines} />
     </section>
   );
 }
@@ -199,15 +193,12 @@ export function JobCard({ job }: { job: Job }) {
         <Reschedule job={job} />
       </section>
       <ClientRecord job={job} />
-      <ProfileSection profile={job.profile} />
-      {job.type === "consultation" ? (
+      <ClientBlock job={job} />
+      {job.type === "consultation" && (
         <ListRows className={styles.rowList}>
           <ListRow title={optionsCopy.link} to={`/jobs/${job.id}/options`} end={<Chevron />} />
         </ListRows>
-      ) : (
-        <PieceSection job={job} />
       )}
-      {job.last_visit !== null && <LastVisit last={job.last_visit} />}
       {/* Last, as the prototype orders the card: the way the visit is done, its steps counted. */}
       {job.type !== null && <HowDone to={`/guides/${job.type}`} steps={screensOf(job).length} />}
     </>

@@ -102,12 +102,13 @@ export interface HoldRow {
   razorpay_order_id: string | null;
   expires_at: string;
   no_show_charge: string | null;
+  booked_from: string | null;
 }
 
 export const holdOf = (id: string) =>
   env.DB.prepare(
     `SELECT state, type, tier, technician_id, amount, confirmed_at, use_credit, one_visit, pay_by_link, payment_link_id,
-       payment_link_url, reference, razorpay_order_id, expires_at, no_show_charge
+       payment_link_url, reference, razorpay_order_id, expires_at, no_show_charge, booked_from
      FROM slot_holds WHERE id = ?1`,
   )
     .bind(id)

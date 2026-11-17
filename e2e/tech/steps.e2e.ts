@@ -426,15 +426,16 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   // The step opens as it was sent, so only the label is typed again.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.piece })).toBeVisible();
   await expect(page.getByText(techCopy.steps.corrected.piece)).toBeVisible();
-  const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
+  const label = page.getByRole("textbox", { name: techCopy.steps.piece.typedLabel });
   await expect(label).toHaveValue("MM-STD-7193 C");
-  await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot })).toHaveValue("LOT-5120");
   await label.fill("MM-STD-7193-C");
   await stepAction(page).click();
 
   // The corrected piece goes first, and the outcome that waited behind it follows.
   await expect.poll(() => fake.writes.map((write) => write.path.split("/").at(-1))).toEqual(["piece", "outcome"]);
-  expect(writesTo(fake, "piece").at(-1)?.body).toMatchObject({ piece_code: "MM-STD-7193-C", supplier_lot: "LOT-5120" });
+  // Its base and lot follow the label corrected, from the kit or its check, never the label refused
+  // (docs/decisions/0270-the-design-checks-api-side.md).
+  expect(writesTo(fake, "piece").at(-1)?.body).toMatchObject({ piece_code: "MM-STD-7193-C" });
   await page.goto("/waiting");
   await expect(page.getByText(techCopy.queue.nothing)).toBeVisible();
 });

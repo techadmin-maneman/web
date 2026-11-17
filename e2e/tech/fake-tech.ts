@@ -158,6 +158,8 @@ export interface Fake {
   compare: boolean;
   /** The client's earlier visits counted, as the card carries them; none to begin. */
   clientVisits: Card["client_visits"];
+  /** Where the visit was booked, as the card says. */
+  bookedVia: Card["booked_via"];
   /** The client's history, as GET /api/tech/jobs/{id}/client-history answers. */
   history: TechReply<"/api/tech/jobs/{id}/client-history">;
   /** The technician's asks for leave, as GET /api/tech/leave answers; an ask adds one, with ops. */
@@ -344,6 +346,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     relocked: false,
     history: { alerts: [], visits: [] },
     clientVisits: { count: 0, first: null },
+    bookedVia: null,
     compare: false,
     photos: [],
     doorPhotos: [],
@@ -389,6 +392,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       paymentLink: fake.paymentLink,
       rescheduleAsked: fake.rescheduleAsked,
       clientVisits: fake.clientVisits,
+      bookedVia: fake.bookedVia,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {

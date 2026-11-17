@@ -1,5 +1,5 @@
-// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): what the technician ticks on each kind of visit,
-// the reasons a job is left partly done, and why a client does not go ahead (docs/decisions/0149-lost-reasons.md). A
+// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): the technician's checklists, why a job is left
+// partly done, why a client does not go ahead (ADR 0149) and why a hair system was not fitted (ADR 0270). A
 // phone keeps the list it got with the job and an item taken off is kept, so older records still read. Until ops save a
 // list, src/config/job-sheet.ts's stands.
 
@@ -33,6 +33,48 @@ function Reasons(
   return <ListEditor {...list} itemLabel={copy.reason} addLabel={copy.addReason} />;
 }
 
+/** The sheet's three lists of reasons: partly done, not going ahead, and not fitted. */
+function ReasonLists({ current, onSaved }: { current: Sheet; onSaved: (sheet: Sheet) => void }) {
+  const access = useAccess();
+  const mayChangeReasons = access.mayCall("POST /api/job-sheet/partial-reasons");
+  const mayChangeLost = access.mayCall("POST /api/job-sheet/lost-reasons");
+  const mayChangeNotFitted = access.mayCall("POST /api/job-sheet/not-fitted-reasons");
+  return (
+    <>
+      <Reasons
+        id="partial-reasons"
+        title={copy.reasons}
+        list={current.partial_reasons}
+        most={current.max_partial_reasons}
+        mayChange={mayChangeReasons}
+        send={(items) => settingsApi.setPartialReasons(items)}
+        onSaved={onSaved}
+        longest={current.max_label}
+      />
+      <Reasons
+        id="lost-reasons"
+        title={copy.lostReasons}
+        list={current.lost_reasons}
+        most={current.max_lost_reasons}
+        mayChange={mayChangeLost}
+        send={(items) => settingsApi.setLostReasons(items)}
+        onSaved={onSaved}
+        longest={current.max_label}
+      />
+      <Reasons
+        id="not-fitted-reasons"
+        title={copy.notFittedReasons}
+        list={current.not_fitted_reasons}
+        most={current.max_not_fitted_reasons}
+        mayChange={mayChangeNotFitted}
+        send={(items) => settingsApi.setNotFittedReasons(items)}
+        onSaved={onSaved}
+        longest={current.max_label}
+      />
+    </>
+  );
+}
+
 export function JobSheet() {
   const [loaded, retry] = useLoad(settingsApi.jobSheet);
   /** The sheet after a save, so "Set by" follows without reading it again. */
@@ -40,8 +82,6 @@ export function JobSheet() {
   const [kind, setKind] = useState<VisitType>("service");
   const access = useAccess();
   const mayChangeChecklists = access.mayCall("POST /api/job-sheet/checklists/{visit_type}");
-  const mayChangeReasons = access.mayCall("POST /api/job-sheet/partial-reasons");
-  const mayChangeLost = access.mayCall("POST /api/job-sheet/lost-reasons");
 
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
@@ -89,26 +129,7 @@ export function JobSheet() {
           onSaved={setSheet}
         />
       )}
-      <Reasons
-        id="partial-reasons"
-        title={copy.reasons}
-        list={current.partial_reasons}
-        most={current.max_partial_reasons}
-        mayChange={mayChangeReasons}
-        send={(items) => settingsApi.setPartialReasons(items)}
-        onSaved={setSheet}
-        longest={current.max_label}
-      />
-      <Reasons
-        id="lost-reasons"
-        title={copy.lostReasons}
-        list={current.lost_reasons}
-        most={current.max_lost_reasons}
-        mayChange={mayChangeLost}
-        send={(items) => settingsApi.setLostReasons(items)}
-        onSaved={setSheet}
-        longest={current.max_label}
-      />
+      <ReasonLists current={current} onSaved={setSheet} />
     </Stack>
   );
 }

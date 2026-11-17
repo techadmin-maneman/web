@@ -195,6 +195,7 @@ export const clients = {
     givenTo: (who: string, when: string) => `To ${who}, ${when}`,
     /** "Closed without a follow-up by priya@maneman.in, 28 Sep 2026", and ops' reason after it. */
     closedWithout: (who: string, when: string) => `Closed without follow-up by ${who}, ${when}`,
+    notFitted: (reason: string) => `Not fitted · ${reason}`,
     /** Why the client is not going ahead after a closed consultation (docs/decisions/0149-lost-reasons.md). */
     lostReason: {
       label: "Why not going ahead",

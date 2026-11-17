@@ -5470,6 +5470,8 @@ export interface components {
             partial_reasons: components["schemas"]["JobSheetItem"][];
             /** @description On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their order (ADR 0149). Empty for any other visit. */
             lost_reasons: components["schemas"]["JobSheetItem"][];
+            /** @description On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0270). Empty for any other visit. */
+            not_fitted_reasons: components["schemas"]["JobSheetItem"][];
             /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
             consumables: components["schemas"]["TechnicianConsumable"][];
             /** @description On a visit that fits a piece, the hair systems the technician's kit holds, by name, with the spec each is matched to the client's hair profile by. Empty for any other visit. */
@@ -5516,6 +5518,8 @@ export interface components {
             } | null;
             /** @description The technician's open ask that ops move the visit, until it is settled; null for none. */
             reschedule_asked: components["schemas"]["TechnicianRescheduleAsked"] | null;
+            /** @description Where the visit was booked: the client's app, the site, or ops in the console. Null until the day before the visit, and for one booked before this was kept. */
+            booked_via: ("app" | "site" | "ops") | null;
             /** @description A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed or declined. Null before it is asked, and for a visit that takes none. Outcome's done waits for signed or declined. */
             sign_off: components["schemas"]["SignOff"] | null;
             /** @description The steps ops sent back to the technician, oldest first: each opens again, lands even after the close, and leaves this list once it has (ADR 0246). */
@@ -5803,6 +5807,8 @@ export interface components {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
             technician: string | null;
+            /** @description Whether the technician asking did it. */
+            yours: boolean;
             /** @description done, partial or no_show; null where ops closed it with no outcome. */
             result: string | null;
             /** @description The note its technician left for the next. */
@@ -5815,6 +5821,8 @@ export interface components {
             consumables: {
                 name: string;
                 quantity: number;
+                /** @description Its unit, as ml or strip; null for one used before the stock had codes. */
+                unit: string | null;
             }[];
             /** @description The label of the piece fitted at it. */
             piece: string | null;
@@ -6048,6 +6056,8 @@ export interface components {
              * @enum {boolean}
              */
             cannot_fit?: true;
+            /** @description With cannot_fit, why: one of the card's not_fitted_reasons, by its id; one ops have since taken off is still taken. Left out by a phone on a build before it was asked (ADR 0270). */
+            not_fitted_reason?: string;
             /** @description A note for the next technician, shown on this client's next job whoever takes it. */
             handoff_note?: string;
             /** @description An alert every technician reads before they start, kept on the client until ops take it off. */

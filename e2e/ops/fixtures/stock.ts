@@ -145,9 +145,14 @@ export const JOB_SHEET = {
     ["price", "The price"],
     ["not_ready", "Not ready yet"],
   ]),
+  not_fitted_reasons: list([
+    ["piece_damaged", "Piece damaged"],
+    ["wrong_piece", "Wrong piece"],
+  ]),
   max_checklist_items: 20,
   max_partial_reasons: 12,
   max_lost_reasons: 12,
+  max_not_fitted_reasons: 12,
   max_label: 80,
 } satisfies OpsReply<"/api/job-sheet">;
 

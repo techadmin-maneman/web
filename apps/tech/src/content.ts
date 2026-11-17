@@ -96,6 +96,9 @@ export const today = localised({
   /** A visit with steps ops sent back, from whatever day, until they are done again (docs/decisions/0246-closed-and-sent-back.md). */
   toFix: (count: number) => (count === 1 ? "Ops couldn’t accept a step" : `Ops couldn’t accept ${String(count)} steps`),
   toFixBody: (who: string, steps: readonly string[]) => `${who} · ${listed(steps)}. Tap to fix.`,
+  /** A photo set the API stopped: "Rohit M. · before photos. Tap to retry.", which opens Pending uploads. */
+  setFailed: "A photo set didn’t upload",
+  setFailedBody: (who: string, set: string) => `${who} · ${set}. Tap to retry.`,
   toFixSteps: {
     before_photos: "before photos",
     checklist: "checklist",
@@ -478,6 +481,8 @@ export const clientRecord = localised({
   clientAlerts: "Client alerts",
   visits: "Visits",
   results: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
+  /** Who did a visit the technician reading did. */
+  you: "You",
   /** "Imran · Done" */
   byAndResult: (who: string | null, result: string) => (who === null ? result : `${who} · ${result}`),
   photo: (angle: string) => `After, ${angle}`,
@@ -550,27 +555,25 @@ export const job = localised({
     pastTitle: "Details closed",
     past: "A visit’s client details close the day after it.",
   },
-  // The board draws the profile's rows inside the piece card; they are a section of their own.
+  // The client block, headed as the prototype heads it for each kind of visit.
   profileTitle: "Hair profile",
+  /** "Last visit 12 Oct", at the hair profile's head. */
+  lastVisitOn: (date: string) => `Last visit ${date}`,
+  fromConsultation: "From the consultation",
+  booking: {
+    title: "Booking",
+    bookedVia: "Booked via",
+    via: { app: "App", site: "Website", ops: "Ops" },
+    payment: "Payment",
+  },
+  // What the hair system step says of the piece paid for.
   piece: {
-    title: "The hair system",
-    // The board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
-    // The board draws no "Paid for" row, nor a warning when the hair profile names another product.
     mismatch: (inProfile: string) => `The hair profile says ${inProfile}. Check with ops before you fit.`,
     rows: {
       paidFor: "Paid for",
       // A fit paid by UPI at the visit: nothing is paid yet, and the technician never handles the money.
       bookedAs: "Booked as",
-      piece: "Hair system",
-      base: "Base",
-      lot: "Supplier lot",
-      fitted: "Fitted",
-      due: "Replacement due",
     },
-    none: "No hair system recorded for this client yet.",
-    lastVisit: (date: string, who: string | null) =>
-      who === null ? `Last visit’s after photo · ${date}` : `Last visit’s after photo · ${date} · ${who}`,
-    lastVisitImage: "Last visit’s after photo",
   },
   // The board draws no failure for a job's card.
   failed: "This job’s card didn’t load.",
@@ -831,54 +834,54 @@ export const steps = localised({
     },
   },
   piece: {
-    // A label is scanned by its QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
-    label: "The new hair system’s label",
-    // The board draws no way out of the fit; it closes as partly done, and ops book the refit.
+    // Scan-first, as the prototype draws it (docs/decisions/0270-the-design-checks-api-side.md): a label is read by its
+    // QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
+    scanTitle: "Scan the hair system",
+    expected: { chosen: "Chosen", newPiece: "New piece", spec: "Spec", replacing: "Replacing" },
+    /** "120% density", the last of the spec. */
+    density: (percent: number) => `${String(percent)}% density`,
+    pointAt: "Point at the label",
+    typeCode: "Type the code",
+    typedLabel: "Code on the label",
     cannotFit: {
       action: "Can’t fit today",
-      title: "Close without fitting?",
-      body: "The job closes as partly done, and ops book the refit with the right hair system.",
-      yes: "Close without fitting",
-      no: "Keep fitting",
+      title: "Can’t fit today",
+      why: "Why?",
+      body: "The visit closes as not fitted. Ops rebook it.",
+      close: "Close and tell ops",
+      /** Above the close while it waits for a reason, as a step's foot says what is missing. */
+      pickFirst: "Pick a reason",
+      dismiss: "Close",
     },
-    scan: "Scan the label",
-    stopScan: "Stop scanning",
-    camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
+    confirmed: {
+      profile: "Profile",
+      match: "Match",
+      kit: "Kit",
+      left: (count: number) => `${String(count)} left after this`,
+      rescan: "Rescan",
+    },
+    camera: { opening: "Opening the camera…", refused: "No camera. Type the code instead." },
     expired: "This hair system has expired. Hand it in and use another.",
     otherThanFitted: "Not the hair system this fit is for. Check with ops before you fit.",
     expiredAction: "That hair system has expired",
-    placeholder: "MM-ESS-0000123-K",
+    placeholder: "MM-ESS-0000000-X",
     // The board draws no label typed wrong.
     malformed: "Type it as on the label, like MM-ESS-0000123-K.",
-    checkFirst: "Check the label to continue",
+    checkFirst: "Scan or type the code to continue",
     /** A label is checked as soon as it reads; again only once there is signal (docs/prompts/tech-redesign.md). */
     checking: "Checking the label…",
     checkAgain: "Check again",
     unknown: "Not in your kit. Check the label, or close with Can’t fit today.",
     notInKitAction: "That label isn’t in your kit",
     uncheckedAction: "Waiting for the label check",
-    inKit: (name: string, lot: string | null) =>
-      lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`,
     // The board draws no lookup with no signal.
     offline: "No signal, so it isn’t checked. It’s saved as you typed it.",
     notThisClient: "That hair system isn’t this client’s.",
     notThisClientAction: "That hair system isn’t this client’s",
-    rows: { piece: "Hair system", base: "Base", lot: "Supplier lot" },
-    // The board draws the base as read, not typed; the pieces tab needs it and the lot (open point 28).
-    base: "Base",
-    lot: "Supplier lot",
-    pick: "Pick from the list",
-    // "Mono · fitted 2 Jul" beside a piece in the client's list.
+    // "MM-ESS-0000451-D · fitted 10 May": the piece a replacement takes off.
     listed: (code: string, fitted: string | null) => (fitted === null ? code : `${code} · fitted ${fitted}`),
-    // The board draws no piece coming off. The pieces tab keeps why it failed.
-    old: {
-      title: "The hair system that came off",
-      label: "The label of the hair system that came off",
-      reason: "Why it failed, if it did",
-    },
-    // The board draws no empty base; the piece may not be in the mirror yet.
-    unnamed: "Not recorded",
-    // The board draws no kit: the hair system fitted comes out of it (docs/decisions/0156-hair-systems-in-stock.md).
+    // The board draws no kit stock without labels: a hair system the kit took in before its pieces carried labels is
+    // picked from the kit, and the label on the piece typed (docs/decisions/0156-hair-systems-in-stock.md).
     kit: {
       title: "From your kit",
       held: (count: number) => `${String(count)} in kit`,
@@ -930,6 +933,11 @@ export const closeOut = localised({
   sub: (who: string, kind: string, result: string) => `${who} · ${kind} · ${result}`,
   outcomes: { done: "done", partial: "partly done", no_show: "no-show" },
   notFitted: "not fitted",
+  /** A fit closed with "Can't fit today": "Not fitted · Piece damaged", and what follows. */
+  result: "Result",
+  notFittedWhy: (why: string | null) => (why === null ? "Not fitted" : `Not fitted · ${why}`),
+  nextStep: "Next step",
+  opsRebook: "Ops rebook the fit",
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
   /** A one visit whose fit the client booked for another day. */
@@ -1180,12 +1188,14 @@ export const profile = localised({
     year: "The transplant’s year",
     skin: "Skin conditions and allergies",
   },
-  // The card's rows from the profile: the board's Tier, as the hair system, Colour, Adhesive and Scalp, and the base's size.
+  // The card's rows from the profile, as the prototype names them.
   card: {
     tier: "Hair system",
-    baseSize: "Base size",
+    chose: "Chose",
+    norwood: "Norwood stage",
+    base: "Base",
     colour: "Colour",
-    adhesive: "Adhesive",
+    fixing: "Fixing",
     scalp: "Scalp",
     size: (width: number, length: number) => `${String(width)} × ${String(length)} in`,
     shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} · ${String(grey)}% grey`),

@@ -74,6 +74,9 @@ export const TaskFactsSchema = z
       kind,
       reason_code: z.string().nullable(),
       reason: z.string().nullable().openapi({ description: "In the words ops gave it, or the job sheet's." }),
+      not_fitted: z.string().nullable().openapi({
+        description: "A fit closed with \"Can't fit today\", why, in the job sheet's words; null for any other close.",
+      }),
       ask: z
         .enum(FINISH_ASKS)
         .nullable()

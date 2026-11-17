@@ -28821,6 +28821,99 @@ Request body:
 }
 ```
 
+### POST /api/job-sheet/not-fitted-reasons
+
+Why a hair system could not be fitted today, the whole list in its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheetListChange"
+}
+```
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/stock
 
 Every place, what each holds of each consumable, what is low, and the latest movements
@@ -36495,6 +36588,30 @@ Request body:
       ],
       "description": "On a closed consultation, why the client is not going ahead, in ops' words; null where none is kept."
     },
+    "not_fitted_reason": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a fit closed with \"Can't fit today\", why it was not fitted, in the job sheet's words; null where none is kept (ADR 0270)."
+    },
     "going_ahead": {
       "anyOf": [
         {
@@ -36643,6 +36760,7 @@ Request body:
     "waits_until",
     "sign_off",
     "lost_reason",
+    "not_fitted_reason",
     "going_ahead",
     "outcome",
     "closed_without_follow_up",
@@ -50835,6 +50953,13 @@ Request body:
           ],
           "description": "In the words ops gave it, or the job sheet's."
         },
+        "not_fitted": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "A fit closed with \"Can't fit today\", why, in the job sheet's words; null for any other close."
+        },
         "ask": {
           "type": [
             "string",
@@ -50854,6 +50979,7 @@ Request body:
         "kind",
         "reason_code",
         "reason",
+        "not_fitted",
         "ask"
       ],
       "additionalProperties": false
@@ -55822,6 +55948,81 @@ Request body:
       "additionalProperties": false,
       "description": "Why a client is not going ahead with a fit after their consultation (ADR 0149)."
     },
+    "not_fitted_reasons": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "What the technician is offered, in order."
+        },
+        "retired": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Taken off by ops, and still understood: a phone may have queued one before it knew."
+        },
+        "set_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null while the committed list stands."
+        },
+        "set_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "retired",
+        "set_by",
+        "set_at"
+      ],
+      "additionalProperties": false,
+      "description": "Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0270)."
+    },
     "max_checklist_items": {
       "type": "integer"
     },
@@ -55829,6 +56030,9 @@ Request body:
       "type": "integer"
     },
     "max_lost_reasons": {
+      "type": "integer"
+    },
+    "max_not_fitted_reasons": {
       "type": "integer"
     },
     "max_label": {
@@ -55839,9 +56043,11 @@ Request body:
     "checklists",
     "partial_reasons",
     "lost_reasons",
+    "not_fitted_reasons",
     "max_checklist_items",
     "max_partial_reasons",
     "max_lost_reasons",
+    "max_not_fitted_reasons",
     "max_label"
   ],
   "additionalProperties": false

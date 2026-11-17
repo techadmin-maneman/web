@@ -52,6 +52,7 @@ async function closingStatements(db: D1Database, step: LandingStep): Promise<D1P
   const at = step.now.toISOString();
   const startedAt = outcome === "no_show" ? null : await startedAtOf(db, step.visit.id);
   const reason = stored?.outcome === "partial" ? stored.reason : null;
+  const notFittedReason = stored?.outcome === "partial" ? (stored.not_fitted_reason ?? null) : null;
   const lostReason = stored?.outcome === "done" ? (stored.lost_reason ?? null) : null;
   const goingAhead = stored?.outcome === "done" ? (stored.going_ahead ?? null) : null;
   const pickedTier = stored?.outcome === "done" ? (stored.product ?? null) : null;
@@ -64,6 +65,7 @@ async function closingStatements(db: D1Database, step: LandingStep): Promise<D1P
       outcome,
       times,
       partialReason: reason,
+      notFittedReason,
       lostReason,
       goingAhead,
       pickedTier,

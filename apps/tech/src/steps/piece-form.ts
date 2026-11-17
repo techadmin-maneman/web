@@ -24,8 +24,8 @@ export interface PieceForm {
   readonly lot: string;
   /** The hair system from the kit, by its stock code; null for a piece from elsewhere. */
   readonly stock: string | null;
+  /** On a replacement, the piece on the client's head, from the card; empty for none. */
   readonly oldCode: string;
-  readonly oldReason: string;
   readonly choice: Choice;
   /** On a one visit, a product chosen with its fit booked for another day (docs/decisions/0247-the-steps-left.md). */
   readonly later: boolean;
@@ -33,12 +33,18 @@ export interface PieceForm {
 
 export const given = (text: string): boolean => text.trim() !== "";
 
-/** A piece still to be fitted, which is the new one on a first fit or a replacement. */
-export const toFit = (piece: ClientPiece): boolean =>
-  piece.fitted_at === null && piece.failed_at === null && piece.replaced_at === null;
 /** A piece on the client's head now, which is the one a replacement takes off. */
-export const onTheHead = (piece: ClientPiece): boolean =>
+const onTheHead = (piece: ClientPiece): boolean =>
   piece.fitted_at !== null && piece.failed_at === null && piece.replaced_at === null;
+
+/**
+ * On a replacement, the piece that comes off: the newest on the client's head fitted before this visit's day, so a step
+ * opened again after its piece landed never names the new one. Null for any other visit, or none on the head.
+ */
+export function cameOff(job: Pick<Job, "type" | "pieces" | "date">): ClientPiece | null {
+  if (job.type !== "replacement") return null;
+  return (job.pieces ?? []).find((piece) => onTheHead(piece) && (piece.fitted_at ?? "") < job.date) ?? null;
+}
 
 /** The product a piece is fitted as: chosen on a one visit, paid for on a first fit, the profile's on a replacement. */
 function productFitted(job: Matched, choice: Choice): string | null {
@@ -90,6 +96,21 @@ function otherThanFitted(job: Matched, choice: Choice, stock: string | null): bo
   const product = productFitted(job, choice);
   const fit = job.profile?.fit ?? null;
   return (product !== null && hairSystem.product !== product) || (fit !== null && !madeTo(hairSystem, fit));
+}
+
+/**
+ * Whether the kit hair system read is the one this fit is for, the product and made to the profile; null where nothing
+ * tells: a piece from elsewhere, or no profile to match.
+ */
+export function kitMatch(job: Matched, choice: Choice, stock: string | null): boolean | null {
+  if (job.profile === null || !job.kit_hair_systems.some((each) => each.code === stock)) return null;
+  return !otherThanFitted(job, choice, stock);
+}
+
+/** How many pieces of the kit hair system read the kit keeps once it is fitted; null for a piece from elsewhere. */
+export function leftAfter(job: Pick<Job, "kit_hair_systems">, stock: string | null): number | null {
+  const held = job.kit_hair_systems.find((each) => each.code === stock)?.held;
+  return held === undefined ? null : Math.max(held - 1, 0);
 }
 
 /**
@@ -145,9 +166,9 @@ export function labelWarning(job: Matched & Pick<Job, "date">, form: PieceForm):
 
 /**
  * What a new label sets: a kit piece's hair system, and the lot a kit piece fills in, which follows the label. A lot the
- * technician typed stays.
+ * technician typed stays; the step's own label passes none, as lots are no longer typed.
  */
-export function afterLabel(
+function afterLabel(
   job: Pick<Job, "kit_hair_systems">,
   was: { readonly code: string; readonly lot: string },
   label: string,
@@ -156,6 +177,22 @@ export function afterLabel(
   const piece = kitPieceOf(job, label);
   const typed = given(was.lot) && was.lot !== filled;
   return { stock: piece?.stock ?? null, lot: typed ? was.lot : (piece?.lot_code ?? "") };
+}
+
+/**
+ * What the step holds once a label is read or typed: its base, lot and hair system follow it, never the label's before
+ * it. A piece of the kit gives its hair system, whose name is its base, and its lot, with or without signal; the lookup
+ * fills them for one from elsewhere. Kit stock with no labels, picked from the kit, stays picked.
+ */
+export function labelTaken(
+  job: Pick<Job, "kit_hair_systems">,
+  stock: string | null,
+  label: string,
+): { readonly stock: string | null; readonly base: string; readonly lot: string } {
+  const next = afterLabel(job, { code: "", lot: "" }, label);
+  const picked = job.kit_hair_systems.find((each) => each.code === stock && each.units.length === 0) ?? null;
+  const fromKit = job.kit_hair_systems.find((each) => each.code === next.stock) ?? null;
+  return { stock: next.stock ?? picked?.code ?? null, base: fromKit?.name ?? "", lot: next.lot };
 }
 
 /** Whether a one visit's client decided against the fit, which fits nothing and asks for no label. */
@@ -204,12 +241,6 @@ export function stillMissing(
   return given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;
 }
 
-/** The piece that came off: why it failed where it did; with no reason, it was due, and is replaced. */
-const oldPieceOf = (form: PieceForm) =>
-  given(form.oldReason)
-    ? { piece_code: form.oldCode, failure_reason: form.oldReason.trim() }
-    : { piece_code: form.oldCode };
-
 /** The step's body: against the fit, or the piece with what was said of it, and on a replacement the one off. */
 export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBody<"piece"> {
   if (declinedTheFit(form, job)) return { declined: true };
@@ -220,6 +251,6 @@ export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBo
     ...(given(form.base) ? { base: form.base.trim() } : {}),
     ...(given(form.lot) ? { supplier_lot: form.lot.trim() } : {}),
     ...(form.stock === null ? {} : { stock_code: form.stock }),
-    ...(given(form.oldCode) ? { old_piece: oldPieceOf(form) } : {}),
+    ...(given(form.oldCode) ? { old_piece: { piece_code: form.oldCode } } : {}),
   };
 }

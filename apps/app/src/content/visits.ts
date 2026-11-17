@@ -14,7 +14,7 @@ export const visits = {
   free: "Free",
   /**
    * A visit still to pay while online payment is off (ADR 0209), through the Razorpay link sent for it, never UPI at the
-   * visit (ADR 0270): "Pay Rs. 2,200 by the Razorpay link we send you".
+   * visit (ADR 0271): "Pay Rs. 2,200 by the Razorpay link we send you".
    */
   payAtVisit: (amount: string) => `Pay ${amount} by the Razorpay link we send you`,
   /** A consultation asked for on the site, which ops have yet to confirm. */

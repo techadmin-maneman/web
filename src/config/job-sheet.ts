@@ -84,6 +84,18 @@ export const LOST_REASONS: readonly JobSheetItem[] = [
 ];
 
 /**
+ * Why a hair system could not be fitted today, picked as the technician closes the fit with "Can't fit today"
+ * (docs/decisions/0270-the-design-checks-api-side.md), as the prototype words them. Ops keep the list; these stand
+ * until they save their own.
+ */
+export const NOT_FITTED_REASONS: readonly JobSheetItem[] = [
+  { id: "piece_damaged", label: "Piece damaged" },
+  { id: "wrong_piece", label: "Wrong piece" },
+  { id: "client_changed_mind", label: "Client changed mind" },
+  { id: "scalp_not_ready", label: "Scalp not ready" },
+];
+
+/**
  * What ops may set a list to. A checklist the technician cannot finish, or a
  * Partial with no reason to pick, would strand a job, so a list is never
  * empty; the checklist route takes twenty ticked at most; and a label is read
@@ -93,5 +105,6 @@ export const JOB_SHEET_BOUNDS = {
   maxChecklistItems: 20,
   maxPartialReasons: 12,
   maxLostReasons: 12,
+  maxNotFittedReasons: 12,
   maxLabel: 80,
 } as const;

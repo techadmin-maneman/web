@@ -178,12 +178,6 @@ const PIECE = {
   replaced_at: null,
 };
 
-/** A 1×1 grey PNG for board A3's last visit: no photograph of anyone is used. */
-const LAST_VISIT_PHOTO = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgAB4iG8MwAAAABJRU5ErkJggg==",
-  "base64",
-);
-
 const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["TechnicianJobDetail"] => {
   const summary = [...JOBS, ...TOMORROW].find((one) => one.id === id);
   if (summary === undefined) throw new Error(`no job ${id} in the fixtures`);
@@ -219,6 +213,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
     lost_reasons: [],
+    not_fitted_reasons: [],
     consumables: CONSUMABLES,
     kit_hair_systems: [],
     products: [],
@@ -232,6 +227,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     reschedule_asked: null,
     sign_off: null,
     client_visits: { count: 0, first: null },
+    booked_via: null,
   };
 };
 
@@ -313,8 +309,6 @@ const dayApi = (jobs: unknown[], tomorrow: unknown[]): Api => ({
 const jobApi = (id: string, progress: Progress = NOTHING_DONE): Api => ({
   "/api/tech/me": json(ME),
   [`/api/tech/jobs/${id}`]: json(cardFor(id, progress)),
-  [`/api/tech/jobs/${id}/last-visit-photo`]: (route) =>
-    route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO }),
   "/api/tech/jobs": json({ date: DAY, jobs: JOBS }),
 });
 

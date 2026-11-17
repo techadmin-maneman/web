@@ -21171,6 +21171,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/job-sheet/not-fitted-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Why a hair system could not be fitted today, the whole list in its order */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["JobSheetListChange"];
+                };
+            };
+            responses: {
+                /** @description The job sheet as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["JobSheet"];
+                    };
+                };
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stock": {
         parameters: {
             query?: never;
@@ -26205,6 +26281,11 @@ export interface components {
                 code: string;
                 label: string;
             } | null;
+            /** @description On a fit closed with "Can't fit today", why it was not fitted, in the job sheet's words; null where none is kept (ADR 0270). */
+            not_fitted_reason: {
+                code: string;
+                label: string;
+            } | null;
             /** @description On a closed consultation, whether the client told the technician they are going ahead; null where not asked. */
             going_ahead: boolean | null;
             /** @description What the visit was closed as, a no-show being its own; null until it is closed. */
@@ -29363,6 +29444,8 @@ export interface components {
             reason_code: string | null;
             /** @description In the words ops gave it, or the job sheet's. */
             reason: string | null;
+            /** @description A fit closed with "Can't fit today", why, in the job sheet's words; null for any other close. */
+            not_fitted: string | null;
             /**
              * @description How the technician suggested finishing it: a time, or ops to call; null for none.
              * @enum {string|null}
@@ -30470,9 +30553,26 @@ export interface components {
                 set_by: string | null;
                 set_at: string | null;
             };
+            /** @description Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0270). */
+            not_fitted_reasons: {
+                /** @description What the technician is offered, in order. */
+                items: {
+                    code: string;
+                    label: string;
+                }[];
+                /** @description Taken off by ops, and still understood: a phone may have queued one before it knew. */
+                retired: {
+                    code: string;
+                    label: string;
+                }[];
+                /** @description Null while the committed list stands. */
+                set_by: string | null;
+                set_at: string | null;
+            };
             max_checklist_items: number;
             max_partial_reasons: number;
             max_lost_reasons: number;
+            max_not_fitted_reasons: number;
             max_label: number;
         };
         JobSheetChecklist: {
