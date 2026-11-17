@@ -3,7 +3,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
-import { ONE_VISIT_NAME, type VisitType, VISIT_TYPE_NAMES } from "../config/visit-types.ts";
+import { isAFitting, ONE_VISIT_NAME, type VisitType, VISIT_TYPE_NAMES } from "../config/visit-types.ts";
 import { bookableTypes } from "../domain/booking/availability.ts";
 import { startBooking } from "../domain/booking/bookings.ts";
 import { checkoutHold } from "../domain/booking/holds.ts";
@@ -12,7 +12,7 @@ import { type PricedService, bookableService, offeredProducts, serviceOf } from 
 import { type Price, lateFeeOn } from "../domain/money/price-book.ts";
 import type { OpsInputs } from "../domain/platform/ops-settings.ts";
 import { bookableDays } from "../domain/visits/next-visit.ts";
-import { stockFitsFrom } from "../domain/inventory/stock-gap.ts";
+import { madeToOrder, stockFitsFrom } from "../domain/inventory/stock-gap.ts";
 import { indiaDate } from "../lib/india-time.ts";
 import {
   type ChangeableVisit,
@@ -106,15 +106,16 @@ export async function stockedRange(
 }
 /**
  * The service a client may book, offered that day with its price then: of a kind they may book now, the tier named,
- * or the kind's standard one where they name none. Else why not: no_product for a first fit on a day the console
- * offers no hair system, not_bookable for anything else.
+ * or the kind's standard one where they name none. Else why not: made_to_order for a fit whose hair system no stock
+ * code is made to the client's size, which ops order and book on WhatsApp; no_product for a first fit on a day the
+ * console offers no hair system; not_bookable for anything else.
  */
 export async function bookable(
   c: Context<AppEnv>,
   personId: string,
   wanted: { readonly type: VisitType; readonly tier: string | undefined },
   on: string,
-): Promise<PricedService | "no_product" | "not_bookable"> {
+): Promise<PricedService | "made_to_order" | "no_product" | "not_bookable"> {
   const db = c.env.DB;
   const [onPackage, city] = await Promise.all([
     packageWanted(db, { kind: wanted.type, tier: wanted.tier, personId }),
@@ -125,7 +126,10 @@ export async function bookable(
     bookableService(db, { kind: wanted.type, tier: wanted.tier, on, onPackage, city }),
   ]);
   if (!types.includes(wanted.type)) return "not_bookable";
-  if (service !== null) return (await pricedFor(db, [service], { personId, on, city }))[0] ?? service;
+  if (service !== null) {
+    if (isAFitting(wanted.type) && (await madeToOrder(db, personId, service.tier))) return "made_to_order";
+    return (await pricedFor(db, [service], { personId, on, city }))[0] ?? service;
+  }
   const noProduct = wanted.type === "first_fit" && (await offeredProducts(db, on, city)).length === 0;
   return noProduct ? "no_product" : "not_bookable";
 }

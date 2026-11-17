@@ -10,6 +10,8 @@ import { addDays, indiaDate } from "../../src/lib/india-time.ts";
 import { expect, test } from "../support.ts";
 import { noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
+import { nextVisitClients } from "./next-visit.ts";
+import { logIn } from "./signed-in.ts";
 import {
   FREE_UNTIL,
   toPayment,
@@ -227,4 +229,89 @@ test("says a late change keeps the payment, never a late fee, where the booking 
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(FREE_UNTIL)).toBeVisible();
   await expect(pay.getByText(/Moving or cancelling inside/)).toHaveCount(0);
+});
+
+/**
+ * A replacement's hair systems, as the API offers every one on sale (ADR 0253): the seed sells the standard
+ * replacement and Essential's. The seed's client has no hair system on record, so the one worn is given here.
+ */
+const WORN = { code: "standard", name: "Mane Man Standard" };
+const CHEAPER = { tier: "essential", name: "Mane Man Essential", visit: "Mane Man Essential replacement" };
+
+/** The seeded client due a replacement, signed in wearing WORN, its sheet open on the choice of hair system. */
+async function choosingTier(page: Page) {
+  const { replacement } = nextVisitClients();
+  await passedThrough(page, "**/api/me", (me: Record<string, unknown>) =>
+    "hair_system" in me
+      ? {
+          ...me,
+          hair_system: {
+            package: WORN.code,
+            name: WORN.name,
+            fitted_on: indiaDay(-170),
+            replace_after_months: 6,
+            due_on: indiaDay(10),
+            replacement_opens_on: indiaDay(-5),
+          },
+        }
+      : me,
+  );
+  await logIn(page, replacement.mobile);
+  await page.getByRole("button", { name: appCopy.home.prompt.bookNext }).click();
+  return page.getByRole("dialog", { name: appCopy.booking.tier.head });
+}
+
+test("offers a replacement's hair systems, the one worn chosen to keep, and opens the days of the one chosen", async ({
+  page,
+}) => {
+  const tiers = await choosingTier(page);
+  // The API's own two replacements, the one worn chosen as the sheet opens.
+  await expect(tiers.getByRole("radio")).toHaveCount(2);
+  await expect(tiers.getByRole("radio", { checked: true })).toHaveCount(1);
+  await expect(tiers.getByRole("radio", { name: new RegExp(WORN.name) })).toBeChecked();
+  await expect(tiers.getByText(appCopy.booking.tier.keep, { exact: true })).toBeVisible();
+  // Each by its hair system's name, not its replacement visit's.
+  await expect(tiers.getByText(WORN.name, { exact: true })).toBeVisible();
+  await expect(tiers.getByText(CHEAPER.name, { exact: true })).toBeVisible();
+  await tiers.getByRole("radio", { name: new RegExp(CHEAPER.name) }).check();
+  await expect(tiers.getByText(appCopy.booking.tier.downgrade, { exact: true })).toBeVisible();
+  const { downgrade, from, oldBack } = appCopy.booking.tier;
+  await expect(
+    tiers.getByRole("status").getByText(from(downgrade, WORN.name, CHEAPER.name), { exact: true }),
+  ).toBeVisible();
+  await expect(tiers.getByRole("status")).toContainText(oldBack(WORN.name));
+  await scanOf(page);
+
+  const days = page.waitForResponse((answer) => {
+    const url = new URL(answer.url());
+    return url.pathname === "/api/availability" && url.searchParams.get("tier") === CHEAPER.tier;
+  });
+  await tiers.getByRole("button", { name: appCopy.booking.tier.next }).click();
+  expect((await days).ok()).toBe(true);
+  await expect(page.getByRole("dialog", { name: appCopy.booking.when.titleDate })).toBeVisible();
+});
+
+// A size no stock code is made to is ordered and booked by ops on WhatsApp (ADR 0253); the API says so for it alone.
+test("says a hair system is made to order in the client's size, asks us on WhatsApp, and goes back to the choice", async ({
+  page,
+}) => {
+  await page.route(/\/api\/availability\?/, (route) =>
+    new URL(route.request().url()).searchParams.get("tier") === CHEAPER.tier
+      ? route.fulfill({ status: 422, json: { error: { code: "made_to_order", request_id: "e2e" } } })
+      : route.fallback(),
+  );
+  const tiers = await choosingTier(page);
+  await tiers.getByRole("radio", { name: new RegExp(CHEAPER.name) }).check();
+  await tiers.getByRole("button", { name: appCopy.booking.tier.next }).click();
+
+  const copy = appCopy.booking.madeToOrder;
+  const made = page.getByRole("dialog", { name: copy.title });
+  await expect(made.getByRole("status")).toContainText(copy.line);
+  await expect(made.getByRole("link", { name: copy.ask })).toHaveAttribute(
+    "href",
+    new RegExp(encodeURIComponent(copy.asking(CHEAPER.visit))),
+  );
+  await scanOf(page);
+  await made.getByRole("button", { name: appCopy.booking.back }).click();
+  await expect(tiers.getByRole("radio", { name: new RegExp(CHEAPER.name) })).toBeChecked();
 });

@@ -123,6 +123,8 @@ export function BookButton({
   const kind = type ?? me.booking.types[0];
   const services =
     type === undefined ? me.booking.services : me.booking.services.filter((service) => service.type === type);
+  // A replacement opens on the hair system worn, which the client keeps or changes (ADR 0253).
+  const chosen = tier ?? (kind === "replacement" ? me.hair_system?.package : undefined) ?? null;
   if (kind === "first_fit" && !services.some((service) => service.type === "first_fit")) {
     return <p>{booking.firstFitNotYet}</p>;
   }
@@ -141,7 +143,7 @@ export function BookButton({
   // A kind the client may not book themselves goes to ops on WhatsApp: every paid visit, while online payment is off.
   if (kind === undefined || !me.booking.self_serve_kinds.includes(kind)) {
     const first = requestFrom(kind, from, wornOf(me));
-    return <WithOps {...{ label, className, message, kind, services, tier, offer, quiet }} from={first} />;
+    return <WithOps {...{ label, className, message, kind, services, offer, quiet }} tier={chosen} from={first} />;
   }
   const onClick = () => {
     setOpen(true);
@@ -161,7 +163,7 @@ export function BookButton({
         <BookingSheet
           type={kind}
           services={services}
-          tier={tier ?? undefined}
+          tier={chosen ?? undefined}
           recommended={kind === "first_fit" ? recommendationOf(me) : undefined}
           offer={offer}
           from={from}

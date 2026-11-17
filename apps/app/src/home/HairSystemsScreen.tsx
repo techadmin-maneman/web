@@ -3,18 +3,17 @@
 // long it lasts, and its service and how often, the one worn now marked.
 
 import { Badge } from "@maneman/ui/Badge";
-import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Loading } from "@maneman/ui/States";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { rupees } from "@maneman/web-kit/money";
 import { api, type Me } from "../api.ts";
 import { hairSystems, profile, titles } from "../content.ts";
 import { PageFailed } from "../frame/PageFailed.tsx";
 import { Shell } from "../frame/Shell.tsx";
 import { useSession } from "../session.ts";
+import { PackageFacts } from "./PackageFacts.tsx";
 import styles from "./hair-systems.module.css";
 
-type Offered =
+export type Offered =
   Awaited<ReturnType<typeof api.packages>> extends infer Answer
     ? Answer extends { ok: true; body: { packages: (infer Each)[] } }
       ? Each
@@ -35,28 +34,12 @@ function Package({ offered, me }: { offered: Offered; me: Me }) {
         {wearing && <Badge>{copy.wearing}</Badge>}
       </div>
       {offered.description !== null && <p className={styles.description}>{offered.description}</p>}
-      <DescriptionList
-        layout="row"
-        className={styles.facts}
-        items={[
-          ...(price === null
-            ? []
-            : [{ term: fitted ? copy.replacementPrice : copy.firstFit, details: rupees(price.amount) }]),
-          { term: copy.lasts, details: copy.months(offered.replace_after_months) },
-          ...(offered.service === null
-            ? []
-            : [
-                {
-                  term: copy.service,
-                  details: (
-                    <>
-                      {rupees(offered.service.amount)}
-                      <span className={styles.per}>{copy.every(offered.service_every_days)}</span>
-                    </>
-                  ),
-                },
-              ]),
-        ]}
+      <PackageFacts
+        priceTerm={fitted ? copy.replacementPrice : copy.firstFit}
+        price={price}
+        months={offered.replace_after_months}
+        service={offered.service}
+        everyDays={offered.service_every_days}
       />
     </article>
   );
