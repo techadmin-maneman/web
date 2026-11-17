@@ -20,7 +20,15 @@ import { NO_PIECE } from "@rules/policy/in-job-steps.ts";
 import { go } from "../route.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
-import { type Heard, keptArrival, keptClosed, keptOutcome, keptStates } from "../store/jobs.ts";
+import {
+  type Heard,
+  keptArrival,
+  keptCalled,
+  keptClosed,
+  keptOutcome,
+  keptPhotographed,
+  keptStates,
+} from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
 import { classes } from "@maneman/ui/classes";
 import frame from "../frame/frame.module.css";
@@ -81,19 +89,51 @@ function receiptOf(job: Job): string {
   return delivered === null ? copy.noShow.notDelivered : copy.noShow.delivered(clock(delivered));
 }
 
-/** The evidence chain's close: the three facts ops rule on, as the phone knows them. */
-function Evidence({ job }: { job: Job }) {
-  const readArrival = useCallback(() => keptArrival(job.id), [job.id]);
-  const measured = valueOr(useAsync(readArrival)[0], null)?.distance_m ?? null;
-
+/** How long they waited at the door: from the later of the check-in and the booked start to the close, else the wait. */
+function waitedOf(job: Job, closedAt: number | null): { hours: number; minutes: number } {
   const checkedIn = job.progress.checked_in_at;
-  const distance = job.progress.distance_m ?? measured;
+  const from = Math.max(checkedIn === null ? 0 : Date.parse(checkedIn), Date.parse(job.starts_at));
+  if (closedAt !== null && closedAt > from) return lengthOf(from, closedAt);
+  return { hours: Math.floor(job.no_show_wait_min / 60), minutes: job.no_show_wait_min % 60 };
+}
+
+/** The evidence chain's close, as the prototype lists it: the check-in, the wait, the WhatsApp, the call and the door. */
+function Evidence({ job }: { job: Job }) {
+  const read = useCallback(
+    async () => ({
+      arrival: await keptArrival(job.id),
+      called: await keptCalled(job.id),
+      photographed: await keptPhotographed(job.id),
+      closed: await keptClosed(job.id),
+    }),
+    [job.id],
+  );
+  const kept = valueOr(useAsync(read)[0], null);
+  const checkedIn = job.progress.checked_in_at;
+  const distance = job.progress.distance_m ?? kept?.arrival?.distance_m ?? null;
+  const photographed = kept?.photographed ?? null;
+  const waited = waitedOf(job, kept?.closed ?? null);
   return (
     <>
-      <dl className={shared.rows}>
-        {checkedIn !== null && <Row name={copy.noShow.checkedIn} value={clock(checkedIn)} />}
-        <Row name={copy.noShow.distance} value={distance === null ? copy.noShow.unmeasured : metres(distance)} />
+      <dl className={classes(shared.rows, styles.rows)}>
+        {checkedIn !== null && (
+          <Row
+            name={copy.noShow.checkedIn}
+            value={copy.noShow.checkedInAt(clock(checkedIn), distance === null ? null : metres(distance))}
+          />
+        )}
+        <Row name={copy.noShow.waited} value={copy.length(waited.hours, waited.minutes)} />
         <Row name={copy.noShow.whatsApp} value={receiptOf(job)} />
+        {job.client !== null && (
+          <Row
+            name={copy.noShow.call}
+            value={(kept?.called ?? null) === null ? copy.noShow.notCalled : copy.noShow.noAnswer}
+          />
+        )}
+        <Row
+          name={copy.noShow.doorPhoto}
+          value={copy.noShow.taken(photographed === null ? null : clock(new Date(photographed).toISOString()))}
+        />
       </dl>
       <p className={styles.closeNote}>{copy.noShow.ops}</p>
     </>

@@ -979,13 +979,21 @@ export const closeOut = localised({
   noShow: {
     ops: "This goes to ops.",
     checkedIn: "Checked in",
-    distance: "Distance",
+    /** "9:27 am · 40 m away", or the time alone where nothing was measured. */
+    checkedInAt: (time: string, distance: string | null) => (distance === null ? time : `${time} · ${distance} away`),
+    waited: "Waited",
     whatsApp: "WhatsApp",
     delivered: (time: string) => `Delivered ${time}`,
     // The board draws the receipt delivered.
     notDelivered: "Sent, not delivered",
     noneSent: "None sent",
-    unmeasured: "Not measured",
+    call: "Call",
+    // A call from the door is one the client did not answer: had they, they would have come to it.
+    noAnswer: "No answer",
+    notCalled: "Not called",
+    doorPhoto: "Door photo",
+    /** "Taken 9:32 am"; "Taken" alone where the phone that took it is not this one. */
+    taken: (time: string | null) => (time === null ? "Taken" : `Taken ${time}`),
   },
   // The board draws no close-out opened before the job closed.
   notClosed: "This job isn’t closed yet.",

@@ -27,7 +27,7 @@ import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useJob } from "../lib/useDay.ts";
 import { clock, countdown, metres, todayInIndia } from "../lib/when.ts";
 import { go, redirect, stepPath } from "../route.ts";
-import { keepCalled, keepClosed, keptArrival, keptCalled } from "../store/jobs.ts";
+import { keepCalled, keepClosed, keepPhotographed, keptArrival, keptCalled } from "../store/jobs.ts";
 import {
   checkInRefusedAsEarly,
   events,
@@ -350,7 +350,7 @@ function AtTheDoor({ job, queued }: { job: Job; queued: readonly Queued[] }) {
         <DoorCamera
           onTaken={(photo) => {
             buzz();
-            void keepDoorFrame(job.id, photo).then(() => {
+            void Promise.all([keepDoorFrame(job.id, photo), keepPhotographed(job.id)]).then(() => {
               setShooting(false);
               again();
             });

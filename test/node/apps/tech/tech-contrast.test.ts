@@ -57,6 +57,7 @@ const LIGHT_PAIRINGS: readonly Pairing[] = [
   { text: "--ink-900", ground: "--disabled", where: "a person’s initials" },
   { text: "--ink-900", ground: "--wash-100", where: "a note on the warm wash: a reschedule asked" },
   { text: "--white-000", ground: "--error", where: "a destructive action" },
+  { text: "--white-000", ground: "--ink-500", where: "the tick on a no-show's or a fit not made's mark" },
   { text: "--white-000", ground: "--camera-900", where: "the camera’s head and its prompt" },
   { text: "--ink-500", ground: "--placeholder", where: "the map’s line beneath its pin" },
   { text: "--ink-900", ground: "--placeholder", where: "the map’s pin" },

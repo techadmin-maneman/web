@@ -346,11 +346,21 @@ test("asks before closing as a no-show, since ops decide on the charge", async (
   await close.click();
   await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.confirm.yes }).click();
 
-  // The close: the evidence ops rule on, and what happens next.
+  // The close: the evidence ops rule on, as the prototype lists it, and what happens next.
+  const noShow = techCopy.closeOut.noShow;
   await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.no_show })).toBeVisible();
-  await expect(page.getByText(techCopy.closeOut.noShow.ops)).toBeVisible();
-  await expect(page.getByText(techCopy.closeOut.noShow.checkedIn)).toBeVisible();
-  await expect(page.getByText("40 m")).toBeVisible();
+  await expect(page.getByText(noShow.ops)).toBeVisible();
+  const evidence = page.locator("dl").first();
+  await expect(evidence.locator("dt")).toHaveText([
+    noShow.checkedIn,
+    noShow.waited,
+    noShow.whatsApp,
+    noShow.call,
+    noShow.doorPhoto,
+  ]);
+  await expect(evidence.locator("dd").first()).toHaveText(/^\d{1,2}(:\d{2})? [ap]m · 40 m away$/);
+  await expect(evidence.locator("dd").nth(3)).toHaveText(noShow.noAnswer);
+  await expect(evidence.locator("dd").nth(4)).toHaveText(/^Taken \d{1,2}(:\d{2})? [ap]m$/);
   await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/no-show")).length).toBe(1);
   expect(await axeViolations(page)).toEqual([]);
 });

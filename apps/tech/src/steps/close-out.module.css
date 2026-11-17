@@ -7,7 +7,7 @@
   overflow-y: auto;
 }
 
-/* The result's mark: navy for a visit closed, ink on the shade for a no-show or a fit not made. */
+/* The result's mark: navy for a visit closed, the quiet grey for a no-show or a fit not made, each with a white tick. */
 .mark,
 .markQuiet {
   display: flex;
@@ -24,8 +24,7 @@
 }
 
 .markQuiet {
-  background: var(--ui-shade);
-  color: var(--ui-text);
+  background: var(--ui-text-soft);
 }
 
 .title {
