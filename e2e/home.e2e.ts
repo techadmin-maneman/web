@@ -107,6 +107,7 @@ test.describe("the flow's bar", () => {
   }
 
   test("on /try offers the free consultation as an outline", async ({ page }) => {
+    test.skip(narrow(page.viewportSize()?.width), "a phone's /try draws its own top bar");
     await page.goto("/try");
     const book = page.locator("header").getByRole("link", { name: siteCopy.header.bookShort });
     await expect(book).toHaveAttribute("href", "/book");

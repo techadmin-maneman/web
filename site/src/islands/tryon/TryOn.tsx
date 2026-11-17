@@ -190,7 +190,7 @@ function TryOnFlow(props: Props) {
       <div class={styles.stage}>
         <Picture photo={state.photo} look={shown} />
         <div class={styles.column}>
-          {at === undefined ? null : <FlowSteps at={at} of={STEPS} onBack={onBack} />}
+          {(at !== undefined || onBack !== null) && <FlowSteps at={at ?? null} of={STEPS} onBack={onBack} />}
           {screen !== "sent" && <StepLabel screen={screen} kind={state.errorKind} />}
 
           {/* Turnstile shows here only if Cloudflare needs the visitor to act: above the step, before its button. */}

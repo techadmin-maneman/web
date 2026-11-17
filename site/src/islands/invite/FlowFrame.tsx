@@ -30,8 +30,12 @@ export function FlowTop(props: { onBack: (() => void) | null; title?: string }) 
   );
 }
 
-/** The step bar, with a laptop's way back above it: /book's four steps by default. */
-export function FlowSteps(props: { at: number; of?: number; onBack: (() => void) | null }) {
+/**
+ * The step bar, with a laptop's way back above it: /book's four steps by default. `at` null: the way back alone, on a
+ * screen that stands outside the steps, as the try-on's error.
+ */
+export function FlowSteps(props: { at: number | null; of?: number; onBack: (() => void) | null }) {
+  const { at } = props;
   return (
     <div class={styles.steps}>
       {props.onBack !== null && (
@@ -40,10 +44,12 @@ export function FlowSteps(props: { at: number; of?: number; onBack: (() => void)
           {tryOn.back}
         </TextButton>
       )}
-      <StepProgress
-        className={styles.bar}
-        steps={Array.from({ length: props.of ?? BOOK_STEPS }, (_, index) => (index < props.at ? "done" : "todo"))}
-      />
+      {at !== null && (
+        <StepProgress
+          className={styles.bar}
+          steps={Array.from({ length: props.of ?? BOOK_STEPS }, (_, index) => (index < at ? "done" : "todo"))}
+        />
+      )}
     </div>
   );
 }

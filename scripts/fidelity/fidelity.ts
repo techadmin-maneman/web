@@ -16,6 +16,8 @@ import { resolve } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { pair as pairIn } from "../lib/fidelity.ts";
 import {
+  tryBoardAt,
+  type TryBoardState,
   bookBoardAt,
   openBoard as openBoardAt,
   preparePage as preparePageAt,
@@ -69,6 +71,14 @@ const BOOK_STATES: readonly { state: BookBoardState; preview: string }[] = [
   { state: "nots", preview: "unserved" },
   { state: "listed", preview: "listed" },
   { state: "done", preview: "booked" },
+];
+
+/** The try-on's states past the first that the page opens at with ?state= (islands/tryon/machine.ts), by the board's names. */
+const TRY_STATES: readonly { state: TryBoardState; preview: string }[] = [
+  { state: "look", preview: "looks" },
+  { state: "send", preview: "gate" },
+  { state: "sent", preview: "sent" },
+  { state: "error", preview: "error" },
 ];
 
 const WIDTHS = [
@@ -162,6 +172,13 @@ async function run(browser: Browser, frame: (typeof WIDTHS)[number]): Promise<vo
     await openBoard(design, `${prefix}Book`, (board) => bookBoardAt(board, state));
     await openSite(site, `/book?state=${preview}`);
     await pairWhole(`page-book-${state}`);
+  }
+
+  // The try-on's steps past the first, the same way.
+  for (const { state, preview } of TRY_STATES) {
+    await openBoard(design, `${prefix}Try`, (board) => tryBoardAt(board, state));
+    await openSite(site, `/try?state=${preview}`);
+    await pairWhole(`page-try-${state}`);
   }
 
   await design.close();

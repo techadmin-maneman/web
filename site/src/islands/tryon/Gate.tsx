@@ -11,7 +11,7 @@ import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./gate.module.css";
 import shared from "./TryOn.module.css";
 
-/** The WhatsApp code's field, on the gate's ink. */
+/** The WhatsApp code's field, on the gate's white. */
 const CODE_FIELD: CodeFieldClasses = { hint: styles.codeHint, error: styles.error, again: styles.codeAgain };
 
 /** The code sent to the number typed, while it waits to be entered. */
@@ -85,6 +85,7 @@ export function Gate(props: {
               mobile={props.mobile}
               code={code.value}
               failure={code.failure}
+              onInk={false}
               classes={CODE_FIELD}
               onInput={code.onInput}
               onAgain={code.onAgain}
