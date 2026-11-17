@@ -281,10 +281,7 @@
   /* ---- Line lengths ------------------------------------------------------ */
   --measure-hero: 900px;
   --measure-hero-body: 600px;
-  --measure-note: 560px;
   --measure-closing: 520px;
-  --measure-upload-title: var(--measure-closing);
-  --measure-error: var(--measure-closing);
   --measure-short: var(--app-column-max);
   --measure-button-column: var(--split-min-wide);
 
@@ -301,27 +298,16 @@
   /* The results' before and after at its tallest. */
   --result-picture-max: 540px; /* a result's pair at its widest, at its photographs' own 4:5 */
 
-  --comparison-label-w: var(
-    --stage-min
-  ); /* a laptop table's first column, the rows' names: 220 px, which the
-                                            try-on's --stage-min also is; moving one moves both */
+  --comparison-label-w: 220px; /* a laptop table's first column, the rows' names */
 
   --teaser-frame-h: clamp(280px, 42vw, 420px);
-  /* The try-on's look beside its photograph, on the sent screen. */
-  --look-frame-max: 420px;
 
   --column-min-narrow: 140px; /* a column of short links or names, two to a phone */
 
   /* ---- Try-on ------------------------------------------------------------ */
-  --flow-pad-bottom: clamp(48px, 6vw, 72px);
-  --flow-split-gap: clamp(32px, 5vw, 72px);
-  --flow-button-max: 320px;
-  --flow-medium-max: 720px;
-  --oval-max: var(--split-min);
-  --consent-key-w: 116px;
-  --stage-min: 220px;
-  --look-min: 200px;
-  --gate-frame-h: clamp(300px, 44vw, 420px);
-  --gate-blur: 7px;
-  --error-frame-h: clamp(200px, 28vw, 260px);
+  --try-picture-w: var(--measure-hero-body); /* a laptop's picture beside each step, 4:3: 600 px */
+  --try-column-w: var(--measure-form); /* a laptop's step beside its picture: 440 px */
+  --try-look-ratio: 648 / 467; /* the look beside the photograph, as the boards draw it */
+  --try-title: clamp(26px, calc(23.77px + 0.5714vw), 32px); /* a step's title: 26 on a phone, 32 on a laptop */
+  --try-lead: clamp(15px, calc(14.63px + 0.0952vw), 16px);
 }

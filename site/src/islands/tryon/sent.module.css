@@ -1,27 +1,18 @@
 /* What ./Sent.tsx alone draws; what it shares is in ./TryOn.module.css. */
+
 .number {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-/* The look beside the photograph, at the photograph's own shape, once it is ready: two classes, so it wins over the
-   teaser band's height. */
-.lookFrame {
-  width: 100%;
-}
-.lookFrame .look {
-  height: auto;
-  aspect-ratio: 4 / 5;
-  max-width: var(--look-frame-max);
-  margin-inline: auto;
-}
-
-/* A returning visitor's look alone: the page no longer holds their photograph to set beside it. */
-.lookOnly {
-  display: block;
-  width: 100%;
-  max-width: var(--look-frame-max);
-  aspect-ratio: 4 / 5;
-  margin-inline: auto;
-  object-fit: cover;
+/* Where the look went, while it is on its way: WhatsApp's mark on a cool square. */
+.tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sp-48);
+  height: var(--sp-48);
+  margin-bottom: var(--sp-16);
+  background: var(--site-band);
+  color: var(--site-navy);
 }

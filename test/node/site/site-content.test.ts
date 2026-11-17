@@ -259,7 +259,7 @@ describe("the second copy round", () => {
   it("leaves where the look goes to the gate", () => {
     const screens = JSON.stringify(site.tryOn);
     expect(screens).not.toMatch(/never shown|privately|for your privacy/i);
-    expect(site.tryOn.gate.caption).toContain("WhatsApp");
+    expect(JSON.stringify(site.tryOn.gate)).toContain("WhatsApp");
   });
 
   // No empty "Preview" box stands in for a look's picture.

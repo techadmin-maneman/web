@@ -86,7 +86,7 @@ test.describe("header", () => {
 });
 
 // A laptop's /book and /try are a flow of their own: the lockup and the way back, no footer (ADR 0265). A phone's
-// /book draws its own top bar and no footer at all; a phone's /try keeps the header and the slim foot until it does.
+// /book and /try draw their own top bar and no footer at all.
 test.describe("the flow's bar", () => {
   for (const path of ["/book", "/try"]) {
     test(`on ${path} leads back to the site, with no footer on a laptop`, async ({ page }) => {
@@ -95,12 +95,8 @@ test.describe("the flow's bar", () => {
       const back = header.getByRole("link", { name: siteCopy.tryOn.backToSite });
       if (narrow(page.viewportSize()?.width)) {
         await expect(back).toBeHidden();
-        if (path === "/book") {
-          await expect(page.getByRole("link", { name: siteCopy.tryOn.backToSite })).toHaveAttribute("href", "/");
-          await expect(page.locator("footer")).toHaveCount(0);
-        } else {
-          await expect(page.locator("footer")).toBeVisible();
-        }
+        await expect(page.getByRole("link", { name: siteCopy.tryOn.backToSite })).toHaveAttribute("href", "/");
+        await expect(page.locator("footer")).toHaveCount(0);
       } else {
         await expect(back).toHaveAttribute("href", "/");
         await expect(header.getByRole("link", { name: siteCopy.header.signIn })).toBeHidden();
@@ -111,6 +107,7 @@ test.describe("the flow's bar", () => {
   }
 
   test("on /try offers the free consultation as an outline", async ({ page }) => {
+    test.skip(narrow(page.viewportSize()?.width), "a phone's /try draws its own top bar");
     await page.goto("/try");
     const book = page.locator("header").getByRole("link", { name: siteCopy.header.bookShort });
     await expect(book).toHaveAttribute("href", "/book");
@@ -175,11 +172,10 @@ test.describe("sticky bar and footer: the home page only", () => {
     await expect(page.locator('footer a[href="/book"]')).toHaveCount(0);
   });
 
-  // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms. A laptop's /try and
-  // /book, and a phone's /book, have no foot at all (the flow's bar, above).
-  for (const path of ["/try", "/privacy"]) {
-    test(`are absent from ${path}, which keeps the slim foot`, async ({ page }, testInfo) => {
-      test.skip(path !== "/privacy" && testInfo.project.name !== "390", "a laptop's flow has no foot");
+  // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms. The flows, /book and
+  // /try, have no foot at all (the flow's bar, above).
+  for (const path of ["/privacy"]) {
+    test(`are absent from ${path}, which keeps the slim foot`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator("footer")).toBeVisible();
       await expect(page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel })).toHaveCount(0);

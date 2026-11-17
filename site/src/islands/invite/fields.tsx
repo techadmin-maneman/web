@@ -15,6 +15,7 @@ import { referral } from "../../content/referral.ts";
 import { booking, whatsapp, type NoticeWords } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
 import { fill } from "../../lib/text.ts";
+import { LegalLinks } from "../LegalLinks.tsx";
 import { MobileField, NameField } from "../PersonFields.tsx";
 import shared from "./Invite.module.css";
 import styles from "./fields.module.css";
@@ -217,31 +218,6 @@ function TermsBox({ idPrefix, tick }: { idPrefix: string; tick: TermsTick }) {
         )}
       </div>
     </>
-  );
-}
-
-/**
- * The terms the form binds the visitor to, and the privacy notice, each a link, beneath its agreement; or, `alone`,
- * on a page that asks nothing yet, with no box to sit beside.
- */
-export function LegalLinks(props: { alone?: string | undefined }) {
-  const words = referral.form.legal;
-  return (
-    <p
-      class={
-        props.alone === undefined ? styles.legal : `${styles.legal ?? ""} ${styles.legalAlone ?? ""} ${props.alone}`
-      }
-    >
-      {words.before}
-      <TextLink inline href="/terms">
-        {words.terms}
-      </TextLink>
-      {words.between}
-      <TextLink inline href="/privacy">
-        {words.privacy}
-      </TextLink>
-      {words.after}
-    </p>
   );
 }
 

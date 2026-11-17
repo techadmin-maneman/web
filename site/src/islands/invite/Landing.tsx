@@ -22,7 +22,7 @@ import { IslandBoundary } from "../IslandBoundary.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
 import { FlowTop } from "./FlowFrame.tsx";
-import { LegalLinks } from "./fields.tsx";
+import { LegalLinks } from "../LegalLinks.tsx";
 import { Arrival, confirmation, PincodeAndForm } from "./PageParts.tsx";
 import { useLandingData } from "./useLandingData.ts";
 import { usePageFlow } from "./usePageFlow.ts";

@@ -1,0 +1,20 @@
+/* What ./LegalLinks.tsx draws. */
+
+/* Beneath a form's agreement: the terms and privacy notice that apply, each a link (./LegalLinks.tsx). */
+.legal {
+  margin: var(--sp-4) 0 0;
+  padding-left: calc(var(--check-box-size) + var(--sp-8));
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+  color: var(--site-text-muted);
+}
+
+/* With no box beside it: the landing's first screen, before the pincode's answer brings the form. */
+.alone {
+  padding-left: 0;
+}
+
+/* Each link's tap reaches a thumb's height above and below its words, padding an inline box leaving the line as it is. */
+.legal a {
+  padding-block: var(--sp-12);
+}

@@ -16,28 +16,29 @@
 // Outside production, ?state=<screen> opens a screen directly, with stand-ins
 // and no API calls, for the fidelity screenshots and the browser tests
 // (machine.ts lists the kinds each screen takes).
+//
+// It is a flow of its own, on the client app's look (ADR 0265): on a phone under the top bar /book draws
+// (../invite/FlowFrame.tsx), a bar of its three steps over each, the step's buttons pinned at the foot.
 
-import { capsLook } from "@maneman/ui/Caps";
-import { TextButton } from "@maneman/ui/TextLink";
 import { useEffect, useReducer, useRef } from "preact/hooks";
-import { ICONS } from "@maneman/brand/icons";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
-import { notices, tryOn, tryOnSendsCopy } from "../../content/site.ts";
+import { notices, tryOn, tryOnSendsCopy, tryOnTeaser } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import { preparePhoto, type PreparedPhoto } from "../../lib/photo.ts";
 import { onArrival, startUpload, type Arrival, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import type { Failure } from "../../lib/tryon-errors.ts";
-import { Icon } from "@maneman/ui/Icon";
 import { Failed } from "./Failed.tsx";
 import { Gate } from "./Gate.tsx";
 import { useReleased, useRenderWatch, useScreenHistory } from "./hooks.ts";
 import { Looks } from "./Looks.tsx";
-import { backFrom, screenNamed, START, step, type Screen } from "./machine.ts";
+import { Picture } from "./Picture.tsx";
+import { backFrom, screenNamed, START, step, type Screen, type TryOnState } from "./machine.ts";
 import { Sent } from "./Sent.tsx";
 import styles from "./TryOn.module.css";
 import { Upload } from "./Upload.tsx";
 import { useGate } from "./useGate.ts";
 import { IslandBoundary } from "../IslandBoundary.tsx";
+import { FlowSteps, FlowTop } from "../invite/FlowFrame.tsx";
 
 interface Props {
   turnstileSiteKey: string;
@@ -56,7 +57,7 @@ function usePhotoWidget(screen: Screen, siteKey: string) {
   const widget = useRef<TurnstileWidget | null>(null);
   useEffect(() => {
     if (screen === "upload" || widget.current !== null || box.current === null) return;
-    widget.current = turnstileWidget(box.current, siteKey, "dark");
+    widget.current = turnstileWidget(box.current, siteKey);
   }, [screen, siteKey]);
   useEffect(
     () => () => {
@@ -65,6 +66,23 @@ function usePhotoWidget(screen: Screen, siteKey: string) {
     [],
   );
   return { box, widget };
+}
+
+/**
+ * The try-on's three steps, and which each screen is at: the sent and error screens stand outside them. The first
+ * step's way back is the top bar's close, to the site; the sent screen has none.
+ */
+const STEPS = 3;
+const STEP_AT: Partial<Record<Screen, number>> = { upload: 1, looks: 2, gate: 3 };
+
+/** The step's line over its words, "Step 2 of 3", or, on the error screen, what went wrong: "Face not clear". */
+function StepLabel(props: { screen: Exclude<Screen, "sent">; kind: TryOnState["errorKind"] }) {
+  const { screen } = props;
+  return (
+    <p class={styles.stepLabel}>
+      {screen === "error" ? tryOn.error.kinds[props.kind].frame : tryOn.stepLabels[screen]}
+    </p>
+  );
 }
 
 function TryOnFlow(props: Props) {
@@ -165,50 +183,47 @@ function TryOnFlow(props: Props) {
     else send({ type: "back" });
   }
 
+  const onBack = backFrom(screen) === "home" || screen === "sent" ? null : back;
+  const at = STEP_AT[screen];
+  const shown = screen === "sent" ? (look ?? state.returnedLook) : null;
   return (
-    <div class={`${styles.flow} on-ink`} data-screen={screen}>
-      <div class={styles.track}>
-        <div class={`${styles.progress} ${styles[`progress-${screen}`]}`} />
-      </div>
-      <div class={styles.inner}>
-        <div class={styles.topline}>
-          <TextButton tone="ink" className={styles.back} onClick={back}>
-            <Icon d={ICONS.back} size="sm" />
-            {backFrom(screen) === "home" ? tryOn.backToSite : tryOn.back}
-          </TextButton>
-          <span class={capsLook(styles.stepLabel)}>
-            {screen === "error" ? tryOn.error.kinds[state.errorKind].step : tryOn.stepLabels[screen]}
-          </span>
+    <div class={styles.flow} data-screen={screen}>
+      <FlowTop title={tryOnTeaser.eyebrow} onBack={onBack} />
+      <div class={styles.stage}>
+        <Picture photo={state.photo} look={shown} />
+        <div class={styles.column}>
+          {(at !== undefined || onBack !== null) && <FlowSteps at={at ?? null} of={STEPS} onBack={onBack} />}
+          {screen !== "sent" && <StepLabel screen={screen} kind={state.errorKind} />}
+
+          {/* Turnstile shows here only if Cloudflare needs the visitor to act: above the step, before its button. */}
+          <div ref={turnstileBox} class={styles.turnstile} />
+
+          {screen === "upload" && <Upload heading={heading} onChoose={choosePhoto} />}
+          {screen === "looks" && (
+            <Looks
+              look={state.look}
+              thumbnails={props.lookThumbnails}
+              heading={heading}
+              onChoose={(look) => {
+                send({ type: "lookChosen", look });
+              }}
+              onContinue={() => {
+                send({ type: "lookDone" });
+              }}
+            />
+          )}
+          {screen === "gate" && <Gate notice={notices.gate} heading={heading} {...gate} />}
+          {screen === "sent" && <Sent state={state} look={shown} heading={heading} />}
+          {screen === "error" && (
+            <Failed
+              kind={state.errorKind}
+              heading={heading}
+              onAgain={() => {
+                send({ type: "again" });
+              }}
+            />
+          )}
         </div>
-
-        {/* Turnstile shows here only if Cloudflare needs the visitor to act: above the step, before its button. */}
-        <div ref={turnstileBox} class={styles.turnstile} />
-
-        {screen === "upload" && <Upload photo={state.photo} heading={heading} onChoose={choosePhoto} />}
-        {screen === "looks" && (
-          <Looks
-            look={state.look}
-            thumbnails={props.lookThumbnails}
-            heading={heading}
-            onChoose={(look) => {
-              send({ type: "lookChosen", look });
-            }}
-            onContinue={() => {
-              send({ type: "lookDone" });
-            }}
-          />
-        )}
-        {screen === "gate" && <Gate notice={notices.gate} heading={heading} {...gate} />}
-        {screen === "sent" && <Sent state={state} look={look ?? state.returnedLook} heading={heading} />}
-        {screen === "error" && (
-          <Failed
-            kind={state.errorKind}
-            heading={heading}
-            onAgain={() => {
-              send({ type: "again" });
-            }}
-          />
-        )}
       </div>
     </div>
   );
@@ -217,7 +232,7 @@ function TryOnFlow(props: Props) {
 /** The island as the page mounts it: a throw while it draws is reported, and the way to us shown in its place. */
 export default function TryOn(props: Props) {
   return (
-    <IslandBoundary>
+    <IslandBoundary top={<FlowTop title={tryOnTeaser.eyebrow} onBack={null} />}>
       <TryOnFlow {...props} />
     </IslandBoundary>
   );

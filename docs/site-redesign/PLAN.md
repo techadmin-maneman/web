@@ -165,6 +165,11 @@ The flow frame's other words are live strings, reused by key: "Free consultation
    to 638:788; the try-on's pair at its band's height on the client's framing (`focus-client`), so the hair shows.
 8. **A phone's address step** keeps its helper lines out of sight but in the page, each still describing its field to a
    screen reader.
+9. **A flow's first screen** says "Our Terms and Privacy Notice apply.", each a link, where the boards draw nothing:
+   with no footer on `/book`, the referral landing or `/try`, every page still links both from the screen it opens on
+   (`e2e/legal-links.e2e.ts`).
+10. **A button not usable yet** keeps the client app's look, a pale ground with muted words, where the boards draw it
+    stone with white words (ADR 0265: the flows take the client app's look values).
 
 ## How each PR is verified
 

@@ -2048,22 +2048,6 @@
     "reviewed": false
   },
   {
-    "key": "site:tryon/tryOn.stepLabels.sent",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Sent to WhatsApp",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.stepLabels.error",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Can’t use this photo",
-    "reviewed": true
-  },
-  {
     "key": "site:tryon/tryOn.upload.title",
     "surface": "site",
     "group": "Try-on",
@@ -2248,27 +2232,11 @@
     "reviewed": false
   },
   {
-    "key": "site:tryon/tryOn.upload.previewCaption",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Your photo appears here",
-    "reviewed": true
-  },
-  {
     "key": "site:tryon/tryOn.upload.previewAlt",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
     "text": "The photo you chose",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.upload.oval",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Fill the oval",
     "reviewed": true
   },
   {
@@ -2302,22 +2270,6 @@
     "where": "tryOn",
     "text": "Continue",
     "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.gate.frame",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "For your WhatsApp only",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.gate.caption",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Your look goes to your WhatsApp, and shows here once it’s ready.",
-    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.gate.title",
@@ -2560,14 +2512,6 @@
     "reviewed": true
   },
   {
-    "key": "site:tryon/tryOn.error.kinds.photo.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Can’t use this photo",
-    "reviewed": true
-  },
-  {
     "key": "site:tryon/tryOn.error.kinds.photo.frame",
     "surface": "site",
     "group": "Try-on",
@@ -2589,14 +2533,6 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "Your face may be turned, your hairline covered, or the light too low. Face a window and shoot straight on.",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.error.kinds.noFace.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Can’t see your face",
     "reviewed": true
   },
   {
@@ -2624,14 +2560,6 @@
     "reviewed": true
   },
   {
-    "key": "site:tryon/tryOn.error.kinds.shoulders.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Show your shoulders",
-    "reviewed": true
-  },
-  {
     "key": "site:tryon/tryOn.error.kinds.shoulders.frame",
     "surface": "site",
     "group": "Try-on",
@@ -2653,14 +2581,6 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "Use a photo that shows your head and shoulders.",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.error.kinds.facing.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Face the camera",
     "reviewed": true
   },
   {
@@ -2688,14 +2608,6 @@
     "reviewed": true
   },
   {
-    "key": "site:tryon/tryOn.error.kinds.onePerson.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Just you, please",
-    "reviewed": true
-  },
-  {
     "key": "site:tryon/tryOn.error.kinds.onePerson.frame",
     "surface": "site",
     "group": "Try-on",
@@ -2717,14 +2629,6 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "Use a photo with no one else in it.",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.error.kinds.notStyleable.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Try another photo",
     "reviewed": true
   },
   {
@@ -2752,14 +2656,6 @@
     "reviewed": true
   },
   {
-    "key": "site:tryon/tryOn.error.kinds.refused.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Try another photo",
-    "reviewed": true
-  },
-  {
     "key": "site:tryon/tryOn.error.kinds.refused.frame",
     "surface": "site",
     "group": "Try-on",
@@ -2781,14 +2677,6 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "We can’t use this one.",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.error.kinds.renderFailed.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Something went wrong",
     "reviewed": true
   },
   {
@@ -2816,14 +2704,6 @@
     "reviewed": true
   },
   {
-    "key": "site:tryon/tryOn.error.kinds.busy.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Please try again shortly",
-    "reviewed": true
-  },
-  {
     "key": "site:tryon/tryOn.error.kinds.busy.frame",
     "surface": "site",
     "group": "Try-on",
@@ -2845,14 +2725,6 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "Try again in a few minutes, or book a consultation and see it in person.",
-    "reviewed": true
-  },
-  {
-    "key": "site:tryon/tryOn.error.kinds.unavailable.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Not available right now",
     "reviewed": true
   },
   {
@@ -2878,14 +2750,6 @@
     "where": "tryOn",
     "text": "Try again in a few minutes, or book a free consultation and see the real thing.",
     "reviewed": false
-  },
-  {
-    "key": "site:tryon/tryOn.error.kinds.paused.step",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "tryOn",
-    "text": "Not available right now",
-    "reviewed": true
   },
   {
     "key": "site:tryon/tryOn.error.kinds.paused.frame",

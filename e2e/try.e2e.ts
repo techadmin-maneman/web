@@ -15,11 +15,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 const SCREENS = {
-  upload: { label: "Step 1 of 3", progress: 24 },
-  looks: { label: "Step 2 of 3", progress: 58 },
-  gate: { label: "Step 3 of 3", progress: 90 },
-  sent: { label: "Sent to WhatsApp", progress: 100 },
-  error: { label: "Can’t use this photo", progress: 24 },
+  upload: { label: "Step 1 of 3", steps: 1 },
+  looks: { label: "Step 2 of 3", steps: 2 },
+  gate: { label: "Step 3 of 3", steps: 3 },
+  sent: { label: "On its way to your WhatsApp", steps: 0 },
+  error: { label: "Can’t read the photo", steps: 0 },
 } as const;
 type Screen = keyof typeof SCREENS;
 
@@ -30,23 +30,17 @@ async function open(page: Page, screen: Screen): Promise<void> {
   await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", screen);
 }
 
-/** The progress bar's width as a whole percentage of its track. */
-function progress(page: Page): Promise<number> {
-  return page
-    .locator("[data-screen] > div")
-    .first()
-    .evaluate((track) => {
-      const bar = track.firstElementChild as HTMLElement;
-      return Math.round((bar.getBoundingClientRect().width / track.getBoundingClientRect().width) * 100);
-    });
+/** How many of the step bar's segments are reached (ADR 0265); none where the screen stands outside the steps. */
+function reached(page: Page): Promise<number> {
+  return page.locator('[data-screen] [data-state="done"]').count();
 }
 
 test.describe("chrome", () => {
   for (const [screen, expected] of Object.entries(SCREENS) as [Screen, (typeof SCREENS)[Screen]][]) {
-    test(`${screen}: "${expected.label}" and ${String(expected.progress)}% progress`, async ({ page }) => {
+    test(`${screen}: "${expected.label}" and ${String(expected.steps)} of 3 steps reached`, async ({ page }) => {
       await open(page, screen);
       await expect(page.getByText(expected.label, { exact: true })).toBeVisible();
-      await expect.poll(() => progress(page)).toBe(expected.progress);
+      await expect.poll(() => reached(page)).toBe(expected.steps);
     });
   }
 
@@ -66,7 +60,8 @@ test.describe("chrome", () => {
   for (const screen of ["upload", "sent"] as const) {
     test(`back from the ${screen} screen returns to the site`, async ({ page }) => {
       await open(page, screen);
-      await page.getByRole("button", { name: siteCopy.tryOn.sent.home }).click();
+      // The top bar's close on a phone, the flow bar's link on a laptop.
+      await page.getByRole("link", { name: siteCopy.tryOn.backToSite }).filter({ visible: true }).first().click();
       await expect(page).toHaveURL(/\/$/);
     });
   }
@@ -191,21 +186,6 @@ test.describe("upload", () => {
     await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.camera })).toHaveCount(0);
   });
 
-  // On a phone the caption sat across the oval's lower corner brackets; there, the camera opens over the page.
-  test("the frame’s caption sits below the oval and its brackets, and a phone draws no empty frame", async ({
-    page,
-  }) => {
-    await open(page, "upload");
-    const caption = page.getByText(siteCopy.tryOn.upload.previewCaption);
-    if ((page.viewportSize()?.width ?? 0) <= 760) {
-      await expect(caption).toBeHidden();
-      return;
-    }
-    const oval = await page.locator("svg").filter({ hasText: siteCopy.tryOn.upload.oval }).boundingBox();
-    const box = await caption.boundingBox();
-    expect(box?.y ?? 0).toBeGreaterThanOrEqual((oval?.y ?? 0) + (oval?.height ?? 0));
-  });
-
   test("a chosen photo is looked at first, and goes on to the looks once used", async ({ page }) => {
     await open(page, "upload");
     await page
@@ -218,7 +198,9 @@ test.describe("upload", () => {
     await camera.getByRole("button", { name: capture.use }).click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "looks");
     await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
-    await expect(page.getByRole("img", { name: siteCopy.tryOn.upload.previewAlt })).toBeVisible();
+    // Beside the step on a laptop; a phone keeps to the step (ADR 0265).
+    const wide = (page.viewportSize()?.width ?? 0) > 760;
+    await expect(page.getByRole("img", { name: siteCopy.tryOn.upload.previewAlt })).toBeVisible({ visible: wide });
   });
 
   test("a dark photo is said to be dark before it is used", async ({ page }) => {
@@ -296,7 +278,6 @@ test.describe("gate", () => {
   test("asks where to send the look before it is made, and needs both fields", async ({ page }) => {
     await open(page, "gate");
     await expect(page.getByRole("heading", { name: siteCopy.tryOn.gate.title })).toBeVisible();
-    await expect(page.getByText(siteCopy.tryOn.gate.caption)).toBeAttached();
     await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveAttribute("aria-required", "true");
     await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAttribute("aria-required", "true");
     await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
@@ -327,33 +308,6 @@ test.describe("gate", () => {
     await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "sent");
   });
-
-  // On a phone its caption trailed under the button's line, saying again what the title says.
-  test("the image column goes on a phone, sits below the form under 760 px, and beside it above", async ({ page }) => {
-    await open(page, "gate");
-    const caption = page.getByText(siteCopy.tryOn.gate.caption);
-    if ((page.viewportSize()?.width ?? 0) <= 600) {
-      await expect(caption).toBeHidden();
-      return;
-    }
-    const form = await page.locator("form").boundingBox();
-    const image = await caption.boundingBox();
-    if ((page.viewportSize()?.width ?? 0) <= 760) expect(image?.y).toBeGreaterThan(form?.y ?? 0);
-    else expect(image?.x ?? 0).toBeLessThan(form?.x ?? 0);
-  });
-
-  // On a phone an empty frame sat under the form, its label across the gilt divider.
-  test("hides the empty frame under 600 px, and keeps its label inside its half above", async ({ page }) => {
-    await open(page, "gate");
-    const label = page.getByText(siteCopy.tryOn.gate.frame);
-    if ((page.viewportSize()?.width ?? 0) <= 600) {
-      await expect(label).toBeHidden();
-      return;
-    }
-    const frame = await label.locator("..").boundingBox();
-    const box = await label.boundingBox();
-    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual((frame?.x ?? 0) + (frame?.width ?? 0) / 2);
-  });
 });
 
 test.describe("sent", () => {
@@ -367,8 +321,8 @@ test.describe("sent", () => {
     await expect(page.getByText("never shown on this site", { exact: false })).toHaveCount(0);
     const screen = page.locator("[data-screen]");
     await expect(screen.getByRole("link", { name: siteCopy.tryOn.sent.book })).toHaveAttribute("href", "/book");
-    await expect(screen.getByRole("link", { name: siteCopy.tryOn.sent.home })).toHaveAttribute("href", "/");
-    await expect(page.locator("[data-screen] img")).toHaveCount(0);
+    await expect(screen.getByRole("link", { name: siteCopy.tryOn.sent.home }).last()).toHaveAttribute("href", "/");
+    await expect(page.getByRole("img", { name: siteCopy.tryOn.sent.ready.lookAlt })).toHaveCount(0);
     await expect(page.getByRole("slider")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Download" })).toHaveCount(0);
   });
@@ -394,31 +348,27 @@ test.describe("error", () => {
   const KINDS = [
     {
       kind: "renderFailed",
-      step: "Something went wrong",
       frame: "The look didn’t work",
       heading: "The look didn’t work this time.",
       another: true,
     },
     {
       kind: "busy",
-      step: "Please try again shortly",
       frame: "The try-on is busy",
       heading: "The try-on is busy just now.",
       another: true,
     },
     {
       kind: "unavailable",
-      step: "Not available right now",
       frame: "WhatsApp",
       heading: "We can’t send to WhatsApp just now.",
       another: false,
     },
   ];
-  for (const { kind, step, frame, heading, another } of KINDS) {
+  for (const { kind, frame, heading, another } of KINDS) {
     test(`${kind} has its own labels, heading and body, and never blames the photograph`, async ({ page }) => {
       await page.goto(`/try?state=error&kind=${kind}`);
       await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-      await expect(page.getByText(step, { exact: true })).toBeVisible();
       await expect(page.getByText(frame, { exact: true })).toBeVisible();
       await expect(page.getByText("photograph", { exact: false }).filter({ hasText: /Cannot/ })).toHaveCount(0);
       await expect(page.getByRole("link", { name: siteCopy.tryOn.error.book })).toBeVisible();
