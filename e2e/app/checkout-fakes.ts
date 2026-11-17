@@ -117,6 +117,11 @@ export async function confirmedByRazorpay(page: Page): Promise<void> {
   await paidAndThen(page, { state: "booked", visit_id: crypto.randomUUID() });
 }
 
+/** The hold's poll answered as paid and not yet booked, however long it is asked: the booking slow to come. */
+export async function paidNotYetBooked(page: Page): Promise<void> {
+  await paidAndThen(page, {});
+}
+
 /** The hold's poll answered as a paid hold that could not be booked: let go, and its payment refunded. */
 export async function refundedAfterPaying(page: Page): Promise<void> {
   await paidAndThen(page, { state: "released" });
