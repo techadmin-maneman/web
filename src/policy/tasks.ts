@@ -90,6 +90,7 @@ export const TASK_GROUPS = [
   "consultation_request",
   "first_fit_to_book",
   "replacement_order",
+  "made_to_order_ask",
   "stock_at_risk",
   "at_risk_client",
   "partial_visit",
@@ -157,6 +158,8 @@ export const TASK_SLA_HOURS: Slas = {
   consultation_request: 48,
   first_fit_to_book: 48,
   replacement_order: 48,
+  // A client told their size is made to order: ordered, and they are messaged, within the day.
+  made_to_order_ask: 24,
   // A fit with no hair system in reach: within the two days, and never later than the fit (ADR 0178).
   stock_at_risk: 48,
   at_risk_client: 48,
@@ -202,8 +205,8 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
  * The groups ops close with a reason: a visit left partly done, whose follow-up the client may never want; an at-risk
  * client, a fit closed without the client's sign-off, a fit guarantee claim and a low rating, each closed with what
  * came of the call; a City matter, closed with what was done; consumables short of what a job expects, closed once
- * checked against the kit; and a technician's asks, for their kit and to move a visit, closed with what was done. Every
- * other group leaves the board only when its thing is done.
+ * checked against the kit; a technician's asks, for their kit and to move a visit, and a client's ask for a hair system
+ * made to order, closed with what was done. Every other group leaves the board only when its thing is done.
  */
 export const CLOSABLE_TASK_GROUPS = [
   "partial_visit",
@@ -215,6 +218,7 @@ export const CLOSABLE_TASK_GROUPS = [
   "city_matter",
   "kit_request",
   "reschedule_request",
+  "made_to_order_ask",
 ] as const satisfies readonly TaskGroup[];
 
 export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS as readonly TaskGroup[]).includes(group);

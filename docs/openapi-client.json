@@ -105,6 +105,7 @@
                   "no_product",
                   "no_profile",
                   "made_to_order",
+                  "not_made_to_order",
                   "unknown_invite",
                   "own_invite",
                   "already_invited",
@@ -3696,6 +3697,43 @@
         },
         "required": [
           "stars"
+        ],
+        "additionalProperties": false
+      },
+      "MadeToOrderAsked": {
+        "type": "object",
+        "properties": {
+          "requested_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was first asked."
+          }
+        },
+        "required": [
+          "requested_at"
+        ],
+        "additionalProperties": false
+      },
+      "MadeToOrderAsk": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "first_fit",
+              "replacement"
+            ],
+            "description": "The visit it is asked at."
+          },
+          "tier": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$",
+            "description": "The package whose hair system it is."
+          }
+        },
+        "required": [
+          "type",
+          "tier"
         ],
         "additionalProperties": false
       },
@@ -10063,6 +10101,147 @@
                                 "already_rated",
                                 "visit_not_done",
                                 "rating_closed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/made-to-order": {
+      "post": {
+        "summary": "Ask ops to order a hair system made to the client's size",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MadeToOrderAsk"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Kept, or already open: ops order it and message the client",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MadeToOrderAsked"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: see error.fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "not_made_to_order: no such package, or the client's size of it is not made to order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_made_to_order"
                               ]
                             }
                           },

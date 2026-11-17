@@ -199,6 +199,9 @@ export const api = {
   /** Something wrong, told to Care: answered with the report's reference (docs/decisions/0259-the-issue-log.md). */
   reportProblem: (body: { about: ProblemAbout; visit_id: string | null; text: string }) =>
     client.post("/api/me/problems", { body }),
+  /** The client's ask for a hair system made to their size, which ops order (ADR 0253, decision 6). */
+  askToOrder: (type: "first_fit" | "replacement", tier: string) =>
+    client.post("/api/me/made-to-order", { body: { type, tier } }),
   /** The client's stars for a visit done, once (ADR 0260). */
   rateVisit: (visitId: string, stars: number) =>
     client.post("/api/visits/{id}/rating", { path: { id: visitId }, body: { stars } }),

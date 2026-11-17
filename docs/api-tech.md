@@ -6909,6 +6909,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "no_product",
             "no_profile",
             "made_to_order",
+            "not_made_to_order",
             "unknown_invite",
             "own_invite",
             "already_invited",

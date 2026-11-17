@@ -8,6 +8,7 @@ import { LEAVE_ON_THE_DAY } from "../dispatch/leave.ts";
 import type { NextVisitDays } from "../../policy/next-visit.ts";
 import type { TaskGroup } from "../../policy/tasks.ts";
 import { CARE_QUEUES } from "../care/chat-tasks.ts";
+import { MADE_TO_ORDER_QUEUE } from "../booking/made-to-order-asks.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
 import { STOCK_RISKS_OPEN } from "../inventory/stock-risks.ts";
 import {
@@ -86,6 +87,7 @@ export interface Queue {
 export const QUEUES: readonly Queue[] = [
   // Customer Care's: chats past their reply-by time, City matters and remedies awaiting a manager.
   ...CARE_QUEUES,
+  MADE_TO_ORDER_QUEUE,
   // A move is still to be told of while its visit is today or later.
   {
     group: "untold_move",

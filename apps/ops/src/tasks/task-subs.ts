@@ -56,6 +56,8 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   replacement_order: (facts, task) =>
     copy.replacement_order(facts.piece_code, plainDate(indiaDate(task.due)), plainDate(facts.due_on)),
   recall_call: (facts) => copy.recall_call(facts.piece_codes.join(" ")),
+  // The hair system to order in the client's size, and the visit it is for.
+  made_to_order_ask: (facts) => copy.made_to_order_ask(facts.name, dispatch.typeNames[facts.kind]),
   stock_at_risk: (facts) => copy.stock_at_risk(facts.name ?? facts.consumable_code ?? ""),
   referral_review: (facts) => SIGNALS[facts.signal ?? ""] ?? copy.unknown,
   grievance: () => copy.grievance,

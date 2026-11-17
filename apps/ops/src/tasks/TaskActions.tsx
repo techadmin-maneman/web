@@ -32,7 +32,8 @@ const closableAs = (group: Group): ClosableGroup | null =>
   group === "at_risk_client" ||
   group === "city_matter" ||
   group === "kit_request" ||
-  group === "reschedule_request"
+  group === "reschedule_request" ||
+  group === "made_to_order_ask"
     ? group
     : null;
 
@@ -47,6 +48,7 @@ const CLOSE_WORDS: Readonly<Record<ClosableGroup, { readonly open: string; reado
   city_matter: tasks.close.cityMatter,
   kit_request: tasks.close.kitRequest,
   reschedule_request: tasks.close.reschedule,
+  made_to_order_ask: tasks.close.madeToOrder,
 };
 
 const closeWords = (group: ClosableGroup) => CLOSE_WORDS[group];

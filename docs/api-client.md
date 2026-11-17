@@ -3317,6 +3317,134 @@ Request body:
 }
 ```
 
+### POST /api/me/made-to-order
+
+Ask ops to order a hair system made to the client's size
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/MadeToOrderAsk"
+}
+```
+
+**201**: Kept, or already open: ops order it and message the client
+
+```json
+{
+  "$ref": "#/components/schemas/MadeToOrderAsked"
+}
+```
+
+**400**: invalid_request: see error.fields
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**422**: not_made_to_order: no such package, or the client's size of it is not made to order
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_made_to_order"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/me/alerts
 
 The client's alerts of the last 30 days, newest first
@@ -7580,6 +7708,7 @@ Request body:
             "no_product",
             "no_profile",
             "made_to_order",
+            "not_made_to_order",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -11416,6 +11545,53 @@ Request body:
   },
   "required": [
     "stars"
+  ],
+  "additionalProperties": false
+}
+```
+
+### MadeToOrderAsked
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "requested_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When it was first asked."
+    }
+  },
+  "required": [
+    "requested_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### MadeToOrderAsk
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "first_fit",
+        "replacement"
+      ],
+      "description": "The visit it is asked at."
+    },
+    "tier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "description": "The package whose hair system it is."
+    }
+  },
+  "required": [
+    "type",
+    "tier"
   ],
   "additionalProperties": false
 }

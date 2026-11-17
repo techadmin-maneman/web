@@ -21,6 +21,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes`, `step_send_backs` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | A technician's position and their SOS | `visit_positions`, `sos_alerts` | A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was | The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since |
 | A fit's sign-off | `fit_sign_offs` | A sign-off asked, flagged or signed since is lost, and a fit closed since reads as closed without one; one declined since is gone from the Tasks board | Nothing to redo for a fit already closed: its job's outcome stands. Ask ops to note on the visit any sign-off since `<T>` the client remembers |
+| A client's ask for a hair system made to order | `made_to_order_asks` | An ask made since is gone from the Tasks board, and one closed since is open on it again | The client's next look at the made-to-order step asks again; close again any ask ordered since `<T>`, and ask Care to message any client who asked since |
 | A client's rating of a visit | `visit_ratings` | A rating given since is lost: the visit asks for one again, and a low one since is gone from the Tasks board | Nothing to redo: a client who rated since may rate again; ask Care to call any client whose low rating they saw since `<T>` |
 | A technician's asks of ops: kit, and a visit to move | `kit_requests`, `reschedule_requests` | An ask made since is lost, and one ops settled since is open again on the Tasks board | Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost |
 | A client's alerts in their app, and the sessions that take their pushes | `client_app_alerts`, `client_push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a browser that allowed pushes since takes none | Nothing: the messages since stay in WhatsApp, and the app subscribes again when it next opens |
@@ -119,6 +120,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [leads](#leads): Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
 - [leave_requests](#leave_requests): A technician's ask for leave from their phone, which Operations approve or decline on Tasks; an approval records the leave and names it.
 - [lost_reasons](#lost_reasons): Why a client is not going ahead with a fit after their consultation, as ops set them, one they took off kept as retired; none means the committed list (ADR 0149).
+- [made_to_order_asks](#made_to_order_asks): A client's ask for a hair system made to order, kept as the app tells them their size is, one a client, visit and package while open, a Tasks row until ops close it, having ordered it (ADR 0253).
 - [maintenance](#maintenance): One row while D1 is being restored: the cron and the queue consumers stand still until it is deleted (runbook, "Restoring D1").
 - [move_proposals](#move_proposals): A move to another day ops asked a client to confirm: where the visit would go, until when, and whether it was accepted, taken back or made moot (ADR 0115).
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
@@ -1696,6 +1698,26 @@ Made by `0128_lost_reasons.sql`.
 | `retired_at` | TEXT | yes |  |  |  |
 | `set_by` | TEXT | no |  |  |  |
 | `set_at` | TEXT | no |  |  |  |
+
+## made_to_order_asks
+
+A client's ask for a hair system made to order, kept as the app tells them their size is, one a client, visit and package while open, a Tasks row until ops close it, having ordered it (ADR 0253).
+
+Made by `0215_made_to_order_asks.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `kind` | TEXT | no |  |  | The visit it was asked at, and the package whose hair system is made to order. |
+| `tier` | TEXT | no |  |  |  |
+| `requested_at` | TEXT | no |  |  |  |
+| `settled_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `made_to_order_asks_by_person`: on (`person_id`)
+- `made_to_order_asks_open`: unique on (`person_id`, `kind`, `tier`), where `settled_at IS NULL`
 
 ## maintenance
 

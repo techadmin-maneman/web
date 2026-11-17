@@ -292,20 +292,46 @@ test("offers a replacement's hair systems, the one worn chosen to keep, and open
 });
 
 // A size no stock code is made to is ordered and booked by ops on WhatsApp (ADR 0253); the API says so for it alone.
-test("says a hair system is made to order in the client's size, asks us on WhatsApp, and goes back to the choice", async ({
-  page,
-}) => {
+/** The tier step, the API answering CHEAPER's days as made to order and the ask with `asked`. */
+async function madeToOrder(page: Page, asked: { status: number; json: object }) {
   await page.route(/\/api\/availability\?/, (route) =>
     new URL(route.request().url()).searchParams.get("tier") === CHEAPER.tier
       ? route.fulfill({ status: 422, json: { error: { code: "made_to_order", request_id: "e2e" } } })
       : route.fallback(),
   );
+  const sent: unknown[] = [];
+  await page.route("**/api/me/made-to-order", (route) => {
+    sent.push(route.request().postDataJSON());
+    return route.fulfill(asked);
+  });
   const tiers = await choosingTier(page);
   await tiers.getByRole("radio", { name: new RegExp(CHEAPER.name) }).check();
   await tiers.getByRole("button", { name: appCopy.booking.tier.next }).click();
+  return { tiers, sent, made: page.getByRole("dialog", { name: appCopy.booking.madeToOrder.title }) };
+}
 
+test("sends ops the ask for a hair system made to order, says we'll order it, and closes on Done", async ({ page }) => {
   const copy = appCopy.booking.madeToOrder;
-  const made = page.getByRole("dialog", { name: copy.title });
+  const { made, sent } = await madeToOrder(page, { status: 201, json: { requested_at: new Date().toISOString() } });
+  await expect(made.getByRole("status")).toContainText(copy.ordering);
+  expect(sent).toEqual([{ type: "replacement", tier: CHEAPER.tier }]);
+  await expect(made.getByRole("link", { name: copy.questions })).toHaveAttribute(
+    "href",
+    new RegExp(encodeURIComponent(copy.about(CHEAPER.visit))),
+  );
+  await scanOf(page);
+  await made.getByRole("button", { name: copy.done }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+});
+
+test("asks the client to send the ask on WhatsApp where it cannot reach us, and goes back to the choice", async ({
+  page,
+}) => {
+  const copy = appCopy.booking.madeToOrder;
+  const { made, tiers } = await madeToOrder(page, {
+    status: 422,
+    json: { error: { code: "not_made_to_order", request_id: "e2e" } },
+  });
   await expect(made.getByRole("status")).toContainText(copy.line);
   await expect(made.getByRole("link", { name: copy.ask })).toHaveAttribute(
     "href",

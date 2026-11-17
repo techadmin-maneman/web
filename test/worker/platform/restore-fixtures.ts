@@ -233,6 +233,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('ap1', 'signed', '{"hairline":true,"blend":true,"secure":true}', '${AT}', 1, '${AT}', 't1', '${AT}')`,
   `INSERT INTO visit_ratings (appointment_id, person_id, technician_id, stars, low, created_at)
      VALUES ('ap1', 'p1', 't1', 2, 1, '${AT}')`,
+  `INSERT INTO made_to_order_asks (id, person_id, kind, tier, requested_at)
+     VALUES ('mto1', 'p1', 'replacement', 'standard', '${AT}')`,
   `INSERT INTO kit_requests (id, technician_id, items, requested_at)
      VALUES ('kr1', 't1', '[{"code":"strip","quantity":2}]', '${AT}')`,
   `INSERT INTO reschedule_requests (id, appointment_id, technician_id, reason, requested_at)

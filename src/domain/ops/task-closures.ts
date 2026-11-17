@@ -58,6 +58,14 @@ export async function closeTask(
             .bind(task.id, options.now.toISOString()),
         ]
       : []),
+    // A client's ask for a hair system made to order, closed once ordered (migration 0215).
+    ...(task.group === "made_to_order_ask"
+      ? [
+          db
+            .prepare("UPDATE made_to_order_asks SET settled_at = ?2 WHERE id = ?1 AND settled_at IS NULL")
+            .bind(task.id, options.now.toISOString()),
+        ]
+      : []),
   ]);
 }
 

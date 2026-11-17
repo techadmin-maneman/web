@@ -232,7 +232,8 @@ function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] 
          WHERE (task_group IN ('partial_visit', 'consumables_short', 'fit_unsigned', 'low_rating', 'at_risk_client')
                 AND subject_id IN (SELECT id FROM appointments WHERE person_id = ?1))
             OR (task_group = 'city_matter' AND subject_id IN (SELECT id FROM city_matters WHERE person_id = ?1))
-            OR (task_group = 'fit_guarantee_claim' AND subject_id IN (SELECT id FROM client_reports WHERE person_id = ?1))`,
+            OR (task_group = 'fit_guarantee_claim' AND subject_id IN (SELECT id FROM client_reports WHERE person_id = ?1))
+            OR (task_group = 'made_to_order_ask' AND subject_id IN (SELECT id FROM made_to_order_asks WHERE person_id = ?1))`,
       )
       .bind(personId),
     db
