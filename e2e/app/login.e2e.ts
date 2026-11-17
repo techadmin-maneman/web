@@ -235,7 +235,7 @@ test("a number out of codes for the day is told so, with WhatsApp under the line
 
 test("a number with no booking sees the same screen, and no code opens it", async ({ page }) => {
   await sendCode(page, randomMobile());
-  await expect(page.getByText("has a booking with us, a code is on its way on WhatsApp.")).toBeVisible();
+  await expect(page.getByText("has a visit booked with us, a code is on its way on WhatsApp.")).toBeVisible();
   await enter(page, CODE);
   await expect(page.getByRole("alert")).toHaveText("That code didn’t match. 4 tries left.");
 });
@@ -351,7 +351,7 @@ test("names each login screen in the browser’s title, and puts focus where the
   await expect(field).toBeFocused();
 
   await page.getByRole("button", { name: appCopy.login.code.noBooking }).click();
-  await expect(page).toHaveTitle("No booking on this number? · Mane Man");
+  await expect(page).toHaveTitle(`${appCopy.login.code.noBooking} · Mane Man`);
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.code.noBooking })).toBeFocused();
   await page.getByRole("button", { name: appCopy.login.code.back }).click();
   await expect(field).toBeFocused();

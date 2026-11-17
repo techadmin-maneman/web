@@ -68,8 +68,8 @@ export const refer = {
   title: "Rewards",
   promise: promiseOf,
   /** The card's two figures: the free service visits left, and how many invites have earned. */
-  left: "Free visits left",
-  leftUseBy: (date: string) => `Free visits left · use by ${date}`,
+  left: "Free service visits left",
+  leftUseBy: (date: string) => `Free service visits left · use by ${date}`,
   earned: "Earned so far",
   fittedTitle: "Friends fitted",
   /** "+3 visits". */

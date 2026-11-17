@@ -33,8 +33,8 @@ export const login = {
      * Neutral on purpose (ADR 0030): the screen never says whether
      * the number has a booking.
      */
-    sentWhatsapp: (number: string) => `If ${number} has a booking with us, a code is on its way on WhatsApp.`,
-    sentSms: (number: string) => `If ${number} has a booking with us, a code is on its way by SMS.`,
+    sentWhatsapp: (number: string) => `If ${number} has a visit booked with us, a code is on its way on WhatsApp.`,
+    sentSms: (number: string) => `If ${number} has a visit booked with us, a code is on its way by SMS.`,
     label: "The 6-digit code",
     /** Shown only for a code sent by SMS: WebOTP reads an SMS, and never a WhatsApp message. */
     automatic: "Read automatically where your phone allows",
@@ -44,7 +44,7 @@ export const login = {
     // Said to a screen reader once, when the countdown runs out.
     canResend: "You can ask for a new code now.",
     submit: "Continue",
-    noBooking: "No booking on this number?",
+    noBooking: "No visit booked on this number?",
     /** "That code didn’t match. 2 tries left.", as the site says it. */
     mismatch: codeMismatch,
     expired: "This code no longer works.",
@@ -55,7 +55,7 @@ export const login = {
   help: {
     back: "Back",
     // The design's title is "We have no booking on this number"; neutral, it becomes a question.
-    title: "No booking on this number?",
+    title: "No visit booked on this number?",
     body: "Book a free consultation to get started.",
     hint: "Try the number you gave us, or message us and we’ll link it.",
     book: "Book a free consultation",
