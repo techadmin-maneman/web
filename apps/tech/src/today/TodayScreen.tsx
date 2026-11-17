@@ -9,7 +9,7 @@ import type { JobSummary } from "../api.ts";
 import { Bell } from "../alerts/index.ts";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
-import { atRisk as atRiskCopy, titles, today as copy } from "../content.ts";
+import { atRisk as atRiskCopy, changed, titles, today as copy } from "../content.ts";
 import { sayNow } from "../lang/index.ts";
 import { rowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
@@ -23,6 +23,7 @@ import { go } from "../route.ts";
 import { useSession } from "../session.ts";
 import { type Heard, keptStates, keptToFix } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
+import { isSetWrite } from "../lib/sets.ts";
 import { LaterToday, Tomorrow } from "./LaterToday.tsx";
 import { NextJob } from "./NextJob.tsx";
 import styles from "./today.module.css";
@@ -118,6 +119,27 @@ function ToFix(props: {
   });
 }
 
+/** Each photo set the API stopped, as the prototype draws it: whose and which, opening Pending uploads to send it again. */
+function FailedSets(props: { readonly queued: readonly Queued[]; readonly names: ReadonlyMap<string, string> }) {
+  const failed = props.queued.filter(
+    (event) => isSetWrite(event) && (event.state === "refused" || event.state === "superseded"),
+  );
+  return failed.map((event) => (
+    <ProblemCard
+      key={event.seq}
+      title={copy.setFailed}
+      onOpen={() => {
+        go("/waiting");
+      }}
+    >
+      {copy.setFailedBody(
+        props.names.get(event.job_id) ?? changed.someJob,
+        copy.toFixSteps[event.kind === "after_photos" ? "after_photos" : "before_photos"],
+      )}
+    </ProblemCard>
+  ));
+}
+
 /** Yesterday's jobs still open, as a card at the top: each can be finished and sent. */
 function LeftOpen(props: {
   readonly date: string;
@@ -170,6 +192,7 @@ export function TodayScreen() {
 
       <div className={styles.problems}>
         <ToFix day={day} queued={waiting.events} names={names} />
+        <FailedSets queued={waiting.events} names={names} />
         <LeftOpen date={date} queued={waiting.events} names={names} />
         {atRisk && unsentOnPhone && <ProblemCard title={atRiskCopy.title}>{atRiskCopy.body}</ProblemCard>}
       </div>

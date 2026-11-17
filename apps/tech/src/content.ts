@@ -96,6 +96,9 @@ export const today = localised({
   /** A visit with steps ops sent back, from whatever day, until they are done again (docs/decisions/0246-closed-and-sent-back.md). */
   toFix: (count: number) => (count === 1 ? "Ops couldn’t accept a step" : `Ops couldn’t accept ${String(count)} steps`),
   toFixBody: (who: string, steps: readonly string[]) => `${who} · ${listed(steps)}. Tap to fix.`,
+  /** A photo set the API stopped: "Rohit M. · before photos. Tap to retry.", which opens Pending uploads. */
+  setFailed: "A photo set didn’t upload",
+  setFailedBody: (who: string, set: string) => `${who} · ${set}. Tap to retry.`,
   toFixSteps: {
     before_photos: "before photos",
     checklist: "checklist",
