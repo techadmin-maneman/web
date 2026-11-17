@@ -114,6 +114,7 @@ Recorded as they are found while building; `docs/client-redesign/REPORT.md` list
   Downgrade, or Switch at the same price or where the one worn's is not known; the price book has no rank. Its note
   says "Any … hair system ordered for you goes back to stock, at no cost to you", not "The … we set aside for you costs
   you nothing": nothing holds a hair system for a client (ADR 0253, decision 5). Where the one chosen is not in stock
-  in the client's size, the days say so and when the earliest fitting is (decision 6); a size no stock code matches is
-  ops' on WhatsApp, and the app's word for it is owed. "Not sure? Ask us" opens WhatsApp, the app's way to ask. Where
+  in the client's size, the days say so and when the earliest fitting is (decision 6); in a size no stock code matches,
+  the days give way to "Made to order in your size" and a way to ask on WhatsApp, ops ordering and booking it. "Not
+  sure? Ask us" opens WhatsApp, the app's way to ask. Where
   the packages' figures cannot be read, each choice keeps its name and price.

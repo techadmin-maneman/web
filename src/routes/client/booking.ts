@@ -103,8 +103,9 @@ const holdRoute = selfServeRoute({
     ),
     422: errorResponse(
       "not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first " +
-        "fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not " +
-        "come to",
+        "fit, on a day the console offers no hair system; made_to_order: a fit whose hair system no stock code is " +
+        "made to the client's size, which ops order and book; not_served: the client's address is in a pincode we " +
+        "do not come to",
     ),
   },
 });

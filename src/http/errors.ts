@@ -142,6 +142,8 @@ export const ERROR_CODES = [
   "no_product",
   // A first fit for a client with no hair profile: nothing says which hair system to fit.
   "no_profile",
+  // A fit whose hair system no stock code is made to the client's size: ops order it and book it on WhatsApp.
+  "made_to_order",
   // An invite ops attach to a client (docs/decisions/0089-an-invite-is-not-lost.md): no invite has the code; it is the
   // client's own; or the client came with one already.
   "unknown_invite",
@@ -330,6 +332,7 @@ export const ERROR_STATUS = {
   service_retired: 400,
   no_product: 422,
   no_profile: 422,
+  made_to_order: 422,
   unknown_invite: 422,
   own_invite: 409,
   already_invited: 409,

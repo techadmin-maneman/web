@@ -20,6 +20,20 @@ export async function fitCode(db: D1Database, personId: string, product: string 
 }
 
 /**
+ * Whether a fit of the client's as `product` takes a hair system made to order: their latest profile complete, and no
+ * stock code made to it. Ops order it on WhatsApp; once it is paid for, its custom order adds the code. False with no
+ * profile, or one not yet complete.
+ */
+export async function madeToOrder(db: D1Database, personId: string, product: string): Promise<boolean> {
+  const fit = (await latestFits(db, [personId])).get(personId);
+  if (fit === undefined) return false;
+  const { base_width_in, base_length_in, colour, grey_percent, density_percent } = fit;
+  const spec = [base_width_in, base_length_in, colour, grey_percent, density_percent];
+  if (spec.some((part) => part === null)) return false;
+  return matchingCode(await hairSystemSpecs(db), { ...fit, product }) === null;
+}
+
+/**
  * The first day a fit may use the hair system a client is made as `product`, where no place holds one and none is on
  * its way: the day after the quickest supplier still in use can deliver it, as a fit's stock gap reads delivery in
  * time (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md). Null where one is held or on its way,

@@ -5,7 +5,7 @@ import { booking } from "../content.ts";
 import type { BookingEvent } from "./flow.ts";
 import type { Days } from "./useDays.ts";
 
-/** Holding the start chosen, and what is said when it cannot be: taken, no address, or not served. */
+/** Holding the start chosen, and what is said when it cannot be: taken, no address, not served, or made to order. */
 export function useHoldStart(sheet: {
   once: (work: () => Promise<void>) => Promise<void>;
   wanted: Wanted | null;
@@ -29,6 +29,7 @@ export function useHoldStart(sheet: {
         await days.askAgainFrom(wanted, date, chosenStart);
       } else if (answer.code === "address_required") sheet.askForAddress(true);
       else if (answer.code === "not_served") sheet.showNotServed();
+      else if (answer.code === "made_to_order") sheet.dispatch({ kind: "madeToOrder" });
       else sheet.setProblem(booking.failedToStart);
     });
 }

@@ -236,11 +236,10 @@ test("says a late change keeps the payment, never a late fee, where the booking 
  * replacement and Essential's. The seed's client has no hair system on record, so the one worn is given here.
  */
 const WORN = { code: "standard", name: "Mane Man Standard" };
-const CHEAPER = { tier: "essential", name: "Mane Man Essential" };
+const CHEAPER = { tier: "essential", name: "Mane Man Essential", visit: "Mane Man Essential replacement" };
 
-test("offers a replacement's hair systems, the one worn chosen to keep, and opens the days of the one chosen", async ({
-  page,
-}) => {
+/** The seeded client due a replacement, signed in wearing WORN, its sheet open on the choice of hair system. */
+async function choosingTier(page: Page) {
   const { replacement } = nextVisitClients();
   await passedThrough(page, "**/api/me", (me: Record<string, unknown>) =>
     "hair_system" in me
@@ -259,7 +258,13 @@ test("offers a replacement's hair systems, the one worn chosen to keep, and open
   );
   await logIn(page, replacement.mobile);
   await page.getByRole("button", { name: appCopy.home.prompt.bookNext }).click();
-  const tiers = page.getByRole("dialog", { name: appCopy.booking.tier.head });
+  return page.getByRole("dialog", { name: appCopy.booking.tier.head });
+}
+
+test("offers a replacement's hair systems, the one worn chosen to keep, and opens the days of the one chosen", async ({
+  page,
+}) => {
+  const tiers = await choosingTier(page);
   // The API's own two replacements, the one worn chosen as the sheet opens.
   await expect(tiers.getByRole("radio")).toHaveCount(2);
   await expect(tiers.getByRole("radio", { checked: true })).toHaveCount(1);
@@ -284,4 +289,29 @@ test("offers a replacement's hair systems, the one worn chosen to keep, and open
   await tiers.getByRole("button", { name: appCopy.booking.tier.next }).click();
   expect((await days).ok()).toBe(true);
   await expect(page.getByRole("dialog", { name: appCopy.booking.when.titleDate })).toBeVisible();
+});
+
+// A size no stock code is made to is ordered and booked by ops on WhatsApp (ADR 0253); the API says so for it alone.
+test("says a hair system is made to order in the client's size, asks us on WhatsApp, and goes back to the choice", async ({
+  page,
+}) => {
+  await page.route(/\/api\/availability\?/, (route) =>
+    new URL(route.request().url()).searchParams.get("tier") === CHEAPER.tier
+      ? route.fulfill({ status: 422, json: { error: { code: "made_to_order", request_id: "e2e" } } })
+      : route.fallback(),
+  );
+  const tiers = await choosingTier(page);
+  await tiers.getByRole("radio", { name: new RegExp(CHEAPER.name) }).check();
+  await tiers.getByRole("button", { name: appCopy.booking.tier.next }).click();
+
+  const copy = appCopy.booking.madeToOrder;
+  const made = page.getByRole("dialog", { name: copy.title });
+  await expect(made.getByRole("status")).toContainText(copy.line);
+  await expect(made.getByRole("link", { name: copy.ask })).toHaveAttribute(
+    "href",
+    new RegExp(encodeURIComponent(copy.asking(CHEAPER.visit))),
+  );
+  await scanOf(page);
+  await made.getByRole("button", { name: appCopy.booking.back }).click();
+  await expect(tiers.getByRole("radio", { name: new RegExp(CHEAPER.name) })).toBeChecked();
 });

@@ -44,6 +44,13 @@ export function useSheetData(asking: Asking) {
     dispatch({ kind: "notServed", address: savedAddress.current });
   };
 
+  /** Why the API offers no days: not at this address, the hair system made to order, or a failure. */
+  const refused = (code: string) => {
+    if (code === "not_served") showNotServed();
+    else if (code === "made_to_order") dispatch({ kind: "madeToOrder" });
+    else dispatch({ kind: "failed" });
+  };
+
   /**
    * Reads the profile, and the days of the visit wanted once there is one, and goes to the first step still to take:
    * picking the visit, the address, or the date.
@@ -58,8 +65,7 @@ export function useSheetData(asking: Asking) {
     savedAddress.current = profile.ok ? profile.body.address : null;
     setAddress(savedAddress.current);
     if (answer !== null && !answer.ok) {
-      if (answer.code === "not_served") showNotServed();
-      else dispatch({ kind: "failed" });
+      refused(answer.code);
       return;
     }
     addressMissing.current = profile.ok && profile.body.address === null;
@@ -84,9 +90,14 @@ export function useSheetData(asking: Asking) {
     dispatch({ kind: "asking" });
     const answer = await api.availability(visit, movingId, firstDay);
     if (answer.ok) showDays(answer.body);
-    else if (answer.code === "not_served") showNotServed();
-    else dispatch({ kind: "failed" });
+    else refused(answer.code);
   };
 
-  return { days, reminders, setReminders, address, addressFirst, askForAddress, showNotServed, load, pick };
+  /** The client ticked "Remind me": their yes to WhatsApp about their visits, recorded under the box's own line. */
+  const switchOnReminders = async () => {
+    const answer = await api.switchConsent("whatsapp_visits", true, "app_booking");
+    if (answer.ok) setReminders(true);
+  };
+
+  return { days, reminders, switchOnReminders, address, addressFirst, askForAddress, showNotServed, load, pick };
 }

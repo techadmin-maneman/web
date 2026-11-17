@@ -21,6 +21,8 @@ export type Step =
   | { readonly kind: "service" }
   /** The day and the start on it, chosen on one screen. */
   | { readonly kind: "when" }
+  /** No days: the hair system is made to order in the client's size, which ops order and book on WhatsApp. */
+  | { readonly kind: "madeToOrder" }
   | { readonly kind: "pay"; readonly hold: Hold }
   | { readonly kind: "failed"; readonly hold: Hold }
   | { readonly kind: "expired" }
@@ -41,6 +43,8 @@ export type BookingEvent =
   | { readonly kind: "addressNeeded"; readonly refused: boolean }
   /** The API offers nothing at this address; with none known, the sheet cannot say where. */
   | { readonly kind: "notServed"; readonly address: Address | null }
+  /** The API leaves the visit to ops: its hair system is made to order in the client's size. */
+  | { readonly kind: "madeToOrder" }
   | { readonly kind: "failed" }
   /** The client stepped back: from the review to the day and time, or from those to the service. */
   | { readonly kind: "back" }
@@ -77,11 +81,13 @@ export function nextStep(step: Step, event: BookingEvent): Step {
     case "notServed":
       if (!CHOOSING.has(step.kind)) return step;
       return event.address === null ? { kind: "broken" } : { kind: "notServed", address: event.address };
+    case "madeToOrder":
+      return CHOOSING.has(step.kind) ? { kind: "madeToOrder" } : step;
     case "failed":
       return CHOOSING.has(step.kind) ? { kind: "broken" } : step;
     case "back":
       if (HOLDING.has(step.kind)) return { kind: "when" };
-      return step.kind === "when" ? { kind: "service" } : step;
+      return step.kind === "when" || step.kind === "madeToOrder" ? { kind: "service" } : step;
     case "changeAddress":
       return HOLDING.has(step.kind) ? { kind: "address", refused: false, changing: true } : step;
     case "held":
