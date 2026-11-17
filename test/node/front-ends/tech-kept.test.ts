@@ -389,6 +389,19 @@ describe("a job’s card", () => {
     expect(await loadJob("a")).toMatchObject({ state: "loaded", fromPhone: true });
   });
 
+  // An answer to a read sent before a one visit's piece step landed carried no choice, and took back the one the phone
+  // saw land; the checklist read it as unmade.
+  it("keeps a one visit's landed choice over an answer that has none, and takes the API's where it has one", async () => {
+    await keepJob({ ...card("a", TODAY), one_visit: true, client_choice: { declined: true } });
+    api({ "/api/tech/jobs/a": { status: 200, json: { ...card("a", TODAY), one_visit: true, client_choice: null } } });
+    expect(await loadJob("a")).toMatchObject({ state: "loaded", value: { client_choice: { declined: true } } });
+    expect(await keptJob("a")).toMatchObject({ client_choice: { declined: true } });
+
+    const chosen = { product: "natural" };
+    api({ "/api/tech/jobs/a": { status: 200, json: { ...card("a", TODAY), one_visit: true, client_choice: chosen } } });
+    expect(await loadJob("a")).toMatchObject({ value: { client_choice: chosen } });
+  });
+
   it("is never read from the phone after a 401, which ends the session", async () => {
     await keepJob(card("a", TODAY));
     api({ "/api/tech/jobs/a": revoked });

@@ -10692,7 +10692,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "null"
       ],
       "minLength": 1,
-      "maxLength": 60
+      "maxLength": 120,
+      "description": "The piece's base; for one from the kit, its hair system's name, which a service's name of up to 60 and its spec make up to about 112 (docs/decisions/0271-the-technician-follow-ups.md)."
     },
     "supplier_lot": {
       "type": [

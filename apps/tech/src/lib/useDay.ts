@@ -156,7 +156,7 @@ async function keepCard(id: string): Promise<void> {
   if (fresh && (await keptJob(id).catch(() => null)) !== null) return;
   const answer = await fetchCard(id);
   if (!answer.ok) return;
-  await keepJob(answer.body).catch(() => undefined);
+  await keepJob(await withLandedChoice(answer.body)).catch(() => undefined);
 }
 
 /**

@@ -5844,6 +5844,7 @@ export interface components {
         /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */
         PieceFitted: {
             piece_code: string;
+            /** @description The piece's base; for one from the kit, its hair system's name, which a service's name of up to 60 and its spec make up to about 112 (docs/decisions/0271-the-technician-follow-ups.md). */
             base?: string | null;
             supplier_lot?: string | null;
             /** @description The hair system fitted, by the stock code the card's kit list gives it, which comes out of the technician's kit; none for a piece from elsewhere. */

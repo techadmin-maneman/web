@@ -22,18 +22,24 @@ checklist that could read the client's choice as unmade for a moment.
    route stayed for older builds: an older build's card shows no picture where it drew one.
 2. **The scanner reads past the label in hand.** The shared camera takes a `takes` check: a code it does not take
    leaves it reading. The hair system step takes no read of the label it already holds, so a label the check refused,
-   held up again, is checked once, and the next label held up is still read. [0162](0162-scanning-labels.md)'s camera
-   reads as before wherever no screen passes `takes`.
+   held up again, is checked once, and the next label held up is still read; one checked with no signal is checked
+   again by Check again beneath the scanner, scanned or typed. [0162](0162-scanning-labels.md)'s camera reads as before
+   wherever no screen passes `takes`.
 3. **Kit stock without labels is based as its hair system is named**, as a labelled piece of the kit is: 0270's
-   departure that such a piece sends no base no longer holds.
+   departure that such a piece sends no base no longer holds. The piece step takes a base of up to 120 characters, as
+   a hair system's name runs to a service's name of 60 and its spec; at 60 it refused a kit piece's real name.
 4. **A refused piece step corrected to the same piece keeps what it was sent with.** Its label written again, as the
    same label once spaces and capitals are put right, keeps the base and lot an older build sent typed; any other label
    takes its own, as before.
 5. **A one visit's choice goes onto its card as its piece step lands**, before the step leaves the outbox, and a card
-   the API answers to a read sent before it landed keeps that choice, so the checklist never reads it as unmade.
+   the API answers to a read sent before it landed keeps that choice. The checklist keeps the list it opened with while
+   it is open: the choice is made at the piece step, before it, so the moment between the step leaving the phone and
+   the card being read again never draws the other list.
 
 ## Consequences
 
-Tests: `test/dom/tech-piece-scanner.test.ts` (the scanner's reads), `test/node/front-ends/tech-piece-form.test.ts`
-(the base and the corrected label), `test/node/front-ends/tech-outbox-replay.test.ts` (the landed choice) and
-`test/worker/field/tech-job-card.test.ts` (no photograph served).
+Tests: `test/dom/tech-piece-scanner.test.ts` (the scanner's reads), `test/dom/ui-qr-camera.test.ts` (the camera's
+`takes`), `test/node/front-ends/tech-piece-form.test.ts` (the base and the corrected label),
+`test/worker/field/field-piece.test.ts` (a hair system's name as the base), `test/node/front-ends/tech-outbox-replay.test.ts`
+and `test/node/front-ends/tech-kept.test.ts` (the landed choice), `test/dom/tech-checklist-choice.test.ts` (the list
+kept) and `test/worker/field/tech-job-card.test.ts` (no photograph served).

@@ -49,11 +49,14 @@ function holdUp(text: string): void {
 
 const codes: string[] = [];
 
+/** What the label's check found, as the step would say. */
+const check: { looked: Parameters<typeof Scanner>[0]["looked"] } = { looked: NOT_LOOKED };
+
 function Step() {
   const [code, setCode] = useState("");
   return createElement(Scanner, {
     code,
-    looked: NOT_LOOKED,
+    looked: check.looked,
     looking: false,
     warning: null,
     cannotFit: null,
@@ -74,6 +77,7 @@ beforeEach(() => {
   camera.open = null;
   camera.stopped = false;
   codes.length = 0;
+  check.looked = NOT_LOOKED;
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -112,5 +116,16 @@ describe("the hair system step's scanner", () => {
     const box = page.querySelector("input");
     expect(box).not.toBeNull();
     expect(page.textContent).toContain(copy.piece.malformed);
+  });
+
+  it("offers Check again under the scanner for a label read with no signal, its code box left shut", () => {
+    holdUp("MM-ESS-0000001-A");
+    check.looked = { state: "offline" };
+    act(() => {
+      root.render(createElement(Step));
+    });
+    const buttons = [...page.querySelectorAll("button")].map((each) => each.textContent.trim());
+    expect(buttons).toContain(copy.piece.checkAgain);
+    expect(page.querySelector("input")).toBeNull();
   });
 });

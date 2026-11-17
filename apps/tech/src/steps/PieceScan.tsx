@@ -103,42 +103,29 @@ function LookedNote({ looked }: { looked: Looked }) {
   );
 }
 
-/** The code typed in, checked as it reads; tried again once a check found no signal. */
-function TypedCode(props: {
-  code: string;
-  offline: boolean;
-  looking: boolean;
-  onCode: (code: string) => void;
-  onLook: () => void;
-}) {
+/** The code typed, checked as it reads. */
+function TypedCode(props: { code: string; onCode: (code: string) => void }) {
   const malformed = given(props.code) && !isLabel(props.code);
   return (
-    <>
-      <Field
-        label={copy.typedLabel}
-        error={malformed ? copy.malformed : null}
-        look={{ label: styles.typedLabel, error: styles.warn }}
-      >
-        {(control) => (
-          <TextInput
-            {...control}
-            value={props.code}
-            placeholder={copy.placeholder}
-            autoCapitalize="characters"
-            autoComplete="off"
-            spellCheck={false}
-            onChange={(event) => {
-              props.onCode(asLabel(event.target.value));
-            }}
-          />
-        )}
-      </Field>
-      {props.offline && (
-        <Button variant="outline" size="control" busy={props.looking} onClick={props.onLook}>
-          {copy.checkAgain}
-        </Button>
+    <Field
+      label={copy.typedLabel}
+      error={malformed ? copy.malformed : null}
+      look={{ label: styles.typedLabel, error: styles.warn }}
+    >
+      {(control) => (
+        <TextInput
+          {...control}
+          value={props.code}
+          placeholder={copy.placeholder}
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          onChange={(event) => {
+            props.onCode(asLabel(event.target.value));
+          }}
+        />
       )}
-    </>
+    </Field>
   );
 }
 
@@ -186,14 +173,12 @@ export function Scanner(props: {
         </TextButton>
         {props.cannotFit}
       </div>
-      {typed && (
-        <TypedCode
-          code={props.code}
-          offline={props.looked.state === "offline"}
-          looking={props.looking}
-          onCode={props.onCode}
-          onLook={props.onLook}
-        />
+      {typed && <TypedCode code={props.code} onCode={props.onCode} />}
+      {/* A label read or typed with no signal is checked again from here, whether it was scanned or typed. */}
+      {props.looked.state === "offline" && (
+        <Button variant="outline" size="control" busy={props.looking} onClick={props.onLook}>
+          {copy.checkAgain}
+        </Button>
       )}
       {props.warning !== null && (
         <p className={styles.warn} role="alert">
