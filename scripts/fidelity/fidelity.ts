@@ -21,7 +21,7 @@ import {
   preparePage as preparePageAt,
   settle,
   type BookBoardState,
-} from "../lib/site-boards.ts";
+} from "./site-boards.ts";
 import { serveDirectory } from "../lib/static-server.ts";
 
 const SITE_DIR = resolve("site/dist/local");

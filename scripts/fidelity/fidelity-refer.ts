@@ -18,7 +18,7 @@ import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { pair } from "../lib/fidelity.ts";
-import { bookBoardAt, openBoard, preparePage, settle, type BookBoardState } from "../lib/site-boards.ts";
+import { bookBoardAt, openBoard, preparePage, settle, type BookBoardState } from "./site-boards.ts";
 import { serveDirectory } from "../lib/static-server.ts";
 /** Where the site keeps the cookie bar's answer (site/src/lib/analytics.ts). */
 const CONSENT_KEY = "mm-ad-consent";

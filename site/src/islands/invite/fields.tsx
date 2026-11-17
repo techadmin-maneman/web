@@ -220,11 +220,18 @@ function TermsBox({ idPrefix, tick }: { idPrefix: string; tick: TermsTick }) {
   );
 }
 
-/** The terms the form binds the visitor to, and the privacy notice, each a link, beneath its agreement. */
-function LegalLinks() {
+/**
+ * The terms the form binds the visitor to, and the privacy notice, each a link, beneath its agreement; or, `alone`,
+ * on a page that asks nothing yet, with no box to sit beside.
+ */
+export function LegalLinks(props: { alone?: string | undefined }) {
   const words = referral.form.legal;
   return (
-    <p class={styles.legal}>
+    <p
+      class={
+        props.alone === undefined ? styles.legal : `${styles.legal ?? ""} ${styles.legalAlone ?? ""} ${props.alone}`
+      }
+    >
       {words.before}
       <TextLink inline href="/terms">
         {words.terms}

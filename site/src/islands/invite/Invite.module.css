@@ -239,6 +239,12 @@
   color: var(--site-on-navy-muted);
 }
 
+/* The landing's line that the terms and the privacy notice apply, beneath the pincode until its answer. */
+.arrivalLegal {
+  order: 7;
+  margin-top: var(--sp-16);
+}
+
 /* ---- The two forms -------------------------------------------------------------------- */
 
 .form {

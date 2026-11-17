@@ -79,9 +79,7 @@ export function PincodePanel(props: { check: PincodeCheck; past: boolean }) {
           <h2 class={styles.panelTitle}>{referral.pincode.title}</h2>
           <form class={styles.pincodeForm} onSubmit={(event) => void props.check.check(event)} noValidate>
             <div class={styles.pincodeField}>
-              <Label htmlFor="invite-pincode">
-                {referral.pincode.label}
-              </Label>
+              <Label htmlFor="invite-pincode">{referral.pincode.label}</Label>
               <TextInput
                 ref={props.check.field}
                 id="invite-pincode"
