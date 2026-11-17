@@ -24,7 +24,9 @@
   white-space: nowrap;
 }
 
+/* A button, unlike a link, sizes to its words unless told to fill the column. */
 .stop {
+  width: 100%;
   margin-top: var(--sp-24);
 }
 
