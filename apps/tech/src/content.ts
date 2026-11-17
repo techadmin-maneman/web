@@ -849,6 +849,8 @@ export const steps = localised({
       why: "Why?",
       body: "The visit closes as not fitted. Ops rebook it.",
       close: "Close and tell ops",
+      /** Above the close while it waits for a reason, as a step's foot says what is missing. */
+      pickFirst: "Pick a reason",
       dismiss: "Close",
     },
     confirmed: {

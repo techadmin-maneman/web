@@ -17,15 +17,15 @@ import {
   DECLINED,
   inKit,
   fitsNothingToday,
-  afterLabel,
+  cameOff,
   labelWarning,
   given,
   kitChoices,
   kitMatch,
+  labelTaken,
   leftAfter,
   profileToMatch,
   noticeFor,
-  onTheHead,
   pieceBody,
   stillMissing,
   type Choice,
@@ -33,7 +33,7 @@ import {
   type PieceForm,
 } from "./piece-form.ts";
 import { ChoiceList, KitPieces, NOT_LOOKED, type Looked } from "./PieceFields.tsx";
-import { Confirmed, Expected, lineOf, productName, Scanner, specOf } from "./PieceScan.tsx";
+import { Confirmed, Expected, lineOf, Scanner } from "./PieceScan.tsx";
 import { isLabel } from "./label.ts";
 import { pieceSent, type PieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
@@ -151,23 +151,22 @@ function Fitting({
   const [stock, setStock] = useState<string | null>(sent?.stock ?? null);
   const { looked, setLooked, looking, look } = useLookup(job, { code, base, lot }, { base: setBase, lot: setLot });
   const [{ choice, later }, decide] = useDecision(sent);
-  // The piece that comes off is the one on the client's head, as the card has it.
-  const oldCode = job.type === "replacement" ? ((job.pieces ?? []).find(onTheHead)?.piece_code ?? "") : "";
+  // The piece that comes off is the one the card has on the client's head from before today.
+  const oldCode = cameOff(job)?.piece_code ?? "";
 
   const form: PieceForm = { code, base, lot, stock, oldCode, choice, later };
   const missing = stillMissing(form, job, checkedOf(looked));
-  /** A label read or typed: one of the kit's pieces picks its hair system and fills in its lot. */
+  /** A label read or typed, with what follows it (piece-form's labelTaken). */
   const takeLabel = (label: string) => {
-    const next = afterLabel(job, { code, lot }, label);
+    const next = labelTaken(job, stock, label);
     setCode(label);
     setLooked(NOT_LOOKED);
-    if (next.stock !== null) setStock(next.stock);
+    setStock(next.stock);
+    setBase(next.base);
     setLot(next.lot);
   };
   const matched = { ...job, profile: matchTo };
   const fitsToday = !fitsNothingToday(form, job) && (!job.one_visit || choice !== null);
-  const product = productName(job, choice);
-  const spec = matchTo === null ? "" : specOf(matchTo.fit);
 
   return (
     <StepFrame
@@ -189,7 +188,7 @@ function Fitting({
           {missing === null && isLabel(code) && looked.state !== "offline" ? (
             <Confirmed
               code={code}
-              line={lineOf(product, spec)}
+              line={lineOf(job, { choice, stock, fit: matchTo?.fit ?? null })}
               matches={kitMatch(matched, choice, stock)}
               left={leftAfter(job, stock)}
               onRescan={() => {

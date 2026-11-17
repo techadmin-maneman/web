@@ -27,7 +27,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/ops/src/technicians/TechnicianForms.tsx": { fn: 89 },
   "apps/tech/src/camera/CaptureScreen.tsx": { fn: 96 },
   "apps/tech/src/login/SignIn.tsx": { fn: 121 },
-  "apps/tech/src/steps/Piece.tsx": { fn: 85 },
+  "apps/tech/src/steps/Piece.tsx": { fn: 84 },
   "apps/tech/src/steps/Profile.tsx": { fn: 85 },
   "scripts/fidelity/fidelity-app.ts": { lines: 1097, fn: 167 },
   "scripts/fidelity/fidelity-tech.ts": { lines: 448, fn: 104 },

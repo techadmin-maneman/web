@@ -4,8 +4,8 @@
 - Date: 2026-11-17
 - Topic: Field work
 - Builds on [0267](0267-the-technician-design-check.md) and [0268](0268-the-visits-design-check.md), whose check it ends
-- Amends [0267](0267-the-technician-design-check.md), [0106](0106-a-clients-hair-profile.md) and [0053](0053-the-technician-app-offline.md):
-  what a past visit used, and the job card's client block
+- Amends [0267](0267-the-technician-design-check.md), [0106](0106-a-clients-hair-profile.md), [0053](0053-the-technician-app-offline.md), [0188](0188-failure-rates-and-value-at-risk.md) and [0169](0169-supplier-claims.md):
+  what a past visit used, the job card's client block, and failures no longer recorded from the step
 
 ## Context
 
@@ -52,12 +52,22 @@ for last, because the API did not yet give the phone what they show.
 - **The code typed** is checked as it reads, with no Check button ([0247](0247-the-steps-left.md), decision 6).
 - **Kit stock whose pieces carry no labels**, taken in before its pieces were labelled, is picked beneath the scanner
   from "From your kit", the label on the piece then typed: a scan cannot find it.
+- **A replacement whose client has no piece on the head**, by the card, shows no Replacing row and sends no piece that
+  came off: the step no longer takes one typed, so such a piece reaches neither the kit's hand-back nor the claims list.
+- **A step opened again** after its piece landed replaces the piece worn before the visit's day, never the one it
+  fitted.
 - **The sheet's Close** is the shared sheet's, on the dark backdrop, where the prototype's backdrop is a bare target.
 
 ## Consequences
 
-A piece that came off is recorded as replaced, never failed, from the step ([0191](0191-a-replaced-piece-comes-off.md));
-the API still takes a failure's reason, which no screen now sends.
+No piece is recorded as failed from the step any more: a piece that came off is replaced
+([0191](0191-a-replaced-piece-comes-off.md)), and the API's failure reason, which no screen now sends, is the only way
+`pieces.failed_at` was written. From now on the Quality page's failure rates ([0188](0188-failure-rates-and-value-at-risk.md)), a
+returned piece's reason on the claims list ([0169](0169-supplier-claims.md)) and the pieces tab's "Came off" count no
+failure of a piece fitted after this, until failures are recorded some other way. The owner was told this with the PR.
+
+A Worker rolled back past this reads a close kept with a not-fitted reason as having no outcome, as one rolled back past
+`cannot_fit` did.
 
 The API still serves the last visit's after photograph (`GET /api/tech/jobs/{id}/last-visit-photo`, from
 [0053](0053-the-technician-app-offline.md)) to a phone on an earlier build; it goes once no phone runs one.

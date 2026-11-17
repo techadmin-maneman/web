@@ -154,6 +154,22 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(visitRow(page, "22 Aug 2027").getByRole("link", { name: /on the board/ })).toHaveCount(0);
 });
 
+// A fit closed with "Can't fit today" said only "Partly done" (docs/decisions/0269-the-design-checks-api-side.md).
+test("says why a fit closed with Can’t fit today was not fitted", async ({ page }) => {
+  const [done] = RECORD.visits.past;
+  if (done === undefined) throw new Error("the record has a visit done");
+  const notFitted = {
+    ...done,
+    type: "first_fit" as const,
+    outcome: "partial" as const,
+    not_fitted_reason: { code: "piece_damaged", label: "Piece damaged" },
+  };
+  await openClient(page, `/clients/${CLIENT.id}/visits`, {
+    [READ_RECORD]: json({ ...RECORD, visits: { ...RECORD.visits, past: [notFitted] } }),
+  });
+  await expect(visitRow(page, "22 Aug 2027")).toContainText(opsCopy.clients.visits.notFitted("Piece damaged"));
+});
+
 // On 25 Oct, a 20 Oct visit nobody arrived for sat under "To come".
 test("puts a visit past its day and not closed first, ahead of those to come", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2027-09-24T06:00:00.000Z"));

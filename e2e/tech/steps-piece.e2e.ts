@@ -5,7 +5,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE } from "./fixtures.ts";
+import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE, todayInIndia } from "./fixtures.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
 import { holding, startedThrough, writesTo, throughTheTasks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
@@ -18,12 +18,15 @@ async function typeCode(page: Page, code: string): Promise<void> {
   await box.fill(code);
 }
 
+/** Rohit's piece, worn since before the visit's day, as the one a replacement takes off. */
+const WORN = { ...ROHITS_PIECE, fitted_at: "2020-07-02" };
+
 // Scan-first, as the prototype draws it (docs/decisions/0269-the-design-checks-api-side.md).
 test.describe("the hair system step", () => {
   async function onThePiece(page: Page): Promise<Fake> {
     const fake = await fakeTech(page);
     fake.type = "replacement";
-    fake.pieces = [ROHITS_PIECE];
+    fake.pieces = [WORN];
     fake.kitHairSystems = holding("standard", "MM-STD-5120-A");
     startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
@@ -59,8 +62,9 @@ test.describe("the hair system step", () => {
     const asked = page.getByRole("dialog", { name: words.title });
     await expect(asked).toContainText(words.body);
     const close = asked.getByRole("button", { name: words.close });
-    // Off until a reason is picked.
+    // Off until a reason is picked, saying so.
     await expect(close).toBeDisabled();
+    await expect(asked.getByText(words.pickFirst, { exact: true })).toBeVisible();
     // The sheet's Close sits on the dialog's backdrop, which axe cannot see, as the reschedule sheet's does.
     expect(await axeViolations(page, (axe) => axe.exclude("dialog > button"))).toEqual([]);
     await asked.getByRole("button", { name: words.dismiss, exact: true }).click();
@@ -69,6 +73,7 @@ test.describe("the hair system step", () => {
 
     await page.getByRole("button", { name: words.action }).click();
     await asked.getByRole("button", { name: "Piece damaged" }).click();
+    await expect(asked.getByText(words.pickFirst, { exact: true })).toHaveCount(0);
     await close.click();
     await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.not_fitted })).toBeVisible();
     // The close names why, and what follows, as the prototype lists it.
@@ -179,6 +184,8 @@ test.describe("the hair system step", () => {
 
     await typeCode(page, "mm-ess-0000007-h");
     const read = page.getByRole("region", { name: "MM-ESS-0000007-H" });
+    // Named as the kit's hair system it is, not as the one expected.
+    await expect(read).toContainText("Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density");
     await expect(read).toContainText(techCopy.steps.piece.confirmed.match);
     await expect(read).toContainText(techCopy.steps.piece.confirmed.left(1));
     expect(await axeViolations(page)).toEqual([]);
@@ -255,6 +262,18 @@ test.describe("the hair system step", () => {
     await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.notThisClient })).toBeVisible();
     await expect(page.getByText(techCopy.steps.piece.notThisClientAction, { exact: true })).toBeVisible();
     await expect(stepAction(page)).toBeDisabled();
+  });
+
+  // Opened again after its piece landed, the step named the new piece as the one coming off.
+  test("opened again after its piece landed, still replaces the piece worn before the visit", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "replacement";
+    fake.pieces = [{ ...ROHITS_PIECE, piece_code: "MM-STD-5120-A", fitted_at: todayInIndia() }, WORN];
+    fake.kitHairSystems = holding("standard", "MM-STD-5120-A");
+    startedThrough(fake, "before_photos", "piece");
+    await page.goto(`/jobs/${JOB_ID}/piece`);
+    await expect(page.getByText(techCopy.steps.piece.listed("MM-STD-4417-B", "2 Jul"))).toBeVisible();
+    await expect(page.getByText(/^MM-STD-5120-A · fitted/)).toHaveCount(0);
   });
 
   test("on a replacement sends the piece on the client’s head as the one that came off, with no why", async ({

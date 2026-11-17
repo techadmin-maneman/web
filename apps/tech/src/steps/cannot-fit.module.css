@@ -1,9 +1,11 @@
 /* "Can't fit today" (./CannotFit.tsx): the prototype's light sheet, its title, "Why?" over the reasons as chips sized
    to their words, the line on what the close does, and the close. */
 
-/* The link beneath the scanner, at a gloved tap's height. */
+/* The link beneath the scanner, as its neighbour: 15 px semibold, a gloved tap high. */
 .action {
   min-height: var(--tech-min);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
 }
 
 .panel {
@@ -38,4 +40,12 @@
   margin: 0;
   font-size: var(--fs-14);
   color: var(--ui-text-soft);
+}
+
+/* What the close waits for, centred over it as a step's foot says it. */
+.missing {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+  text-align: center;
 }

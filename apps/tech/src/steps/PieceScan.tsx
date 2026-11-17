@@ -16,7 +16,7 @@ import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
 import type { Looked } from "./PieceFields.tsx";
-import { given, onTheHead, type Choice } from "./piece-form.ts";
+import { cameOff, given, type Choice } from "./piece-form.ts";
 import styles from "./piece-scan.module.css";
 
 const copy = steps.piece;
@@ -63,7 +63,7 @@ function Row({ name, last = false, children }: { name: string; last?: boolean; c
 export function Expected({ job, fit, choice }: { job: Job; fit: MatchFit | null; choice: Choice }) {
   const product = productName(job, choice);
   const spec = fit === null ? "" : specOf(fit);
-  const old = job.type === "replacement" ? ((job.pieces ?? []).find(onTheHead) ?? null) : null;
+  const old = cameOff(job);
   const inProfile = profileNamesAnother(job);
   return (
     <>
@@ -157,28 +157,34 @@ export function Scanner(props: {
   onLook: () => void;
 }) {
   const [typing, setTyping] = useState(given(props.code));
+  // Each read opens the camera afresh, so a label the check refuses can be followed by another.
+  const [round, setRound] = useState(0);
+  // A code that is no label, read or typed, shows in its box with what is wrong with it.
+  const typed = typing || (given(props.code) && !isLabel(props.code));
   return (
     <div className={styles.scanner}>
       <QrCamera
+        key={round}
         words={copy.camera}
         aim={copy.pointAt}
         onRead={(text) => {
+          setRound(round + 1);
           props.onCode(asLabel(text));
         }}
       />
       <div className={styles.links}>
         <TextButton
           className={styles.link}
-          aria-expanded={typing}
+          aria-expanded={typed}
           onClick={() => {
-            setTyping(!typing);
+            setTyping(!typed);
           }}
         >
           {copy.typeCode}
         </TextButton>
         {props.cannotFit}
       </div>
-      {typing && (
+      {typed && (
         <TypedCode
           code={props.code}
           offline={props.looked.state === "offline"}
@@ -251,6 +257,19 @@ export function Confirmed(props: {
   );
 }
 
-/** The confirmed piece's line: what it is, in Hindi where a catalog holds its name, and the spec it is made to. */
-export const lineOf = (product: string | null, spec: string): string =>
-  [product === null ? null : sayKnown(product), spec === "" ? null : spec].filter((part) => part !== null).join(" · ");
+/**
+ * The confirmed piece's line: the kit's hair system read, by its name; else what was expected, the product in Hindi
+ * where a catalog holds its name, and the spec.
+ */
+export function lineOf(
+  job: Job,
+  read: { readonly choice: Choice; readonly stock: string | null; readonly fit: MatchFit | null },
+): string {
+  const name = job.kit_hair_systems.find((each) => each.code === read.stock)?.name;
+  if (name !== undefined) return name;
+  const product = productName(job, read.choice);
+  const spec = read.fit === null ? "" : specOf(read.fit);
+  return [product === null ? null : sayKnown(product), spec === "" ? null : spec]
+    .filter((part) => part !== null)
+    .join(" · ");
+}

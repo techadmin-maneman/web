@@ -52,6 +52,7 @@ function CannotFitSheet(props: {
           </>
         )}
         <p className={styles.body}>{copy.body}</p>
+        {asks && reason === null && <p className={styles.missing}>{copy.pickFirst}</p>}
         <Button
           variant="primary"
           size="action"

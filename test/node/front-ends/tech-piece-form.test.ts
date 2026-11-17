@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 import type { Queued } from "../../../apps/tech/src/store/outbox.ts";
 import { steps as copy, oneVisit } from "../../../apps/tech/src/content.ts";
 import {
+  cameOff,
   DECLINED,
   kitChoices,
+  labelTaken,
   pieceBody,
   profileToMatch,
   stillMissing,
@@ -173,5 +175,66 @@ describe("the kit’s hair systems", () => {
       type: "first_fit",
     } as unknown as Parameters<typeof kitChoices>[0];
     expect(kitChoices(job, null)[0]?.hairSystem.code).toBe("denser");
+  });
+});
+
+describe("a label taken", () => {
+  const unit = (code: string, lot: string | null) => ({ code, lot_code: lot, expires_on: null });
+  const kit = {
+    kit_hair_systems: [
+      { code: "hs_a", name: "Mane Man Essential · 8 × 10 in", units: [unit("MM-ESS-0000001-A", "LOT-A")] },
+      { code: "hs_b", name: "Mane Man Natural · 7 × 9 in", units: [unit("MM-NAT-0000002-B", "LOT-B")] },
+      { code: "hs_old", name: "Mane Man Essential, before labels", units: [] },
+    ],
+  } as unknown as Parameters<typeof labelTaken>[0];
+
+  it("takes a kit piece's hair system, its name as the base and its lot, with or without signal", () => {
+    expect(labelTaken(kit, null, "MM-ESS-0000001-A")).toEqual({
+      stock: "hs_a",
+      base: "Mane Man Essential · 8 × 10 in",
+      lot: "LOT-A",
+    });
+  });
+
+  it("keeps nothing of the label before it, so a piece read again is sent as itself", () => {
+    expect(labelTaken(kit, "hs_a", "MM-NAT-0000002-B")).toEqual({
+      stock: "hs_b",
+      base: "Mane Man Natural · 7 × 9 in",
+      lot: "LOT-B",
+    });
+    // A piece from outside the kit after one of it: no hair system, base or lot left from the kit's.
+    expect(labelTaken(kit, "hs_a", "MM-STD-4417-B")).toEqual({ stock: null, base: "", lot: "" });
+    // Rescan: nothing at all.
+    expect(labelTaken(kit, "hs_a", "")).toEqual({ stock: null, base: "", lot: "" });
+  });
+
+  it("keeps kit stock with no labels picked, for the label on its piece", () => {
+    expect(labelTaken(kit, "hs_old", "MM-ESS-0000999-Z")).toEqual({ stock: "hs_old", base: "", lot: "" });
+  });
+});
+
+describe("the piece that comes off a replacement", () => {
+  const piece = (code: string, fitted: string | null) => ({
+    piece_code: code,
+    base: null,
+    supplier_lot: null,
+    fitted_at: fitted,
+    replacement_due_at: null,
+    failed_at: null,
+    failure_reason: null,
+    replaced_at: null,
+  });
+  const job = (pieces: ReturnType<typeof piece>[]) =>
+    ({ type: "replacement", date: "2026-11-17", pieces }) as unknown as Parameters<typeof cameOff>[0];
+
+  it("is the one on the head from before the visit's day, never the one this visit fitted", () => {
+    const today = piece("MM-ESS-0000779-S", "2026-11-17");
+    const worn = piece("MM-STD-4417-B", "2026-07-02");
+    expect(cameOff(job([today, worn]))?.piece_code).toBe("MM-STD-4417-B");
+  });
+
+  it("is none where nothing is on the head, and on any other visit", () => {
+    expect(cameOff(job([]))).toBeNull();
+    expect(cameOff({ ...job([piece("MM-STD-4417-B", "2026-07-02")]), type: "first_fit" })).toBeNull();
   });
 });

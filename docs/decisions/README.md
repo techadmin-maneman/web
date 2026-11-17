@@ -473,7 +473,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0166](0166-purchase-orders.md) | Purchase orders | 2026-10-12 | accepted |  |
 | [0167](0167-receipts-and-landed-cost.md) | Receipts and landed cost | 2026-10-12 | accepted |  |
 | [0168](0168-bills-in-books.md) | Bills in Books | 2026-10-12 | accepted |  |
-| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted |  |
+| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted | [0269](0269-the-design-checks-api-side.md) |
 | [0170](0170-stock-photos.md) | Photographs of stock | 2026-10-12 | accepted |  |
 | [0171](0171-vendor-credits.md) | Vendor credits | 2026-10-12 | accepted |  |
 | [0172](0172-supplier-scorecard.md) | Supplier scorecard | 2026-10-12 | accepted |  |
@@ -492,7 +492,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0185](0185-cycle-counts.md) | Cycle counts | 2026-10-12 | accepted |  |
 | [0186](0186-usage-and-shrinkage.md) | Usage against expected, and shrinkage | 2026-10-12 | accepted |  |
 | [0187](0187-recalls.md) | Recalls | 2026-10-12 | accepted |  |
-| [0188](0188-failure-rates-and-value-at-risk.md) | Failure rates and value at risk | 2026-10-12 | accepted |  |
+| [0188](0188-failure-rates-and-value-at-risk.md) | Failure rates and value at risk | 2026-10-12 | accepted | [0269](0269-the-design-checks-api-side.md) |
 | [0189](0189-the-staff-list-on-by-default.md) | The Staff list on by default | 2026-10-13 | accepted |  |
 | [0190](0190-foreign-orders-judged-at-a-rate.md) | Foreign orders judged at a rate | 2026-10-13 | accepted |  |
 | [0191](0191-a-replaced-piece-comes-off.md) | A replaced piece comes off | 2026-10-13 | accepted |  |

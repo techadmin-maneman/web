@@ -40,6 +40,15 @@ export const toFit = (piece: ClientPiece): boolean =>
 export const onTheHead = (piece: ClientPiece): boolean =>
   piece.fitted_at !== null && piece.failed_at === null && piece.replaced_at === null;
 
+/**
+ * On a replacement, the piece that comes off: the newest on the client's head fitted before this visit's day, so a step
+ * opened again after its piece landed never names the new one. Null for any other visit, or none on the head.
+ */
+export function cameOff(job: Pick<Job, "type" | "pieces" | "date">): ClientPiece | null {
+  if (job.type !== "replacement") return null;
+  return (job.pieces ?? []).find((piece) => onTheHead(piece) && (piece.fitted_at ?? "") < job.date) ?? null;
+}
+
 /** The product a piece is fitted as: chosen on a one visit, paid for on a first fit, the profile's on a replacement. */
 function productFitted(job: Matched, choice: Choice): string | null {
   if (job.one_visit) return choice;
@@ -160,7 +169,7 @@ export function labelWarning(job: Matched & Pick<Job, "date">, form: PieceForm):
 
 /**
  * What a new label sets: a kit piece's hair system, and the lot a kit piece fills in, which follows the label. A lot the
- * technician typed stays.
+ * technician typed stays; the step's own label passes none, as lots are no longer typed.
  */
 export function afterLabel(
   job: Pick<Job, "kit_hair_systems">,
@@ -171,6 +180,22 @@ export function afterLabel(
   const piece = kitPieceOf(job, label);
   const typed = given(was.lot) && was.lot !== filled;
   return { stock: piece?.stock ?? null, lot: typed ? was.lot : (piece?.lot_code ?? "") };
+}
+
+/**
+ * What the step holds once a label is read or typed: its base, lot and hair system follow it, never the label's before
+ * it. A piece of the kit gives its hair system, whose name is its base, and its lot, with or without signal; the lookup
+ * fills them for one from elsewhere. Kit stock with no labels, picked from the kit, stays picked.
+ */
+export function labelTaken(
+  job: Pick<Job, "kit_hair_systems">,
+  stock: string | null,
+  label: string,
+): { readonly stock: string | null; readonly base: string; readonly lot: string } {
+  const next = afterLabel(job, { code: "", lot: "" }, label);
+  const picked = job.kit_hair_systems.find((each) => each.code === stock && each.units.length === 0) ?? null;
+  const fromKit = job.kit_hair_systems.find((each) => each.code === next.stock) ?? null;
+  return { stock: next.stock ?? picked?.code ?? null, base: fromKit?.name ?? "", lot: next.lot };
 }
 
 /** Whether a one visit's client decided against the fit, which fits nothing and asks for no label. */

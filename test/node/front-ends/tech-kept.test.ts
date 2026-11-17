@@ -36,6 +36,7 @@ import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
 import {
   eighthRelease,
   eleventhRelease,
+  thirteenthRelease,
   twelfthRelease,
   firstRelease,
   ninthRelease,
@@ -607,5 +608,13 @@ describe("what the build before the design pass kept", () => {
     expect(await keptJob("a")).toMatchObject({ client_visits: null });
     const [kept] = (await keptDay(TODAY)) ?? [];
     expect(kept).toMatchObject({ drive_km: null });
+  });
+});
+
+describe("what the build before the design check's API side kept", () => {
+  it("reads a card with no booking's source and no reasons not fitted, so Can't fit today asks none, until read again", async () => {
+    const { booked_via: _via, not_fitted_reasons: _reasons, ...earlier } = card("a", TODAY);
+    await thirteenthRelease([{ ...earlier, v: 2 }]);
+    expect(await keptJob("a")).toMatchObject({ booked_via: null, not_fitted_reasons: [] });
   });
 });

@@ -263,7 +263,6 @@ export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
   { id: "aftercare_explained", label: "Aftercare explained" },
 ];
 
-/** Why a client may not go ahead after a consultation: the committed list, in src/config/job-sheet.ts's words. */
 /** Why a fit may not be fitted today, as the job sheet's committed list words them. */
 export const NOT_FITTED_REASONS: Card["not_fitted_reasons"] = [
   { id: "piece_damaged", label: "Piece damaged" },
@@ -272,6 +271,7 @@ export const NOT_FITTED_REASONS: Card["not_fitted_reasons"] = [
   { id: "scalp_not_ready", label: "Scalp not ready" },
 ];
 
+/** Why a client may not go ahead after a consultation: the committed list, in src/config/job-sheet.ts's words. */
 const LOST_REASONS: Card["lost_reasons"] = [
   { id: "price", label: "The price" },
   { id: "not_ready", label: "Not ready yet" },
