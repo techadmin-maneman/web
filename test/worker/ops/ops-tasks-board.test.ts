@@ -172,6 +172,7 @@ describe("GET /api/tasks", () => {
             kind: "service",
             reason_code: "piece_not_ready",
             reason: "Hair system not ready",
+            not_fitted: null,
             ask: null,
           },
           detail: "service Hair system not ready",

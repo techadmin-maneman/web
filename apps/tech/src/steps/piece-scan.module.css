@@ -56,9 +56,27 @@
   margin-top: var(--sp-4);
 }
 
+/* The links beneath the scanner, and Rescan: the prototype's 15 px at the semibold weight, which the words inherit. */
+.links,
+.rescan {
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
 .links {
   display: flex;
   justify-content: space-between;
+}
+
+/* A gloved tap's height, as every target in the app keeps. */
+.link {
+  min-height: var(--tech-min);
+}
+
+.typedLabel {
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
 }
 
 .note,

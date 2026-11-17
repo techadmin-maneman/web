@@ -1,6 +1,5 @@
-// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): what the technician ticks on each kind of visit,
-// the reasons a job is left partly done, why a client does not go ahead (docs/decisions/0149-lost-reasons.md), and why
-// a hair system could not be fitted (docs/decisions/0269-the-design-checks-api-side.md). A
+// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): the technician's checklists, why a job is left
+// partly done, why a client does not go ahead (ADR 0149) and why a hair system was not fitted (ADR 0269). A
 // phone keeps the list it got with the job and an item taken off is kept, so older records still read. Until ops save a
 // list, src/config/job-sheet.ts's stands.
 

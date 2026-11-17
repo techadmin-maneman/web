@@ -27,10 +27,10 @@
   .video {
     display: block;
     width: 100%;
-    height: var(--scan-height, auto);
+    height: var(--scan-height);
     aspect-ratio: 4 / 3;
     object-fit: cover;
-    background: var(--scan-ground, var(--ink));
+    background: var(--scan-ground);
   }
 
   /* Where the label is held: a white frame at the picture's middle, and the words beneath it. */

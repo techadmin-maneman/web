@@ -191,8 +191,9 @@ export function TodayScreen() {
       <Head date={date} title={titleOf(jobs, states, day.state === "loaded")} heading={heading} />
 
       <div className={styles.problems}>
-        <ToFix day={day} queued={waiting.events} names={names} />
+        {/* As the prototype stacks them: a photo set that didn't upload, then a step ops couldn't accept. */}
         <FailedSets queued={waiting.events} names={names} />
+        <ToFix day={day} queued={waiting.events} names={names} />
         <LeftOpen date={date} queued={waiting.events} names={names} />
         {atRisk && unsentOnPhone && <ProblemCard title={atRiskCopy.title}>{atRiskCopy.body}</ProblemCard>}
       </div>

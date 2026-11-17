@@ -862,10 +862,10 @@ export const steps = localised({
     expired: "This hair system has expired. Hand it in and use another.",
     otherThanFitted: "Not the hair system this fit is for. Check with ops before you fit.",
     expiredAction: "That hair system has expired",
-    placeholder: "MM-ESS-0000123-K",
+    placeholder: "MM-ESS-0000000-X",
     // The board draws no label typed wrong.
     malformed: "Type it as on the label, like MM-ESS-0000123-K.",
-    checkFirst: "Scan the label to continue",
+    checkFirst: "Scan or type the code to continue",
     /** A label is checked as soon as it reads; again only once there is signal (docs/prompts/tech-redesign.md). */
     checking: "Checking the label…",
     checkAgain: "Check again",

@@ -3,7 +3,7 @@
 // client. NOW is Monday 21 September 2026, 12 noon in India. Everyone here is
 // made up.
 
-import { aPackage } from "../fixtures/index.ts";
+import { aHold, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
@@ -305,17 +305,18 @@ describe("the card", () => {
 
   it("says where the visit was booked, from the hold that booked it, and nothing for one booked before it was kept", async () => {
     expect((await card(TODAY_JOB)).booked_via).toBeNull();
-    const booked = (id: string, from: string | null, at: string) =>
-      env.DB.prepare(
-        `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
-           amount_ex_gst, gst_percent, state, appointment_id, expires_at, created_at, updated_at, booked_from)
-         VALUES (?1, ?2, 'service', '2026-09-21', 'morning', ?3, 0, 0, 0, 18, 'booked', ?4, ?5, ?5, ?5, ?6)`,
-      )
-        .bind(id, PERSON, IMRAN, TODAY_JOB, at, from)
-        .run();
-    await booked("hold-site", "site", "2026-09-10T05:00:00.000Z");
+    const booked = (from: "site" | "app", at: string) =>
+      aHold({
+        person_id: PERSON,
+        technician_id: IMRAN,
+        state: "booked",
+        appointment_id: TODAY_JOB,
+        booked_from: from,
+        created_at: at,
+      });
+    await booked("site", "2026-09-10T05:00:00.000Z");
     // A later hold of the same visit, a move say, leaves where it was first booked.
-    await booked("hold-app", "app", "2026-09-12T05:00:00.000Z");
+    await booked("app", "2026-09-12T05:00:00.000Z");
     expect((await card(TODAY_JOB)).booked_via).toBe("site");
   });
 

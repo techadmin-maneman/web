@@ -105,6 +105,7 @@ export const MY_DATA = {
         consents_shown: { label: "Agreed by booking", as: "purposes" },
         state: words("Status"),
         auto_refund_reason: words("Refunded automatically"),
+        booked_from: words("Booked through"),
         created_at: time("Started"),
         confirmed_at: time("Confirmed"),
       },

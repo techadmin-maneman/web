@@ -11,7 +11,7 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { useState, type ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { job as jobCopy, profile as profileCopy, steps } from "../content.ts";
-import { sayKnown, theirs } from "../lang/index.ts";
+import { sayKnown } from "../lang/index.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
@@ -114,7 +114,11 @@ function TypedCode(props: {
   const malformed = given(props.code) && !isLabel(props.code);
   return (
     <>
-      <Field label={copy.typedLabel} error={malformed ? copy.malformed : null} look={{ error: styles.warn }}>
+      <Field
+        label={copy.typedLabel}
+        error={malformed ? copy.malformed : null}
+        look={{ label: styles.typedLabel, error: styles.warn }}
+      >
         {(control) => (
           <TextInput
             {...control}
@@ -164,6 +168,7 @@ export function Scanner(props: {
       />
       <div className={styles.links}>
         <TextButton
+          className={styles.link}
           aria-expanded={typing}
           onClick={() => {
             setTyping(!typing);
@@ -238,14 +243,14 @@ export function Confirmed(props: {
         )}
       </dl>
       <div className={styles.rescan}>
-        <TextButton onClick={props.onRescan}>{copy.confirmed.rescan}</TextButton>
+        <TextButton className={styles.link} onClick={props.onRescan}>
+          {copy.confirmed.rescan}
+        </TextButton>
       </div>
     </section>
   );
 }
 
-/** The confirmed piece's line: what it is, and the spec it is made to. */
+/** The confirmed piece's line: what it is, in Hindi where a catalog holds its name, and the spec it is made to. */
 export const lineOf = (product: string | null, spec: string): string =>
-  [product === null ? null : theirs(sayKnown(product)), spec === "" ? null : spec]
-    .filter((part) => part !== null)
-    .join(" · ");
+  [product === null ? null : sayKnown(product), spec === "" ? null : spec].filter((part) => part !== null).join(" · ");

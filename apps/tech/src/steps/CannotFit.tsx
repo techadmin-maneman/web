@@ -79,6 +79,7 @@ export function CannotFit({
   return (
     <>
       <TextButton
+        className={styles.action}
         onClick={() => {
           setAsking(true);
         }}
