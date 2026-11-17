@@ -82,9 +82,14 @@ export function manifest(app: PwaApp, ground: string) {
  */
 const NEVER_DRAWN = /-(latin-ext|rupee)-/;
 
+/** A source map, built for Sentry at deploy and deleted before the app ships (scripts/release/sentry-maps.ts). */
+const isSourceMap = (name: string) => name.endsWith(".map");
+
 /** The files the service worker keeps: every file of the build, with the app itself kept as "/". */
 export function precacheList(fileNames: readonly string[]): string[] {
-  const files = fileNames.filter((name) => name !== "index.html" && name !== "sw.js" && !NEVER_DRAWN.test(name));
+  const files = fileNames.filter(
+    (name) => name !== "index.html" && name !== "sw.js" && !NEVER_DRAWN.test(name) && !isSourceMap(name),
+  );
   return ["/", ...[...new Set(files)].sort().map((name) => `/${name}`)];
 }
 

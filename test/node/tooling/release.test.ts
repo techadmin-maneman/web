@@ -120,6 +120,17 @@ describe("shipping a Worker", () => {
     expect(calls).toContain(`versions deploy ${NEW}@100 --yes --message staging abc123`);
   });
 
+  // Sentry reads the bundle uploaded and its source map from there (scripts/release/sentry-maps.ts).
+  it("keeps the bundle it uploads, with its map, where asked, and nowhere where not", () => {
+    const kept = fakeWorker(serving(OLD));
+    uploadVersion(target("mm-api", "staging", kept.wrangler), "abc123", "staging abc123", "/tmp/mm-api-bundle");
+    expect(kept.calls.find((call) => call.startsWith("versions upload"))).toContain("--outdir /tmp/mm-api-bundle");
+
+    const none = fakeWorker(serving(OLD));
+    uploadVersion(target("mm-api", "staging", none.wrangler), "abc123", "staging abc123");
+    expect(none.calls.find((call) => call.startsWith("versions upload"))).not.toContain("--outdir");
+  });
+
   // A secret change publishes an untagged version, so the commit is baked into the code as well.
   it("bakes a commit's SHA into the bundle it uploads, and nothing that is not one", () => {
     const sha = "0123456789abcdef0123456789abcdef01234567";

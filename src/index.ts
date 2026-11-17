@@ -8,7 +8,7 @@ import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
 import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger, type Logger } from "./log.ts";
-import { createErrorTracker } from "./providers/error-tracking.ts";
+import { createErrorTracker, releaseOf } from "./providers/error-tracking.ts";
 import { pingHeartbeat } from "./providers/heartbeat.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
@@ -28,6 +28,8 @@ import { backUp } from "./workflows/backup.ts";
 const config = validateStaticConfig(env as unknown as Record<string, unknown>);
 
 const makeDependencies = productionDependencies(config);
+// The commit the bundle was built from, defined at upload (scripts/lib/release.ts); undeclared locally and in tests.
+declare const BUILD_SHA: string | undefined;
 /** Where error lines are reported, while SENTRY_DSN is set: one tracker for the isolate, its sends counted together. */
 const errors =
   config.settings.sentryDsn === null
@@ -35,7 +37,7 @@ const errors =
     : createErrorTracker({
         dsn: config.settings.sentryDsn,
         environment: config.environment,
-        release: env.CF_VERSION_METADATA.tag === "" ? env.CF_VERSION_METADATA.id : env.CF_VERSION_METADATA.tag,
+        release: releaseOf(env.CF_VERSION_METADATA, typeof BUILD_SHA === "string" ? BUILD_SHA : null),
         fetch: (input, init) => fetch(input, init),
         now: () => new Date(),
       });
