@@ -5,6 +5,7 @@ import type { Queued } from "../../../apps/tech/src/store/outbox.ts";
 import { steps as copy, oneVisit } from "../../../apps/tech/src/content.ts";
 import {
   cameOff,
+  cameOffEarly,
   DECLINED,
   kitChoices,
   labelTaken,
@@ -21,6 +22,7 @@ const EMPTY: PieceForm = {
   lot: "",
   stock: null,
   oldCode: "",
+  failure: null,
   choice: null,
   later: false,
 };
@@ -244,7 +246,7 @@ describe("the piece that comes off a replacement", () => {
     base: null,
     supplier_lot: null,
     fitted_at: fitted,
-    replacement_due_at: null,
+    replacement_due_at: null as string | null,
     failed_at: null,
     failure_reason: null,
     replaced_at: null,
@@ -261,5 +263,22 @@ describe("the piece that comes off a replacement", () => {
   it("is none where nothing is on the head, and on any other visit", () => {
     expect(cameOff(job([]))).toBeNull();
     expect(cameOff({ ...job([piece("MM-STD-4417-B", "2026-07-02")]), type: "first_fit" })).toBeNull();
+  });
+
+  it("came off early where it was due after the visit's day, and not on or after its due day", () => {
+    const due = (on: string | null) => job([{ ...piece("MM-STD-4417-B", "2026-07-02"), replacement_due_at: on }]);
+    expect(cameOffEarly(due("2027-01-02"))).toBe(true);
+    expect(cameOffEarly(due("2026-11-17"))).toBe(false);
+    expect(cameOffEarly(due("2026-10-02"))).toBe(false);
+    expect(cameOffEarly(due(null))).toBe(false);
+    expect(cameOffEarly(job([]))).toBe(false);
+  });
+
+  it("is sent with why it failed where the technician said", () => {
+    const off = { ...EMPTY, code: LABEL, oldCode: "MM-STD-1201-A", failure: "edges_lifting" };
+    expect(pieceBody(off, FIRST_FIT)).toEqual({
+      piece_code: LABEL,
+      old_piece: { piece_code: "MM-STD-1201-A", failure_reason: "edges_lifting" },
+    });
   });
 });

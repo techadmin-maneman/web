@@ -68,6 +68,7 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
         { kind: "in", at: ARJUN.last_message_at, author: "client", text: ARJUN.last_line, delivery: null },
       ],
       close_reason: null,
+      piece_report: null,
     }),
   });
   await page.goto("/messages");
@@ -97,7 +98,7 @@ test("names a Care person by the name clients know them by, once a manager has s
   const named = { ...ARJUN, care_name: "Asha" };
   await answer(page, {
     "GET /api/conversations": json({ conversations: [named], next_cursor: null }),
-    "GET /api/conversations/{id}": json({ conversation: named, items: [], close_reason: null }),
+    "GET /api/conversations/{id}": json({ conversation: named, items: [], close_reason: null, piece_report: null }),
   });
   await page.goto("/messages");
   await chatRow(page, "Arjun Mehta").click();
@@ -151,6 +152,7 @@ test("keeps a chat open when, read again, the list it was opened from no longer 
       conversation: ARJUN,
       items: [{ kind: "in", at: ARJUN.last_message_at, author: "client", text: ARJUN.last_line, delivery: null }],
       close_reason: null,
+      piece_report: null,
     }),
   });
   await page.goto("/messages");

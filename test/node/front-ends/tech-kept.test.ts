@@ -37,6 +37,7 @@ import {
   eighthRelease,
   eleventhRelease,
   thirteenthRelease,
+  fourteenthRelease,
   twelfthRelease,
   firstRelease,
   ninthRelease,
@@ -123,6 +124,7 @@ const card = (id: string, date: string) =>
     partial_reasons: [],
     lost_reasons: [],
     not_fitted_reasons: [],
+    failure_reasons: [],
     consumables: [],
     kit_hair_systems: [],
     products: [],
@@ -629,5 +631,13 @@ describe("what the build before the design check's API side kept", () => {
     const { booked_via: _via, not_fitted_reasons: _reasons, ...earlier } = card("a", TODAY);
     await thirteenthRelease([{ ...earlier, v: 2 }]);
     expect(await keptJob("a")).toMatchObject({ booked_via: null, not_fitted_reasons: [] });
+  });
+});
+
+describe("what the build before the reasons a hair system failed kept", () => {
+  it("reads a replacement's card with no failure reasons, so a piece off early asks none, until read again", async () => {
+    const { failure_reasons: _reasons, ...earlier } = card("a", TODAY);
+    await fourteenthRelease([{ ...earlier, v: 2 }]);
+    expect(await keptJob("a")).toMatchObject({ failure_reasons: [] });
   });
 });

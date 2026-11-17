@@ -97,6 +97,7 @@ const SMALL_TABLES = new Set([
   "partial_reasons",
   "lost_reasons",
   "not_fitted_reasons",
+  "failure_reasons",
   // A row a product a time Finance set its cost.
   "standard_costs",
   // A row a city, month and measure.

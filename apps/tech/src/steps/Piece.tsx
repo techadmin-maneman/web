@@ -149,12 +149,11 @@ function Fitting({
   const [base, setBase] = useState(sent?.base ?? "");
   const [lot, setLot] = useState(sent?.lot ?? "");
   const [stock, setStock] = useState<string | null>(sent?.stock ?? null);
+  const [failure, setFailure] = useState(sent?.failure ?? null);
   const { looked, setLooked, looking, look } = useLookup(job, { code, base, lot }, { base: setBase, lot: setLot });
   const [{ choice, later }, decide] = useDecision(sent);
   // The piece that comes off is the one the card has on the client's head from before today.
-  const oldCode = cameOff(job)?.piece_code ?? "";
-
-  const form: PieceForm = { code, base, lot, stock, oldCode, choice, later };
+  const form: PieceForm = { code, base, lot, stock, oldCode: cameOff(job)?.piece_code ?? "", failure, choice, later };
   const missing = stillMissing(form, job, checkedOf(looked));
   /** A label read or typed, with what follows it (piece-form's labelTaken). */
   const takeLabel = (label: string) => {
@@ -183,7 +182,7 @@ function Fitting({
       {job.one_visit && <Asked job={job} decided={{ choice, later }} decide={decide} />}
       {fitsToday && (
         <div className={styles.scan}>
-          <Expected job={job} fit={matchTo?.fit ?? null} choice={choice} />
+          <Expected job={job} fit={matchTo?.fit ?? null} choice={choice} failure={failure} onFailure={setFailure} />
           {/* Confirmed once it is known: with no signal to check it, it stays as typed, saying so. */}
           {missing === null && isLabel(code) && looked.state !== "offline" ? (
             <Confirmed

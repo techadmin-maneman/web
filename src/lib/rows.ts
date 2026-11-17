@@ -537,6 +537,14 @@ export interface Rows {
     readonly subject_id: string | null;
     readonly payload_json: string | null;
   };
+  readonly failure_reasons: {
+    readonly code: string;
+    readonly label: string;
+    readonly position: number;
+    readonly retired_at: string | null;
+    readonly set_by: string;
+    readonly set_at: string;
+  };
   readonly first_fit_requests: {
     readonly id: string;
     readonly person_id: string;
@@ -1058,6 +1066,7 @@ export interface Rows {
     readonly deleted_at: string | null;
     readonly replacement_booked: number;
     readonly replaced_at: string | null;
+    readonly failure_code: string | null;
   };
   readonly pincode_demand: {
     readonly pincode: string;

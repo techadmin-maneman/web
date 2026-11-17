@@ -26,6 +26,7 @@ const DATED_TABLES: readonly (readonly [table: string, holds: string, where: str
   ["partial_reasons", "Why a visit is left partly done", "Settings · Job sheet"],
   ["lost_reasons", "Why a lead is lost", "Settings · Job sheet"],
   ["not_fitted_reasons", "Why a hair system could not be fitted today", "Settings · Job sheet"],
+  ["failure_reasons", "Why a hair system failed", "Settings · Job sheet"],
   ["word_versions", "The words the site and the apps show, as ops edit them", "Words"],
 ];
 

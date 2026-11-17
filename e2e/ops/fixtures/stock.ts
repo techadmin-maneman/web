@@ -149,10 +149,15 @@ export const JOB_SHEET = {
     ["piece_damaged", "Piece damaged"],
     ["wrong_piece", "Wrong piece"],
   ]),
+  failure_reasons: list([
+    ["edges_lifting", "Edges lifting"],
+    ["shedding", "Shedding"],
+  ]),
   max_checklist_items: 20,
   max_partial_reasons: 12,
   max_lost_reasons: 12,
   max_not_fitted_reasons: 12,
+  max_failure_reasons: 12,
   max_label: 80,
 } satisfies OpsReply<"/api/job-sheet">;
 

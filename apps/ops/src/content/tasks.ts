@@ -398,6 +398,7 @@ export const tasks = {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already booked or closed."),
       invalid_request: "Give a reason.",
+      failure_reason: changed("That reason is no longer listed, or no hair system of the fit is on record."),
       offline: OFFLINE,
       unknown: FAILED,
     },

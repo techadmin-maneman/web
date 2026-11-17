@@ -342,8 +342,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "technician_id",
       "mobile_hash",
     ],
-    whyLeftOut:
-      "The one-time codes we sent, kept only as one-way hashes for a day; the sign-ins say when they were used.",
+    whyLeftOut: "The one-time codes we sent, kept as one-way hashes for a day; the sign-ins say when they were used.",
     erasure: {
       deletes: true,
       blanks: ["code_hash"],
@@ -399,8 +398,9 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "synced_at",
       "deleted_at",
       "replacement_booked",
+      "failure_code",
     ],
-    whyLeftOut: "Our and FSM's keys, our supplier's batch, and whether a replacement is booked, which the visits show.",
+    whyLeftOut: "Our and FSM's keys, our supplier's batch, the failure list's code, and if a replacement is booked.",
     erasure: { why: "Kept, as the record of what was fitted." },
   },
   referral_attributions: {

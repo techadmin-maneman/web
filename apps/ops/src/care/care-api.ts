@@ -37,8 +37,12 @@ export const careApi = {
     client.post("/api/conversations/{id}/replies", { path: { id }, body: { text } }),
   noteChat: (id: string, text: string) =>
     client.post("/api/conversations/{id}/notes", { path: { id }, body: { text } }),
-  closeChat: (id: string, reason: CloseReason) =>
-    client.post("/api/conversations/{id}/close", { path: { id }, body: { reason } }),
+  /** Closed with what it was about, and, where the client's hair system was at fault, why it failed (ADR 0272). */
+  closeChat: (id: string, reason: CloseReason, failure: string | null = null) =>
+    client.post("/api/conversations/{id}/close", {
+      path: { id },
+      body: failure === null ? { reason } : { reason, failure_reason: failure },
+    }),
   careTeam: () => client.get("/api/care-team"),
   moveCarePerson: (personId: string, email: string) =>
     client.post("/api/clients/{id}/care-person", { path: { id: personId }, body: { email } }),

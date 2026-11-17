@@ -15,6 +15,7 @@ import { QuickReplyPick } from "./QuickReplies.tsx";
 import form from "@maneman/ui/forms.module.css";
 import styles from "./care.module.css";
 import { FormActions } from "@maneman/ui/FormActions";
+import { AtFault } from "../clients/index.ts";
 
 const { compose } = copy;
 
@@ -145,11 +146,16 @@ export function Composer(props: {
   );
 }
 
-/** Close chat, in the chat's head: what it was about, opening on the latest open report's, then Close, in a drawer. */
+/**
+ * Close chat, in the chat's head: what it was about, opening on the latest open report's, then Close, in a drawer.
+ * Where that report is about the hair system the client wears, whether it was at fault (ADR 0272).
+ */
 export function CloseChat(props: {
   readonly conversationId: string;
   /** What the chat's latest report still open was about (docs/decisions/0259-the-issue-log.md); null for none. */
   readonly suggested: CloseReason | null;
+  /** The client whose hair system that report is about; null where it is about none. */
+  readonly pieceOf: string | null;
   readonly onThread: (thread: ChatThread, said: string) => void;
 }) {
   return <DrawerButton label={compose.closeChat}>{(close) => <CloseForm {...props} onClosed={close} />}</DrawerButton>;
@@ -158,16 +164,18 @@ export function CloseChat(props: {
 function CloseForm(props: {
   readonly conversationId: string;
   readonly suggested: CloseReason | null;
+  readonly pieceOf: string | null;
   readonly onThread: (thread: ChatThread, said: string) => void;
   readonly onClosed: () => void;
 }) {
   const [reason, setReason] = useState<CloseReason>(props.suggested ?? "other");
+  const [fault, setFault] = useState("");
   const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
   const shut = () =>
     once(async () => {
       setFailure(null);
-      const answer = await careApi.closeChat(props.conversationId, reason);
+      const answer = await careApi.closeChat(props.conversationId, reason, fault === "" ? null : fault);
       if (!answer.ok) {
         setFailure({ code: answer.code, fields: answer.fields });
         return;
@@ -178,12 +186,21 @@ function CloseForm(props: {
   return (
     <div className={form.fields}>
       <ReasonChoice reason={reason} onReason={setReason} error={boxError(copy.errors, failure, "reason")} />
+      {props.pieceOf !== null && (
+        <AtFault
+          clientId={props.pieceOf}
+          value={fault}
+          disabled={busy}
+          error={boxError(copy.errors, failure, "failure_reason")}
+          onChange={setFault}
+        />
+      )}
       <FormActions>
         <Button variant="primary" size="small" disabled={busy} onClick={() => void shut()}>
           {compose.closeChat}
         </Button>
       </FormActions>
-      <Refused failed={failure} errors={copy.errors} boxes={["reason"]} />
+      <Refused failed={failure} errors={copy.errors} boxes={["reason", "failure_reason"]} />
     </div>
   );
 }

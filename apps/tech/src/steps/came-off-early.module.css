@@ -1,0 +1,13 @@
+/* The reason picked for a piece that came off early (./CameOffEarly.tsx), with Change beside it, on one line as the
+   rows above it set their words. The link and the sheet are "Can't fit today"'s (./cannot-fit.module.css). */
+
+.said {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+  color: var(--ui-text);
+}

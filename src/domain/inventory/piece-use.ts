@@ -10,6 +10,7 @@
 
 import { useStillToRecord } from "../../policy/stock.ts";
 import { latestStep, takenFor, takenFromKit } from "../field/job-use.ts";
+import { failureWordsOf, jobSheet } from "../field/job-sheet-settings.ts";
 import { pieceStepOf } from "./pieces.ts";
 import { fitsNothing, pieceBodyOf } from "../field/job-event-bodies.ts";
 import { pieceReturnStatements } from "./piece-returns.ts";
@@ -77,12 +78,12 @@ export async function recordPieceUse(
   const code = stockCodeOf(body);
   const fitted = new Map(code === null ? [] : [[code, 1]]);
   const at = input.now.toISOString();
-  // The piece that came off goes back into the kit to hand in, whether it failed or was due.
+  // The piece that came off goes back into the kit to hand in, whether it failed or was due, why in its reason's words.
   const oldPiece = oldPieceOf(body);
+  const why = oldPiece?.reason ?? null;
+  const reason = why === null ? null : failureWordsOf(await jobSheet(db), why).words;
   const returned =
-    oldPiece === null
-      ? []
-      : pieceReturnStatements(db, { jobId, technicianId, label: oldPiece.code, reason: oldPiece.reason, at });
+    oldPiece === null ? [] : pieceReturnStatements(db, { jobId, technicianId, label: oldPiece.code, reason, at });
   const owed = useStillToRecord(fitted, await takenFor(db, { jobId, technicianId, hairSystems: true }));
   if (owed.size === 0) {
     if (returned.length > 0) await db.batch(returned);

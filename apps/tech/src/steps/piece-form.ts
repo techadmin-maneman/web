@@ -26,6 +26,8 @@ export interface PieceForm {
   readonly stock: string | null;
   /** On a replacement, the piece on the client's head, from the card; empty for none. */
   readonly oldCode: string;
+  /** Why that piece came off before it was due, by a code of the card's failure_reasons; null where not said. */
+  readonly failure: string | null;
   readonly choice: Choice;
   /** On a one visit, a product chosen with its fit booked for another day (docs/decisions/0247-the-steps-left.md). */
   readonly later: boolean;
@@ -44,6 +46,15 @@ const onTheHead = (piece: ClientPiece): boolean =>
 export function cameOff(job: Pick<Job, "type" | "pieces" | "date">): ClientPiece | null {
   if (job.type !== "replacement") return null;
   return (job.pieces ?? []).find((piece) => onTheHead(piece) && (piece.fitted_at ?? "") < job.date) ?? null;
+}
+
+/**
+ * Whether the piece a replacement takes off came off before it was due, which asks, never requires, why
+ * (docs/decisions/0272-why-a-hair-system-failed.md).
+ */
+export function cameOffEarly(job: Pick<Job, "type" | "pieces" | "date">): boolean {
+  const due = cameOff(job)?.replacement_due_at ?? null;
+  return due !== null && due > job.date;
 }
 
 /** The product a piece is fitted as: chosen on a one visit, paid for on a first fit, the profile's on a replacement. */
@@ -262,6 +273,10 @@ export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit" | "kit_hai
     ...(base === undefined ? {} : { base }),
     ...(given(form.lot) ? { supplier_lot: form.lot.trim() } : {}),
     ...(form.stock === null ? {} : { stock_code: form.stock }),
-    ...(given(form.oldCode) ? { old_piece: { piece_code: form.oldCode } } : {}),
+    ...(given(form.oldCode) ? { old_piece: oldPieceOf(form) } : {}),
   };
 }
+
+/** The piece that came off, with why where the technician said it failed. */
+const oldPieceOf = (form: PieceForm) =>
+  form.failure === null ? { piece_code: form.oldCode } : { piece_code: form.oldCode, failure_reason: form.failure };

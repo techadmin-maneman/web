@@ -17,9 +17,11 @@ import {
   INBOX_VIEWS,
   listConversations,
   PAGE_THREADS,
+  PIECE_REPORTS,
   type InboxContext,
 } from "../../domain/care/inbox.ts";
 import { coverOn } from "../../domain/care/cover.ts";
+import { failWornPiece } from "../../domain/inventory/piece-failures.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { addNote, CLOSE_REASONS, closeConversation, replyTo } from "../../domain/care/replies.ts";
 
@@ -86,6 +88,11 @@ const ThreadSchema = z
     close_reason: z.union([z.enum(CLOSE_REASONS), z.null()]).openapi({
       description:
         "The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none.",
+    }),
+    piece_report: z.union([z.enum(PIECE_REPORTS), z.null()]).openapi({
+      description:
+        "That report's category where it is about the hair system the client wears, which the close asks whether it " +
+        "failed (ADR 0272); null for none.",
     }),
   })
   .strict()
@@ -178,13 +185,31 @@ const closeRoute = opsRoute({
       required: true,
       ...json(
         z
-          .object({ reason: z.enum(CLOSE_REASONS) })
+          .object({
+            reason: z.enum(CLOSE_REASONS),
+            failure_reason: z
+              .string()
+              .min(1)
+              .max(64)
+              .optional()
+              .openapi({
+                description:
+                  "Where the hair system the client wears was at fault: why it failed, by a code of the job sheet's " +
+                  "failure_reasons; it is marked failed today (ADR 0272). Left out where it was not.",
+              }),
+          })
           .strict()
           .openapi("ChatClose"),
       ),
     },
   },
-  responses: { 200: answered, 404: errorResponse("not_found") },
+  responses: {
+    200: answered,
+    400: errorResponse(
+      "invalid_request: failure_reason is not on the failure list, or the client on the chat's number wears no hair system",
+    ),
+    404: errorResponse("not_found"),
+  },
 });
 
 /** The Care hours ops set, and who covers whom today. */
@@ -226,7 +251,12 @@ function registerAnswers(app: App): void {
 
   app.openapi(closeRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const closed = await closeConversation(c.env.DB, { ...changeOf(c, id), reason: c.req.valid("json").reason });
+    const { reason, failure_reason: failure } = c.req.valid("json");
+    if (failure !== undefined) {
+      const failed = await failWornPiece(c.env.DB, { conversationId: id, reason: failure }, changeOf(c, id));
+      if (!failed.ok) return refuse(c, failed.code === "not_found" ? "not_found" : "invalid_request", failed.fields);
+    }
+    const closed = await closeConversation(c.env.DB, { ...changeOf(c, id), reason });
     if (closed === "not_found") return refuse(c, "not_found");
     const thread = await conversationThread(c.env.DB, c.env.BACKUPS, id, await inboxContext(c));
     if (thread === null) return refuse(c, "not_found");

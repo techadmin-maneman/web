@@ -178,6 +178,9 @@ export const AUDIT_ACTIONS = [
   "consumable.delete",
   "consumable.usage",
   "job_sheet.set",
+  // A hair system marked failed by ops, or its failure taken back (docs/decisions/0272-why-a-hair-system-failed.md).
+  "piece.failed",
+  "piece.failure_undone",
   "stock.receive",
   "stock.transfer",
   "stock.count",

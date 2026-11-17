@@ -72,6 +72,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   partial_reasons: [],
   lost_reasons: [],
   not_fitted_reasons: [],
+  failure_reasons: [],
   consumables: [],
   kit_hair_systems: [],
   products: [],

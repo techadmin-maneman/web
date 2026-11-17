@@ -1,5 +1,6 @@
 // Failure rates on the Quality page (docs/decisions/0188-failure-rates-and-value-at-risk.md): the pieces fitted in the
-// last year and how many failed, grouped one way at a time.
+// last year and how many failed, grouped one way at a time; by reason, of all of them, how many failed for each
+// (docs/decisions/0272-why-a-hair-system-failed.md).
 
 import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
@@ -18,13 +19,19 @@ import { RowHead } from "@maneman/ui/RowHead";
 import { qualityApi } from "./quality-api.ts";
 
 type Rates = Success<paths["/api/quality/failures"]["get"]>;
-type Way = "code" | "lot" | "supplier" | "technician";
+type Way = "code" | "lot" | "supplier" | "technician" | "reason";
 
-const WAYS: readonly Way[] = ["code", "lot", "supplier", "technician"];
+const WAYS: readonly Way[] = ["code", "lot", "supplier", "technician", "reason"];
 const loadRates = () => qualityApi.failures();
 
 const groupsOf = (rates: Rates, way: Way) =>
-  ({ code: rates.by_code, lot: rates.by_lot, supplier: rates.by_supplier, technician: rates.by_technician })[way];
+  ({
+    code: rates.by_code,
+    lot: rates.by_lot,
+    supplier: rates.by_supplier,
+    technician: rates.by_technician,
+    reason: rates.by_reason,
+  })[way];
 
 /** The way the rates are grouped, in the panel's head beside its title. */
 function WayChoice({ way, onWay }: { way: Way; onWay: (way: Way) => void }) {

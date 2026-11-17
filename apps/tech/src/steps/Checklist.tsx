@@ -54,11 +54,12 @@ function Tasks({
   onFinish: (body: EventBody<"checklist">) => void;
   onBack: () => void;
 }) {
-  // The list it opened with, while it is open: the choice is made at the piece step, before it, and the moment between
-  // that step leaving the phone and the card being read again never draws the other list
-  // (docs/decisions/0271-the-technician-follow-ups.md).
-  const [openedDeclined] = useState(declined);
-  const items = openedDeclined ? job.checklist_if_declined : job.checklist;
+  // The list it opened with, while it is open, but for the client's no heard since, which only shortens it: the choice
+  // is made at the piece step, before it, so the moment between that step leaving the phone and the card being read
+  // again never draws the other list for long (docs/decisions/0272-why-a-hair-system-failed.md).
+  const [shownDeclined, showDeclined] = useState(declined);
+  if (declined && !shownDeclined) showDeclined(true);
+  const items = shownDeclined ? job.checklist_if_declined : job.checklist;
   const [at, setAt] = useState(() => {
     const listed = items.map((item) => item.id);
     const passed =
@@ -78,7 +79,7 @@ function Tasks({
   const last = at >= items.length - 1;
   return (
     <StepFrame
-      title={titleOf(job, openedDeclined)}
+      title={titleOf(job, shownDeclined)}
       page={at}
       action={last ? undefined : visit.nextTask}
       ready

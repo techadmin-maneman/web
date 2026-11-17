@@ -8449,6 +8449,13 @@ One of the client's try-on looks, under the card's own unlock, never cached
       },
       "description": "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0270). Empty for any other visit."
     },
+    "failure_reasons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/JobSheetItem"
+      },
+      "description": "On a replacement, why the piece that came off may have failed, as ops set them, in their order: what the technician picks from where it came off before it was due (ADR 0272). Empty for any other visit."
+    },
     "consumables": {
       "type": "array",
       "items": {
@@ -8748,6 +8755,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "partial_reasons",
     "lost_reasons",
     "not_fitted_reasons",
+    "failure_reasons",
     "consumables",
     "kit_hair_systems",
     "products",
@@ -10741,7 +10749,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "piece_code"
       ],
       "additionalProperties": false,
-      "description": "On a replacement: the piece that came off, and why it failed where it did; with no reason, it was due and is replaced."
+      "description": "On a replacement: the piece that came off, and why it failed where it did, by a code of the card's failure_reasons or in words; with no reason, it was due and is replaced (ADR 0272)."
     },
     "product": {
       "type": "string",

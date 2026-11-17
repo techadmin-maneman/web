@@ -9,6 +9,7 @@ import { archivedMessages } from "./chat-archive.ts";
 import { giveCarePerson } from "./care-people.ts";
 import { chatOpened, FROM_APP } from "./chat-opened.ts";
 import { openReportsOf } from "./issue-log.ts";
+import type { ProblemCategory } from "../../policy/problems.ts";
 import { read, readAll } from "../../lib/read-all.ts";
 import { CLOSE_REASON_OF, type CloseReason } from "./replies.ts";
 
@@ -229,7 +230,29 @@ export interface Thread {
    * its category; null for none.
    */
   readonly close_reason: CloseReason | null;
+  /**
+   * That report's category where it is about the hair system the client wears, which the close asks whether it failed
+   * (docs/decisions/0272-why-a-hair-system-failed.md); null for none.
+   */
+  readonly piece_report: PieceReport | null;
 }
+
+/** The reports about the hair system itself, which may mean it failed. */
+export const PIECE_REPORTS = ["edges_lifting", "shedding", "colour"] as const satisfies readonly ProblemCategory[];
+type PieceReport = (typeof PIECE_REPORTS)[number];
+
+const isPieceReport = (category: ProblemCategory | null | undefined): category is PieceReport =>
+  PIECE_REPORTS.some((each) => each === category);
+
+/** Whether the client wears a hair system now: one on record fitted, and neither failed nor replaced. */
+const wearsOne = async (db: D1Database, personId: string): Promise<boolean> =>
+  (await db
+    .prepare(
+      `SELECT 1 FROM pieces WHERE person_id = ?1 AND deleted_at IS NULL AND failed_at IS NULL AND replaced_at IS NULL
+         AND fitted_at IS NOT NULL LIMIT 1`,
+    )
+    .bind(personId)
+    .first()) !== null;
 
 /** How far back a thread reads, so a long-standing client's opens quickly. */
 const THREAD_ITEMS = 300;
@@ -297,5 +320,12 @@ export async function conversationThread(
   const [latest] = holder === null ? [] : await openReportsOf(db, holder);
   const closeReason =
     latest?.category === undefined || latest.category === null ? null : CLOSE_REASON_OF[latest.category];
-  return { conversation: rowOf({ ...listed, last_line: null }, context), items, close_reason: closeReason };
+  const category = latest?.category;
+  const pieceReport = isPieceReport(category) && holder !== null && (await wearsOne(db, holder)) ? category : null;
+  return {
+    conversation: rowOf({ ...listed, last_line: null }, context),
+    items,
+    close_reason: closeReason,
+    piece_report: pieceReport,
+  };
 }

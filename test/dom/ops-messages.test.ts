@@ -93,7 +93,12 @@ beforeEach(() => {
           delivery: "sent",
         };
         return Promise.resolve(
-          Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied], close_reason: "billing" }),
+          Response.json({
+            conversation: { ...ARJUN, state: "waiting" },
+            items: [replied],
+            close_reason: "billing",
+            piece_report: null,
+          }),
         );
       }
       if (address.pathname === "/api/care-team") {
@@ -158,10 +163,14 @@ beforeEach(() => {
       }
       if (address.pathname === `/api/conversations/${IMRAN.id}`) {
         const said = { kind: "in", at: IMRAN.last_message_at, author: "client", text: IMRAN.last_line, delivery: null };
-        return Promise.resolve(Response.json({ conversation: IMRAN, items: [said], close_reason: null }));
+        return Promise.resolve(
+          Response.json({ conversation: IMRAN, items: [said], close_reason: null, piece_report: null }),
+        );
       }
       if (address.pathname === `/api/conversations/${STRANGER.id}`) {
-        return Promise.resolve(Response.json({ conversation: STRANGER, items: [], close_reason: null }));
+        return Promise.resolve(
+          Response.json({ conversation: STRANGER, items: [], close_reason: null, piece_report: null }),
+        );
       }
       if (address.pathname === `/api/conversations/${ARJUN.id}`) {
         return Promise.resolve(
@@ -169,6 +178,7 @@ beforeEach(() => {
             conversation: ARJUN,
             // The chat's open report is about a payment (docs/decisions/0259-the-issue-log.md).
             close_reason: "billing",
+            piece_report: null,
             items: [
               {
                 kind: "auto",

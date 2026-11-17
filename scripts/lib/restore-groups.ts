@@ -261,6 +261,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "partial_reasons",
       "lost_reasons",
       "not_fitted_reasons",
+      "failure_reasons",
       "pay_grades",
       "visit_pay_rates",
       "word_versions",

@@ -676,6 +676,15 @@ export const clients = {
       unknown: FAILED,
     },
   },
+  /**
+   * Asked as Care close a guarantee claim or a chat about the hair system the client wears
+   * (docs/decisions/0272-why-a-hair-system-failed.md): No, or Yes with why. Our words.
+   */
+  atFault: {
+    label: "Was the hair system at fault?",
+    no: "No",
+    yes: (reason: string) => `Yes · ${reason}`,
+  },
   /** Every piece the client has been fitted with. */
   pieces: {
     title: "Hair systems",
@@ -692,6 +701,29 @@ export const clients = {
     failed: (date: string, reason: string | null) => (reason === null ? date : `${date} · ${reason}`),
     /** A piece another took the place of: "Replaced 24 Jun". */
     replaced: (date: string) => `Replaced ${date}`,
+    /** Marking one failed, and taking that back, for the reasons atFault offers. Our words. */
+    failure: {
+      mark: "Mark failed",
+      markLabel: (code: string) => `Mark ${code} failed`,
+      title: (code: string) => `Mark ${code} failed`,
+      reason: "Why it failed",
+      pickReason: "Pick a reason",
+      failedOn: "Day it failed",
+      marking: "Marking…",
+      undo: "Undo",
+      undoLabel: (code: string) => `Undo ${code} failed`,
+      undoing: "Undoing…",
+      errors: {
+        failure_reason: changed("That reason is no longer listed."),
+        failed_on: "Pick a day from its fit to today.",
+        not_changeable: changed("Its failure changed meanwhile."),
+        not_found: changed("Not found."),
+        not_permitted: NOT_PERMITTED,
+        offline: OFFLINE,
+        unconfirmed: UNCONFIRMED,
+        unknown: FAILED,
+      },
+    },
     // The board draws no client without a piece, and every client has none until they are fitted.
     empty: "No hair system fitted yet.",
   },

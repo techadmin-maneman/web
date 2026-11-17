@@ -34,10 +34,10 @@ function answer(url: string): Promise<Response> {
     );
   }
   if (path === `/api/conversations/${ARJUN.id}`) {
-    return Promise.resolve(Response.json({ conversation: ARJUN, items: [], close_reason: null }));
+    return Promise.resolve(Response.json({ conversation: ARJUN, items: [], close_reason: null, piece_report: null }));
   }
   if (path === `/api/conversations/${IMRAN.id}`) {
-    return Promise.resolve(Response.json({ conversation: IMRAN, items: [], close_reason: null }));
+    return Promise.resolve(Response.json({ conversation: IMRAN, items: [], close_reason: null, piece_report: null }));
   }
   if (path === `/api/conversations/${ARJUN.id}/report-photos`)
     return Promise.resolve(Response.json({ photos: PHOTOS }));
