@@ -187,8 +187,11 @@ interface RefundToRecord {
   processed_at: string | null;
   created_at: string;
   books_payment_id: string;
-  /** The invoice of the charge the payment kept, set against it; null for none. */
-  books_kept_invoice_id: string | null;
+  /**
+   * The invoice of the charge the payment kept, where the payment's refunds now reach into what it kept, so Books has
+   * nothing left on the payment to refund from; null otherwise, as for the refund of the part not kept.
+   */
+  kept_invoice_to_free: string | null;
 }
 
 /** Refunds Razorpay has processed, of payments Books has. */
@@ -196,7 +199,12 @@ export async function refundsToRecord(pass: Pass): Promise<RefundToRecord[]> {
   const { results } = await pass.db
     .prepare(
       `SELECT r.id, p.person_id, r.razorpay_refund_id, r.amount, r.processed_at, r.created_at, p.books_payment_id,
-         p.books_kept_invoice_id
+         CASE WHEN p.refunded_amount > p.amount - COALESCE(
+             (SELECT c.kept_amount FROM visit_changes c WHERE c.payment_id = p.id AND c.kind IN ('cancelled', 'replaced')),
+             (SELECT n.kept_amount FROM no_show_cases n
+              WHERE n.appointment_id = p.appointment_id AND n.decision = 'charged' AND p.kind = 'visit'),
+             p.amount)
+           THEN p.books_kept_invoice_id END AS kept_invoice_to_free
        FROM refunds r JOIN payments p ON p.id = r.payment_id
        WHERE r.status = 'processed' AND r.books_refund_id IS NULL AND p.books_payment_id IS NOT NULL
          AND (r.books_checked_at IS NULL OR r.books_checked_at < ?1)
@@ -224,12 +232,13 @@ export async function recordRefund(pass: Pass, refund: RefundToRecord, fromAccou
     id: refund.id,
     personId: refund.person_id,
     what: `refund ${refund.id} (Razorpay ${refund.razorpay_refund_id})`,
-    // Money set against a kept charge's issued invoice comes back only once that invoice is credited.
+    // Money set against a kept charge's issued invoice can be refunded from the payment only once it is taken off it.
     then:
-      refund.books_kept_invoice_id === null
+      refund.kept_invoice_to_free === null
         ? "It is asked again every hour."
-        : `Its payment is set against invoice ${refund.books_kept_invoice_id} for a charge kept: credit that invoice in ` +
-          `Books, and record the refund there under ${refund.razorpay_refund_id}. It is looked for every hour.`,
+        : `Its payment is set against invoice ${refund.kept_invoice_to_free} for a charge kept, and this refund reaches ` +
+          "into it: in Books, take the payment off that invoice, then credit or void the invoice. The refund is then " +
+          "recorded from the payment within the hour.",
   } as const;
   try {
     const booksRefundId =

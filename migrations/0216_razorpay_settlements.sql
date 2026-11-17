@@ -24,8 +24,8 @@ CREATE TABLE razorpay_settlements (
 CREATE INDEX razorpay_settlements_to_record ON razorpay_settlements (settled_at)
   WHERE books_transfer_id IS NULL OR (books_fee_id IS NULL AND fees > 0);
 
--- The invoice Books raised for the charge a payment kept (src/domain/books/books-kept.ts), so a refund of it can name
--- the invoice to credit, and staging's clean-up can find it. The deployed Worker neither reads nor writes it.
+-- The invoice Books raised for the charge a payment kept (src/domain/books/books-kept.ts), so a refund reaching into it
+-- can name the invoice to free the payment from, and staging's clean-up can find it.
 ALTER TABLE payments ADD COLUMN books_kept_invoice_id TEXT;
 
 -- backfill: none. No settlement was kept, nor kept charge invoiced, before this migration.

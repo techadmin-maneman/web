@@ -44,7 +44,7 @@ staging and production, and its one account for Razorpay's money is "Razorpay Cl
    (`src/domain/books/books-kept.ts`). A no-show's charge waits until its dispute window has closed with no dispute
    open, as a dispute may give it all back. An invoice found voided is told to ops to settle by hand, as before, and so
    is an erased client's charge. The invoice's ID is kept on the payment (`books_kept_invoice_id`), so staging's
-   clean-up finds it, and a refund of the payment that Books refuses names the invoice ops credit first.
+   clean-up finds it, and a refund reaching into the kept part names the invoice ops free the payment from.
 
 ## Consequences
 
@@ -54,7 +54,9 @@ staging and production, and its one account for Razorpay's money is "Razorpay Cl
   (`scripts/lib/wrangler-config-check.ts`) no longer refuses them shared; it still refuses a shared Razorpay key.
   Staging names Razorpay Clearing, its payments and refunds there carrying "Staging test", but neither the bank nor
   the fee's account, and its webhook leaves `settlement.processed` off.
-- A kept charge refunded after its invoice is issued: Books refuses the refund until ops credit the invoice, and ops
-  are told which one. Before, the kept money sat as the client's credit and the refund went through.
+- A refund that reaches into a kept charge after its invoice is issued: Books refuses it, as the payment has nothing
+  left unused, and ops are told to take the payment off that invoice, then credit or void it; the next pass then records
+  the refund from the payment. The refund of the part not kept goes through as before. Before, the kept money sat as
+  the client's credit and every refund went through.
 - A no-show charge's invoice comes once its dispute window, 30 days by default, has closed; the CA is asked whether
   that is in time (open point 16).

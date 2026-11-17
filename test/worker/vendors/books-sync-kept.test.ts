@@ -167,26 +167,49 @@ describe("a charge we keep", () => {
     expect(books.made.invoices).toHaveLength(1);
   });
 
-  it("refunded after it is invoiced, tells ops to credit its invoice when Books refuses the refund", async () => {
-    await payment();
-    await cancelled("cancelled", 400000);
-    const books = createStubBooks();
-    await pass(books, "books-customer-9");
-    await env.DB.prepare(
-      `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, created_at, processed_at, updated_at)
-       VALUES ('refund-kept', ?1, 'rfnd_kept1', 400000, 'processed', ?2, ?2, ?2)`,
-    )
-      .bind(PAYMENT, NOW.toISOString())
-      .run();
-    books.refuseNext("recordRefund");
+  describe("refunded after it is invoiced", () => {
+    /** The visit cancelled late, its kept part invoiced; then a refund of `amount`, the payment's refunds now `total`. */
+    async function refunded(id: string, amount: number, total: number, books: StubBooks) {
+      await payment();
+      await cancelled("cancelled", 400000);
+      await pass(books, "books-customer-9");
+      await env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, created_at, processed_at, updated_at)
+           VALUES (?1, ?2, ?3, ?4, 'processed', ?5, ?5, ?5)`,
+        ).bind(id, PAYMENT, `rfnd_${id}`, amount, NOW.toISOString()),
+        env.DB.prepare("UPDATE payments SET refunded_amount = ?1 WHERE id = ?2").bind(total, PAYMENT),
+      ]);
+    }
 
-    await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
-    expect(told).toEqual([
-      expect.stringContaining(
-        `Its payment is set against invoice ${books.made.issued[0] ?? ""} for a charge kept: credit that invoice in ` +
-          "Books, and record the refund there under rfnd_kept1.",
-      ),
-    ]);
+    it("of the part not kept is recorded from the payment, and a refusal of it says nothing of the invoice", async () => {
+      const books = createStubBooks();
+      await refunded("routine", 2600000, 2600000, books);
+      books.refuseNext("recordRefund");
+
+      await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
+      expect(told).toEqual([expect.stringContaining("Books refused refund routine (Razorpay rfnd_routine)")]);
+      expect(told[0]).toContain("It is asked again every hour.");
+      expect(told[0]).not.toContain("invoice");
+
+      await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 4));
+      expect(books.made.refunds).toEqual([expect.objectContaining({ amount: 2600000, reference: "rfnd_routine" })]);
+    });
+
+    it("reaching into what was kept, tells ops to free the payment from its invoice when Books refuses it", async () => {
+      const books = createStubBooks();
+      await refunded("kept", 400000, 3000000, books);
+      books.refuseNext("recordRefund");
+
+      await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
+      expect(told).toEqual([
+        expect.stringContaining(
+          `Its payment is set against invoice ${books.made.issued[0] ?? ""} for a charge kept, and this refund reaches ` +
+            "into it: in Books, take the payment off that invoice, then credit or void the invoice. The refund is " +
+            "then recorded from the payment within the hour.",
+        ),
+      ]);
+    });
   });
 
   it("of a client erased since is told to ops, not invoiced", async () => {
