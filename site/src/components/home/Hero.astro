@@ -45,7 +45,7 @@ const showFootage = isShown(heroFootage);
   <p class="area">{hero.area}</p>
   <button
     type="button"
-    class={buttonLook({ variant: "outlineOnInk", size: "small", className: "pause" })}
+    class={buttonLook({ variant: "outlineOnNavy", size: "small", className: "pause" })}
     data-hero-toggle
     data-pause={hero.pause}
     data-play={hero.play}
@@ -63,10 +63,10 @@ const showFootage = isShown(heroFootage);
     <h1>{hero.title}</h1>
     <p class="body">{hero.body}</p>
     <div class="actions">
-      <a class={buttonLook({ variant: "gold", size: "action", className: "act book" })} href="/book">
+      <a class={buttonLook({ variant: "goldOnNavy", size: "action", className: "act book" })} href="/book">
         {hero.book}
       </a>
-      <a class={buttonLook({ variant: "outlineOnInk", size: "action", className: "act try" })} href="/try">
+      <a class={buttonLook({ variant: "outlineOnNavy", size: "action", className: "act try" })} href="/try">
         {hero.tryOn}
       </a>
     </div>
@@ -155,6 +155,9 @@ const showFootage = isShown(heroFootage);
     min-height: var(--hero-min-h);
     display: flex;
     align-items: flex-end;
+    /* The strip the area line and Pause sit in stays clear: on a short screen the words grow the hero rather than
+       run under them. */
+    padding-top: calc(var(--hero-tag-top) + var(--tap) + var(--sp-16));
     padding-bottom: var(--bar-reserve);
   }
   .footage {
@@ -183,10 +186,11 @@ const showFootage = isShown(heroFootage);
   .scrim--side {
     background: var(--hero-scrim-side);
   }
+  /* Under the area line, where footage still marked as a placeholder says so. */
   .tag {
     position: absolute;
-    top: var(--hero-tag-top);
-    left: var(--gutter);
+    top: calc(var(--hero-tag-top) + var(--tap));
+    left: var(--hero-edge);
     padding: var(--sp-8) var(--sp-12);
     font-size: var(--fs-14);
   }
@@ -216,8 +220,6 @@ const showFootage = isShown(heroFootage);
     padding: 0 var(--sp-16);
     font-size: var(--fs-16);
     font-weight: var(--weight-medium);
-    border-color: var(--site-on-navy-edge);
-    color: var(--site-on-navy);
   }
   .content {
     position: relative;
@@ -290,23 +292,5 @@ const showFootage = isShown(heroFootage);
     padding: 0 var(--sp-16);
     font-size: var(--fs-16);
     font-weight: var(--weight-medium);
-  }
-  .book {
-    color: var(--site-navy);
-  }
-  .try {
-    border-color: var(--site-on-navy-edge);
-    color: var(--site-on-navy);
-  }
-  @media (hover: hover) {
-    .book:hover {
-      background: var(--site-gold-hover);
-      box-shadow: none;
-    }
-    .try:hover,
-    .pause:hover {
-      border-color: var(--site-on-navy);
-      background: transparent;
-    }
   }
 </style>

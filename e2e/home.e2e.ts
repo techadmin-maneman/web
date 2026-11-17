@@ -284,6 +284,19 @@ test.describe("home sections", () => {
   });
 
   // The area and Pause sit at the hero's top corners, on the page's column as the words are (ADR 0264).
+  // A phone's browser with its bars showing leaves the hero less than the board's 692 px: the words keep below the
+  // area line and Pause rather than run under them.
+  test("the hero's words keep clear of its top corners on a short screen", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 664 });
+    await page.goto("/");
+    const hero = page.locator('[data-section="hero"]');
+    const line = await hero.locator(".sequence").boundingBox();
+    const area = await hero.getByText(siteCopy.hero.area, { exact: true }).boundingBox();
+    const pause = await hero.getByRole("button", { name: siteCopy.hero.pause }).boundingBox();
+    const top = Math.max((area?.y ?? 0) + (area?.height ?? 0), (pause?.y ?? 0) + (pause?.height ?? 0));
+    expect(line?.y ?? 0).toBeGreaterThanOrEqual(top);
+  });
+
   test("the hero's area line and Pause keep to the page's column", async ({ page }) => {
     await page.goto("/");
     const hero = page.locator('[data-section="hero"]');
@@ -330,6 +343,8 @@ test.describe("home sections", () => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
     await expect(line).toHaveText(siteCopy.hero.sequence.join(" "));
+    // Polite, and its words never change as it turns, so nothing is said again (ADR 0264).
+    await expect(line).toHaveAttribute("aria-live", "polite");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.hero.title);
     const phrases = line.locator(".phrase");
     await expect(phrases.nth(0)).toHaveClass(/\bon\b/);
