@@ -938,7 +938,9 @@ export const closeOut = localised({
   paymentRow: "Payment",
   why: "Why",
   fit: "Fit",
-  goingAhead: "Going ahead",
+  /** A consultation's yes, as the prototype writes it: "Mane Man Natural · ops to book"; ops book the fit. */
+  goingAhead: (product: string | null) => `${product ?? "Going ahead"} · ops to book`,
+  /** "Not now · the price": ops' reason, as it reads mid-line. */
   notNow: (why: string | null) => (why === null ? "Not now" : `Not now · ${why}`),
   // The board writes "1 h 22 m"; the phone times it from Start job (open point 60).
   length: (hours: number, minutes: number) => lengthOf(hours * 60 + minutes),

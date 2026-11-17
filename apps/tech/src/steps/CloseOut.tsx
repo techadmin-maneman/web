@@ -36,7 +36,7 @@ import light from "../frame/light.module.css";
 import { FinishTheWork, NavigateNext, NextUp, PaymentLink } from "./ClosedParts.tsx";
 import shared from "./steps.module.css";
 import styles from "./close-out.module.css";
-import { sayKnown, theirs } from "../lang/index.ts";
+import { sayKnown, theirs, useLanguage } from "../lang/index.ts";
 
 const NOTHING_HEARD: ReadonlyMap<string, Heard> = new Map();
 
@@ -144,6 +144,8 @@ function Evidence({ job }: { job: Job }) {
 function Decided({ job }: { job: Job }) {
   const readOutcome = useCallback(() => keptOutcome(job.id), [job.id]);
   const said = valueOr(useAsync(readOutcome)[0], null);
+  // In English ops' reason reads mid-line, "Not now · the price"; inside Hindi it stays exactly as they wrote it.
+  const english = useLanguage() === "en";
   if (said === null) return null;
   // Ops' reasons, in Hindi where a catalog holds the whole of one, as they wrote it otherwise.
   const label = (reasons: Job["partial_reasons"], id: string | undefined) => {
@@ -155,9 +157,12 @@ function Decided({ job }: { job: Job }) {
     return why === null ? null : <Row name={copy.why} value={why} />;
   }
   if (said.going_ahead === undefined) return null;
+  if (said.going_ahead) {
+    const product = job.products.find((one) => one.tier === said.product)?.name ?? null;
+    return <Row name={copy.fit} value={copy.goingAhead(product === null ? null : theirs(product))} />;
+  }
   const lost = label(job.lost_reasons, said.lost_reason);
-  const fit = said.going_ahead ? copy.goingAhead : copy.notNow(lost === null ? null : theirs(lost));
-  return <Row name={copy.fit} value={fit} />;
+  return <Row name={copy.fit} value={copy.notNow(lost === null ? null : theirs(english ? midLine(lost) : lost))} />;
 }
 
 /** How long the visit took, from the check-in to its close: as this phone kept the close, else when it was queued. */
@@ -166,12 +171,31 @@ function tookOf(started: number | null, closedAt: number | null, queued: readonl
   return started === null || closed === null ? null : lengthOf(started, closed);
 }
 
-/** What the visit came to: the decision, how long it took, its photographs and how it is paid. */
+/** A reason as it reads mid-line, "the price": a common phrase's first capital lowered, a name's kept. */
+const midLine = (words: string): string =>
+  /^\p{Lu}[^\p{Lu}]*$/u.test(words) ? words.charAt(0).toLowerCase() + words.slice(1) : words;
+
+/**
+ * What the visit came to: the decision, how long it took, its photographs and how it is paid. A consultation's, as the
+ * prototype lists them: how long, the photographs, then whether the client goes ahead; it charges nothing here.
+ */
 function Rows(props: { job: Job; took: { hours: number; minutes: number } | null; photos: string }) {
+  const consultation = props.job.type === "consultation" && !props.job.one_visit;
+  const took =
+    props.took === null ? null : <Row name={copy.duration} value={copy.length(props.took.hours, props.took.minutes)} />;
+  if (consultation) {
+    return (
+      <dl className={classes(shared.rows, styles.rows)}>
+        {took}
+        <Row name={copy.photos} value={props.photos} />
+        <Decided job={props.job} />
+      </dl>
+    );
+  }
   return (
     <dl className={classes(shared.rows, styles.rows)}>
       <Decided job={props.job} />
-      {props.took !== null && <Row name={copy.duration} value={copy.length(props.took.hours, props.took.minutes)} />}
+      {took}
       <Row name={copy.photos} value={props.photos} />
       <Row name={copy.paymentRow} value={badges[props.job.badge]} />
     </dl>

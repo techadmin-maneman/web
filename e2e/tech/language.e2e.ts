@@ -116,11 +116,10 @@ test("the close-out says what was decided in Hindi around ops' own reason, which
   await page.goto(`/jobs/${JOB_ID}/outcome`);
   await page.getByRole("button", { name: /^Mane Man Essential/ }).click();
   await stepAction(page).click();
-  await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
-  await page.getByRole("button", { name: techCopy.steps.outcome.notNow }).click();
+  await page.getByRole("radio", { name: techCopy.steps.outcome.notNow, exact: true }).click();
   await page.getByRole("button", { name: "Client moved to another city" }).click();
   await stepAction(page).click();
-  await expect(page.getByText(techCopy.closeOut.notNow("Client moved to another city"))).toBeVisible();
+  await expect(page.getByText(techCopy.closeOut.notNow("client moved to another city"))).toBeVisible();
   const closeOut = new URL(page.url()).pathname;
 
   await goInApp(page, "/me");

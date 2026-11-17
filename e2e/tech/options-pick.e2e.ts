@@ -70,8 +70,7 @@ test("a pick of a product the card no longer offers is never sent", async ({ pag
   await page.reload();
 
   await stepAction(page).click();
-  await page.getByRole("radio", { name: steps.outcome.done, exact: true }).click();
-  await page.getByRole("button", { name: steps.outcome.yes }).click();
+  await page.getByRole("radio", { name: steps.outcome.yes, exact: true }).click();
   await stepAction(page).click();
   await expect.poll(() => writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: true });
 });
@@ -96,7 +95,7 @@ test("a refused close opens on the close, with the pick it sent", async ({ page 
   await page.getByRole("button", { name: techCopy.queue.correct }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: steps.titles.outcome })).toBeVisible();
-  await page.getByRole("button", { name: steps.outcome.yes }).click();
+  await page.getByRole("radio", { name: steps.outcome.yes, exact: true }).click();
   await expect(page.getByText(steps.outcome.picked("Mane Man Natural"))).toBeVisible();
   // Back is Options, with the pick it sent.
   await page.getByRole("button", { name: steps.back }).click();

@@ -1,5 +1,5 @@
 // The outcome's result and its summary (docs/prompts/tech-redesign.md, "Outcome"; ./Outcome.tsx): Done or Partly done
-// as radio rows under their heading, and what the close sends, before it goes.
+// as radio rows under their heading, a consultation's question in the same form, and what the close sends.
 
 import { ChoiceGroup, Radio } from "@maneman/ui/Field";
 import { SectionHead } from "@maneman/ui/SectionHead";
@@ -26,6 +26,29 @@ export function Result(props: { chosen: "done" | "partial" | null; onChoose: (va
           checked={props.chosen === value}
           onChange={() => {
             props.onChoose(value);
+          }}
+        />
+      ))}
+    </ChoiceGroup>
+  );
+}
+
+/** A consultation's one question, as the prototype asks it at once: "Going ahead with a fit?", Yes or Not now. */
+export function GoingAheadRows(props: { answer: boolean | null; onAnswer: (value: boolean) => void }) {
+  const options = [
+    [true, copy.outcome.yes],
+    [false, copy.outcome.notNow],
+  ] as const;
+  return (
+    <ChoiceGroup legend={copy.outcome.goingAhead} legendLook="title" ruled className={styles.result}>
+      {options.map(([value, label]) => (
+        <Radio
+          key={String(value)}
+          name="going-ahead"
+          label={label}
+          checked={props.answer === value}
+          onChange={() => {
+            props.onAnswer(value);
           }}
         />
       ))}
