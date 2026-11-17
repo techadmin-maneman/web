@@ -13,29 +13,54 @@ import { PincodePanel } from "./PincodePanel.tsx";
 import type { PageFlow } from "./usePageFlow.ts";
 import { Waitlist } from "./Waitlist.tsx";
 
-/** The page's two columns: what it asks for, and beside it what it holds and how it works. */
-export function Arrival(props: { children: ComponentChildren; aside?: ComponentChildren }) {
+/**
+ * The page's two columns: what it asks for, and beside it what it holds and how it works; on a phone, under the
+ * flow's top bar. `how`: where the column's How it works shows, a page that folds it into a step on a phone saying
+ * so (Book.tsx).
+ */
+export function Arrival(props: {
+  children: ComponentChildren;
+  top: ComponentChildren;
+  aside?: ComponentChildren;
+  how?: "both" | "laptop";
+}) {
   return (
     <section class={styles.arrival}>
+      {props.top}
       <div class={`${styles.inner} ${inviteSheet.grid}`}>
         <div class={inviteSheet.lead}>{props.children}</div>
         <div class={inviteSheet.aside}>
           {props.aside}
-          <HowItWorks />
+          <HowItWorks on={props.how ?? "both"} />
         </div>
       </div>
     </section>
   );
 }
 
-/** The confirmation, once the page holds one and the history is at it; null while the page asks. */
-export function confirmation(page: PageFlow, name: string | null, reward: ReferralReward | null) {
+/** What stays around the list's confirmation: the flow's top bar, /book's step bar, and where How it works shows. */
+export interface ListedFrame {
+  readonly top: ComponentChildren;
+  readonly steps?: ComponentChildren;
+  readonly how: "both" | "laptop";
+}
+
+/**
+ * The confirmation, once the page holds one and the history is at it; null while the page asks. Booked, the
+ * confirmation is the whole screen; on the list, it stays in the flow's frame, beside How it works.
+ */
+export function confirmation(page: PageFlow, name: string | null, reward: ReferralReward | null, frame: ListedFrame) {
   const { state, heading } = page;
   if (state.view === "booked" && state.booked !== null) {
     return <Booked booking={state.booked} reward={reward} heading={heading} />;
   }
   if (state.view === "listed" && state.listed !== null) {
-    return <Listed listing={state.listed} name={name} reward={reward} heading={heading} />;
+    return (
+      <Arrival top={frame.top} how={frame.how}>
+        {frame.steps}
+        <Listed listing={state.listed} name={name} reward={reward} heading={heading} />
+      </Arrival>
+    );
   }
   return null;
 }
@@ -51,7 +76,7 @@ export function PincodeAndForm(props: {
   const shared = { ...form, onChangePincode: page.pincode.change, person: page.state.kept };
   return (
     <>
-      <PincodePanel check={page.pincode} />
+      <PincodePanel check={page.pincode} past={props.stage === "address"} />
       {answer?.served === true && (
         <Consultation
           {...shared}

@@ -23,17 +23,20 @@ const { consultation } = referral;
 type Plan = OpenWindows["plan"];
 type WindowOption = (typeof consultation.windows)[number];
 
-/** What to book: the consultation alone, or the consultation and fit in one visit, which the API refuses while ops offer
- * no hair system. */
+/**
+ * What to book: the consultation alone, or the consultation and fit in one visit, which the API refuses while ops offer
+ * no hair system. The one visit says how it is paid, and on a laptop when it starts.
+ */
 export function PlanChoice({ plan, onPlanChange }: { plan: Plan; onPlanChange: (plan: Plan) => void }) {
   const choices = consultation.plan;
   return (
-    <Fieldset legend={choices.legend} legendLook="caps">
+    <Fieldset legend={choices.legend} legendLook="caps" className={shared.quietLegend}>
       <div class={styles.windows}>
         {choices.options.map((option) => (
           <ChoiceCard
             key={option.id}
             name="plan"
+            look="round"
             className={styles.window}
             checked={plan === option.id}
             onChange={() => {
@@ -44,7 +47,12 @@ export function PlanChoice({ plan, onPlanChange }: { plan: Plan; onPlanChange: (
           </ChoiceCard>
         ))}
       </div>
-      {plan === "one_visit" && <p class={shared.planNote}>{choices.note}</p>}
+      {plan === "one_visit" && (
+        <p class={shared.planNote}>
+          <span class={shared.planWhen}>{choices.note} </span>
+          {choices.oneVisitNote}
+        </p>
+      )}
     </Fieldset>
   );
 }

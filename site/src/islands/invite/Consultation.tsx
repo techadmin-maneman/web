@@ -101,7 +101,7 @@ function VisitPart(
   const windowIds = props.windows.map((option) => option.id);
   return (
     <>
-      <div>
+      <div class={stage === "visit" ? styles.visitHead : undefined}>
         {stage === "visit" && <StepLine at={3} name={booking.steps.visit} focus={false} />}
         {/* The site's own page is already headed and introduced; the invite's is not. */}
         {props.invited && (
@@ -111,6 +111,7 @@ function VisitPart(
           </>
         )}
         <ForPincode
+          wide
           text={fill(consultation.forPincode, { pincode: props.answer.pincode })}
           onChange={props.onChangePincode}
         />

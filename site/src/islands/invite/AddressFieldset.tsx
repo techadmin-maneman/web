@@ -53,7 +53,7 @@ export function AddressFieldset(props: {
   }, [unfolded, idPrefix]);
 
   return (
-    <Fieldset legend={copy.legend} legendLook="caps">
+    <Fieldset legend={copy.legend} legendLook="caps" className={styles.quietLegend}>
       <div class={styles.fields}>
         <AddressSearch
           value={address.building}

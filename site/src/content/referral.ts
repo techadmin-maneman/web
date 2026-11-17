@@ -255,8 +255,11 @@ export const referral = {
         { id: "consultation", label: `Consultation · ${visitLength.consultation}` },
         { id: "one_visit", label: `Consultation and fit · ${visitLength.firstFit}` },
       ] satisfies readonly { id: OpenWindows["plan"]; label: string }[],
-      // The first fit's three hours do not fit in the evening's half-slots, so the one visit starts earlier.
-      note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay by UPI at the visit, once fitted; decide against it and you pay nothing.",
+      // The first fit's three hours do not fit in the evening's half-slots, so the one visit starts earlier. A laptop
+      // says so before how it is paid; a phone says only how it is paid.
+      note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then.",
+      /** How the one visit is paid: through a Razorpay link once fitted (ADR 0257), in words ADR 0269 settles. */
+      oneVisitNote: "Paid through a Razorpay link once you’re fitted. Decide against it and you pay nothing.",
     },
     /**
      * A discount code for the consultation and fit in one visit, on /book only

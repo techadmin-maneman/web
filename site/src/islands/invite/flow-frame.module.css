@@ -1,0 +1,55 @@
+/* The booking pages' frame (./FlowFrame.tsx): the client app's top bar on a phone, and the step bar on both. */
+
+/* The way back where there is one, the flow's name, and the way out, as the client app's booking draws its head. */
+.top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  min-height: var(--flow-top-h);
+  padding: var(--sp-8) var(--sp-12) var(--sp-4) var(--screen-gutter);
+}
+
+.top:has(.topButton:first-child) {
+  padding-left: var(--sp-4);
+}
+
+.topButton {
+  color: var(--site-navy);
+}
+
+.topTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  color: var(--site-text);
+}
+
+.steps {
+  order: 0;
+}
+
+.bar {
+  margin: calc(var(--sp-4) + var(--sp-2)) 0 calc(var(--sp-16) + var(--sp-2));
+}
+
+/* A laptop's way back, over the step bar. */
+.back {
+  display: none;
+}
+
+@media (min-width: 761px) {
+  .top {
+    display: none;
+  }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-4);
+    min-height: var(--tap);
+    font-size: var(--fs-15);
+    color: var(--site-navy);
+  }
+}

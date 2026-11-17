@@ -1,6 +1,6 @@
 // The other pages: /book, the stop page, the page not found, and each page's title and description.
 
-import { serviceArea, visitLength } from "../service.ts";
+import { capitalised, serviceArea, visitLength } from "../service.ts";
 import { tryOnTeaser } from "./home.ts";
 
 /**
@@ -16,6 +16,8 @@ export const booking = {
     `In just ${visitLength.consultation}, a specialist measures, colour-matches and custom-maps your hairline at your home, completely free. And you get to see a demo of how your hairline would look with the right system in place.`,
     "Love what you see? You can even get it fitted and walk out with a full head of hair the very same day.",
   ],
+  /** A phone's one line under the first step's title, in place of the two above (ADR 0265). */
+  introShort: `${capitalised(visitLength.consultation)} at your home, completely free.`,
   /** Where we do not come yet: what the list is for. The WhatsApp is the visitor's to tick, so it is promised as so. */
   introWaitlist: "Join the list. Tick the box and we’ll WhatsApp you the week we start coming to you.",
   /**
