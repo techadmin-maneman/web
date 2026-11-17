@@ -1,86 +1,69 @@
 ---
-// The guarantee beside the founder's note with the mark: two columns on a wide screen, one after the other on a phone.
-import { capsLook } from "@maneman/ui/Caps";
+// The guarantee beside the founder's note, on white (ADR 0263): one after the other on a phone, two columns on a
+// laptop. The note's first paragraph shows, and the rest unfolds (../../islands/home/FounderNote.tsx).
+import FounderNote from "../../islands/home/FounderNote.tsx";
 import { founderNote, guarantee } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 ---
 
-<section class="container pair" data-section="guarantee">
-  <div class="guarantee-part">
-    <h2 class={capsLook("label-title")}>{guarantee.label}</h2>
-    <p class="guarantee">{guarantee.text}</p>
-  </div>
-  {isShown(founderNote) && (
-    <div class="founder-part" data-section="founder">
-      <h2 class={capsLook("label-title")}>{founderNote.label}</h2>
-      {founderNote.paragraphs.map((paragraph) => (
-        <p class="note">{paragraph}</p>
-      ))}
-      <div class="signature">
-        <svg class="mark" viewBox="0 0 200 217.4" width="30" height="33" aria-hidden="true">
-          <use href="#mm" />
-        </svg>
-        <div>
-          <p class="name">{founderNote.name}</p>
-          <p class="role">{founderNote.signature}</p>
-        </div>
-      </div>
+<section class="band ground-white" data-section="guarantee">
+  <div class="container pair">
+    <div class="guarantee-part">
+      <h2 class="eyebrow">{guarantee.label}</h2>
+      <p class="guarantee">{guarantee.text}</p>
     </div>
-  )}
+    {isShown(founderNote) && (
+      <div class="founder-part" data-section="founder">
+        <h2 class="eyebrow">{founderNote.label}</h2>
+        <FounderNote paragraphs={founderNote.paragraphs} more={founderNote.more} />
+        <p class="signature">
+          <span class="name">{founderNote.name}</span>
+          <span class="role">{founderNote.signature}</span>
+        </p>
+      </div>
+    )}
+  </div>
 </section>
 
 <style>
   .pair {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-wide)), 1fr));
-    gap: var(--space-2xl);
-    padding-top: var(--section-gap);
+    gap: var(--sp-40);
   }
-  .guarantee-part,
-  .founder-part {
-    max-width: var(--measure-column);
-  }
-  .label-title {
-    margin: 0;
-    font-weight: var(--weight-regular);
-    font-size: var(--fs-16);
-    color: var(--text-muted);
+  .guarantee-part {
+    padding-top: var(--site-gap-block);
+    border-top: var(--rule-strong) solid var(--site-navy);
   }
   .guarantee {
-    margin: var(--sp-16) 0 0;
-    font-family: var(--site-font);
-    font-size: var(--fs-h4);
-    line-height: var(--lh-130);
-    letter-spacing: var(--tracking-heading);
-    text-wrap: balance;
+    margin: var(--site-gap-lede) 0 0;
+    font-size: var(--site-fs-statement);
+    line-height: var(--site-lh-statement);
+    letter-spacing: var(--site-tracking-statement);
+    font-weight: var(--weight-semibold);
+    color: var(--site-navy);
   }
-  .note {
-    margin: var(--sp-16) 0 0;
-    font-size: var(--fs-lead);
-    line-height: var(--lh-160);
-    color: var(--text);
-    text-wrap: pretty;
+  .founder-part {
+    padding-top: var(--site-gap-block);
+    border-top: var(--hairline) solid var(--site-line);
   }
   .signature {
-    margin-top: var(--sp-24);
     display: flex;
-    align-items: center;
-    gap: var(--sp-16);
-  }
-  .mark {
-    fill: var(--ink);
-  }
-  .name,
-  .role {
-    margin: 0;
-    font-family: var(--site-font);
+    flex-direction: column;
+    margin: var(--sp-16) 0 0;
+    font-size: var(--site-fs-body);
   }
   .name {
-    font-size: var(--fs-lead);
-    color: var(--text);
+    font-weight: var(--weight-semibold);
+    color: var(--site-navy);
   }
   .role {
-    font-size: var(--fs-16);
-    color: var(--text-muted);
+    color: var(--site-text-muted);
+  }
+  @media (min-width: 761px) {
+    .pair {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      gap: var(--site-columns-gap);
+      align-items: start;
+    }
   }
 </style>

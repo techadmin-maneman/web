@@ -134,7 +134,7 @@ test.describe("sticky bar and footer: the home page only", () => {
     await page.goto("/");
     const bar = page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel });
     await expect(bar).toBeHidden();
-    await page.locator('[data-section="what"]').evaluate((section) => {
+    await page.locator('[data-section="range"]').evaluate((section) => {
       section.scrollIntoView();
     });
     if (testInfo.project.name === "390") await expect(bar).toBeVisible();
@@ -143,6 +143,7 @@ test.describe("sticky bar and footer: the home page only", () => {
       // A section's own filled button on the screen sends the bar down, so one filled button shows (ADR 0266).
       await page
         .locator("main [data-filled]")
+        .filter({ visible: true })
         .first()
         .evaluate((button) => {
           button.scrollIntoView({ block: "center" });
@@ -216,7 +217,7 @@ test.describe("skip link", () => {
   test("the bar is a landmark, and its button keeps to a phone’s width", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "390", "the bar is a phone's");
     await page.goto("/");
-    await page.locator('[data-section="what"]').evaluate((section) => {
+    await page.locator('[data-section="range"]').evaluate((section) => {
       section.scrollIntoView();
     });
     const book = page
@@ -251,7 +252,7 @@ test.describe("hash routes from v2", () => {
 });
 
 test.describe("home sections", () => {
-  // v2's order, the results beneath the hero, the technicians, materials and quotes gone (ADR 0213).
+  // The redesign's order (ADR 0263): the "own table" line closes How it works rather than standing alone.
   test("are all there, in order", async ({ page }) => {
     await page.goto("/");
     const order = await page.locator("main > [data-section]").evaluateAll((all) => all.map((el) => el.dataset.section));
@@ -262,7 +263,6 @@ test.describe("home sections", () => {
       "norwood",
       "comparison",
       "teaser",
-      "discretion",
       "how",
       "range",
       "guarantee",
@@ -375,8 +375,12 @@ test.describe("home sections", () => {
     await page.goto("/");
     await expect(page.getByText(siteCopy.heroFootage.tag)).toHaveCount(0);
     await expect(page.locator(".label", { hasText: /^Placeholder$/ })).toHaveCount(0);
+    // On the restored picture on a phone, beneath its line on a laptop: said once wherever it shows.
     await expect(
-      page.locator('[data-section="norwood"] .label').getByText(siteCopy.illustrationTag, { exact: true }),
+      page
+        .locator('[data-section="norwood"]')
+        .getByText(siteCopy.illustrationTag, { exact: true })
+        .filter({ visible: true }),
     ).toHaveCount(1);
   });
 
@@ -405,19 +409,46 @@ test.describe("home sections", () => {
     await expect(results.getByText(siteCopy.illustrationTag, { exact: true })).toHaveCount(0);
   });
 
-  test("Norwood: the five stages we fit, a hairline restored, then Book a free consultation", async ({ page }) => {
+  test("Norwood on a laptop: the five stages we fit and a hairline restored in a row, then Book", async ({ page }) => {
+    test.skip(narrow(page.viewportSize()?.width), "a phone chooses a stage");
     await page.goto("/");
     const norwood = page.locator('[data-section="norwood"]');
-    await expect(norwood.locator(".cards > li")).toHaveCount(6);
-    await expect(norwood.locator(".cards > li .name")).toHaveText([
+    await expect(norwood.locator(".row > li .name")).toHaveText([
       ...siteCopy.norwood.stages.map((stage) => stage.name),
       siteCopy.norwood.restored,
     ]);
-    await expect(norwood.getByRole("link", { name: siteCopy.hero.book })).toHaveAttribute("href", "/book");
+    await expect(norwood.getByRole("group", { name: siteCopy.norwood.picker })).toBeHidden();
+    const book = norwood.getByRole("link", { name: siteCopy.norwood.book }).filter({ visible: true });
+    await expect(book).toHaveAttribute("href", "/book");
+  });
+
+  // A phone chose from five small cards; now a stage at a time beside the hairline restored (ADR 0263).
+  test("Norwood on a phone: a stage chosen above its picture, the restored one beside it", async ({ page }) => {
+    test.skip(!narrow(page.viewportSize()?.width), "a laptop shows the row");
+    await page.goto("/");
+    const norwood = page.locator('[data-section="norwood"]');
+    await norwood.scrollIntoViewIfNeeded();
+    await expect(norwood.locator("astro-island")).not.toHaveAttribute("ssr", "");
+    const picker = norwood.getByRole("group", { name: siteCopy.norwood.picker });
+    const third = siteCopy.norwood.stages[0];
+    const fifth = siteCopy.norwood.stages[2];
+    if (third === undefined || fifth === undefined) throw new Error("the stages");
+    const named = (stage: { numeral: string; name: string }) =>
+      siteCopy.norwood.pickerOption.replace("{numeral}", stage.numeral).replace("{name}", stage.name);
+    await expect(picker.getByRole("button")).toHaveCount(5);
+    await expect(picker.getByRole("button", { name: named(third) })).toHaveAttribute("aria-pressed", "true");
+    await expect(norwood.getByText(third.name, { exact: true }).filter({ visible: true })).toBeVisible();
+    await picker.getByRole("button", { name: named(fifth) }).click();
+    await expect(picker.getByRole("button", { name: named(fifth) })).toHaveAttribute("aria-pressed", "true");
+    await expect(picker.getByRole("button", { name: named(third) })).toHaveAttribute("aria-pressed", "false");
+    await expect(norwood.getByText(fifth.name, { exact: true }).filter({ visible: true })).toBeVisible();
+    // The restored hairline stays beside whichever stage is chosen.
+    await expect(norwood.getByText(siteCopy.norwood.restored, { exact: true }).filter({ visible: true })).toBeVisible();
+    await expect(norwood.locator(".row")).toBeHidden();
   });
 
   test("comparison: seven rows, ticks and crosses read as Yes and No", async ({ page }) => {
-    test.skip(narrow(page.viewportSize()?.width), "a phone has the cards");
+    test.skip(narrow(page.viewportSize()?.width), "a phone has the toggles");
     await page.goto("/");
     const table = page.getByRole("table", { name: siteCopy.comparison.title });
     await expect(table.getByRole("row")).toHaveCount(8);
@@ -436,32 +467,54 @@ test.describe("home sections", () => {
     ]);
   });
 
-  // Three and four columns squeezed every cell onto four lines on a phone.
-  test("comparison and range: a card for each option to swipe through on a phone, a table on a wider screen", async ({
-    page,
-  }) => {
+  // The cards to swipe became toggles above their rows on a phone (ADR 0263); a laptop keeps the tables.
+  test("comparison and range: toggles above their rows on a phone, a table on a laptop", async ({ page }) => {
     await page.goto("/");
     const phone = narrow(page.viewportSize()?.width);
-    for (const [title, count] of [
-      [siteCopy.comparison.title, 3],
-      [siteCopy.range.title, 4],
-    ] as const) {
-      const cards = page.getByRole("list", { name: title });
+    for (const title of [siteCopy.comparison.title, siteCopy.range.title]) {
       if (phone) {
-        await expect(cards.getByRole("listitem")).toHaveCount(count);
+        await expect(page.getByRole("group", { name: title })).toBeVisible();
         await expect(page.getByRole("table", { name: title })).toBeHidden();
       } else {
-        await expect(cards).toBeHidden();
+        await expect(page.getByRole("group", { name: title })).toBeHidden();
         await expect(page.getByRole("table", { name: title })).toBeVisible();
       }
     }
     if (!phone) return;
-    const comparison = page.getByRole("list", { name: siteCopy.comparison.title }).getByRole("listitem");
-    await expect(comparison.nth(0)).toContainText("Surgical risks");
-    await expect(comparison.nth(2)).toContainText("Nothing implanted or swallowed");
-    const celebrity = page.getByRole("list", { name: siteCopy.range.title }).getByRole("listitem").nth(3);
-    await expect(celebrity).toContainText("Celebrity");
-    await expect(celebrity).toContainText("Twice a month");
+    const comparison = page.locator('[data-section="comparison"]');
+    await comparison.scrollIntoViewIfNeeded();
+    await expect(comparison.locator("astro-island")).not.toHaveAttribute("ssr", "");
+    const against = comparison.getByRole("group", { name: siteCopy.comparison.title });
+    const [transplant, medication, ours] = siteCopy.comparison.columns;
+    await expect(against.getByRole("button", { name: transplant })).toHaveAttribute("aria-pressed", "true");
+    await expect(comparison.getByText("Surgical risks").filter({ visible: true })).toBeVisible();
+    await expect(comparison.getByText("Nothing implanted or swallowed").filter({ visible: true })).toBeVisible();
+    await against.getByRole("button", { name: medication }).click();
+    await expect(against.getByRole("button", { name: medication })).toHaveAttribute("aria-pressed", "true");
+    await expect(comparison.getByText("Long-term side effects").filter({ visible: true })).toBeVisible();
+    await expect(comparison.getByText(ours ?? "", { exact: true }).filter({ visible: true })).toBeVisible();
+
+    const range = page.locator('[data-section="range"]');
+    await range.scrollIntoViewIfNeeded();
+    await expect(range.locator("astro-island")).not.toHaveAttribute("ssr", "");
+    const products = range.getByRole("group", { name: siteCopy.range.title });
+    await expect(products.getByRole("button")).toHaveCount(4);
+    await products.getByRole("button", { name: siteCopy.range.products[3]?.short }).click();
+    await expect(range.getByText("Twice a month").filter({ visible: true })).toBeVisible();
+  });
+
+  // The founder's words are never trimmed: the rest of the note unfolds in place, every word in the page.
+  test("the founder's note shows its first paragraph and unfolds the rest", async ({ page }) => {
+    await page.goto("/");
+    const founder = page.locator('[data-section="founder"]');
+    const [first, second, , last] = siteCopy.founderNote.paragraphs;
+    await expect(founder.getByText(first ?? "")).toBeVisible();
+    await expect(founder.getByText(second ?? "")).toBeHidden();
+    await expect(founder.getByText(last ?? "")).toBeAttached();
+    await founder.getByText(siteCopy.founderNote.more, { exact: true }).click();
+    await expect(founder.locator("details")).toHaveAttribute("open", "");
+    await expect(founder.getByText(second ?? "")).toBeVisible();
+    await expect(founder.getByText(last ?? "")).toBeVisible();
   });
 
   test("the teaser slider starts at 46% and moves with the keyboard", async ({ page }) => {

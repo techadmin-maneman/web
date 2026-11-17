@@ -1,29 +1,41 @@
 ---
-// Why choose a hair system: against a transplant and medication.
+// Why choose a hair system, on the cool ground: against a transplant and medication, as a table on a laptop and as
+// toggles on a phone (ADR 0263).
 import CompareTable from "../CompareTable.astro";
+import CompareToggle from "../../islands/home/CompareToggle.tsx";
 import { comparison } from "../../content/site.ts";
 ---
 
-<section class="container comparison" data-section="comparison">
-  <h2 class="section-title">{comparison.title}</h2>
-  <p class="lead intro">{comparison.intro}</p>
-  <CompareTable
-    label={comparison.title}
-    columns={comparison.columns}
-    rows={comparison.rows}
-    yes={comparison.yes}
-    no={comparison.no}
-  />
+<section class="band ground-cool" data-section="comparison">
+  <div class="container">
+    <h2 class="section-title">{comparison.title}</h2>
+    <p class="lead">{comparison.intro}</p>
+    <CompareTable
+      label={comparison.title}
+      columns={comparison.columns}
+      rows={comparison.rows}
+      yes={comparison.yes}
+      no={comparison.no}
+      ours
+    />
+    <div class="phone">
+      <CompareToggle
+        client:visible
+        label={comparison.title}
+        columns={comparison.columns}
+        rows={comparison.rows}
+        yes={comparison.yes}
+        no={comparison.no}
+        versus
+      />
+    </div>
+  </div>
 </section>
 
 <style>
-  .comparison {
-    padding-top: var(--section-gap);
-  }
-  .section-title {
-    margin-bottom: var(--sp-12);
-  }
-  .intro {
-    margin: 0 0 var(--space-l);
+  @media (min-width: 761px) {
+    .phone {
+      display: none;
+    }
   }
 </style>

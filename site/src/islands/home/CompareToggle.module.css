@@ -1,0 +1,75 @@
+/* A phone's comparison or range (./CompareToggle.tsx): the toggles, then the rows. */
+.toggle {
+  --control-height: var(--tap);
+
+  margin-top: var(--site-gap-list);
+}
+
+/* Against the hair system: the two named over a navy rule, then each row's name above its two answers. */
+.versus {
+  margin-top: var(--sp-16);
+}
+.head,
+.cells {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.head {
+  border-bottom: var(--rule-strong) solid var(--site-navy);
+  font-size: var(--site-fs-label);
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
+}
+.head > span {
+  padding: var(--sp-8) var(--sp-12);
+}
+.pair {
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--site-line);
+}
+.key {
+  margin: 0;
+  padding: 0 var(--sp-12) var(--sp-4);
+  font-size: var(--site-fs-label);
+  font-weight: var(--weight-semibold);
+  color: var(--site-text-muted);
+}
+.cells {
+  font-size: var(--site-fs-body);
+  line-height: var(--lh-145);
+}
+.them,
+.us {
+  padding: 0 var(--sp-12);
+}
+.them {
+  color: var(--site-text-muted);
+}
+/* The hair system's answer, marked by a navy rule down its side. */
+.us {
+  border-left: var(--progress-line) solid var(--site-navy);
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
+}
+
+/* One option's rows: its name and its value either side. */
+.list {
+  margin: var(--sp-8) 0 0;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--site-line);
+  font-size: var(--site-fs-body);
+}
+.row dt {
+  color: var(--site-text-muted);
+}
+.row dd {
+  margin: 0;
+  text-align: right;
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
+}

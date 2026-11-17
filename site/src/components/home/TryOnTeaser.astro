@@ -1,100 +1,100 @@
 ---
-// The try-on teaser: copy on the left, a before/after pair on the right.
-import { capsLook } from "@maneman/ui/Caps";
+// The try-on teaser, on navy (ADR 0263): its words, a before and after, and the way in. On a phone the button follows
+// the picture; on a laptop it sits beneath the words, beside the picture.
 import { buttonLook } from "@maneman/ui/Button";
 import BeforeAfter from "../../islands/BeforeAfter.tsx";
 import { placeholderTag, teaserPair, tryOnTeaser } from "../../content/site.ts";
 import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
 
-const sizes = "(min-width: 761px) 50vw, 100vw";
-const widths = [390, 780, 1200];
+const sizes = "(min-width: 761px) 640px, 100vw";
+const widths = [390, 780, 1280];
 ---
 
-<section class="teaser on-ink" data-section="teaser">
+<section class="teaser ground-navy" data-section="teaser">
   <div class="container inner">
-    <div>
-      <div class={capsLook("eyebrow")}>{tryOnTeaser.eyebrow}</div>
-      <h2>{tryOnTeaser.title}</h2>
-      <p>{tryOnTeaser.body}</p>
-      <a class={buttonLook({ variant: "light", size: "action", className: "start" })} href="/try" data-filled>
-        {tryOnTeaser.start}
-      </a>
+    <div class="words">
+      <p class="eyebrow">{tryOnTeaser.eyebrow}</p>
+      <h2 class="section-title">{tryOnTeaser.title}</h2>
+      <p class="lead">{tryOnTeaser.body}</p>
     </div>
     {isShown(teaserPair) && (
-      <BeforeAfter
-        client:visible
-        start={tryOnTeaser.start_percent}
-        beforeLabel={tryOnTeaser.before}
-        afterLabel={tryOnTeaser.after}
-        sliderLabel={tryOnTeaser.sliderLabel}
-        sliderValue={tryOnTeaser.sliderValue}
-        tag={isTaggedPlaceholder(teaserPair) ? placeholderTag : undefined}
-      >
-        <DesignPicture
-          slot="after"
-          file={teaserPair.after.file}
-          alt={teaserPair.after.alt}
-          sizes={sizes}
-          widths={widths}
-          class="focus-client"
-        />
-        <DesignPicture
-          slot="before"
-          file={teaserPair.before.file}
-          alt={teaserPair.before.alt}
-          sizes={sizes}
-          widths={widths}
-          class="focus-client"
-        />
-      </BeforeAfter>
+      <div class="picture">
+        <BeforeAfter
+          client:visible
+          className="teaser-compare"
+          start={tryOnTeaser.start_percent}
+          beforeLabel={tryOnTeaser.before}
+          afterLabel={tryOnTeaser.after}
+          sliderLabel={tryOnTeaser.sliderLabel}
+          sliderValue={tryOnTeaser.sliderValue}
+          tag={isTaggedPlaceholder(teaserPair) ? placeholderTag : undefined}
+        >
+          <DesignPicture
+            slot="after"
+            file={teaserPair.after.file}
+            alt={teaserPair.after.alt}
+            sizes={sizes}
+            widths={widths}
+            class="focus-client"
+          />
+          <DesignPicture
+            slot="before"
+            file={teaserPair.before.file}
+            alt={teaserPair.before.alt}
+            sizes={sizes}
+            widths={widths}
+            class="focus-client"
+          />
+        </BeforeAfter>
+      </div>
     )}
+    <a class={buttonLook({ variant: "goldOnNavy", size: "action", className: "start" })} href="/try" data-filled>
+      {tryOnTeaser.start}
+    </a>
   </div>
 </section>
 
 <style>
   .teaser {
-    margin-top: var(--section-gap);
-    background: var(--ink-deep);
+    padding: var(--site-teaser-pad-top) 0 var(--site-teaser-pad-bottom);
   }
   .inner {
-    padding-block: var(--band-pad);
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-wide)), 1fr));
-    gap: var(--space-2xl);
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "words" "picture" "start";
+  }
+  .words {
+    grid-area: words;
   }
   .eyebrow {
-    letter-spacing: var(--tracking-18);
-    font-size: var(--fs-17);
-    color: var(--ink-muted);
+    margin-bottom: var(--sp-12);
   }
-  h2 {
-    margin: var(--sp-24) 0 0;
-    font-family: var(--site-font);
-    font-weight: var(--weight-regular);
-    font-size: var(--fs-h1);
-    line-height: var(--lh-100);
-    letter-spacing: var(--tracking-title);
-    color: var(--paper);
-    max-width: var(--measure-lead);
-    text-wrap: balance;
+  .picture {
+    grid-area: picture;
+    margin-top: var(--sp-20);
   }
-  p {
-    margin: var(--sp-24) 0 0;
-    font-size: var(--fs-body);
-    line-height: var(--lh-160);
-    color: var(--ink-soft);
-    max-width: var(--measure-short);
-    text-wrap: pretty;
+  .picture :global(.teaser-compare) {
+    height: auto;
+    aspect-ratio: 648 / 467;
   }
-  /* Full width on a phone, its own width beside the picture. */
   .start {
-    margin-top: var(--space-m);
+    grid-area: start;
+    margin-top: var(--sp-20);
   }
   @media (min-width: 761px) {
+    .inner {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      grid-template-rows: 1fr auto auto 1fr;
+      grid-template-areas: ". picture" "words picture" "start picture" ". picture";
+      column-gap: var(--site-columns-gap);
+    }
+    .picture {
+      margin-top: 0;
+    }
     .start {
-      width: fit-content;
+      justify-self: start;
+      margin-top: var(--sp-32);
     }
   }
 </style>

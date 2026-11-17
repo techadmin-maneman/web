@@ -1,0 +1,13 @@
+/* The founder's note (./FounderNote.tsx): its paragraphs, and the way to the rest as the board draws it, navy words
+   underlined. */
+.paragraph {
+  margin-top: var(--sp-12);
+}
+.more {
+  margin-top: var(--sp-4);
+}
+.summary {
+  font-size: var(--site-fs-body);
+  font-weight: var(--weight-medium);
+  color: var(--site-navy);
+}

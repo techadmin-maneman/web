@@ -31,7 +31,7 @@
     cursor: pointer;
   }
 
-  .segment[aria-checked="true"] {
+  .segment:is([aria-checked="true"], [aria-pressed="true"]) {
     border-color: var(--segmented-on-edge);
     background: var(--segmented-on);
     color: var(--segmented-on-text);
@@ -50,12 +50,12 @@
     text-align: center;
   }
 
-  .segment[aria-checked="true"] .count {
+  .segment:is([aria-checked="true"], [aria-pressed="true"]) .count {
     background: var(--segmented-on-count);
   }
 
   @media (hover: hover) {
-    .segment:not([aria-checked="true"]):hover {
+    .segment:not([aria-checked="true"], [aria-pressed="true"]):hover {
       color: var(--ui-text);
     }
   }

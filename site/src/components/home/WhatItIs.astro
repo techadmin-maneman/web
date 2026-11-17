@@ -1,41 +1,41 @@
 ---
-// "What it is": its words, and its line beside them on a wide screen, beneath the results.
+// "What it is", on the cool ground: its words, and its line under a navy rule beneath them on a phone, beside them on a
+// laptop (ADR 0263).
 import { whatItIs } from "../../content/site.ts";
 ---
 
-<section id="what" class="container what" data-section="what">
-  <div class="words">
-    <h2 class="section-title">{whatItIs.title}</h2>
-    <p class="body">{whatItIs.body}</p>
+<section id="what" class="band ground-cool" data-section="what">
+  <div class="container what">
+    <div>
+      <h2 class="section-title">{whatItIs.title}</h2>
+      <p class="body-text body">{whatItIs.body}</p>
+    </div>
+    <p class="statement line">{whatItIs.statement}</p>
   </div>
-  <p class="statement">{whatItIs.statement}</p>
 </section>
 
 <style>
   .what {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-wide)), 1fr));
-    gap: var(--space-xl) var(--space-2xl);
-    align-items: end;
-    padding-top: var(--section-gap);
-  }
-  .words {
-    max-width: var(--measure-column);
+    gap: var(--site-space-12-20);
   }
   .body {
-    margin: var(--sp-24) 0 0;
-    font-size: var(--fs-lead);
-    line-height: var(--lh-160);
-    color: var(--text);
-    text-wrap: pretty;
+    margin-top: var(--site-space-12-20);
+    font-size: var(--site-fs-lead);
   }
-  .statement {
-    margin: 0;
-    font-family: var(--site-font);
-    font-size: var(--fs-h2);
-    line-height: var(--lh-115);
-    letter-spacing: var(--tracking-heading);
-    color: var(--text);
-    text-wrap: balance;
+  .line {
+    padding-top: var(--site-space-16-24);
+    font-size: var(--site-fs-statement);
+    line-height: var(--site-lh-statement);
+    letter-spacing: var(--site-tracking-statement);
+  }
+  @media (min-width: 761px) {
+    .what {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--site-columns-gap);
+    }
+    .line {
+      align-self: end;
+    }
   }
 </style>

@@ -592,6 +592,30 @@
     "reviewed": true
   },
   {
+    "key": "site:home/norwood.picker",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Choose your stage",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/norwood.pickerOption",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "Stage {numeral}, {name}",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/norwood.after",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "After",
+    "reviewed": false
+  },
+  {
     "key": "site:home/comparison.title",
     "surface": "site",
     "group": "Home",

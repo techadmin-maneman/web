@@ -26,16 +26,15 @@
 /* Two classes, so the size wins over the global .label rule. */
 .teaser .corner {
   position: absolute;
-  top: var(--sp-20);
-  font-size: var(--fs-15);
+  top: 0;
 }
 .teaser .left {
-  left: var(--sp-20);
+  left: 0;
   /* Gone before its picture narrows to less than the label. */
   opacity: clamp(0, calc((var(--at-n) - 14) / 10), 1);
 }
 .teaser .right {
-  right: var(--sp-20);
+  right: 0;
   opacity: clamp(0, calc((86 - var(--at-n)) / 10), 1);
 }
 .teaser .tag {
