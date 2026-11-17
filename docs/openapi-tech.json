@@ -3232,6 +3232,10 @@
               }
             ]
           },
+          "yours": {
+            "type": "boolean",
+            "description": "Whether the technician asking did it."
+          },
           "result": {
             "anyOf": [
               {
@@ -3284,11 +3288,23 @@
                 },
                 "quantity": {
                   "type": "number"
+                },
+                "unit": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Its unit, as ml or strip; null for one used before the stock had codes."
                 }
               },
               "required": [
                 "name",
-                "quantity"
+                "quantity",
+                "unit"
               ],
               "additionalProperties": false
             }
@@ -3310,6 +3326,7 @@
           "date",
           "type",
           "technician",
+          "yours",
           "result",
           "note",
           "photos",

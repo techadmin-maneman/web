@@ -210,15 +210,21 @@ test("the client's history says a consumable the catalog holds in Hindi", async 
         date: "2026-09-01",
         type: "service",
         technician: "Imran",
+        yours: true,
         result: "done",
         note: null,
         photos: [],
-        consumables: [{ name: "Tape strips", quantity: 2 }],
+        consumables: [
+          { name: "Tape strips", quantity: 2, unit: "strip" },
+          { name: "Solvent", quantity: 10, unit: "ml" },
+          { name: "Walker tape", quantity: 3, unit: null },
+        ],
         piece: null,
       },
     ],
   };
   await keptHindi(page);
   await page.goto(`/jobs/${JOB_ID}/history`);
-  await expect(page.locator("main")).toContainText("टेप स्ट्रिप × 2");
+  await expect(page.locator("main")).toContainText("2 टेप स्ट्रिप · 10 ml सॉल्वेंट · Walker tape × 3");
+  await expect(page.locator("main")).toContainText("आप · हो गया");
 });

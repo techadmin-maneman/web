@@ -5803,6 +5803,8 @@ export interface components {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
             technician: string | null;
+            /** @description Whether the technician asking did it. */
+            yours: boolean;
             /** @description done, partial or no_show; null where ops closed it with no outcome. */
             result: string | null;
             /** @description The note its technician left for the next. */
@@ -5815,6 +5817,8 @@ export interface components {
             consumables: {
                 name: string;
                 quantity: number;
+                /** @description Its unit, as ml or strip; null for one used before the stock had codes. */
+                unit: string | null;
             }[];
             /** @description The label of the piece fitted at it. */
             piece: string | null;

@@ -10191,6 +10191,10 @@ One of the client's try-on looks, under the card's own unlock, never cached
         }
       ]
     },
+    "yours": {
+      "type": "boolean",
+      "description": "Whether the technician asking did it."
+    },
     "result": {
       "anyOf": [
         {
@@ -10243,11 +10247,23 @@ One of the client's try-on looks, under the card's own unlock, never cached
           },
           "quantity": {
             "type": "number"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its unit, as ml or strip; null for one used before the stock had codes."
           }
         },
         "required": [
           "name",
-          "quantity"
+          "quantity",
+          "unit"
         ],
         "additionalProperties": false
       }
@@ -10269,6 +10285,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "date",
     "type",
     "technician",
+    "yours",
     "result",
     "note",
     "photos",

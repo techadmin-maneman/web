@@ -9,6 +9,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, type Kit } from "../api.ts";
 import { kit as kitCopy } from "../content.ts";
+import { countOf, midSentence } from "../lib/amounts.ts";
 import { stamp } from "../lib/when.ts";
 import { NotDone, type Problem } from "./NotDone.tsx";
 import styles from "./kit.module.css";
@@ -29,26 +30,13 @@ const named = (item: Need): string =>
   isMeasure(item.unit) ? `${sayKnown(item.name)}, ${item.unit}` : sayKnown(item.name);
 
 /**
- * A common name as it reads mid-sentence, "shampoo sachets"; a product's name, with a capital past its first letter,
- * as ops wrote it.
- */
-const midSentence = (name: string): string =>
-  /^\p{Lu}[^\p{Lu}]*$/u.test(name) ? name.charAt(0).toLowerCase() + name.slice(1) : name;
-
-/**
  * The one thing short, as the ask names it: "6 shampoo sachets", "4 tape strips", "90 ml of solvent". Ops' name for
  * it is kept as they wrote it but for a common name's first capital, made plural where a count is.
  */
 function shortPhrase(item: Need): string {
   const count = shortOf(item);
-  const name = midSentence(item.name);
-  const words = name.toLowerCase();
-  if (isMeasure(item.unit)) return `${amountOf(count, item.unit)} of ${name}`;
-  // A unit ops wrote in the plural counts as its one.
-  const unit = item.unit.replace(/s$/, "");
-  if (!words.endsWith(unit) && !words.endsWith(`${unit}s`)) return `${amountOf(count, unit)} of ${name}`;
-  if (count === 1) return `1 ${name.replace(/s$/, "")}`;
-  return `${String(count)} ${words.endsWith("s") ? name : `${name}s`}`;
+  if (isMeasure(item.unit)) return `${amountOf(count, item.unit)} of ${midSentence(item.name)}`;
+  return countOf(count, item.unit, item.name);
 }
 
 /** What the ask says: the one thing short, named; or what's short, where it is more than one. */

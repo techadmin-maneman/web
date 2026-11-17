@@ -481,6 +481,8 @@ export const clientRecord = localised({
   clientAlerts: "Client alerts",
   visits: "Visits",
   results: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
+  /** Who did a visit the technician reading did. */
+  you: "You",
   /** "Imran · Done" */
   byAndResult: (who: string | null, result: string) => (who === null ? result : `${who} · ${result}`),
   photo: (angle: string) => `After, ${angle}`,
