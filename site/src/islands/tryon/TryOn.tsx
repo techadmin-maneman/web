@@ -31,6 +31,7 @@ import { Failed } from "./Failed.tsx";
 import { Gate } from "./Gate.tsx";
 import { useReleased, useRenderWatch, useScreenHistory } from "./hooks.ts";
 import { Looks } from "./Looks.tsx";
+import { Picture } from "./Picture.tsx";
 import { backFrom, screenNamed, START, step, type Screen } from "./machine.ts";
 import { Sent } from "./Sent.tsx";
 import styles from "./TryOn.module.css";
@@ -172,43 +173,50 @@ function TryOnFlow(props: Props) {
   // The first step's way back is the top bar's close, to the site; the sent screen has none, the look on its way.
   const onBack = backFrom(screen) === "home" || screen === "sent" ? null : back;
   const at = STEP_AT[screen];
+  // The look, once it is ready to show here: beside the photograph, where the step's picture stands.
+  const shown = screen === "sent" ? (look ?? state.returnedLook) : null;
   return (
     <div class={styles.flow} data-screen={screen}>
       <FlowTop title={tryOnTeaser.eyebrow} onBack={onBack} />
-      <div class={styles.inner}>
-        {at === undefined ? null : <FlowSteps at={at} of={STEPS} onBack={onBack} />}
-        <p class={styles.stepLabel}>
-          {screen === "error" ? tryOn.error.kinds[state.errorKind].step : tryOn.stepLabels[screen]}
-        </p>
+      <div class={styles.stage}>
+        <Picture photo={state.photo} look={shown} />
+        <div class={styles.column}>
+          {at === undefined ? null : <FlowSteps at={at} of={STEPS} onBack={onBack} />}
+          {shown === null && (
+            <p class={styles.stepLabel}>
+              {screen === "error" ? tryOn.error.kinds[state.errorKind].step : tryOn.stepLabels[screen]}
+            </p>
+          )}
 
-        {/* Turnstile shows here only if Cloudflare needs the visitor to act: above the step, before its button. */}
-        <div ref={turnstileBox} class={styles.turnstile} />
+          {/* Turnstile shows here only if Cloudflare needs the visitor to act: above the step, before its button. */}
+          <div ref={turnstileBox} class={styles.turnstile} />
 
-        {screen === "upload" && <Upload photo={state.photo} heading={heading} onChoose={choosePhoto} />}
-        {screen === "looks" && (
-          <Looks
-            look={state.look}
-            thumbnails={props.lookThumbnails}
-            heading={heading}
-            onChoose={(look) => {
-              send({ type: "lookChosen", look });
-            }}
-            onContinue={() => {
-              send({ type: "lookDone" });
-            }}
-          />
-        )}
-        {screen === "gate" && <Gate notice={notices.gate} heading={heading} {...gate} />}
-        {screen === "sent" && <Sent state={state} look={look ?? state.returnedLook} heading={heading} />}
-        {screen === "error" && (
-          <Failed
-            kind={state.errorKind}
-            heading={heading}
-            onAgain={() => {
-              send({ type: "again" });
-            }}
-          />
-        )}
+          {screen === "upload" && <Upload photo={state.photo} heading={heading} onChoose={choosePhoto} />}
+          {screen === "looks" && (
+            <Looks
+              look={state.look}
+              thumbnails={props.lookThumbnails}
+              heading={heading}
+              onChoose={(look) => {
+                send({ type: "lookChosen", look });
+              }}
+              onContinue={() => {
+                send({ type: "lookDone" });
+              }}
+            />
+          )}
+          {screen === "gate" && <Gate notice={notices.gate} heading={heading} {...gate} />}
+          {screen === "sent" && <Sent state={state} look={shown} heading={heading} />}
+          {screen === "error" && (
+            <Failed
+              kind={state.errorKind}
+              heading={heading}
+              onAgain={() => {
+                send({ type: "again" });
+              }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

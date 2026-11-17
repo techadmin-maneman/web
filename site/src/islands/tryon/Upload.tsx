@@ -14,39 +14,6 @@ import { Title, type HeadingRef } from "./Title.tsx";
 import shared from "./TryOn.module.css";
 import styles from "./upload.module.css";
 
-/** The guide a photo is framed to: a dashed oval with gilt corners, and its line beneath. */
-function Oval() {
-  return (
-    <svg viewBox="0 0 320 400" class={styles.oval} aria-hidden="true">
-      <path
-        d="M160 92 C196 92 218 126 218 178 C218 232 194 268 160 274 C126 268 102 232 102 178 C102 126 124 92 160 92 Z"
-        class={styles.ovalGuide}
-        fill="none"
-        stroke-width={ICON_STROKES.regular}
-        stroke-dasharray="6 6"
-      />
-      <path
-        d="M30 30 H66 M30 30 V66 M290 30 H254 M290 30 V66 M30 370 H66 M30 370 V334 M290 370 H254 M290 370 V334"
-        class={styles.ovalCorners}
-        fill="none"
-        stroke-width={ICON_STROKES.heavy}
-      />
-      <text
-        x="160"
-        y="332"
-        class={styles.ovalLabel}
-        font-family="IBM Plex Sans, sans-serif"
-        font-size="15"
-        letter-spacing="1.8"
-        text-anchor="middle"
-        font-variant="small-caps"
-      >
-        {tryOn.upload.oval}
-      </text>
-    </svg>
-  );
-}
-
 /** False once the device is known to have no camera, so Take a photo is not offered. */
 function useHasCamera(): boolean {
   const [has, setHas] = useState(true);
@@ -146,23 +113,6 @@ function Guidelines(props: { heading: HeadingRef }) {
   );
 }
 
-/** The frame beside the words: the oval waiting for a photo, which a phone does not draw, or the photo chosen. */
-function Preview(props: { photo: string | null }) {
-  if (props.photo !== null) {
-    return (
-      <div class={styles.preview}>
-        <img class={styles.previewPhoto} src={props.photo} alt={tryOn.upload.previewAlt} />
-      </div>
-    );
-  }
-  return (
-    <div class={`${styles.preview} ${styles.waiting}`}>
-      <Oval />
-      <div class={styles.previewCaption}>{tryOn.upload.previewCaption}</div>
-    </div>
-  );
-}
-
 /**
  * Step one: the guidelines, then a photograph taken or chosen, looked at before it is used. The camera opens over the
  * page, the whole screen on a phone; where the browser will not open it, Take a photo asks for the phone's own camera
@@ -188,41 +138,38 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
 
   const capture = tryOn.upload.capture;
   return (
-    <div class={shared.split}>
-      <div>
-        <Guidelines heading={props.heading} />
-        <div class={styles.actions}>
-          {hasCamera && (
-            <Button
-              variant="primary"
-              size="action"
-              onClick={() => {
-                if (blocked) phoneCamera.current?.click();
-                else setTaking("camera");
-              }}
-            >
-              {tryOn.upload.camera}
-            </Button>
-          )}
+    <div>
+      <Guidelines heading={props.heading} />
+      <div class={`${shared.foot ?? ""} ${styles.actions ?? ""}`}>
+        {hasCamera && (
           <Button
-            variant={hasCamera ? "outline" : "primary"}
+            variant="primary"
             size="action"
             onClick={() => {
-              fileInput.current?.click();
+              if (blocked) phoneCamera.current?.click();
+              else setTaking("camera");
             }}
           >
-            {tryOn.upload.choose}
+            {tryOn.upload.camera}
           </Button>
-        </div>
+        )}
+        <Button
+          variant={hasCamera ? "outline" : "primary"}
+          size="action"
+          onClick={() => {
+            fileInput.current?.click();
+          }}
+        >
+          {tryOn.upload.choose}
+        </Button>
         {blocked && (
           <InlineMessage tone="note" className={styles.blocked}>
             {tryOn.upload.blocked}
           </InlineMessage>
         )}
-        <FileInput ref={fileInput} accept="image/jpeg,image/png" hidden onChange={chosen("files")} />
-        <FileInput ref={phoneCamera} accept="image/*" capture="user" hidden onChange={chosen("phone")} />
       </div>
-      <Preview photo={props.photo} />
+      <FileInput ref={fileInput} accept="image/jpeg,image/png" hidden onChange={chosen("files")} />
+      <FileInput ref={phoneCamera} accept="image/*" capture="user" hidden onChange={chosen("phone")} />
       {taking !== null && (
         <PhotoCapture
           still={looking?.url ?? null}

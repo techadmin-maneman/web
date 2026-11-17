@@ -48,15 +48,17 @@ export function Looks(props: {
           </ChoiceCard>
         ))}
       </Fieldset>
-      <Button
-        variant="primary"
-        size="action"
-        className={`${shared.next} ${shared.nextSpaced}`}
-        aria-disabled={look < 0}
-        onClick={props.onContinue}
-      >
-        {lookLabel(look)}
-      </Button>
+      <div class={shared.foot}>
+        <Button
+          variant="primary"
+          size="action"
+          className={shared.next}
+          aria-disabled={look < 0}
+          onClick={props.onContinue}
+        >
+          {lookLabel(look)}
+        </Button>
+      </div>
     </div>
   );
 }

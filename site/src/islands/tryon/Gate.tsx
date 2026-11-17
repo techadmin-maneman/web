@@ -68,14 +68,6 @@ export function Gate(props: {
   const busy = props.sending || code?.checking === true;
   return (
     <div class={styles.gate}>
-      <div class={styles.gateImage}>
-        <div class={styles.gateFrame}>
-          <div class={styles.gateLeft} />
-          <div class={styles.gateRight} />
-          <span class={capsLook(styles.gateFrameLabel)}>{tryOn.gate.frame}</span>
-        </div>
-        <p class={styles.gateCaption}>{tryOn.gate.caption}</p>
-      </div>
       <form ref={props.form} onSubmit={props.onSubmit} noValidate>
         <Title heading={props.heading}>{tryOn.gate.title}</Title>
         <div class={styles.fields}>
@@ -112,11 +104,7 @@ export function Gate(props: {
         </Button>
         {props.notice.line !== undefined && (
           <p class={styles.reassurance}>
-            <NoticeLine
-              line={props.notice.line}
-              href={props.notice.line.href}
-              more={CLIENT_WORDS.noticeMore}
-            />
+            <NoticeLine line={props.notice.line} href={props.notice.line.href} more={CLIENT_WORDS.noticeMore} />
           </p>
         )}
       </form>

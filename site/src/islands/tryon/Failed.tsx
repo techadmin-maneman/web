@@ -11,16 +11,12 @@ import styles from "./TryOn.module.css";
 export function Failed(props: { kind: ErrorKind; heading: HeadingRef; onAgain: () => void }) {
   const copy = tryOn.error.kinds[props.kind];
   return (
-    <div class={styles.notice}>
-      <div class={styles.noticeFrame}>
-        <Icon d={ICONS.noPhoto} size="xl" />
-        <div class={capsLook()}>{copy.frame}</div>
-      </div>
+    <div>
       <Title heading={props.heading} className={styles.noticeTitle}>
         {copy.title}
       </Title>
       <p class={styles.noticeBody}>{copy.body}</p>
-      <div class={styles.noticeActions}>
+      <div class={styles.foot}>
         {/* While the try-on cannot run, another photograph would be refused too. */}
         {props.kind !== "unavailable" && props.kind !== "paused" && (
           <Button variant="primary" size="action" onClick={props.onAgain}>
