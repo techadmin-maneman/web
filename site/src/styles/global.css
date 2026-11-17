@@ -6,7 +6,7 @@
 
 @import "@maneman/brand/tokens.css";
 @import "./tokens-site.css";
-@import "@maneman/brand/fonts.css";
+@import "@maneman/brand/fonts-plex.css";
 @import "@maneman/ui/base.css";
 
 /*
@@ -41,18 +41,18 @@
 
   body {
     margin: 0;
-    background: var(--paper);
-    color: var(--text);
-    font-family: var(--font-sans);
+    background: var(--site-ground);
+    color: var(--site-text);
+    font-family: var(--site-font);
     -webkit-font-smoothing: antialiased;
   }
 
   a {
-    color: var(--text);
+    color: var(--site-navy);
     text-decoration: none;
   }
   a:hover {
-    color: var(--ink);
+    color: var(--site-navy-hover);
   }
 
   input,
@@ -64,23 +64,20 @@
     color: inherit;
   }
   ::placeholder {
-    color: var(--paper-hint);
+    color: var(--site-text-muted);
     opacity: 1;
   }
   .on-ink ::placeholder {
-    color: var(--ink-muted);
+    color: var(--site-on-navy-muted);
   }
   select {
     appearance: none;
   }
 
-  /* Keyboard focus: the design has none, so it follows the surface's text colour. */
+  /* Keyboard focus: a brass ring on every ground, the one place brass is drawn (ADR 0262). */
   :focus-visible {
-    outline: var(--focus-width) solid var(--focus-colour, var(--ink));
+    outline: var(--focus-width) solid var(--focus-colour, var(--site-focus));
     outline-offset: var(--focus-offset);
-  }
-  .on-ink {
-    --focus-colour: var(--paper);
   }
 
   /*
@@ -99,7 +96,7 @@
   --action-pad: var(--sp-32);
   --control-pad: var(--sp-24);
   --small-pad: var(--sp-20);
-  --field-height: var(--btn-lg);
+  --field-height: var(--site-button-h);
   --field-text: var(--fs-16);
   --message-size: var(--fs-14);
 }
@@ -115,22 +112,23 @@
 /* ---- Type ----------------------------------------------------------------- */
 
 .serif {
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
 }
 
 .section-title {
   margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
+  font-family: var(--site-font);
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
   font-size: var(--fs-h2);
-  line-height: var(--lh-100);
+  line-height: var(--lh-115);
   letter-spacing: var(--tracking-heading);
 }
 
 .lead {
   font-size: var(--fs-lead);
   line-height: var(--lh-160);
-  color: var(--text-soft);
+  color: var(--site-text-muted);
   max-width: var(--measure-lead);
   text-wrap: pretty;
 }
@@ -138,10 +136,11 @@
 /* ---- Labels on images: tags, numerals, Before and After ---------------- */
 
 .label {
-  background: var(--ink-night);
+  background: var(--site-navy);
   padding: var(--sp-8) var(--sp-12);
-  font-size: var(--fs-13);
-  color: var(--ink-tag);
+  font-size: var(--site-fs-label);
+  font-weight: var(--weight-semibold);
+  color: var(--site-on-navy);
   white-space: nowrap;
 }
 

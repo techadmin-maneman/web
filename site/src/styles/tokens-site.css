@@ -5,24 +5,125 @@
  * packages/brand/tokens.css.
  */
 
+/*
+ * The redesign's roles and scales (docs/prompts/site-redesign.md, "Tokens"; ADR 0262): IBM Plex Sans alone, white and
+ * cool grounds between navy bands, one filled button to a view, square corners. Type and space grow from 390 to 1440 px;
+ * each clamp's middle term is the straight line between its two ends.
+ */
+:root {
+  /* ---- Colour: what each colour is for on the site ---------------------------------------- */
+  --site-ground: var(--white-000);
+  --site-band: var(--cool-100);
+  --site-navy: var(--navy-900);
+  --site-navy-hover: var(--navy-800);
+  --site-navy-rule: var(--navy-700); /* rules and edges on navy: the footer's top */
+  --site-gold: var(--gilt); /* the one filled button on navy */
+  --site-gold-hover: var(--gilt-hover);
+  --site-focus: var(--brass); /* the focus ring, on every ground */
+  --site-line: var(--line-200);
+  --site-text: var(--ink-900);
+  --site-text-muted: var(--ink-500);
+  --site-on-navy: var(--white-000);
+  --site-on-navy-muted: var(--mist-300);
+  --site-on-navy-edge: var(--white-055);
+  --site-scrim: var(--ink-night); /* the film's ground, under its overlays */
+
+  /* ---- Type ------------------------------------------------------------------------------ */
+  --site-font: var(--font-plex);
+  --site-fs-turning: clamp(40px, calc(25.14px + 3.81vw), 80px); /* the hero's turning line */
+  --site-fs-hero-title: clamp(20px, calc(17.77px + 0.571vw), 26px);
+  --site-fs-section: clamp(26px, calc(19.31px + 1.714vw), 44px); /* a section's or a page's title */
+  --site-fs-statement: clamp(20px, calc(14.8px + 1.333vw), 34px); /* "at your own table" */
+  --site-fs-lead: clamp(16px, calc(15.26px + 0.19vw), 18px);
+  --site-fs-body: var(--fs-16);
+  --site-fs-label: var(--fs-14);
+  --site-fs-small: var(--fs-13); /* the smallest anywhere; the home page keeps to 14 and up */
+  --site-fs-button: var(--fs-16);
+
+  /* ---- Space ----------------------------------------------------------------------------- */
+  --site-column: 1200px;
+  --site-gutter: clamp(20px, calc(12.57px + 1.905vw), 40px);
+  --site-section-y: clamp(56px, calc(41.14px + 3.81vw), 96px);
+  --site-button-h: var(--btn-client); /* 52 */
+  --site-header-button-h: var(--sp-40); /* a laptop's header */
+  --site-header-icon: var(--tap); /* a phone's header, 44 */
+}
+
+/* The shared parts' roles (packages/brand/tokens.css) on the site's white, as the client app's look sets them
+   (apps/app/src/styles/look.css), so a part draws alike on both. */
+:root {
+  --ui-ground: var(--site-ground);
+  --ui-raised: var(--site-ground);
+  --ui-tint: var(--site-band);
+  --ui-shade: var(--disabled);
+  --ui-box: var(--site-ground);
+  --ui-box-off: var(--disabled);
+  --ui-text: var(--site-text);
+  --ui-text-soft: var(--site-text-muted);
+  --ui-text-muted: var(--site-text-muted);
+  --ui-text-quiet: var(--site-text-muted);
+  --ui-toggle-text: var(--site-text);
+  --ui-hint: var(--site-text-muted);
+  --ui-line: var(--site-line);
+  --ui-line-control: var(--stone);
+  --ui-strong: var(--site-navy);
+  --ui-on-strong: var(--site-on-navy);
+  --ui-strong-pressed: var(--site-navy-hover);
+  --ui-error: var(--red-700);
+  --pick-edge: var(--stone);
+  --pick-on: var(--site-navy);
+  --pick-on-text: var(--site-on-navy);
+  --surface: var(--site-ground);
+  --on-surface: var(--site-text);
+  --on-surface-muted: var(--site-text-muted);
+  --border-subtle: var(--site-line);
+  --border-control: var(--stone);
+  --status-error: var(--red-700);
+  --status-warning: var(--red-700);
+  --status-saved: var(--site-text);
+  --status-done: var(--site-text);
+  --status-note: var(--site-text-muted);
+  --ui-radius-button: 0;
+  --ui-radius-box: 0;
+  --title-font: var(--site-font);
+  --title-weight: var(--weight-semibold);
+  --action-weight: var(--weight-semibold);
+  --caps-font: var(--site-font);
+  --caps-weight: var(--weight-semibold);
+  --caps-variant: normal;
+  --caps-tracking: normal;
+  --focus-colour: var(--site-focus);
+}
+
+/* On navy, words are white and their quieter lines mist; nothing is paper. */
+[data-ground="ink"] {
+  --on-surface: var(--site-on-navy);
+  --on-surface-muted: var(--site-on-navy-muted);
+  --border-subtle: var(--site-navy-rule);
+  --border-control: var(--site-on-navy-edge);
+  --status-saved: var(--site-on-navy);
+  --status-done: var(--site-on-navy);
+  --status-note: var(--site-on-navy-muted);
+}
+
 :root {
   /* ---- Type: the site's scale, which grows with the screen ------------------------------------ */
   /* Display, the five headings, then the larger text beneath a heading and the body; beyond the scale, the two
      display sizes of the band's statement and how it works' numerals. The brand's fixed sizes (--fs-13 to --fs-30)
      are for what does not grow. */
-  --fs-hero: clamp(42px, 7.4vw, 96px);
+  --fs-hero: var(--site-fs-turning);
   /* The hero's turning line: on a narrow phone it shrinks so its longest phrase, about 8.7 times the type's size,
      keeps to one line. */
   --fs-hero-line: min(var(--fs-hero), calc((100vw - 2 * var(--gutter)) / 8.9));
-  --fs-band: clamp(34px, 6.4vw, 84px);
+  --fs-band: var(--site-fs-statement);
   --fs-step-number: clamp(40px, 5vw, 72px);
-  --fs-h1: clamp(32px, 4.6vw, 62px);
-  --fs-h2: clamp(30px, 4vw, 54px);
+  --fs-h1: var(--site-fs-section);
+  --fs-h2: var(--site-fs-section);
   --fs-h3: clamp(28px, 3.4vw, 44px);
   --fs-h4: clamp(24px, 2.8vw, 38px);
   --fs-h5: clamp(20px, 2vw, 26px);
-  --fs-lead: clamp(17px, 1.4vw, 20px);
-  --fs-body: clamp(16px, 1.3vw, 18px);
+  --fs-lead: var(--site-fs-lead);
+  --fs-body: var(--site-fs-body);
 
   /* ---- Space: the site's scale, which grows with the screen ----------------------------------- */
   /* Between and inside a section's parts, smallest first; a section's own frame is beneath, named for it. */
@@ -38,13 +139,13 @@
   /* ---- Page frame -------------------------------------------------------- */
   /* The top of a page of text, the try-on's and the 404. */
   --page-pad-top: clamp(40px, 6vw, 88px);
-  --page-max: 1440px;
-  --gutter: clamp(20px, 4vw, 48px);
+  --page-max: calc(var(--site-column) + 2 * var(--site-gutter)); /* the column and its gutters */
+  --gutter: var(--site-gutter);
   --header-gap: clamp(16px, 2.5vw, 34px);
   --bar-h: var(--sp-64);
   --bar-reserve: 72px; /* the space the home page keeps for the sticky bar */
   --foot-bar-h: 0px; /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
-  --section-gap: clamp(56px, 8vw, 112px);
+  --section-gap: var(--site-section-y);
   --band-pad: clamp(48px, 7vw, 96px);
   --split-min: 300px;
   --split-min-mid: 340px;

@@ -1,7 +1,7 @@
 /*
  * IBM Plex Sans and IBM Plex Sans Devanagari, self-hosted (SIL Open Font License), from @fontsource, for the
- * technician app alone: the console, the client app and the site keep fonts.css. The weights the technician
- * design uses, 400, 500 and 600, in Google's latin, latin-ext and devanagari subsets.
+ * technician app, the client app and the site (ADR 0262); the console keeps fonts.css. The weights the
+ * designs use, 400, 500 and 600, in Google's latin, latin-ext and devanagari subsets.
  *
  * Both are one family, "IBM Plex Sans", split by unicode-range: a Hindi word takes the Devanagari file's glyphs and
  * the Latin around it keeps Plex Sans's, and the browser fetches each file only for a page that writes a character

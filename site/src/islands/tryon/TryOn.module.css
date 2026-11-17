@@ -62,7 +62,7 @@
 .titleLarge,
 .noticeTitle {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-weight: var(--weight-regular);
   color: var(--paper);
 }

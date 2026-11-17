@@ -1,17 +1,19 @@
 # The fidelity method
 
-How `npm run fidelity` pairs the design with the build. Its screenshots are in `docs/fidelity/`, last shot on 11 October 2026. Every pair is shot afresh each night on main (`.github/workflows/nightly-browser.yml`, "fidelity"), as the run's `fidelity-pairs` artifact; a script that a change broke fails the run, and the run's issue says so.
+How `npm run fidelity` pairs the design with the build. Its screenshots are in `docs/fidelity/`, but for the site's: they are 11 MB and change with every PR of its redesign, so they stay out of git; run it locally, or take the nightly run's artifact. Every pair is shot afresh each night on main (`.github/workflows/nightly-browser.yml`, "fidelity"), as the run's `fidelity-pairs` artifact; a script that a change broke fails the run, and the run's issue says so.
 
-## Phase 1
+## The site
 
-`scripts/fidelity/fidelity.ts` opens the design and the local build in Chromium and shoots them side by side, section by section.
+`scripts/fidelity/fidelity.ts` opens each board of the site redesign (`design/site-redesign/boards`, approved 17 November 2026; ADR 0262) and the local build in Chromium, at the board's own width, 390 or 1440 px, and writes the pairs to `docs/fidelity/site/<width>/`: the home page's header, its eleven sections and its footer, and every other page whole.
 
-- **The design's libraries** are React 18.3.1, ReactDOM 18.3.1 and `@babel/standalone` 7.29.0. The design fetches them from unpkg; the run answers those requests with the same versions from `node_modules`. React 18.3.1 stays at the repository root for this reason, whatever version an app uses.
-- **Fonts.** The design loads its fonts from Google, and the build self-hosts the same families (`packages/brand/fonts.css`). Both wait for `document.fonts.ready`.
+- **The boards' runtime** is the design canvas's, `design/support.js`, with React 18.3.1, ReactDOM 18.3.1 and `@babel/standalone` 7.29.0 from unpkg, answered from `node_modules`.
+- **Pictures.** A board names its pictures by the canvas's `/_blob/<id>`; the run answers each from the repository's own file, as `design/site-redesign/README.md` maps them.
+- **Fonts.** The boards load IBM Plex Sans from Google; the build self-hosts it (`packages/brand/fonts-plex.css`). Both wait for `document.fonts.ready`.
 - **Video** is blocked on both sides, so both show the poster.
-- **Fixed bars** are hidden while the sections are shot, then shot on their own.
+- **A board's length.** A board is drawn at a phone's or a laptop's height with its page scrolling inside; the run unrolls it to its full length before it is shot.
+- **Fixed bars** are hidden while the build's pages are shot.
 
-Any difference in type, spacing, colour or order is a defect. The prices are not: they are the price book's, which the local build shows as it was on 22 September 2026, where v2 says ₹25,000, ₹1,500 and ₹17,000 (ADR 0022, item 39), and they are written "Rs. 30,000" where v2 writes its sign, as the owner ruled on 27 September 2026 (ADR 0025, item 51). Nor are the try-on's consent screen and gate: they show the notices that send the look to WhatsApp only and keep a client's try-on, whose placeholder words await counsel and are longer than v2's (ADR 0104; ADR 0084; ADR 0025, items 65 and 88). Nor is the try-on's order since the owner's ruling of 1 October 2026 (ADR 0104): nothing renders before the gate, so v2's processing and result screens pair with nothing (`try-5-processing` and `try-7-result` are no more), the looks screen's button reads Continue, the steps are of four, and the gate's frame reads "For your WhatsApp only"; the sent and unavailable screens have no pair in v2. Nor are the home page's words where the owner rewrote them on 1 October 2026 (ADR 0103): the hero, What it is, the comparison, How it works and the FAQ say the owner's words in v2's type; v2's two bases pair with Materials and construction, which took their place; v2's prices pair with nothing while the site gives none; and the range has no pair in v2.
+Any difference in type, spacing, colour or order is a defect, but for the departures `docs/site-redesign/PLAN.md` lists and the boards' stand-ins: their one results pair, grey looks, guide photographs and "Prototype:" lines. Where a board draws a state the build reaches only by acting (a step of `/book` or `/try`), the pair is of the page as it opens; each state is paired as its PR builds it. The pairs v2's design made (`design/Mane Man Site v2.dc.html`) are gone with it.
 
 ## The kit
 
