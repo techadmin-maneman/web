@@ -121,6 +121,7 @@ const card = (id: string, date: string) =>
     checklist_if_declined: [],
     partial_reasons: [],
     lost_reasons: [],
+    not_fitted_reasons: [],
     consumables: [],
     kit_hair_systems: [],
     products: [],

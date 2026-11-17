@@ -38,7 +38,6 @@
     "Change number": "नंबर बदलें",
     "Check in at the door.": "दरवाज़े पर चेक इन करें।",
     "Check the figures to continue": "आगे बढ़ने के लिए नाप जाँचें",
-    "Check the label to continue": "आगे बढ़ने के लिए लेबल जाँचें",
     "Check the number and the code.": "नंबर और कोड जाँचें।",
     "Check-in failed": "चेक इन नहीं हुआ",
     "Checked in": "चेक इन हो गया",
@@ -145,7 +144,7 @@
     "New, or your number changed? Ask ops to add it.": "नए हैं, या नंबर बदला है? ऑप्स से जुड़वाएँ।",
     "Next · leave now": "आगे · अभी निकलें",
     "No alerts in the last 7 days.": "पिछले 7 दिनों में कोई अलर्ट नहीं।",
-    "No camera. Type the label instead.": "कैमरा नहीं है। लेबल टाइप करें।",
+    "No camera. Type the code instead.": "कैमरा नहीं है। कोड टाइप करें।",
     "No consumables to record. Tell ops if you used any.": "लिखने को कोई सामान नहीं। कुछ इस्तेमाल किया हो तो ऑप्स को बताएँ।",
     "No earlier visits.": "पहले कोई विज़िट नहीं।",
     "No hair system is offered for this visit. Speak to ops before you fit anything.": "इस विज़िट के लिए कोई हेयर सिस्टम नहीं है। कुछ भी फ़िट करने से पहले ऑप्स से बात करें।",
@@ -232,6 +231,7 @@
     "Scalp under good light": "अच्छी रोशनी में स्कैल्प",
     "Scan or type each label": "हर लेबल स्कैन या टाइप करें",
     "Scan the label": "लेबल स्कैन करें",
+    "Scan the label to continue": "आगे बढ़ने के लिए लेबल स्कैन करें",
     "Sections": "हिस्से",
     "See what is waiting": "देखें क्या बाकी है",
     "Send": "भेजें",
@@ -419,6 +419,10 @@
   },
   "patterns": [
     {
+      "match": "^([^·]+) left after this$",
+      "hi": "इसके बाद $1 बचेगा"
+    },
+    {
       "match": "^([^·]+) photo sets? and ([^·]+) actions? not sent yet$",
       "hi": "$1 फ़ोटो सेट और $2 एंट्री अभी नहीं भेजी गईं"
     },
@@ -437,6 +441,10 @@
     {
       "match": "^([^·]+) · ([^·]+)\\. Tap to retry\\.$",
       "hi": "$1 · $2। फिर से भेजने के लिए टैप करें।"
+    },
+    {
+      "match": "^([^·]+)% density$",
+      "hi": "$1% डेंसिटी"
     },
     {
       "match": "^From consultation, ([^·]+)$",

@@ -175,6 +175,11 @@ export const JobDetailSchema = JobSummarySchema.extend({
       "On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their " +
       "order (ADR 0149). Empty for any other visit.",
   }),
+  not_fitted_reasons: z.array(JobSheetItemSchema).openapi({
+    description:
+      "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0269). " +
+      "Empty for any other visit.",
+  }),
   consumables: z.array(OfferedSchema).openapi({
     description:
       "Every consumable the technician may record, those this job's service is expected to use first, " +

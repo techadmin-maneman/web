@@ -126,6 +126,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [no_show_cases](#no_show_cases): The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 - [no_show_disputes](#no_show_disputes): A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, refunded or upheld, with their reason (ADR 0096).
 - [no_show_refunds](#no_show_refunds): What a no-show's ruling gives back of the visit's payment, kept as owed with the ruling until it is refunded or left to ops (ADR 0096).
+- [not_fitted_reasons](#not_fitted_reasons): Why a hair system could not be fitted today, as ops set them, one they took off kept as retired; none means the committed list (ADR 0269).
 - [number_change_requests](#number_change_requests): A client's change of mobile number: the codes proven on both numbers, and what ops decided (ADR 0042, ADR 0078).
 - [number_codes](#number_codes): Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).
 - [ops_settings](#ops_settings): The business inputs ops set in the console, a row each; a row that is not there means the committed default (ADR 0061).
@@ -1845,6 +1846,21 @@ Indexes:
 
 - `no_show_refunds_owed`: on (`created_at`), where `settled_at IS NULL`
 - A `UNIQUE` constraint: unique on (`appointment_id`, `why`)
+
+## not_fitted_reasons
+
+Why a hair system could not be fitted today, as ops set them, one they took off kept as retired; none means the committed list (ADR 0269).
+
+Made by `0218_not_fitted_reasons.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |  |
+| `label` | TEXT | no |  |  |  |
+| `position` | INTEGER | no |  |  |  |
+| `retired_at` | TEXT | yes |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 ## number_change_requests
 
@@ -3926,7 +3942,7 @@ Indexes:
 
 What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`, `0205_finish_the_work.sql`, `0206_consultation_pick.sql`.
+Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`, `0205_finish_the_work.sql`, `0206_consultation_pick.sql`, `0218_not_fitted_reasons.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3946,6 +3962,7 @@ Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`, `0205_finish
 | `finish_ask` | TEXT | yes |  |  | Migration number: 0205 When a technician who left a visit partly done, or could not fit, suggests finishing it: tomorrow morning, tomorrow evening, or ops to call the client (docs/decisions/0246-closed-and-sent-back.md). Ops read it on the visit's task. Only new columns, which the code deployed neither reads nor writes. |
 | `finish_asked_at` | TEXT | yes |  |  |  |
 | `picked_tier` | TEXT | yes |  |  | Migration number: 0206 The hair system a consultation's client picked from Options, going ahead with a fit, by its tier (docs/decisions/0247-the-steps-left.md). Ops read it on the client's First fit to book task. Only a new column, which the code deployed neither reads nor writes. |
+| `not_fitted_reason` | TEXT | yes |  |  |  |
 
 Indexes:
 

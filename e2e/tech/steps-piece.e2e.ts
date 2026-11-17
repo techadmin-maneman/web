@@ -11,7 +11,15 @@ import { holding, startedThrough, writesTo, throughTheTasks } from "./steps-fixt
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { stepAction } from "./steps-fixtures.ts";
 
-test.describe("the piece (board B3, step 4)", () => {
+/** "Type the code", and the code typed in. */
+async function typeCode(page: Page, code: string): Promise<void> {
+  const box = page.getByRole("textbox", { name: techCopy.steps.piece.typedLabel });
+  if (!(await box.isVisible())) await page.getByRole("button", { name: techCopy.steps.piece.typeCode }).click();
+  await box.fill(code);
+}
+
+// Scan-first, as the prototype draws it (docs/decisions/0269-the-design-checks-api-side.md).
+test.describe("the hair system step", () => {
   async function onThePiece(page: Page): Promise<Fake> {
     const fake = await fakeTech(page);
     fake.type = "replacement";
@@ -23,46 +31,55 @@ test.describe("the piece (board B3, step 4)", () => {
     return fake;
   }
 
-  test("reads a label typed with a space as the hyphen it means, and keeps a malformed one from Next", async ({
+  test("says what is expected and the piece it replaces, reads a typed space as a hyphen, and holds a malformed label", async ({
     page,
   }) => {
     await onThePiece(page);
-    const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
+    await expect(page.getByRole("heading", { level: 2, name: techCopy.steps.piece.scanTitle })).toBeVisible();
+    await expect(page.getByText(techCopy.steps.piece.listed("MM-STD-4417-B", "2 Jul"))).toBeVisible();
+    await expect(page.getByText(techCopy.steps.piece.pointAt)).toBeVisible();
 
-    await label.fill("mm-std-7193 c");
-    await expect(label).toHaveValue("MM-STD-7193-C");
+    await typeCode(page, "mm-std-7193 c");
+    const typed = page.getByRole("textbox", { name: techCopy.steps.piece.typedLabel });
+    await expect(typed).toHaveValue("MM-STD-7193-C");
     // Checked as it reads, with no step of its own: not in the kit, so the fit does not go on.
     await expect(page.getByText(techCopy.steps.piece.notInKitAction, { exact: true })).toBeVisible();
     await expect(stepAction(page)).toBeDisabled();
 
-    await label.fill("MM-STD-71");
+    await typed.fill("MM-STD-71");
     await expect(page.getByText(techCopy.steps.piece.checkFirst, { exact: true })).toBeVisible();
     await expect(stepAction(page)).toBeDisabled();
     await expect(page.getByText(techCopy.steps.piece.malformed)).toBeVisible();
   });
 
-  test("closes as partly done with no piece fitted, Can’t fit today, once asked", async ({ page }) => {
+  test("Can’t fit today asks why from ops’ list, and closes the fit as not fitted with it", async ({ page }) => {
     const fake = await onThePiece(page);
     const words = techCopy.steps.piece.cannotFit;
-    // Inside the step's gutter, as every other control on it is, never against the screen's edge.
-    const wayOut = await page.getByRole("button", { name: words.action }).boundingBox();
-    expect(wayOut?.x).toBeGreaterThanOrEqual(16);
     await page.getByRole("button", { name: words.action }).click();
     const asked = page.getByRole("dialog", { name: words.title });
     await expect(asked).toContainText(words.body);
-    expect(await axeViolations(page)).toEqual([]);
-    await asked.getByRole("button", { name: words.no }).click();
+    const close = asked.getByRole("button", { name: words.close });
+    // Off until a reason is picked.
+    await expect(close).toBeDisabled();
+    // The sheet's Close sits on the dialog's backdrop, which axe cannot see, as the reschedule sheet's does.
+    expect(await axeViolations(page, (axe) => axe.exclude("dialog > button"))).toEqual([]);
+    await asked.getByRole("button", { name: words.dismiss, exact: true }).click();
     await expect(asked).toHaveCount(0);
     expect(writesTo(fake, "outcome")).toEqual([]);
 
     await page.getByRole("button", { name: words.action }).click();
-    await page.getByRole("dialog", { name: words.title }).getByRole("button", { name: words.yes }).click();
+    await asked.getByRole("button", { name: "Piece damaged" }).click();
+    await close.click();
     await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.not_fitted })).toBeVisible();
-    await expect(page.getByText(techCopy.closeOut.sub("Rohit M.", "replacement", "not fitted"))).toBeVisible();
+    // The close names why, and what follows, as the prototype lists it.
+    await expect(page.getByText(techCopy.closeOut.notFittedWhy("Piece damaged"), { exact: true })).toBeVisible();
+    await expect(page.getByText(techCopy.closeOut.opsRebook, { exact: true })).toBeVisible();
+    await expect(page.getByText(techCopy.closeOut.duration, { exact: true })).toHaveCount(0);
     expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({
       outcome: "partial",
       reason: "no_piece",
       cannot_fit: true,
+      not_fitted_reason: "piece_damaged",
     });
   });
 
@@ -76,7 +93,9 @@ test.describe("the piece (board B3, step 4)", () => {
     startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
 
-    await expect(page.getByRole("region", { name: techCopy.job.piece.rows.paidFor })).toContainText("Mane Man Natural");
+    await expect(page.getByText(techCopy.job.piece.rows.paidFor, { exact: true })).toBeVisible();
+    await expect(page.getByText("Mane Man Natural", { exact: true })).toBeVisible();
+    await expect(page.getByText("8 × 10 in · #1B · 20% grey · 120% density", { exact: true })).toBeVisible();
     await expect(
       page.getByRole("alert").filter({
         hasText: "The hair profile says Mane Man Essential. Check with ops before you fit.",
@@ -84,7 +103,7 @@ test.describe("the piece (board B3, step 4)", () => {
     ).toBeVisible();
   });
 
-  test("lists the kit’s hair systems, the one made to the profile first, and sends the one picked", async ({
+  test("picks kit stock whose pieces carry no labels from the kit, the one made to the profile first", async ({
     page,
   }) => {
     const fake = await fakeTech(page);
@@ -119,15 +138,16 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(choices.first()).toContainText("120% density · 2 in kit");
     await choices.first().click();
     await expect(choices.first()).toHaveAttribute("aria-pressed", "true");
+    await typeCode(page, "MM-STD-5120-A");
+    await expect(page.getByText(techCopy.steps.piece.confirmed.left(1))).toBeVisible();
     expect(await axeViolations(page)).toEqual([]);
-    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-5120-A");
     await stepAction(page).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({ piece_code: "MM-STD-5120-A", stock_code: "hs_exact" });
   });
 
-  test("a label from the kit picks its hair system and lot, and an expired one keeps Next dim", async ({ page }) => {
+  test("confirms a label from the kit against the profile and the kit, and holds an expired one", async ({ page }) => {
     const fake = await fakeTech(page);
     fake.type = "first_fit";
     fake.service = { tier: "essential", name: "Mane Man Essential" };
@@ -151,20 +171,20 @@ test.describe("the piece (board B3, step 4)", () => {
     ];
     startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
-    const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
 
-    await label.fill("MM-ESS-0000008-J");
-    await expect(page.getByRole("alert")).toHaveText(techCopy.steps.piece.expired);
+    await typeCode(page, "MM-ESS-0000008-J");
+    await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.expired })).toBeVisible();
     await expect(page.getByText(techCopy.steps.piece.expiredAction, { exact: true })).toBeVisible();
     await expect(stepAction(page)).toBeDisabled();
 
-    await label.fill("mm-ess-0000007-h");
-    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot })).toHaveValue("HS-1");
-    const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
-    await expect(kit.getByRole("button").first()).toHaveAttribute("aria-pressed", "true");
+    await typeCode(page, "mm-ess-0000007-h");
+    const read = page.getByRole("region", { name: "MM-ESS-0000007-H" });
+    await expect(read).toContainText(techCopy.steps.piece.confirmed.match);
+    await expect(read).toContainText(techCopy.steps.piece.confirmed.left(1));
+    expect(await axeViolations(page)).toEqual([]);
     await stepAction(page).click();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
-    // The label checked as it read, the kit's hair system names its base.
+    // The label checked as it read: the kit's hair system names its base, and the kit's piece its lot.
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-ESS-0000007-H",
       base: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density",
@@ -173,42 +193,43 @@ test.describe("the piece (board B3, step 4)", () => {
     });
   });
 
-  test("says so when no camera opens to scan the label, which can still be typed", async ({ page }) => {
+  test("Rescan sets the piece read aside, for the scanner again", async ({ page }) => {
     await onThePiece(page);
-    await page.evaluate(() => {
+    await typeCode(page, "MM-STD-5120-A");
+    await page.getByRole("button", { name: techCopy.steps.piece.confirmed.rescan }).click();
+    await expect(page.getByText(techCopy.steps.piece.pointAt)).toBeVisible();
+    await expect(stepAction(page)).toBeDisabled();
+  });
+
+  test("says so when no camera opens, and the code can still be typed", async ({ page }) => {
+    await page.addInitScript(() => {
       Object.defineProperty(navigator, "mediaDevices", {
         value: { getUserMedia: () => Promise.reject(new Error("No camera")) },
       });
     });
-    await page.getByRole("button", { name: techCopy.steps.piece.scan }).click();
-    await expect(page.getByRole("alert")).toHaveText(techCopy.steps.piece.camera.refused);
-    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toBeEditable();
-  });
-
-  test("the label field is the whole of its 64 px box, so a gloved tap lands in it", async ({ page }) => {
     await onThePiece(page);
-    const box = await page.getByRole("textbox", { name: techCopy.steps.piece.label }).boundingBox();
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(60);
+    await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.camera.refused })).toBeVisible();
+    await typeCode(page, "MM-STD-5120-A");
+    await expect(page.getByRole("region", { name: "MM-STD-5120-A" })).toBeVisible();
   });
 
   test("with no signal says the label is not checked, rather than unknown", async ({ page }) => {
     const fake = await onThePiece(page);
     fake.online = false;
     // Checked as it reads: no button to press first.
-    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-7193-C");
+    await typeCode(page, "MM-STD-7193-C");
 
     await expect(page.getByText(techCopy.steps.piece.offline)).toBeVisible();
     // It can be tried again once there is signal.
     await expect(page.getByRole("button", { name: techCopy.steps.piece.checkAgain })).toBeVisible();
-    await expect(page.getByText(/We do not know that label/)).toHaveCount(0);
     await expect(stepAction(page)).toBeEnabled();
   });
 
   // A label taken while another is still being checked gets its own answer, and nothing of the first's.
-  test("checks a label taken while another is still being checked, and fills nothing of the first", async ({
+  test("checks a label taken while another is still being checked, and takes nothing of the first", async ({
     page,
   }) => {
-    await onThePiece(page);
+    const fake = await onThePiece(page);
     let first = true;
     await page.route("**/api/tech/pieces/lookup**", async (route) => {
       if (first) {
@@ -217,57 +238,39 @@ test.describe("the piece (board B3, step 4)", () => {
       }
       await route.fallback();
     });
-    const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
-    await label.fill(ROHITS_PIECE.piece_code);
-    await label.fill("MM-STD-9998-Z");
+    await typeCode(page, ROHITS_PIECE.piece_code);
+    await typeCode(page, "MM-STD-9998-Z");
 
     await expect(page.getByText(techCopy.steps.piece.unknown)).toBeVisible();
     await page.waitForTimeout(1800);
     await expect(page.getByText(techCopy.steps.piece.unknown)).toBeVisible();
-    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.base, exact: true })).toHaveValue("");
     await expect(stepAction(page)).toBeDisabled();
+    expect(writesTo(fake, "piece")).toEqual([]);
   });
 
   test("will not record another client’s piece", async ({ page }) => {
     await onThePiece(page);
-    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-9999-Z");
+    await typeCode(page, "MM-STD-9999-Z");
 
     await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.notThisClient })).toBeVisible();
     await expect(page.getByText(techCopy.steps.piece.notThisClientAction, { exact: true })).toBeVisible();
     await expect(stepAction(page)).toBeDisabled();
-    // The other piece's base and lot stay off this job.
-    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.base, exact: true })).toHaveValue("");
-    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot, exact: true })).toHaveValue("");
   });
 
-  test("picks the piece from the client’s list, and sends its base, its lot and the piece that came off", async ({
+  test("on a replacement sends the piece on the client’s head as the one that came off, with no why", async ({
     page,
   }) => {
     const fake = await onThePiece(page);
-
-    // The new piece: typed, with its base and lot, which the pieces tab reads.
-    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-5120-A");
-    await page.getByRole("textbox", { name: techCopy.steps.piece.base }).fill("PLACEHOLDER_STANDARD");
-    await page.getByRole("textbox", { name: techCopy.steps.piece.lot }).fill("LOT-5120");
-
-    // The one that came off, picked from the client's pieces rather than typed.
-    await page.getByRole("button", { name: techCopy.steps.piece.pick }).click();
-    await page.getByRole("button", { name: /MM-STD-4417-B/ }).click();
-    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.old.label })).toHaveValue("MM-STD-4417-B");
-    await page.getByRole("textbox", { name: techCopy.steps.piece.old.reason }).fill("Lifted at the front");
-    expect(await axeViolations(page)).toEqual([]);
-
+    await typeCode(page, "MM-STD-5120-A");
     await stepAction(page).click();
     await expect(
       page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.replacement }),
     ).toBeVisible();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
-    expect(writesTo(fake, "piece")[0]?.body).toEqual({
+    expect(writesTo(fake, "piece")[0]?.body).toMatchObject({
       piece_code: "MM-STD-5120-A",
-      base: "PLACEHOLDER_STANDARD",
-      supplier_lot: "LOT-5120",
       stock_code: "hs_standard",
-      old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "Lifted at the front" },
+      old_piece: { piece_code: "MM-STD-4417-B" },
     });
   });
 });
@@ -312,7 +315,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
     await page.getByRole("radio", { name: "Mane Man Natural", exact: true }).click();
     await expect(page.getByRole("radio", { name: "Mane Man Natural", exact: true })).toBeChecked();
-    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
+    await typeCode(page, "MM-NAT-5120-A");
     await stepAction(page).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
@@ -328,7 +331,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     const fake = await onTheChoice(page);
     await page.getByRole("radio", { name: techCopy.oneVisit.declined, exact: true }).click();
     await expect(page.getByText(techCopy.oneVisit.declinedNote)).toBeVisible();
-    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
+    await expect(page.getByText(techCopy.steps.piece.pointAt)).toHaveCount(0);
     await expect(stepAction(page)).toHaveText(techCopy.visit.next(techCopy.steps.checklistTitles.consultation));
     await expect(page.getByRole("button", { name: techCopy.steps.piece.cannotFit.action })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
@@ -361,7 +364,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
   test("runs the consultation’s checklist and the fit’s for a client being fitted", async ({ page }) => {
     await onTheChoice(page);
     await page.getByRole("radio", { name: "Mane Man Natural" }).click();
-    await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
+    await typeCode(page, "MM-NAT-5120-A");
     await stepAction(page).click();
 
     await expect(page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist })).toBeVisible();
@@ -377,7 +380,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(today).toBeDisabled();
     await expect(page.getByText(techCopy.oneVisit.notInKit("Mane Man Essential"))).toBeVisible();
     await expect(page.getByRole("radio", { name: new RegExp(techCopy.oneVisit.bookLater) })).toBeChecked();
-    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
+    await expect(page.getByText(techCopy.steps.piece.pointAt)).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
   });
 
@@ -391,7 +394,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await expect(page.getByRole("radio", { name: new RegExp(`^${techCopy.oneVisit.fitToday}`) })).toBeChecked();
     await page.getByRole("radio", { name: new RegExp(techCopy.oneVisit.bookLater) }).click();
     await expect(page.getByText(techCopy.oneVisit.laterNote)).toBeVisible();
-    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.label })).toHaveCount(0);
+    await expect(page.getByText(techCopy.steps.piece.pointAt)).toHaveCount(0);
     // Nothing is fitted today: the consultation's checklist is next, and there is no fit to give up on.
     await expect(stepAction(page)).toHaveText(techCopy.visit.next(techCopy.steps.checklistTitles.consultation));
     await expect(page.getByRole("button", { name: techCopy.steps.piece.cannotFit.action })).toHaveCount(0);

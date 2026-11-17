@@ -29,8 +29,35 @@ for last, because the API did not yet give the phone what they show.
    for are the hair system step's ([0163](0163-pieces-scanned-from-the-kit.md)), and the last visit's photographs are
    the handoff's and the history's. [0106](0106-a-clients-hair-profile.md)'s piece card, read from the profile, is this
    block.
+4. **"Can't fit today" asks why**, as the owner answered on 17 November 2026
+   ([0267](0267-the-technician-design-check.md), decision 2): a light sheet with the reasons ops keep in Settings, Job
+   sheet, beside the partial and lost reasons (`not_fitted_reasons`; the prototype's four until ops save their own),
+   and "Close and tell ops" off until one is picked. The close keeps it on the visit's outcome
+   (`visit_outcomes.not_fitted_reason`); ops read "Not fitted · Piece damaged" on the partly done visit's task and on
+   the client's page. A phone on an earlier build closes with no reason, as it did.
+5. **A fit closed not fitted** lists, as the prototype does, Result ("Not fitted · Piece damaged"), Photos and Next
+   step ("Ops rebook the fit"), and Finish the work beneath.
+6. **The hair system step is scan-first**: "Scan the hair system", what is expected (the product paid for, chosen or
+   fitted new, its spec, and the piece it replaces), the camera live with "Type the code" and "Can't fit today" beneath
+   it, then the piece confirmed, against the profile ("Match") and the kit ("1 left after this"), with Rescan. The step
+   asks for the scan alone: the base and the lot come from the label's check, the hair system from the kit's piece, and
+   the piece that came off is the one the card has on the client's head. "Why it failed, if it did" is no longer asked
+   (the owner's answer of 17 November 2026).
+7. **The API refuses a consultation closed partly done** (error field `outcome`): it closes done, going ahead or not
+   ([0268](0268-the-visits-design-check.md), decision 1). A consultation and fit in one visit may still close partly
+   done, as "Can't fit today" closes it.
+
+## Departures from the prototype
+
+- **The code typed** is checked as it reads, with no Check button ([0247](0247-the-steps-left.md), decision 6).
+- **Kit stock whose pieces carry no labels**, taken in before its pieces were labelled, is picked beneath the scanner
+  from "From your kit", the label on the piece then typed: a scan cannot find it.
+- **The sheet's Close** is the shared sheet's, on the dark backdrop, where the prototype's backdrop is a bare target.
 
 ## Consequences
+
+A piece that came off is recorded as replaced, never failed, from the step ([0191](0191-a-replaced-piece-comes-off.md));
+the API still takes a failure's reason, which no screen now sends.
 
 The API still serves the last visit's after photograph (`GET /api/tech/jobs/{id}/last-visit-photo`, from
 [0053](0053-the-technician-app-offline.md)) to a phone on an earlier build; it goes once no phone runs one.

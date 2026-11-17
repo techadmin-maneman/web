@@ -8,7 +8,7 @@ import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useCallback } from "react";
-import type { Job, JobSummary } from "../api.ts";
+import type { Job, JobSummary, OutcomeRequest } from "../api.ts";
 import { badges, closeOut as copy, titles } from "../content.ts";
 import { kindNameLower } from "../lib/kind.ts";
 import { arrivedAt, declinedTheFit, fitBookedLater, outcomeOf, type Outcome } from "../lib/progress.ts";
@@ -213,6 +213,22 @@ function Rows(props: {
 }
 
 /**
+ * A fit closed with "Can't fit today", as the prototype lists it: not fitted and why, the photographs, and that ops
+ * rebook it (docs/decisions/0269-the-design-checks-api-side.md).
+ */
+function NotFittedRows({ job, said, photos }: { job: Job; said: OutcomeRequest | null; photos: string }) {
+  const code = said?.outcome === "partial" ? said.not_fitted_reason : undefined;
+  const why = job.not_fitted_reasons.find((reason) => reason.id === code)?.label;
+  return (
+    <dl className={classes(shared.rows, styles.rows)}>
+      <Row name={copy.result} value={copy.notFittedWhy(why === undefined ? null : theirs(sayKnown(why)))} />
+      <Row name={copy.photos} value={photos} />
+      <Row name={copy.nextStep} value={copy.opsRebook} />
+    </dl>
+  );
+}
+
+/**
  * The piece fitted at this visit, by its label: the piece step still on the phone, else the client's newest piece once
  * it is one fitted on the visit's day or after.
  */
@@ -317,9 +333,9 @@ export function CloseOut({ id }: { id: string }) {
         <p className={styles.sub}>
           {copy.sub(who, kindNameLower(job), closedAs(job, outcome, waiting.events, notFitted))}
         </p>
-        {outcome === "no_show" ? (
-          <Evidence job={job} />
-        ) : (
+        {outcome === "no_show" && <Evidence job={job} />}
+        {notFitted && <NotFittedRows job={job} said={said} photos={photos} />}
+        {outcome !== "no_show" && !notFitted && (
           <Rows job={job} took={took} photos={photos} piece={fittedPiece(job, waiting.events)} />
         )}
         {/* A card the phone kept from before one visits names no link. */}

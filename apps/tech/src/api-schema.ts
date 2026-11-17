@@ -5470,6 +5470,8 @@ export interface components {
             partial_reasons: components["schemas"]["JobSheetItem"][];
             /** @description On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their order (ADR 0149). Empty for any other visit. */
             lost_reasons: components["schemas"]["JobSheetItem"][];
+            /** @description On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0269). Empty for any other visit. */
+            not_fitted_reasons: components["schemas"]["JobSheetItem"][];
             /** @description Every consumable the technician may record, those this job's service is expected to use first, each with the count its stepper starts at. */
             consumables: components["schemas"]["TechnicianConsumable"][];
             /** @description On a visit that fits a piece, the hair systems the technician's kit holds, by name, with the spec each is matched to the client's hair profile by. Empty for any other visit. */
@@ -6054,6 +6056,8 @@ export interface components {
              * @enum {boolean}
              */
             cannot_fit?: true;
+            /** @description With cannot_fit, why: one of the card's not_fitted_reasons, by its id; one ops have since taken off is still taken. Left out by a phone on a build before it was asked (ADR 0269). */
+            not_fitted_reason?: string;
             /** @description A note for the next technician, shown on this client's next job whoever takes it. */
             handoff_note?: string;
             /** @description An alert every technician reads before they start, kept on the client until ops take it off. */

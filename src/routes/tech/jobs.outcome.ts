@@ -88,16 +88,32 @@ async function signOffLetsClose(c: Ctx, job: WorkableJob): Promise<boolean> {
   return closesFit((await signOffOf(c.env.DB, job.id))?.state ?? null);
 }
 
+/** "Can't fit today": a fit closed from its piece step, with why where the phone asked (docs/decisions/0269-the-design-checks-api-side.md). */
+async function cannotFitBody(
+  c: Ctx,
+  job: WorkableJob,
+  body: Extract<OutcomeBody, { outcome: "partial" }>,
+): Promise<StepBody> {
+  if (body.reason !== NO_PIECE || !takesStep("piece", job.type, job.oneVisit !== null)) {
+    return { invalid: ["cannot_fit"] };
+  }
+  const why = body.not_fitted_reason;
+  if (why === undefined) return { outcome: "partial", reason: NO_PIECE, cannot_fit: true };
+  const known = knownCodes((await jobSheet(c.env.DB)).notFittedReasons);
+  return known.has(why)
+    ? { outcome: "partial", reason: NO_PIECE, cannot_fit: true, not_fitted_reason: why }
+    : { invalid: ["not_fitted_reason"] };
+}
+
 /** The close as it is kept, or the fields refused: `sign_off` for a fit closed done before its sign-off. */
 export async function outcomeBody(c: Ctx, job: WorkableJob, body: OutcomeBody): Promise<StepBody> {
   if (body.outcome === "done") {
     return (await signOffLetsClose(c, job)) ? doneBody(c, job, body) : { invalid: ["sign_off"] };
   }
-  if (body.cannot_fit === true) {
-    return body.reason === NO_PIECE && takesStep("piece", job.type, job.oneVisit !== null)
-      ? { outcome: "partial", reason: NO_PIECE, cannot_fit: true }
-      : { invalid: ["cannot_fit"] };
-  }
+  if (body.cannot_fit === true) return cannotFitBody(c, job, body);
+  if (body.not_fitted_reason !== undefined) return { invalid: ["not_fitted_reason"] };
+  // A consultation closes done, going ahead or not (docs/decisions/0268-the-visits-design-check.md).
+  if (job.type === "consultation" && job.oneVisit === null) return { invalid: ["outcome"] };
   const known = knownCodes((await jobSheet(c.env.DB)).partialReasons);
   return known.has(body.reason) ? { outcome: "partial", reason: body.reason } : { invalid: ["reason"] };
 }

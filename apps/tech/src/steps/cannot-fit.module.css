@@ -1,0 +1,36 @@
+/* "Can't fit today" (./CannotFit.tsx): the prototype's light sheet, its title, "Why?" over the reasons as chips sized
+   to their words, the line on what the close does, and the close. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.why {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+/* At the prototype's 14 px, wrapping. */
+.reasons {
+  --control-text: var(--fs-14);
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}
+
+.body {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}

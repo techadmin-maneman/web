@@ -13,7 +13,7 @@ import { paymentEntries } from "../../domain/money/client-payments.ts";
 import { creditBalance } from "../../domain/money/credits.ts";
 import { clientVisitCodes } from "../../domain/money/discount-code-uses.ts";
 import { partialVisitsClosed } from "../../domain/ops/task-closures.ts";
-import { jobSheet, type JobSheet } from "../../domain/field/job-sheet-settings.ts";
+import { jobSheet, type JobSheet, type JobSheetList } from "../../domain/field/job-sheet-settings.ts";
 import { lostReasonsOf } from "../../domain/visits/lost-reasons.ts";
 import { clientInviteOf } from "../../domain/referrals/referrals.ts";
 import { clientHistory } from "../../domain/visits/client-history.ts";
@@ -22,6 +22,7 @@ import {
   clientStateOf,
   isFitted,
   listVisits,
+  notFittedReasonsOf,
   visitOutcomes,
 } from "../../domain/visits/client-visits.ts";
 import { VISIT_OUTCOMES } from "../../domain/visits/visit-status.ts";
@@ -41,6 +42,11 @@ const LostReasonSchema = z.object({ code: z.string(), label: z.string() }).stric
 const ClientVisitSchema = VisitSummarySchema.extend({
   lost_reason: z.union([LostReasonSchema, z.null()]).openapi({
     description: "On a closed consultation, why the client is not going ahead, in ops' words; null where none is kept.",
+  }),
+  not_fitted_reason: z.union([LostReasonSchema, z.null()]).openapi({
+    description:
+      "On a fit closed with \"Can't fit today\", why it was not fitted, in the job sheet's words; null where none " +
+      "is kept (ADR 0269).",
   }),
   going_ahead: z.union([z.boolean(), z.null()]).openapi({
     description:
@@ -255,24 +261,28 @@ const ErasedClientRecordSchema = z
 async function recordVisits(db: D1Database, personId: string, now: Date, sheet: Promise<JobSheet>) {
   const visits = await listVisits(db, personId, now);
   const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
-  const [outcomes, closings, codes, lost, { lostReasons }] = await Promise.all([
+  const [outcomes, closings, codes, lost, notFitted, { lostReasons, notFittedReasons }] = await Promise.all([
     visitOutcomes(db, visitIds),
     partialVisitsClosed(db, visitIds),
     clientVisitCodes(db, personId),
     lostReasonsOf(db, visitIds),
+    notFittedReasonsOf(db, visitIds),
     sheet,
   ]);
-  const words = new Map([...lostReasons.retired, ...lostReasons.items].map((item) => [item.id, item.label]));
-  const lostReasonOf = (id: string) => {
-    const code = lost.lost.get(id);
+  const wordsOf = (list: JobSheetList) =>
+    new Map([...list.retired, ...list.items].map((item) => [item.id, item.label]));
+  const reasonOf = (codes: ReadonlyMap<string, string>, words: ReadonlyMap<string, string>, id: string) => {
+    const code = codes.get(id);
     return code === undefined ? null : { code, label: words.get(code) ?? code };
   };
+  const [lostWords, notFittedWords] = [wordsOf(lostReasons), wordsOf(notFittedReasons)];
   const withOutcome = (list: typeof visits.upcoming) =>
     list.map((visit) => ({
       ...visit,
       outcome: outcomes.get(visit.id) ?? null,
       closed_without_follow_up: closings.get(visit.id) ?? null,
-      lost_reason: lostReasonOf(visit.id),
+      lost_reason: reasonOf(lost.lost, lostWords, visit.id),
+      not_fitted_reason: reasonOf(notFitted, notFittedWords, visit.id),
       going_ahead: lost.said.get(visit.id) ?? null,
       discount_code: codes.get(visit.id)?.code ?? null,
       price_open: codes.get(visit.id)?.open ?? false,

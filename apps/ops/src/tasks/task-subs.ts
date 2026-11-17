@@ -81,7 +81,8 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   address_to_confirm: (facts) => copy.address_to_confirm(dayAndTime(facts.starts_at)),
   // The technician's reason in the job sheet's words, and the day they closed the visit.
   partial_visit: (facts, task) => {
-    const reason = facts.reason_code === NO_PIECE ? copy.noPiece : (facts.reason ?? copy.noReason);
+    const notFitted = facts.not_fitted === null ? copy.noPiece : copy.notFitted(facts.not_fitted);
+    const reason = facts.reason_code === NO_PIECE ? notFitted : (facts.reason ?? copy.noReason);
     return copy.partial_visit(
       reason,
       shortDate(indiaDate(task.since)),

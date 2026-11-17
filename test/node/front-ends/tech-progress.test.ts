@@ -71,6 +71,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   checklist_if_declined: [],
   partial_reasons: [],
   lost_reasons: [],
+  not_fitted_reasons: [],
   consumables: [],
   kit_hair_systems: [],
   products: [],

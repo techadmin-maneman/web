@@ -19,7 +19,6 @@ const EMPTY: PieceForm = {
   lot: "",
   stock: null,
   oldCode: "",
-  oldReason: "",
   choice: null,
   later: false,
 };
@@ -55,10 +54,9 @@ describe("the piece step", () => {
     expect(stillMissing({ ...typed, stock: "hs_exact" }, unlabelledKit, "unknown")).toBeNull();
   });
 
-  it("takes the piece that came off with or without why it failed, as a due one has no failure", () => {
+  it("takes the piece that came off, the one on the client's head, with no why: the step no longer asks it", () => {
     const off = { ...EMPTY, code: LABEL, oldCode: "MM-STD-1201-A" };
     expect(stillMissing(off, FIRST_FIT, "found")).toBeNull();
-    expect(stillMissing({ ...off, oldReason: "lifted at the front" }, FIRST_FIT, "found")).toBeNull();
     expect(stillMissing({ ...off, oldCode: "MM-STD-12" }, FIRST_FIT, "found")).toBe(copy.piece.checkFirst);
     expect(pieceBody(off, FIRST_FIT)).toEqual({ piece_code: LABEL, old_piece: { piece_code: "MM-STD-1201-A" } });
   });
@@ -100,11 +98,11 @@ describe("the piece step", () => {
       product: "natural",
       base: "Lace",
     });
-    const replaced = { ...EMPTY, code: LABEL, lot: "L-7", oldCode: "MM-STD-1201-A", oldReason: " lifted " };
+    const replaced = { ...EMPTY, code: LABEL, lot: "L-7", oldCode: "MM-STD-1201-A" };
     expect(pieceBody(replaced, FIRST_FIT)).toEqual({
       piece_code: LABEL,
       supplier_lot: "L-7",
-      old_piece: { piece_code: "MM-STD-1201-A", failure_reason: "lifted" },
+      old_piece: { piece_code: "MM-STD-1201-A" },
     });
   });
 

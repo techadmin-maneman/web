@@ -834,54 +834,52 @@ export const steps = localised({
     },
   },
   piece: {
-    // A label is scanned by its QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
-    label: "The new hair system’s label",
-    // The board draws no way out of the fit; it closes as partly done, and ops book the refit.
+    // Scan-first, as the prototype draws it (docs/decisions/0269-the-design-checks-api-side.md): a label is read by its
+    // QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
+    scanTitle: "Scan the hair system",
+    expected: { chosen: "Chosen", newPiece: "New piece", spec: "Spec", replacing: "Replacing" },
+    /** "120% density", the last of the spec. */
+    density: (percent: number) => `${String(percent)}% density`,
+    pointAt: "Point at the label",
+    typeCode: "Type the code",
+    typedLabel: "Code on the label",
     cannotFit: {
       action: "Can’t fit today",
-      title: "Close without fitting?",
-      body: "The job closes as partly done, and ops book the refit with the right hair system.",
-      yes: "Close without fitting",
-      no: "Keep fitting",
+      title: "Can’t fit today",
+      why: "Why?",
+      body: "The visit closes as not fitted. Ops rebook it.",
+      close: "Close and tell ops",
+      dismiss: "Close",
     },
-    scan: "Scan the label",
-    stopScan: "Stop scanning",
-    camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
+    confirmed: {
+      profile: "Profile",
+      match: "Match",
+      kit: "Kit",
+      left: (count: number) => `${String(count)} left after this`,
+      rescan: "Rescan",
+    },
+    camera: { opening: "Opening the camera…", refused: "No camera. Type the code instead." },
     expired: "This hair system has expired. Hand it in and use another.",
     otherThanFitted: "Not the hair system this fit is for. Check with ops before you fit.",
     expiredAction: "That hair system has expired",
     placeholder: "MM-ESS-0000123-K",
     // The board draws no label typed wrong.
     malformed: "Type it as on the label, like MM-ESS-0000123-K.",
-    checkFirst: "Check the label to continue",
+    checkFirst: "Scan the label to continue",
     /** A label is checked as soon as it reads; again only once there is signal (docs/prompts/tech-redesign.md). */
     checking: "Checking the label…",
     checkAgain: "Check again",
     unknown: "Not in your kit. Check the label, or close with Can’t fit today.",
     notInKitAction: "That label isn’t in your kit",
     uncheckedAction: "Waiting for the label check",
-    inKit: (name: string, lot: string | null) =>
-      lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`,
     // The board draws no lookup with no signal.
     offline: "No signal, so it isn’t checked. It’s saved as you typed it.",
     notThisClient: "That hair system isn’t this client’s.",
     notThisClientAction: "That hair system isn’t this client’s",
-    rows: { piece: "Hair system", base: "Base", lot: "Supplier lot" },
-    // The board draws the base as read, not typed; the pieces tab needs it and the lot (open point 28).
-    base: "Base",
-    lot: "Supplier lot",
-    pick: "Pick from the list",
-    // "Mono · fitted 2 Jul" beside a piece in the client's list.
+    // "MM-ESS-0000451-D · fitted 10 May": the piece a replacement takes off.
     listed: (code: string, fitted: string | null) => (fitted === null ? code : `${code} · fitted ${fitted}`),
-    // The board draws no piece coming off. The pieces tab keeps why it failed.
-    old: {
-      title: "The hair system that came off",
-      label: "The label of the hair system that came off",
-      reason: "Why it failed, if it did",
-    },
-    // The board draws no empty base; the piece may not be in the mirror yet.
-    unnamed: "Not recorded",
-    // The board draws no kit: the hair system fitted comes out of it (docs/decisions/0156-hair-systems-in-stock.md).
+    // The board draws no kit stock without labels: a hair system the kit took in before its pieces carried labels is
+    // picked from the kit, and the label on the piece typed (docs/decisions/0156-hair-systems-in-stock.md).
     kit: {
       title: "From your kit",
       held: (count: number) => `${String(count)} in kit`,
@@ -933,6 +931,11 @@ export const closeOut = localised({
   sub: (who: string, kind: string, result: string) => `${who} · ${kind} · ${result}`,
   outcomes: { done: "done", partial: "partly done", no_show: "no-show" },
   notFitted: "not fitted",
+  /** A fit closed with "Can't fit today": "Not fitted · Piece damaged", and what follows. */
+  result: "Result",
+  notFittedWhy: (why: string | null) => (why === null ? "Not fitted" : `Not fitted · ${why}`),
+  nextStep: "Next step",
+  opsRebook: "Ops rebook the fit",
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
   /** A one visit whose fit the client booked for another day. */

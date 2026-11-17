@@ -91,6 +91,7 @@ export function closeVisit({
   outcome,
   times,
   partialReason,
+  notFittedReason = null,
   lostReason = null,
   goingAhead = null,
   pickedTier = null,
@@ -102,6 +103,8 @@ export function closeVisit({
   outcome: VisitOutcome;
   times: VisitTimes;
   partialReason: string | null;
+  /** A fit closed with "Can't fit today", why (docs/decisions/0269-the-design-checks-api-side.md). */
+  notFittedReason?: string | null;
   /** After a consultation, why the client is not going ahead with a fit (docs/decisions/0149-lost-reasons.md). */
   lostReason?: string | null;
   /** After a consultation, whether the client said they are going ahead with a fit; null where not asked. */
@@ -114,8 +117,8 @@ export function closeVisit({
   return db
     .prepare(
       `INSERT INTO visit_outcomes (id, appointment_id, started_at, ended_at, duration_minutes, outcome, partial_reason,
-         updated_at, closed_by, close_reason, lost_reason, going_ahead, picked_tier)
-       SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11, ?12, ?13, ?14 FROM appointments
+         updated_at, closed_by, close_reason, lost_reason, going_ahead, picked_tier, not_fitted_reason)
+       SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11, ?12, ?13, ?14, ?15 FROM appointments
        WHERE id = ?2 AND deleted_at IS NULL AND status = ?9
          AND NOT EXISTS (SELECT 1 FROM visit_outcomes WHERE appointment_id = ?2)`,
     )
@@ -134,6 +137,7 @@ export function closeVisit({
       lostReason,
       goingAhead === null ? null : Number(goingAhead),
       pickedTier,
+      notFittedReason,
     );
 }
 

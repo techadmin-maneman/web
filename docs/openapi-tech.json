@@ -1694,6 +1694,13 @@
             },
             "description": "On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their order (ADR 0149). Empty for any other visit."
           },
+          "not_fitted_reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobSheetItem"
+            },
+            "description": "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0269). Empty for any other visit."
+          },
           "consumables": {
             "type": "array",
             "items": {
@@ -1992,6 +1999,7 @@
           "checklist_if_declined",
           "partial_reasons",
           "lost_reasons",
+          "not_fitted_reasons",
           "consumables",
           "kit_hair_systems",
           "products",
@@ -4224,6 +4232,12 @@
                   true
                 ],
                 "description": "Can't fit today: a fit closed from its piece step with no piece of the client's spec to fit, its reason `no_piece`. It follows the step before the piece, and ops are given the refit to book."
+              },
+              "not_fitted_reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "With cannot_fit, why: one of the card's not_fitted_reasons, by its id; one ops have since taken off is still taken. Left out by a phone on a build before it was asked (ADR 0269)."
               },
               "handoff_note": {
                 "type": "string",

@@ -368,13 +368,15 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       return { ...day, jobs: day.jobs.map((job) => ({ ...job, drive_km: job.drive_km ?? null })) };
     });
   },
-  // Version 14: a card carries where the visit was booked (docs/decisions/0269-the-design-checks-api-side.md). One
-  // kept before says nothing of it until it is read again.
+  // Version 14: a card carries where the visit was booked, and why a fit may not be fitted today
+  // (docs/decisions/0269-the-design-checks-api-side.md). One kept before says neither until it is read again, so its
+  // Can't fit today closes with no reason, as it did.
   (_db, upgrade) => {
     eachAgain(upgrade.objectStore("cards"), (value) => {
-      // What an earlier build wrote, which may lack the field this step adds.
-      const card = value as Partial<Pick<Job, "booked_via">>;
-      return card.booked_via === undefined ? { ...card, booked_via: null } : null;
+      // What an earlier build wrote, which may lack the fields this step adds.
+      const card = value as Partial<Pick<Job, "booked_via" | "not_fitted_reasons">>;
+      if (card.booked_via !== undefined && card.not_fitted_reasons !== undefined) return null;
+      return { ...card, booked_via: card.booked_via ?? null, not_fitted_reasons: card.not_fitted_reasons ?? [] };
     });
   },
 ];

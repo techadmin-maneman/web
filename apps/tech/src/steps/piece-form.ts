@@ -24,8 +24,8 @@ export interface PieceForm {
   readonly lot: string;
   /** The hair system from the kit, by its stock code; null for a piece from elsewhere. */
   readonly stock: string | null;
+  /** On a replacement, the piece on the client's head, from the card; empty for none. */
   readonly oldCode: string;
-  readonly oldReason: string;
   readonly choice: Choice;
   /** On a one visit, a product chosen with its fit booked for another day (docs/decisions/0247-the-steps-left.md). */
   readonly later: boolean;
@@ -90,6 +90,21 @@ function otherThanFitted(job: Matched, choice: Choice, stock: string | null): bo
   const product = productFitted(job, choice);
   const fit = job.profile?.fit ?? null;
   return (product !== null && hairSystem.product !== product) || (fit !== null && !madeTo(hairSystem, fit));
+}
+
+/**
+ * Whether the kit hair system read is the one this fit is for, the product and made to the profile; null where nothing
+ * tells: a piece from elsewhere, or no profile to match.
+ */
+export function kitMatch(job: Matched, choice: Choice, stock: string | null): boolean | null {
+  if (job.profile === null || !job.kit_hair_systems.some((each) => each.code === stock)) return null;
+  return !otherThanFitted(job, choice, stock);
+}
+
+/** How many pieces of the kit hair system read the kit keeps once it is fitted; null for a piece from elsewhere. */
+export function leftAfter(job: Pick<Job, "kit_hair_systems">, stock: string | null): number | null {
+  const held = job.kit_hair_systems.find((each) => each.code === stock)?.held;
+  return held === undefined ? null : Math.max(held - 1, 0);
 }
 
 /**
@@ -204,12 +219,6 @@ export function stillMissing(
   return given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;
 }
 
-/** The piece that came off: why it failed where it did; with no reason, it was due, and is replaced. */
-const oldPieceOf = (form: PieceForm) =>
-  given(form.oldReason)
-    ? { piece_code: form.oldCode, failure_reason: form.oldReason.trim() }
-    : { piece_code: form.oldCode };
-
 /** The step's body: against the fit, or the piece with what was said of it, and on a replacement the one off. */
 export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBody<"piece"> {
   if (declinedTheFit(form, job)) return { declined: true };
@@ -220,6 +229,6 @@ export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBo
     ...(given(form.base) ? { base: form.base.trim() } : {}),
     ...(given(form.lot) ? { supplier_lot: form.lot.trim() } : {}),
     ...(form.stock === null ? {} : { stock_code: form.stock }),
-    ...(given(form.oldCode) ? { old_piece: oldPieceOf(form) } : {}),
+    ...(given(form.oldCode) ? { old_piece: { piece_code: form.oldCode } } : {}),
   };
 }
