@@ -42,7 +42,7 @@
   .onInk {
     border-color: var(--ink-line-strong);
     background: transparent;
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .onInk::placeholder {
@@ -270,8 +270,8 @@
   }
 
   .tickOnInk:has(.tickInput:checked) {
-    border-color: var(--paper);
-    background: var(--paper);
+    border-color: var(--on-ink);
+    background: var(--on-ink);
   }
 
   .tick:has(.tickInput[aria-invalid="true"]) {
@@ -302,7 +302,7 @@
   }
 
   .tickOnInk + .checkLabel {
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   /* ---- Choices that answer one question ------------------------------------- */

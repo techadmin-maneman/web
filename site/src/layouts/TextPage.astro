@@ -55,9 +55,11 @@ const {
 </Site>
 
 <style>
+  /* An address or an email in a policy breaks where it must, so it never runs past a narrow column. */
   .text-page {
     font-size: var(--site-fs-article);
     line-height: var(--lh-155);
+    overflow-wrap: anywhere;
   }
   .tag {
     display: inline-block;

@@ -12,7 +12,7 @@
     width: 100%;
     min-height: var(--tap-row);
     padding: 0 var(--sp-16);
-    border: var(--hairline) solid var(--paper-control);
+    border: var(--hairline) solid var(--choice-edge);
     background: var(--white);
     font: inherit;
     color: var(--text);
@@ -39,7 +39,7 @@
   .filled:has(.radio:checked) {
     border-color: var(--ink);
     background: var(--ink);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .filled:has(.radio:checked) .note {
@@ -118,14 +118,14 @@
   }
 
   .onInk:has(.radio:checked) {
-    border-color: var(--paper);
+    border-color: var(--on-ink);
     background: var(--ink);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .card:has(.radio:disabled) {
-    border-color: var(--paper-shade);
-    background: var(--paper-shade);
+    border-color: var(--choice-off);
+    background: var(--choice-off);
     color: var(--text-muted);
     cursor: default;
   }
@@ -141,12 +141,12 @@
     justify-content: center;
     width: var(--sp-20);
     height: var(--sp-20);
-    border: var(--hairline) solid var(--paper-control);
+    border: var(--hairline) solid var(--choice-edge);
   }
 
   .boxOn {
     border-color: var(--ink);
     background: var(--ink);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 }

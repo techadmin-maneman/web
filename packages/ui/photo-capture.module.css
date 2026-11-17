@@ -8,7 +8,7 @@
 
 @layer ui {
   .frame {
-    --focus-colour: var(--paper);
+    --focus-colour: var(--focus-over-photo);
 
     width: 100%;
     max-width: 100%;
@@ -18,7 +18,7 @@
     padding: 0;
     border: 0;
     background: var(--ink-night);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   /* Only while open: a closed dialog stays hidden as the browser hides it. */
@@ -136,7 +136,7 @@
 
   .close {
     justify-self: start;
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   /* Over the photograph, where the bar holds its answers. */
@@ -145,7 +145,7 @@
     top: calc(var(--sp-12) + env(safe-area-inset-top));
     left: var(--sp-12);
     background: var(--sheet-scrim);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .balance {
@@ -157,8 +157,8 @@
     width: var(--tap-row);
     height: var(--tap-row);
     padding: 0;
-    border: var(--sp-4) solid var(--paper);
-    background: var(--paper);
+    border: var(--sp-4) solid var(--on-ink);
+    background: var(--on-ink);
     box-shadow: inset 0 0 0 var(--sp-4) var(--ink-night);
     cursor: pointer;
     transition: transform var(--duration-quick) var(--ease-house);
