@@ -1,46 +1,79 @@
-// Money Books holds that no invoice will come to be set against, though some of it is kept: what a late cancel or
-// replacement kept, a no-show's charge, and a late fee. Each Books pass (src/domain/books/books-sync.ts) tells ops of it once,
-// and closes the alert once the payment has gone back in full.
+// A charge we keep, invoiced in Books (docs/decisions/0261-razorpay-money-in-books.md): what a late cancel or
+// replacement kept, a no-show's charge, and a late fee. Each Books pass (src/domain/books/books-sync.ts) raises the
+// kept part's own invoice on the visit's Books item, GST included in it, sends it, and sets the payment against it, so
+// the money is the business's and not the client's credit. A no-show's charge waits until its dispute window has
+// closed with no dispute open, as a dispute may give it all back. An erased client's is told to ops instead.
 
-import { rupees } from "@maneman/web-kit/money";
+import { STANDARD_TIER, VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
+import { indiaDate } from "../../lib/india-time.ts";
+import type { NewBooksInvoice } from "../../providers/books/index.ts";
 import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
+import { supplyFor } from "../cities/gst-registrations.ts";
+import { claimToApply, closeFailures, markApplied, tellFailure, type Pass } from "./books-pass.ts";
+import { titled } from "./books-invoices.ts";
 import { PER_PASS } from "./vendor-pass.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
+
+/** Outside calls one kept charge may cost: the look for its invoice, its making, its sending, the payment set against it, and an alert. */
+export const CALLS_PER_KEPT = 5;
+
+/** Why the money was kept, which names the invoice's line. */
+type KeptFor = "cancelled" | "replaced" | "no_show" | "late_fee";
+
+const KEPT_NAMES: Readonly<Record<KeptFor, string>> = {
+  cancelled: "Late cancellation charge",
+  replaced: "Late change charge",
+  no_show: "No-show charge",
+  late_fee: "Late move charge",
+};
 
 interface KeptRow {
   id: string;
   person_id: string;
   books_payment_id: string;
-  appointment_id: string | null;
+  books_customer_id: string;
+  appointment_id: string;
   kind: "visit" | "late_fee";
   amount: number;
   refunded_amount: number;
   change: "cancelled" | "replaced" | null;
   change_kept: number | null;
   no_show_kept: number | null;
+  type: VisitType;
+  tier: string | null;
+  service_city: string | null;
+  books_item_id: string | null;
+  /** 1 where the client has been erased since, whose charge ops settle by hand. */
+  erased: number;
 }
 
 /**
- * Payments Books has that no invoice will ever be set against, though some of the money is kept: a visit's payment
- * part kept by a late cancel or replacement, or by a no-show's charge, and a late fee for moving a visit, which is
- * not the visit's price. What is kept sits in Books as the client's credit. A payment refunded in full keeps nothing,
- * and nor does a no-show charge refunded on the client's dispute, whose refund may not have landed yet.
+ * Payments Books has that no visit's invoice will ever be set against, though some of the money is kept: a visit's
+ * payment part kept by a late cancel or replacement, or by a no-show's charge, and a late fee for moving a visit,
+ * which is not the visit's price. A payment refunded in full keeps nothing, and nor does a no-show charge refunded
+ * on the client's dispute, whose refund may not have landed yet.
  */
-export async function keptMoney(db: D1Database): Promise<KeptRow[]> {
-  const { results } = await db
+export async function keptMoney(pass: Pass): Promise<KeptRow[]> {
+  const { results } = await pass.db
     .prepare(
-      `SELECT p.id, p.person_id, p.books_payment_id, p.appointment_id, p.kind, p.amount, p.refunded_amount,
-         c.kind AS change, c.kept_amount AS change_kept, n.kept_amount AS no_show_kept
-       FROM payments p
+      `SELECT p.id, p.person_id, p.books_payment_id, pe.books_customer_id, p.appointment_id, p.kind, p.amount,
+         p.refunded_amount, c.kind AS change, c.kept_amount AS change_kept, n.kept_amount AS no_show_kept,
+         a.type, a.tier, a.service_city, s.books_item_id, pe.erased_at IS NOT NULL AS erased
+       FROM payments p JOIN people pe ON pe.id = p.person_id JOIN appointments a ON a.id = p.appointment_id
+       LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, ?3)
        LEFT JOIN visit_changes c ON c.payment_id = p.id AND c.kind IN ('cancelled', 'replaced') AND c.kept_amount > 0
        LEFT JOIN no_show_cases n ON n.appointment_id = p.appointment_id AND p.kind = 'visit'
          AND n.decision = 'charged' AND n.kept_amount > 0
          AND NOT EXISTS (SELECT 1 FROM no_show_disputes d WHERE d.case_id = n.id AND d.ruling = 'refunded')
        WHERE p.books_payment_id IS NOT NULL AND p.books_applied_at IS NULL AND p.amount > p.refunded_amount
+         AND pe.books_customer_id IS NOT NULL
          AND (p.kind = 'late_fee' OR c.id IS NOT NULL OR n.id IS NOT NULL)
-       ORDER BY p.captured_at LIMIT ?1`,
+         AND (n.id IS NULL OR (n.dispute_until < ?1
+           AND NOT EXISTS (SELECT 1 FROM no_show_disputes d WHERE d.case_id = n.id AND d.ruling IS NULL)))
+         AND (p.books_checked_at IS NULL OR p.books_checked_at < ?2)
+       ORDER BY p.captured_at LIMIT ?4`,
     )
-    .bind(PER_PASS)
+    .bind(pass.at, pass.recheck, STANDARD_TIER, PER_PASS)
     .all<KeptRow>();
   return results;
 }
@@ -58,28 +91,82 @@ export async function keptSinceRefunded(db: D1Database): Promise<string[]> {
   return results.map((row) => row.id);
 }
 
-/** What was kept, and why, in the words ops read. */
-function keptFor(kept: KeptRow): string {
-  const visit = kept.appointment_id ?? "unknown";
-  if (kept.change !== null) return `visit ${visit} was ${kept.change} and ${rupees(kept.change_kept ?? 0)} of it kept`;
-  if (kept.no_show_kept !== null) return `visit ${visit} was a no-show and ${rupees(kept.no_show_kept)} of it kept`;
-  return `it is the late fee for moving visit ${visit}, and ${rupees(kept.amount - kept.refunded_amount)} of it kept`;
+const keptForOf = (kept: KeptRow): KeptFor => kept.change ?? (kept.kind === "late_fee" ? "late_fee" : "no_show");
+
+/** What is kept: the charge's own figure, never more than the payment holds once its refunds are out. */
+function keptAmount(kept: KeptRow): number {
+  const held = kept.amount - kept.refunded_amount;
+  return Math.min(held, kept.change_kept ?? kept.no_show_kept ?? held);
 }
 
-/** Told once: the payment is claimed as dealt with first, so an overlapping run does not tell it again. */
-export async function alertKeptMoney(db: D1Database, alertOnce: AlertOnce, at: string, kept: KeptRow): Promise<void> {
-  const claimed = await db
-    .prepare("UPDATE payments SET books_applied_at = ?1 WHERE id = ?2 AND books_applied_at IS NULL RETURNING id")
-    .bind(at, kept.id)
-    .first();
-  if (claimed === null) return;
-  await tellUnapplied(alertOnce, kept, keptFor(kept));
+/** The kept part's invoice, under the payment's ID: one line on the visit's item, the amount GST included. */
+async function keptInvoice(pass: Pass, kept: KeptRow, itemId: string): Promise<NewBooksInvoice> {
+  const supply = (await supplyFor(pass.db, pass.options.gst))(kept.service_city);
+  return {
+    customerId: kept.books_customer_id,
+    reference: kept.id,
+    date: indiaDate(new Date(pass.at)),
+    placeOfSupply: supply.placeOfSupply,
+    branchId: supply.branchId,
+    line: {
+      itemId,
+      name: `${KEPT_NAMES[keptForOf(kept)]}, ${titled(VISIT_TYPE_NAMES[kept.type])}`,
+      description: pass.options.labelAsTest ? "Staging test" : "",
+      rate: keptAmount(kept),
+      discount: 0,
+    },
+  };
 }
 
-/**
- * Ops settle it by hand. How kept money is invoiced, so that it does not
- * stay the client's credit, waits for the CA (docs/open-points.md, item 16).
- */
+/** True when the kept part is invoiced and the payment set against it now. */
+export async function invoiceKept(pass: Pass, kept: KeptRow): Promise<boolean> {
+  if (!(await claimToApply(pass, kept.id))) return false;
+  const failed = {
+    kind: "kept",
+    id: kept.id,
+    personId: kept.person_id,
+    what: `the invoice of what payment ${kept.id} kept`,
+    then: "It is asked again every hour.",
+  } as const;
+  if (kept.erased === 1) {
+    await tellUnapplied(pass.deps.alertOnce, kept, "the client was erased before its invoice was raised");
+    await markApplied(pass, kept.id);
+    return false;
+  }
+  // The hourly item check tells ops of a service Books has no item for.
+  if (kept.books_item_id === null) {
+    pass.log.warn("kept_item_missing", { payment_id: kept.id, type: kept.type, tier: kept.tier });
+    return false;
+  }
+  try {
+    const { books } = pass.deps;
+    // An earlier try whose answer never came may have raised it already.
+    const invoice =
+      (await books.findInvoice(kept.id)) ??
+      (await books.createInvoice(await keptInvoice(pass, kept, kept.books_item_id)));
+    await pass.db
+      .prepare("UPDATE payments SET books_kept_invoice_id = ?1 WHERE id = ?2")
+      .bind(invoice.id, kept.id)
+      .run();
+    if (invoice.status === "void") {
+      await tellUnapplied(pass.deps.alertOnce, kept, `its invoice ${invoice.id} is void`);
+      await markApplied(pass, kept.id);
+      return false;
+    }
+    if (invoice.status === "draft") await books.issueInvoice(invoice.id);
+    if (invoice.balance > 0) {
+      await books.applyToInvoice(kept.books_payment_id, invoice.id, Math.min(invoice.balance, keptAmount(kept)));
+    }
+  } catch (error) {
+    await tellFailure(pass, failed, error);
+    return false;
+  }
+  await markApplied(pass, kept.id);
+  await closeFailures(pass, failed);
+  return true;
+}
+
+/** Ops settle it by hand: refund it, or keep it in Books as the client's credit. */
 export async function tellUnapplied(
   alertOnce: AlertOnce,
   payment: { id: string; person_id: string; books_payment_id: string },

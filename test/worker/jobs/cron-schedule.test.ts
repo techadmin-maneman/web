@@ -281,6 +281,9 @@ describe("the Books pass's options", () => {
     apiHost: "www.zohoapis.in",
     orgId: "60088931635",
     refundAccountId: "bank-7",
+    bankAccountId: null,
+    gatewayFeesAccountId: null,
+    gatewayFeesTaxId: null,
     gst: { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" },
     itemPush: true,
     billAccounts: { hairSystems: "acct-cogs", consumables: "acct-raw" },
@@ -295,15 +298,37 @@ describe("the Books pass's options", () => {
     };
     expect(booksSyncOptions(config)).toEqual({
       refundAccountId: "bank-7",
+      settlementAccounts: null,
       billAccounts: { hairSystems: "acct-cogs", consumables: "acct-raw" },
       labelAsTest: true,
       gst: zohoBooks.gst,
     });
   });
 
+  it("posts settlements in production alone, once Razorpay's, the bank's and the fee's accounts are all set", () => {
+    const withAccounts = (bankAccountId: string | null, environment: StaticConfig["environment"] = "production") => ({
+      ...LOCAL_CONFIG,
+      environment,
+      settings: {
+        ...LOCAL_CONFIG.settings,
+        zohoBooks: { ...zohoBooks, bankAccountId, gatewayFeesAccountId: "acct-fees", gatewayFeesTaxId: "tax-18" },
+      },
+    });
+    expect(booksSyncOptions(withAccounts("bank-kotak")).settlementAccounts).toEqual({
+      razorpay: "bank-7",
+      bank: "bank-kotak",
+      fees: "acct-fees",
+      feesTaxId: "tax-18",
+    });
+    expect(booksSyncOptions(withAccounts(null)).settlementAccounts).toBeNull();
+    // The one Books organisation's bank is the real one.
+    expect(booksSyncOptions(withAccounts("bank-kotak", "staging")).settlementAccounts).toBeNull();
+  });
+
   it("has no refund account or GST without Books' settings, and labels nothing as a test in production", () => {
     expect(booksSyncOptions({ ...LOCAL_CONFIG, environment: "production" })).toMatchObject({
       refundAccountId: null,
+      settlementAccounts: null,
       labelAsTest: false,
       gst: NO_GST,
     });

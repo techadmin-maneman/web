@@ -29,6 +29,8 @@ import { opsInputs } from "./ops-inputs.ts";
 import { packageWanted } from "../domain/clients/client-package.ts";
 import { pricedFor } from "../domain/booking/client-prices.ts";
 import { cityOfPerson } from "../domain/cities/cities.ts";
+import { currentAddress } from "../domain/clients/profile.ts";
+import { isServed } from "../domain/clients/service-area.ts";
 
 /**
  * The terms for moving one of the client's visits of this type now, and the visit as a move sees it; null if it
@@ -152,6 +154,13 @@ export async function notOffered(
     if (first !== null) return refuse(c, first);
   }
   return c.json(errorBody(why, c.var.requestId), 422);
+}
+
+/** Whether the client's address is in a pincode we do not come to; false while they have given none. */
+export async function addressOutsideArea(db: D1Database, personId: string): Promise<boolean> {
+  const address = await currentAddress(db, personId);
+  if (address === null) return false;
+  return !(await isServed(db, address.pincode));
 }
 
 /** A moved visit's own service, by its name as it is now, with the length the visit keeps. */

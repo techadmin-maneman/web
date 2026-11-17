@@ -3,7 +3,7 @@
 // cron, not in the payment's path: Books is never on the way to a
 // booking.
 //
-// Each pass does a little of six things, oldest first:
+// Each pass does a little of each of these, oldest first:
 //   - makes the Books customer of each client with money or a finished visit to
 //     record (src/domain/books/books-customers.ts);
 //   - writes a client's new number or address to their customer;
@@ -11,11 +11,13 @@
 //     was for, which the receipt prints as its description of supply;
 //   - applies a visit's payment to its invoice, once Books has sent it, and tells
 //     ops of any part the invoice did not owe;
-//   - tells ops of money kept that no invoice will come to be set against: what
-//     a late cancel or replacement kept, a no-show's charge, and a late fee
-//     (src/domain/books/books-kept.ts);
+//   - invoices money kept, which no visit's invoice will be set against: what a
+//     late cancel or replacement kept, a no-show's charge, and a late fee, the
+//     payment set against that invoice (src/domain/books/books-kept.ts);
 //   - records each processed refund of a recorded payment, from the account
-//     Razorpay settles into, when that account is set;
+//     Razorpay holds our money in, when that account is set;
+//   - records each settlement Razorpay paid out, in production, as a transfer
+//     to the bank and its fee as an expense (./books-settlements.ts);
 //   - makes each receipt against a purchase order a bill of its supplier's
 //     vendor, once both bill accounts are set (./books-bills.ts), then each
 //     claim credited a vendor credit beside its bill (./books-credits.ts).
@@ -39,7 +41,7 @@ import type { CallBudget } from "../../lib/call-budget.ts";
 import { type Logger } from "../../log.ts";
 import { claimsToCredit, creditClaim } from "./books-credits.ts";
 import { addVendor, billReceipt, receiptsToBill, vendorsToAdd, type BillAccounts } from "./books-bills.ts";
-import { keptMoney, keptSinceRefunded, alertKeptMoney } from "./books-kept.ts";
+import { CALLS_PER_KEPT, invoiceKept, keptMoney, keptSinceRefunded } from "./books-kept.ts";
 import { RECHECK_AFTER_MS } from "./vendor-pass.ts";
 import type { BooksSyncDeps, BooksSyncOptions, Pass } from "./books-pass.ts";
 import { customersToAdd, addCustomer, customersToUpdate, updateCustomer } from "./books-sync-customers.ts";
@@ -51,6 +53,7 @@ import {
   refundsToRecord,
   recordRefund,
 } from "./books-sync-payments.ts";
+import { CALLS_PER_SETTLEMENT, recordSettlement, settlementsToRecord } from "./books-settlements.ts";
 
 /** Outside calls one record may cost: Books' look for it, Books' record, and the alert it may send. */
 export const CALLS_PER_RECORD = 3;
@@ -62,7 +65,11 @@ export type BooksSyncSummary = {
   customersUpdated: number;
   recorded: number;
   applied: number;
+  /** Charges kept whose own invoice Books now has, the payment set against it. */
+  kept: number;
   refunded: number;
+  /** Razorpay's settlements whose transfer and fee Books now has. */
+  settled: number;
   vendors: number;
   bills: number;
   credits: number;
@@ -122,7 +129,9 @@ export async function syncBooks({
     customersUpdated: 0,
     recorded: 0,
     applied: 0,
+    kept: 0,
     refunded: 0,
+    settled: 0,
     vendors: 0,
     bills: 0,
     credits: 0,
@@ -144,9 +153,9 @@ export async function syncBooks({
     if (!budget.spend(CALLS_PER_RECORD)) return summary;
     if (await applyPayment(pass, payment)) summary.applied += 1;
   }
-  for (const kept of await keptMoney(db)) {
-    if (!budget.spend(1)) return summary;
-    await alertKeptMoney(db, deps.alertOnce, pass.at, kept);
+  for (const kept of await keptMoney(pass)) {
+    if (!budget.spend(CALLS_PER_KEPT)) return summary;
+    if (await invoiceKept(pass, kept)) summary.kept += 1;
   }
   for (const paymentId of await keptSinceRefunded(db)) await deps.resolveAlert(`books_unapplied:${paymentId}`);
   if (options.billAccounts !== null && !(await bill(pass, options.billAccounts, budget, summary))) return summary;
@@ -154,6 +163,11 @@ export async function syncBooks({
   for (const refund of await refundsToRecord(pass)) {
     if (!budget.spend(CALLS_PER_RECORD)) return summary;
     if (await recordRefund(pass, refund, options.refundAccountId)) summary.refunded += 1;
+  }
+  if (options.settlementAccounts === null) return summary;
+  for (const settlement of await settlementsToRecord(pass)) {
+    if (!budget.spend(CALLS_PER_SETTLEMENT)) return summary;
+    if (await recordSettlement(pass, settlement, options.settlementAccounts)) summary.settled += 1;
   }
   return summary;
 }

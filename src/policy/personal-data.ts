@@ -383,6 +383,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "books_payment_id",
       "books_checked_at",
       "books_applied_at",
+      "books_kept_invoice_id",
     ],
     whyLeftOut:
       "Our, Razorpay's and Books' keys, the currency (always rupees), and a one-way hash of the UPI ID, which reads as nothing.",

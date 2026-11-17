@@ -166,16 +166,36 @@ export async function clientHold(db: D1Database, holdId: string, personId: strin
  */
 export async function holdAtCheckout(
   db: D1Database,
-  asked: { personId: string; type: VisitType; tier: string; date: string; window: BookingWindow; now: Date },
+  asked: {
+    personId: string;
+    type: VisitType;
+    tier: string;
+    date: string;
+    window: BookingWindow;
+    /** The start picked, where the app sends one: another start in the window is another time, not this hold's. */
+    startsAt: Date | undefined;
+    /** Where the visit is now: a hold made at another pincode is for somewhere else. */
+    address: { readonly pincode: string } | null;
+    now: Date;
+  },
 ): Promise<string | null> {
   const row = await db
     .prepare(
       `SELECT id FROM slot_holds
        WHERE ${ownAtCheckout("slot_holds", { person: "?1", type: "?2", tier: "?3", now: "?6" })}
-         AND date = ?4 AND window_label = ?5
+         AND date = ?4 AND window_label = ?5 AND (?7 IS NULL OR starts_at = ?7) AND pincode IS ?8
        ORDER BY expires_at DESC LIMIT 1`,
     )
-    .bind(asked.personId, asked.type, asked.tier, asked.date, asked.window, asked.now.toISOString())
+    .bind(
+      asked.personId,
+      asked.type,
+      asked.tier,
+      asked.date,
+      asked.window,
+      asked.now.toISOString(),
+      asked.startsAt?.toISOString() ?? null,
+      asked.address?.pincode ?? null,
+    )
     .first<{ id: string }>();
   return row?.id ?? null;
 }

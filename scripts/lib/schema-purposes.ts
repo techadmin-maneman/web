@@ -192,6 +192,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   referral_attributions:
     "A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).",
   referral_codes: "A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).",
+  razorpay_settlements: "Each payout Razorpay made to the bank, its fee, and its transfer and fee in Books (ADR 0261).",
   refunds: "The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).",
   serviceable_pincodes:
     "Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).",

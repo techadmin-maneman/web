@@ -4,7 +4,7 @@
 
 import { z } from "@hono/zod-openapi";
 import { askToOrder } from "../../domain/booking/made-to-order-asks.ts";
-import { bookable } from "../../http/client-booking.ts";
+import { addressOutsideArea, bookable } from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -55,9 +55,13 @@ export function registerClientMadeToOrder(app: App): void {
     const { type, tier } = c.req.valid("json");
     const personId = clientOf(c).subjectId;
     const now = c.var.deps.now();
-    // Kept only where booking it would answer made to order, by the rule the days and the hold refuse it by.
-    const why = await bookable(c, personId, { type, tier }, addDays(indiaDate(now), 1));
-    if (why !== "made_to_order") return refuse(c, "not_made_to_order");
+    // Kept only where booking it would answer made to order, by the rules the days and the hold refuse it by: an
+    // address we do not come to is told first, as the days tell it.
+    const [why, outside] = await Promise.all([
+      bookable(c, personId, { type, tier }, addDays(indiaDate(now), 1)),
+      addressOutsideArea(c.env.DB, personId),
+    ]);
+    if (why !== "made_to_order" || outside) return refuse(c, "not_made_to_order");
     return c.json(await askToOrder(c.env.DB, { personId, kind: type, tier, now }), 201);
   });
 }

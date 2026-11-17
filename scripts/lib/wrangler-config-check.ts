@@ -343,10 +343,11 @@ function checkNoSharedResources(config: JsonObject): string[] {
 }
 
 /**
- * The vars that name a vendor's tenant: the Books organisation and its refund account, and the Razorpay account. Staging
- * and production never share one, so nothing staging does can reach production's books or payments.
+ * The vars that name a vendor's tenant that staging and production never share: the Razorpay account, so nothing staging
+ * does can take a real payment. Books keeps one organisation for both, its staging records marked "Staging test"
+ * (docs/decisions/0261-razorpay-money-in-books.md).
  */
-export const TENANT_VARS = ["ZOHO_BOOKS_ORG_ID", "BOOKS_REFUND_ACCOUNT_ID", "RAZORPAY_KEY_ID"] as const;
+export const TENANT_VARS = ["RAZORPAY_KEY_ID"] as const;
 
 function checkOwnTenants(config: JsonObject): string[] {
   const [staging, production] = REMOTE_ENVIRONMENTS.map((environment) => environmentBlock(config, environment));

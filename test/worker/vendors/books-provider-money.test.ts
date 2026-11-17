@@ -162,7 +162,7 @@ describe("Books: invoices", () => {
 describe("Books: payments, receipts and refunds", () => {
   const body = (call: { body: string } | undefined) => JSON.parse(call?.body ?? "null") as unknown;
 
-  it("records a payment in rupees, against the client's customer, with what it was for, and returns its ID", async () => {
+  it("records a payment in rupees, against the client's customer, with what it was for, into Razorpay's account, and returns its ID", async () => {
     const { books, calls } = zohoBooks({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${BOOKS_API}/customerpayments`]: () => json({ code: 0, payment: { payment_id: "bp-1" } }, 201),
@@ -175,6 +175,7 @@ describe("Books: payments, receipts and refunds", () => {
       reference: "MM-2026-0841",
       description: "Staging test: Razorpay payment pay_test41",
       supply: "Staging test: Advance for First fit, Mon 21 Sep",
+      depositAccountId: "4242595000000352005",
     });
     expect(id).toBe("bp-1");
     expect(calls[1]?.method).toBe("POST");
@@ -187,6 +188,7 @@ describe("Books: payments, receipts and refunds", () => {
       reference_number: "MM-2026-0841",
       description: "Staging test: Razorpay payment pay_test41",
       product_description: "Staging test: Advance for First fit, Mon 21 Sep",
+      account_id: "4242595000000352005",
     });
   });
 
@@ -280,6 +282,7 @@ describe("Books: payments, receipts and refunds", () => {
       reference: "r",
       description: "d",
       supply: "s",
+      depositAccountId: null,
     };
     await expect(books.recordPayment(payment)).rejects.toThrow(/400/);
   });
@@ -299,6 +302,7 @@ describe("the stand-ins", () => {
       reference: "r",
       description: "d",
       supply: "s",
+      depositAccountId: null,
     };
     const recorded = await books.recordPayment(payment);
     expect(await new Response((await books.receiptPdf(recorded))?.body).text()).toMatch(/^%PDF-1\.4/);
@@ -348,6 +352,7 @@ describe("the stand-ins", () => {
       reference: "r",
       description: "d",
       supply: "s",
+      depositAccountId: null,
     });
     const line = { itemId: "stub-item-1", name: "First fit", description: "First fit", rate: 100, discount: 0 };
     await books.createInvoice({
@@ -406,6 +411,7 @@ describe("the stand-ins", () => {
       reference: "r",
       description: "d",
       supply: "s",
+      depositAccountId: null,
     };
     await expect(off.recordPayment(payment)).rejects.toThrow("BOOKS_PROVIDER is none");
     await expect(off.upsertCustomer(CUSTOMER)).rejects.toThrow("BOOKS_PROVIDER is none");
