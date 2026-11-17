@@ -2,13 +2,14 @@
 // the number on a waitlist, and the invite that has expired for this friend. The booked one says the same to every
 // number, since whoever typed it may not be its owner (src/policy/site-booking.ts): it restates only the day and window
 // picked, the details go to the number on WhatsApp, and the client app shows them once its owner signs in with a code.
-// It also says whether the discount code sent with it stands (ADR 0108).
+// It also says whether the discount code sent with it stands (ADR 0108). Booked, it is a navy screen of its own, its
+// one filled button the gold "Open the app"; on the list, it stays in the flow's frame on white (ADR 0265).
 
-import { capsLook } from "@maneman/ui/Caps";
 import { indiaClock, indiaTimeOf } from "@maneman/web-kit/dates";
 import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
+import { TextLink } from "@maneman/ui/TextLink";
 import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
 import { windowSpan } from "@rules/config/scheduling.ts";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
@@ -20,6 +21,7 @@ import { longDay } from "../../lib/dates.ts";
 import { fill } from "../../lib/text.ts";
 import { Icon } from "@maneman/ui/Icon";
 import styles from "./done.module.css";
+import shared from "./Invite.module.css";
 import type { Booking, Listing } from "./outcomes.ts";
 
 type HeadingRef = { current: HTMLHeadingElement | null };
@@ -30,10 +32,10 @@ type StandingCode = NonNullable<Consultation["discount_code"]>;
 function Expired(props: { reward: ReferralReward | null }) {
   const { expired } = referral;
   return (
-    <div class={styles.doneFrame}>
-      <div class={capsLook(styles.doneLabel)}>{expired.label}</div>
-      <h2 class={styles.frameTitle}>{expired.title}</h2>
-      <p class={styles.frameBody}>{expired.body(props.reward)}</p>
+    <div class={styles.expired}>
+      <div class={styles.label}>{expired.label}</div>
+      <h2 class={styles.expiredTitle}>{expired.title}</h2>
+      <p class={styles.expiredBody}>{expired.body(props.reward)}</p>
     </div>
   );
 }
@@ -101,12 +103,18 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
   };
   return (
     <div class={styles.calendar}>
-      <p class={capsLook(styles.calendarLabel)}>{calendar.label}</p>
-      <div class={styles.doneActions}>
-        <ButtonLink variant="outline" size="small" href={googleCalendarLink(entry)} target="_blank" rel="noopener">
+      <p class={styles.calendarLabel}>{calendar.label}</p>
+      <div class={styles.calendarLinks}>
+        <ButtonLink
+          variant="outlineOnNavy"
+          size="small"
+          href={googleCalendarLink(entry)}
+          target="_blank"
+          rel="noopener"
+        >
           {calendar.google}
         </ButtonLink>
-        <ButtonLink variant="outline" size="small" href={icsHref(entry, new Date())} download={calendar.fileName}>
+        <ButtonLink variant="outlineOnNavy" size="small" href={icsHref(entry, new Date())} download={calendar.fileName}>
           {calendar.file}
         </ButtonLink>
       </div>
@@ -131,26 +139,28 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
   const code = codeNote(props.booking);
   const app = clientAppOrigin(ENVIRONMENT);
   return (
-    <section class={styles.done}>
-      <div class={`${styles.doneBlock} on-ink`}>
-        <div class={capsLook(styles.doneBlockLabel)}>{copy.label}</div>
-        <Icon d={ICONS.tick} size="xl" />
-        <h1 ref={props.heading} tabIndex={-1} class={styles.doneBlockTitle}>
-          {copy.title}
-        </h1>
-        <p class={styles.doneBlockBody}>{fill(copy.body, { mobile })}</p>
-      </div>
-      <div class={styles.doneAfter}>
-        {booked && <p class={styles.doneNote}>{ready}</p>}
-        {code !== null && <p class={styles.doneNote}>{code}</p>}
-        {credits !== null && <p class={styles.doneNote}>{credits}</p>}
-        {result.invite === "expired" && <Expired reward={props.reward} />}
-        {booked && <AddToCalendar result={result} ready={ready} />}
-        {app !== null && <p class={styles.doneNote}>{referral.booked.appHint}</p>}
-        <div class={styles.doneActions}>
+    <section class={styles.booked}>
+      <div class={`${styles.panel} on-ink`} data-ground="ink">
+        <div class={styles.body}>
+          <span class={styles.mark}>
+            <Icon d={ICONS.tick} size="xl" />
+          </span>
+          <div class={styles.label}>{copy.label}</div>
+          <h1 ref={props.heading} tabIndex={-1} class={styles.title}>
+            {copy.title}
+          </h1>
+          <p class={styles.line}>{fill(copy.body, { mobile })}</p>
+          {booked && <p class={styles.line}>{ready}</p>}
+          {code !== null && <p class={styles.line}>{code}</p>}
+          {credits !== null && <p class={styles.line}>{credits}</p>}
+          {result.invite === "expired" && <Expired reward={props.reward} />}
+          {booked && <AddToCalendar result={result} ready={ready} />}
+          {app !== null && <p class={`${styles.line} ${styles.appHint}`}>{referral.booked.appHint}</p>}
+        </div>
+        <div class={styles.actions}>
           {app !== null && (
             <ButtonLink
-              variant="primary"
+              variant="goldOnNavy"
               size="action"
               href={app}
               onClick={(event) => {
@@ -160,9 +170,15 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
               {referral.booked.app}
             </ButtonLink>
           )}
-          <ButtonLink variant="outline" size="action" href="/">
+          <ButtonLink variant="outlineOnNavy" size="action" className={styles.backWide} href="/">
             {referral.booked.back}
           </ButtonLink>
+          {/* A phone's way back beneath the gold, in words, as the board draws it. */}
+          {app !== null && (
+            <TextLink tone="ink" quiet className={styles.backPhone} href="/">
+              {referral.booked.back}
+            </TextLink>
+          )}
         </div>
       </div>
     </section>
@@ -188,25 +204,24 @@ export function Listed(props: {
       : []),
   ];
   return (
-    <section class={styles.done}>
-      <div class={styles.doneFrame}>
-        <div class={capsLook(styles.doneLabel)}>{listed.label}</div>
-        <h1 ref={props.heading} tabIndex={-1} class={styles.frameTitle}>
-          {area === null ? listed.titleUnknown : fill(listed.title, { area })}
-        </h1>
-        {lines.length > 0 && <p class={styles.frameBody}>{lines.join(" ")}</p>}
+    <div class={styles.listed}>
+      <span class={`${styles.mark} ${styles.markNavy}`}>
+        <Icon d={ICONS.tick} size="xl" />
+      </span>
+      <div class={styles.label}>{listed.label}</div>
+      <h1 ref={props.heading} tabIndex={-1} class={styles.listedTitle}>
+        {area === null ? listed.titleUnknown : fill(listed.title, { area })}
+      </h1>
+      {lines.length > 0 && <p class={styles.listedBody}>{lines.join(" ")}</p>}
+      {invite === "expired" && <Expired reward={props.reward} />}
+      <div class={`${shared.send} ${styles.listedActions}`}>
+        <ButtonLink variant="primary" size="action" href="/try">
+          {listed.tryOn}
+        </ButtonLink>
+        <ButtonLink variant="outline" size="action" href="/">
+          {listed.back}
+        </ButtonLink>
       </div>
-      <div class={styles.doneAfter}>
-        {invite === "expired" && <Expired reward={props.reward} />}
-        <div class={styles.doneActions}>
-          <ButtonLink variant="primary" size="action" href="/try">
-            {listed.tryOn}
-          </ButtonLink>
-          <ButtonLink variant="outline" size="action" href="/">
-            {listed.back}
-          </ButtonLink>
-        </div>
-      </div>
-    </section>
+    </div>
   );
 }

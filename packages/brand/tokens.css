@@ -171,6 +171,7 @@
   --sp-36: 36px;
   --sp-40: 40px;
   --sp-48: 48px;
+  --sp-56: 56px;
   --sp-64: 64px;
   --sp-72: 72px;
 
@@ -185,7 +186,7 @@
   --progress-line: var(--focus-offset-wide);
   --focus-inset: calc(-1 * var(--focus-width)); /* a ring drawn inside a row or a cell, which would clip one outside */
   --tap: 44px; /* the smallest touch target; also the small button's height */
-  --btn-lg: 56px;
+  --btn-lg: var(--sp-56);
   --btn-md: var(--sp-48);
   --btn-client: 52px; /* the client app's primary button and its fields (docs/prompts/client-redesign.md) */
   --tap-row: var(--sp-64); /* rows, tabs, the code's boxes, a visit's times */

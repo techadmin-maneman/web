@@ -1536,11 +1536,11 @@
     "reviewed": false
   },
   {
-    "key": "site:pages/booking.introWaitlist",
+    "key": "site:pages/booking.introShort",
     "surface": "site",
     "group": "Book",
     "where": "booking",
-    "text": "Join the list. Tick the box and we’ll WhatsApp you the week we start coming to you.",
+    "text": "60 minutes at your home, completely free.",
     "reviewed": false
   },
   {
@@ -4660,7 +4660,15 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay by UPI at the visit, once fitted; decide against it and you pay nothing.",
+    "text": "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then.",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.consultation.plan.oneVisitNote",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Paid through a Razorpay link once you’re fitted. Decide against it and you pay nothing.",
     "reviewed": false
   },
   {

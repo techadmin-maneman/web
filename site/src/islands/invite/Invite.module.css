@@ -1,3 +1,10 @@
+/*
+ * /book and the referral landing, on the client app's look (ADR 0265). On a phone, one column under the flow's top bar,
+ * the step's button pinned at the screen's foot, the two columns' pieces interleaved in the boards' order. From 761 px
+ * the step's labels, the full intro and How it works's steps show; from 1024 px they take two columns, the form's and,
+ * beside it, the invite's card and How it works.
+ */
+
 /* ---- The page, one column on a phone ------------------------------------------ */
 
 .grid {
@@ -5,7 +12,6 @@
   flex-direction: column;
 }
 
-/* On a phone the two columns' pieces interleave, in the boards' order. */
 .lead,
 .aside {
   display: contents;
@@ -14,7 +20,7 @@
 .from {
   order: 1;
   font-size: var(--fs-15);
-  color: var(--text-muted);
+  color: var(--site-text-muted);
 }
 
 /* The referrer's card, as WhatsApp showed it in the chat: the same 1200 by 630. */
@@ -24,51 +30,54 @@
   width: 100%;
   height: auto;
   margin-top: var(--sp-16);
-  background: var(--ink);
+  background: var(--site-navy);
 }
 
 .title {
   order: 3;
-  margin: var(--sp-24) 0 0;
-  font-family: var(--site-font);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-h1);
+  margin: var(--sp-4) 0 calc(var(--sp-4) + var(--sp-2));
+  font-size: var(--flow-title);
+  font-weight: var(--weight-semibold);
   line-height: var(--lh-115);
   letter-spacing: var(--tracking-heading);
+  color: var(--site-navy);
 }
 
-/* /book has no invite above its headline. */
-.grid:not(:has(.inviteCard)) .title {
-  margin-top: 0;
+/* An invite's headline, under who sent it and their card. */
+.inviteCard + .title {
+  margin-top: var(--sp-24);
 }
 
 .offer {
   order: 4;
-  margin-top: var(--sp-16);
-  max-width: var(--measure-form);
-  font-size: var(--fs-lead);
-  line-height: var(--lh-160);
-  color: var(--text);
+  margin-bottom: calc(var(--sp-12) + var(--sp-2));
+  font-size: var(--flow-lead);
+  line-height: var(--lh-150);
+  color: var(--site-text-muted);
 }
 
 .offer p {
   margin: 0;
 }
 
-@media (max-width: 760px) {
-  .offerPast {
-    display: none;
-  }
+.offer p + p {
+  margin-top: calc(var(--sp-12) + var(--sp-2));
 }
 
-/* Who the booking is for, beneath the headline it books. */
+/* A phone's one line under the first step's title; a laptop's two paragraphs. Past the first step, the step itself. */
+.introLong,
+.offerPast {
+  display: none;
+}
+
+/* Who the booking is for, and the way back to them. */
 .bookingFor {
   order: 5;
-  margin-top: var(--sp-24);
+  margin-bottom: var(--sp-16);
 }
 
-.offer p + p {
-  margin-top: var(--sp-12);
+.bookingFor > .forPincode {
+  margin-top: 0;
 }
 
 .unknownTitle,
@@ -79,97 +88,103 @@
 .unknownBody {
   margin-top: var(--sp-4);
   font-size: var(--fs-16);
-  color: var(--text-soft);
 }
 
-/* ---- How it works (C1, C5) ----------------------------------------------- */
+/* /book's "Step 2 · Your area": a laptop's line over the step, which a phone's step bar draws instead. */
+.stepLine {
+  margin: 0 0 calc(var(--sp-4) + var(--sp-2));
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  color: var(--site-text-muted);
+  scroll-margin-top: var(--sp-24);
+}
+
+/* ---- How it works: a laptop's column, a phone's fold ------------------------------ */
 
 .steps {
+  display: none;
   order: 8;
-  margin-top: var(--sp-32);
 }
 
 .stepsTitle {
-  margin: 0;
-  font-size: var(--fs-15);
-  font-weight: var(--weight-regular);
-  color: var(--text-muted);
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  color: var(--site-text-muted);
 }
 
 .stepList {
-  margin: var(--sp-16) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  gap: var(--sp-16);
+  border-top: var(--hairline) solid var(--site-line);
 }
 
-/* A rule above each step, as the board draws them. */
 .step {
-  display: flex;
-  gap: var(--sp-16);
-  align-items: flex-start;
-  padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--paper-line);
+  display: grid;
+  grid-template-columns: calc(var(--sp-20) + var(--sp-2)) minmax(0, 1fr);
+  gap: var(--sp-4);
+  padding: calc(var(--sp-12) + var(--sp-2)) 0;
+  border-bottom: var(--hairline) solid var(--site-line);
 }
 
 .stepNumber {
-  flex: none;
-  font-family: var(--site-font);
-  font-size: var(--fs-h5);
-  line-height: var(--lh-100);
-  color: var(--text-muted);
-  font-variant-numeric: oldstyle-nums;
+  color: var(--site-text-muted);
 }
 
 .stepTitle {
   margin: 0;
   font-size: var(--fs-16);
-  font-weight: var(--weight-regular);
-  line-height: var(--lh-130);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-150);
 }
 
-/* The step's length and promise, above what happens in it. */
 .stepLead {
-  margin: var(--sp-4) 0 0;
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--text);
+  margin: 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-150);
 }
 
 .stepBody {
-  margin: var(--sp-4) 0 0;
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--site-text-muted);
 }
 
-/* ---- The pincode block (C1, C5), and its answer (C2, C3) ------------------ */
+.howFold {
+  border-top: var(--hairline) solid var(--site-line);
+  border-bottom: 0;
+}
+
+.howSummary {
+  min-height: var(--btn-client);
+  padding-block: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
+}
+
+/* On an invite, the fold follows the form, as the column it stands for does. */
+.aside > .howFold {
+  order: 8;
+}
+
+/* ---- The pincode, and its answer ---------------------------------------------------- */
 
 .panel {
   order: 6;
-  margin-top: var(--sp-32);
-  padding: var(--sp-24) var(--sp-20);
-  background: var(--ink);
-  color: var(--paper);
-}
-
-/* On a phone the answer is a band across the page, as C2 and C3 draw it. */
-.answered {
-  margin-inline: calc(-1 * var(--gutter));
-  padding: var(--sp-16) var(--gutter) var(--sp-24);
 }
 
 .panelTitle {
-  margin: 0;
-  font-family: var(--site-font);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-h5);
-  line-height: var(--lh-115);
+  margin: 0 0 calc(var(--sp-8) + var(--sp-2));
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+  color: var(--site-navy);
 }
 
 .pincodeForm {
-  margin-top: var(--sp-16);
   display: flex;
   gap: var(--sp-8);
   align-items: flex-end;
@@ -183,46 +198,67 @@
 
 .check {
   flex: none;
-  width: var(--landing-check-w);
-  padding: 0;
+  padding-inline: calc(var(--sp-20) + var(--sp-2));
 }
 
-/* An error on ink needs the ink palette's red; the paper one is unreadable there. */
-.panel .error {
-  color: var(--error-on-ink);
-}
-
-.answer {
-  margin: 0;
+/* Where we come, a navy banner that says so, with the way back to the pincode on a phone; where we do not, a navy
+   block that says so and why. */
+.answered {
   display: flex;
   align-items: center;
   gap: var(--sp-12);
-  font-family: var(--site-font);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-26);
-  line-height: var(--lh-115);
+  padding: calc(var(--sp-12) + var(--sp-2)) var(--sp-16);
+  background: var(--site-navy);
+  color: var(--site-on-navy);
+}
+
+.answeredNot {
+  display: block;
+}
+
+.answer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  margin: 0;
+  font-size: var(--fs-16);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-145);
 }
 
 .answer svg {
   flex: none;
-  color: var(--gilt);
+  color: var(--site-gold);
 }
 
 .answerBody {
-  margin: var(--sp-12) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--site-on-navy-muted);
 }
 
-/* ---- The two forms (C2, C3) ------------------------------------------------ */
+/* The landing's line that the terms and the privacy notice apply, beneath the pincode until its answer. */
+.arrivalLegal {
+  order: 7;
+  margin-top: var(--sp-16);
+}
+
+/* ---- The two forms -------------------------------------------------------------------- */
 
 .form {
   order: 7;
-  margin-top: var(--sp-28);
+  margin-top: calc(var(--sp-16) + var(--sp-2));
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+/* The first step's form has nothing above it to keep apart from. */
+.offer + .form,
+.bookingFor + .form {
+  margin-top: 0;
 }
 
 .form > * {
@@ -230,7 +266,7 @@
 }
 
 .form > * + * {
-  margin-top: var(--sp-24);
+  margin-top: var(--sp-20);
 }
 
 /* An empty live region or Turnstile box keeps its place in the page and takes no space. */
@@ -241,68 +277,53 @@
 .formTitle,
 .waitlistTitle {
   margin: 0;
-  font-family: var(--site-font);
-  font-weight: var(--weight-regular);
-}
-
-.formTitle {
-  font-size: var(--fs-30);
-  line-height: var(--lh-115);
-}
-
-.waitlistTitle {
-  font-size: var(--fs-28);
-  line-height: var(--lh-115);
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+  color: var(--site-navy);
 }
 
 .formBody,
 .forPincode {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--text-soft);
-}
-
-.formBody + .forPincode {
-  margin-top: 0;
-}
-
-/* /book's "Step 2 of 4 · Your area", over the step it names. */
-.step {
-  margin: 0;
+  margin: calc(var(--sp-4) + var(--sp-2)) 0 0;
   font-size: var(--fs-15);
-  color: var(--text-muted);
-  scroll-margin-top: var(--sp-24);
+  line-height: var(--lh-150);
 }
 
-.step + .forPincode,
-.step + .waitlistTitle {
-  margin-top: var(--sp-12);
+.formBody {
+  color: var(--site-text-muted);
+}
+
+.formBody + .forPincode,
+.stepLine + .forPincode,
+.stepLine + .waitlistTitle {
+  margin-top: 0;
 }
 
 .forPincode {
   font-variant-numeric: tabular-nums;
 }
 
-/* A fieldset's margin is the form's spacing (.form > * + *). */
-
 /* The month or months the dates fall in, above them: the tiles name only the weekday and the day. */
 .months {
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-15);
-  color: var(--text-soft);
+  color: var(--site-text-muted);
 }
 
 .windowLabel {
   font-size: var(--fs-16);
 }
 
-/* Beneath what to book: how the first fit asked for is booked and paid (ADR 0086). */
+/* Beneath what to book: when the one visit starts, and how it is paid (ADR 0105, ADR 0257). */
 .planNote {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
+  line-height: var(--lh-150);
+}
+
+.planWhen {
+  display: none;
 }
 
 /* One column as wide as the form, never as wide as its widest field's content: a 320 px screen scrolls nothing. */
@@ -313,24 +334,19 @@
   min-width: 0;
 }
 
-.consent {
-  min-height: var(--tap);
-  padding-top: var(--sp-4);
-}
-
 /* The waitlist's optional launch alert sits closer beneath the agreement. */
 .form > .consent ~ .consent {
-  margin-top: var(--sp-16);
+  margin-top: var(--sp-8);
 }
 
 .consentText {
   font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--text-soft);
+  line-height: var(--lh-150);
 }
 
 .consentNote {
-  color: var(--text-muted);
+  font-size: var(--fs-13);
+  color: var(--site-text-muted);
 }
 
 .turnstile:not(:empty) {
@@ -344,15 +360,15 @@
 
 .hint {
   margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+  color: var(--site-text-muted);
 }
 
 .told {
   font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
+  line-height: var(--lh-150);
+  color: var(--site-text-muted);
 }
 
 /* /book's line for the invite this browser remembers, and the way to go on without it. */
@@ -366,13 +382,106 @@
   margin: 0;
 }
 
-/* ---- Desktop: prices, pincode and form left; card and how it works right ---- */
+/* The step's button, pinned to a phone's foot under a hairline while its form is on the screen, as the client app's
+   booking holds its own; the line above it says what went wrong. */
+.send {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-raised);
+  margin-inline: calc(-1 * var(--gutter));
+  padding: var(--sp-12) var(--gutter) calc(var(--sp-16) + var(--site-safe-bottom));
+  border-top: var(--hairline) solid var(--site-line);
+  background: var(--site-ground);
+}
+
+.send > [aria-live]:not(:empty) + * {
+  margin-top: var(--sp-12);
+}
+
+/* While the cookie bar asks, the button waits at the form's foot, where the page's room beneath it keeps it clear. */
+:global(html[data-consent-asking]) .send {
+  position: static;
+}
+
+/* ---- A phone: the shorter steps --------------------------------------------------- */
+
+@media (max-width: 760px) {
+  /* What follows a line kept for a screen reader alone, or a step's head with nothing else a phone shows, starts
+     where the step bar leaves off. */
+  .stepLine + *,
+  .visitHead + *,
+  .panelPast + .form {
+    margin-top: 0;
+  }
+
+  .bookingForPast,
+  .panelPast,
+  .forPincodeWide {
+    display: none;
+  }
+}
+
+/* ---- A laptop ------------------------------------------------------------------------ */
+
+@media (min-width: 761px) {
+  /* A laptop names the area alone in the banner, the pincode and its Change beneath it in the form. */
+  .introShort,
+  .answerPincode,
+  .answerChange {
+    display: none;
+  }
+
+  .introLong {
+    display: block;
+  }
+
+  .offer {
+    margin-bottom: var(--sp-32);
+  }
+
+  .planWhen {
+    display: inline;
+  }
+
+  .answered {
+    margin-bottom: var(--sp-4);
+  }
+
+  .steps {
+    display: block;
+    margin-top: var(--sp-48);
+    padding-top: calc(var(--sp-12) + var(--sp-2));
+    border-top: var(--rule-strong) solid var(--site-navy);
+  }
+
+  .howFold {
+    display: none;
+  }
+
+  .stepNumber {
+    font-size: var(--fs-15);
+  }
+
+  /* The step's button under a hairline at the form's foot, as wide as its words and no narrower than the board's. */
+  .send {
+    position: static;
+    margin: var(--sp-28) 0 0;
+    padding: var(--sp-24) 0 0;
+    background: none;
+  }
+
+  .form > .send {
+    margin-top: var(--sp-28);
+  }
+}
+
+/* ---- Two columns: the form's, and the card and How it works beside it -------------- */
 
 @media (min-width: 1024px) {
   .grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: var(--landing-column-gap);
+    grid-template-columns: minmax(0, 1fr) var(--flow-aside-w);
+    column-gap: var(--site-columns-gap);
     align-items: start;
   }
 
@@ -390,61 +499,16 @@
     margin-top: 0;
   }
 
-  .title {
-    margin-top: var(--sp-24);
-    line-height: var(--lh-100);
-    letter-spacing: var(--tracking-title);
-  }
-
   /* The card is in the other column, so a headline with no line naming who sent it starts the column. */
   .lead > .title:first-child {
     margin-top: 0;
   }
 
-  .offer {
-    margin-top: var(--sp-24);
-    line-height: var(--lh-160);
-  }
-
   .steps {
-    margin-top: var(--sp-36);
+    margin-top: 0;
   }
 
-  .stepsTitle {
-    font-size: var(--fs-16);
-  }
-
-  .stepList {
-    margin-top: var(--sp-16);
-    gap: var(--sp-16);
-  }
-
-  .step {
-    gap: var(--sp-16);
-    padding-top: var(--sp-16);
-  }
-
-  .stepTitle {
-    font-size: var(--fs-18);
-  }
-
-  .stepBody {
-    font-size: var(--fs-16);
-    line-height: var(--lh-145);
-  }
-
-  .panel,
-  .answered {
-    margin: var(--sp-36) 0 0;
-    padding: var(--sp-24);
-  }
-
-  .pincodeForm {
-    margin-top: var(--sp-16);
-    gap: var(--sp-12);
-  }
-
-  .form {
+  .inviteCard + .steps {
     margin-top: var(--sp-36);
   }
 }

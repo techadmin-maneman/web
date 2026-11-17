@@ -172,6 +172,59 @@
   --compare-knob-radius: 0;
 }
 
+/*
+ * The booking pages take the client app's look for every shared part (ADR 0265; apps/app/src/styles/look.css): labels in
+ * the words' ink and medium weight, 52 px fields and buttons, 24 px boxes and 20 px radios, the day strip's figures and
+ * three start times to a row in Plex's semibold, a step bar's track in grid grey. Site.astro marks their body.
+ */
+.app-look {
+  --ui-tint: var(--grid-100);
+  --label-text: var(--site-text);
+  --label-weight: var(--weight-medium);
+  --action-height: var(--btn-client);
+  --control-height: var(--tap);
+  --control-text: var(--fs-15);
+  --control-weight: var(--weight-medium);
+  --radio-size: var(--sp-20);
+  --check-text: var(--fs-15);
+  --check-row-height: var(--tap);
+  --check-box-size: var(--sp-24);
+  --screen-gutter: var(--site-gutter);
+  --strip-number-size: var(--fs-20);
+  --strip-number-weight: var(--weight-semibold);
+  --strip-off-ground: var(--grid-100);
+  --strip-off-text: var(--stone);
+  --strip-day-height: 62px; /* a day's square on a phone, as the board draws it: 72 px on a laptop */
+  --time-columns: 3;
+  --time-height: calc(var(--sp-48) - var(--sp-2));
+  --time-weight: var(--weight-medium);
+  --time-name-size: var(--fs-14);
+  --time-name-weight: var(--weight-semibold);
+  --time-name-caps: normal;
+  --time-name-tracking: normal;
+  --time-name-colour: var(--site-text);
+  --time-taken-ground: var(--white-000);
+  --time-taken-edge: var(--grid-100);
+  --time-taken-text: var(--stone);
+
+  /* The flow's own frame: the phone's top bar, and a laptop's column beside How it works. */
+  --flow-top-h: var(--btn-lg);
+  --flow-aside-w: 380px;
+  --flow-title: clamp(26px, calc(22.29px + 0.952vw), 34px); /* a step's title, 26 on a phone and 34 on a laptop */
+  --flow-lead: clamp(15px, calc(14.26px + 0.19vw), 17px);
+  --flow-mark: var(--sp-64); /* the done screens' ringed tick */
+  --flow-done-title: clamp(30px, calc(26.29px + 0.952vw), 40px); /* the day booked */
+  --flow-done-max: 680px; /* a laptop's confirmation panel */
+  --flow-action-min: 240px; /* a laptop's step button, at its narrowest */
+}
+
+@media (min-width: 761px) {
+  .app-look {
+    --strip-day-height: var(--sp-72);
+    --time-columns: 5;
+  }
+}
+
 /* On navy, words are white and their quieter lines mist; nothing is paper. */
 [data-ground="ink"] {
   --on-surface: var(--site-on-navy);
@@ -246,7 +299,7 @@
   --hero-actions-gap: clamp(24px, calc(19.54px + 1.143vw), 36px); /* the words to the buttons */
 
   /* The results' before and after at its tallest. */
-  --result-picture-max-h: 680px; /* a laptop's result at its tallest, as the board draws it */
+  --result-picture-max: 540px; /* a result's pair at its widest, at its photographs' own 4:5 */
 
   --comparison-label-w: var(
     --stage-min
@@ -271,9 +324,4 @@
   --gate-frame-h: clamp(300px, 44vw, 420px);
   --gate-blur: 7px;
   --error-frame-h: clamp(200px, 28vw, 260px);
-
-  /* ---- The referral landing and /book: 390, then 1440 ---- */
-  --landing-pad-top: clamp(26px, 4.4vw, 64px);
-  --landing-column-gap: var(--bar-reserve);
-  --landing-check-w: clamp(104px, 8.3vw, 120px);
 }

@@ -35,6 +35,7 @@ import { byDoor, leadSent } from "./submit.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
+import { hiddenOnPhoneLook } from "@maneman/ui/VisuallyHidden";
 import { BOOKING_DAYS } from "@rules/config/scheduling.ts";
 import type { Plan } from "./flow.ts";
 
@@ -58,8 +59,13 @@ interface ConsultationProps extends FormProps {
 /** Whether a consultation and fit in one visit can start in a window: the morning or the afternoon. */
 const oneVisitStartsIn = (window: BookingWindow): boolean => isOneOf(ONE_VISIT_WINDOWS, window);
 
-/** The WhatsApp code's field, on this form's paper. */
-const CODE_FIELD: CodeFieldClasses = { hint: styles.hint, error: styles.error, again: undefined };
+/** The WhatsApp code's field, on this form's paper; why it is asked, out of a phone's sight (ADR 0265). */
+const CODE_FIELD: CodeFieldClasses = {
+  hint: styles.hint,
+  why: hiddenOnPhoneLook,
+  error: styles.error,
+  again: undefined,
+};
 
 /** The button's words: what the plan books, or, once a code is on its way, confirming it. */
 function submitLabel(plan: Plan, codeWaiting: boolean): string {
@@ -101,7 +107,7 @@ function VisitPart(
   const windowIds = props.windows.map((option) => option.id);
   return (
     <>
-      <div>
+      <div class={stage === "visit" ? styles.visitHead : undefined}>
         {stage === "visit" && <StepLine at={3} name={booking.steps.visit} focus={false} />}
         {/* The site's own page is already headed and introduced; the invite's is not. */}
         {props.invited && (
@@ -111,6 +117,7 @@ function VisitPart(
           </>
         )}
         <ForPincode
+          wide
           text={fill(consultation.forPincode, { pincode: props.answer.pincode })}
           onChange={props.onChangePincode}
         />

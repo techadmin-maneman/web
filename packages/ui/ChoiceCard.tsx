@@ -2,7 +2,8 @@
 // The radio is the browser's, unseen, over the whole card, so the card is what is tapped and the keyboard and a screen
 // reader work as they do with any radio. `filled` turns the card to the ink when chosen; `ticked` edges it in the ink
 // and the screen draws a `TickBox` in it; `picture` stands a drawing or a photograph over its words and edges it in
-// the ink. On the ink, a chosen card is edged in the paper.
+// the ink; `round` draws a radio's round before its words and, chosen, fills the round and edges the card twice over in
+// the strong ink. On the ink, a chosen card is edged in the paper.
 
 import { ICONS } from "@maneman/brand/icons";
 import type { ChangeEvent, ReactNode } from "react";
@@ -23,7 +24,7 @@ export function ChoiceCard({
   readonly name: string;
   readonly checked: boolean;
   readonly disabled?: boolean;
-  readonly look?: "filled" | "ticked" | "picture";
+  readonly look?: "filled" | "ticked" | "picture" | "round";
   readonly onInk?: boolean;
   readonly className?: string | undefined;
   readonly onChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -39,6 +40,7 @@ export function ChoiceCard({
         disabled={disabled}
         onChange={onChange}
       />
+      {look === "round" && <span className={styles.dot} aria-hidden="true" />}
       {children}
     </label>
   );

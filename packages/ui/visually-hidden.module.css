@@ -11,3 +11,15 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* The same, on a phone alone: words a laptop shows and a phone's frame says another way, as the site's /book step line. */
+@media (max-width: 760px) {
+  .hiddenOnPhone {
+    position: absolute;
+    width: var(--sr-only-size);
+    height: var(--sr-only-size);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

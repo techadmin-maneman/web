@@ -17,7 +17,7 @@ import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
 import { FAVICON_SIZES, OG_IMAGE, token } from "../lib/brand-images.ts";
 import { SITE_ORIGIN } from "../lib/site-origin.ts";
 import { jsonLd } from "../lib/structured-data.ts";
-import { isFlowPage, pagePath } from "../lib/page-path.ts";
+import { isBookingPage, isFlowPage, pagePath } from "../lib/page-path.ts";
 import plex400 from "../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2?url";
 import plex500 from "../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2?url";
 import plex600 from "../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2?url";
@@ -97,7 +97,7 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     ))}
     <slot name="head" />
   </head>
-  <body class:list={[isFlowPage(path) && "in-flow"]}>
+  <body class:list={[isFlowPage(path) && "in-flow", isBookingPage(path) && "app-look"]}>
     <a class={skipLinkLook()} href="#content">
       {header.skip}
     </a>
@@ -106,7 +106,7 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     <main id="content" tabindex="-1">
       <slot />
     </main>
-    {home ? <Footer /> : <SlimFooter />}
+    {home ? <Footer /> : !isBookingPage(path) && <SlimFooter />}
     {CONSENT_BAR_SHOWN && <ConsentBar />}
     {home && <StickyBar />}
     <script>

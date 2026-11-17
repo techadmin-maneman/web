@@ -1,6 +1,7 @@
 // More, folded until asked for: a question and its answer, or a section's detail. The browser's own details and
-// summary, in the apps' look, so the keyboard and a screen reader work as they expect. The site's pages draw their
-// own details element in the ruled look, a list's entries each a row with a plus that turns to a minus when open.
+// summary, in the apps' look, so the keyboard and a screen reader work as they expect. The ruled look draws a list's
+// entries each a row with a plus that turns to a minus when open; the site's Astro pages draw their own details element
+// in it, with its classes.
 
 import { ICON_STROKE, ICONS } from "@maneman/brand/icons";
 import type { ReactNode } from "react";
@@ -11,19 +12,32 @@ export function Disclosure({
   summary,
   children,
   open,
+  look = "plain",
   className,
   summaryClassName,
 }: {
   readonly summary: ReactNode;
   readonly children: ReactNode;
   readonly open?: boolean;
+  /** `ruled`: a row between hairlines, its summary beside a plus that turns to a minus as it opens. */
+  readonly look?: "plain" | "ruled";
   readonly className?: string | undefined;
   /** The summary's place, where the screen sets it apart: its own margin or type. */
   readonly summaryClassName?: string;
 }) {
+  const ruled = look === "ruled";
   return (
-    <details className={classes(styles.disclosure, className)} open={open}>
-      <summary className={classes(styles.summary, summaryClassName)}>{summary}</summary>
+    <details className={classes(ruled ? styles.ruled : styles.disclosure, className)} open={open}>
+      <summary className={classes(ruled ? styles.ruledSummary : styles.summary, summaryClassName)}>
+        {ruled ? (
+          <>
+            <span>{summary}</span>
+            <DisclosureSign />
+          </>
+        ) : (
+          summary
+        )}
+      </summary>
       {children}
     </details>
   );
