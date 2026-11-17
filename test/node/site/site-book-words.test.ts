@@ -1,5 +1,5 @@
 // /book's words of how long a visit takes (ADR 0265): each is the console's, through visitLength, never typed into a
-// line; and the one visit's note says it is paid through a Razorpay link (ADR 0269), never by UPI or in cash.
+// line; and the one visit is paid through a Razorpay link (ADR 0269, ADR 0270), never by UPI or in cash.
 
 import { describe, expect, it } from "vitest";
 import { referral } from "../../../site/src/content/referral.ts";
@@ -36,6 +36,13 @@ describe("/book's lengths", () => {
   it("are never typed into a line of the page, its form or How it works", () => {
     const lines = [booking, referral.consultation, referral.howItWorks].flatMap(strings);
     expect(lines.filter((line) => LENGTH.test(typedIn(line)))).toEqual([]);
+  });
+});
+
+describe("the one visit's payment", () => {
+  it("is through Razorpay alone: no line of the booking's words offers UPI or cash", () => {
+    expect(referral.booked.ready.oneVisit).toContain("Razorpay");
+    expect(JSON.stringify({ referral, booking })).not.toMatch(/\bUPI\b|\bcash\b/i);
   });
 });
 
