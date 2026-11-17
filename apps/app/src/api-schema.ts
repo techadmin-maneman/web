@@ -2631,7 +2631,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description not_made_to_order: booking the visit would not answer made_to_order: the client may not book it now, no such package is on sale, or their size of it is in stock */
+                /** @description not_made_to_order: booking the visit would not say it is made to order: the client may not book it now, no such package is on sale, or their size of it is in stock */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -2640,7 +2640,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "made_to_order" | "not_made_to_order";
+                                code: "not_made_to_order";
                             } & {
                                 [key: string]: unknown;
                             };

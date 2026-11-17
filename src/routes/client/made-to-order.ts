@@ -44,8 +44,8 @@ const askRoute = clientRoute({
     400: errorResponse("invalid_request: see error.fields"),
     401: errorResponse("session_required"),
     422: errorResponse(
-      "not_made_to_order: booking the visit would not answer made_to_order: the client may not book it now, no such " +
-        "package is on sale, or their size of it is in stock",
+      "not_made_to_order: booking the visit would not say it is made to order: the client may not book it now, no " +
+        "such package is on sale, or their size of it is in stock",
     ),
   },
 });

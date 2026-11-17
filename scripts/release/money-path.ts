@@ -133,7 +133,8 @@ async function walk(token: string): Promise<void> {
   expectStatus(`a hold on ${open.date}, ${open.window}`, held.status, 201, held.body);
   const holdId = (held.body as { id: string }).id;
   try {
-    const started = await call("POST", "/api/bookings", { hold_id: holdId });
+    // The client's tick to the terms, which every booking now carries (src/routes/schemas/terms.ts).
+    const started = await call("POST", "/api/bookings", { hold_id: holdId, terms: true });
     expectStatus("the payment started", started.status, 201, started.body);
     const checkout = (started.body as { checkout: { order_id: string } | null }).checkout;
     if (checkout?.order_id.startsWith("order_") !== true) {

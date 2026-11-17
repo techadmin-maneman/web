@@ -3409,7 +3409,7 @@ Request body:
 }
 ```
 
-**422**: not_made_to_order: booking the visit would not answer made_to_order: the client may not book it now, no such package is on sale, or their size of it is in stock
+**422**: not_made_to_order: booking the visit would not say it is made to order: the client may not book it now, no such package is on sale, or their size of it is in stock
 
 ```json
 {
@@ -3426,7 +3426,6 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
-                "made_to_order",
                 "not_made_to_order"
               ]
             }
