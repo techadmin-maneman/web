@@ -7,7 +7,7 @@ import type { RazorpaySettlement } from "../../providers/payments/razorpay.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 
 /** How far back the catch-up reads Razorpay's settlements: a week, past any webhook's retries. */
-export const SETTLEMENTS_READ_DAYS = 7;
+const SETTLEMENTS_READ_DAYS = 7;
 
 /** Keeps a settlement Razorpay has made, once; one not yet processed is not money in the bank, and waits. */
 export async function keepSettlement(db: D1Database, settlement: RazorpaySettlement, now: Date): Promise<boolean> {
