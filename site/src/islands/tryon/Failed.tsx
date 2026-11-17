@@ -23,11 +23,11 @@ export function Failed(props: { kind: ErrorKind; heading: HeadingRef; onAgain: (
       <div class={styles.noticeActions}>
         {/* While the try-on cannot run, another photograph would be refused too. */}
         {props.kind !== "unavailable" && props.kind !== "paused" && (
-          <Button variant="light" size="action" onClick={props.onAgain}>
+          <Button variant="primary" size="action" onClick={props.onAgain}>
             {tryOn.error.another}
           </Button>
         )}
-        <ButtonLink variant="outlineOnInk" size="action" href="/book">
+        <ButtonLink variant="outline" size="action" href="/book">
           {tryOn.error.book}
         </ButtonLink>
       </div>

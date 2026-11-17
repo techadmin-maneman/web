@@ -77,10 +77,10 @@ export function Sent(props: {
       )}
       <div class={shared.disclaimer}>{sent.disclaimer}</div>
       <div class={shared.noticeActions}>
-        <ButtonLink variant="light" size="action" href="/book">
+        <ButtonLink variant="primary" size="action" href="/book">
           {sent.book}
         </ButtonLink>
-        <ButtonLink variant="outlineOnInk" size="action" href="/">
+        <ButtonLink variant="outline" size="action" href="/">
           {sent.home}
         </ButtonLink>
       </div>

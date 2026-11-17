@@ -79,13 +79,12 @@ export function Gate(props: {
       <form ref={props.form} onSubmit={props.onSubmit} noValidate>
         <Title heading={props.heading}>{tryOn.gate.title}</Title>
         <div class={styles.fields}>
-          <NameField id="gate-name" value={props.name} bad={nameBad} words={tryOn.gate} onInk onInput={props.onName} />
+          <NameField id="gate-name" value={props.name} bad={nameBad} words={tryOn.gate} onInput={props.onName} />
           <MobileField
             id="gate-mobile"
             value={props.mobile}
             bad={mobileBad}
             words={tryOn.gate}
-            onInk
             onInput={props.onMobile}
           />
           {code !== null && (
@@ -94,7 +93,6 @@ export function Gate(props: {
               mobile={props.mobile}
               code={code.value}
               failure={code.failure}
-              onInk
               classes={CODE_FIELD}
               onInput={code.onInput}
               onAgain={code.onAgain}
@@ -103,7 +101,7 @@ export function Gate(props: {
         </div>
         <GateSaid photoOnItsWay={props.photoOnItsWay} failure={props.failure} />
         <Button
-          variant="light"
+          variant="primary"
           size="action"
           className={styles.gateSubmit}
           type="submit"
@@ -118,7 +116,6 @@ export function Gate(props: {
               line={props.notice.line}
               href={props.notice.line.href}
               more={CLIENT_WORDS.noticeMore}
-              tone="ink"
             />
           </p>
         )}

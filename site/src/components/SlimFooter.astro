@@ -1,21 +1,19 @@
 ---
 // The foot of every page but the home page, which has the full footer: navy, the lockup in white and where to go from
 // here, then the company and its privacy notice and terms under a navy-700 rule, so every page that takes a person's
-// details links both. A laptop's /try draws none, the flow ending in itself (ADR 0265), and /book and the referral
-// landing draw none at all (layouts/Site.astro); their consent lines link the notices and the terms.
+// details links both. The flows, /book, the referral landing and /try, draw none, each ending in itself (ADR 0265;
+// layouts/Site.astro); their consent lines link the notices and the terms.
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { business, footer } from "../content/site.ts";
 import { MORE_PAGES } from "../lib/more-pages.ts";
-import { isFlowPage, pagePath } from "../lib/page-path.ts";
 import Lockup from "./Lockup.astro";
 import Social from "./Social.astro";
 
 const { legal } = footer.columns;
 const year = new Date().getFullYear();
-const flow = isFlowPage(pagePath(Astro.url.pathname));
 ---
 
-<footer class:list={["slim", flow && "flow"]}>
+<footer class="slim">
   <div class="inner">
     <div class="top">
       <a class={textLinkLook({ tone: "ink", quiet: true, className: "home" })} href="/" aria-label={business.name}>
@@ -114,9 +112,6 @@ const flow = isFlowPage(pagePath(Astro.url.pathname));
     }
     .small {
       font-size: var(--fs-14);
-    }
-    .flow {
-      display: none;
     }
   }
 </style>

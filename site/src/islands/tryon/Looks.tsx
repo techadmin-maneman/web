@@ -29,7 +29,6 @@ export function Looks(props: {
             key={option.id}
             name="look"
             look="picture"
-            onInk
             checked={look === index}
             onChange={() => {
               props.onChoose(index);
@@ -50,7 +49,7 @@ export function Looks(props: {
         ))}
       </Fieldset>
       <Button
-        variant="light"
+        variant="primary"
         size="action"
         className={`${shared.next} ${shared.nextSpaced}`}
         aria-disabled={look < 0}

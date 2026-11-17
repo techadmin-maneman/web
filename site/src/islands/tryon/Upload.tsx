@@ -194,7 +194,7 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
         <div class={styles.actions}>
           {hasCamera && (
             <Button
-              variant="light"
+              variant="primary"
               size="action"
               onClick={() => {
                 if (blocked) phoneCamera.current?.click();
@@ -205,7 +205,7 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
             </Button>
           )}
           <Button
-            variant={hasCamera ? "outlineOnInk" : "light"}
+            variant={hasCamera ? "outline" : "primary"}
             size="action"
             onClick={() => {
               fileInput.current?.click();
@@ -215,7 +215,7 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
           </Button>
         </div>
         {blocked && (
-          <InlineMessage tone="note" ground="ink" className={styles.blocked}>
+          <InlineMessage tone="note" className={styles.blocked}>
             {tryOn.upload.blocked}
           </InlineMessage>
         )}

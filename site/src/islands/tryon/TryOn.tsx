@@ -16,18 +16,17 @@
 // Outside production, ?state=<screen> opens a screen directly, with stand-ins
 // and no API calls, for the fidelity screenshots and the browser tests
 // (machine.ts lists the kinds each screen takes).
+//
+// It is a flow of its own, on the client app's look (ADR 0265): on a phone under the top bar /book draws
+// (../invite/FlowFrame.tsx), a bar of its three steps over each, the step's buttons pinned at the foot.
 
-import { capsLook } from "@maneman/ui/Caps";
-import { TextButton } from "@maneman/ui/TextLink";
 import { useEffect, useReducer, useRef } from "preact/hooks";
-import { ICONS } from "@maneman/brand/icons";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
-import { notices, tryOn, tryOnSendsCopy } from "../../content/site.ts";
+import { notices, tryOn, tryOnSendsCopy, tryOnTeaser } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import { preparePhoto, type PreparedPhoto } from "../../lib/photo.ts";
 import { onArrival, startUpload, type Arrival, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import type { Failure } from "../../lib/tryon-errors.ts";
-import { Icon } from "@maneman/ui/Icon";
 import { Failed } from "./Failed.tsx";
 import { Gate } from "./Gate.tsx";
 import { useReleased, useRenderWatch, useScreenHistory } from "./hooks.ts";
@@ -38,6 +37,7 @@ import styles from "./TryOn.module.css";
 import { Upload } from "./Upload.tsx";
 import { useGate } from "./useGate.ts";
 import { IslandBoundary } from "../IslandBoundary.tsx";
+import { FlowSteps, FlowTop } from "../invite/FlowFrame.tsx";
 
 interface Props {
   turnstileSiteKey: string;
@@ -66,6 +66,10 @@ function usePhotoWidget(screen: Screen, siteKey: string) {
   );
   return { box, widget };
 }
+
+/** The try-on's three steps, and which each screen is at: the sent and error screens stand outside them. */
+const STEPS = 3;
+const STEP_AT: Partial<Record<Screen, number>> = { upload: 1, looks: 2, gate: 3 };
 
 function TryOnFlow(props: Props) {
   const [state, send] = useReducer(step, START);
@@ -165,21 +169,17 @@ function TryOnFlow(props: Props) {
     else send({ type: "back" });
   }
 
+  // The first step's way back is the top bar's close, to the site; the sent screen has none, the look on its way.
+  const onBack = backFrom(screen) === "home" || screen === "sent" ? null : back;
+  const at = STEP_AT[screen];
   return (
-    <div class={`${styles.flow} on-ink`} data-screen={screen}>
-      <div class={styles.track}>
-        <div class={`${styles.progress} ${styles[`progress-${screen}`]}`} />
-      </div>
+    <div class={styles.flow} data-screen={screen}>
+      <FlowTop title={tryOnTeaser.eyebrow} onBack={onBack} />
       <div class={styles.inner}>
-        <div class={styles.topline}>
-          <TextButton tone="ink" className={styles.back} onClick={back}>
-            <Icon d={ICONS.back} size="sm" />
-            {backFrom(screen) === "home" ? tryOn.backToSite : tryOn.back}
-          </TextButton>
-          <span class={capsLook(styles.stepLabel)}>
-            {screen === "error" ? tryOn.error.kinds[state.errorKind].step : tryOn.stepLabels[screen]}
-          </span>
-        </div>
+        {at === undefined ? null : <FlowSteps at={at} of={STEPS} onBack={onBack} />}
+        <p class={styles.stepLabel}>
+          {screen === "error" ? tryOn.error.kinds[state.errorKind].step : tryOn.stepLabels[screen]}
+        </p>
 
         {/* Turnstile shows here only if Cloudflare needs the visitor to act: above the step, before its button. */}
         <div ref={turnstileBox} class={styles.turnstile} />
