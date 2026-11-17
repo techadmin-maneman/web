@@ -32,6 +32,7 @@ describe("where a task leads", () => {
     expect(taskClientPath("first_fit_to_book", CLIENT)).toBe(`/clients/${CLIENT}/visits`);
     expect(taskClientPath("referral_review", CLIENT)).toBe(`/clients/${CLIENT}/visits`);
     expect(taskClientPath("replacement_order", CLIENT)).toBe(`/clients/${CLIENT}/pieces`);
+    expect(taskClientPath("made_to_order_ask", CLIENT)).toBe(`/clients/${CLIENT}/pieces`);
     expect(taskClientPath("payment_owed", CLIENT)).toBe(`/clients/${CLIENT}/payments`);
     expect(taskClientPath("grievance", CLIENT)).toBe(`/clients/${CLIENT}/consents`);
   });

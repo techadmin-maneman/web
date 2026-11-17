@@ -1,8 +1,8 @@
 -- Migration number: 0215
--- A hair system made to order (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md, decision 6): a
--- client whose size no stock code matches is told so as they book a first fit or a replacement, and their ask is kept
--- here, a task on the board until ops close it, having ordered it, taken payment and booked the fitting on WhatsApp.
--- A new table: the Worker already deployed reads and writes none of it.
+-- A client's ask for a hair system made to order (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md,
+-- decision 6): a task on the board until ops close it, having ordered it and booked the fitting, or until a visit of its
+-- kind is booked for the client. A new table, and a trigger that updates only it: the Worker already deployed reads and
+-- writes none of it.
 
 CREATE TABLE made_to_order_asks (
   id TEXT PRIMARY KEY,
@@ -18,5 +18,14 @@ CREATE TABLE made_to_order_asks (
 CREATE UNIQUE INDEX made_to_order_asks_open ON made_to_order_asks (person_id, kind, tier) WHERE settled_at IS NULL;
 -- A client's own asks, for their data's copy and erasure.
 CREATE INDEX made_to_order_asks_by_person ON made_to_order_asks (person_id);
+
+-- A visit of the ask's kind booked for the client, by ops or by the client, settles their open asks of that kind: the
+-- fitting ops booked once it was ordered, or a hair system in stock the client chose instead.
+CREATE TRIGGER made_to_order_asks_settled AFTER INSERT ON appointments
+WHEN NEW.type IN ('first_fit', 'replacement')
+BEGIN
+  UPDATE made_to_order_asks SET settled_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+   WHERE person_id = NEW.person_id AND kind = NEW.type AND settled_at IS NULL;
+END;
 
 -- backfill: none. No ask was kept before this migration.

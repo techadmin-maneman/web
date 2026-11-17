@@ -2,9 +2,7 @@
 // decision 6), kept as they are told their size is made to order: one a client, visit and package while it is open, a
 // task on the board until ops close it, having ordered it, taken payment and booked the fitting (migration 0215).
 
-import { madeToOrder } from "../inventory/stock-gap.ts";
 import type { TaskGroup } from "../../policy/tasks.ts";
-import { serviceOf } from "./services.ts";
 
 export type MadeToOrderKind = "first_fit" | "replacement";
 
@@ -23,15 +21,14 @@ export const MADE_TO_ORDER_QUEUE: { readonly group: TaskGroup; readonly sql: str
 };
 
 /**
- * Keeps the ask, where the client's size of `tier` is made to order, unless one is open already: when it was first
- * asked. Null where it is not made to order, or no package is `tier`, so nothing is kept.
+ * Keeps the ask, which the route has found booking would answer as made to order, unless one is open already: when it
+ * was first asked. A visit of its kind booked since settles it (migration 0215).
  */
 export async function askToOrder(
   db: D1Database,
   ask: { readonly personId: string; readonly kind: MadeToOrderKind; readonly tier: string; readonly now: Date },
-): Promise<{ readonly requested_at: string } | null> {
+): Promise<{ readonly requested_at: string }> {
   const { personId, kind, tier } = ask;
-  if ((await serviceOf(db, kind, tier)) === null || !(await madeToOrder(db, personId, tier))) return null;
   await db
     .prepare(
       `INSERT OR IGNORE INTO made_to_order_asks (id, person_id, kind, tier, requested_at)
@@ -39,11 +36,12 @@ export async function askToOrder(
     )
     .bind(crypto.randomUUID(), personId, kind, tier, ask.now.toISOString())
     .run();
-  return db
+  const open = await db
     .prepare(
       `SELECT requested_at FROM made_to_order_asks INDEXED BY made_to_order_asks_open
        WHERE person_id = ?1 AND kind = ?2 AND tier = ?3 AND settled_at IS NULL`,
     )
     .bind(personId, kind, tier)
     .first<{ requested_at: string }>();
+  return open ?? { requested_at: ask.now.toISOString() };
 }

@@ -11,7 +11,7 @@ import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { aPackage } from "../fixtures/index.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { opsAs, person, post } from "../ops/staff-fixtures.ts";
-import { IMRAN, SANA, client, technician, wornPiece } from "./client-booking-fixtures.ts";
+import { IMRAN, SANA, client, technician, visit, wornPiece } from "./client-booking-fixtures.ts";
 
 let app: App;
 
@@ -21,21 +21,7 @@ beforeEach(async () => {
   app = appFor("local", fakeDependencies(), {}, "client");
   await technician(IMRAN, "Imran Qureshi", "IQ");
   await technician(SANA, "Sana Mirza", "SM");
-});
-
-type Who = { readonly id: string; readonly cookie: string };
-
-/** A fitted client of Essential, made to its hair systems' spec; Natural's are ranged an inch wider than their base. */
-async function fittedOfEssential(): Promise<Who> {
-  const rohit = await client();
-  await wornPiece(rohit.id, "2026-09-28");
-  await env.DB.prepare(
-    `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
-       grey_percent, density_percent)
-     VALUES (?1, ?1, 'ops@localhost', ?2, 'essential', 8, 10, '1B', 0, 100)`,
-  )
-    .bind(rohit.id, NOW.toISOString())
-    .run();
+  // Essential's hair systems are made to the clients' spec below; Natural's are ranged an inch wider.
   await aPackage({ code: "essential", name: "Mane Man Essential", firstFit: 3000000 });
   await aPackage({
     code: "natural",
@@ -43,6 +29,23 @@ async function fittedOfEssential(): Promise<Who> {
     firstFit: 3500000,
     spec: { baseWidthIn: 9, baseLengthIn: 10, colour: "1B", greyPercent: 0, densityPercent: 100 },
   });
+});
+
+type Who = { readonly id: string; readonly cookie: string };
+
+/**
+ * A fitted client of Essential, made to its hair systems' spec, their hair system due on `dueOn`.
+ */
+async function fittedOfEssential(dueOn = "2026-09-28"): Promise<Who> {
+  const rohit = await client();
+  await wornPiece(rohit.id, dueOn);
+  await env.DB.prepare(
+    `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+       grey_percent, density_percent)
+     VALUES (?1, ?1, 'ops@localhost', ?2, 'essential', 8, 10, '1B', 0, 100)`,
+  )
+    .bind(rohit.id, NOW.toISOString())
+    .run();
   return rohit;
 }
 
@@ -78,15 +81,50 @@ describe("a client's ask for a hair system made to order", () => {
     ]);
   });
 
-  it("is refused where the client's size is in stock, or no package is the one named", async () => {
+  it("is refused wherever booking would not answer made to order: in stock, no such package, or not theirs to book", async () => {
     const rohit = await fittedOfEssential();
-    for (const tier of ["essential", "premium"]) {
-      const refused = await ask(rohit, { type: "replacement", tier });
+    const refusals = [
+      { type: "replacement", tier: "essential" },
+      { type: "replacement", tier: "premium" },
+      // A fitted client books no first fit.
+      { type: "first_fit", tier: "natural" },
+    ];
+    for (const body of refusals) {
+      const refused = await ask(rohit, body);
       expect(refused.status).toBe(422);
       expect(await refused.json()).toMatchObject({ error: { code: "not_made_to_order" } });
     }
     expect((await ask(rohit, { type: "service", tier: "natural" })).status).toBe(400);
+    // A replacement not yet due: from 1 December, past the days a visit may be booked on.
+    const later = await fittedOfEssential("2026-12-10");
+    expect((await ask(later, { type: "replacement", tier: "natural" })).status).toBe(422);
     expect(await asked()).toEqual([]);
+  });
+
+  it("is settled once a visit of its kind is booked for the client, by ops or by them", async () => {
+    const rohit = await fittedOfEssential();
+    await ask(rohit, { type: "replacement", tier: "natural" });
+    expect(await asked()).toHaveLength(1);
+    await visit(rohit.id, "replacement", "scheduled", "2026-10-02T04:30:00.000Z", IMRAN);
+    expect(await asked()).toEqual([]);
+    expect(
+      await env.DB.prepare("SELECT COUNT(*) AS open FROM made_to_order_asks WHERE settled_at IS NULL").first("open"),
+    ).toBe(0);
+  });
+
+  it("keeps the ask when the client is erased, and blanks the words ops closed it with", async () => {
+    const rohit = await fittedOfEssential();
+    await ask(rohit, { type: "replacement", tier: "natural" });
+    const [task] = await asked();
+    await post(opsAs(person("ops@maneman.test")), `/api/tasks/made_to_order_ask/${task?.id ?? ""}/close`, {
+      reason: "Ordered for Rohit; fitting booked.",
+    });
+    const { personalDataStatements } = await import("../../../src/domain/privacy/erasure-statements.ts");
+    await env.DB.batch(await personalDataStatements(env.DB, rohit.id, NOW.toISOString()));
+    expect(
+      await env.DB.prepare("SELECT reason FROM task_closures WHERE task_group = 'made_to_order_ask'").first("reason"),
+    ).toBeNull();
+    expect(await env.DB.prepare("SELECT COUNT(*) AS kept FROM made_to_order_asks").first("kept")).toBe(1);
   });
 
   it("leaves the board once ops close it with what was ordered, and a later ask opens a new one", async () => {

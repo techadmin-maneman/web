@@ -692,3 +692,56 @@ test("lists a technician's asks, for kit and to move a visit, and closes one wit
     .poll(() => closed)
     .toEqual([{ url: `/api/tasks/kit_request/${kitAsk}/close`, body: { reason: "In Friday's transfer" } }]);
 });
+
+// A client's ask for a hair system made to their size (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md):
+// Operations order it and book the fitting, then close it with what was done.
+test("lists a client's ask for a hair system made to order, and closes it once ordered", async ({ page }) => {
+  const ask = "98000000-0000-4000-8000-000000000001";
+  const board: OpsReply<"/api/tasks"> = {
+    overdue: 0,
+    truncated: false,
+    low_stock_places: 0,
+    lapsed: 0,
+    staff: [],
+    groups: [
+      {
+        group: "made_to_order_ask",
+        count: 1,
+        closable: true,
+        tasks: [
+          {
+            id: ask,
+            person: { id: "22000000-0000-4000-8000-000000000031", name: "Rohit Malhotra" },
+            facts: { group: "made_to_order_ask", kind: "replacement", name: "Mane Man Natural" },
+            detail: "Mane Man Natural",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-22T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  };
+  const closed: unknown[] = [];
+  await open(page, board, NO_ALERTS, {
+    "POST /api/tasks/{group}/{id}/close": async (route) => {
+      closed.push({ url: new URL(route.request().url()).pathname, body: route.request().postDataJSON() as unknown });
+      await empty()(route);
+    },
+  });
+  await expect.poll(() => kindsListed(page)).toEqual([opsCopy.tasks.groups.made_to_order_ask]);
+  await expect(row(page, "Rohit Malhotra")).toContainText(
+    opsCopy.tasks.subs.made_to_order_ask("Mane Man Natural", opsCopy.dispatch.typeNames.replacement),
+  );
+  expect(await axeViolations(page)).toEqual([]);
+
+  const drawer = await detail(page, "Rohit Malhotra");
+  await drawer.getByRole("button", { name: opsCopy.tasks.close.madeToOrder.open }).click();
+  await drawer.getByLabel(opsCopy.tasks.close.madeToOrder.label).fill("Ordered in 9 by 10; fitting booked");
+  await drawer.getByRole("button", { name: opsCopy.tasks.close.confirm }).click();
+  await expect
+    .poll(() => closed)
+    .toEqual([
+      { url: `/api/tasks/made_to_order_ask/${ask}/close`, body: { reason: "Ordered in 9 by 10; fitting booked" } },
+    ]);
+});

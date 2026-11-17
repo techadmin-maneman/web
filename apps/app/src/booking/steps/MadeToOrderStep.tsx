@@ -54,7 +54,14 @@ export function MadeToOrderStep(props: {
             {copy.ask}
           </ButtonLink>
         ) : (
-          <Button variant="primary" size="action" className={bookingSheet.primary} onClick={props.onClose}>
+          // Busy until the ask is answered: one that fails asks the client to send it on WhatsApp instead.
+          <Button
+            variant="primary"
+            size="action"
+            className={bookingSheet.primary}
+            busy={ask === "asking"}
+            onClick={props.onClose}
+          >
             {copy.done}
           </Button>
         )
