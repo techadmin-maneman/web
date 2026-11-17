@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mane Man home on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16233A}a:hover{color:#1F2E49}
+.mm *{box-sizing:border-box}
+.mm{font-family:"IBM Plex Sans",Arial,sans-serif;color:#1F2328;-webkit-font-smoothing:antialiased}
+.mm button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.mm .btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 18px;font-weight:600;font-size:16px;line-height:1;text-decoration:none;width:100%;text-align:center;border:0}
+.mm .btn-primary{background:#16233A;color:#FDFDFB}
+.mm .btn-secondary{background:transparent;color:#16233A;border:1px solid #16233A}
+.mm .btn-gold{background:#C9A363;color:#16233A}
+.mm .btn-onnavy{background:transparent;color:#FDFDFB;border:1px solid rgba(253,253,251,.55)}
+.mm .btn-sm{height:40px;font-size:14px;padding:0 14px;width:auto}
+.mm .icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;color:#16233A}
+.mm .sec{padding:56px 20px}
+.mm .band{background:#F1F3F6}
+.mm .h2{font-size:26px;line-height:1.2;font-weight:600;letter-spacing:-.2px;color:#16233A;margin:0}
+.mm .lede{font-size:16px;line-height:1.5;color:#5F6670;margin:8px 0 0}
+.mm .body{font-size:16px;line-height:1.55;margin:0}
+.mm .label{font-size:14px;font-weight:600;color:#5F6670;margin:0}
+.mm .seg{display:flex;border:1px solid #D9DCE1;padding:3px;gap:3px}
+.mm .seg button{flex:1;height:38px;font-size:14px;font-weight:500;color:#5F6670;text-align:center}
+.mm .seg button[aria-pressed="true"]{background:#16233A;color:#FDFDFB}
+.mm .tag{position:absolute;top:0;font-size:14px;font-weight:600;background:#16233A;color:#FDFDFB;padding:6px 9px;line-height:1}
+.mm .kv{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid #D9DCE1;font-size:16px}
+.mm .kv span:first-child{color:#5F6670}
+.mm .kv span:last-child{text-align:right}
+.mm .flink{color:#FDFDFB;text-decoration:none;font-size:16px}
+.mm .flink:hover{color:#FDFDFB}
+.mm .menu-link{display:flex;justify-content:space-between;align-items:center;min-height:60px;border-bottom:1px solid #D9DCE1;font-size:20px;font-weight:600;color:#16233A;text-decoration:none}
+.mm input[type=range].cmp{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+.mm .scroll::-webkit-scrollbar{display:none}
+.mm .strip::-webkit-scrollbar{display:none}
+.mm :focus-visible{outline:2px solid #B98B45;outline-offset:2px}
+.mm .lh{position:relative;overflow:hidden;background:#16233A;display:flex;align-items:flex-end}
+.mm .lh video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+.mm .lh .scrim{position:absolute;inset:0;background:#0b12204d}
+.mm .lh .up{background:linear-gradient(to top,#0b1220 0%,#0b1220ad 50%,#0b12201a 100%)}
+.mm .lh .side{background:linear-gradient(to right,#0b1220c7 0%,#0b122080 42%,#0b122000 72%)}
+.mm .lh .seq{display:grid;margin:0;font-weight:600;line-height:1;letter-spacing:-.02em;color:#FDFDFB;max-width:900px}
+.mm .lh .seq span{grid-area:1/1;text-wrap:balance;transition:opacity .42s ease}
+.mm .lh h1{margin:0;font-weight:500;line-height:1.15;letter-spacing:-.01em;color:#FDFDFB;max-width:900px;text-wrap:balance}
+.mm .lh .lb{margin:16px 0 0;line-height:1.6;color:#A9B2C1;max-width:600px}
+.mm .lh .acts{display:flex;flex-wrap:wrap;gap:16px}
+.mm .lh .b{display:flex;align-items:center;justify-content:center;min-height:56px;padding:0 16px;font:inherit;font-size:16px;font-weight:500;text-decoration:none;border-radius:0}
+.mm .lh .b-gold{background:#C9A363;color:#16233A}
+.mm .lh .b-out{border:1px solid rgba(253,253,251,.55);color:#FDFDFB;background:transparent}
+.mm .lh .pz{position:absolute;z-index:1;min-height:44px;padding:0 16px;font-size:16px;font-weight:500;border:1px solid rgba(253,253,251,.55);color:#FDFDFB}
+.mm .linkbtn{background:none;border:0;padding:0;cursor:pointer;font:inherit}
+</style>
+</helmet>
+<div class="mm" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FDFDFB">
+
+<header style="position: absolute; top: 0; left: 0; right: 0; height: 60px; z-index: 20; background: #FDFDFB; border-bottom: 1px solid #D9DCE1; display: flex; align-items: center; gap: 6px; padding: 0 12px 0 16px">
+<a href="#top" aria-label="Mane Man home" style="display: flex; flex: 1"><img src="/_blob/46c99c5eb0be46270893d5352e07bb7c" alt="Mane Man" style="height: 30px; width: auto; display: block"></a>
+<a href="https://claude.ai/artifact/R3jhpuNxKkZxi6YBExSQk3" style="display: inline-flex; align-items: center; gap: 5px; height: 44px; padding: 0 4px; font-size: 14px; font-weight: 600; color: #16233A; text-decoration: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"></path></svg>Sign in</a>
+<a class="btn btn-primary btn-sm" href="PhoneBook.dc.html" style="padding: 0 12px">Free consultation</a>
+</header>
+
+<div class="scroll" onScroll="{{onScroll}}" style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none">
+<div id="top"></div>
+
+<section class="lh" style="min-height: 692px; padding-bottom: 72px">
+<div style="position: absolute; inset: 0; background: #0b1220"><video data-hero-video autoplay muted loop playsinline preload="auto" poster="/_blob/12e6ac892d293817cff2a6d95a220451" src="/_blob/bc87db6d919f08c22c0932d213f1737a" aria-hidden="true"></video></div>
+<div class="scrim"></div><div class="scrim up"></div><div class="scrim side"></div>
+<button class="pz" onClick="{{togglePause}}" style="top: 16px; right: 20px">{{pauseLabel}}</button>
+<p style="position: absolute; z-index: 1; top: 16px; left: 20px; margin: 0; min-height: 44px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: #FDFDFB">Delhi NCR · home service</p>
+<div style="position: relative; width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 20px 32px">
+<p class="seq" aria-live="polite" style="font-size: 40px"><sc-for list="{{phrases}}" as="ph" hint-placeholder-count="5"><span style="opacity: {{ph.op}}">{{ph.t}}</span></sc-for></p>
+<h1 style="margin-top: 18px; font-size: 20px">A full head of hair, matched to your own.</h1>
+<p class="lb" style="font-size: 16px">Your technician comes when it suits you, matches a hair system to your own hair and fits it.</p>
+<div class="acts" style="margin-top: 24px; flex-direction: column">
+<a class="b b-gold" href="PhoneBook.dc.html">Book a free consultation</a>
+<a class="b b-out" href="PhoneTry.dc.html">Try a new look</a>
+</div>
+</div>
+</section>
+
+<section id="results" class="sec">
+<h2 class="h2">10,000+ transformations by our specialists. Quietly.</h2>
+<div style="position: relative; margin: 22px 0 0; aspect-ratio: 638 / 788; background: #F1F3F6; overflow: hidden; touch-action: none">
+<img src="/_blob/a61f447e2f699745f59ad83d99a48b3e" alt="Before" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+<img src="/_blob/9815d97bc5d84b0fbae65f5ac30d85e0" alt="After" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(0 0 0 {{resPos}}%)">
+<span class="tag" style="left: 0">Before</span>
+<span class="tag" style="right: 0">After</span>
+<div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{resPos}}%; width: 2px; margin-left: -1px; background: #FDFDFB"><span style="position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; background: #FDFDFB; display: flex; align-items: center; justify-content: center; color: #16233A; box-shadow: 0 2px 8px rgba(22,35,58,.25)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6-5 6 5 6M15 6l5 6-5 6"></path></svg></span></div>
+<input class="cmp" type="range" min="0" max="100" value="{{resPos}}" onChange="{{onRes}}" aria-label="Drag to compare before and after">
+</div>
+<div style="display: flex; align-items: center; gap: 12px; margin: 16px 0 0">
+<div style="flex: 1"><div style="font-size: 20px; font-weight: 600; color: #16233A">{{caption}}</div><div style="font-size: 14px; color: #5F6670">{{pager}}</div></div>
+<button class="icon-btn" style="border: 1px solid #D9DCE1" aria-label="Previous result" onClick="{{prevRes}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg></button>
+<button class="icon-btn" style="border: 1px solid #D9DCE1" aria-label="Next result" onClick="{{nextRes}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg></button>
+</div>
+</section>
+
+<section id="what" class="sec band">
+<h2 class="h2">What it is</h2>
+<p class="body" style="margin-top: 12px">A fine base of lace, mono or skin, with 100% real human hair tied in strand by strand. Shaped to your scalp, matched to your own hair, and bonded to the skin. It is not a wig.</p>
+<p style="margin: 20px 0 0; padding: 16px 0 0; border-top: 2px solid #16233A; font-size: 20px; line-height: 1.3; font-weight: 600; color: #16233A">You sleep in it, shower in it, train in it.</p>
+</section>
+
+<section id="scale" class="sec">
+<h2 class="h2">Where you are on the scale</h2>
+<p class="lede">Hair loss in men is graded in seven stages.</p>
+<p style="margin: 14px 0 0; font-size: 14px; font-weight: 600; color: #5F6670">Stages III to VII · We fit all five</p>
+<div class="seg" role="group" aria-label="Choose your stage" style="margin: 18px 0 0"><sc-for list="{{stageChips}}" as="c" hint-placeholder-count="5"><button aria-pressed="{{c.on}}" onClick="{{c.pick}}" aria-label="{{c.aria}}">{{c.n}}</button></sc-for></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 16px 0 0">
+<figure style="margin: 0">
+<div style="position: relative; aspect-ratio: 4 / 5; background: #F1F3F6; overflow: hidden"><img src="{{stageNow.img}}" alt="{{stageNow.alt}}" style="width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block"><span style="position: absolute; left: 0; top: 0; width: 46px; height: 40px; background: #16233A; color: #FDFDFB; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{stageNow.n}}</span></div>
+<figcaption style="padding: 8px 0 0"><span style="display: block; font-size: 16px; font-weight: 600; color: #16233A">{{stageNow.t}}</span><span style="font-size: 14px; color: #5F6670">We fit</span></figcaption>
+</figure>
+<figure style="margin: 0">
+<div style="position: relative; aspect-ratio: 4 / 5; background: #16233A; overflow: hidden"><img src="/_blob/a07b75b76ded983aa1ee549560968fe0" alt="Illustration: the same man after a first fit" style="width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block"><span style="position: absolute; left: 0; top: 0; height: 40px; padding: 0 10px; background: #16233A; color: #FDFDFB; font-size: 14px; font-weight: 600; display: flex; align-items: center">After</span><span style="position: absolute; left: 0; bottom: 0; right: 0; padding: 8px 10px; background: rgba(22,35,58,.9); color: #FDFDFB; font-size: 14px; font-weight: 500">Illustration</span></div>
+<figcaption style="padding: 8px 0 0; font-size: 16px; font-weight: 600; color: #16233A">From these to this in 90 minutes.</figcaption>
+</figure>
+</div>
+<a class="btn btn-primary" href="PhoneBook.dc.html" style="margin-top: 24px">Book a free consultation</a>
+</section>
+
+<section id="why" class="sec band">
+<h2 class="h2">Why choose a hair system</h2>
+<p class="lede">How a hair system compares.</p>
+<div class="seg" role="group" aria-label="Compare with" style="margin: 18px 0 0">
+<button aria-pressed="{{isTransplant}}" onClick="{{pickTransplant}}">Transplant</button>
+<button aria-pressed="{{isMedication}}" onClick="{{pickMedication}}">Medication</button>
+</div>
+<div style="margin: 14px 0 0">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 2px solid #16233A; color: #16233A; font-size: 14px; font-weight: 600">
+<div style="padding: 10px 12px">{{themName}}</div><div style="padding: 10px 12px">Hair system</div>
+</div>
+<sc-for list="{{cmpRows}}" as="r" hint-placeholder-count="7">
+<div style="border-bottom: 1px solid #D9DCE1; padding: 12px 0 12px">
+<div style="font-size: 14px; font-weight: 600; color: #5F6670; padding: 0 12px 4px">{{r.k}}</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); font-size: 16px; line-height: 1.4">
+<div style="padding: 0 12px; color: #5F6670">{{r.them}}</div>
+<div style="padding: 0 12px; color: #16233A; font-weight: 600; border-left: 3px solid #16233A">{{r.us}}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section id="tryon" style="background: #16233A; color: #FDFDFB; padding: 44px 20px 40px">
+<p style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #A9B2C1">Try-on</p>
+<h2 style="margin: 0; font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -.3px">See yourself with hair.</h2>
+<p style="margin: 10px 0 0; font-size: 16px; line-height: 1.5; color: #A9B2C1">One photo, one look from six, sent privately to your WhatsApp.</p>
+<div style="position: relative; margin: 22px 0 0; aspect-ratio: 648 / 467; background: #16233A; overflow: hidden; touch-action: none">
+<img src="/_blob/ec91a2c2f8571d957ec002fff1a7e49c" alt="Your photo" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+<img src="/_blob/e95078326f2527d0d4f8c838bc12afc1" alt="The look" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(0 0 0 {{tryPos}}%)">
+<span class="tag" style="left: 0">Before</span>
+<span class="tag" style="right: 0">After</span>
+<div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{tryPos}}%; width: 2px; margin-left: -1px; background: #FDFDFB"></div>
+<input class="cmp" type="range" min="0" max="100" value="{{tryPos}}" onChange="{{onTry}}" aria-label="Drag to compare your photo and the look">
+</div>
+<a class="btn btn-gold" href="PhoneTry.dc.html" style="margin-top: 20px">Start the try-on</a>
+</section>
+
+<section id="how" class="sec">
+<h2 class="h2">How it works</h2>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+<div style="margin: 24px 0 0; padding: 24px 0 0; border-top: 1px solid #D9DCE1">
+<img src="{{s.img}}" alt="{{s.alt}}" style="width: 100%; aspect-ratio: 644 / 480; object-fit: cover; display: block; background: #F1F3F6">
+<div style="display: flex; gap: 14px; margin: 16px 0 0">
+<span style="font-size: 20px; font-weight: 600; color: #16233A; width: 28px">{{s.n}}</span>
+<div><h3 style="margin: 0; font-size: 20px; font-weight: 600; color: #16233A">{{s.t}}</h3><p class="body" style="margin-top: 6px">{{s.b}}</p><p style="margin: 8px 0 0; font-size: 14px; color: #5F6670">{{s.m}}</p></div>
+</div>
+</div>
+</sc-for>
+<p style="margin: 32px 0 0; padding: 24px 0 0; border-top: 2px solid #16233A; font-size: 22px; line-height: 1.3; font-weight: 600; color: #16233A">90 minutes at your own table, and nobody else need ever know.</p>
+</section>
+
+<section id="range" class="sec band">
+<h2 class="h2">The range</h2>
+<p class="lede">Four hair systems, every one 100% real human hair. Your technician helps you choose.</p>
+<div class="seg" role="group" aria-label="Hair system" style="margin: 18px 0 0">
+<sc-for list="{{products}}" as="p" hint-placeholder-count="4"><button aria-pressed="{{p.on}}" onClick="{{p.pick}}" style="font-size: 14px">{{p.name}}</button></sc-for>
+</div>
+<div style="margin: 8px 0 0">
+<sc-for list="{{productRows}}" as="r" hint-placeholder-count="6"><div class="kv"><span>{{r.k}}</span><span style="font-weight: 600; color: #16233A">{{r.v}}</span></div></sc-for>
+</div>
+</section>
+
+<section class="sec">
+<div style="border-top: 2px solid #16233A; padding: 16px 0 0">
+<p class="label">The guarantee</p>
+<p style="margin: 8px 0 0; font-size: 20px; line-height: 1.3; font-weight: 600; color: #16233A">If the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full.</p>
+</div>
+<div style="margin: 40px 0 0; border-top: 1px solid #D9DCE1; padding: 16px 0 0">
+<p class="label">A note from the founder</p>
+<p class="body" style="margin-top: 10px">I started losing my hair at twenty-four. By thirty, I'd had a transplant and spent years on medication, trying to hold on to what I was losing. Over time, I realised these came with trade-offs I didn't like. I was fighting a losing battle.</p>
+<sc-if value="{{founderOpen}}" hint-placeholder-val="{{false}}"><p class="body" style="margin-top: 12px">Hair loss is hard enough. Navigating an industry that can make you feel worse about yourself shouldn't be part of it.</p>
+<p class="body" style="margin-top: 12px">Losing your hair is natural. It's nobody's fault, and it doesn't define you. You can own it, do something about it, or simply move on. What matters is feeling good about the person you see in the mirror, and getting on with being the best version of yourself.</p>
+<p class="body" style="margin-top: 12px">That's why I started Mane Man. A more private, straightforward way to get your hair back, on your terms.</p>
+</sc-if>
+<sc-if value="{{founderShut}}" hint-placeholder-val="{{true}}"><button class="linkbtn" onClick="{{openFounder}}" style="margin: 12px 0 0; font-size: 16px; font-weight: 500; color: #16233A; text-decoration: underline">Read the full note</button></sc-if>
+<p style="margin: 16px 0 0; font-size: 16px"><span style="font-weight: 600; color: #16233A">Rishabh Gupta</span><br><span style="color: #5F6670">Founder, Mane Man</span></p>
+</div>
+</section>
+
+<section id="faq" class="sec band">
+<h2 class="h2">Questions</h2>
+<p class="lede">If yours isn't here, <a href="https://wa.me/919034572990">ask on WhatsApp</a>.</p>
+<div style="margin: 18px 0 0; border-top: 1px solid #D9DCE1">
+<sc-for list="{{faqs}}" as="f" hint-placeholder-count="10">
+<div style="border-bottom: 1px solid #D9DCE1">
+<button aria-expanded="{{f.open}}" onClick="{{f.toggle}}" style="display: flex; width: 100%; align-items: center; gap: 12px; min-height: 60px; padding: 14px 0; font-size: 16px; font-weight: 500; color: #1F2328"><span style="flex: 1">{{f.q}}</span><span style="font-size: 20px; font-weight: 400; color: #16233A; width: 20px; text-align: center">{{f.sign}}</span></button>
+<sc-if value="{{f.open}}" hint-placeholder-val="{{false}}"><p style="margin: 0; padding: 0 28px 18px 0; font-size: 16px; line-height: 1.55; color: #5F6670">{{f.a}}</p></sc-if>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section style="background: #16233A; color: #FDFDFB; padding: 48px 20px">
+<p style="margin: 0; font-size: 26px; line-height: 1.25; font-weight: 600">The consultation takes 60 minutes and costs nothing.</p>
+<a class="btn btn-gold" href="PhoneBook.dc.html" style="margin-top: 20px">Book a free consultation</a>
+</section>
+
+<footer style="background: #16233A; border-top: 1px solid #33435F; color: #FDFDFB; padding: 40px 20px 120px">
+<img src="/_blob/b973a775e3f46aa5ea5548b5a149c5fd" alt="Mane Man" style="height: 36px; width: auto; display: block">
+<p style="margin: 16px 0 0; font-size: 16px; line-height: 1.4">A full head of hair, matched to your own. Fitted at home.</p>
+<div style="margin: 28px 0 0"><span style="font-size: 14px; font-weight: 600; color: #A9B2C1">Reach us</span><a class="flink" href="https://wa.me/919034572990" style="display: block; margin-top: 8px">WhatsApp · +91 90345 72990</a></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 28px 0 0">
+<div style="display: flex; flex-direction: column; gap: 12px"><span style="font-size: 14px; font-weight: 600; color: #A9B2C1">Service</span><a class="flink" href="#what">What it is</a><a class="flink" href="#range">The range</a><a class="flink" href="PhoneTry.dc.html">Try-on</a><a class="flink" href="#faq">Questions</a></div>
+<div style="display: flex; flex-direction: column; gap: 12px"><span style="font-size: 14px; font-weight: 600; color: #A9B2C1">Learn</span><a class="flink" href="PhoneGuides.dc.html">Guides</a></div>
+</div>
+<div style="margin: 28px 0 0; padding: 20px 0 0; border-top: 1px solid #33435F; display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 14px"><span style="color: #A9B2C1">© 2026 Mane Man Private Limited</span><a class="flink" style="font-size: 14px" href="PhonePrivacy.dc.html">Privacy</a><a class="flink" style="font-size: 14px" href="PhoneTerms.dc.html">Terms</a><a class="flink" style="font-size: 14px" href="PhoneAftercare.dc.html">Aftercare</a><a class="flink" style="font-size: 14px" href="PhoneOfferTerms.dc.html">Offer terms</a></div>
+<p style="margin: 16px 0 0; font-size: 14px; color: #A9B2C1">Delhi NCR · home service only</p>
+</footer>
+</div>
+
+<sc-if value="{{bar}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 15; background: #FDFDFB; border-top: 1px solid #D9DCE1; padding: 12px 16px 16px; display: flex; gap: 10px">
+<a class="icon-btn" href="https://wa.me/919034572990" aria-label="Ask on WhatsApp" style="width: 52px; height: 52px; border: 1px solid #16233A; flex: none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"></path></svg></a>
+<a class="btn btn-primary" href="PhoneBook.dc.html">Book a free consultation</a>
+</div>
+</sc-if>
+
+
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  vid() { try { return (this.root && this.root.querySelector ? this.root : document).querySelector('[data-hero-video]'); } catch (e) { return null; } }
+  film(on) { const v = this.vid(); if (!v) return; if (on) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } else v.pause(); }
+  componentDidMount() { let rm = false; try { rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {} if (rm) { this.setState({ paused: true, phrase: 4 }); setTimeout(() => this.film(false), 0); } this.iv = setInterval(() => { const st = this.state || {}; if (!st.paused) this.setState({ phrase: ((st.phrase || 0) + 1) % 5 }); }, 3200); }
+  componentWillUnmount() { clearInterval(this.iv); }
+  renderVals() {
+    const s = Object.assign({ phrase: 0, paused: false, menu: false, bar: false, resPos: 50, tryPos: 50, res: 0, cmp: 'transplant', product: 0, faq: 0 }, this.state || {});
+    const set = (o) => this.setState(o);
+    const rows = [
+      ['Cost', 'Rs. 1.2–3 lakh, very often repeated', 'Rs. 20,000–50,000 a year, for life', 'Quoted free, before anything is fitted'],
+      ['Visible result', '9–12 months', '6–9 months', 'The same day'],
+      ['Covers advanced loss', 'No', 'No', 'Yes'],
+      ['No surgery', 'No', 'Yes', 'Yes'],
+      ['Side effects', 'Surgical risks', 'Long-term side effects', 'Nothing implanted or swallowed'],
+      ['Reversible', 'No', 'Yes', 'Yes'],
+      ['Upkeep', 'Loss carries on; repeats are common', 'Daily, for life', 'A service visit every 2 to 4 weeks']
+    ];
+    const ti = s.cmp === 'transplant' ? 1 : 2;
+    const P = [
+      { name: 'Essential', v: ['Everyday wear', 'Fine mono', 'Good', 'Moderate', '8 months', 'Monthly'] },
+      { name: 'Active', v: ['The gym and sport', 'French lace', 'Very good', 'Highest', '6 months', 'Monthly'] },
+      { name: 'Natural', v: ['A visible parting', 'Silk over lace', 'Very good', 'Moderate', '6 months', 'Monthly'] },
+      { name: 'Celebrity', v: ['A close look', 'Thin skin', 'Best', 'Low', '4 months', 'Twice a month'] }
+    ];
+    const K = ['Made for', 'Base', 'Hairline', 'Breathes', 'Lasts', 'Service visit'];
+    const F = [
+      ['Will anyone be able to tell?', 'Not at conversational distance. The hairline is where it is won or lost, and every hair system we fit has a lace front that melts into the skin. Under a shower, or with a hand run back through the hair, someone could tell.'],
+      ['How long does a hair system last?', 'Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every two to four weeks keeps it at its best.'],
+      ['What happens at a service visit?', 'The technician lifts the hair system, cleans the adhesive off the base and your scalp, checks the knots, re-bonds it and trims the hair to match your own growth. About 60 minutes, at your home.'],
+      ['Can I swim, shower and exercise with it?', 'Yes to all three. Chlorine and sea salt shorten the life of the base, so rinse it in fresh water afterwards. Heavy sweating is fine.'],
+      ['Does it damage the hair I still have?', 'The base sits on skin, not on hair, and the perimeter is bonded to areas where you have little or none. Hair under the base is trimmed short rather than shaved.'],
+      ['How do you match the colour and the hairline?', 'Colour is matched against forty samples in daylight at the consultation, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed with you before anything is fitted.'],
+      ["What if I don't like it?", "Say so before it's fitted and you pay nothing. Once it's fitted: if the fit isn't right, tell us within 14 days. We'll refit it free or refund you in full."],
+      ['Which cities do you cover?', "We're in Delhi, Gurgaon, Noida, Faridabad and Ghaziabad, by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are."],
+      ['What does it cost?', 'It depends on the hair system you choose. Your technician quotes it at the free consultation, before anything is fitted. No deposit, no package.'],
+      ['Is this the same thing as a wig?', 'No. A wig sits on the whole head, is held by tension or clips, and comes off at night. This is bonded to the skin over the area you have lost, is cut to your face, and stays on for weeks at a time.']
+    ];
+    return {
+      menu: s.menu, bar: s.bar, resPos: s.resPos, tryPos: s.tryPos,
+      openMenu: () => set({ menu: true }), closeMenu: () => set({ menu: false }),
+      onScroll: (e) => { const b = e.target.scrollTop > 640; if (b !== s.bar) set({ bar: b }); },
+      onRes: (e) => set({ resPos: +e.target.value }), onTry: (e) => set({ tryPos: +e.target.value }),
+      caption: ['Life-changing.', 'Ten years younger.', 'Head held high again.', 'Love it.'][s.res], pager: (s.res + 1) + ' of 4',
+      phrases: ['Natural up close.', '100% real human hair.', 'Fitted at home.', 'Confidence restored.', 'Be the Main Man again.'].map((t, i) => ({ t, op: i === s.phrase ? 1 : 0 })), pauseLabel: s.paused ? 'Play' : 'Pause', founderOpen: !!s.founder, founderShut: !s.founder, openFounder: () => set({ founder: true }), togglePause: () => { this.film(s.paused); set({ paused: !s.paused }); },
+      prevRes: () => set({ res: (s.res + 3) % 4, resPos: 50 }), nextRes: () => set({ res: (s.res + 1) % 4, resPos: 50 }),
+      ...(() => { const stages = [
+        { n: 'III', t: 'A clear M', s: 'We fit', img: '/_blob/a5492dcc8a58cdd102717ad0b2414525', alt: 'Stage III hair loss' },
+        { n: 'IV', t: 'Front and crown', s: 'We fit', img: '/_blob/bbab40e5c65579e47942dd15aba0f368', alt: 'Stage IV hair loss' },
+        { n: 'V', t: 'The bridge narrows', s: 'We fit', img: '/_blob/42bda878273d884f5adf41aa981869b5', alt: 'Stage V hair loss' },
+        { n: 'VI', t: 'The bridge is gone', s: 'We fit', img: '/_blob/83b08d225cf5f12f13718335d7d1a361', alt: 'Stage VI hair loss' },
+        { n: 'VII', t: 'A rim only', s: 'We fit', img: '/_blob/4a2ba88c85e96be053da77fbefde5362', alt: 'Stage VII hair loss' }
+      ]; const k = s.nw || 0; return { stages, stageNow: stages[k], stageChips: stages.map((st, i) => ({ n: st.n, on: i === k, aria: 'Stage ' + st.n + ', ' + st.t, pick: () => set({ nw: i }) })) }; })(),
+      isTransplant: s.cmp === 'transplant', isMedication: s.cmp === 'medication',
+      pickTransplant: () => set({ cmp: 'transplant' }), pickMedication: () => set({ cmp: 'medication' }),
+      themName: s.cmp === 'transplant' ? 'Transplant' : 'Medication',
+      cmpRows: rows.map(r => ({ k: r[0], them: r[ti], us: r[3] })),
+      steps: [
+        { n: '01', t: 'Consultation at home', b: 'Your scalp measured, your colour matched in daylight, and your hair system chosen with you. Then see how one looks on you, for real.', m: '60 minutes · free', img: '/_blob/639c2a63f11b7d0d6540cbeca2c04a5e', alt: 'A technician measuring a scalp' },
+        { n: '02', t: 'The first fit', b: 'The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Confidence, delivered.', m: '90 minutes · at your home', img: '/_blob/9163b1cbe05919d0f57a68586e3af776', alt: 'A client after the first fit' },
+        { n: '03', t: 'Regular service visits', b: 'Every month, or every two weeks on Celebrity: lifted, cleaned, re-bonded and trimmed to your own growth.', m: '60 minutes · at your home', img: '/_blob/f4b4d4e26ae533e08364cff24ae8a856', alt: "The technician's tool roll" }
+      ],
+      products: P.map((p, i) => ({ name: p.name, on: s.product === i, pick: () => set({ product: i }) })),
+      productRows: K.map((k, i) => ({ k, v: P[s.product].v[i] })),
+      faqs: F.map((f, i) => ({ q: f[0], a: f[1], open: s.faq === i, sign: s.faq === i ? '−' : '+', toggle: () => set({ faq: s.faq === i ? -1 : i }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

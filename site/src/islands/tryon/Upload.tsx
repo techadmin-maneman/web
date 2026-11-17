@@ -35,7 +35,7 @@ function Oval() {
         x="160"
         y="332"
         class={styles.ovalLabel}
-        font-family="EB Garamond, serif"
+        font-family="IBM Plex Sans, sans-serif"
         font-size="15"
         letter-spacing="1.8"
         text-anchor="middle"

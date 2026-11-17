@@ -15,7 +15,7 @@
   padding-top: var(--sp-16);
 }
 .guidelineNumber {
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-size: var(--fs-22);
   color: var(--ink-muted);
   font-variant-numeric: oldstyle-nums;

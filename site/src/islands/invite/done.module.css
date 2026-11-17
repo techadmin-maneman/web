@@ -25,7 +25,7 @@
 
 .doneBlockTitle {
   margin: var(--sp-16) 0 0;
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-weight: var(--weight-regular);
   font-size: var(--fs-28);
   line-height: var(--lh-115);
@@ -53,7 +53,7 @@
 
 .frameTitle {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-weight: var(--weight-regular);
   font-size: var(--fs-26);
   line-height: var(--lh-115);

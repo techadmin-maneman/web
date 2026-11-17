@@ -43,7 +43,7 @@
 
 .caption {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
   font-size: var(--fs-h3);
   line-height: var(--lh-115);
   letter-spacing: var(--tracking-heading);
