@@ -52,9 +52,12 @@ export const signIn = localised({
 } as const);
 
 export const today = localised({
-  /** The jobs still to do today: the count falls as each closes. */
+  /** The jobs today, before any has closed; then those still to do, as each closes. */
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
+  left: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} left`,
   allDone: "All done today",
+  /** The day's own name: its title before its jobs load, and its list's head once none is left to do. */
+  title: "Today",
   sync: {
     synced: "Synced",
     offline: (saved: number) => (saved > 0 ? `Offline · ${String(saved)} saved` : "Offline"),
@@ -77,8 +80,9 @@ export const today = localised({
   call: (first: string) => `Call ${first}`,
   later: "Later today",
   dayView: "Day view",
-  /** A job done with, by how it closed. */
+  /** A job done with, by how it closed: under its time, and after its kind of visit. */
   closed: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
+  closedAfter: { done: "done", partial: "partly done", no_show: "no-show", other: "closed" },
   /** A job under way that runs into the next: when to be done to reach it on time. */
   runsOver: (finishBy: string, next: string) => `Running over · finish by ${finishBy} for the ${next} job`,
   noMore: "No more jobs today.",
@@ -90,13 +94,13 @@ export const today = localised({
   leftOpen: (time: string, who: string) => `Still open from yesterday · ${time} · ${who}`,
   leftOpenBody: "Finish it and send it.",
   /** A visit with steps ops sent back, from whatever day, until they are done again (docs/decisions/0246-closed-and-sent-back.md). */
-  toFix: (time: string, who: string) => `Needs a fix · ${time} · ${who}`,
-  toFixBody: (steps: readonly string[]) => `Ops sent back ${listed(steps)}.`,
+  toFix: (count: number) => (count === 1 ? "Ops couldn’t accept a step" : `Ops couldn’t accept ${String(count)} steps`),
+  toFixBody: (who: string, steps: readonly string[]) => `${who} · ${listed(steps)}. Tap to fix.`,
   toFixSteps: {
-    before_photos: "the before photos",
-    checklist: "the tasks",
-    consumables: "the consumables",
-    after_photos: "the after photos",
+    before_photos: "before photos",
+    checklist: "checklist",
+    consumables: "consumables",
+    after_photos: "after photos",
   },
   offline: {
     title: "No signal",
@@ -163,19 +167,29 @@ export const me = localised({
   pending: "Pending uploads",
   nothingPending: "None",
   contact: "Contact ops",
+  /** The Contact sheet's title: ops in the technician's city. */
+  contactTitle: (city: string) => `Ops, ${city}`,
+  /** Leave's line on Me: the asks ops have still to answer. */
+  withOps: (count: number) => `${String(count)} with ops`,
   signOut: "Sign out",
   /** The sheet before signing out, which wipes the phone. */
   sheet: {
     title: "Sign out?",
     uploaded: "Everything is uploaded.",
+    /** Work on the phone not yet sent, which signing out would lose: "5 uploads will be lost." */
+    lost: (count: number) => `${String(count)} ${count === 1 ? "upload" : "uploads"} will be lost.`,
     cancel: "Cancel",
   },
+  closeContact: "Close",
 } as const);
 
 /** The way to ops from anywhere the app says to ask them (./components/ReachOps.tsx). */
 export const ops = localised({
   call: "Call ops",
   whatsApp: "WhatsApp ops",
+  /** Under a title that names ops already, as the Contact sheet's: "Call", "WhatsApp". */
+  callShort: "Call",
+  whatsAppShort: "WhatsApp",
 } as const);
 
 /** The Safety sheet, from the shield in a visit's header (docs/prompts/tech-redesign.md, "Safety"). */
@@ -183,10 +197,10 @@ export const safety = localised({
   open: "Safety",
   title: "Safety",
   sharing: "Ops can see your location until you close this visit.",
-  sos: "SOS",
+  sos: "Hold for SOS",
   sosSub: "Alerts ops and shares your location",
   /** Beneath SOS while it is held: under reduced motion, the only sign it is going. */
-  keepHolding: "Keep holding…",
+  keepHolding: "Keep holding",
   sending: "Sending your SOS…",
   hold: "Press and hold for 3 seconds. Let go to cancel.",
   /** "SOS sent 9:41 am" */
@@ -213,20 +227,7 @@ const listed = (words: readonly string[]) =>
  * has not reached us, and says so when there is no signal to sign out with.
  */
 export const leaving = localised({
-  // Neither file draws a sign-out with work still on the phone, or with no signal.
-  unsent: (sets: number, actions: number) => {
-    const held: string[] = [];
-    if (sets > 0) held.push(counted(sets, "photo set", "photo sets"));
-    if (actions > 0) held.push(counted(actions, "action", "actions"));
-    return `${held.join(" and ")} not sent yet`;
-  },
-  body: "Sign out now and they’re lost.",
-  // Nothing is waiting to be sent: signing out still takes the jobs off the phone.
-  confirm: "Sign out of this phone?",
-  confirmBody: "Your jobs leave this phone until you sign in again.",
-  stay: "Stay signed in",
-  send: "Send first",
-  anyway: "Sign out anyway",
+  // The prototype draws no sign-out with no signal.
   stayed: "No signal. You’re still signed in. Try again with signal.",
 } as const);
 
@@ -267,7 +268,6 @@ export const atRisk = localised({
 } as const);
 
 export const queue = localised({
-  waiting: (count: number) => `${String(count)} photo ${count === 1 ? "set" : "sets"} waiting`,
   retry: "Retry",
   states: {
     uploading: "Uploading…",
@@ -277,10 +277,14 @@ export const queue = localised({
   /** Beneath the title: how many jobs still have work on the phone. */
   jobsWaiting: (count: number) => `${String(count)} waiting`,
   noneWaiting: "None waiting",
-  // The board writes "7 of 10"; each set is counted on its own, by the photographs the API confirmed.
-  phases: { before: "Before photos", after: "After photos" },
-  sent: (phase: string, done: number, total: number) => `${phase} · ${String(done)} of ${String(total)} sent`,
-  taking: (phase: string, taken: number, total: number) => `${phase} · ${String(taken)} of ${String(total)} taken`,
+  /** A set's row, as the prototype heads it: whose, and which, "Rohit M. · before photos". */
+  setOf: (who: string, phase: string) => `${who} · ${phase}`,
+  phasesAfter: { before: "before photos", after: "after photos" },
+  /** Beneath it: how many, or, still being taken, how many so far. */
+  photos: (count: number) => counted(count, "photo", "photos"),
+  taken: (taken: number, total: number) => `${String(taken)} of ${String(total)} taken`,
+  /** How far a set has gone: said beside a stopped one, which has no line, and to a screen reader beside the line. */
+  sentOf: (sent: number, total: number) => `${String(sent)} of ${String(total)} sent`,
   // The board draws the photo sets; these name the writes beside them.
   title: "Pending uploads",
   nothing: "Everything is uploaded.",
@@ -318,10 +322,10 @@ export const queue = localised({
 const stopped: Readonly<Record<string, string>> = {
   // The 409 names the fields that moved and never their values. The new time, once the card read again
   // carries it, and whom a job went to are named by whatStopped below.
-  superseded: "This job changed while the phone was offline.",
+  superseded: "Ops changed this job.",
   technician: "This job is someone else’s now.",
   time: "Ops moved this job to another time.",
-  status: "This job was cancelled while the phone was offline.",
+  status: "Ops cancelled this job.",
   out_of_order: "Steps arrived out of order. Open the job again.",
   not_today: "This job is on another day. Arrive and start it on the day.",
   too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
@@ -348,8 +352,10 @@ const stopped: Readonly<Record<string, string>> = {
  * recorded has none.
  */
 function movedTo(moved: Moved, now: Date): string {
-  // The prompt's example has a time on the day; the line without one, and the one with a day, are ours.
-  if (moved.at === null) return `Ops moved this job to ${moved.technician}.`;
+  // The prompt's example has a time on the day; the line without one, and the one with a day, are ours. A name that
+  // ends in a full stop, "Imran K.", ends the sentence itself.
+  if (moved.at === null)
+    return `Ops moved this job to ${moved.technician}${/[.!?]$/.test(moved.technician) ? "" : "."}`;
   const day = todayInIndia(new Date(moved.at));
   const time = clock(moved.at);
   if (day === todayInIndia(now)) return `Ops moved this job to ${moved.technician} at ${time}.`;
@@ -400,17 +406,22 @@ function whatStoppedEn(why: Why, now: Date = apiDate(), startsNow: string | null
  * showing. What was recorded stays in Pending uploads.
  */
 export const interrupted = localised({
+  /** Whose visit, as the prototype says it, where the phone knows the client; else the job by its time and kind. */
+  cancelledOf: (name: string) => `${name}’s visit was cancelled`,
   cancelled: (job: string) => `${job}: cancelled`,
+  closedOf: (name: string) => `${name}’s visit was closed`,
   closed: (job: string) => `${job}: closed`,
-  closedBody: "This visit was closed. What you recorded is kept on this phone, in Pending uploads.",
+  movedOf: (name: string, to: string) => `${name}’s visit moved to ${to}`,
   moved: (job: string, to: string) => `${job}: moved to ${to}`,
   /** From a push, which names no one: given to another technician, or called off. */
+  reassignedOf: (name: string) => `${name}’s visit was given to another technician`,
   reassigned: (job: string) => `${job}: given to another technician`,
-  reassignedBody: "Ops gave this visit to another technician.",
-  cancelledAlert: "Ops cancelled this visit.",
-  cancelledBody: "Ops cancelled this visit. What you recorded is kept on this phone, in Pending uploads.",
-  movedBody: (to: string) =>
-    `Ops gave this visit to ${to}. What you recorded is kept on this phone, in Pending uploads.`,
+  /** When ops did it, where the API says; and, where the phone recorded any of it, that it is kept. */
+  cancelledAt: (time: string | null) => (time === null ? "Ops cancelled this visit." : `Ops cancelled it at ${time}.`),
+  reassignedAt: (time: string | null) =>
+    time === null ? "Ops gave this visit to another technician." : `Ops reassigned it at ${time}.`,
+  closedBody: "This visit was closed.",
+  kept: "What you recorded is kept on this phone, in Pending uploads.",
   today: "Back to Today",
 } as const);
 
@@ -456,21 +467,21 @@ export const clientRecord = localised({
   history: "Client history",
   /** "5 visits since Jul", beneath the history's row. */
   since: (count: number, month: string) => `${counted(count, "visit", "visits")} since ${month}`,
-  newClient: "New client",
+  /** Beneath the handoff's photographs: which they are, and when. */
+  afterPhotos: (date: string) => `After photos, ${date}`,
   /** The history screen. */
   title: "Client history",
-  back: "Back to the job",
   none: "No earlier visits.",
   failed: "The client’s history didn’t load.",
   retry: "Try again",
-  /** "Service visit · 1 Sep" */
-  visit: (kind: string, date: string) => `${kind} · ${date}`,
+  /** The history's two heads, as the prototype has them. */
+  clientAlerts: "Client alerts",
+  visits: "Visits",
   results: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
   /** "Imran · Done" */
   byAndResult: (who: string | null, result: string) => (who === null ? result : `${who} · ${result}`),
   photo: (angle: string) => `After, ${angle}`,
-  used: "Used",
-  piece: (label: string) => `Piece fitted: ${label}`,
+  piece: (label: string) => `Fitted ${label}`,
 } as const);
 
 export const job = localised({
@@ -508,7 +519,6 @@ export const job = localised({
     minute: (minutes: number) => `${String(minutes)} min`,
     onTheWay: (minutes: number) => `On my way, ${String(minutes)} min`,
     late: (minutes: number) => `Running ${String(minutes)} min late`,
-    fromUs: "Sent on WhatsApp from Mane Man’s number.",
     sentAt: (time: string) => `Sent at ${time}`,
     /** "Sent: on my way, 20 min", under the actions. */
     sent: (what: string) => `Sent: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
@@ -523,7 +533,6 @@ export const job = localised({
   putRight: "Put it right",
   // The board draws no job's state on its card or its row.
   states: { inProgress: "In progress", closed: "Closed out", atTheDoor: "At the door" },
-  closedAs: (outcome: string) => `Closed out · ${outcome}`,
   notToday: {
     tomorrow: "This job is tomorrow. Arrive and start it on the day.",
     other: "This job isn’t today’s. Arrive and start it on its day.",
@@ -690,6 +699,9 @@ export const visit = localised({
   },
   /** Above a step ops sent back: what they said to fix, as they wrote it. */
   sentBack: (reason: string) => `Ops sent this back: ${reason}`,
+  /** The same at the head of the step, as the prototype words it: that ops refused it, their reason, and the way on. */
+  refused: "Ops couldn’t accept this step",
+  fixIt: (reason: string) => `${reason} Fix it and tap Next.`,
 } as const);
 
 export const capture = localised({
@@ -1137,7 +1149,7 @@ export const profile = localised({
     adhesive: "Adhesive",
     scalp: "Scalp",
     size: (width: number, length: number) => `${String(width)} × ${String(length)} in`,
-    shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} / ${String(grey)}% grey`),
+    shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} · ${String(grey)}% grey`),
   },
 } as const);
 
@@ -1182,10 +1194,8 @@ export const schedule = localised({
   noJobs: "–",
   /** "Thu, 12 Nov" */
   day: (weekday: string, date: string) => `${weekday}, ${date}`,
-  /** "Today, Thu 12 Nov" */
+  /** "Today, Thu 12 Nov": only today is named, as the prototype writes it; every other day as `day`. */
   today: (weekday: string, date: string) => `Today, ${weekday} ${date}`,
-  /** "Tomorrow, Fri 13 Nov" */
-  tomorrow: (weekday: string, date: string) => `Tomorrow, ${weekday} ${date}`,
   jobs: (count: number) => counted(count, "job", "jobs"),
   nothing: "Nothing booked",
   dayView: "The day, by the hour",
@@ -1288,6 +1298,8 @@ export const guides = localised({
     sign_off: "The client checks the fit and signs",
     outcome: "Result and close",
   },
+  /** A consultation's outcome, which asks whether the client goes ahead with a fit, and sends no link of its own. */
+  consultationOutcome: "Going ahead or not",
   /** "Service visit · Service", beneath a task's name. */
   where: (kind: string, step: string) => `${kind} · ${step}`,
   gone: "This task isn’t in the guide any more.",
@@ -1322,13 +1334,15 @@ export const reschedule = localised({
   open: "Ask ops to reschedule",
   why: "Why",
   reasons: { client_asked: "Client asked", running_late: "I’m running late", kit_problem: "Kit problem" },
+  /** The reason inside the note once asked, mid-sentence: "· client asked ·". */
+  reasonsAfter: { client_asked: "client asked", running_late: "running late", kit_problem: "kit problem" },
   send: "Send to ops",
   close: "Close",
   needsSignal: "Needs signal",
   failed: "That didn’t reach ops. Try again.",
   closed: "This visit is closed or called off.",
   gone: "This visit isn’t yours any more.",
-  /** "Reschedule asked 9:05 am · Client asked · ops will confirm with the client" */
+  /** "Reschedule asked 9:05 am · client asked · ops will confirm with the client" */
   asked: (time: string, reason: string) => `Reschedule asked ${time} · ${reason} · ops will confirm with the client`,
 } as const);
 
@@ -1441,18 +1455,28 @@ export const kit = localised({
   held: {
     title: "In kit",
     none: "Your kit is empty.",
-    /** A count the kit's ledger has at nought or below: more was used than it held. */
-    out: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
-    expires: (date: string) => `Expires ${date}`,
+    /**
+     * A count the kit's ledger has at nought or below, more used than it held where it is below; and who knows, as low
+     * says it.
+     */
+    out: (short: string | null, coming: boolean) =>
+      `${short === null ? "Out" : `Out, ${short} short`} · ${coming ? "more on its way" : "ops notified"}`,
+    outUntilBack: (short: string | null) =>
+      `${short === null ? "Out" : `Out, ${short} short`} · hand back the expired stock and ops are told`,
+    /** Out, with ops' count not told of it: no stock to hand back, or a hair system, which that count does not watch. */
+    outAlone: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
+    /** A lot and when it expires, as the prototype writes it: "TS-2611 · expires 31 May 2027". */
+    expires: (lot: string, date: string) => `${lot} · expires ${date}`,
     /** A lot inside the days ops are warned before it expires. */
-    useFirst: (date: string) => `Use first · expires ${date}`,
+    useFirst: (lot: string, date: string) => `Use ${lot} first, expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
     recalled: "In a recall: not to be used",
     pieces: (count: number) => `${String(count)} labelled`,
     /** At or below the level ops keep a kit at: ops are alerted on their own, and send more. */
-    low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops told"),
+    low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops notified"),
     /** Low only for stock that goes back: ops' count sees it until it does. */
     lowUntilBack: "Low · hand back the expired stock and ops are told",
+    lowAlone: "Low",
   },
   returned: {
     title: "Return to ops",

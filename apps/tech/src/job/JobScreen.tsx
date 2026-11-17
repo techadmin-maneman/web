@@ -3,17 +3,15 @@
 // checked in; Continue once the visit has begun; View summary once it has closed. A job ops changed under the phone
 // offers nothing to press on with and says what changed; one on another day says when it can be worked.
 
-import { GLYPHS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
-import { Icon } from "@maneman/ui/Icon";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
-import { closeOut as closeOutCopy, job as copy, visit as visitCopy, whatStopped } from "../content.ts";
+import { job as copy, visit as visitCopy, whatStopped } from "../content.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
-import { nextStep, outcomeOf, stageOf, stepsToFix, type Stage } from "../lib/progress.ts";
+import { nextStep, stageOf, stepsToFix, type Stage } from "../lib/progress.ts";
 import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { apiDate, dayAfter, todayInIndia } from "../lib/when.ts";
@@ -24,6 +22,7 @@ import { backOf } from "../lib/opened-from.ts";
 import { CheckInFailed, useCheckIn } from "./CheckIn.tsx";
 import { JobCard } from "./JobCard.tsx";
 import styles from "./job-screen.module.css";
+import { Chevron } from "../frame/Chevron.tsx";
 
 /** What ops changed, in the app's words: the new time when the card now carries one, else the field that moved. */
 function whatChanged(job: Job, queued: readonly Queued[]): string {
@@ -32,10 +31,9 @@ function whatChanged(job: Job, queued: readonly Queued[]): string {
   return whatStopped({ ...moved, startsAt: moved.starts_at ?? null }, apiDate(), job.starts_at);
 }
 
-/** The line that says where a job stands, for the stages that are not the door. */
-function stateLine(stage: Stage, job: Job, queued: readonly Queued[]): string | null {
+/** The line that says where a job stands, for the stages that are not the door; a closed one's View summary says it. */
+function stateLine(stage: Stage, job: Job): string | null {
   if (stage === "started") return copy.states.inProgress;
-  if (stage === "closed") return copy.closedAs(closeOutCopy.outcomes[outcomeOf(job, queued) ?? "done"]);
   if (stage === "not_today") {
     return job.date === dayAfter(todayInIndia()) ? copy.notToday.tomorrow : copy.notToday.other;
   }
@@ -156,7 +154,7 @@ export function JobScreen({ id }: { id: string }) {
   const stage = stageOf(job, queued, todayInIndia());
   if (stage === "door") return <AtTheJob job={job} queued={queued} />;
 
-  const line = stateLine(stage, job, queued);
+  const line = stateLine(stage, job);
   return (
     <CardFrame
       title={nameOf(job)}
@@ -173,7 +171,7 @@ export function JobScreen({ id }: { id: string }) {
       {line !== null && <p className={styles.state}>{line}</p>}
       {stage === "started" && (
         <ListRows className={styles.plan}>
-          <ListRow title={visitCopy.allSteps} to={`/jobs/${job.id}/plan`} end={<Icon d={GLYPHS.chevron} size="sm" />} />
+          <ListRow title={visitCopy.allSteps} to={`/jobs/${job.id}/plan`} end={<Chevron />} />
         </ListRows>
       )}
       <JobCard job={job} />

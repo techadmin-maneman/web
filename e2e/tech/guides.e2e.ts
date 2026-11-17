@@ -39,6 +39,13 @@ test("opens from Me, lists the four kinds of visit, and reads a task's instructi
   await expect(page).toHaveURL(/\/guides\/service$/);
   await page.getByRole("button", { name: techCopy.job.back }).click();
   await expect(page).toHaveURL(/\/guides$/);
+
+  // A consultation's outcome is whether the client goes ahead, as the prototype names its step.
+  await page.getByRole("link", { name: new RegExp(`^${techCopy.types.consultation}`) }).click();
+  await expect(page.getByText(copy.consultationOutcome, { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: techCopy.job.back }).click();
+  await expect(page).toHaveURL(/\/guides$/);
+
   await page.getByRole("button", { name: techCopy.job.back }).click();
   await expect(page).toHaveURL(/\/me$/);
 });

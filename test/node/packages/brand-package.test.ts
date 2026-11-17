@@ -165,6 +165,7 @@ const OFF_THE_SCALE = [
   "--tech-row",
   "--tech-time",
   "--tech-time-today",
+  "--tech-reach-ops",
 ] as const;
 
 describe("the scale", () => {

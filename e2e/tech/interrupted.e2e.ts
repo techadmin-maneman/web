@@ -20,13 +20,14 @@ test("a job ops cancelled under the phone says so once, with a call to ops and t
   fake.supersede = ["status"];
   await stepAction(page).click();
 
-  const dialog = page.getByRole("dialog", { name: /: cancelled$/ });
-  await expect(dialog).toContainText(interrupted.cancelledBody);
+  // Whose visit, as the prototype words it; and that what was recorded is kept (ADR 0246).
+  const dialog = page.getByRole("dialog", { name: interrupted.cancelledOf("Rohit M.") });
+  await expect(dialog).toContainText(`${interrupted.cancelledAt(null)} ${interrupted.kept}`);
   await expect(dialog.getByRole("link", { name: techCopy.ops.call })).toHaveAttribute("href", /^tel:\+/);
   expect(await axeViolations(page)).toEqual([]);
 
   await dialog.getByRole("button", { name: interrupted.today }).click();
-  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: techCopy.today.jobs(3) })).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
@@ -39,8 +40,8 @@ test("a job given to another technician names them", async ({ page }) => {
   fake.wentTo = { technician: "Sandeep", at: null };
   await stepAction(page).click();
 
-  const dialog = page.getByRole("dialog", { name: /: moved to Sandeep$/ });
-  await expect(dialog).toContainText(interrupted.movedBody("Sandeep"));
+  const dialog = page.getByRole("dialog", { name: interrupted.movedOf("Rohit M.", "Sandeep") });
+  await expect(dialog).toContainText(`${interrupted.reassignedAt(null)} ${interrupted.kept}`);
 });
 
 test("a job ops closed under the phone says so", async ({ page }) => {
@@ -51,6 +52,6 @@ test("a job ops closed under the phone says so", async ({ page }) => {
   fake.closedByOps = true;
   await stepAction(page).click();
 
-  const dialog = page.getByRole("dialog", { name: /: closed$/ });
-  await expect(dialog).toContainText(interrupted.closedBody);
+  const dialog = page.getByRole("dialog", { name: interrupted.closedOf("Rohit M.") });
+  await expect(dialog).toContainText(`${interrupted.closedBody} ${interrupted.kept}`);
 });

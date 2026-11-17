@@ -3,8 +3,8 @@
 // ops, the pieces that came off clients and any expired stock; and what it holds, each lot's expiry beside it, low and
 // out in colour. Never a cost. Its writes need signal, and say so without it.
 
-import { amountOf } from "@maneman/web-kit/figures";
-import { fullDate, indiaDate } from "@maneman/web-kit/dates";
+import { amountOf, isMeasure } from "@maneman/web-kit/figures";
+import { fullDate, indiaDate, listDate } from "@maneman/web-kit/dates";
 import { Button } from "@maneman/ui/Button";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -26,36 +26,58 @@ import { sayKnown, sayNow } from "../lang/index.ts";
 
 type Held = Kit["held"][number];
 
-/** What the kit holds of an item: its count, or that it is out, and how far short where more was used than it held. */
+/** What the kit holds of an item fit to use, bare as the prototype draws it: "46", "100 ml"; out, nought. */
 function heldOf(quantity: number, unit: string): string {
-  if (quantity > 0) return sayNow(amountOf(quantity, unit));
-  return copy.held.out(quantity === 0 ? null : amountOf(-quantity, unit));
+  const left = Math.max(quantity, 0);
+  return isMeasure(unit) ? sayNow(amountOf(left, unit)) : String(left);
 }
 
-/** A lot's expiry as the kit says it: to use first, or when. */
-const lotWhen = (lot: { readonly use_first: boolean }, on: string): string =>
-  lot.use_first ? copy.held.useFirst(on) : copy.held.expires(on);
+/**
+ * A lot not yet expired, as the prototype writes it: its code and expiry, or to use it first. Where the item is in more
+ * than one lot, each says how much it holds.
+ */
+function lotLine(lot: Held["lots"][number], item: Held, today: string, several: boolean): string {
+  // This year's by its day, "24 Nov"; one further off with its year, "31 May 2027".
+  const on = listDate(lot.expires_on ?? today, Number(today.slice(0, 4)));
+  if (lot.use_first) return copy.held.useFirst(lot.lot_code, on);
+  const code = several ? `${lot.lot_code} · ${sayNow(amountOf(lot.quantity, item.unit))}` : lot.lot_code;
+  return copy.held.expires(code, on);
+}
 
-/** The lines beneath an item the kit holds: low, its labelled pieces, and each lot not yet expired with its expiry. */
+/** The lines beneath an item the kit holds: out or low, its labelled pieces, and each lot not yet expired. */
 function heldLines(item: Held, today: string, coming: boolean): string[] {
-  const lots = item.lots
-    .filter((lot) => !lot.recalled && lot.expires_on !== null && lot.expires_on >= today)
-    .map(
-      (lot) =>
-        `${lot.lot_code} · ${sayNow(amountOf(lot.quantity, item.unit))} · ${lotWhen(lot, fullDate(lot.expires_on ?? today))}`,
-    );
+  const lots = item.lots.filter((lot) => !lot.recalled && lot.expires_on !== null && lot.expires_on >= today);
+  const short = item.usable < 0 ? amountOf(-item.usable, item.unit) : null;
+  const out = item.usable <= 0;
   return [
-    ...(item.low && item.usable > 0 ? [lowLine(item, coming)] : []),
+    ...(out ? [outLine(item, short, coming)] : []),
+    ...(!out && item.low ? [lowLine(item, coming)] : []),
     ...(item.hair_system ? [copy.held.pieces(item.units.length)] : []),
-    ...lots,
+    ...lots.map((lot) => lotLine(lot, item, today, lots.length > 1)),
   ];
 }
 
-/** Why an item is low: ops told, or more on its way; or low only for stock to hand back, which tells ops once back. */
+/**
+ * Why an item is low: ops told, or more on its way; or low only for stock to hand back, which tells ops once back;
+ * otherwise only that it is low.
+ */
 function lowLine(item: Held, coming: boolean): string {
   if (coming) return copy.held.low(true);
-  return item.ops_told ? copy.held.low(false) : copy.held.lowUntilBack;
+  if (item.ops_told) return copy.held.low(false);
+  return toldOnceBack(item) ? copy.held.lowUntilBack : copy.held.lowAlone;
 }
+
+/** The same for an item out, and how far short where more was used than it held. */
+function outLine(item: Held, short: string | null, coming: boolean): string {
+  if (coming || item.ops_told) return copy.held.out(short, coming);
+  return toldOnceBack(item) ? copy.held.outUntilBack(short) : copy.held.outAlone(short);
+}
+
+/**
+ * Whether ops' count tells them once its expired or recalled stock is handed back. Never for a hair system, which that
+ * count does not watch: its expired pieces wait under Return to ops, with their own Hand back.
+ */
+const toldOnceBack = (item: Held): boolean => !item.hair_system && item.quantity > item.usable;
 
 /** An item's figure, what it holds fit to use: out in red, low in the metal's words, otherwise quiet. */
 function amountLook(item: Held): string | undefined {
@@ -187,6 +209,11 @@ export function KitScreen() {
     setSettled(false);
   };
   const kit = after ?? (loaded.state === "loaded" ? loaded.value : null);
+  // Ops are the way on only where the kit shows nothing: empty, with nothing coming or to hand back, or not read.
+  const askOps =
+    kit === null
+      ? loaded.state === "failed"
+      : kit.held.length === 0 && kit.coming.length === 0 && kit.returned.length === 0;
   // When the kit was last read, so a phone without signal shows how old its figures are.
   const [readAt, setReadAt] = useState<string | null>(null);
   useEffect(() => {
@@ -228,7 +255,7 @@ export function KitScreen() {
           <InKit kit={kit} />
         </>
       )}
-      <ReachOps className={styles.reach} onPaper />
+      {askOps && <ReachOps className={styles.reach} onPaper />}
     </main>
   );
 }

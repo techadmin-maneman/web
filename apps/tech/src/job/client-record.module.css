@@ -1,17 +1,8 @@
-/* The client's record on the job (./ClientRecord.tsx), in the new look: the alerts in a problem card, the handoff note
-   with its visit's photographs in one row, and the row to the client's history. */
+/* The client's record on the job (./ClientRecord.tsx), as the prototype draws it: the alerts in a problem card, the
+   handoff note with its visit's photographs as labelled tiles, and the history one line between hairlines. */
 
 .record {
-  padding-top: var(--sp-24);
-}
-
-/* Client history and how the visit is done: rows inside the gutter, as the prototype draws them. */
-.rows {
-  margin: 0 var(--screen-gutter);
-}
-
-.inset {
-  padding: 0 var(--screen-gutter);
+  padding: var(--sp-24) var(--screen-gutter) 0;
 }
 
 .alerts {
@@ -24,26 +15,41 @@
   font-size: var(--fs-15);
 }
 
-.handoff {
-  margin-bottom: var(--sp-16);
-}
-
 .handoffNote {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
   line-height: var(--lh-145);
 }
 
-.photos {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: var(--sp-8);
-  margin-top: var(--sp-12);
+.caption {
+  margin: calc(var(--sp-4) + var(--sp-2)) 0 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
 }
 
-.photo {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  background: var(--placeholder);
+/* The history: one line 52 px tall between hairlines, its count and chevron at the end. */
+.history {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(var(--sp-48) + var(--sp-4));
+  margin-top: var(--sp-16);
+  border-top: var(--hairline) solid var(--ui-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
+  color: var(--ui-strong);
+  text-decoration: none;
+}
+
+.historyTitle {
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.historyEnd {
+  display: flex;
+  gap: calc(var(--sp-4) + var(--sp-2));
+  align-items: center;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
 }

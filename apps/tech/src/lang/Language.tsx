@@ -7,6 +7,7 @@ import { ListRow } from "@maneman/ui/ListRow";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { useId, useState } from "react";
 import { languageNames, me as copy } from "../content.ts";
+import { RowEnd } from "../frame/RowEnd.tsx";
 import { chooseLanguage } from "./kept.ts";
 import { useLanguage, type Language } from "./language.ts";
 import styles from "./language.module.css";
@@ -51,7 +52,7 @@ export function LanguageRow() {
     <>
       <ListRow
         title={copy.language}
-        meta={<span lang={language}>{languageNames[language]}</span>}
+        end={<RowEnd value={<span lang={language}>{languageNames[language]}</span>} />}
         onClick={() => {
           setOpen(true);
         }}

@@ -76,12 +76,6 @@
   color: var(--ui-text-soft);
 }
 
-/* The way to the visit's guide, a row under the facts with the section's rule above it. */
-.guide {
-  margin: var(--sp-20) var(--screen-gutter) 0;
-  border-top: var(--rule-strong) solid var(--ui-strong);
-}
-
 /* A drive's line in its hatched block: the arrow, and the way there in Google Maps where the address is known. */
 .drive {
   display: inline-flex;

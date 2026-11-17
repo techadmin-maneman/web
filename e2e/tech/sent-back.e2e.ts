@@ -21,14 +21,17 @@ test("a count ops sent back is on Today, opens from the job, says why, and close
   fake.sentBack = [{ kind: "consumables", reason: "Count the tape strips again.", sent_at: new Date().toISOString() }];
   await page.goto("/");
 
-  const card = page.getByText(today.toFixBody([today.toFixSteps.consumables]));
+  // As the prototype words it: that ops refused a step, whose and which, and the way to it.
+  const card = page.getByText(today.toFix(1));
   await expect(card).toBeVisible();
+  await expect(page.getByText(new RegExp(` · ${today.toFixSteps.consumables}\\. Tap to fix\\.$`))).toBeVisible();
   await card.click();
 
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
   await page.getByRole("button", { name: job.putRight }).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
-  await expect(page.getByText(visit.sentBack("Count the tape strips again."))).toBeVisible();
+  await expect(page.getByText(visit.refused)).toBeVisible();
+  await expect(page.getByText(visit.fixIt("Count the tape strips again."))).toBeVisible();
   // Nothing after it is left to do: the action sends the step, and closes nothing.
   await expect(stepAction(page)).toHaveText(visit.sendFix);
   expect(await axeViolations(page)).toEqual([]);
@@ -75,7 +78,7 @@ test("a step sent back on a visit that has locked again is put right from its ca
   await expect(page.getByText(job.locked.pastTitle)).toBeVisible();
   await expect(page.getByText(job.locked.past)).toBeVisible();
   await page.getByRole("button", { name: job.putRight }).click();
-  await expect(page.getByText(visit.sentBack("Tick the scalp check."))).toBeVisible();
+  await expect(page.getByText(visit.fixIt("Tick the scalp check."))).toBeVisible();
   await throughTheTasks(page);
   await stepAction(page).click();
   await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);

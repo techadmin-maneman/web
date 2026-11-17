@@ -29,6 +29,9 @@ const PHASE_OF: Readonly<Partial<Record<Queued["kind"], Phase>>> = {
   after_photos: "after",
 };
 
+/** A finished set's own write, which the set's row stands for: never counted again as an action. */
+export const isSetWrite = (event: Queued): boolean => PHASE_OF[event.kind] !== undefined;
+
 /** Every set with a frame on the phone or its write still to send, in the order they were taken. */
 export function photoSets(frames: readonly Frame[], events: readonly Queued[]): PhotoSet[] {
   const sets = new Map<string, PhotoSet>();
