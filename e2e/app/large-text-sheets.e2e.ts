@@ -144,7 +144,7 @@ for (const size of SIZES) {
     const card = page.getByRole("dialog", { name: refer.card.title });
     await expect(card).toBeVisible();
     await holds(page, size, "invite's card");
-    await card.getByRole("radio", { name: /The Mane Man example card/ }).click();
+    await card.getByRole("radio", { name: refer.card.house.name }).click();
     await card.getByRole("button", { name: refer.card.next }).click();
     const preview = page.getByRole("dialog", { name: refer.preview.title });
     await expect(preview.getByRole("link", { name: refer.preview.whatsapp })).toBeVisible();

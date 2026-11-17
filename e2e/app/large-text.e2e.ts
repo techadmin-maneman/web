@@ -180,8 +180,11 @@ for (const size of SIZES) {
     await page.unroute("**/api/me");
 
     // A page's read held unanswered, the page loading; the photographs' own skeleton, then the shared one.
+    // The page's own request, sent once its code has loaded and its skeleton drawn, past the shared loading screen.
     await page.route("**/api/photos", () => undefined);
+    const asked = page.waitForRequest("**/api/photos");
     await page.goto("/photos");
+    await asked;
     await expect(page.getByRole("heading", { level: 1, name: titles.photos })).toBeVisible();
     await holds(page, size, "photos loading");
     await page.route("**/api/me/alerts", () => undefined);
