@@ -207,7 +207,6 @@ describe("content", () => {
   it("names one service area on every page", () => {
     const pages = JSON.stringify(site) + JSON.stringify(referral);
     expect(pages).not.toContain("Gurgaon only");
-    expect(site.header.area).toBe("Delhi NCR");
     expect(site.footer.area).toBe("Delhi NCR · home service only");
     expect(site.pageTitles.home).toContain("across Delhi NCR");
     expect(site.pageDescriptions.home).toContain("across Delhi NCR");

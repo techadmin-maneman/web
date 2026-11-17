@@ -30,10 +30,21 @@ import { consentBar as words } from "../content/site.ts";
   const bar = document.querySelector<HTMLElement>("[data-consent-bar]");
   if (bar !== null && consentAnswer() === null) {
     bar.hidden = false;
+    // While it asks, the page keeps the bar's height clear at its foot, so a page that ends in a form can still bring
+    // the form's last button above it (--consent-reserve, site/src/styles/tokens-site.css).
+    const root = document.documentElement;
+    const keepClear = new ResizeObserver(() => {
+      // The bar, what holds it above the page's foot, and as much again above it.
+      const above = parseFloat(getComputedStyle(bar).bottom);
+      root.style.setProperty("--consent-reserve", `${String(bar.offsetHeight + 2 * above)}px`);
+    });
+    keepClear.observe(bar);
     for (const button of bar.querySelectorAll<HTMLButtonElement>("[data-consent]")) {
       button.addEventListener("click", () => {
         answerConsent(button.dataset.consent === "granted" ? "granted" : "denied");
         bar.hidden = true;
+        keepClear.disconnect();
+        root.style.removeProperty("--consent-reserve");
       });
     }
   }

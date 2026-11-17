@@ -1,0 +1,54 @@
+---
+// The mark and the small cut of the wordmark side by side, as design/brand/lockup-navy.svg and lockup-white.svg draw
+// them: the wordmark 0.371 of the mark's height, set 0.3225 of it apart. Drawn from the page's sprite in one colour, so
+// no file of the brand's is copied into the site.
+interface Props {
+  /** Where it stands, which sets its height (site/src/styles/tokens-site.css). */
+  size: "header" | "footer" | "slim";
+  tone: "navy" | "white";
+}
+
+const { size, tone } = Astro.props;
+---
+
+<span class:list={["lockup", size, tone]}>
+  <svg class="mark" viewBox="0 0 200 217.4" aria-hidden="true">
+    <use href="#mm"></use>
+  </svg>
+  <svg class="word" viewBox="-3 -3 638 106" aria-hidden="true">
+    <use href="#wms"></use>
+  </svg>
+</span>
+
+<style>
+  .lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--lockup-h) * var(--site-lockup-gap));
+  }
+  .header {
+    --lockup-h: var(--site-lockup-header);
+  }
+  .footer {
+    --lockup-h: var(--site-lockup-footer);
+  }
+  .slim {
+    --lockup-h: var(--site-lockup-slim);
+  }
+  .navy {
+    fill: var(--site-navy);
+  }
+  .white {
+    fill: var(--site-on-navy);
+  }
+  .mark {
+    display: block;
+    height: var(--lockup-h);
+    width: auto;
+  }
+  .word {
+    display: block;
+    height: calc(var(--lockup-h) * var(--site-lockup-word));
+    width: auto;
+  }
+</style>

@@ -19,10 +19,7 @@
   --site-navy-rule: var(--navy-700); /* rules and edges on navy: the footer's top */
   --site-gold: var(--gilt); /* the one filled button on navy */
   --site-gold-hover: var(--gilt-hover);
-  /* The focus ring: brass on navy (5.1:1); on white and cool, where brass is 3.0:1 and 2.8:1, the brief's metal
-     darkened to gold-700 (4.9:1 and 4.5:1), clear of WCAG 1.4.11's 3:1 (ADR 0262). */
-  --site-focus: var(--gold-700);
-  --site-focus-on-navy: var(--brass);
+  --site-focus: var(--brass); /* the focus ring, on every ground (ADR 0266) */
   --site-line: var(--line-200);
   --site-text: var(--ink-900);
   --site-text-muted: var(--ink-500);
@@ -50,6 +47,31 @@
   --site-button-h: var(--btn-client); /* 52 */
   --site-header-button: var(--sp-40); /* the header's button on a phone, 14 px words */
   --site-header-button-wide: var(--tap); /* the header's button on a laptop, 16 px words; also a phone's Sign in */
+  --site-header-h: 60px; /* the header, and what scrolling stops below: 72 px on a laptop */
+  --site-bar-pad-top: var(--sp-12); /* the phone's sticky bar, around its 52 px buttons */
+  --site-bar-pad-bottom: var(--sp-16);
+  --site-safe-bottom: env(safe-area-inset-bottom, 0px); /* a phone's home bar, under anything fixed to the foot */
+  --site-none: 0px; /* no room, where a role starts with none */
+  --consent-reserve: var(
+    --site-none
+  ); /* the cookie bar's room at the page's foot while it asks (components/ConsentBar.astro) */
+
+  /* ---- The lockup (components/Lockup.astro), as design/brand/lockup-navy.svg draws it at 40 px: a 14.84 px small
+     cut, 12.9 px from the mark ------------------------------------------------------------------------------ */
+  --site-lockup-word: 0.371;
+  --site-lockup-gap: 0.3225;
+  --site-lockup-header: 30px;
+  --site-lockup-footer: var(--sp-36);
+  --site-lockup-slim: 34px;
+}
+
+@media (min-width: 761px) {
+  :root {
+    --site-header-h: var(--sp-72);
+    --site-lockup-header: var(--sp-40);
+    --site-lockup-footer: var(--sp-40);
+    --site-lockup-slim: var(--sp-36);
+  }
 }
 
 /* The shared parts' roles (packages/brand/tokens.css) on the site's white, as the client app's look sets them
@@ -107,7 +129,6 @@
   --status-saved: var(--site-on-navy);
   --status-done: var(--site-on-navy);
   --status-note: var(--site-on-navy-muted);
-  --focus-colour: var(--site-focus-on-navy);
 }
 
 :root {
@@ -143,12 +164,14 @@
   /* ---- Page frame -------------------------------------------------------- */
   /* The top of a page of text, the try-on's and the 404. */
   --page-pad-top: clamp(40px, 6vw, 88px);
-  --page-max: calc(var(--site-column) + 2 * var(--site-gutter)); /* the column and its gutters */
+  --page-max: var(--site-column); /* the column, its gutters inside it: 1120 px of words at 1440, as the boards' wrap */
   --gutter: var(--site-gutter);
   --header-gap: clamp(16px, 2.5vw, 34px);
-  --bar-h: var(--sp-64);
-  --bar-reserve: 72px; /* the space the home page keeps for the sticky bar */
-  --foot-bar-h: 0px; /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
+  --bar-h: calc(
+    var(--site-bar-pad-top) + var(--site-button-h) + var(--site-bar-pad-bottom)
+  ); /* the phone's sticky bar */
+  --bar-reserve: var(--sp-72); /* the space the home page keeps for the sticky bar */
+  --foot-bar-h: var(--site-none); /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
   --section-gap: var(--site-section-y);
   --band-pad: clamp(48px, 7vw, 96px);
   --split-min: 300px;
