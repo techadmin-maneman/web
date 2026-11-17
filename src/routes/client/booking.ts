@@ -17,9 +17,11 @@ import { partnerCodeFor } from "../../domain/referrals/channels.ts";
 import { keepShownConsents, recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
 import { acceptTerms } from "../../domain/privacy/terms-acceptances.ts";
 import {
+  type AddressRefusal,
   bookable,
   movedService,
   moveTermsFor,
+  notOffered,
   rangeFor,
   soldAs,
   startCheckout,
@@ -28,7 +30,7 @@ import {
 import { clientOf } from "../../http/client-session.ts";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
-import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { selfServeRoute } from "../../http/session-routes.ts";
 import { servesItself } from "../../http/self-serve.ts";
@@ -208,6 +210,17 @@ async function servedFor(
   if (!isFullAddress(address)) return false;
   return type === "consultation" ? takesNewClients(db, address.pincode, now) : isServed(db, address.pincode);
 }
+/** The refusal the address gives a visit: none given yet, or one we do not come to; null for one we come to. */
+async function addressRefusal(
+  db: D1Database,
+  address: Awaited<ReturnType<typeof currentAddress>>,
+  type: VisitType,
+  now: Date,
+): Promise<AddressRefusal> {
+  if (!isFullAddress(address)) return "address_required";
+  return (await servedFor(db, address, type, now)) ? null : "not_served";
+}
+
 export function registerClientBooking(app: App): void {
   app.openapi(holdRoute, async (c) => {
     const personId = clientOf(c).subjectId;
@@ -226,7 +239,7 @@ export function registerClientBooking(app: App): void {
     if (time === null) return refuse(c, "invalid_request", ["starts_at"]);
     const { window, startsAt } = time;
     if (movingId !== undefined && move === null) return refuse(c, "not_changeable");
-    if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
+    if (typeof offered === "string") return notOffered(c, offered, () => addressRefusal(c.env.DB, address, type, now));
     const moves = movesOf(move);
     const moveKind = moves?.kind ?? null;
     const [service, sold, useCredit, served, atCheckout] = await Promise.all([
