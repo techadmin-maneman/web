@@ -109,14 +109,14 @@ A test asserts the set of files in `site/src/assets` is unchanged by the redesig
   #D4B47A and `--white-055`, an outline's edge on navy. `site/src/styles/tokens-site.css` maps the site's roles onto
   them (`--site-ground`, `--site-band`, `--site-navy`, `--site-line`, `--site-text`, `--site-text-muted`,
   `--site-on-navy-muted`, `--site-focus`, the button roles), and the shared parts' `--ui-*` roles onto white.
-- **Focus and edges.** The focus ring is brass on navy and `--gold-700` on white and cool, where brass is under 3:1; a
-  control's edge is stone on white and `--ink-500` on cool (ADR 0262, decisions 4 and 5).
+- **Focus and edges.** The focus ring is brass on every ground, as the owner ruled (ADR 0266); a control's edge is stone on white
+  and `--ink-500` on cool (ADR 0262, decisions 4 and 5).
 - **Type.** `packages/brand/fonts-plex.css` replaces `fonts.css` on the site; EB Garamond and Instrument Sans leave
   the site's build, and production's coming-soon page takes Plex too. The clamp scale: turning line 40–80, hero title
   20–26, section 26–44, statement 20–34, lead 16–18, body 16, labels 14, buttons 16, written once as `--site-fs-*`
   with `clamp()` between 390 and 1440 px.
-- **Space.** Column 1200 px, gutters 20 / 40 px; section padding 56 / 96 px; buttons 52 px; the header's button 40 px
-  on a phone and 44 px on a laptop.
+- **Space.** Column 1200 px with its gutters inside it, as the boards' `.wrap` (1120 px of words at 1440); gutters
+  20 / 40 px; section padding 56 / 96 px; buttons 52 px; the header's button 40 px on a phone and 44 px on a laptop.
 - **Radius.** 0; circles only for radio dots, the spinner and the slider knob.
 - **`/book` and `/try`** take the client app's look values (`apps/app/src/styles/look.css` roles), so the shared parts
   draw alike (ADR 0121).
@@ -149,10 +149,8 @@ The flow frame's other words are live strings, reused by key: "Free consultation
 1. **Phone comparison and range.** The brief says "the Transplant and Medication toggle, as now", but live draws
    swipeable cards (#783). The prototype draws segmented toggles; the prototype wins on look, so the cards become
    toggles.
-2. **Two filled buttons in one view: for the owner.** The fixed header's filled "Book a free consultation" shares the
-   screen with every section's own filled button: the hero's gold Book, Norwood's, the try-on teaser's gold button and
-   the closing band's; on a phone the sticky bar's Book joins it. The boards draw each, and the brief says one filled
-   button per view. Built as the boards draw it until the owner rules; listed in REPORT.md.
+2. **The header's Book is an outline.** The boards draw it filled beside every section's own filled button; the owner
+   ruled on 17 November 2026 that it is an outline everywhere, so each screen keeps one filled button (ADR 0266).
 3. **Board stand-ins**: one results pair, grey look thumbnails, guide photographs, "Prototype:" lines and the stubbed
    clauses in privacy and terms are not built; the real content is.
 4. **The one visit's length** reads as the API gives it; the board's "2.5 hours" shows only if ops set it.

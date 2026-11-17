@@ -23,7 +23,7 @@
   html {
     scroll-behavior: smooth;
     /* Whatever the page scrolls to, a section or a focused control, stops below the fixed header. */
-    scroll-padding-top: var(--header-h);
+    scroll-padding-top: var(--site-header-h);
   }
   /* Under prefers-reduced-motion nothing moves, as in the apps (packages/ui/base.css). */
   @media (prefers-reduced-motion: reduce) {
@@ -74,13 +74,10 @@
     appearance: none;
   }
 
-  /* Keyboard focus: a metal ring, brass on navy and gold-700 on white and cool (ADR 0262). */
+  /* Keyboard focus: a brass ring on every ground (ADR 0262). */
   :focus-visible {
     outline: var(--focus-width) solid var(--focus-colour, var(--site-focus));
     outline-offset: var(--focus-offset);
-  }
-  .on-ink {
-    --focus-colour: var(--site-focus-on-navy);
   }
 
   /*
@@ -105,6 +102,13 @@
 }
 
 /* ---- Layout ------------------------------------------------------------- */
+
+/* A laptop's flow has no footer, so while the cookie bar asks its form keeps the bar's room beneath it. */
+@media (min-width: 761px) {
+  .in-flow main {
+    padding-bottom: var(--consent-reserve);
+  }
+}
 
 .container {
   max-width: var(--page-max);

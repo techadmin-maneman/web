@@ -671,7 +671,11 @@ test("a booking sends the details to WhatsApp, and opens the app with the number
   ).toBeVisible();
   await expect(page.getByText(referralCopy.referral.booked.appHint)).toBeVisible();
   await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: referralCopy.referral.booked.back })).toHaveAttribute("href", "/");
+  // The page's own way back, beside the header's on a laptop (ADR 0265).
+  await expect(page.locator("main").getByRole("link", { name: referralCopy.referral.booked.back })).toHaveAttribute(
+    "href",
+    "/",
+  );
   const app = page.getByRole("link", { name: referralCopy.referral.booked.app });
   await expect(app).toHaveAttribute("href", "http://app.localhost:4322");
   await page.route(/^http:\/\/app\.localhost:4322\//, (route) =>

@@ -37,46 +37,92 @@ test.describe("header", () => {
     }
   });
 
-  test("hides the section links and the area tag below 760 px, with no menu button", async ({ page }) => {
+  test("hides the section links below 760 px, with no menu button", async ({ page }) => {
     await page.goto("/");
     const links = page.locator("header").getByRole("link", { name: siteCopy.range.title });
-    if (narrow(page.viewportSize()?.width)) {
-      await expect(links).toBeHidden();
-      await expect(page.locator("header").getByText(siteCopy.header.area)).toBeHidden();
-    } else {
-      await expect(links).toBeVisible();
-      await expect(page.locator("header").getByText(siteCopy.header.area)).toBeVisible();
-    }
+    if (narrow(page.viewportSize()?.width)) await expect(links).toBeHidden();
+    else await expect(links).toBeVisible();
     await expect(page.locator("header").getByRole("button")).toHaveCount(0);
   });
 
-  test("scrolls a section link to its section, 56 px below the top", async ({ page }) => {
+  // The page's own filled button is the one on the screen (ADR 0266).
+  test("draws its Book as an outline", async ({ page }) => {
+    await page.goto("/");
+    const book = narrow(page.viewportSize()?.width) ? siteCopy.header.bookShort : siteCopy.header.book;
+    const button = page.locator("header").getByRole("link", { name: book, exact: true });
+    expect(await button.evaluate((link) => getComputedStyle(link).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  });
+
+  // The client app answers locally, so its sign-in is offered (site/src/lib/app-link.ts).
+  test("offers Sign in to the client app", async ({ page }) => {
+    await page.goto("/");
+    const signIn = page.locator("header").getByRole("link", { name: siteCopy.header.signIn });
+    await expect(signIn).toBeVisible();
+    await expect(signIn).toHaveAttribute("href", /^http:\/\/app\.localhost:\d+$/);
+  });
+
+  test("scrolls a section link to its section, 72 px below the top", async ({ page }) => {
     test.skip(narrow(page.viewportSize()?.width), "the links are hidden below 760 px");
     await page.goto("/");
     await page.locator("header").getByRole("link", { name: siteCopy.range.title }).click();
     await expect
       .poll(() => page.evaluate(() => Math.round(document.getElementById("range")?.getBoundingClientRect().top ?? 0)))
-      .toBe(56);
+      .toBe(72);
   });
 
   test("goes home first from another page, then to the section", async ({ page }) => {
     test.skip(narrow(page.viewportSize()?.width), "the links are hidden below 760 px");
-    await page.goto("/book");
+    await page.goto("/privacy");
     await page.locator("header").getByRole("link", { name: siteCopy.faq.title }).click();
     await expect(page).toHaveURL(/\/#faq$/);
     await expect
       .poll(() => page.evaluate(() => Math.round(document.getElementById("faq")?.getBoundingClientRect().top ?? 0)))
-      .toBe(56);
+      .toBe(72);
+  });
+});
+
+// A laptop's /book and /try are a flow of their own: the lockup and the way back, no footer (ADR 0265).
+test.describe("the flow's bar", () => {
+  for (const path of ["/book", "/try"]) {
+    test(`on ${path} leads back to the site, with no footer on a laptop`, async ({ page }) => {
+      await page.goto(path);
+      const header = page.locator("header");
+      const back = header.getByRole("link", { name: siteCopy.tryOn.backToSite });
+      if (narrow(page.viewportSize()?.width)) {
+        await expect(back).toBeHidden();
+        await expect(page.locator("footer")).toBeVisible();
+      } else {
+        await expect(back).toHaveAttribute("href", "/");
+        await expect(header.getByRole("link", { name: siteCopy.header.signIn })).toBeHidden();
+        await expect(header.getByRole("link", { name: siteCopy.range.title })).toBeHidden();
+        await expect(page.locator("footer")).toBeHidden();
+      }
+    });
+  }
+
+  test("on /try offers the free consultation as an outline", async ({ page }) => {
+    await page.goto("/try");
+    const book = page.locator("header").getByRole("link", { name: siteCopy.header.bookShort });
+    await expect(book).toHaveAttribute("href", "/book");
+    expect(await book.evaluate((link) => getComputedStyle(link).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
   });
 });
 
 test.describe("sticky bar and footer: the home page only", () => {
   // The bar is a phone's: on a wider screen the header's own button books.
-  test("appear on the home page, the bar on a phone only", async ({ page }, testInfo) => {
+  test("appear on the home page, the bar on a phone once the hero has gone by", async ({ page }, testInfo) => {
     await page.goto("/");
     const bar = page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel });
+    await expect(bar).toBeHidden();
+    await page.locator('[data-section="what"]').evaluate((section) => {
+      section.scrollIntoView();
+    });
     if (testInfo.project.name === "390") await expect(bar).toBeVisible();
     else await expect(bar).toBeHidden();
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+    await expect(bar).toBeHidden();
     await expect(page.locator("footer")).toBeVisible();
     await expect(page.locator("footer")).toContainText(siteCopy.footer.entity);
     await expect(page.locator("footer")).toContainText(siteCopy.footer.area);
@@ -84,7 +130,8 @@ test.describe("sticky bar and footer: the home page only", () => {
       "href",
       "/#faq",
     );
-    await expect(page.locator('footer a[href="/book"]')).toHaveCount(1);
+    // The closing band above it is the last call (ADR 0263).
+    await expect(page.locator('footer a[href="/book"]')).toHaveCount(0);
   });
 
   // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms.
@@ -136,6 +183,9 @@ test.describe("skip link", () => {
   test("the bar is a landmark, and its button keeps to a phone’s width", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "390", "the bar is a phone's");
     await page.goto("/");
+    await page.locator('[data-section="what"]').evaluate((section) => {
+      section.scrollIntoView();
+    });
     const book = page
       .getByRole("navigation", { name: siteCopy.stickyBar.label })
       .getByRole("link", { name: siteCopy.header.book });
