@@ -173,14 +173,10 @@
   margin-top: var(--sp-12);
 }
 
-/* The two actions on a hair system on its way, side by side, Scan the wider. */
+/* The two actions on a hair system on its way, side by side and alike in width, as the prototype draws them. */
 .grow {
   flex: 1 1 0;
   gap: var(--sp-8);
-}
-
-.grow:first-child {
-  flex-grow: 1.3;
 }
 
 .rest {

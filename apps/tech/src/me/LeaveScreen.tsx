@@ -14,7 +14,6 @@ import { dayDate, spanEnds } from "../lib/when.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import { useState } from "react";
 import { api, type LeaveRequests } from "../api.ts";
-import { NoSignal } from "../frame/Banners.tsx";
 import { CardFrame } from "../frame/CardFrame.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { leave as copy, reference } from "../content.ts";
@@ -147,7 +146,6 @@ export function LeaveScreen() {
   const asks = after ?? (loaded.state === "loaded" ? loaded.value : null);
   return (
     <CardFrame title={copy.title} back="/me" foot={null}>
-      {offline && <NoSignal />}
       <div className={styles.page}>
         <SectionHead title={copy.askTitle} ruled={false} />
         <Ask offline={offline} onAsked={setAfter} />

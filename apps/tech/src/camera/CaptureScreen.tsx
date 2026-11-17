@@ -15,7 +15,6 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
 import { capture as copy, storage, visit as visitCopy } from "../content.ts";
-import { NoSignal } from "../frame/Banners.tsx";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
@@ -23,7 +22,6 @@ import { buzz } from "../lib/haptics.ts";
 import { dayMonth } from "../lib/when.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { go } from "../route.ts";
-import { useOnline } from "../session.ts";
 import { useStep } from "../steps/index.ts";
 import { isStorageFull, onStorageFull } from "../store/db.ts";
 import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } from "../store/outbox.ts";
@@ -197,31 +195,27 @@ function CameraHead(props: {
   stream: MediaStream | null;
   heading: (element: HTMLHeadingElement | null) => void;
 }) {
-  const online = useOnline();
   return (
-    <>
-      <header className={styles.top}>
-        <IconButton
-          className={styles.back}
-          d={ICONS.cross}
-          size="lg"
-          label={copy.close}
-          onClick={() => {
-            go(`/jobs/${props.id}/plan`);
-          }}
-        />
-        <div className={styles.titles}>
-          <h1 className={styles.title} ref={props.heading} tabIndex={-1}>
-            {props.title}
-          </h1>
-          <p className={styles.count}>
-            {props.angle === undefined ? copy.of(props.taken) : copy.taking(props.taken + 1, copy.angles[props.angle])}
-          </p>
-        </div>
-        <Torch stream={props.stream} />
-      </header>
-      {!online && <NoSignal />}
-    </>
+    <header className={styles.top}>
+      <IconButton
+        className={styles.back}
+        d={ICONS.cross}
+        size="lg"
+        label={copy.close}
+        onClick={() => {
+          go(`/jobs/${props.id}/plan`);
+        }}
+      />
+      <div className={styles.titles}>
+        <h1 className={styles.title} ref={props.heading} tabIndex={-1}>
+          {props.title}
+        </h1>
+        <p className={styles.count}>
+          {props.angle === undefined ? copy.of(props.taken) : copy.taking(props.taken + 1, copy.angles[props.angle])}
+        </p>
+      </div>
+      <Torch stream={props.stream} />
+    </header>
   );
 }
 
@@ -345,7 +339,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         )}
         {full && (
           <p className={styles.alertBar} role="alert">
-            {storage.title}
+            {storage.camera}
           </p>
         )}
         {notice !== null && (

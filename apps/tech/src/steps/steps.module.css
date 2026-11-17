@@ -174,22 +174,24 @@
   padding: 0 var(--sp-20) var(--sp-20);
 }
 
+/* A fact by its name, as the prototype draws the summary and the close: the name grey at the start, the value at the
+   end, both 15 px, in a 44 px ruled row. */
 .row {
   display: flex;
   gap: var(--sp-16);
   justify-content: space-between;
-  padding: var(--sp-16) 0;
+  padding: calc(var(--sp-12) - var(--hairline)) 0;
   border-bottom: var(--hairline) solid var(--ui-line);
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
 }
 
 .rowKey {
-  font-size: var(--fs-16);
   color: var(--ui-text-soft);
 }
 
 .rowValue {
   margin: 0;
-  font-size: var(--fs-17);
   font-variant-numeric: tabular-nums;
   text-align: right;
   color: var(--ui-text);
@@ -206,13 +208,30 @@
 
 /* Chosen: the board's heavier edge, in paper rather than its gold, which is Next's alone (ADR 0025, item 59). */
 
+/* A choice's reasons, as the prototype draws them: a small head, then chips sized to their words that wrap. */
 .reasons {
   display: flex;
   flex-direction: column;
   gap: var(--sp-8);
+  padding: var(--sp-16) var(--screen-gutter) 0;
+}
+
+.reasonHead {
   margin: 0;
-  padding: var(--sp-16) var(--sp-20) var(--sp-20);
-  border-top: var(--hairline) solid var(--ui-line);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
+}
+
+/* Compact chips sized to their words, at the prototype's 14 px, and the glove's height. */
+.chips {
+  --control-text: var(--fs-14);
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
 

@@ -20,19 +20,6 @@
   color: var(--ui-error);
 }
 
-/* A tinted strip of the column's width, under the screen's head. */
-.noSignal {
-  display: flex;
-  gap: var(--sp-8);
-  align-items: center;
-  margin: 0;
-  padding: var(--sp-8) var(--screen-gutter);
-  background: var(--ui-tint);
-  color: var(--ui-text);
-  font-size: var(--fs-14);
-  line-height: var(--lh-145);
-}
-
 .message {
   font-size: var(--fs-17);
   line-height: var(--lh-145);
@@ -58,4 +45,42 @@
 
 .paperFoot {
   border-top-color: var(--ui-line);
+}
+
+/* A phone with no room left, above whichever screen is showing: the prototype's red line. */
+.full {
+  flex-shrink: 0;
+  margin: 0;
+  padding: calc(var(--sp-8) + var(--sp-2)) var(--sp-16);
+  background: var(--error);
+  color: var(--white-000);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+/* No signal: the prototype's navy line at the very top, faded in. */
+.noSignal {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--sp-8);
+  align-items: center;
+  margin: 0;
+  padding: var(--sp-8) var(--sp-16);
+  background: var(--navy-900);
+  color: var(--white-000);
+  font-family: var(--font-plex);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .noSignal {
+    animation: fade-in var(--duration-toast) var(--ease-house);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
 }

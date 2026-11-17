@@ -56,7 +56,7 @@ export function PreviewScreen({ date, id }: { readonly date: string; readonly id
       <div className={styles.page}>
         <DescriptionList
           className={styles.facts}
-          layout="list"
+          layout="ends"
           items={[
             { term: copy.time, details: copy.when(clock(job.starts_at), jobCopy.minutes(length)) },
             { term: copy.area, details: job.sector ?? "" },

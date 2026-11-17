@@ -78,7 +78,7 @@
 
 /* The way to the visit's guide, a row under the facts with the section's rule above it. */
 .guide {
-  margin-top: var(--sp-20);
+  margin: var(--sp-20) var(--screen-gutter) 0;
   border-top: var(--rule-strong) solid var(--ui-strong);
 }
 

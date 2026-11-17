@@ -3,6 +3,7 @@
 
 import { GLYPHS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
+import { classes } from "@maneman/ui/classes";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { Switch } from "@maneman/ui/Switch";
@@ -52,7 +53,7 @@ export function SendMe(props: {
   return (
     <>
       <SectionHead title={copy.sendMe} size="list" className={styles.section} />
-      <ListRows className={styles.rows} label={copy.sendMe}>
+      <ListRows className={classes(styles.rows, styles.kinds)} label={copy.sendMe}>
         {ALERT_KINDS.map((kind) => (
           <ListRow
             key={kind}

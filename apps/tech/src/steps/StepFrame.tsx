@@ -17,14 +17,12 @@ import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { steps as copy, visit } from "../content.ts";
-import { NoSignal } from "../frame/Banners.tsx";
 import { Safety } from "../frame/Safety.tsx";
 import { kindNameLower } from "../lib/kind.ts";
 import { done, sentBackFor } from "../lib/progress.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { routeOf, usePath } from "../route.ts";
-import { useSession } from "../session.ts";
 import { keptJob } from "../store/jobs.ts";
 import { screensOf } from "../visit/index.ts";
 import styles from "./step-frame.module.css";
@@ -144,7 +142,6 @@ export function StepFrame({
 }) {
   const heading = useScreen(title);
   const settled = useSettled(page);
-  const { offline } = useSession();
   const where = useWhere();
   const label = action ?? labelOf(where);
   // A refusal says what to put right; failing one, what ops said when they sent the step back.
@@ -165,7 +162,6 @@ export function StepFrame({
         </div>
         {where !== null && <Safety jobId={where.job.id} className={styles.safety} />}
       </header>
-      {offline && <NoSignal />}
       {where !== null && <StepBar where={where} />}
       <div className={styles.body}>
         {said !== null && (

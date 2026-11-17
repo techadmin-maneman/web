@@ -83,8 +83,15 @@
   --label-text: var(--ink-500);
   --label-weight: var(--weight-regular);
   --check-row-height: var(--tap-row);
-  /* A ruled list's choice at the app's gloved 48 px, as the outcome's Result and the language sheet draw them. */
-  --choice-row-height: var(--tech-min);
+  /* A ruled list's choice as the outcome's Result and the language sheet draw them: the prototype's 60 px from rule to
+     rule, which is 52 px rows and the 8 px the choices keep between them (packages/ui field.module.css .choices, which
+     wins over the ruled list's own gap of none); no rule over the first, its words 16 px at Plex's medium, under a
+     20 px title. */
+  --choice-row-height: calc(var(--btn-lg) - var(--sp-4));
+  --choice-rule-top: 0;
+  --choice-text: var(--fs-16);
+  --choice-weight: var(--weight-medium);
+  --legend-title-text: var(--fs-20);
   --check-box-size: var(--sp-24);
 
   /* The tab bar on white: its current tab in navy, under a 2 px navy mark; and a sheet's panel on white. */
@@ -96,13 +103,15 @@
   --tab-mark: var(--navy-900);
   --sheet-ground: var(--white-000);
   --sheet-text: var(--ink-900);
-  /* Rows run the column's width under hairlines, with no box, at the brief's list sizes. */
+  /* Rows run the column's width under hairlines, with no box, their words on the gutter's line, at the prototype's
+     list sizes: a 16 px title; Today's list keeps its rows 16 px in, beside each row's mark. */
   --list-edge: 0;
+  --row-pad-x: 0;
   --row-lead-text: var(--fs-15);
   --row-lead-colour: var(--ink-900);
   --row-lead-wrap: normal;
   --row-lead-align: flex-start;
-  --row-title-text: var(--fs-17);
+  --row-title-text: var(--fs-16);
   --row-title-weight: var(--weight-semibold);
   --row-meta-text: var(--fs-14);
 

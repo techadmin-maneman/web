@@ -48,21 +48,29 @@
     color: var(--sheet-text);
   }
 
+  /* On paper, at the prototype's sizes: a 20 px title in the strong ink, a 15 px line, the answers 8 px apart. */
   .paper .title {
     font-family: var(--title-font);
-    font-size: var(--fs-22);
+    font-size: var(--fs-20);
     font-weight: var(--title-weight);
-    color: var(--sheet-text);
+    line-height: var(--lh-130);
+    color: var(--ui-strong);
   }
 
   .paper .body {
+    margin: var(--sp-12) 0 var(--sp-16);
+    font-size: var(--fs-15);
+    line-height: var(--lh-145);
     color: var(--ui-text-soft);
   }
 
-  .paper .yes {
-    margin-top: var(--sp-12);
+  .answers {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
   }
 
+  .paper .yes,
   .paper .no {
     margin-top: 0;
   }

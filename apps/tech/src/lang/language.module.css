@@ -10,4 +10,5 @@
   font-size: var(--fs-20);
   font-weight: var(--weight-semibold);
   line-height: var(--lh-115);
+  color: var(--ui-strong);
 }

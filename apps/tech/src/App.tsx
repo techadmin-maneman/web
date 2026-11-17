@@ -5,7 +5,7 @@
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { classes } from "@maneman/ui/classes";
-import { Stopped, StorageFull } from "./frame/Banners.tsx";
+import { NoSignal, Stopped, StorageFull } from "./frame/Banners.tsx";
 import { Interrupted } from "./frame/Interrupted.tsx";
 import { SharePosition } from "./frame/SharePosition.tsx";
 import { update } from "./content.ts";
@@ -103,6 +103,10 @@ function pageFor(route: Route) {
   }
 }
 
+/** The camera's screens, which say a full phone in their own words under their head. */
+const onCamera = (route: Route): boolean =>
+  route.page === "step" && (route.step === "before_photos" || route.step === "after_photos");
+
 /** The screens once there is a session, each reading the one account of the outbox kept here. */
 function SignedIn({ session, path }: { session: Session; path: string }) {
   const waiting = useOutboxSubscription();
@@ -112,7 +116,9 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
   return (
     <SessionContext value={session}>
       <OutboxContext value={waiting}>
-        <StorageFull />
+        {/* No signal, said once at the very top of every screen, as the prototype draws it. */}
+        {session.offline && <NoSignal />}
+        <StorageFull onCamera={onCamera(route)} />
         <UpdateReady copy={update} resting={route.page === "today"} onInk={!drawnLight(route.page)} />
         {/* A job's work stopped reaching us, said above every screen; the waiting screen says it job by job. */}
         {route.page !== "waiting" && <Stopped />}

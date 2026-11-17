@@ -61,7 +61,7 @@ export function ClientRecord({ job }: { job: Job }) {
           </div>
         )}
       </div>
-      <ListRows>
+      <ListRows className={styles.rows}>
         <ListRow
           title={copy.history}
           meta={visitsOf(job)}

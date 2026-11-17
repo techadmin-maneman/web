@@ -3,7 +3,7 @@
 // does, and that a job's work stopped reaching us — ops moved the job under the
 // phone, or the API refused a step — which until now only the waiting screen said.
 
-import { APP_ICONS } from "@maneman/brand/icons";
+import { GLYPHS } from "@maneman/brand/icons";
 import { buttonLook } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
@@ -19,24 +19,32 @@ import styles from "./banner.module.css";
 import light from "./light.module.css";
 import { apiDate } from "../lib/when.ts";
 
-/** While the phone has just refused a write for want of room (../store/db.ts), above whichever screen is showing. */
-export function StorageFull() {
+/** Whether the phone has just refused a write for want of room (../store/db.ts), as it changes. */
+function useStorageFull(): boolean {
   const [full, setFull] = useState(isStorageFull);
   useEffect(() => onStorageFull(setFull), []);
-  if (!full) return null;
+  return full;
+}
+
+/**
+ * The phone has no room for what the technician does: the prototype's red line, above whichever screen is showing.
+ * The camera says it in its own words, under its head, so it draws none of this.
+ */
+export function StorageFull({ onCamera }: { readonly onCamera: boolean }) {
+  const full = useStorageFull();
+  if (!full || onCamera) return null;
   return (
-    <div className={styles.full} role="alert">
-      <p className={styles.fullTitle}>{storage.title}</p>
-      <p className={styles.fullBody}>{storage.body}</p>
-    </div>
+    <p className={light.full} role="alert">
+      {storage.bar}
+    </p>
   );
 }
 
-/** On a screen in the new look, the bar under its head that says there is no signal and the work is kept. */
+/** No signal, and the work is kept: the prototype's navy line at the top of every screen, the camera's too. */
 export function NoSignal() {
   return (
     <p className={light.noSignal} role="status">
-      <Icon d={APP_ICONS.offline} size="sm" weight="heavy" />
+      <Icon d={GLYPHS.cloud} size="sm" />
       <span>{todayCopy.offline.bar}</span>
     </p>
   );

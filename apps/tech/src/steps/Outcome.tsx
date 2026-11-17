@@ -6,7 +6,7 @@ import { sayKnown, theirs } from "../lang/index.ts";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "@rules/policy/client-record.ts";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { EventBody, Job, OutcomeRequest, PartialReason } from "../api.ts";
 import { oneVisit, options, signOff, steps as copy, visit } from "../content.ts";
 import { Result, Summary } from "./OutcomeParts.tsx";
@@ -101,6 +101,7 @@ function Pair<T extends string | boolean>(props: {
         <ToggleButton
           key={String(option.value)}
           className={shared.choice}
+          filled
           pressed={props.chosen === option.value}
           onClick={() => {
             props.onChoose(option.value);
@@ -113,24 +114,30 @@ function Pair<T extends string | boolean>(props: {
   );
 }
 
-/** Ops' reasons, one to a row, one of which may be picked. */
+/** Ops' reasons under a small head, as chips that wrap, one of which may be picked: filled once it is. */
 function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | null; onPick: (id: string) => void }) {
+  const headId = useId();
   return (
-    <ul className={shared.reasons}>
-      {props.reasons.map((one) => (
-        <li key={one.id}>
-          <ToggleButton
-            className={styles.reason}
-            pressed={props.picked === one.id}
-            onClick={() => {
-              props.onPick(one.id);
-            }}
-          >
-            {sayKnown(one.label)}
-          </ToggleButton>
-        </li>
-      ))}
-    </ul>
+    <div className={shared.reasons}>
+      <p className={shared.reasonHead} id={headId}>
+        {copy.outcome.reason}
+      </p>
+      <ul className={shared.chips} aria-labelledby={headId}>
+        {props.reasons.map((one) => (
+          <li key={one.id}>
+            <ToggleButton
+              filled
+              pressed={props.picked === one.id}
+              onClick={() => {
+                props.onPick(one.id);
+              }}
+            >
+              {sayKnown(one.label)}
+            </ToggleButton>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -327,12 +334,7 @@ function Choosing({
           }}
         />
       )}
-      {notGoingAhead && (
-        <>
-          <p className={shared.note}>{copy.outcome.why}</p>
-          <ReasonList reasons={job.lost_reasons} picked={lost} onPick={setLost} />
-        </>
-      )}
+      {notGoingAhead && <ReasonList reasons={job.lost_reasons} picked={lost} onPick={setLost} />}
       {choice === "partial" && <ReasonList reasons={job.partial_reasons} picked={reason} onPick={setReason} />}
       <Summary job={job} />
       {notes.fields}

@@ -232,9 +232,10 @@ export const leaving = localised({
 
 /** When the phone has no room left for what the app must keep: a photograph, a step. */
 export const storage = localised({
-  // Neither file draws a phone that is full.
-  title: "This phone’s storage is full",
-  body: "Free up space by deleting photos or apps you don’t need, then try again.",
+  /** Above every screen but the camera, which says it in its own words (the prototype's red line). */
+  bar: "Phone storage full. Free up space to keep saving your work.",
+  // The prototype says "Free 200 MB": the phone cannot know how much it needs.
+  camera: "Phone storage full. Free up space to keep taking photos.",
 } as const);
 
 /** A new version of the app, waiting to be taken (packages/web-kit/sw-update.ts). */
@@ -883,7 +884,8 @@ export const steps = localised({
     notNow: "Not now",
     /** The product the client picked on Options, which goes with a yes. */
     picked: (name: string) => `Their pick: ${name}.`,
-    why: "Why not?",
+    /** The head over a choice's reasons, a partly done's or a not now's. */
+    reason: "Reason",
     pickWhy: "Pick why to continue",
     answerFirst: "Say if they’re going ahead",
   },

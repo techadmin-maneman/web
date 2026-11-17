@@ -3,6 +3,7 @@
 // ink and quieter, with how it closed; then tomorrow, which opens the Schedule.
 
 import { GLYPHS } from "@maneman/brand/icons";
+import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Link } from "@maneman/ui/router";
@@ -32,6 +33,9 @@ function lastLine(job: JobSummary, state: RowState | null, ahead: Ahead): string
   return copy.driveAndLeave(job.drive_minutes, clock(job.leave_by));
 }
 
+/** A line with its times and lengths kept whole, so a narrow row never breaks "11:05 / am" or "25 / min". */
+const keptWhole = (line: string): string => line.replace(/(\d) (am|pm|min|h)\b/g, "$1\u00a0$2");
+
 /** What a row's last line reads beyond the job: the next job still to do, and the phone's writes on their way. */
 interface Ahead {
   readonly later: JobSummary | undefined;
@@ -53,18 +57,20 @@ function Row(props: {
   return (
     <ListRow
       to={`/jobs/${job.id}`}
-      rule={closed ? "done" : undefined}
       lead={
-        <span className={closed ? styles.quiet : undefined}>
-          <span className={styles.rowTime}>{clock(job.starts_at)}</span>
-          {job.minutes !== null && <span className={styles.rowLength}>{jobCopy.minutes(job.minutes)}</span>}
+        <span className={styles.lead}>
+          <span className={classes(styles.mark, closed && styles.markDone)} />
+          <span className={closed ? styles.quiet : undefined}>
+            <span className={styles.rowTime}>{clock(job.starts_at)}</span>
+            {job.minutes !== null && <span className={styles.rowLength}>{jobCopy.minutes(job.minutes)}</span>}
+          </span>
         </span>
       }
       title={<span className={closed ? styles.quiet : undefined}>{props.client ?? kindName(job)}</span>}
       meta={
         <>
-          <span className={styles.rowLine}>{what}</span>
-          {last !== null && <span className={closed ? styles.rowClosed : styles.rowLine}>{last}</span>}
+          <span className={styles.rowLine}>{keptWhole(what)}</span>
+          {last !== null && <span className={closed ? styles.rowClosed : styles.rowLine}>{keptWhole(last)}</span>}
         </>
       }
       end={<Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />}

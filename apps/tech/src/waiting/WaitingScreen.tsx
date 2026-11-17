@@ -14,7 +14,6 @@ import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { Icon } from "@maneman/ui/Icon";
 import { useState } from "react";
-import { NoSignal } from "../frame/Banners.tsx";
 import { CardFrame } from "../frame/CardFrame.tsx";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../content.ts";
@@ -190,8 +189,6 @@ export function WaitingScreen() {
       sub={jobs.length === 0 ? copy.noneWaiting : copy.jobsWaiting(jobs.length)}
       foot={null}
     >
-      {offline && <NoSignal />}
-
       {jobs.length === 0 ? (
         <AllSent />
       ) : (

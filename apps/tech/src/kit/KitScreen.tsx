@@ -11,7 +11,6 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useState } from "react";
 import { api, type Kit } from "../api.ts";
-import { NoSignal } from "../frame/Banners.tsx";
 import { ReachOps } from "../frame/ReachOps.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
@@ -204,7 +203,6 @@ export function KitScreen() {
         </div>
         <SyncLabel />
       </header>
-      {offline && <NoSignal />}
       {kit === null && loaded.state === "loading" && <Loading onPaper />}
       {kit === null && loaded.state === "failed" && (
         <Failed message={copy.failed} retry={copy.retry} onRetry={retry} requestId={loaded.requestId} onPaper />

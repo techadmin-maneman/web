@@ -227,8 +227,9 @@ test("a frame the phone has no room for can be taken again, and the phone says i
   });
   await capture.click();
   await expect(page.getByText(techCopy.capture.missed)).toBeVisible();
-  // Said over the screen, and on the camera's own red bar.
-  await expect(page.getByText(techCopy.storage.title)).toHaveCount(2);
+  // Said once, on the camera's own red bar, in its words: the line every other screen shows steps aside here.
+  await expect(page.getByText(techCopy.storage.camera)).toHaveCount(1);
+  await expect(page.getByText(techCopy.storage.bar)).toHaveCount(0);
   await expect(page.getByText(techCopy.capture.unavailableTitle)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 
@@ -238,7 +239,7 @@ test("a frame the phone has no room for can be taken again, and the phone says i
   });
   await capture.click();
   await expect(page.getByText(shots(1), { exact: true })).toBeVisible();
-  await expect(page.getByText(techCopy.storage.title)).toHaveCount(0);
+  await expect(page.getByText(techCopy.storage.camera)).toHaveCount(0);
 });
 
 test("a camera the phone refused can be asked for again", async ({ page }) => {

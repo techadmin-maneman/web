@@ -9,6 +9,8 @@
   --tech-min: var(--sp-48); /* nothing under this: the initials chip, Retry */
   --copy-target: var(--tech-min); /* an error's reference, copied (packages/ui/error-ref.module.css) */
   --tech-time: 76px; /* the time column down the left of a job row, "12:30 pm" on one line */
+  /* Today's time column: the prototype's 68 px at its 15 px, in em so it grows with a larger text size. */
+  --tech-time-today: 4.6em;
   --tech-mark: var(--sp-28); /* the mark at the head of Today */
   --tech-box: var(--sp-36); /* a checklist item's box */
   --fs-timer: var(--fs-56); /* the wait timer's count, the technician app's one large number */

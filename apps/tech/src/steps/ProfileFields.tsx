@@ -62,6 +62,7 @@ export function Chips<T extends string | number>({
               key={option.id}
               asRadio={!many}
               className={styles.chip}
+              filled
               pressed={on}
               onClick={() => {
                 onChoose(option.id);

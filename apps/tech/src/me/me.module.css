@@ -90,8 +90,8 @@
 }
 
 /* A row's words on the gutter's line, as the heading's: the row's own padding taken back from the margin. */
+/* The rows on the gutter's line, their rules gutter to gutter, as the prototype draws them. */
 .rows {
-  margin: 0 calc(var(--sp-16) * -1);
   border-top: var(--hairline) solid var(--ui-line);
   border-bottom: var(--hairline) solid var(--ui-line);
 }
