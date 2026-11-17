@@ -12,6 +12,8 @@
 .picture {
   grid-area: picture;
   width: 100%;
+  max-width: var(--result-picture-max);
+  justify-self: end;
 }
 .controls {
   grid-area: controls;
@@ -34,11 +36,11 @@
   }
 }
 
-/* The pair at its photographs' own shape, not the teaser's band: two classes, so it wins over the band's height. */
+/* The pair at its photographs' own 4:5, uncropped, not the teaser's band: two classes, so it wins over the band's
+   height. */
 .picture .compare {
   height: auto;
-  aspect-ratio: 638 / 788;
-  max-height: var(--result-picture-max-h);
+  aspect-ratio: 4 / 5;
 }
 
 .words {

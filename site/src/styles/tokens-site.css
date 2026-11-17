@@ -214,7 +214,7 @@
   --flow-lead: clamp(15px, calc(14.26px + 0.19vw), 17px);
   --flow-mark: var(--sp-64); /* the done screens' ringed tick */
   --flow-done-title: clamp(30px, calc(26.29px + 0.952vw), 40px); /* the day booked */
-  --flow-done-max: var(--result-picture-max-h); /* a laptop's confirmation panel, 680 px */
+  --flow-done-max: 680px; /* a laptop's confirmation panel */
   --flow-action-min: 240px; /* a laptop's step button, at its narrowest */
 }
 
@@ -299,7 +299,7 @@
   --hero-actions-gap: clamp(24px, calc(19.54px + 1.143vw), 36px); /* the words to the buttons */
 
   /* The results' before and after at its tallest. */
-  --result-picture-max-h: 680px; /* a laptop's result at its tallest, as the board draws it */
+  --result-picture-max: 540px; /* a result's pair at its widest, at its photographs' own 4:5 */
 
   --comparison-label-w: var(
     --stage-min
