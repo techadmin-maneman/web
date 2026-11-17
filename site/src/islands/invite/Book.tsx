@@ -5,6 +5,7 @@
 // docs/decisions/0116-book-asks-for-the-name-and-number-first.md), in the client app's frame on a phone, with a bar of
 // the four steps (FlowFrame.tsx, ADR 0265). Outside production, ?state= opens each state directly (preview.ts).
 
+import { hiddenOnPhoneLook } from "@maneman/ui/VisuallyHidden";
 import { booking } from "../../content/site.ts";
 import type { PincodeAnswer } from "../../lib/api.ts";
 import { IslandBoundary } from "../IslandBoundary.tsx";
@@ -66,7 +67,7 @@ function BookPage(props: Props) {
   return (
     <Arrival top={<FlowTop onBack={back} />} how="laptop">
       <FlowSteps at={stepAt(first, answer, step)} onBack={back} />
-      <h1 ref={page.heading} tabIndex={-1} class={titled ? styles.title : `${styles.title ?? ""} ${styles.titlePast ?? ""}`}>
+      <h1 ref={page.heading} tabIndex={-1} class={titled ? styles.title : `${styles.title ?? ""} ${hiddenOnPhoneLook ?? ""}`}>
         {bookingTitle(answer, plan)}
       </h1>
       {/* Past the first step a phone goes straight to the form; the headline stays to say what it books. */}

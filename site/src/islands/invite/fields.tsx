@@ -9,6 +9,7 @@ import { useEffect, useRef } from "preact/hooks";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { NoticeLine } from "@maneman/ui/NoticeLine";
+import { hiddenOnPhoneLook } from "@maneman/ui/VisuallyHidden";
 import { ICONS } from "@maneman/brand/icons";
 import { referral } from "../../content/referral.ts";
 import { booking, whatsapp, type NoticeWords } from "../../content/site.ts";
@@ -251,7 +252,7 @@ export function StepLine(props: { at: number; name: string; focus: boolean }) {
     line.current?.scrollIntoView({ block: "start" });
   }, [props.focus]);
   return (
-    <p ref={line} tabIndex={-1} data-says-where class={shared.stepLine}>
+    <p ref={line} tabIndex={-1} data-says-where class={`${shared.stepLine ?? ""} ${hiddenOnPhoneLook ?? ""}`}>
       {fill(booking.step, { at: String(props.at), name: props.name })}
     </p>
   );

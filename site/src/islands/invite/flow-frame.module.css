@@ -17,6 +17,17 @@
   color: var(--site-navy);
 }
 
+/* The way out, a link to the site the size of the way back. */
+.topLink {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  color: var(--site-navy);
+}
+
 .topTitle {
   flex: 1;
   min-width: 0;

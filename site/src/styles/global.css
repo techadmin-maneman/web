@@ -103,11 +103,9 @@
 
 /* ---- Layout ------------------------------------------------------------- */
 
-/* A laptop's flow has no footer, so while the cookie bar asks its form keeps the bar's room beneath it. */
-@media (min-width: 761px) {
-  .in-flow main {
-    padding-bottom: var(--consent-reserve);
-  }
+/* A flow has no footer of its own, so while the cookie bar asks its form keeps the bar's room beneath it. */
+.in-flow main {
+  padding-bottom: var(--consent-reserve);
 }
 
 .container {

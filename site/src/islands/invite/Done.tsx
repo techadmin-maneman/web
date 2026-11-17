@@ -9,7 +9,7 @@ import { indiaClock, indiaTimeOf } from "@maneman/web-kit/dates";
 import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
-import { textLinkLook } from "@maneman/ui/TextLink";
+import { TextLink } from "@maneman/ui/TextLink";
 import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
 import { windowSpan } from "@rules/config/scheduling.ts";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
@@ -175,9 +175,9 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
           </ButtonLink>
           {/* A phone's way back beneath the gold, in words, as the board draws it. */}
           {app !== null && (
-            <a class={textLinkLook({ tone: "ink", quiet: true, className: styles.backPhone })} href="/">
+            <TextLink tone="ink" quiet className={styles.backPhone} href="/">
               {referral.booked.back}
-            </a>
+            </TextLink>
           )}
         </div>
       </div>

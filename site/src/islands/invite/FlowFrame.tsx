@@ -5,9 +5,9 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
-import { IconButton, iconButtonLook } from "@maneman/ui/IconButton";
+import { IconButton } from "@maneman/ui/IconButton";
 import { StepProgress } from "@maneman/ui/Progress";
-import { textLinkLook } from "@maneman/ui/TextLink";
+import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { header, tryOn } from "../../content/site.ts";
 import styles from "./flow-frame.module.css";
 
@@ -22,9 +22,9 @@ export function FlowTop(props: { onBack: (() => void) | null }) {
         <IconButton className={styles.topButton} d={ICONS.back} size="md" label={tryOn.back} onClick={props.onBack} />
       )}
       <p class={styles.topTitle}>{header.bookShort}</p>
-      <a class={iconButtonLook(styles.topButton)} href="/" aria-label={tryOn.backToSite}>
+      <TextLink quiet className={styles.topLink} href="/" aria-label={tryOn.backToSite}>
         <Icon d={ICONS.cross} size="md" />
-      </a>
+      </TextLink>
     </div>
   );
 }
@@ -34,10 +34,10 @@ export function FlowSteps(props: { at: number; onBack: (() => void) | null }) {
   return (
     <div class={styles.steps}>
       {props.onBack !== null && (
-        <button type="button" class={textLinkLook({ quiet: true, className: styles.back })} onClick={props.onBack}>
+        <TextButton quiet className={styles.back} onClick={props.onBack}>
           <Icon d={ICONS.back} size="sm" />
           {tryOn.back}
-        </button>
+        </TextButton>
       )}
       <StepProgress
         className={styles.bar}

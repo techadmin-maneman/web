@@ -471,7 +471,13 @@ test("the pincode’s answer is announced, and the pincode can be changed", asyn
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
-  await expect(page.getByText(`For ${SERVED.pincode}`)).toBeVisible();
+  // The pincode the form is for: a phone's in the banner, beside its Change; a laptop's beneath it (ADR 0265).
+  if ((page.viewportSize()?.width ?? 0) <= 760) {
+    await expect(page.getByRole("heading", { name: `We come to Sector 65, ${SERVED.pincode}` })).toBeVisible();
+  } else {
+    await expect(page.getByText(`For ${SERVED.pincode}`)).toBeVisible();
+  }
+  await expect(page.getByRole("button", { name: referralCopy.referral.pincode.changeLabel })).toBeVisible();
   await expect(page.getByRole("button", { name: referralCopy.referral.consultation.submit })).toBeVisible();
 });
 
@@ -669,7 +675,10 @@ test("a booking sends the details to WhatsApp, and opens the app with the number
   await expect(
     page.getByText("Your technician arrives in those hours. Details are on WhatsApp at +91 98100 00000."),
   ).toBeVisible();
-  await expect(page.getByText(referralCopy.referral.booked.appHint)).toBeVisible();
+  // A laptop says where else the booking shows; a phone's Open the app says it in its place (ADR 0265).
+  const appHint = page.getByText(referralCopy.referral.booked.appHint);
+  if ((page.viewportSize()?.width ?? 0) <= 760) await expect(appHint).toBeHidden();
+  else await expect(appHint).toBeVisible();
   await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
   const ownBack = page.locator("main").getByRole("link", { name: referralCopy.referral.booked.back });
   await expect(ownBack).toHaveAttribute("href", "/");
@@ -708,9 +717,10 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   const plan = page.getByRole("group", { name: referralCopy.referral.consultation.plan.legend });
   await expect(plan.getByRole("radio", { name: "Consultation · 60 minutes" })).toBeChecked();
   await plan.getByRole("radio", { name: "Consultation and fit · 3 hours" }).check();
-  await expect(
-    plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./),
-  ).toBeVisible();
+  await expect(plan.getByText(referralCopy.referral.consultation.plan.oneVisitNote)).toBeVisible();
+  const when = plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./);
+  if ((page.viewportSize()?.width ?? 0) <= 760) await expect(when).toBeHidden();
+  else await expect(when).toBeVisible();
   // The form's heading follows what it books.
   await expect(
     page.getByRole("heading", { level: 2, name: referralCopy.referral.consultation.titleOneVisit }),
@@ -782,7 +792,8 @@ test("on a phone the pincode comes before how it works, on the first screen", as
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   const pincode = await page.getByLabel(referralCopy.referral.pincode.label).boundingBox();
-  const steps = await page.getByRole("heading", { name: siteCopy.howItWorks.title }).boundingBox();
+  // How it works folds on a phone, below the form (ADR 0265).
+  const steps = await page.locator("summary", { hasText: siteCopy.howItWorks.title }).boundingBox();
   expect(pincode).not.toBeNull();
   expect(steps).not.toBeNull();
   expect(pincode?.y ?? 0).toBeLessThan(steps?.y ?? 0);

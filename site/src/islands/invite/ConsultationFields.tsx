@@ -14,6 +14,7 @@ import type { OpenWindows } from "../../lib/api.ts";
 import { stripMonths, type StripDay } from "../../lib/dates.ts";
 import { dayOpen, hoursOn, isOpen, startsIn, type OpenDays, type Slot } from "../../lib/open-windows.ts";
 import { TimeChoice } from "@maneman/ui/TimeChoice";
+import { hiddenOnPhoneLook } from "@maneman/ui/VisuallyHidden";
 import { dayClock } from "@maneman/web-kit/dates";
 import shared from "./Invite.module.css";
 import styles from "./consultation-fields.module.css";
@@ -30,7 +31,7 @@ type WindowOption = (typeof consultation.windows)[number];
 export function PlanChoice({ plan, onPlanChange }: { plan: Plan; onPlanChange: (plan: Plan) => void }) {
   const choices = consultation.plan;
   return (
-    <Fieldset legend={choices.legend} legendLook="caps" className={shared.quietLegend}>
+    <Fieldset legend={<span class={hiddenOnPhoneLook}>{choices.legend}</span>} legendLook="caps">
       <div class={styles.windows}>
         {choices.options.map((option) => (
           <ChoiceCard

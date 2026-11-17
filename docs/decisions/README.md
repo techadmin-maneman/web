@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0269. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0270. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -263,6 +263,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0264](0264-the-hero-restyled.md) The hero, restyled
 - [0265](0265-book-and-try-on-the-client-apps-look.md) `/book` and `/try` on the client app's look
 - [0266](0266-the-sites-header-book-and-focus-ring.md) The site's header Book and focus ring
+- [0269](0269-the-one-visits-note-on-book.md) The one visit's note on `/book`
 
 ### The ops console
 
@@ -568,7 +569,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0262](0262-the-sites-typeface-and-palette.md) | The site's typeface and palette | 2026-11-17 | accepted | [0266](0266-the-sites-header-book-and-focus-ring.md) |
 | [0263](0263-the-home-pages-order-and-bands.md) | The home page's order and bands | 2026-11-17 | accepted |  |
 | [0264](0264-the-hero-restyled.md) | The hero, restyled | 2026-11-17 | accepted |  |
-| [0265](0265-book-and-try-on-the-client-apps-look.md) | `/book` and `/try` on the client app's look | 2026-11-17 | accepted |  |
+| [0265](0265-book-and-try-on-the-client-apps-look.md) | `/book` and `/try` on the client app's look | 2026-11-17 | accepted | [0269](0269-the-one-visits-note-on-book.md) |
 | [0266](0266-the-sites-header-book-and-focus-ring.md) | The site's header Book and focus ring | 2026-11-17 | accepted |  |
 | [0267](0267-the-technician-design-check.md) | The technician app's design check | 2026-11-17 | accepted | [0268](0268-the-visits-design-check.md) |
 | [0268](0268-the-visits-design-check.md) | The visit's design check | 2026-11-17 | accepted |  |
+| [0269](0269-the-one-visits-note-on-book.md) | The one visit's note on `/book` | 2026-11-17 | accepted |  |

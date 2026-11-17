@@ -1,4 +1,4 @@
-import { DisclosureSign, ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
+import { Disclosure } from "@maneman/ui/Disclosure";
 import { referral } from "../../content/referral.ts";
 import styles from "./Invite.module.css";
 
@@ -35,13 +35,9 @@ export function HowItWorks(props: { on: "both" | "laptop" | "phone" }) {
         </div>
       )}
       {props.on !== "laptop" && (
-        <details class={`${ruled.details} ${styles.howFold ?? ""}`}>
-          <summary class={`${ruled.summary} ${styles.howSummary ?? ""}`}>
-            <span>{title}</span>
-            <DisclosureSign />
-          </summary>
+        <Disclosure look="ruled" summary={title} className={styles.howFold} summaryClassName={styles.howSummary ?? ""}>
           <Steps />
-        </details>
+        </Disclosure>
       )}
     </>
   );

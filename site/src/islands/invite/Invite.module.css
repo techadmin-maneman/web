@@ -380,7 +380,8 @@
    booking holds its own; the line above it says what went wrong. */
 .send {
   position: sticky;
-  bottom: 0;
+  /* Above the cookie bar while it asks (components/ConsentBar.astro). */
+  bottom: var(--consent-reserve);
   z-index: var(--z-raised);
   margin-inline: calc(-1 * var(--gutter));
   padding: var(--sp-12) var(--gutter) calc(var(--sp-16) + var(--site-safe-bottom));
@@ -392,22 +393,9 @@
   margin-top: var(--sp-12);
 }
 
-/* ---- A phone: the shorter steps (ADR 0265) --------------------------------------- */
+/* ---- A phone: the shorter steps --------------------------------------------------- */
 
 @media (max-width: 760px) {
-  /* Past the first step the title and intro give way to the step, the title kept for a screen reader. */
-  .titlePast,
-  .stepLine {
-    position: absolute;
-    width: var(--hairline);
-    height: var(--hairline);
-    margin: calc(-1 * var(--hairline));
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
   /* What follows a line kept for a screen reader alone, or a step's head with nothing else a phone shows, starts
      where the step bar leaves off. */
   .stepLine + *,
@@ -420,16 +408,6 @@
   .panelPast,
   .forPincodeWide {
     display: none;
-  }
-
-  /* What a group asks is said by the step's banner and its choices; a screen reader still hears it. */
-  .quietLegend > legend {
-    position: absolute;
-    width: var(--hairline);
-    height: var(--hairline);
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 }
 

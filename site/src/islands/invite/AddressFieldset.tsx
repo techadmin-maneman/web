@@ -5,6 +5,7 @@
 // until asked for, beneath the flat.
 
 import { Fieldset } from "@maneman/ui/Field";
+import { hiddenOnPhoneLook } from "@maneman/ui/VisuallyHidden";
 import { AddressFields } from "@maneman/ui/AddressFields";
 import { AddressSearch } from "@maneman/ui/AddressSearch";
 import { areaOfSuggestion, type AddressPart } from "@maneman/web-kit/address";
@@ -53,7 +54,7 @@ export function AddressFieldset(props: {
   }, [unfolded, idPrefix]);
 
   return (
-    <Fieldset legend={copy.legend} legendLook="caps" className={styles.quietLegend}>
+    <Fieldset legend={<span class={hiddenOnPhoneLook}>{copy.legend}</span>} legendLook="caps">
       <div class={styles.fields}>
         <AddressSearch
           value={address.building}
