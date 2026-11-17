@@ -1,32 +1,40 @@
-.page {
-  max-width: var(--measure-column);
-  margin: 0 auto;
-  padding: var(--page-pad-top) var(--gutter) var(--section-gap);
-  min-height: calc(100dvh - var(--site-header-h));
-}
+/* /stop's screens, each in a short page of text's column (.text-page in styles/global.css). */
 
 .page h1:focus {
   outline: none;
 }
 
-.body {
-  margin: var(--sp-24) 0 var(--sp-32);
-}
-
-.note {
-  font-size: var(--fs-lead);
-  line-height: var(--lh-160);
+.note,
+.expired {
+  font-size: var(--site-fs-article);
+  line-height: var(--lh-155);
   text-wrap: pretty;
 }
 
-/* In the sentence's own colour, so underlined to be seen as a link. */
+.note {
+  margin: var(--sp-16) 0 0;
+}
+
+.expired {
+  margin: var(--sp-12) 0 0;
+}
+
+/* The number, kept on one line. */
 .page a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: var(--sp-4);
   white-space: nowrap;
 }
 
+.stop {
+  margin-top: var(--sp-24);
+}
+
 .failure {
-  margin-top: var(--sp-16);
+  margin-top: var(--sp-12);
+}
+
+/* Across a phone; on a laptop, as wide as its words. */
+@media (min-width: 761px) {
+  .stop {
+    width: fit-content;
+  }
 }

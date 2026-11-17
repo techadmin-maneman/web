@@ -4,7 +4,7 @@ import { expect, test } from "./support.ts";
 import * as guideCopy from "../site/src/content/guides.ts";
 import { placeholderTag } from "../site/src/content/site.ts";
 
-test("lists every guide, and each opens with its title and a way to book", async ({ page }) => {
+test("lists every guide, and each opens with its title, the way back and a way to book", async ({ page }) => {
   await page.goto("/guides");
   await expect(page.getByRole("heading", { level: 1, name: guideCopy.guidesPage.title })).toBeVisible();
   const [first] = guideCopy.guides;
@@ -14,6 +14,7 @@ test("lists every guide, and each opens with its title and a way to book", async
   await page.getByRole("link", { name: first.title }).click();
   await expect(page).toHaveURL(new RegExp(`/guides/${first.slug}$`));
   await expect(page.getByRole("heading", { level: 1, name: first.title })).toBeVisible();
+  await expect(page.getByRole("link", { name: guideCopy.guidesPage.all })).toHaveAttribute("href", "/guides");
   // Approved, so no draft tag.
   await expect(page.getByText(placeholderTag, { exact: true })).toHaveCount(0);
   for (const section of first.sections)
@@ -77,6 +78,7 @@ test("each city has a page of its own, linked from /areas, its areas left for th
     .click();
   await expect(page).toHaveURL(/\/areas\/gurgaon$/);
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  await expect(page.getByRole("link", { name: guideCopy.areasPage.all })).toHaveAttribute("href", "/areas");
   await expect(page.locator("[data-city-areas]")).toBeHidden();
   await expect(page.getByRole("link", { name: guideCopy.cityPage.check })).toHaveAttribute("href", "/book");
   await expect(

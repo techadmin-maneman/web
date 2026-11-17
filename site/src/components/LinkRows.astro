@@ -1,0 +1,100 @@
+---
+// Rows that each open a page, between hairlines, a chevron at the end: the guides' list, the cities, and beneath a guide
+// or a city the others. In the guides' list each name is larger, in navy, with a line beneath it; a row underlines only
+// its name when pointed at.
+import { textLinkLook } from "@maneman/ui/TextLink";
+import Icon from "./Icon.astro";
+
+interface Row {
+  href: string;
+  title: string;
+  /** The line beneath the name, in the guides' list. */
+  summary?: string;
+  /** The city a row names, which the site's Worker hides where it serves no one. */
+  city?: string;
+}
+
+interface Props {
+  rows: readonly Row[];
+  /**
+   * The guides' list, its names larger and in navy, each over its summary, ruled above the first; the cities, a step
+   * larger than the page's words; or, beneath a guide or a city, the others, closer together.
+   */
+  look?: "guides" | "cities" | "others";
+}
+
+const { rows, look = "others" } = Astro.props;
+---
+
+<ul class:list={["rows", look]}>
+  {rows.map((row) => (
+    <li data-city={row.city}>
+      <a class={textLinkLook({ quiet: true, className: "row" })} href={row.href}>
+        <span class="words">
+          <span class="name">{row.title}</span>
+          {row.summary !== undefined && <span class="summary">{row.summary}</span>}
+        </span>
+        <Icon name="chevron" size="sm" class="chevron" />
+      </a>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .guides {
+    margin-top: var(--sp-28);
+    border-top: var(--hairline) solid var(--site-line);
+  }
+  .cities {
+    font-size: var(--fs-17);
+  }
+  .row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: var(--sp-12);
+    padding: var(--sp-16) 0;
+    border-bottom: var(--hairline) solid var(--site-line);
+    line-height: var(--lh-155);
+    text-decoration-line: none;
+  }
+  .guides .row {
+    align-items: flex-start;
+  }
+  .others .row {
+    padding: var(--sp-12) 0;
+  }
+  .words {
+    flex: 1;
+    min-width: 0;
+  }
+  .name,
+  .summary {
+    display: block;
+  }
+  .guides .name {
+    font-size: var(--site-fs-guide-title);
+    font-weight: var(--weight-semibold);
+    color: var(--site-navy);
+  }
+  .summary {
+    margin-top: var(--sp-4);
+    font-size: var(--fs-15);
+    color: var(--site-text-muted);
+  }
+  .chevron {
+    flex-shrink: 0;
+    color: var(--site-chevron);
+  }
+  @media (hover: hover) {
+    .row:hover .name {
+      text-decoration-line: underline;
+      text-underline-offset: var(--sp-4);
+    }
+  }
+</style>

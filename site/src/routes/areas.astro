@@ -3,7 +3,7 @@
 // once its wording is shown (site/astro.config.ts): for staging under the design's "Placeholder" tag until it is
 // approved, for production then.
 import { buttonLook } from "@maneman/ui/Button";
-import { textLinkLook } from "@maneman/ui/TextLink";
+import LinkRows from "../components/LinkRows.astro";
 import { areasPage, cityPage, guidesPage } from "../content/guides.ts";
 import { business } from "../content/site.ts";
 import TextPage from "../layouts/TextPage.astro";
@@ -23,45 +23,54 @@ const trail = [
   description={areasPage.description}
   title={areasPage.title}
   publish={areasPage.publish}
+  short
   structuredData={[breadcrumbs(trail)]}
 >
-  <p slot="lead" class="lead" data-cities={areasPage.cities}>
+  <p slot="lead" class="page-lede" data-cities={areasPage.cities}>
     {areasPage.lead}
   </p>
-  <p>{areasPage.streets}</p>
-  <p>{areasPage.next}</p>
+  <p class="streets">{areasPage.streets}</p>
+  <p class="next">{areasPage.next}</p>
   <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
     {areasPage.check}
   </a>
   {isShown(cityPage) && (
     <nav class="cities" aria-labelledby="city-pages">
-      <h2 id="city-pages">{areasPage.cityPages}</h2>
-      <ul>
-        {business.areaServed.map((city) => (
-          <li data-city={city}>
-            <a class={textLinkLook({ inline: true })} href={`/areas/${citySlug(city)}`}>
-              {fill(cityPage.title, { city })}
-            </a>
-          </li>
-        ))}
-      </ul>
+      <h2 id="city-pages" class="list-head">
+        {areasPage.cityPages}
+      </h2>
+      <LinkRows
+        look="cities"
+        rows={business.areaServed.map((city) => ({
+          href: `/areas/${citySlug(city)}`,
+          title: fill(cityPage.title, { city }),
+          city,
+        }))}
+      />
     </nav>
   )}
 </TextPage>
 
 <style>
+  .streets {
+    margin: var(--site-gap-near) 0 0;
+  }
+  .next {
+    margin: var(--site-gap-page-lede) 0 0;
+  }
   .book {
-    margin-top: var(--sp-48);
+    margin-top: var(--sp-24);
   }
   .cities {
-    margin-top: var(--sp-48);
+    margin-top: var(--sp-40);
   }
-  .cities ul {
-    margin: var(--sp-16) 0 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: var(--sp-12);
-    font-size: var(--fs-lead);
+  .cities .list-head {
+    margin-top: 0;
+  }
+  /* Across a phone; on a laptop, as wide as its words. */
+  @media (min-width: 761px) {
+    .book {
+      width: fit-content;
+    }
   }
 </style>

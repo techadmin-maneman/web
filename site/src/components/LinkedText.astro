@@ -20,7 +20,7 @@ const pieces = text.split(GUARANTEE_HOLE);
     {index > 0 && <span data-guarantee-days>{legalDays(GUARANTEE_DAYS)}</span>}
     {withLinks(piece).map((part) =>
       "href" in part ? (
-        <a class={textLinkLook({ inline: true })} href={part.href}>
+        <a class={textLinkLook({ tone: "strong", inline: true })} href={part.href}>
           {part.text}
         </a>
       ) : (

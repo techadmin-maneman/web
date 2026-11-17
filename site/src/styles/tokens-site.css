@@ -94,6 +94,25 @@
   --site-lockup-header: 30px;
   --site-lockup-footer: var(--sp-36);
   --site-lockup-slim: 34px;
+
+  /* ---- The pages of text: the guides, the cities, the policies, the notices, /stop and the 404 ---- */
+  --site-fs-page-title: clamp(30px, calc(24.8px + 1.333vw), 44px);
+  --site-lh-page-title: 1.12;
+  --site-tracking-page-title: -0.5px;
+  --site-fs-page-lede: clamp(17px, calc(16.26px + 0.19vw), 19px);
+  --site-fs-article: clamp(16px, calc(15.63px + 0.0952vw), 17px); /* a guide's or a policy's words */
+  --site-fs-article-head: var(--site-fs-caption); /* its sections' headings, 20 to 24 */
+  --site-fs-guide-title: clamp(18px, calc(16.51px + 0.381vw), 22px); /* a guide's name in the list of them */
+  --site-measure-text: 720px; /* a guide's, a policy's or the notices' words */
+  --site-measure-short: 640px; /* the cities, /stop and the 404 */
+  --site-gap-page-lede: 10px; /* a page's title to its lede, one short paragraph to the next, an area's row */
+  --site-gap-near: 18px; /* a guide's way back to its title; a policy's title to its version */
+  --site-gap-paragraph: 14px; /* a paragraph to the next */
+  --site-space-6: 6px; /* a list's heading to the navy rule beneath it; a guide's contents, one line to the next */
+  --site-clause-number: var(--tap); /* a policy's clause numbers, in a column of their own: 44 px */
+  --site-version-label: 180px; /* a policy's version table: its names' column */
+  --site-foot-gap: clamp(56px, calc(35.2px + 5.333vw), 112px); /* a page's last words to its footer */
+  --site-chevron: var(--stone); /* a row that opens a page; the boards' paler grey, at the apps' chevron colour */
 }
 
 @media (min-width: 761px) {
@@ -264,8 +283,8 @@
   --space-3xl: clamp(48px, 7vw, 88px);
 
   /* ---- Page frame -------------------------------------------------------- */
-  /* The top of a page of text, the try-on's and the 404. */
-  --page-pad-top: clamp(40px, 6vw, 88px);
+  /* The top of a page of text, /stop's and the 404's, beneath the header. */
+  --page-pad-top: clamp(28px, calc(14.63px + 3.429vw), 64px);
   --page-max: var(--site-column); /* the column, its gutters inside it: 1120 px of words at 1440, as the boards' wrap */
   --gutter: var(--site-gutter);
   --bar-h: calc(
@@ -273,7 +292,6 @@
   ); /* the phone's sticky bar */
   --bar-reserve: var(--sp-72); /* the space the home page keeps for the sticky bar */
   --foot-bar-h: var(--site-none); /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
-  --section-gap: var(--site-section-y);
   --split-min: 300px;
   --split-min-mid: 340px;
   --split-min-wide: 360px;

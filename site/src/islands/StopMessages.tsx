@@ -25,7 +25,7 @@ function WithChatLink(props: { text: string }) {
       {parts.map((part, index) => (
         <Fragment key={index}>
           {index > 0 && (
-            <TextLink href={whatsappChat(whatsapp.number)} inline>
+            <TextLink href={whatsappChat(whatsapp.number)} tone="strong" inline>
               {whatsapp.display}
             </TextLink>
           )}
@@ -71,11 +71,11 @@ export default function StopMessages() {
 
   if (screen.kind === "done") {
     return (
-      <section class={styles.page}>
-        <h1 ref={heading} tabIndex={-1} class="section-title">
+      <section class={`text-page short ${styles.page}`}>
+        <h1 ref={heading} tabIndex={-1} class="page-title">
           {words.done.title}
         </h1>
-        <p class={`lead ${styles.body}`}>{words.done[screen.purpose]}</p>
+        <p class="page-lede">{words.done[screen.purpose]}</p>
         <p class={styles.note}>
           <WithChatLink text={words.done.again} />
         </p>
@@ -85,11 +85,11 @@ export default function StopMessages() {
 
   if (screen.kind === "expired") {
     return (
-      <section class={styles.page}>
-        <h1 ref={heading} tabIndex={-1} class="section-title">
+      <section class={`text-page short ${styles.page}`}>
+        <h1 ref={heading} tabIndex={-1} class="page-title">
           {words.expired.title}
         </h1>
-        <p class={`lead ${styles.body}`}>
+        <p class={styles.expired}>
           <WithChatLink text={words.expired.body} />
         </p>
       </section>
@@ -97,12 +97,13 @@ export default function StopMessages() {
   }
 
   return (
-    <section class={styles.page}>
-      <h1 class="section-title">{words.ask.title}</h1>
-      <p class={`lead ${styles.body}`}>{words.ask.body}</p>
+    <section class={`text-page short ${styles.page}`}>
+      <h1 class="page-title">{words.ask.title}</h1>
+      <p class="page-lede">{words.ask.body}</p>
       <Button
         variant="primary"
         size="action"
+        className={styles.stop}
         aria-disabled={screen.busy}
         onClick={() => {
           void stop();

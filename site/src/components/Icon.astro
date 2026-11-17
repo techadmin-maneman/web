@@ -3,6 +3,7 @@
 // shared Icon draws it in the islands and the apps.
 import {
   CLIENT_ICONS,
+  GLYPHS,
   ICON_SIZES,
   ICON_STROKES,
   ICONS,
@@ -11,7 +12,7 @@ import {
   type IconWeight,
 } from "@maneman/brand/icons";
 
-const PATHS = { ...ICONS, ...SOCIAL_ICONS, user: CLIENT_ICONS.user };
+const PATHS = { ...ICONS, ...SOCIAL_ICONS, user: CLIENT_ICONS.user, chevron: GLYPHS.chevron };
 
 interface Props {
   name: keyof typeof PATHS;

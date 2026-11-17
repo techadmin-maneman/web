@@ -139,6 +139,8 @@ A test asserts the set of files in `site/src/assets` is unchanged by the redesig
 5. `referral.consultation.plan.oneVisitNote`: "Paid through a Razorpay link once you're fitted. Decide against it and
    you pay nothing." marked `PLACEHOLDER` for the owner's wording.
 6. Durations are the live sentences with the console's lengths.
+7. `guidesPage.all` "All guides" and `areasPage.all` "All areas": the way back above a guide's and a city's title,
+   in the boards' words.
 
 **Not in the brief's copy list, but named in its Header section:** "Sign in", the header's link to the client app
 (`header.signIn`). The only missing string; the brief gives its words, so it is not marked `PLACEHOLDER`.
@@ -170,6 +172,10 @@ The flow frame's other words are live strings, reused by key: "Free consultation
    screen still links both, as the owner asked on 17 November 2026 (`e2e/legal-links.e2e.ts`).
 10. **A button not usable yet** keeps the client app's look, a pale ground with muted words, where the boards draw it
     stone with white words (ADR 0265: the flows take the client app's look values).
+11. **A policy's clause numbers** keep counsel's own form, "1.1." and "(a)", where the boards drop the last full stop.
+12. **A row's chevron** is stone, the apps' chevron colour, where the boards draw a paler grey.
+13. **A link in a policy's sentence** takes the sentence's colour, underlined in it, where the boards draw it navy.
+14. **The way back above a guide or a city** is a thumb's height to tap; its words sit where the boards' do.
 
 ## How each PR is verified
 
