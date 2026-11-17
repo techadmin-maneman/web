@@ -35,6 +35,8 @@ const PAIRINGS: readonly Pairing[] = [
   { text: "--ink-tag", ground: "--ink-disabled", where: "an action not usable yet" },
   { text: "--ink-soft", ground: "--ink-frame", where: "the capture guide, an angle not taken yet" },
   { text: "--paper", ground: "--ink-raised", where: "an angle taken, a chosen outcome" },
+  // The shared parts' words light on the ink (packages/brand/tokens.css), the paper in the apps.
+  { text: "--on-ink", ground: "--ink-deep", where: "an onInk field's and an outline's words" },
 ];
 
 /**
