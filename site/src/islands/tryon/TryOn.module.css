@@ -37,7 +37,6 @@
   line-height: var(--lh-115);
   letter-spacing: var(--tracking-heading);
   color: var(--site-navy);
-  text-wrap: balance;
 }
 
 .title:focus,
