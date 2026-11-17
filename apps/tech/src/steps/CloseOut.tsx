@@ -12,10 +12,10 @@ import type { Job, JobSummary } from "../api.ts";
 import { badges, closeOut as copy, titles } from "../content.ts";
 import { kindNameLower } from "../lib/kind.ts";
 import { arrivedAt, declinedTheFit, fitBookedLater, outcomeOf, type Outcome } from "../lib/progress.ts";
-import { useDay, useJob, useNames } from "../lib/useDay.ts";
+import { useDay, useJob, useNames, type KeptLoad } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
+import { clock, dayAfter, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
 import { NO_PIECE } from "@rules/policy/in-job-steps.ts";
 import { go } from "../route.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
@@ -33,7 +33,7 @@ import type { Queued } from "../store/outbox.ts";
 import { classes } from "@maneman/ui/classes";
 import frame from "../frame/frame.module.css";
 import light from "../frame/light.module.css";
-import { FinishTheWork, NavigateNext, NextUp, PaymentLink } from "./ClosedParts.tsx";
+import { DoneForToday, FinishTheWork, NavigateNext, NextUp, PaymentLink } from "./ClosedParts.tsx";
 import shared from "./steps.module.css";
 import styles from "./close-out.module.css";
 import { sayKnown, theirs, useLanguage } from "../lang/index.ts";
@@ -179,7 +179,12 @@ const midLine = (words: string): string =>
  * What the visit came to: the decision, how long it took, its photographs and how it is paid. A consultation's, as the
  * prototype lists them: how long, the photographs, then whether the client goes ahead; it charges nothing here.
  */
-function Rows(props: { job: Job; took: { hours: number; minutes: number } | null; photos: string }) {
+function Rows(props: {
+  job: Job;
+  took: { hours: number; minutes: number } | null;
+  photos: string;
+  piece: string | null;
+}) {
   const consultation = props.job.type === "consultation" && !props.job.one_visit;
   const took =
     props.took === null ? null : <Row name={copy.duration} value={copy.length(props.took.hours, props.took.minutes)} />;
@@ -197,9 +202,40 @@ function Rows(props: { job: Job; took: { hours: number; minutes: number } | null
       <Decided job={props.job} />
       {took}
       <Row name={copy.photos} value={props.photos} />
+      {props.piece !== null && <Row name={copy.hairSystem} value={props.piece} />}
       <Row name={copy.paymentRow} value={badges[props.job.badge]} />
     </dl>
   );
+}
+
+/**
+ * The piece fitted at this visit, by its label: the piece step still on the phone, else the client's newest piece once
+ * it is one fitted on the visit's day or after.
+ */
+function fittedPiece(job: Job, queued: readonly Queued[]): string | null {
+  if (!job.steps.includes("piece")) return null;
+  const sent = queued.find((event) => event.job_id === job.id && event.kind === "piece")?.body as
+    { piece_code?: unknown } | null | undefined;
+  if (typeof sent?.piece_code === "string") return sent.piece_code;
+  const newest = job.pieces?.[0] ?? null;
+  const fittedOn = newest?.fitted_at ?? null;
+  if (newest === null || fittedOn === null) return null;
+  return fittedOn >= job.date ? newest.piece_code : null;
+}
+
+/** Tomorrow's first job, where today has none left: the day after's, earliest first. */
+function firstOf(day: KeptLoad<readonly JobSummary[]>): JobSummary | null {
+  if (day.state !== "loaded") return null;
+  return [...day.value].sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0] ?? null;
+}
+
+/** What comes next: today's next job, or, after the last, that the day is done and tomorrow's first. */
+function WhatsNext({ later, names }: { later: JobSummary | null; names: ReadonlyMap<string, string> }) {
+  const [tomorrow] = useDay(dayAfter(todayInIndia()));
+  if (later !== null)
+    return <NextUp next={later} name={names.get(later.id) ?? later.client_name ?? where(later.sector)} />;
+  const first = firstOf(tomorrow);
+  return first === null ? null : <DoneForToday first={first} />;
 }
 
 /** How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed. */
@@ -271,13 +307,15 @@ export function CloseOut({ id }: { id: string }) {
         <p className={styles.sub}>
           {copy.sub(who, kindNameLower(job), closedAs(job, outcome, waiting.events, notFitted))}
         </p>
-        {outcome === "no_show" ? <Evidence job={job} /> : <Rows job={job} took={took} photos={photos} />}
+        {outcome === "no_show" ? (
+          <Evidence job={job} />
+        ) : (
+          <Rows job={job} took={took} photos={photos} piece={fittedPiece(job, waiting.events)} />
+        )}
         {/* A card the phone kept from before one visits names no link. */}
         {job.one_visit && job.payment_link !== null && <PaymentLink job={job} link={job.payment_link} />}
         {outcome === "partial" && <FinishTheWork job={job} closing={closing} />}
-        {later !== null && (
-          <NextUp next={later} name={names.get(later.id) ?? later.client_name ?? where(later.sector)} />
-        )}
+        <WhatsNext later={later} names={names} />
       </section>
 
       <div className={classes(frame.foot, light.paperFoot, styles.foot)}>

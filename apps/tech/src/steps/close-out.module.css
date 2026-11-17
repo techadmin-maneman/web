@@ -54,6 +54,14 @@
   margin-top: var(--sp-24);
 }
 
+/* Under Finish the work's head, as small as the prototype sets it. */
+.finishAsk {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
 .note,
 .closeNote {
   margin: var(--sp-8) 0 0;

@@ -5,7 +5,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
+import { JOB_ID, jobsToday, ONE_VISIT_CHECKLIST, ROHITS_PIECE, todayInIndia } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { atTheDoor, deviceRecordOnPhone, heldOnPhone, pageScrolls, queuedOnPhone, recordOnPhone } from "./on-phone.ts";
 import { holding, startedThrough, writesTo, brassMarks, throughTheTasks } from "./steps-fixtures.ts";
@@ -525,4 +525,36 @@ test("guides each task with its words, what to watch for, and the client's alert
   await throughTheTasks(page);
   await expect(page.getByText(techCopy.visit.task(3, 3))).toBeVisible();
   await expect(stepAction(page)).toHaveText(techCopy.visit.next("Consumables"));
+});
+
+// A replacement's close named the visit's other facts and never the piece it fitted.
+test("a replacement's close names the hair system fitted at it, by its label", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "replacement";
+  startedThrough(fake, "before_photos", "piece", "checklist", "consumables", "after_photos", "sign_off", "outcome");
+  fake.progress = { ...fake.progress, outcome: "done" };
+  // The client's newest piece, fitted on the visit's day, is this visit's.
+  fake.pieces = [{ ...ROHITS_PIECE, piece_code: "MM-ESS-0000779-S", fitted_at: todayInIndia() }, ROHITS_PIECE];
+  await page.goto(`/jobs/${JOB_ID}/done`);
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.closed })).toBeVisible();
+  const rows = page.locator("dl").first();
+  await expect(rows.locator("dt")).toContainText([techCopy.closeOut.hairSystem]);
+  await expect(rows.getByText("MM-ESS-0000779-S", { exact: true })).toBeVisible();
+});
+
+// After the day's last job the close said only "Back to today", where the prototype keeps its Next block.
+test("after the day's last job, the close says the day is done, with tomorrow's first job", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.tomorrow = true;
+  startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos", "outcome");
+  fake.progress = { ...fake.progress, outcome: "done" };
+  const today = todayInIndia();
+  // This job alone today, so nothing is left once it closes.
+  await page.route(
+    (url) => url.pathname === "/api/tech/jobs" && url.searchParams.get("date") === today,
+    (route) => route.fulfill({ json: { date: today, jobs: jobsToday(today).slice(0, 1), sent_back: [] } }),
+  );
+  await page.goto(`/jobs/${JOB_ID}/done`);
+  await expect(page.getByText(techCopy.closeOut.next.doneForToday, { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Tomorrow · \d{1,2}(:\d{2})? [ap]m$/)).toBeVisible();
 });

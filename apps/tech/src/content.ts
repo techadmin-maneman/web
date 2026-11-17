@@ -986,7 +986,12 @@ export const closeOut = localised({
     /** "25 min drive", after the next job's kind and place. */
     drive: (minutes: number) => `${String(minutes)} min drive`,
     today: "Today",
+    /** After the day's last job: nothing more today, then tomorrow's first, "Tomorrow · 9:30 am". */
+    doneForToday: "Done for today",
+    tomorrow: (time: string) => `Tomorrow · ${time}`,
   },
+  /** The piece fitted at the visit, by its label. */
+  hairSystem: "Hair system",
   // The board draws the next job; the day ends without one.
   lastJob: "Back to today",
   // The evidence chain's close: the evidence summary, and what happens to it.

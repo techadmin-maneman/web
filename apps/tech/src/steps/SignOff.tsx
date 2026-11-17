@@ -157,8 +157,10 @@ function Signing({
         else void ask();
       }}
     >
-      <StandingLine job={job} standing={standing} held={held} />
-      {!closes && <Decline job={job} />}
+      <div className={styles.content}>
+        <StandingLine job={job} standing={standing} held={held} />
+        {!closes && <Decline job={job} />}
+      </div>
     </StepFrame>
   );
 }
