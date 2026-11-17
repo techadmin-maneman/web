@@ -68,3 +68,26 @@
 
   margin: var(--sp-4) 0 calc(-1 * var(--sp-12));
 }
+
+/* "How this visit is done" (./HowDone.tsx): one line under the ink's 2 px rule, 52 px tall, the steps at its end. */
+.howDone {
+  display: flex;
+  gap: var(--sp-12);
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(var(--sp-48) + var(--sp-4));
+  margin: var(--sp-20) var(--screen-gutter) 0;
+  border-top: var(--rule-strong) solid var(--ui-strong);
+  color: var(--ui-strong);
+  text-decoration: none;
+}
+
+.howDoneTitle {
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.howDoneCount {
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}

@@ -1196,10 +1196,8 @@ export const schedule = localised({
   noJobs: "–",
   /** "Thu, 12 Nov" */
   day: (weekday: string, date: string) => `${weekday}, ${date}`,
-  /** "Today, Thu 12 Nov" */
+  /** "Today, Thu 12 Nov": only today is named, as the prototype writes it; every other day as `day`. */
   today: (weekday: string, date: string) => `Today, ${weekday} ${date}`,
-  /** "Tomorrow, Fri 13 Nov" */
-  tomorrow: (weekday: string, date: string) => `Tomorrow, ${weekday} ${date}`,
   jobs: (count: number) => counted(count, "job", "jobs"),
   nothing: "Nothing booked",
   dayView: "The day, by the hour",
@@ -1455,16 +1453,23 @@ export const kit = localised({
   held: {
     title: "In kit",
     none: "Your kit is empty.",
-    /** A count the kit's ledger has at nought or below: more was used than it held. */
-    out: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
-    expires: (date: string) => `Expires ${date}`,
+    /**
+     * A count the kit's ledger has at nought or below, more used than it held where it is below; and who knows, as low
+     * says it.
+     */
+    out: (short: string | null, coming: boolean) =>
+      `${short === null ? "Out" : `Out, ${short} short`} · ${coming ? "more on its way" : "ops notified"}`,
+    outUntilBack: (short: string | null) =>
+      `${short === null ? "Out" : `Out, ${short} short`} · hand back the expired stock and ops are told`,
+    /** A lot and when it expires, as the prototype writes it: "TS-2611 · expires 31 May 2027". */
+    expires: (lot: string, date: string) => `${lot} · expires ${date}`,
     /** A lot inside the days ops are warned before it expires. */
-    useFirst: (date: string) => `Use first · expires ${date}`,
+    useFirst: (lot: string, date: string) => `Use ${lot} first, expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
     recalled: "In a recall: not to be used",
     pieces: (count: number) => `${String(count)} labelled`,
     /** At or below the level ops keep a kit at: ops are alerted on their own, and send more. */
-    low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops told"),
+    low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops notified"),
     /** Low only for stock that goes back: ops' count sees it until it does. */
     lowUntilBack: "Low · hand back the expired stock and ops are told",
   },

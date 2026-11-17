@@ -18,6 +18,9 @@ const copy = kitCopy.forecast;
 
 type Need = Kit["forecast"][number];
 
+/** A hair system by its tier, as the prototype names its pieces: "Essential", where the product is "Mane Man Essential". */
+const tierOf = (product: string): string => product.replace(/^Mane Man\s+/, "");
+
 /** How far short of an item the kit is. */
 const shortOf = (item: { readonly need: number; readonly have: number }): number => item.need - Math.max(item.have, 0);
 
@@ -26,12 +29,19 @@ const named = (item: Need): string =>
   isMeasure(item.unit) ? `${sayKnown(item.name)}, ${item.unit}` : sayKnown(item.name);
 
 /**
- * The one thing short, as the ask names it: "6 Shampoo sachets", "4 Tape strips", "90 ml of Solvent". Ops' name for
- * it is kept as they wrote it, made plural where a count is.
+ * A common name as it reads mid-sentence, "shampoo sachets"; a product's name, with a capital past its first letter,
+ * as ops wrote it.
+ */
+const midSentence = (name: string): string =>
+  /^\p{Lu}[^\p{Lu}]*$/u.test(name) ? name.charAt(0).toLowerCase() + name.slice(1) : name;
+
+/**
+ * The one thing short, as the ask names it: "6 shampoo sachets", "4 tape strips", "90 ml of solvent". Ops' name for
+ * it is kept as they wrote it but for a common name's first capital, made plural where a count is.
  */
 function shortPhrase(item: Need): string {
   const count = shortOf(item);
-  const name = item.name;
+  const name = midSentence(item.name);
   const words = name.toLowerCase();
   if (isMeasure(item.unit)) return `${amountOf(count, item.unit)} of ${name}`;
   // A unit ops wrote in the plural counts as its one.
@@ -126,7 +136,7 @@ export function Forecast(props: { readonly kit: Kit; readonly offline: boolean; 
             {pieces.map((item) => (
               <Line
                 key={`piece:${item.product}`}
-                name={copy.pieces(theirs(sayKnown(item.name)))}
+                name={copy.pieces(theirs(sayKnown(tierOf(item.name))))}
                 need={item.need}
                 have={item.have}
               />

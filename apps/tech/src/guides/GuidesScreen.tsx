@@ -15,7 +15,8 @@ import { useChecklists } from "./checklists.ts";
 import styles from "./guides.module.css";
 
 /** A kind of visit's screens, in the order they are worked, as a visit of that kind would have them. */
-const screensFor = (type: VisitType): Screen[] => screensOf({ type, one_visit: false, steps: cardStepsFor(type) });
+export const screensFor = (type: VisitType): Screen[] =>
+  screensOf({ type, one_visit: false, steps: cardStepsFor(type) });
 
 export function GuidesScreen() {
   return (

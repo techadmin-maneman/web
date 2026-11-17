@@ -63,8 +63,9 @@ test("opens from its tab, shows each lot’s expiry, and receives a top-up by th
   // An expired lot goes back to ops, and is listed there rather than as held.
   await expect(page.getByRole("region", { name: copy.returned.title })).toContainText(/SV-1 · 20 ml\s*Expired 31 Jan/);
   await expect(held).not.toContainText("SV-1");
-  await expect(held).toContainText("SV-2 · 60 ml · Expires 31 Jan");
-  await expect(held).toContainText("SV-3 · 40 ml · Use first · expires 20 Jul");
+  // As the prototype writes a lot: its code and expiry, with how much where the item is in more than one.
+  await expect(held).toContainText(copy.held.expires("SV-2 · 60 ml", "31 Jan 2031"));
+  await expect(held).toContainText(copy.held.useFirst("SV-3", "20 Jul 2030"));
 
   const coming = page.getByRole("region", { name: copy.coming.title });
   // Scan opens the camera; a label it can't read is typed in beside it.
@@ -232,7 +233,9 @@ test("says an item is out, and how far short, rather than a count below nought",
   if (solvent !== undefined) fake.kit = { ...fake.kit, held: [{ ...solvent, quantity: -4, usable: -4, lots: [] }] };
   await page.goto("/kit");
   const held = page.getByRole("region", { name: copy.held.title });
-  await expect(held.getByRole("listitem")).toContainText(["Solvent" + copy.held.out("4 ml")]);
+  // As the prototype draws one out: nought in its figure, and beneath, how far short and who knows.
+  const told = solvent?.ops_told === true ? copy.held.out("4 ml", false) : copy.held.outUntilBack("4 ml");
+  await expect(held.getByRole("listitem")).toContainText(["Solvent" + told + "0 ml"]);
 });
 
 test("hands back the pieces that came off, and the expired stock", async ({ page }) => {
