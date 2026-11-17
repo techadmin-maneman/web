@@ -48,7 +48,7 @@ export const live = {
   /** The technician marked the client not home. */
   notHome: "Missed visit",
   notHomeLine:
-    "Ops look at what happened and decide the missed-visit charge. If they charge it and you were home, you can dispute it here.",
+    "We look at what happened and decide on the missed-visit charge. If we charge it and you were home, you can dispute it here.",
   /** Past its window with nobody arriving. */
   missed: "We’ll be in touch about this visit",
   done: "Visit done",

@@ -109,7 +109,7 @@ export const home = {
   customOrder: {
     awaitingPayment: "Your hair system, made to your profile, is ready to order.",
     pay: (amount: string) => `Pay ${amount}`,
-    paid: "Paid in full. We are placing your order.",
+    paid: "Paid in full. We’re placing your order.",
     ordered: (date: string | null) =>
       date === null ? "Your hair system is being made." : `Your hair system is being made, due by ${date}.`,
     arrived: "Your hair system has arrived. We’ll message you to book your first fit.",
