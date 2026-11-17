@@ -206,7 +206,7 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     checkin_radius_m: 200,
     pieces: [PIECE],
     // Board A3's "Last visit, after. 22 Aug, Imran.", and board B5's "delivered 9:33 am".
-    last_visit: { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${id}/last-visit-photo` },
+    last_visit: { date: "2030-08-22", technician: "Imran" },
     reminder: { state: "delivered", delivered_at: `${DAY}T04:03:00.000Z` },
     steps: cardStepsFor(summary.type ?? "service"),
     checklist: CHECKLIST,

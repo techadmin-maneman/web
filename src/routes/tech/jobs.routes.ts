@@ -75,23 +75,6 @@ export const jobRoute = techRoute({
   },
 });
 
-export const lastVisitPhotoRoute = techRoute({
-  method: "get",
-  path: "/api/tech/jobs/{id}/last-visit-photo",
-  summary: "The client's last visit, after: one photograph, under the card's own unlock, never cached",
-  request: { params: jobId },
-  responses: {
-    200: {
-      description: "The image",
-      content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
-    },
-    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
-    404: errorResponse(
-      "not_found: no such job of this technician's, not unlocked yet, or no earlier visit's photograph",
-    ),
-  },
-});
-
 export const clientHistoryRoute = techRoute({
   method: "get",
   path: "/api/tech/jobs/{id}/client-history",

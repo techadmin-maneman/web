@@ -10,6 +10,7 @@
 // later step is sent with. Each has a store of its own (./db.ts).
 
 import type { CheckIn, Job, JobState, JobSummary, OutcomeRequest, VisitToFix } from "../api.ts";
+import { choiceIn } from "../lib/progress.ts";
 import { dayAfter } from "../lib/when.ts";
 import { all, clear, get, put, remove } from "./db.ts";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -58,6 +59,21 @@ export async function keepJob(job: Job): Promise<void> {
 
 export async function keptJob(id: string): Promise<Job | null> {
   return get("cards", id);
+}
+
+/**
+ * What a landed write leaves on the day and card the phone keeps: where the job stands, and a one visit's choice from
+ * its piece step, kept on its card before the step leaves the outbox, so nothing before the card is read again reads
+ * the choice as unmade.
+ */
+export async function keepWhatLanded(
+  event: { readonly job_id: string; readonly kind: string; readonly body: unknown },
+  state: JobState | null,
+): Promise<void> {
+  if (state !== null) await keepLanded(event.job_id, state);
+  const choice = event.kind === "piece" ? choiceIn(event.body) : null;
+  const card = choice === null ? null : await keptJob(event.job_id);
+  if (card?.one_visit === true) await keepJob({ ...card, client_choice: choice });
 }
 
 /** What the check-in measured: the distance, the radius, and when the no-show wait ends. */

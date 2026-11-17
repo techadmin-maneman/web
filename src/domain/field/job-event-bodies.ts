@@ -18,7 +18,17 @@ export const ChecklistRequestSchema = z
 const PieceFittedSchema = z
   .object({
     piece_code: z.string().min(3).max(40),
-    base: z.string().min(1).max(60).nullable().optional(),
+    base: z
+      .string()
+      .min(1)
+      .max(120)
+      .nullable()
+      .optional()
+      .openapi({
+        description:
+          "The piece's base; for one from the kit, its hair system's name, which a service's name of up to 60 and its " +
+          "spec make up to about 112 (docs/decisions/0271-the-technician-follow-ups.md).",
+      }),
     supplier_lot: z.string().min(1).max(60).nullable().optional(),
     stock_code: z.string().min(1).max(64).nullable().optional().openapi({
       description:

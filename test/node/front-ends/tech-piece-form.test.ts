@@ -108,6 +108,18 @@ describe("the piece step", () => {
     });
   });
 
+  it("bases a piece of kit stock with no labels as its hair system is named", () => {
+    const kit = {
+      ...FIRST_FIT,
+      kit_hair_systems: [{ code: "hs_old", name: "Mane Man Essential, before labels", units: [] }],
+    } as unknown as typeof FIRST_FIT;
+    expect(pieceBody({ ...EMPTY, code: LABEL, stock: "hs_old" }, kit)).toEqual({
+      piece_code: LABEL,
+      base: "Mane Man Essential, before labels",
+      stock_code: "hs_old",
+    });
+  });
+
   it("sends the hair system picked from the kit", () => {
     expect(pieceBody({ ...EMPTY, code: LABEL, stock: "hs_essential_8x10_1b_g20_d100" }, FIRST_FIT)).toEqual({
       piece_code: LABEL,
@@ -210,6 +222,19 @@ describe("a label taken", () => {
 
   it("keeps kit stock with no labels picked, for the label on its piece", () => {
     expect(labelTaken(kit, "hs_old", "MM-ESS-0000999-Z")).toEqual({ stock: "hs_old", base: "", lot: "" });
+  });
+
+  it("keeps a refused step's base and lot when its label is corrected to the same piece, and only then", () => {
+    const sent = { code: "MM-STD-7193 C", base: "Lace", lot: "LOT-5120" };
+    expect(labelTaken(kit, null, "MM-STD-7193-C", sent)).toEqual({ stock: null, base: "Lace", lot: "LOT-5120" });
+    // Another piece altogether: nothing of the refused one.
+    expect(labelTaken(kit, null, "MM-STD-8000-D", sent)).toEqual({ stock: null, base: "", lot: "" });
+    // A kit piece gives its own.
+    expect(labelTaken(kit, null, "MM-ESS-0000001-A", { ...sent, code: "MM-ESS-0000001 A" })).toEqual({
+      stock: "hs_a",
+      base: "Mane Man Essential · 8 × 10 in",
+      lot: "LOT-A",
+    });
   });
 });
 

@@ -867,99 +867,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/tech/jobs/{id}/last-visit-photo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The client's last visit, after: one photograph, under the card's own unlock, never cached */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The image */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "image/jpeg": string;
-                        "image/png": string;
-                    };
-                };
-                /** @description invalid_request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "invalid_request";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "session_required" | "device_revoked" | "technician_inactive";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description not_found: no such job of this technician's, not unlocked yet, or no earlier visit's photograph */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "not_found";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/tech/jobs/{id}/checkin": {
         parameters: {
             query?: never;
@@ -5451,8 +5358,6 @@ export interface components {
                 date: string;
                 /** @description The first name of who did it. */
                 technician: string | null;
-                /** @description Its after photograph, never to be kept on the phone. */
-                photo_url: string;
             } | null;
             /** @description The day-before or arrival WhatsApp to the client: on its way, sent, or delivered and when; null when none went, as when one was skipped or failed. */
             reminder: {
@@ -5939,6 +5844,7 @@ export interface components {
         /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */
         PieceFitted: {
             piece_code: string;
+            /** @description The piece's base; for one from the kit, its hair system's name, which a service's name of up to 60 and its spec make up to about 112 (docs/decisions/0271-the-technician-follow-ups.md). */
             base?: string | null;
             supplier_lot?: string | null;
             /** @description The hair system fitted, by the stock code the card's kit list gives it, which comes out of the technician's kit; none for a piece from elsewhere. */
