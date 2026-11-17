@@ -1,4 +1,3 @@
-import { capsLook } from "@maneman/ui/Caps";
 import { messageLook } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
@@ -10,6 +9,7 @@ import { MobileField, NameField } from "../PersonFields.tsx";
 import type { FormRef } from "../useInvalidFocus.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./gate.module.css";
+import shared from "./TryOn.module.css";
 
 /** The WhatsApp code's field, on the gate's ink. */
 const CODE_FIELD: CodeFieldClasses = { hint: styles.codeHint, error: styles.error, again: styles.codeAgain };
@@ -92,21 +92,23 @@ export function Gate(props: {
           )}
         </div>
         <GateSaid photoOnItsWay={props.photoOnItsWay} failure={props.failure} />
-        <Button
-          variant="primary"
-          size="action"
-          className={styles.gateSubmit}
-          type="submit"
-          aria-disabled={busy}
-          icon={busy ? ICONS.sending : undefined}
-        >
-          {submitLabel(code, props.sending)}
-        </Button>
-        {props.notice.line !== undefined && (
-          <p class={styles.reassurance}>
-            <NoticeLine line={props.notice.line} href={props.notice.line.href} more={CLIENT_WORDS.noticeMore} />
-          </p>
-        )}
+        <div class={shared.foot}>
+          <Button
+            variant="primary"
+            size="action"
+            className={styles.gateSubmit}
+            type="submit"
+            aria-disabled={busy}
+            icon={busy ? ICONS.sending : undefined}
+          >
+            {submitLabel(code, props.sending)}
+          </Button>
+          {props.notice.line !== undefined && (
+            <p class={styles.reassurance}>
+              <NoticeLine line={props.notice.line} href={props.notice.line.href} more={CLIENT_WORDS.noticeMore} />
+            </p>
+          )}
+        </div>
       </form>
     </div>
   );

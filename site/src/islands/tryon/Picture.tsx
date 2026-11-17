@@ -42,7 +42,7 @@ export function Picture(props: { photo: string | null; look: string | null }) {
   }
   return (
     <div class={`${styles.picture ?? ""} ${styles.empty ?? ""}`} aria-hidden="true">
-      <Icon d={ICONS.camera} size="xl" />
+      <Icon d={ICONS.noPhoto} size="xl" />
     </div>
   );
 }

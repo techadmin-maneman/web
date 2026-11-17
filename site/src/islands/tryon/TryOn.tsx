@@ -32,7 +32,7 @@ import { Gate } from "./Gate.tsx";
 import { useReleased, useRenderWatch, useScreenHistory } from "./hooks.ts";
 import { Looks } from "./Looks.tsx";
 import { Picture } from "./Picture.tsx";
-import { backFrom, screenNamed, START, step, type Screen } from "./machine.ts";
+import { backFrom, screenNamed, START, step, type Screen, type TryOnState } from "./machine.ts";
 import { Sent } from "./Sent.tsx";
 import styles from "./TryOn.module.css";
 import { Upload } from "./Upload.tsx";
@@ -68,9 +68,20 @@ function usePhotoWidget(screen: Screen, siteKey: string) {
   return { box, widget };
 }
 
-/** The try-on's three steps, and which each screen is at: the sent and error screens stand outside them. */
+/**
+ * The try-on's three steps, and which each screen is at: the sent and error screens stand outside them. The first
+ * step's way back is the top bar's close, to the site; the sent screen has none.
+ */
 const STEPS = 3;
 const STEP_AT: Partial<Record<Screen, number>> = { upload: 1, looks: 2, gate: 3 };
+
+/** The step's line over its words, "Step 2 of 3", or, on the sent and error screens, what they are. */
+function StepLabel(props: { screen: Screen; kind: TryOnState["errorKind"] }) {
+  const { screen } = props;
+  return (
+    <p class={styles.stepLabel}>{screen === "error" ? tryOn.error.kinds[props.kind].step : tryOn.stepLabels[screen]}</p>
+  );
+}
 
 function TryOnFlow(props: Props) {
   const [state, send] = useReducer(step, START);
@@ -170,10 +181,8 @@ function TryOnFlow(props: Props) {
     else send({ type: "back" });
   }
 
-  // The first step's way back is the top bar's close, to the site; the sent screen has none, the look on its way.
   const onBack = backFrom(screen) === "home" || screen === "sent" ? null : back;
   const at = STEP_AT[screen];
-  // The look, once it is ready to show here: beside the photograph, where the step's picture stands.
   const shown = screen === "sent" ? (look ?? state.returnedLook) : null;
   return (
     <div class={styles.flow} data-screen={screen}>
@@ -182,11 +191,7 @@ function TryOnFlow(props: Props) {
         <Picture photo={state.photo} look={shown} />
         <div class={styles.column}>
           {at === undefined ? null : <FlowSteps at={at} of={STEPS} onBack={onBack} />}
-          {shown === null && (
-            <p class={styles.stepLabel}>
-              {screen === "error" ? tryOn.error.kinds[state.errorKind].step : tryOn.stepLabels[screen]}
-            </p>
-          )}
+          {screen !== "sent" && <StepLabel screen={screen} kind={state.errorKind} />}
 
           {/* Turnstile shows here only if Cloudflare needs the visitor to act: above the step, before its button. */}
           <div ref={turnstileBox} class={styles.turnstile} />

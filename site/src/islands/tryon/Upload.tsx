@@ -1,6 +1,5 @@
 import "../refs-as-props.ts";
 import { FileInput } from "@maneman/ui/Field";
-import { ICON_STROKES } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { NoticeLine } from "@maneman/ui/NoticeLine";

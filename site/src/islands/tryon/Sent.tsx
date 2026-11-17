@@ -31,9 +31,12 @@ export function Sent(props: {
     <div>
       {/* On its way: where it went, as a tile; once shown, the look is the step's picture (Picture.tsx). */}
       {look === null && (
-        <span class={styles.tile}>
-          <Icon d={ICONS.whatsapp} size="md" />
-        </span>
+        <>
+          <span class={styles.tile}>
+            <Icon d={ICONS.whatsapp} size="md" />
+          </span>
+          <p class={shared.stepLabel}>{tryOn.stepLabels.sent}</p>
+        </>
       )}
       <Title heading={props.heading} className={shared.noticeTitle}>
         {titleOf({ returning, shown: look !== null })}

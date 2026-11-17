@@ -1,9 +1,6 @@
-import { capsLook } from "@maneman/ui/Caps";
 import { Button, ButtonLink } from "@maneman/ui/Button";
-import { ICONS } from "@maneman/brand/icons";
 import { tryOn } from "../../content/site.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
-import { Icon } from "@maneman/ui/Icon";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 

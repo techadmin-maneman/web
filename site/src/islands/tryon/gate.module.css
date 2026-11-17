@@ -1,87 +1,43 @@
 /* What ./Gate.tsx alone draws; what it shares is in ./TryOn.module.css. */
 
 .gate {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-mid)), 1fr));
-  gap: var(--flow-split-gap);
-  align-items: center;
+  min-width: 0;
 }
 
-@media (max-width: 760px) {
-  .gateImage {
-    order: 2;
-  }
-}
-.gateFrame {
-  width: 100%;
-  height: var(--gate-frame-h);
-  background: var(--ink-frame);
-  position: relative;
-  display: flex;
-}
-.gateLeft {
-  flex: 1;
-  border-right: var(--hairline) solid var(--gilt);
-}
-.gateRight {
-  flex: 1;
-  background: var(--ink-raised);
-  filter: blur(var(--gate-blur));
-}
-.gateFrameLabel {
-  position: absolute;
-  left: var(--sp-20);
-  right: calc(50% + var(--sp-20));
-  bottom: var(--sp-20);
-  font-size: var(--fs-15);
-  color: var(--ink-muted);
-}
-.gateCaption {
-  margin: var(--sp-20) 0 0;
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--ink-muted);
-  max-width: var(--measure-form);
-  text-wrap: pretty;
-}
-/* On a phone the frame and its caption go: the title says where the look goes, and the line beneath the button. */
-@media (max-width: 600px) {
-  .gateImage {
-    display: none;
-  }
-}
 .fields {
-  margin-top: var(--space-s);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-20);
-  max-width: var(--measure-form);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-16);
+  margin-top: var(--sp-8);
 }
+
 .error {
   margin-top: var(--sp-8);
 }
+
 .gateFailure {
-  margin-top: var(--sp-20);
-  max-width: var(--measure-form);
+  margin-top: var(--sp-16);
 }
+
 .codeHint {
   margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--ink-muted);
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+  color: var(--site-text-muted);
 }
+
 .codeAgain {
-  margin-top: var(--sp-12);
+  margin-top: var(--sp-8);
 }
+
 .gateSubmit {
   width: 100%;
-  max-width: var(--measure-form);
-  margin-top: var(--sp-24);
 }
+
+/* What sending agrees to, under the button. */
 .reassurance {
-  margin-top: var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
-  line-height: var(--lh-160);
-  max-width: var(--measure-form);
+  margin: 0;
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+  color: var(--site-text-muted);
 }
