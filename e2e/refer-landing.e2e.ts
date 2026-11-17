@@ -670,7 +670,7 @@ test("a booking sends the details to WhatsApp, and opens the app with the number
   await expect(
     page.getByText("Your technician arrives in those hours. Details are on WhatsApp at +91 98100 00000."),
   ).toBeVisible();
-  // A laptop shows where else the booking shows; a phone keeps it out of sight, Open the app saying it (ADR 0265).
+  // Where else the booking shows: a laptop's line, a phone's out of sight (e2e/book.e2e.ts checks which).
   await expect(page.getByText(referralCopy.referral.booked.appHint)).toBeAttached();
   await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
   const ownBack = page.locator("main").getByRole("link", { name: referralCopy.referral.booked.back });
