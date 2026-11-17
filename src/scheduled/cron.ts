@@ -379,8 +379,12 @@ export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   };
 }
 
-/** Where Razorpay's settlements post; null until Razorpay's, the bank's and the fee's accounts are all set. */
+/**
+ * Where Razorpay's settlements post; null until Razorpay's, the bank's and the fee's accounts are all set, and
+ * outside production, as the one Books organisation's bank is the real one.
+ */
 function settlementAccountsOf(config: StaticConfig): SettlementAccounts | null {
+  if (config.environment !== "production") return null;
   const books = config.settings.zohoBooks;
   const razorpay = books?.refundAccountId ?? null;
   const bank = books?.bankAccountId ?? null;

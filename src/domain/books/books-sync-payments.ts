@@ -187,13 +187,16 @@ interface RefundToRecord {
   processed_at: string | null;
   created_at: string;
   books_payment_id: string;
+  /** The invoice of the charge the payment kept, set against it; null for none. */
+  books_kept_invoice_id: string | null;
 }
 
 /** Refunds Razorpay has processed, of payments Books has. */
 export async function refundsToRecord(pass: Pass): Promise<RefundToRecord[]> {
   const { results } = await pass.db
     .prepare(
-      `SELECT r.id, p.person_id, r.razorpay_refund_id, r.amount, r.processed_at, r.created_at, p.books_payment_id
+      `SELECT r.id, p.person_id, r.razorpay_refund_id, r.amount, r.processed_at, r.created_at, p.books_payment_id,
+         p.books_kept_invoice_id
        FROM refunds r JOIN payments p ON p.id = r.payment_id
        WHERE r.status = 'processed' AND r.books_refund_id IS NULL AND p.books_payment_id IS NOT NULL
          AND (r.books_checked_at IS NULL OR r.books_checked_at < ?1)
@@ -221,7 +224,12 @@ export async function recordRefund(pass: Pass, refund: RefundToRecord, fromAccou
     id: refund.id,
     personId: refund.person_id,
     what: `refund ${refund.id} (Razorpay ${refund.razorpay_refund_id})`,
-    then: "It is asked again every hour.",
+    // Money set against a kept charge's issued invoice comes back only once that invoice is credited.
+    then:
+      refund.books_kept_invoice_id === null
+        ? "It is asked again every hour."
+        : `Its payment is set against invoice ${refund.books_kept_invoice_id} for a charge kept: credit that invoice in ` +
+          `Books, and record the refund there under ${refund.razorpay_refund_id}. It is looked for every hour.`,
   } as const;
   try {
     const booksRefundId =

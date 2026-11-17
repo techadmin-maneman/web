@@ -27,6 +27,7 @@ export const WRITTEN_ELSEWHERE: Readonly<Partial<Record<CoreTable, readonly stri
   payments: [
     "src/domain/booking/bookings.ts",
     "src/domain/booking/move-in-place.ts",
+    "src/domain/books/books-kept.ts",
     "src/domain/books/books-pass.ts",
     "src/domain/books/books-sync-payments.ts",
   ],

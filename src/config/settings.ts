@@ -102,8 +102,8 @@ export interface ZohoBooksSettings {
   /** The Books organisation invoices and receipts are in. */
   readonly orgId: string;
   /**
-   * The Books account refunds are paid from: the one Razorpay settles into. Without it, refunds are not recorded
-   * in Books and their vouchers wait (docs/open-points.md).
+   * The Books account Razorpay holds our money in, Razorpay Clearing: each Razorpay payment is deposited to it and each
+   * refund paid from it. Without it, refunds are not recorded in Books and their vouchers wait (docs/open-points.md).
    */
   readonly refundAccountId: string | null;
   /**

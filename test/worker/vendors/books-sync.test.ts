@@ -131,8 +131,8 @@ describe("payments and refunds", () => {
       await payment();
       await env.DB.prepare("UPDATE payments SET razorpay_payment_id = 'upi:412345678901'").run();
       const books = createStubBooks();
-      await pass(books, "books-customer-9", NOW, { refundAccountId: null, labelAsTest: false });
-      // Ours already, so in Books' Undeposited Funds, not Razorpay's account.
+      // Razorpay's account is set, and the payment still names none: it is ours already, so in Undeposited Funds.
+      await pass(books, "books-customer-9", NOW, { refundAccountId: "bank-7", labelAsTest: false });
       expect(books.made.payments[0]).toMatchObject({
         mode: "UPI",
         description: "UPI payment 412345678901",

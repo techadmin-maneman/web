@@ -14,6 +14,7 @@
 //   POST https://api.razorpay.com/v1/payment_links/{id}/notify_by/sms   { success: true }
 //   GET  https://api.razorpay.com/v1/payment_links/{id}       { id, status, reference_id, order_id }
 //   POST https://api.razorpay.com/v1/payment_links/{id}/cancel     { id, status: "cancelled" }
+//   GET  https://api.razorpay.com/v1/settlements?from=&to=&count=  { items: [settlement] }, read once an hour
 //
 // A payment link is texted to the client by Razorpay itself, so it needs no template of ours and no secret beyond the
 // keys (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
@@ -157,8 +158,8 @@ function linkBody(link: PaymentLinkRequest) {
 }
 
 /**
- * Each order's payment captured as it is authorised, whatever the account's own setting (docs/open-points.md, item 154;
- * Razorpay's Orders API: an order's values outrank the Dashboard's): within Razorpay's least window, 12 minutes, and one
+ * Each order's payment captured as it is authorised, whatever the account's own setting (Razorpay's Orders API: an
+ * order's values outrank the Dashboard's): within Razorpay's least window, 12 minutes, and one
  * left uncaptured by the manual window's end, its five days, refunded at normal speed, as our refunds are.
  */
 const CAPTURE = {

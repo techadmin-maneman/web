@@ -305,9 +305,10 @@ describe("the Books pass's options", () => {
     });
   });
 
-  it("posts settlements only once Razorpay's, the bank's and the fee's accounts are all set", () => {
-    const withAccounts = (bankAccountId: string | null) => ({
+  it("posts settlements in production alone, once Razorpay's, the bank's and the fee's accounts are all set", () => {
+    const withAccounts = (bankAccountId: string | null, environment: StaticConfig["environment"] = "production") => ({
       ...LOCAL_CONFIG,
+      environment,
       settings: {
         ...LOCAL_CONFIG.settings,
         zohoBooks: { ...zohoBooks, bankAccountId, gatewayFeesAccountId: "acct-fees", gatewayFeesTaxId: "tax-18" },
@@ -320,6 +321,8 @@ describe("the Books pass's options", () => {
       feesTaxId: "tax-18",
     });
     expect(booksSyncOptions(withAccounts(null)).settlementAccounts).toBeNull();
+    // The one Books organisation's bank is the real one.
+    expect(booksSyncOptions(withAccounts("bank-kotak", "staging")).settlementAccounts).toBeNull();
   });
 
   it("has no refund account or GST without Books' settings, and labels nothing as a test in production", () => {

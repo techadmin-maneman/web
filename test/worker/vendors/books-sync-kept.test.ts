@@ -84,6 +84,11 @@ beforeEach(async () => {
     .run();
 });
 
+const keptInvoiceOf = (paymentId: string) =>
+  env.DB.prepare("SELECT books_kept_invoice_id FROM payments WHERE id = ?1")
+    .bind(paymentId)
+    .first("books_kept_invoice_id");
+
 describe("a charge we keep", () => {
   async function cancelled(kind: "cancelled" | "replaced", kept: number) {
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(VISIT).run();
@@ -154,10 +159,48 @@ describe("a charge we keep", () => {
       { paymentId: paid?.books_payment_id, invoiceId: books.made.issued[0], amount: 400000 },
     ]);
     expect(paid?.books_applied_at).toBe(NOW.toISOString());
+    // Kept, so a refund can name it and staging's clean-up can find it.
+    expect(await keptInvoiceOf(PAYMENT)).toBe(books.made.issued[0]);
     expect(told).toEqual([]);
 
     await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
     expect(books.made.invoices).toHaveLength(1);
+  });
+
+  it("refunded after it is invoiced, tells ops to credit its invoice when Books refuses the refund", async () => {
+    await payment();
+    await cancelled("cancelled", 400000);
+    const books = createStubBooks();
+    await pass(books, "books-customer-9");
+    await env.DB.prepare(
+      `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, created_at, processed_at, updated_at)
+       VALUES ('refund-kept', ?1, 'rfnd_kept1', 400000, 'processed', ?2, ?2, ?2)`,
+    )
+      .bind(PAYMENT, NOW.toISOString())
+      .run();
+    books.refuseNext("recordRefund");
+
+    await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
+    expect(told).toEqual([
+      expect.stringContaining(
+        `Its payment is set against invoice ${books.made.issued[0] ?? ""} for a charge kept: credit that invoice in ` +
+          "Books, and record the refund there under rfnd_kept1.",
+      ),
+    ]);
+  });
+
+  it("of a client erased since is told to ops, not invoiced", async () => {
+    await payment();
+    await cancelled("cancelled", 400000);
+    await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), PERSON).run();
+    const books = createStubBooks();
+    await pass(books, "books-customer-9");
+    expect(books.made.invoices).toEqual([]);
+    expect(told).toEqual([
+      expect.stringContaining(
+        "it has nothing to be set against (the client was erased before its invoice was raised).",
+      ),
+    ]);
   });
 
   it("names what a late change kept", async () => {

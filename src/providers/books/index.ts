@@ -56,7 +56,7 @@ export interface NewBooksPayment {
   readonly depositAccountId: string | null;
 }
 
-/** Money given back from a recorded payment, from the account Razorpay settles into. Amounts in paise. */
+/** Money given back from a recorded payment, from the account Razorpay holds our money in. Amounts in paise. */
 export interface NewBooksRefund {
   readonly amount: number;
   readonly date: string;

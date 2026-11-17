@@ -34,22 +34,27 @@ staging and production, and its one account for Razorpay's money is "Razorpay Cl
    - Razorpay's fee as an expense in `BOOKS_GATEWAY_FEES_ACCOUNT_ID`, paid out of Razorpay Clearing, under the
      settlement's ID. Once GST is on, `BOOKS_GATEWAY_FEES_TAX_ID` names the fee's tax, the amount including it, so its
      GST is input credit.
-     Razorpay Clearing then holds what Razorpay still owes us. Settlements are recorded only once Razorpay Clearing, the
-     bank and the fee's account are all set; a failure is asked again each hour and told to ops as every Books record's
-     is.
+     Razorpay Clearing then holds what Razorpay still owes us, and staging's labelled test payments and refunds until
+     staging's records are cleared. Settlements are recorded in production alone, once Razorpay Clearing, the bank and
+     the fee's account are all set, as the one Books organisation's bank is the real one; a failure is asked again each
+     hour and told to ops as every Books record's is.
 5. **A kept charge invoiced.** The CA ruled that a kept charge is invoiced, the amount kept including 18% GST. Each
    Books pass raises its own invoice under the payment's ID, on the visit's Books item, one line ("Late cancellation
    charge, First Fit"; "No-show charge, …"; "Late move charge, …"), sends it, and sets the payment against it
    (`src/domain/books/books-kept.ts`). A no-show's charge waits until its dispute window has closed with no dispute
-   open, as a dispute may give it all back. An invoice found voided is told to ops to settle by hand, as before.
+   open, as a dispute may give it all back. An invoice found voided is told to ops to settle by hand, as before, and so
+   is an erased client's charge. The invoice's ID is kept on the payment (`books_kept_invoice_id`), so staging's
+   clean-up finds it, and a refund of the payment that Books refuses names the invoice ops credit first.
 
 ## Consequences
 
-- The Worker's Books token needs `ZohoBooks.banking.CREATE` and `ZohoBooks.expenses.CREATE`, and each webhook
-  `settlement.processed` (`docs/go-live.md`).
+- The Worker's Books token needs `ZohoBooks.banking.CREATE`, `ZohoBooks.expenses.READ` and `ZohoBooks.expenses.CREATE`,
+  and production's webhook `settlement.processed` (`docs/go-live.md`).
 - Staging and production share the Books organisation and the account IDs, so the config check
   (`scripts/lib/wrangler-config-check.ts`) no longer refuses them shared; it still refuses a shared Razorpay key.
-  Razorpay's test mode makes no settlements, so staging records none; its payments and refunds in Razorpay Clearing
-  carry "Staging test".
+  Staging names Razorpay Clearing, its payments and refunds there carrying "Staging test", but neither the bank nor
+  the fee's account, and its webhook leaves `settlement.processed` off.
+- A kept charge refunded after its invoice is issued: Books refuses the refund until ops credit the invoice, and ops
+  are told which one. Before, the kept money sat as the client's credit and the refund went through.
 - A no-show charge's invoice comes once its dispute window, 30 days by default, has closed; the CA is asked whether
   that is in time (open point 16).

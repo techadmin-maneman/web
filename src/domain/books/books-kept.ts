@@ -2,7 +2,7 @@
 // replacement kept, a no-show's charge, and a late fee. Each Books pass (src/domain/books/books-sync.ts) raises the
 // kept part's own invoice on the visit's Books item, GST included in it, sends it, and sets the payment against it, so
 // the money is the business's and not the client's credit. A no-show's charge waits until its dispute window has
-// closed with no dispute open, as a dispute may give it all back.
+// closed with no dispute open, as a dispute may give it all back. An erased client's is told to ops instead.
 
 import { STANDARD_TIER, VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -43,6 +43,8 @@ interface KeptRow {
   tier: string | null;
   service_city: string | null;
   books_item_id: string | null;
+  /** 1 where the client has been erased since, whose charge ops settle by hand. */
+  erased: number;
 }
 
 /**
@@ -56,7 +58,7 @@ export async function keptMoney(pass: Pass): Promise<KeptRow[]> {
     .prepare(
       `SELECT p.id, p.person_id, p.books_payment_id, pe.books_customer_id, p.appointment_id, p.kind, p.amount,
          p.refunded_amount, c.kind AS change, c.kept_amount AS change_kept, n.kept_amount AS no_show_kept,
-         a.type, a.tier, a.service_city, s.books_item_id
+         a.type, a.tier, a.service_city, s.books_item_id, pe.erased_at IS NOT NULL AS erased
        FROM payments p JOIN people pe ON pe.id = p.person_id JOIN appointments a ON a.id = p.appointment_id
        LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, ?3)
        LEFT JOIN visit_changes c ON c.payment_id = p.id AND c.kind IN ('cancelled', 'replaced') AND c.kept_amount > 0
@@ -64,7 +66,7 @@ export async function keptMoney(pass: Pass): Promise<KeptRow[]> {
          AND n.decision = 'charged' AND n.kept_amount > 0
          AND NOT EXISTS (SELECT 1 FROM no_show_disputes d WHERE d.case_id = n.id AND d.ruling = 'refunded')
        WHERE p.books_payment_id IS NOT NULL AND p.books_applied_at IS NULL AND p.amount > p.refunded_amount
-         AND pe.books_customer_id IS NOT NULL AND pe.erased_at IS NULL
+         AND pe.books_customer_id IS NOT NULL
          AND (p.kind = 'late_fee' OR c.id IS NOT NULL OR n.id IS NOT NULL)
          AND (n.id IS NULL OR (n.dispute_until < ?1
            AND NOT EXISTS (SELECT 1 FROM no_show_disputes d WHERE d.case_id = n.id AND d.ruling IS NULL)))
@@ -126,6 +128,11 @@ export async function invoiceKept(pass: Pass, kept: KeptRow): Promise<boolean> {
     what: `the invoice of what payment ${kept.id} kept`,
     then: "It is asked again every hour.",
   } as const;
+  if (kept.erased === 1) {
+    await tellUnapplied(pass.deps.alertOnce, kept, "the client was erased before its invoice was raised");
+    await markApplied(pass, kept.id);
+    return false;
+  }
   // The hourly item check tells ops of a service Books has no item for.
   if (kept.books_item_id === null) {
     pass.log.warn("kept_item_missing", { payment_id: kept.id, type: kept.type, tier: kept.tier });
@@ -137,6 +144,10 @@ export async function invoiceKept(pass: Pass, kept: KeptRow): Promise<boolean> {
     const invoice =
       (await books.findInvoice(kept.id)) ??
       (await books.createInvoice(await keptInvoice(pass, kept, kept.books_item_id)));
+    await pass.db
+      .prepare("UPDATE payments SET books_kept_invoice_id = ?1 WHERE id = ?2")
+      .bind(invoice.id, kept.id)
+      .run();
     if (invoice.status === "void") {
       await tellUnapplied(pass.deps.alertOnce, kept, `its invoice ${invoice.id} is void`);
       await markApplied(pass, kept.id);

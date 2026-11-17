@@ -3,7 +3,7 @@
 // cron, not in the payment's path: Books is never on the way to a
 // booking.
 //
-// Each pass does a little of six things, oldest first:
+// Each pass does a little of each of these, oldest first:
 //   - makes the Books customer of each client with money or a finished visit to
 //     record (src/domain/books/books-customers.ts);
 //   - writes a client's new number or address to their customer;
@@ -15,7 +15,9 @@
 //     late cancel or replacement kept, a no-show's charge, and a late fee, the
 //     payment set against that invoice (src/domain/books/books-kept.ts);
 //   - records each processed refund of a recorded payment, from the account
-//     Razorpay settles into, when that account is set;
+//     Razorpay holds our money in, when that account is set;
+//   - records each settlement Razorpay paid out, in production, as a transfer
+//     to the bank and its fee as an expense (./books-settlements.ts);
 //   - makes each receipt against a purchase order a bill of its supplier's
 //     vendor, once both bill accounts are set (./books-bills.ts), then each
 //     claim credited a vendor credit beside its bill (./books-credits.ts).

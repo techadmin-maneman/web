@@ -2093,7 +2093,7 @@ Indexes:
 
 The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 
-Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0096_payments_to_refund.sql`, `0099_retention.sql`, `0201_trigger_clocks.sql`.
+Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0096_payments_to_refund.sql`, `0099_retention.sql`, `0201_trigger_clocks.sql`, `0216_razorpay_settlements.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2121,6 +2121,7 @@ Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_c
 | `kind` | TEXT | no | `'visit'` |  | What a payment paid for: the visit, or a late fee for moving it. |
 | `amount_ex_gst` | INTEGER | yes |  |  | What a payment was before GST, and at what rate, as the hold priced it. Null for a payment no hold priced, which the Payments tab splits at GST_PERCENT. |
 | `gst_percent` | INTEGER | yes |  |  |  |
+| `books_kept_invoice_id` | TEXT | yes |  |  | The invoice Books raised for the charge a payment kept (src/domain/books/books-kept.ts), so a refund of it can name the invoice to credit, and staging's clean-up can find it. The deployed Worker neither reads nor writes it. |
 
 Indexes:
 

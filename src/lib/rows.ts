@@ -968,6 +968,7 @@ export interface Rows {
     readonly kind: string;
     readonly amount_ex_gst: number | null;
     readonly gst_percent: number | null;
+    readonly books_kept_invoice_id: string | null;
   };
   readonly people: {
     readonly id: string;

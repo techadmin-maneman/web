@@ -456,11 +456,11 @@ Our own database is the record of visits (docs/decisions/0110-field-work-without
 
 5. **The buckets.** `mm-<t>-client-photos` and `mm-<t>-referral-cards` are step 1's, and must exist before any deploy, since `wrangler.jsonc` binds them. Neither gets a lifecycle rule: a client's photograph is only deleted on purpose.
 
-6. **Razorpay's accounts.** Payments go to Books by themselves (docs/decisions/0044-payments-mirror.md, "Receipts in Books"), each Razorpay payment into the account Razorpay holds our money in, which a refund leaves; each settlement is a transfer from it to the bank, and Razorpay's fee an expense (docs/decisions/0261-razorpay-money-in-books.md). Staging and production share one Books, so both carry the same IDs.
+6. **Razorpay's accounts.** Payments go to Books by themselves (docs/decisions/0044-payments-mirror.md, "Receipts in Books"), each Razorpay payment into the account Razorpay holds our money in, which a refund leaves; each settlement is a transfer from it to the bank, and Razorpay's fee an expense (docs/decisions/0261-razorpay-money-in-books.md). Staging and production share one Books, so both name Razorpay Clearing; only production records settlements, so only production names the bank and the fee's account.
    - In Books: Banking → Add Bank or Credit Card → Payment Clearing, named "Razorpay Clearing", in INR. Its ID, the number at the end of its address, is `BOOKS_REFUND_ACCOUNT_ID`.
    - The bank Razorpay settles to, added in Banking: its ID is `BOOKS_BANK_ACCOUNT_ID`.
    - The expense account "Bank Fees and Charges", in the chart of accounts: its ID is `BOOKS_GATEWAY_FEES_ACCOUNT_ID`. Once GST is on in Books, the ID of the tax group GST18 is `BOOKS_GATEWAY_FEES_TAX_ID`, so the fee's GST is input credit.
-   - Set them in the environment's vars in `wrangler.jsonc`, then deploy. None is a secret. Settlements are recorded once Razorpay Clearing, the bank and the fee's account are all set.
+   - Set them in the environment's vars in `wrangler.jsonc`, then deploy. None is a secret. Settlements are recorded in production once Razorpay Clearing, the bank and the fee's account are all set; staging leaves the bank and the fee's account empty, as the one Books' bank is the real one.
 
 7. **Each service's item.** A visit is invoiced on its service's Books item, at the price book's price on the day (docs/decisions/0073-prices-from-the-price-book.md). Once an hour the cron's `books_items` job matches each service offered today to its item: the one kept on it, else the active one Books holds under its name.
    - **With the push on,** an item Books lacks is made, and one that differs is written with the console's name, today's price and the SAC code, a few a pass. Ops hear, as `books_item:<kind>/<tier>`, only of one still unsettled an hour on.
@@ -499,7 +499,7 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
 3. **The webhook,** in Razorpay's dashboard, in the mode that matches the keys: Account & Settings → Webhooks → Add New Webhook.
    - URL: `https://<public host>/api/hooks/razorpay`.
    - Secret: the one from point 2.
-   - Events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, `payment_link.paid`, which names the payment link a consultation and fit in one visit was paid by (ADR 0105), and `settlement.processed`, each payout to the bank (ADR 0261).
+   - Events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, `payment_link.paid`, which names the payment link a consultation and fit in one visit was paid by (ADR 0105), and, in production alone, `settlement.processed`, each payout to the bank (ADR 0261). Staging's test mode leaves it off: its settlements are never recorded.
    - Payment links on: the one visit's link is made through the API (`POST /v1/payment_links`), which the account must allow (open point 166).
    - On staging, the hooks path already has its Access bypass (step 12, point 3).
 
