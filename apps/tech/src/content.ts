@@ -1463,7 +1463,7 @@ export const kit = localised({
       `${short === null ? "Out" : `Out, ${short} short`} · ${coming ? "more on its way" : "ops notified"}`,
     outUntilBack: (short: string | null) =>
       `${short === null ? "Out" : `Out, ${short} short`} · hand back the expired stock and ops are told`,
-    /** Out with no stock to hand back, and ops' count not told of it, as for a hair system. */
+    /** Out, with ops' count not told of it: no stock to hand back, or a hair system, which that count does not watch. */
     outAlone: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
     /** A lot and when it expires, as the prototype writes it: "TS-2611 · expires 31 May 2027". */
     expires: (lot: string, date: string) => `${lot} · expires ${date}`,

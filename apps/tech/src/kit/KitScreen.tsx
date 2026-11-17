@@ -58,23 +58,26 @@ function heldLines(item: Held, today: string, coming: boolean): string[] {
 }
 
 /**
- * Why an item is low: ops told, or more on its way; or low only for stock to hand back, which tells ops once back. Ops'
- * count never tells them of a hair system, so one with nothing to hand back says only that it is low.
+ * Why an item is low: ops told, or more on its way; or low only for stock to hand back, which tells ops once back;
+ * otherwise only that it is low.
  */
 function lowLine(item: Held, coming: boolean): string {
   if (coming) return copy.held.low(true);
   if (item.ops_told) return copy.held.low(false);
-  return toHandBack(item) ? copy.held.lowUntilBack : copy.held.lowAlone;
+  return toldOnceBack(item) ? copy.held.lowUntilBack : copy.held.lowAlone;
 }
 
 /** The same for an item out, and how far short where more was used than it held. */
 function outLine(item: Held, short: string | null, coming: boolean): string {
   if (coming || item.ops_told) return copy.held.out(short, coming);
-  return toHandBack(item) ? copy.held.outUntilBack(short) : copy.held.outAlone(short);
+  return toldOnceBack(item) ? copy.held.outUntilBack(short) : copy.held.outAlone(short);
 }
 
-/** Whether it holds expired or recalled stock, which goes back to ops. */
-const toHandBack = (item: Held): boolean => item.quantity > item.usable;
+/**
+ * Whether ops' count tells them once its expired or recalled stock is handed back. Never for a hair system, which that
+ * count does not watch: its expired pieces wait under Return to ops, with their own Hand back.
+ */
+const toldOnceBack = (item: Held): boolean => !item.hair_system && item.quantity > item.usable;
 
 /** An item's figure, what it holds fit to use: out in red, low in the metal's words, otherwise quiet. */
 function amountLook(item: Held): string | undefined {

@@ -390,6 +390,35 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   expect(await heldOnPhone(page)).toMatchObject({ frames: 0, outbox: 0 });
 });
 
+test("names a set whose photographs all went up, its write refused, on the delete sheet", async ({ page, context }) => {
+  const fake = await fakeTech(page);
+  await atTheDoor(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
+  await page.getByRole("button", { name: techCopy.job.start }).click();
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
+  await expect(capture).toBeEnabled();
+  await expect.poll(() => fake.writes.length).toBe(2);
+
+  fake.online = false;
+  await context.setOffline(true);
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await capture.click();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
+  }
+  await page.getByRole("button", { name: techCopy.capture.finish }).click();
+  for (let back = 0; back < 3; back += 1) await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await openPending(page);
+
+  // Ops closed the job meanwhile: the photographs go up, and only then is the set's write refused.
+  fake.closedByOps = true;
+  fake.online = true;
+  await context.setOffline(false);
+  await expect.poll(async () => (await heldOnPhone(page)).frames).toBe(0);
+  await page.getByRole("button", { name: techCopy.queue.forget.open }).click();
+  await expect(page.getByText("This deletes 1 action from this phone.")).toBeVisible();
+});
+
 test("counts a set as sent only as its photographs go up", async ({ page, context }) => {
   const fake = await fakeTech(page);
   await intoTheBasement(page, context, fake);

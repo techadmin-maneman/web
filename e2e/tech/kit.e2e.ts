@@ -250,6 +250,23 @@ test("says an item is out, and how far short, rather than a count below nought",
     // As the prototype draws one out: nought in its figure, and beneath, how far short and who knows.
     await expect(held.getByRole("listitem")).toContainText(["Solvent" + says + "0 ml"]);
   }
+
+  // A hair system's expired piece goes back by its own Hand back, and ops' count never watches one: only that it is out.
+  const hairSystem = {
+    ...solvent,
+    code: "hs_essential",
+    name: "Mane Man Essential",
+    unit: "piece",
+    quantity: 1,
+    usable: 0,
+    ops_told: false,
+    hair_system: true,
+    lots: [{ ...expired, quantity: 1 }],
+  };
+  fake.kit = { ...fake.kit, held: [hairSystem] };
+  await page.goto("/kit");
+  await expect(held.getByRole("listitem")).toContainText([`Mane Man Essential${copy.held.outAlone(null)}`]);
+  await expect(held).not.toContainText(copy.held.outUntilBack(null));
 });
 
 test("hands back the pieces that came off, and the expired stock", async ({ page }) => {

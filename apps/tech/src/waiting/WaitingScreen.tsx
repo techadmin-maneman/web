@@ -199,8 +199,11 @@ export function WaitingScreen() {
   };
 
   const photosOf = (id: string) => waiting.frames.filter((frame) => frame.job_id === id).length;
-  // A set's own write is the set: the actions are the job's other writes.
-  const actionsOf = (id: string) => waiting.events.filter((event) => event.job_id === id && !isSetWrite(event)).length;
+  // A set's own write is the set: counted by its photos while the phone holds any, and as the write alone once they
+  // have all gone up, so the delete sheet always names what it deletes.
+  const actionsOf = (id: string) =>
+    waiting.events.filter((event) => event.job_id === id && !isSetWrite(event)).length +
+    sets.filter((set) => set.job === id && set.held === 0).length;
   const actionsWaiting = (id: string) =>
     waiting.events.filter((event) => event.job_id === id && event.state === "waiting" && !isSetWrite(event)).length;
 
