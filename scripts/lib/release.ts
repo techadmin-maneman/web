@@ -119,8 +119,10 @@ function versionTagged(target: Target, tag: string): string | null {
   return tagged.at(-1)?.id ?? null;
 }
 
-/** Uploads a new version without sending it any traffic, and returns its ID. */
-/** `outdir`: where the bundle uploaded is kept, with its source map; none where omitted. */
+/**
+ * Uploads a new version without sending it any traffic, and returns its ID. With `outdir`, the bundle uploaded is kept
+ * there with its source map.
+ */
 export function uploadVersion(target: Target, tag: string, message: string, outdir?: string): string {
   const outputFile = join(mkdtempSync(join(tmpdir(), "wrangler-")), "output.ndjson");
   // The commit, baked into the bundle as BUILD_SHA: a secret change publishes an untagged version of the same code, and
