@@ -176,6 +176,8 @@ The flow frame's other words are live strings, reused by key: "Free consultation
 14. **The way back above a guide or a city** reads the list's own title, "Guides" or "Areas we cover", where the boards
     write "All guides" and "All areas" (the brief's words stay as live), and is a thumb's height to tap; its words sit
     where the boards' do.
+15. **A header narrower than 357 px**, as on a small phone or with its text enlarged, draws the mark without the
+    wordmark, and Sign in as its icon, named for a screen reader: the three side by side need 357 px.
 
 ## How each PR is verified
 

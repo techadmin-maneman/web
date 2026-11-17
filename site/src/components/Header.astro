@@ -35,9 +35,9 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
     ))}
   </nav>
   {appOrigin !== null && (
-    <a class={textLinkLook({ quiet: true, className: "signin" })} href={appOrigin}>
+    <a class={textLinkLook({ quiet: true, className: "signin" })} href={appOrigin} aria-label={header.signIn}>
       <Icon name="user" size="sm" class="person" />
-      {header.signIn}
+      <span class="signin-words">{header.signIn}</span>
     </a>
   )}
   {!booking && (
@@ -72,6 +72,7 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
     align-items: center;
     gap: var(--sp-4);
     padding: 0 var(--sp-12) 0 var(--sp-16);
+    container-type: inline-size;
   }
   .home {
     display: flex;
@@ -106,6 +107,15 @@ const appOrigin = clientAppOrigin(ENVIRONMENT);
   @media (max-width: 760px) {
     .wide-only,
     .framed {
+      display: none;
+    }
+  }
+
+  /* Narrower than the lockup, Sign in and the free consultation take side by side, as a small phone's or one whose
+     text is enlarged: the mark alone, and Sign in its icon, named for a screen reader. */
+  @container (max-width: 356px) {
+    .home :global(.word),
+    .signin-words {
       display: none;
     }
   }

@@ -110,3 +110,26 @@ test.describe("no paper or wash", () => {
     });
   }
 });
+
+// Under reduced motion nothing moves on its own (WCAG 2.3.3; global.css stops every animation and transition): no
+// animation runs once the page has settled, the hero's turning line included.
+test.describe("reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  for (const path of SCREENS) {
+    test(`on ${path}, nothing moves`, async ({ page }) => {
+      await page.goto(path);
+      await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 600)));
+      const running = await page.evaluate(() =>
+        document
+          .getAnimations()
+          .filter((animation) => animation.playState === "running")
+          .map((animation) => {
+            const target = (animation.effect as KeyframeEffect | null)?.target;
+            return `${target?.tagName.toLowerCase() ?? "?"}.${target?.getAttribute("class")?.split(" ")[0] ?? ""}`;
+          }),
+      );
+      expect(running).toEqual([]);
+    });
+  }
+});
