@@ -774,22 +774,23 @@ export const steps = localised({
   back: "Back",
   of: (done: number, total: number) => `${String(done)} of ${String(total)}`,
   place: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
+  // Each step named as the plan names it (../visit/engine.ts), as the prototype heads them.
   titles: {
     before_photos: "Before photos",
-    checklist: "Service checklist",
-    consumables: "Consumables used",
-    piece: "The hair system",
+    checklist: "Service",
+    consumables: "Consumables",
+    piece: "Hair system",
     // No board draws the hair profile (ADR 0106).
     profile: "Hair profile",
     after_photos: "After photos",
     outcome: "Outcome",
   },
-  // The board titles a service visit's list; the other types' are named the same way.
+  // The guided tasks, as the plan names them: a service's, a fitting's, and a consultation's look at the scalp.
   checklistTitles: {
-    service: "Service checklist",
-    replacement: "Replacement checklist",
-    first_fit: "First fit checklist",
-    consultation: "Consultation checklist",
+    service: "Service",
+    replacement: "Fitting",
+    first_fit: "Fitting",
+    consultation: "Scalp and hairline",
   },
   // The board names no step but the one it draws.
   next: "Next",
@@ -887,6 +888,8 @@ export const steps = localised({
   outcome: {
     /** What the close leaves on the client's record, for whoever takes their next visit. */
     nextNote: "Note for the next technician",
+    /** Under the note: where it shows. */
+    nextNoteWhere: "Shown on this client’s next job, whoever takes it.",
     alert: "Alert for every visit",
     notePlaceholder: "What should the next technician know?",
     result: "Result",
@@ -900,9 +903,10 @@ export const steps = localised({
     photosSent: (count: number) => `${String(count)} sent`,
     /** A one visit closed as done texts the client the payment link. */
     sendLinkAndClose: "Send link and close",
-    // The board draws Done chosen already; nothing is chosen for the technician here.
-    choose: "Choose Done or Partly done",
-    pickReason: "Pick a reason to continue",
+    // The board draws Done chosen already; nothing is chosen for the technician here. What the dim Next waits on, as
+    // the prototype words it.
+    choose: "Pick a result",
+    pickReason: "Pick a reason",
     done: "Done",
     partial: "Partly done",
     // After a consultation: whether the client is going ahead with a fit, and why not (docs/decisions/0149-lost-reasons.md).
@@ -913,8 +917,8 @@ export const steps = localised({
     picked: (name: string) => `Their pick: ${name}.`,
     /** The head over a choice's reasons, a partly done's or a not now's. */
     reason: "Reason",
-    pickWhy: "Pick why to continue",
-    answerFirst: "Say if they’re going ahead",
+    pickWhy: "Pick a reason",
+    answerFirst: "Pick yes or not now",
   },
 } as const);
 

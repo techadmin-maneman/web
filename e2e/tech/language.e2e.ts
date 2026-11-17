@@ -101,7 +101,7 @@ test("Me's Language row switches every screen without a reload, and a visit keep
 
   // Back to the visit within the app: on the task it was on, in Hindi, the page never loaded again.
   await goInApp(page, `/jobs/${JOB_ID}/checklist`);
-  await expect(page.getByRole("heading", { level: 1, name: "सर्विस की चेकलिस्ट" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "सर्विस" })).toBeVisible();
   await expect(page.getByText("काम 2/3", { exact: true })).toBeVisible();
   await expect(page.locator("body")).toHaveAttribute("data-same-load", "yes");
 });

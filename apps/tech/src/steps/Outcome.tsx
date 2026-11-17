@@ -5,6 +5,7 @@
 import { sayKnown, theirs } from "../lang/index.ts";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Field, TextArea } from "@maneman/ui/Field";
+import { SectionHead } from "@maneman/ui/SectionHead";
 import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "@rules/policy/client-record.ts";
 import { useEffect, useId, useState } from "react";
 import type { EventBody, Job, OutcomeRequest, PartialReason } from "../api.ts";
@@ -184,19 +185,25 @@ function useCloseNotes(sent: { readonly note: string; readonly alert: string } |
   });
   const fields = (
     <div className={styles.notes}>
-      <Field label={copy.outcome.nextNote}>
-        {(control) => (
-          <TextArea
-            {...control}
-            placeholder={copy.outcome.notePlaceholder}
-            maxLength={HANDOFF_MAX_CHARS}
-            value={note}
-            onChange={(event) => {
-              setNote(event.currentTarget.value);
-            }}
-          />
-        )}
-      </Field>
+      {/* Under a section's head, as the prototype draws it, the box named for a screen reader, where it shows beneath. */}
+      <div>
+        <SectionHead size="list" title={copy.outcome.nextNote} />
+        <Field label={copy.outcome.nextNote} labelHidden className={styles.noteBox}>
+          {(control) => (
+            <TextArea
+              {...control}
+              placeholder={copy.outcome.notePlaceholder}
+              maxLength={HANDOFF_MAX_CHARS}
+              rows={3}
+              value={note}
+              onChange={(event) => {
+                setNote(event.currentTarget.value);
+              }}
+            />
+          )}
+        </Field>
+        <p className={styles.noteWhere}>{copy.outcome.nextNoteWhere}</p>
+      </div>
       <Field label={copy.outcome.alert}>
         {(control) => (
           <TextArea
