@@ -14,7 +14,8 @@ import { useCamera } from "@maneman/ui/useCamera";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
-import { capture as copy, storage, visit as visitCopy } from "../content.ts";
+import { capture as copy, visit as visitCopy } from "../content.ts";
+import { CameraStorageFull } from "../frame/Banners.tsx";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
@@ -184,7 +185,7 @@ function promptOf(missed: "missed" | "blank" | null, angle: Angle | undefined): 
 
 /**
  * The camera's head: the way back to the visit's plan, as from every step, the step's name with the angles taken, and
- * the torch; beneath it, with no signal, the bar that says the photographs are kept.
+ * the torch.
  */
 function CameraHead(props: {
   id: string;
@@ -337,11 +338,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
             </ToggleButton>
           </div>
         )}
-        {full && (
-          <p className={styles.alertBar} role="alert">
-            {storage.camera}
-          </p>
-        )}
+        {full && <CameraStorageFull className={styles.alertBar} />}
         {notice !== null && (
           <p className={styles.alertBar} role="alert">
             {notice}

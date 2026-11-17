@@ -2,7 +2,7 @@
  * A question before a tap that cannot be taken back, at the foot of the column
  * on the ink-night ground (./Sheet.tsx). Both answers are outlined,
  * 64 px and full width, the way back last, where the thumb is. On paper, the way
- * back comes first and is the filled one.
+ * back is the filled one, first unless the question puts it last (safeLast).
  */
 
 @layer base, ui;

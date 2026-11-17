@@ -103,7 +103,7 @@ export const today = localised({
     body: "Today’s jobs and cards are on the phone.",
     /** On a job's step: what the technician does is kept, and goes once the signal is back. */
     step: "Saved on the phone. Sends when you’re back online.",
-    /** Under Today's head: the bar the new look draws. */
+    /** At the top of every screen while there is no signal (../frame/Banners.tsx). */
     bar: "No signal · your work is saved on this phone",
   },
   failed: "The day’s jobs didn’t load.",

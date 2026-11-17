@@ -89,7 +89,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* A row's words on the gutter's line, as the heading's: the row's own padding taken back from the margin. */
 /* The rows on the gutter's line, their rules gutter to gutter, as the prototype draws them. */
 .rows {
   border-top: var(--hairline) solid var(--ui-line);

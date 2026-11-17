@@ -233,6 +233,15 @@ test("a frame the phone has no room for can be taken again, and the phone says i
   await expect(page.getByText(techCopy.capture.unavailableTitle)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 
+  // Off the camera, every other screen says it at the top, in the frame's words.
+  await page.getByRole("button", { name: techCopy.capture.close }).click();
+  await expect(page.getByRole("alert").filter({ hasText: techCopy.storage.bar })).toBeVisible();
+  await expect(page.getByText(techCopy.storage.camera)).toHaveCount(0);
+  await page.goBack();
+  await expect(capture).toBeEnabled();
+  await expect(page.getByText(techCopy.storage.camera)).toHaveCount(1);
+  await expect(page.getByText(techCopy.storage.bar)).toHaveCount(0);
+
   // Room again: the same angle is taken, and the warning goes.
   await page.evaluate(() => {
     (window as unknown as { roomAgain: () => void }).roomAgain();

@@ -7,7 +7,7 @@ import { GLYPHS } from "@maneman/brand/icons";
 import { buttonLook } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { changed as copy, storage, today as todayCopy, whatStopped } from "../content.ts";
 import { jobLabel } from "../lib/kind.ts";
 import { useHeldJobs } from "../lib/useDay.ts";
@@ -26,16 +26,44 @@ function useStorageFull(): boolean {
   return full;
 }
 
+/** How many of the camera's own lines for a full phone are drawn, and who wants to know when that changes. */
+let saidOnCamera = 0;
+const hearers = new Set<() => void>();
+const hearCamera = (hear: () => void) => {
+  hearers.add(hear);
+  return () => {
+    hearers.delete(hear);
+  };
+};
+
 /**
- * The phone has no room for what the technician does: the prototype's red line, above whichever screen is showing.
- * The camera says it in its own words, under its head, so it draws none of this.
+ * The phone has no room for what the technician does: the prototype's red line, above whichever screen is showing,
+ * unless the camera is saying it in its own words under its head.
  */
-export function StorageFull({ onCamera }: { readonly onCamera: boolean }) {
+export function StorageFull() {
   const full = useStorageFull();
-  if (!full || onCamera) return null;
+  const camera = useSyncExternalStore(hearCamera, () => saidOnCamera > 0);
+  if (!full || camera) return null;
   return (
     <p className={light.full} role="alert">
       {storage.bar}
+    </p>
+  );
+}
+
+/** The camera's line for a full phone, under its head and in its words; the frame's line stands aside while it shows. */
+export function CameraStorageFull({ className }: { readonly className: string | undefined }) {
+  useLayoutEffect(() => {
+    saidOnCamera += 1;
+    for (const hear of hearers) hear();
+    return () => {
+      saidOnCamera -= 1;
+      for (const hear of hearers) hear();
+    };
+  }, []);
+  return (
+    <p className={className} role="alert">
+      {storage.camera}
     </p>
   );
 }

@@ -103,10 +103,6 @@ function pageFor(route: Route) {
   }
 }
 
-/** The camera's screens, which say a full phone in their own words under their head. */
-const onCamera = (route: Route): boolean =>
-  route.page === "step" && (route.step === "before_photos" || route.step === "after_photos");
-
 /** The screens once there is a session, each reading the one account of the outbox kept here. */
 function SignedIn({ session, path }: { session: Session; path: string }) {
   const waiting = useOutboxSubscription();
@@ -118,7 +114,7 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
       <OutboxContext value={waiting}>
         {/* No signal, said once at the very top of every screen, as the prototype draws it. */}
         {session.offline && <NoSignal />}
-        <StorageFull onCamera={onCamera(route)} />
+        <StorageFull />
         <UpdateReady copy={update} resting={route.page === "today"} onInk={!drawnLight(route.page)} />
         {/* A job's work stopped reaching us, said above every screen; the waiting screen says it job by job. */}
         {route.page !== "waiting" && <Stopped />}

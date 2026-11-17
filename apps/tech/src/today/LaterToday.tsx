@@ -14,7 +14,7 @@ import { kindName } from "../lib/kind.ts";
 import type { RowState } from "../lib/progress.ts";
 import type { Queued } from "../store/outbox.ts";
 import type { Heard } from "../store/jobs.ts";
-import { closedAs } from "../lib/today.ts";
+import { closedAs, keptWhole } from "../lib/today.ts";
 import { apiDate, clock, dayAfter, runsOver, todayInIndia } from "../lib/when.ts";
 import styles from "./today.module.css";
 
@@ -32,9 +32,6 @@ function lastLine(job: JobSummary, state: RowState | null, ahead: Ahead): string
   if (job.drive_minutes === null || job.leave_by === null) return null;
   return copy.driveAndLeave(job.drive_minutes, clock(job.leave_by));
 }
-
-/** A line with its times and lengths kept whole, so a narrow row never breaks "11:05 / am" or "25 / min". */
-const keptWhole = (line: string): string => line.replace(/(\d) (am|pm|min|h)\b/g, "$1\u00a0$2");
 
 /** What a row's last line reads beyond the job: the next job still to do, and the phone's writes on their way. */
 interface Ahead {
@@ -62,7 +59,9 @@ function Row(props: {
           <span className={classes(styles.mark, closed && styles.markDone)} />
           <span className={closed ? styles.quiet : undefined}>
             <span className={styles.rowTime}>{clock(job.starts_at)}</span>
-            {job.minutes !== null && <span className={styles.rowLength}>{jobCopy.minutes(job.minutes)}</span>}
+            {job.minutes !== null && (
+              <span className={styles.rowLength}>{keptWhole(jobCopy.minutes(job.minutes))}</span>
+            )}
           </span>
         </span>
       }

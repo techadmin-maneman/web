@@ -193,7 +193,6 @@
 
 .rowLength {
   font-size: var(--fs-14);
-  white-space: nowrap;
 }
 
 /* How a job closed, in the ink, beside its rule. */

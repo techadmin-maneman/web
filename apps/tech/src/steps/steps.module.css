@@ -206,8 +206,6 @@
   padding: var(--sp-20);
 }
 
-/* Chosen: the board's heavier edge, in paper rather than its gold, which is Next's alone (ADR 0025, item 59). */
-
 /* A choice's reasons, as the prototype draws them: a small head, then chips sized to their words that wrap. */
 .reasons {
   display: flex;
@@ -275,8 +273,7 @@
 
 /* A full-width row inside the scrolling body draws its ring inside itself, so the body's edge never cuts it. */
 
-/* The choices and reasons are the shared ToggleButton; these place them: a choice the primary's height, a reason
-   across the column, a chip at least a stepper wide. */
+/* A choice is the shared ToggleButton at the primary's height, its words at the start. */
 .choice {
   display: flex;
   align-items: center;
@@ -284,7 +281,7 @@
   text-align: left;
 }
 
-/* A chosen option is filled in paper, so what it says beside its name takes the option's ink, not the note's. */
+/* A chosen option's words are in the full ink, and what it says beside its name with them, not in the note's grey. */
 .choice[aria-pressed="true"] .note {
   color: inherit;
 }
