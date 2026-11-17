@@ -51,23 +51,26 @@
   --site-bar-pad-top: var(--sp-12); /* the phone's sticky bar, around its 52 px buttons */
   --site-bar-pad-bottom: var(--sp-16);
   --site-safe-bottom: env(safe-area-inset-bottom, 0px); /* a phone's home bar, under anything fixed to the foot */
-  --consent-reserve: 0px; /* the cookie bar's room at the page's foot while it asks (components/ConsentBar.astro) */
+  --site-none: 0px; /* no room, where a role starts with none */
+  --consent-reserve: var(
+    --site-none
+  ); /* the cookie bar's room at the page's foot while it asks (components/ConsentBar.astro) */
 
   /* ---- The lockup (components/Lockup.astro), as design/brand/lockup-navy.svg draws it at 40 px: a 14.84 px small
      cut, 12.9 px from the mark ------------------------------------------------------------------------------ */
   --site-lockup-word: 0.371;
   --site-lockup-gap: 0.3225;
   --site-lockup-header: 30px;
-  --site-lockup-footer: 36px;
+  --site-lockup-footer: var(--sp-36);
   --site-lockup-slim: 34px;
 }
 
 @media (min-width: 761px) {
   :root {
-    --site-header-h: 72px;
-    --site-lockup-header: 40px;
-    --site-lockup-footer: 40px;
-    --site-lockup-slim: 36px;
+    --site-header-h: var(--sp-72);
+    --site-lockup-header: var(--sp-40);
+    --site-lockup-footer: var(--sp-40);
+    --site-lockup-slim: var(--sp-36);
   }
 }
 
@@ -167,8 +170,8 @@
   --bar-h: calc(
     var(--site-bar-pad-top) + var(--site-button-h) + var(--site-bar-pad-bottom)
   ); /* the phone's sticky bar */
-  --bar-reserve: 72px; /* the space the home page keeps for the sticky bar */
-  --foot-bar-h: 0px; /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
+  --bar-reserve: var(--sp-72); /* the space the home page keeps for the sticky bar */
+  --foot-bar-h: var(--site-none); /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
   --section-gap: var(--site-section-y);
   --band-pad: clamp(48px, 7vw, 96px);
   --split-min: 300px;
