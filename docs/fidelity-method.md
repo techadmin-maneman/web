@@ -159,7 +159,7 @@ These differences are known and stand:
 has no board of its own in the site redesign: it is `/book`'s island with an invite (ADR 0265), so each of its states
 is paired with `/book`'s board walked to the step that draws the same thing, at 390 and 1440 px: `arrival` (the
 board's pincode step), `served` (the visit), `not-served` (the list), `on-the-list` and `booked`. The walk is a
-visitor's, on the board itself (`scripts/lib/site-boards.ts`, `bookBoardAt`); `npm run fidelity` uses the same walk
+visitor's, on the board itself (`scripts/fidelity/site-boards.ts`, `bookBoardAt`); `npm run fidelity` uses the same walk
 for `/book`'s own states (`page-book-<state>`).
 
 - **The page's API is answered with the design's own example:** Rohit's invite, Sector 65 for 122018 and Bandra for 400050. No mm-api runs, Turnstile is never reached, and the cookie bar is answered.

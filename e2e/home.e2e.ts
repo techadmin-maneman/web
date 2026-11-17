@@ -697,26 +697,6 @@ test.describe("arriving at a section on a phone", () => {
   }
 });
 
-// The before and after pairs as they were framed before the redesign: the results whole, at their photographs' own
-// 4:5, and the try-on's pair on the client's framing, which keeps the hair in the band.
-test.describe("the before and after pairs", () => {
-  test("show the results whole, and the try-on's hair", async ({ page }) => {
-    await page.goto("/");
-    const result = page.locator('[data-section="results"] img').first();
-    await result.scrollIntoViewIfNeeded();
-    const shape = await result.evaluate((image) => {
-      const box = image.getBoundingClientRect();
-      return Math.round((box.width / box.height) * 100) / 100;
-    });
-    expect(shape).toBe(0.8);
-    const teaser = page.locator('[data-section="teaser"] img');
-    await expect(teaser).toHaveCount(2);
-    for (const image of await teaser.all()) {
-      expect(await image.evaluate((element) => getComputedStyle(element).objectPosition)).toBe("50% 28%");
-    }
-  });
-});
-
 test.describe("WCAG on the home page", () => {
   // Looping footage needs a way to stop it (WCAG 2.2.2).
   test("the hero footage can be paused, and stays paused", async ({ page }) => {

@@ -31,7 +31,6 @@
     "scripts/dev/seed-local.ts",
     "scripts/fidelity/*.ts",
     "scripts/lib/fidelity.ts",
-    "scripts/lib/site-boards.ts",
     "scripts/dev/serve-*.ts",
     "scripts/ci/lighthouse.ts",
     "scripts/lib/static-server.ts",

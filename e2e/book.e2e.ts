@@ -87,6 +87,9 @@ test("keeps the name and number first, then asks for the area, the visit and the
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ name: "Test Visitor", mobile: "9810000000", consent: true });
+  // A laptop says where else the booking shows; a phone keeps it out of sight, Open the app saying it (ADR 0265).
+  const wide = !narrow(page.viewportSize()?.width);
+  await expect(page.getByText(referralCopy.referral.booked.appHint)).toBeVisible({ visible: wide });
 });
 
 test("Change returns to the name and number as typed, and the same again is not kept twice", async ({ page }) => {

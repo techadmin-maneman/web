@@ -21,6 +21,11 @@
   color: var(--site-text-muted);
 }
 
+/* With no box beside it: the landing's first screen, before the pincode's answer brings the form. */
+.legalAlone {
+  padding-left: 0;
+}
+
 /* Each link's tap reaches a thumb's height above and below its words, padding an inline box leaving the line as it is. */
 .legal a {
   padding-block: var(--sp-12);

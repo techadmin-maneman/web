@@ -4,7 +4,7 @@
 // each of its states as a visitor would (ADR 0265).
 import { readFileSync } from "node:fs";
 import type { Browser, Page } from "@playwright/test";
-import { routeDesignLibraries, STILL } from "./fidelity.ts";
+import { routeDesignLibraries, STILL } from "../lib/fidelity.ts";
 
 /** Each board's picture, from the README's table: `| \`<id>\` | \`<file>` …`. */
 const BLOBS: ReadonlyMap<string, string> = new Map(

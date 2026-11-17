@@ -30,7 +30,7 @@ Worker's rewrites, `?state=` previews, and the Lighthouse budgets. No endpoint, 
 | `PhoneNotFound` / `LaptopNotFound`     | `*-12-404`                                                  | `pages/404.astro`                                                         | `content/site/pages.ts`                                             |
 
 The referral landing (`/r/:code`) has no board. It shares `/book`'s island and takes `/book`'s look; its fidelity
-pairs against `/book`'s board: PR 5 moved `fidelity:refer` onto it (`scripts/lib/site-boards.ts`).
+pairs against `/book`'s board: PR 5 moved `fidelity:refer` onto it (`scripts/fidelity/site-boards.ts`).
 
 ### Home, section by section
 

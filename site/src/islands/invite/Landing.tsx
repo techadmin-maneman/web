@@ -22,6 +22,7 @@ import { IslandBoundary } from "../IslandBoundary.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
 import { FlowTop } from "./FlowFrame.tsx";
+import { LegalLinks } from "./fields.tsx";
 import { Arrival, confirmation, PincodeAndForm } from "./PageParts.tsx";
 import { useLandingData } from "./useLandingData.ts";
 import { usePageFlow } from "./usePageFlow.ts";
@@ -98,6 +99,8 @@ function LandingPage(props: Props) {
         )}
       </div>
       <PincodeAndForm page={page} form={form} stage="all" />
+      {/* The terms and the privacy notice, linked from the first screen as from every page; the form brings its own. */}
+      {page.pincode.answer === null && <LegalLinks alone={styles.arrivalLegal} />}
     </Arrival>
   );
 }

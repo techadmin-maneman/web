@@ -42,7 +42,11 @@ function stepAt(first: boolean, answer: PincodeAnswer | null, step: string): num
 function backOf(page: ReturnType<typeof usePageFlow>, first: boolean): (() => void) | null {
   if (first) return null;
   if (page.pincode.answer === null) return page.changePerson;
-  if (page.state.step === "address") return () => history.back();
+  if (page.state.step === "address") {
+    return () => {
+      history.back();
+    };
+  }
   return page.pincode.change;
 }
 
@@ -67,7 +71,11 @@ function BookPage(props: Props) {
   return (
     <Arrival top={<FlowTop onBack={back} />} how="laptop">
       <FlowSteps at={stepAt(first, answer, step)} onBack={back} />
-      <h1 ref={page.heading} tabIndex={-1} class={titled ? styles.title : `${styles.title ?? ""} ${hiddenOnPhoneLook ?? ""}`}>
+      <h1
+        ref={page.heading}
+        tabIndex={-1}
+        class={titled ? styles.title : `${styles.title ?? ""} ${hiddenOnPhoneLook ?? ""}`}
+      >
         {bookingTitle(answer, plan)}
       </h1>
       {/* The first step's intro, however it is reached; past it the page goes straight to the step. */}
@@ -83,7 +91,11 @@ function BookPage(props: Props) {
         <AboutYou turnstileSiteKey={props.turnstileSiteKey} kept={kept} onKept={page.keepPerson} />
       ) : (
         <>
-          <div class={answer?.served === true ? `${styles.bookingFor ?? ""} ${styles.bookingForPast ?? ""}` : styles.bookingFor}>
+          <div
+            class={
+              answer?.served === true ? `${styles.bookingFor ?? ""} ${styles.bookingForPast ?? ""}` : styles.bookingFor
+            }
+          >
             <BookingFor person={kept} onChange={page.changePerson} />
           </div>
           {answer === null && <StepLine at={2} name={booking.steps.area} focus={false} />}
