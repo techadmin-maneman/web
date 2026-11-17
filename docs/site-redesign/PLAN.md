@@ -158,7 +158,8 @@ The flow frame's other words are live strings, reused by key: "Free consultation
 3. **Board stand-ins**: one results pair, grey look thumbnails, guide photographs, "Prototype:" lines and the stubbed
    clauses in privacy and terms are not built; the real content is.
 4. **The one visit's length** reads as the API gives it; the board's "2.5 hours" shows only if ops set it.
-5. **"10,000+ transformations"** is live copy with no source in the repository; kept, listed for the owner.
+5. **"10,000+ transformations"** is live copy, kept: ADR 0213 records that it counts our specialists' past fits, and
+   the owner confirmed it accurate on 17 November 2026.
 6. **"Sign in" in production** is left out until the client app is switched on there.
 7. **The home page's before and after pairs** are framed as they were before the redesign, at the owner's request on
    17 November 2026: the results whole at their photographs' own 4:5, at most 540 px wide, where the boards crop them
@@ -176,8 +177,9 @@ The flow frame's other words are live strings, reused by key: "Free consultation
 14. **The way back above a guide or a city** reads the list's own title, "Guides" or "Areas we cover", where the boards
     write "All guides" and "All areas" (the brief's words stay as live), and is a thumb's height to tap; its words sit
     where the boards' do.
-15. **A header narrower than 357 px**, as on a small phone or with its text enlarged, draws the mark without the
-    wordmark, and Sign in as its icon, named for a screen reader: the three side by side need 357 px.
+15. **On a screen narrower than 357 px** with Sign in shown (279 px without it), as a small phone's or one with its text
+    enlarged, the header draws the mark without the wordmark, and Sign in as its icon: a 44 px target, named for a
+    screen reader.
 
 ## How each PR is verified
 

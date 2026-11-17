@@ -55,7 +55,7 @@
 
   /* The range covers the stage, unseen; its focus ring is drawn on the handle. */
   .stage:has(input:focus-visible) .handle {
-    outline: var(--focus-width) solid var(--compare-focus);
+    outline: var(--focus-width) solid var(--focus-over-photo);
     outline-offset: var(--focus-offset);
   }
 }

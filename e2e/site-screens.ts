@@ -20,7 +20,11 @@ export const PAGES = [
   "/no-such-page",
 ];
 
-/** Every page, /stop as a link opens it, and each screen of the flows that opens as a ?state= preview. */
+/**
+ * Every page, /stop as a link opens it, and each screen of the flows that opens as a ?state= preview
+ * (site/src/islands/invite/preview.ts, site/src/islands/tryon/machine.ts). /book's area and address steps have none,
+ * and are reached by the booking's own tests.
+ */
 export const SCREENS = [
   ...PAGES,
   "/stop#a-token",
@@ -28,9 +32,13 @@ export const SCREENS = [
   "/book?state=served",
   "/book?state=unserved",
   "/book?state=booked",
+  "/book?state=requested",
+  "/book?state=expired",
   "/book?state=listed",
   "/try?state=looks",
   "/try?state=gate",
   "/try?state=sent",
+  "/try?state=sent&kind=returning",
   "/try?state=error",
+  "/try?state=error&kind=unavailable",
 ];

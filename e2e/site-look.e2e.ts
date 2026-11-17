@@ -3,6 +3,7 @@
 
 import type { Locator, Page } from "@playwright/test";
 import { expect, fakeTurnstile, test, visit } from "./support.ts";
+import { answerOpen, mockApi, NOON_2_OCTOBER, openDays, openForm } from "./book-fixtures.ts";
 import { PAGES, SCREENS } from "./site-screens.ts";
 
 test.beforeEach(async ({ page }) => {
@@ -109,6 +110,17 @@ test.describe("no paper or wash", () => {
       expect([...new Set(pointed)]).toEqual([]);
     });
   }
+});
+
+// A day full in every window draws its windows closed, a choice that cannot be chosen: in the site's pale grey, not the
+// apps' paper.
+test("a full window on /book draws no paper", async ({ page }) => {
+  await page.clock.setFixedTime(NOON_2_OCTOBER);
+  await mockApi(page);
+  await answerOpen(page, () => openDays({ "2026-10-03": { morning: false, afternoon: true, evening: true } }));
+  await openForm(page);
+  await expect(page.getByRole("radio", { name: /^Morning/ })).toBeDisabled();
+  expect(await paperDrawn(page, page.locator("body *"))).toEqual([]);
 });
 
 // Under reduced motion nothing moves on its own (WCAG 2.3.3; global.css stops every animation and transition): no

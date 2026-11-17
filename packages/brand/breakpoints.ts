@@ -25,5 +25,7 @@ export const CONTAINER = {
   /** Under it a row of five short names, as the live card's stages, no longer fits at the scale's smallest size. */
   fiveNames: "(width < 13rem)",
   /** Under it the site's header no longer holds the lockup, Sign in and the free consultation side by side. */
-  siteHeader: "(max-width: 356px)",
+  siteHeader: "(max-width: 328px)",
+  /** Under it the site's header no longer holds the lockup and the free consultation, where there is no Sign in. */
+  siteHeaderAlone: "(max-width: 250px)",
 } as const;

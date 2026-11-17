@@ -46,9 +46,9 @@ function spills(page: Page) {
     });
     // A box running past its parent's edge, as a row of buttons wider than its card, though each keeps its words. A box
     // set absolutely, as a count over an icon's corner, is placed so on purpose, as is one its own negative margin pulls
-    // out, as a bar drawn to the screen's edges; the children of a box that clips or scrolls are its own to hold,
-    // measured as it scrolls. A parent that draws no box of its own (display: contents) is passed through to the one
-    // that does.
+    // out as far as the margin, as a bar drawn to the screen's edges; the children of a box that clips or scrolls are
+    // its own to hold, measured as it scrolls. A parent that draws no box of its own (display: contents) is passed
+    // through to the one that does. A margin is read unzoomed and a box measured zoomed, so the margin is zoomed too.
     const boxed = (node: HTMLElement | null): HTMLElement | null =>
       node !== null && getComputedStyle(node).display === "contents" ? boxed(node.parentElement) : node;
     const overrun = shown.flatMap((box) => {
@@ -57,8 +57,11 @@ function spills(page: Page) {
       if (parent === null || ["absolute", "fixed"].includes(style.position)) return [];
       if (["hidden", "clip", "auto", "scroll"].includes(getComputedStyle(parent).overflowX)) return [];
       const [own, edge] = [box.getBoundingClientRect(), parent.getBoundingClientRect()];
-      const pastRight = own.right > edge.right + 1 && parseFloat(style.marginRight) >= 0;
-      const pastLeft = own.left < edge.left - 1 && parseFloat(style.marginLeft) >= 0;
+      const zoom = box.currentCSSZoom;
+      const pulledRight = Math.max(0, -parseFloat(style.marginRight)) * zoom;
+      const pulledLeft = Math.max(0, -parseFloat(style.marginLeft)) * zoom;
+      const pastRight = own.right > edge.right + pulledRight + 1;
+      const pastLeft = own.left < edge.left - pulledLeft - 1;
       const out = own.width > 0 && (pastRight || pastLeft);
       return out ? [`${box.tagName.toLowerCase()} "${box.textContent.trim().slice(0, 40)}" past its box`] : [];
     });

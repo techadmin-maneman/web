@@ -124,8 +124,8 @@
   }
 
   .card:has(.radio:disabled) {
-    border-color: var(--paper-shade);
-    background: var(--paper-shade);
+    border-color: var(--choice-off);
+    background: var(--choice-off);
     color: var(--text-muted);
     cursor: default;
   }

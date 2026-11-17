@@ -49,7 +49,8 @@ photographs. Nothing was added to `site/src/assets`, and a test holds the set un
 3. **Board stand-ins** are not built: one results pair, grey look thumbnails, guide photographs, "Prototype:" lines,
    stubbed clauses. The real content is.
 4. **The one visit's length** reads as the console sets it; the board's "2.5 hours" shows only if ops set it.
-5. **"10,000+ transformations"** is kept word for word (owner, 17 November).
+5. **"10,000+ transformations"** is kept word for word: ADR 0213 records that it counts our specialists' past fits,
+   and the owner confirmed it accurate on 17 November 2026.
 6. **"Sign in" in production** is left out until the client app is switched on there.
 7. **The home page's before and after pairs** keep their pre-redesign framing, at the owner's request: the results
    whole at 4:5, the try-on pair on the client's framing.
@@ -62,15 +63,18 @@ photographs. Nothing was added to `site/src/assets`, and a test holds the set un
 13. **A link in a policy's sentence** takes the sentence's colour, underlined in it.
 14. **The way back above a guide or a city** reads the list's own title, "Guides" or "Areas we cover", where the boards
     write new words; it is a 44 px tap target.
-15. **A header narrower than 357 px**, as on a small phone or with enlarged text, draws the mark without the wordmark,
-    and Sign in as its icon, named for a screen reader.
+15. **On a screen narrower than 357 px** with Sign in shown (279 px without it), as a small phone's or one with its text
+    enlarged, the header draws the mark without the wordmark, and Sign in as its icon: a 44 px target, named for a
+    screen reader.
 
 ## No paper
 
 No page draws the brand's paper family or the client app's wash (`#E9E4D8`, `#F4F0E8` and their kin), at rest or
-under the pointer (`e2e/site-look.e2e.ts`). The cookie bar's buttons, the light-on-ink looks, a chosen card's words,
-a choice card's edge, the before and after handle's focus ring and the footer's icons now draw in roles the site sets
-to white, stone and brass (`--on-ink`, `--on-ink-pressed`, `--choice-edge`, `--compare-focus`); the apps keep paper.
+under the pointer, a full window on `/book` included (`e2e/site-look.e2e.ts`). The cookie bar's buttons, the
+light-on-ink looks, a chosen card's words, a choice card's edge and a card that cannot be chosen, the focus ring over
+a photograph or the camera's view, and the footer's icons now draw in roles the site sets to white, cool, stone, its
+pale grey and brass (`--on-ink`, `--on-ink-pressed`, `--choice-edge`, `--choice-off`, `--focus-over-photo`); the
+apps keep paper.
 
 ## Accessibility and sizes
 
@@ -82,6 +86,15 @@ to white, stone and brass (`--on-ink`, `--on-ink-pressed`, `--choice-edge`, `--c
 - Lighthouse, mobile profile, the median of three runs: home 98 / 100 / 100 / 100 (performance, accessibility, best
   practices, SEO), `/try` 99 / 100 / 100 / 100, `/book` 99 / 100 / 100 / 100, a guide, the cities and the privacy
   notice 100 across; every page within its budget (`npm run lighthouse`).
+
+## Settled with the owner
+
+- **The one visit's note**, "Paid through a Razorpay link once you're fitted. Decide against it and you pay nothing.",
+  approved as written on 17 November 2026 (ADR 0269).
+- **"10,000+ transformations"**: see departure 5.
+- **The header's Book an outline, and the focus ring brass on every ground** (ADR 0266).
+- **Razorpay only**, never UPI, on the site and in the client app (ADR 0272).
+- **The terms and the privacy notice linked from every flow screen** (departure 9).
 
 ## Open for the owner
 

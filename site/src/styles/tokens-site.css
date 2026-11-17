@@ -118,7 +118,8 @@
   --on-ink: var(--site-on-navy);
   --on-ink-pressed: var(--site-band);
   --choice-edge: var(--stone);
-  --compare-focus: var(--site-focus);
+  --choice-off: var(--disabled);
+  --focus-over-photo: var(--site-focus);
 }
 
 @media (min-width: 761px) {
@@ -315,6 +316,7 @@
   --hero-peek: clamp(90px, calc(92.74px - 0.1905vw), 92px);
   --hero-min-h: max(520px, calc(100svh - var(--site-header-h) - var(--hero-peek)));
   --hero-tag-top: clamp(16px, 2.4vw, 26px); /* the area line and Pause, from the hero's top */
+  --hero-pause-room: calc(var(--tap) + var(--tap) + var(--sp-12)); /* Pause or Play, and a gap before it */
   --hero-pad-bottom: clamp(32px, calc(20.11px + 3.048vw), 64px); /* the words, above the room kept for the bar */
   --hero-title-gap: clamp(18px, calc(15.77px + 0.571vw), 24px); /* the turning line to the title */
   --hero-actions-gap: clamp(24px, calc(19.54px + 1.143vw), 36px); /* the words to the buttons */
