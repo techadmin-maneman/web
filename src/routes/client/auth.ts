@@ -16,7 +16,7 @@ import { deviceLabel, openSession, revokeSession } from "../../domain/sign-in/se
 import { clearClientCookie, clientSessionOf, setClientCookie } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse } from "../../http/send-code.ts";
+import { knownCode, mayAskForCode, sendCodeAfterResponse } from "../../http/send-code.ts";
 import { checkTurnstile, visitorOf } from "../../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import {
@@ -158,8 +158,8 @@ async function contactOf(
   db: D1Database,
   personId: string | null,
 ): Promise<{ mobileE164: string; name: string; testRecord: boolean } | null> {
-  if (personId === null) return null;
-  return liveContact(db, personId);
+  // Read for a challenge nobody holds too, so the answer to a holder's takes no longer.
+  return liveContact(db, personId ?? "");
 }
 
 const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
@@ -184,8 +184,6 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
   if (asked === "busy") return refuse(c, "busy");
   if (asked !== "open") return refuse(c, "rate_limited");
 
-  if (!(await countCode({ c, surface: "login", sendsTo, testRecord, now }))) return refuse(c, "busy");
-
   const code = knownCode({ login: limits, testRecord }) ?? newLoginCode();
   const challenge = await createChallenge(db, {
     holder: "person",
@@ -195,7 +193,7 @@ const login: RouteHandler<typeof loginRoute, AppEnv> = async (c) => {
     pepper: limits.codePepper,
     now,
   });
-  await sendCodeAfterResponse({ c, mobileE164: sendsTo, testRecord, channel: "whatsapp", code });
+  await sendCodeAfterResponse({ c, surface: "login", mobileE164: sendsTo, testRecord, channel: "whatsapp", code });
   return c.json(challengeBody(c, challenge, now), 202);
 };
 
@@ -224,11 +222,9 @@ async function sendAgain(c: Ctx, challengeId: string, channel: CodeChannel) {
   if (asked === "busy") return refuse(c, "busy");
   if (asked !== "open") return refuse(c, "rate_limited");
 
-  if (!(await countCode({ c, surface: "login", sendsTo, testRecord, now }))) return refuse(c, "busy");
-
   const code = knownCode({ login: config.settings.login, testRecord }) ?? newLoginCode();
   await replaceCode(db, challenge, { channel, code, pepper: config.settings.login.codePepper, now });
-  await sendCodeAfterResponse({ c, mobileE164: sendsTo, testRecord, channel, code });
+  await sendCodeAfterResponse({ c, surface: "login", mobileE164: sendsTo, testRecord, channel, code });
   const sent = { ...challenge, channel, lastSentAt: now, sends: challenge.sends + 1 };
   return c.json(challengeBody(c, sent, now), 202);
 }

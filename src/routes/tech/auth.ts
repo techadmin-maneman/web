@@ -29,7 +29,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
 import { afterResponse } from "../../http/after-response.ts";
-import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGate } from "../../http/send-code.ts";
+import { knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGate } from "../../http/send-code.ts";
 import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../../http/technician-session.ts";
 import { visitorOf } from "../../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
@@ -214,8 +214,6 @@ export function registerTechAuth(app: App): void {
     if (asked !== "open") return refuse(c, "rate_limited");
 
     const sendsTo = technician?.mobileE164 ?? null;
-    if (!(await countCode({ c, surface: "tech", sendsTo, testRecord, now }))) return refuse(c, "busy");
-
     const code = knownCode({ login: limits, testRecord }) ?? newLoginCode();
     const challenge = await createChallenge(db, {
       holder: "technician",
@@ -224,7 +222,7 @@ export function registerTechAuth(app: App): void {
       pepper: limits.codePepper,
       now,
     });
-    await sendCodeAfterResponse({ c, mobileE164: sendsTo, testRecord, channel: "whatsapp", code });
+    await sendCodeAfterResponse({ c, surface: "tech", mobileE164: sendsTo, testRecord, channel: "whatsapp", code });
     const secondsUntil = (instant: Date) => Math.max(0, Math.ceil((instant.getTime() - now.getTime()) / 1000));
     return c.json(
       {

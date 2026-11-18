@@ -34,6 +34,29 @@ import {
 
 let logs: ReturnType<typeof captureLogs>;
 
+/** The database, never answering the write that counts a login code against the day's ceiling. */
+function ceilingNeverAnswers(db: D1Database): D1Database {
+  const never = () => new Promise<never>(() => undefined);
+  return new Proxy(db, {
+    get(target, property, receiver) {
+      if (property !== "prepare") return Reflect.get(target, property, receiver) as unknown;
+      return (sql: string): D1PreparedStatement => {
+        const statement = target.prepare(sql);
+        if (!sql.includes("INSERT INTO counters")) return statement;
+        return new Proxy(statement, {
+          get(inner, key, self) {
+            if (key !== "bind") return Reflect.get(inner, key, self) as unknown;
+            return (...values: unknown[]): D1PreparedStatement =>
+              values[0] === "ceiling:login_code"
+                ? ({ first: never, all: never, run: never, raw: never } as unknown as D1PreparedStatement)
+                : inner.bind(...values);
+          },
+        });
+      };
+    },
+  });
+}
+
 beforeEach(async () => {
   useClock(NOW);
   logs = captureLogs();
@@ -137,6 +160,31 @@ describe("a login code that does not go", () => {
     await tries(1);
     const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
     expect(open).toEqual({ n: 0 });
+  });
+});
+
+// The module's rule: every answer takes the same time whoever holds the number. A client's code is counted against
+// the day's ceiling after the answer, as it is sent then, so the answer never waits on that write.
+describe("the answer to a client's number", () => {
+  it("does not wait on the count against the day's ceiling", async () => {
+    const context = { waitUntil: () => undefined, passThroughOnException: () => undefined, props: {} };
+    const asked = app.request(
+      "https://maneman.test/api/auth/otp",
+      {
+        method: "POST",
+        headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: BOOKED, turnstile_token: "token" }),
+      },
+      { ...env, DB: ceilingNeverAnswers(env.DB) },
+      context,
+    );
+    const waited = new Promise<"waited">((resolve) =>
+      setTimeout(() => {
+        resolve("waited");
+      }, 3000),
+    );
+    const answer = await Promise.race([asked, waited]);
+    expect(answer === "waited" ? answer : answer.status).toBe(202);
   });
 });
 
