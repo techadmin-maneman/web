@@ -10,6 +10,7 @@
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
 // invocation may send (docs/decisions/0112-workers-paid.md).
 
+import { createAlert } from "../providers/alerts.ts";
 import { alertVisitsNotBegun } from "../domain/dispatch/not-begun.ts";
 import { YOUCAM_UNIT_FLOOR } from "../config/tryon.ts";
 import { tellOfBooksCalls } from "../domain/books/books-calls.ts";
@@ -257,9 +258,16 @@ async function booksErasuresJob({ env, deps, log, budget }: CronContext): Promis
 
 /** An alert whose first telling the chat did not take, told again (src/domain/platform/alerts.ts). */
 async function alertsRetoldJob({ env, deps, config, log }: CronContext): Promise<void> {
+  // The urgent space, told what the alert space keeps refusing; only this pass needs it, so it is made here.
+  const urgentUrl = config.settings.urgentWebhookUrl;
+  const urgent =
+    urgentUrl === null
+      ? null
+      : createAlert({ webhookUrl: urgentUrl, environment: config.environment, fetch: deps.fetch, log });
   const told = await retellUndelivered({
     db: env.DB,
     alert: deps.alert,
+    urgent,
     now: deps.now,
     environment: config.environment,
     log,
