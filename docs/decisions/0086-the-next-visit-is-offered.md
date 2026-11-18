@@ -94,7 +94,7 @@ Both take the third statement of the board's read, which now holds five arms, th
 
 ### The horizon
 
-A visit may be booked in the app from tomorrow to `horizon` days on, 45 to begin with, and a first fit no sooner than the lead time after the consultation. `GET /api/availability` still answers a strip of 14 days, from the day asked for, moved back so it ends by the horizon where it can, with any day outside the bookable days offered to nobody; `POST /api/holds` refuses a day outside them (`not_bookable`), for a move as for a new visit. The site's consultation form keeps its own fortnight from tomorrow (`BOOKING_DAYS`, which is now the strip's length and the site's reach alone).
+A visit may be booked in the app from tomorrow to `horizon` days on, 45 to begin with, and a first fit no sooner than the lead time after the consultation. `GET /api/availability` still answers a strip of 14 days, from the day asked for, moved back so it ends by the horizon where it can, with any day outside the bookable days offered to nobody; `POST /api/holds` refuses a day outside them (`not_bookable`), for a move as for a new visit. The site's consultation form keeps its own fortnight from tomorrow (`BOOKING_DAYS`, which is now the strip's length and the site's reach alone), and offers today as well where ops let its visit be booked for today, as the app does: from the lead time on (owner's ruling, 18 November 2026).
 
 ### One setting for the seven figures
 

@@ -7,7 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fakeQueue, markDatabase, NOW, provedNumberCode, request } from "../helpers.ts";
 import { ADDRESS, pincode, VISITOR, post, site } from "./consultations-fixtures.ts";
-import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
+import { BOOKING_RULES, SAME_DAY_BOOKING } from "../../../src/policy/start-times.ts";
 
 beforeEach(async () => {
   await markDatabase();
@@ -67,7 +67,7 @@ describe("GET /api/availability/public", () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
   });
 
-  it("answers the fortnight from tomorrow, open where someone is free, for a minute's cache, naming nobody", async () => {
+  it("answers today and the fortnight from tomorrow, open where someone is free, for a minute's cache, naming nobody", async () => {
     const answer = await open("pincode=122018&plan=consultation");
 
     expect(answer.status).toBe(200);
@@ -76,17 +76,52 @@ describe("GET /api/availability/public", () => {
     expect(text).not.toContain("Imran");
     const { plan, days } = JSON.parse(text) as Open;
     expect(plan).toBe("consultation");
-    expect(days).toHaveLength(14);
-    expect(days[0]).toMatchObject({ date: "2026-09-22", windows: ALL_OPEN, hours: HOURS });
+    expect(days).toHaveLength(15);
+    const tomorrow = days.find((day) => day.date === "2026-09-22");
+    expect(tomorrow).toMatchObject({ windows: ALL_OPEN, hours: HOURS });
     // Its starts every half hour from 9, the last an hour's consultation and its wrap-up end by 8.
-    expect(days[0]?.starts.map((start) => start.time)).toEqual(
+    expect(tomorrow?.starts.map((start) => start.time)).toEqual(
       Array.from({ length: 20 }, (_, index) => {
         const minute = 9 * 60 + index * 30;
         return `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
       }),
     );
-    expect(days[0]?.starts.every((start) => start.open)).toBe(true);
+    expect(tomorrow?.starts.every((start) => start.open)).toBe(true);
     expect(days.at(-1)?.date).toBe("2026-10-05");
+  });
+
+  // At 10:55 on 18 Nov the site offered nothing before the next morning, where the app would have booked 14:00 that day.
+  it("offers today from the lead time on while ops let consultations be booked for today, and refuses earlier", async () => {
+    const days = await daysOf("pincode=122018&plan=consultation");
+    // Noon on Monday, with a three-hour lead: from 15:00.
+    const today = days[0];
+    expect(today?.date).toBe("2026-09-21");
+    expect(today?.starts.filter((start) => start.open).map((start) => start.time)[0]).toBe("15:00");
+    expect(today?.windows).toEqual({ morning: false, afternoon: true, evening: true });
+
+    expect((await book({ date: "2026-09-21", window: "evening", starts_at: "2026-09-21T10:30:00.000Z" })).status).toBe(
+      201,
+    );
+    const early = await book({
+      mobile: "9810000003",
+      date: "2026-09-21",
+      window: "afternoon",
+      starts_at: "2026-09-21T07:30:00.000Z",
+    });
+    expect(await early.json()).toMatchObject({ error: { code: "not_bookable" } });
+  });
+
+  it("offers nothing today while ops keep consultations to another day", async () => {
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('same_day_booking', ?1, 'ops', ?2)",
+    )
+      .bind(JSON.stringify({ ...SAME_DAY_BOOKING, consultation: "no" }), NOW.toISOString())
+      .run();
+    const days = await daysOf("pincode=122018&plan=consultation");
+    expect(days).toHaveLength(14);
+    expect(days[0]?.date).toBe("2026-09-22");
+    const today = await book({ date: "2026-09-21", window: "evening", starts_at: "2026-09-21T10:30:00.000Z" });
+    expect(await today.json()).toMatchObject({ error: { code: "not_bookable" } });
   });
 
   it("closes a day once its technician's is full, as booking it would be refused, and a day ops blacked out", async () => {
@@ -142,7 +177,10 @@ describe("GET /api/availability/public", () => {
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
     const off = { selfServeBooking: false, selfServeConsultations: false };
 
-    for (const day of await daysOf("pincode=122018&plan=consultation", off)) expect(day.windows).toEqual(ALL_OPEN);
+    const [today, ...later] = await daysOf("pincode=122018&plan=consultation", off);
+    // Today from the lead time on: the morning is over.
+    expect(today?.windows).toEqual({ morning: false, afternoon: true, evening: true });
+    for (const day of later) expect(day.windows).toEqual(ALL_OPEN);
     for (const day of await daysOf("pincode=122018&plan=one_visit", off)) {
       expect(day.windows).toEqual({ morning: true, afternoon: true, evening: false });
     }

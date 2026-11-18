@@ -5,7 +5,8 @@
 import { BOOKING_DAYS, BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
 import { startGrid, type GridStart } from "../../policy/start-times.ts";
 import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
-import { addDays, indiaDate } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaTime } from "../../lib/india-time.ts";
+import { minuteOf, timeOf } from "../../policy/day-plan.ts";
 import { planStartsIn, type Plan } from "../../policy/one-visit.ts";
 import { siteVisit } from "./site-visit.ts";
 import { availability } from "./availability.ts";
@@ -25,6 +26,27 @@ interface OpenDay {
   readonly starts: readonly GridStart[];
 }
 
+/** A plan's kind of visit, as the rule for booking today names it. */
+const typeOfPlan = (plan: Plan): "first_fit" | "consultation" => (plan === "one_visit" ? "first_fit" : "consultation");
+
+/**
+ * The days the form offers: from today where ops let the plan's visit be booked for today, the app's rule
+ * (src/domain/booking/start-offers.ts), else from tomorrow, in India; to the same last day either way. Today's earliest
+ * start is the lead time from now.
+ */
+export function siteDays(
+  plan: Plan,
+  inputs: OpsInputs,
+  now: Date,
+): { readonly first: string; readonly days: number; readonly earliestToday: string | null } {
+  const today = indiaDate(now);
+  if (inputs.sameDayBooking[typeOfPlan(plan)] !== "yes") {
+    return { first: addDays(today, 1), days: BOOKING_DAYS, earliestToday: null };
+  }
+  const earliest = minuteOf(indiaTime(now)) + inputs.bookingRules.lead * 60;
+  return { first: today, days: BOOKING_DAYS + 1, earliestToday: timeOf(Math.min(earliest, 24 * 60 - 1)) };
+}
+
 /** How a booking on a day is taken: not at all, as a request ops fix the hour of, or as a slot of this length. */
 type DayBooking =
   { readonly by: "nothing" } | { readonly by: "request" } | { readonly by: "slot"; readonly minutes: number };
@@ -40,11 +62,16 @@ async function dayBooking(db: D1Database, plan: Plan, date: string, selfServeBoo
 /** The windows and starts someone is free in, for each length a slot is held for, keyed "minutes/date". */
 async function freeWindows(
   db: D1Database,
-  asked: { readonly bookings: readonly DayBooking[]; readonly pincode: string; readonly fitting: Fitting | null },
-  first: string,
+  asked: {
+    readonly bookings: readonly DayBooking[];
+    readonly pincode: string;
+    readonly fitting: Fitting | null;
+    readonly type: "first_fit" | "consultation";
+  },
+  range: { readonly first: string; readonly days: number },
   now: Date,
 ): Promise<{ windows: Map<string, Set<BookingWindow>>; starts: Map<string, string[]> }> {
-  const { bookings, pincode, fitting } = asked;
+  const { bookings, pincode, fitting, type } = asked;
   const lengths = new Set(bookings.flatMap((booking) => (booking.by === "slot" ? [booking.minutes] : [])));
   const free = new Map<string, Set<BookingWindow>>();
   const starts = new Map<string, string[]>();
@@ -53,9 +80,10 @@ async function freeWindows(
       db,
       // Only the technicians in the pincode's city can take it.
       placing: { personId: null, pincode },
-      visit: { minutes, fitting },
-      from: first,
-      days: BOOKING_DAYS,
+      // Its kind, so today is offered as the app offers it.
+      visit: { minutes, fitting, type },
+      from: range.first,
+      days: range.days,
       now,
     })) {
       const open = day.windows.filter((offer) => offer.open).map((offer) => offer.window);
@@ -81,6 +109,8 @@ function startsOfDay(day: {
   readonly hours: Readonly<Record<BookingWindow, WindowTimes>>;
   readonly inputs: OpsInputs;
   readonly free: readonly string[] | undefined;
+  /** Today's first start, the lead time from now; null on any other day. */
+  readonly earliest: string | null;
 }): GridStart[] {
   const { booking, inputs } = day;
   if (booking.by === "nothing") return [];
@@ -94,13 +124,14 @@ function startsOfDay(day: {
   );
   if (booking.by === "slot") return grid;
   const startable = (time: string) =>
+    (day.earliest === null || time >= day.earliest) &&
     BOOKING_WINDOWS.some(
       (window) => planStartsIn(day.plan, window) && time >= day.hours[window].start && time < day.hours[window].end,
     );
   return grid.map(({ time }) => ({ time, open: startable(time) }));
 }
 
-/** The days the form offers at a pincode, from tomorrow in India, each window open where booking it would be taken. */
+/** The days the form offers at a pincode (siteDays), each window open where booking it would be taken. */
 export async function openDays(
   db: D1Database,
   asked: { readonly plan: Plan; readonly pincode: string },
@@ -108,8 +139,9 @@ export async function openDays(
   now: Date,
 ): Promise<OpenDay[]> {
   const { plan, pincode } = asked;
-  const first = addDays(indiaDate(now), 1);
-  const dates = Array.from({ length: BOOKING_DAYS }, (_, index) => addDays(first, index));
+  const inputs = await readOpsInputs(db, now);
+  const range = siteDays(plan, inputs, now);
+  const dates = Array.from({ length: range.days }, (_, index) => addDays(range.first, index));
   const days = await Promise.all(
     dates.map(async (date) => ({ date, booking: await dayBooking(db, plan, date, selfServeBooking) })),
   );
@@ -118,31 +150,36 @@ export async function openDays(
     bookings: days.map((day) => day.booking),
     pincode,
     fitting: plan === "one_visit" ? ONE_VISIT_FIT : null,
+    type: typeOfPlan(plan),
   };
-  const [free, schedule, inputs] = await Promise.all([
-    freeWindows(db, asking, first, now),
-    loadSlotSchedule(db),
-    readOpsInputs(db, now),
-  ]);
+  const [free, schedule] = await Promise.all([freeWindows(db, asking, range, now), loadSlotSchedule(db)]);
+  const today = indiaDate(now);
 
   return days.map(({ date, booking }) => {
+    const hours = windowTimesOf(schedule.on(date));
+    const starts = startsOfDay({
+      booking,
+      plan,
+      hours,
+      inputs,
+      free: free.starts.get(`${String(minutesOf(booking))}/${date}`),
+      earliest: date === today ? range.earliestToday : null,
+    });
     const isOpen = (window: BookingWindow): boolean => {
       if (!planStartsIn(plan, window) || booking.by === "nothing") return false;
-      if (booking.by === "request") return true;
+      // A request is open where a start in the window is: today, from the lead time on.
+      if (booking.by === "request") {
+        return starts.some(
+          (start) => start.open && start.time >= hours[window].start && start.time < hours[window].end,
+        );
+      }
       return free.windows.get(`${String(booking.minutes)}/${date}`)?.has(window) ?? false;
     };
-    const hours = windowTimesOf(schedule.on(date));
     return {
       date,
       windows: { morning: isOpen("morning"), afternoon: isOpen("afternoon"), evening: isOpen("evening") },
       hours,
-      starts: startsOfDay({
-        booking,
-        plan,
-        hours,
-        inputs,
-        free: free.starts.get(`${String(minutesOf(booking))}/${date}`),
-      }),
+      starts,
     };
   });
 }

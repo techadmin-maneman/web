@@ -3297,7 +3297,7 @@ export interface components {
         OpenWindows: {
             /** @enum {string} */
             plan: "consultation" | "one_visit";
-            /** @description The days the form offers: 14, from tomorrow in India. */
+            /** @description The days the form offers: 14 from tomorrow in India, and today too where ops let the plan's visit be booked for today (same_day_booking), its starts from the lead time on. */
             days: {
                 /** Format: date */
                 date: string;

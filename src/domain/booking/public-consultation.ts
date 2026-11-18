@@ -4,11 +4,15 @@ import { type ToldNotice, CONSULTATION_NOTICES } from "../../config/notices.ts";
 import { newNumbersState } from "./new-number-state.ts";
 import { oneVisitCode } from "./public-booking-code.ts";
 import type { LossExtent } from "../../config/booking.ts";
-import { HOLD_SECONDS, BOOKING_DAYS, type BookingWindow } from "../../config/scheduling.ts";
+import { HOLD_SECONDS, type BookingWindow } from "../../config/scheduling.ts";
 import { type Plan, planStartsIn } from "../../policy/one-visit.ts";
 import { bookingNeedsProof } from "../../policy/number-proof.ts";
 import type { ConsentSource } from "../../policy/consents.ts";
-import { addDays, indiaDate } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaTime } from "../../lib/india-time.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
+import { siteDays } from "./open-windows.ts";
+import { loadSlotSchedule } from "./slot-times.ts";
+import { windowTimesOf } from "../../policy/slot-times.ts";
 import { type NotBookedFromSite, notBookedFromSite, typedAddress } from "../../policy/site-booking.ts";
 import { type Address, currentAddress, firstAddressStatement } from "../clients/profile.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
@@ -162,6 +166,14 @@ export interface Booked {
 /** A code that stands on a site booking: the code, and what it takes off the hair system's price when they pay. */
 export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 
+/** A request for today at a start before the lead time from now, or in a window that has ended by then. */
+async function tooSoon(db: D1Database, request: ConsultationRequest, earliestToday: string | null): Promise<boolean> {
+  if (earliestToday === null) return false;
+  if (request.startsAt !== null) return indiaTime(request.startsAt) < earliestToday;
+  const hours = windowTimesOf((await loadSlotSchedule(db)).on(request.date));
+  return hours[request.window].end <= earliestToday;
+}
+
 /**
  * The request's own checks, before its number's: the pincode served and the day open for booking, a window the plan
  * starts in, a product for a one visit, and the address in the pincode booked at.
@@ -171,14 +183,19 @@ async function checkRequest(
   request: ConsultationRequest,
   now: Date,
 ): Promise<{ ok: true; pincode: Pincode } | Refusal> {
-  const first = addDays(indiaDate(now), 1);
   const oneVisit = request.plan === "one_visit";
-  const [pincode, products] = await Promise.all([
+  const [pincode, products, inputs] = await Promise.all([
     pincodeOf(db, request.pincode),
     oneVisit ? offeredProducts(db, request.date) : [],
+    readOpsInputs(db, now),
   ]);
   const today = indiaDate(now);
-  const outside = request.date < first || request.date > addDays(first, BOOKING_DAYS - 1);
+  // The days the form offers: today too where ops let the visit be booked for today, from the lead time on.
+  const { first, days, earliestToday } = siteDays(request.plan, inputs, now);
+  const outside =
+    request.date < first ||
+    request.date > addDays(first, days - 1) ||
+    (request.date === today && (await tooSoon(db, request, earliestToday)));
   if (pincode === null || !takesNewClientsOn(pincode, today) || outside) {
     return { ok: false, code: "not_bookable" };
   }
