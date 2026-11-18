@@ -9352,6 +9352,12 @@ One of the client's try-on looks, under the card's own unlock, never cached
         {
           "type": "number",
           "enum": [
+            130
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
             140
           ]
         },
@@ -9594,6 +9600,12 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "number",
           "enum": [
             120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            130
           ]
         },
         {
@@ -11049,6 +11061,12 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "number",
           "enum": [
             120
+          ]
+        },
+        {
+          "type": "number",
+          "enum": [
+            130
           ]
         },
         {

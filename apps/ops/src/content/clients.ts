@@ -1,6 +1,7 @@
 // A client's page, and finding one (board B): their visits, pieces, consents, payments, photos and profile.
 
 import { quantity } from "@maneman/web-kit/figures";
+import type { DENSITIES } from "@maneman/web-kit/hair-profile";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN, UNCONFIRMED } from "./common.ts";
 
 export const clients = {
@@ -768,7 +769,10 @@ export const clients = {
     },
     stages: { I: "I", II: "II", III: "III", IV: "IV", V: "V", VI: "VI", VII: "VII" },
     colours: { "1": "#1", "1B": "#1B", "2": "#2", "3": "#3", "4": "#4", "5": "#5", "6": "#6", "7": "#7", "8": "#8" },
-    densities: { 80: "80%", 100: "100%", 120: "120%", 140: "140%" },
+    densities: { 80: "80%", 100: "100%", 120: "120%", 130: "130%", 140: "140%" } satisfies Record<
+      (typeof DENSITIES)[number],
+      string
+    >,
     waves: { straight: "Straight", slight_wave: "Slight wave", wavy: "Wavy", curly: "Curly" },
     hairlines: { natural: "Natural", receded: "Receded", straight: "Straight", widows_peak: "Widow’s peak" },
     attachments: { tape: "Tape", glue: "Glue", both: "Tape and glue" },

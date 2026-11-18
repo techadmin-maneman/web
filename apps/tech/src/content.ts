@@ -1164,7 +1164,7 @@ export const profile = localised({
     "7": "#7",
     "8": "#8",
   } satisfies Words<"colour">,
-  densities: { 80: "80%", 100: "100%", 120: "120%", 140: "140%" } satisfies Words<"density_percent">,
+  densities: { 80: "80%", 100: "100%", 120: "120%", 130: "130%", 140: "140%" } satisfies Words<"density_percent">,
   waves: { straight: "Straight", slight_wave: "Slight wave", wavy: "Wavy", curly: "Curly" } satisfies Words<"wave">,
   hairlines: {
     natural: "Natural",

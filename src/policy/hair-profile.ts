@@ -18,8 +18,8 @@ export type NorwoodStage = (typeof NORWOOD_STAGES)[number];
 export const COLOURS = ["1", "1B", "2", "3", "4", "5", "6", "7", "8"] as const;
 export type Colour = (typeof COLOURS)[number];
 
-/** In per cent, as suppliers order it. */
-export const DENSITIES = [80, 100, 120, 140] as const;
+/** In per cent, as suppliers order it: 100 and 120 in the standard range, 80 and 130 made to order, and 140. */
+export const DENSITIES = [80, 100, 120, 130, 140] as const;
 export type Density = (typeof DENSITIES)[number];
 
 export const WAVES = ["straight", "slight_wave", "wavy", "curly"] as const;

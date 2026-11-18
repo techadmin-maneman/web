@@ -17,6 +17,7 @@ import { HOSTNAME } from "../../../../src/config/environments.ts";
 import { BOOKING_WINDOWS } from "../../../../src/config/scheduling.ts";
 import { MOVE_REASONS } from "../../../../src/policy/dispatch.ts";
 import { VISIT_TYPES } from "../../../../src/config/visit-types.ts";
+import { DENSITIES } from "../../../../src/policy/hair-profile.ts";
 
 describe("the ops console’s content", () => {
   it("previews the launch alert word for word, with the first name left as a placeholder", () => {
@@ -148,5 +149,12 @@ describe("a rule's figure", () => {
     [1000, "a day", "1,000 a day"],
   ])("writes %i %s as %s", (value, unit, written) => {
     expect(settings.rules.confirm.figure(value, unit)).toBe(written);
+  });
+});
+
+// A profile at 130% read as a bare "130", and the console's correction could not choose it.
+describe("the hair profile's densities", () => {
+  it("are worded for every density the profile takes, and only those", () => {
+    expect(Object.keys(ops.clients.profile.densities).map(Number)).toEqual([...DENSITIES]);
   });
 });

@@ -47,6 +47,18 @@ test.describe("the client’s hair profile", () => {
     expect(await axeViolations(page)).toEqual([]);
   });
 
+  // The custom range sells 130%: it read as a bare "130", and a correction could not keep it.
+  test("reads a density of 130%, and the correction starts from it", async ({ page }) => {
+    const at130 = {
+      ...HAIR_PROFILE,
+      latest: { ...HAIR_PROFILE.latest, fit: { ...HAIR_PROFILE.latest.fit, density_percent: 130 as const } },
+    };
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(at130) });
+    await expect(section(page).locator("dl").first()).toContainText("Density130%");
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
+    await expect(page.getByRole("combobox", { name: opsCopy.clients.profile.rows.density_percent })).toHaveValue("130");
+  });
+
   test("corrects it as a new version, the form starting from the latest", async ({ page }) => {
     const corrected = {
       ...HAIR_PROFILE,
