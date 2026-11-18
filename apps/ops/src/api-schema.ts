@@ -14873,7 +14873,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** What is left of a captured payment refunded, with why: one the client made twice */
+        /** What is left of a captured payment, or part of it, refunded with why: one the client made twice */
         post: {
             parameters: {
                 query?: never;
@@ -14898,7 +14898,7 @@ export interface paths {
                         "application/json": components["schemas"]["PaymentRefunded"];
                     };
                 };
-                /** @description invalid_request: no reason given */
+                /** @description invalid_request: no reason given, or an amount of nothing or above what is left (fields) */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -30032,6 +30032,8 @@ export interface components {
         };
         PaymentRefund: {
             reason: string;
+            /** @description In paise: part of what is left, given back. Left out, all that is left goes back. */
+            amount?: number;
         };
         PaymentLinkResent: {
             /**

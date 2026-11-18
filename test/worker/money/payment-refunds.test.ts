@@ -11,11 +11,11 @@ const PAYMENT = "55555555-5555-4555-8555-000000000001";
 
 let payments: StubPayments;
 
-const refund = (reason = "Paid twice for the same fit") =>
+const refund = (reason = "Paid twice for the same fit", amount?: number) =>
   request(appFor("local", fakeDependencies({ payments }), {}, "ops"), `/api/payments/${PAYMENT}/refund`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
-    body: JSON.stringify({ reason }),
+    body: JSON.stringify(amount === undefined ? { reason } : { reason, amount }),
   });
 
 beforeEach(async () => {
@@ -110,6 +110,28 @@ describe("POST /api/payments/{id}/refund", () => {
     expect(answer.status).toBe(200);
     expect(await answer.json()).toEqual({ amount: 400_000 });
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_twice", amount: 400_000 }]);
+  });
+
+  // A goodwill or part refund: Finance give back an amount up to what is left, and the rest stays refundable.
+  it("refunds part of a payment, then the rest, each under a receipt of its own", async () => {
+    const part = await refund("Visit cut short", 500_000);
+    expect(part.status).toBe(200);
+    expect(await part.json()).toEqual({ amount: 500_000 });
+    const rest = await refund("The rest, as agreed");
+    expect(rest.status).toBe(200);
+    expect(await rest.json()).toEqual({ amount: 2_500_000 });
+    expect(payments.made.refunds).toEqual([
+      { paymentId: "pay_twice", amount: 500_000 },
+      { paymentId: "pay_twice", amount: 2_500_000 },
+    ]);
+  });
+
+  it("refuses an amount above what is left, and one of nothing", async () => {
+    const tooMuch = await refund("Goodwill", 3_000_001);
+    expect(tooMuch.status).toBe(400);
+    expect(await tooMuch.json()).toMatchObject({ error: { code: "invalid_request", fields: ["amount"] } });
+    expect((await refund("Goodwill", 0)).status).toBe(400);
+    expect(payments.made.refunds).toEqual([]);
   });
 
   it("takes a reason", async () => {

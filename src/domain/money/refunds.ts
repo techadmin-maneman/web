@@ -19,8 +19,8 @@ type RefundFor =
       readonly why: "waived" | "charged" | "refunded on dispute";
       readonly appointmentId: string;
     }
-  /** What is left of a payment, refunded by ops (./payment-refunds.ts). */
-  | { readonly kind: "payment"; readonly paymentId: string }
+  /** A payment refunded by ops (./payment-refunds.ts): the first in full or in part, `nth` the refund of it it is. */
+  | { readonly kind: "payment"; readonly paymentId: string; readonly nth?: number }
   /** A custom order refunded in full (./custom-order-refunds.ts). */
   | { readonly kind: "custom_order"; readonly orderId: string };
 
@@ -36,7 +36,10 @@ export function refundReceipt(refund: RefundFor): string {
     case "no_show":
       return `${NO_SHOW_RECEIPTS[refund.why]}-${refund.appointmentId}`;
     case "payment":
-      return `p-${refund.paymentId}`;
+      // The first keeps the receipt every ops refund once had; each later part refund of the payment has its own.
+      return refund.nth === undefined || refund.nth <= 1
+        ? `p-${refund.paymentId}`
+        : `p${String(refund.nth)}-${refund.paymentId}`;
     case "custom_order":
       return `co-${refund.orderId}`;
   }

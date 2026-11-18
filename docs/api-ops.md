@@ -20072,7 +20072,7 @@ A day's money in the caller's cities: what was collected, what went back, and ea
 
 ### POST /api/payments/{id}/refund
 
-What is left of a captured payment refunded, with why: one the client made twice
+What is left of a captured payment, or part of it, refunded with why: one the client made twice
 
 Request body:
 
@@ -20090,7 +20090,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: no reason given
+**400**: invalid_request: no reason given, or an amount of nothing or above what is left (fields)
 
 ```json
 {
@@ -52554,6 +52554,11 @@ Request body:
       "minLength": 1,
       "maxLength": 200,
       "pattern": "^[^\\p{Cc}]+$/u"
+    },
+    "amount": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "description": "In paise: part of what is left, given back. Left out, all that is left goes back."
     }
   },
   "required": [

@@ -1,5 +1,6 @@
-// A payment refunded by ops, with why: one the client made twice, as when they paid again for a fit owed to them
-// (src/routes/ops/payment-refunds.ts). What is left of it goes back; the refund's row shows once Razorpay processes it.
+// A payment refunded by ops, with why: one the client made twice, as when they paid again for a fit owed to them, or
+// part of it given back (src/routes/ops/payment-refunds.ts). The amount starts at what is left of it; the refund's row
+// shows once Razorpay processes it.
 // Offered beside each payment on a client's Payments tab and on the Ledger, which Finance reach without a client's page.
 
 import { Button, RowButton } from "@maneman/ui/Button";
@@ -7,7 +8,7 @@ import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { Refusal } from "@maneman/ui/Refusal";
-import { Field, TextInput } from "@maneman/ui/Field";
+import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -75,7 +76,16 @@ export function RefundPayment({ entry }: { entry: Refundable }) {
   );
 }
 
-/** Why the payment goes back, in a drawer beside the list, and the refund asked of Razorpay. */
+/** Rupees as the amount box shows them: whole where they are, else to the paisa. */
+const rupeeText = (paise: number): string => (paise % 100 === 0 ? String(paise / 100) : (paise / 100).toFixed(2));
+
+/** The paise typed in rupees; null for nothing, or what is not a number. */
+const paiseOf = (text: string): number | null => {
+  const rupeesTyped = Number(text);
+  return text.trim() === "" || !Number.isFinite(rupeesTyped) ? null : Math.round(rupeesTyped * 100);
+};
+
+/** Why the payment goes back, and how much of it, in a drawer beside the list, and the refund asked of Razorpay. */
 function RefundForm(props: {
   entry: Refundable;
   left: number;
@@ -84,12 +94,17 @@ function RefundForm(props: {
 }) {
   const { entry, left } = props;
   const [reason, setReason] = useState("");
+  const [amountText, setAmountText] = useState(rupeeText(left));
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
+  const amount = paiseOf(amountText);
+  const amountFits = amount !== null && amount > 0 && amount <= left;
   const refund = () =>
     once(async () => {
       setFailed(null);
-      const answer = await clientsApi.refundPayment(entry.id, { reason: reason.trim() });
+      // All that is left goes back with no amount named, as it always has; a part names its own.
+      const part = amount !== null && amount < left ? { amount } : {};
+      const answer = await clientsApi.refundPayment(entry.id, { reason: reason.trim(), ...part });
       if (answer.ok) props.onAsked(answer.body.amount);
       else setFailed(errorText(copy.refundErrors, answer));
     });
@@ -114,10 +129,32 @@ function RefundForm(props: {
           />
         )}
       </Field>
+      <Field label={copy.refundAmount} className={form.field}>
+        {(control) => (
+          <NumberInput
+            {...control}
+            width="amount"
+            min={1}
+            step="any"
+            inputMode="decimal"
+            value={amountText}
+            disabled={busy}
+            onChange={(event) => {
+              setAmountText(event.target.value);
+            }}
+          />
+        )}
+      </Field>
       {failed !== null && <Refusal said={failed} />}
       <FormActions>
-        <Button variant="destructive" size="small" type="submit" busy={busy} disabled={reason.trim() === ""}>
-          {copy.refundConfirm(rupees(left))}
+        <Button
+          variant="destructive"
+          size="small"
+          type="submit"
+          busy={busy}
+          disabled={reason.trim() === "" || !amountFits}
+        >
+          {copy.refundConfirm(rupees(amountFits ? amount : left))}
         </Button>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>

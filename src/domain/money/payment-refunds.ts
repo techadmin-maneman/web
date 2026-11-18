@@ -1,6 +1,8 @@
 // A payment refunded by ops, with why: one the client made twice, as when they paid again for a fit that was owed to
-// them (docs/decisions/0192-free-remakes.md). What is left of it is asked of Razorpay once, under the payment's own
-// receipt (docs/decisions/0100-a-refund-is-made-once.md); its refund row comes from Razorpay's webhook.
+// them (docs/decisions/0192-free-remakes.md), or a part of it given back as goodwill. What is left of it, or the part
+// asked, goes to Razorpay once, under a receipt of the payment's own: the first ops refund of it `p-<payment>`, each
+// later one numbered by the refunds the payment already has, so a second press of the same refund lands on the same
+// receipt and is made once (docs/decisions/0100-a-refund-is-made-once.md).
 
 import { rupees } from "@maneman/web-kit/money";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
@@ -15,6 +17,8 @@ export type PaymentRefund =
   | { readonly kind: "refunded"; readonly amount: number }
   | { readonly kind: "missing" }
   | { readonly kind: "nothing_left" }
+  /** More was asked than is left of the payment. */
+  | { readonly kind: "more_than_left" }
   | { readonly kind: "left_to_ops" }
   | { readonly kind: "by_upi" };
 
@@ -22,6 +26,8 @@ type PaidRow = {
   person_id: string;
   razorpay_payment_id: string;
   amount: number;
+  /** The refunds Razorpay has taken of it, by any path, which numbers the next ops refund's receipt. */
+  refunds: number;
   /** Refunded, asked for and not yet processed, or owed by a cancel and not yet asked for. */
   refunded: number;
 };
@@ -31,6 +37,7 @@ export function capturedPayment(db: D1Database, paymentId: string): Promise<Paid
   return db
     .prepare(
       `SELECT p.person_id, p.razorpay_payment_id, p.amount,
+         (SELECT COUNT(*) FROM refunds r WHERE r.payment_id = p.id) AS refunds,
          p.refunded_amount + COALESCE((SELECT SUM(r.amount) FROM refunds r
                                         WHERE r.payment_id = p.id AND r.status = 'created'), 0)
            + COALESCE((SELECT SUM(c.refund_amount) FROM visit_changes c
@@ -46,13 +53,15 @@ export function capturedPayment(db: D1Database, paymentId: string): Promise<Paid
 export async function refundPayment(
   db: D1Database,
   deps: { readonly payments: PaymentsProvider; readonly alertOnce: AlertOnce },
-  asked: { readonly paymentId: string; readonly reason: string },
+  asked: { readonly paymentId: string; readonly reason: string; readonly amount?: number },
   written: Written,
 ): Promise<PaymentRefund> {
   const paid = await capturedPayment(db, asked.paymentId);
   if (paid === null) return { kind: "missing" };
-  const amount = paid.amount - paid.refunded;
-  if (amount <= 0) return { kind: "nothing_left" };
+  const left = paid.amount - paid.refunded;
+  if (left <= 0) return { kind: "nothing_left" };
+  if (asked.amount !== undefined && asked.amount > left) return { kind: "more_than_left" };
+  const amount = asked.amount ?? left;
   // Paid by UPI to the bank, not through Razorpay: ops refund it the same way (docs/decisions/0209).
   if (paidOutsideRazorpay(paid.razorpay_payment_id)) return { kind: "by_upi" };
   const outcome = await askRefund(
@@ -60,7 +69,7 @@ export async function refundPayment(
     paid.razorpay_payment_id,
     {
       amount,
-      receipt: refundReceipt({ kind: "payment", paymentId: asked.paymentId }),
+      receipt: refundReceipt({ kind: "payment", paymentId: asked.paymentId, nth: paid.refunds + 1 }),
       notes: { payment_id: asked.paymentId, reason: asked.reason },
     },
     { record: { db, now: written.now } },
