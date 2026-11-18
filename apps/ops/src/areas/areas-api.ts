@@ -15,10 +15,10 @@ export const areasApi = {
   serviceArea: () => client.get("/api/service-area"),
   /**
    * Only the pincodes named change. The route refuses a change that would leave
-   * none served, or serve one from a day to come, and launches each pincode it
-   * begins serving: `alerted` counts the WhatsApps that queues.
+   * none served, or serve one from a day to come, or serve a city not ready to
+   * launch unless `notReadyReason`, an Admin's why, is given; and launches each
+   * pincode it begins serving: `alerted` counts the WhatsApps that queues.
    */
-  /** `notReadyReason`: an Admin's why, to serve a city not ready to launch. */
   setServiceArea: (changes: readonly AreaChange[], notReadyReason?: string) =>
     client.post("/api/service-area", {
       body: { changes: [...changes], ...(notReadyReason === undefined ? {} : { not_ready_reason: notReadyReason }) },

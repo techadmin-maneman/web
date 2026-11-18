@@ -218,8 +218,8 @@ async function refusalOf(
 
 /**
  * The pincodes among these in a city not ready to launch: nobody there trained to fit, or no stockroom. Served there,
- * a pincode would be consulted in with nobody to fit (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
- * A missing GST registration is the console's to warn of, not a reason to wait.
+ * a pincode would be consulted in with nobody to fit. A missing GST registration is the console's to warn of, not a
+ * reason to wait.
  */
 async function pincodesNotReady(db: D1Database, launching: readonly (AreaPincode | undefined)[]): Promise<string[]> {
   const cities = [...new Set(launching.flatMap((pincode) => (pincode?.city ? [pincode.city] : [])))];

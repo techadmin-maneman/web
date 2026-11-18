@@ -224,7 +224,7 @@ export const technicians = {
     /** A first fit or a replacement goes only to a technician trained to fit (ADR 0119). */
     fitsTrained: "Trained to fit",
   },
-  /** A technician in training takes no visit of any kind till ops clear the day (ADR 0278). */
+  /** A technician in training takes no visit of any kind till ops clear the day. */
   training: {
     until: "In training until",
     none: "Not in training",
