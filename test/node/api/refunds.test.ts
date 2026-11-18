@@ -144,6 +144,8 @@ describe("refundReceipt", () => {
     expect(refundReceipt({ kind: "payment", paymentId: ID })).toBe(`p-${ID}`);
     expect(refundReceipt({ kind: "payment_part", key: ID })).toBe(`pp-${ID}`);
     expect(refundReceipt({ kind: "payment_part", key: ID })).toBe(refundReceipt({ kind: "payment_part", key: ID }));
-    expect(refundReceipt({ kind: "payment_part", key: again })).not.toBe(refundReceipt({ kind: "payment_part", key: ID }));
+    expect(refundReceipt({ kind: "payment_part", key: again })).not.toBe(
+      refundReceipt({ kind: "payment_part", key: ID }),
+    );
   });
 });

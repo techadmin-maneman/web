@@ -32,7 +32,7 @@ let posted: unknown[];
 let lost: number;
 
 /** The key the drawer made when it opened. */
-const KEY = expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
+const KEY = expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u) as string;
 
 const button = (text: string) =>
   [...document.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
