@@ -63,22 +63,25 @@ export async function cadenceRange(db: D1Database): Promise<{ readonly least: nu
 }
 
 /**
- * How many months a hair system fitted on a visit is worn before its replacement falls due: the package the visit is
- * a first fit or replacement of, else the client's, else the standard package's, else the months a new one starts with.
+ * How many months a hair system fitted on a visit is worn before its replacement falls due: the package of the product
+ * the client chose at the visit (a one visit, booked before they chose), else the package the visit is a first fit or
+ * replacement of, else the client's, else the standard package's, else the months a new one starts with.
  */
 export async function replaceAfterMonthsFor(
   db: D1Database,
   visit: { readonly id: string; readonly personId: string },
+  chosenProduct: string | null = null,
 ): Promise<number> {
   const row = await db
     .prepare(
       `SELECT COALESCE(
+         (SELECT replace_after_months FROM packages WHERE code = ?3),
          (SELECT k.replace_after_months FROM appointments a JOIN packages k ON k.code = a.tier
            WHERE a.id = ?1 AND a.type IN ('first_fit', 'replacement')),
          (SELECT k.replace_after_months FROM people p JOIN packages k ON k.code = p.package WHERE p.id = ?2),
          (SELECT replace_after_months FROM packages WHERE code = '${STANDARD_TIER}')) AS months`,
     )
-    .bind(visit.id, visit.personId)
+    .bind(visit.id, visit.personId, chosenProduct)
     .first<{ months: number | null }>();
   return row?.months ?? REPLACE_AFTER_MONTHS.start;
 }

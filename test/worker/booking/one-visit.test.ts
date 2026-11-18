@@ -119,6 +119,17 @@ describe("the piece step of a one visit", () => {
     expect(JSON.parse(step?.body ?? "{}")).toMatchObject({ piece_code: A_PIECE.piece_code, product: NATURAL.tier });
   });
 
+  // The visit is booked as the standard first fit; the piece is worn as long as the product the client chose lasts.
+  it("records the piece due by the life of the product the client chose, not the one the visit was booked under", async () => {
+    const job = await oneVisit();
+    await env.DB.prepare("UPDATE packages SET replace_after_months = 4 WHERE code = ?1").bind(NATURAL.tier).run();
+    expect((await toThePiece(job, { ...A_PIECE, product: NATURAL.tier })).status).toBe(202);
+    const piece = await env.DB.prepare("SELECT fitted_at, replacement_due_at FROM pieces WHERE piece_code = ?1")
+      .bind(A_PIECE.piece_code)
+      .first();
+    expect(piece).toEqual({ fitted_at: "2026-09-21", replacement_due_at: "2027-01-21" });
+  });
+
   it("refuses a product not offered on the visit's day, and a piece with none", async () => {
     const job = await oneVisit();
     await job.workTo("piece");
