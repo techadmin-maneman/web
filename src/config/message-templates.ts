@@ -161,8 +161,7 @@ export const TEMPLATES = {
   // hair system: a lock screen shows them.
   consultation_follow_up_v3:
     "Hi {{1}}, your consultation is done.\nYour technician's recommendation is in the Mane Man app. Any question, reply here.",
-  fit_aftercare_v3:
-    "Hi {{1}}, your visit today is done.\nYour aftercare guide: {{2}}\nAny question, reply here.",
+  fit_aftercare_v3: "Hi {{1}}, your visit today is done.\nYour aftercare guide: {{2}}\nAny question, reply here.",
   first_check_in_v1:
     "Hi {{1}}, how are you finding it so far?\nIf anything feels off, reply here and we'll put it right.",
   second_check_in_v2: "Hi {{1}}, a few weeks on: how is everything?\nIf anything needs a look, reply here.",
