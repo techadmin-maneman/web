@@ -9478,7 +9478,8 @@ Referral grants held for review whose friend is in the caller's cities, oldest f
                 "shared_upi",
                 "monthly_cap",
                 "same_mobile",
-                "attached_after_fit"
+                "attached_after_fit",
+                "fit_not_signed"
               ]
             }
           },

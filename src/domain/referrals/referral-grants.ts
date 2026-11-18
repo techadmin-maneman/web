@@ -1,5 +1,7 @@
 // The referral grant (docs/decisions/0048-referrals.md, "The grant"). When a referred person's first fit closes
-// as done, the fraud rules run first. Then either each side gets the service-visit credits ops set for it, the
+// as done and they have signed it off (docs/decisions/0254-client-signs-off-the-fit.md), the fraud rules run first; a
+// fit closed with the sign-off declined waits for ops, and one still being signed off waits for the client. Then
+// either each side gets the service-visit credits ops set for it, the
 // referrer a WhatsApp that their friend was fitted and the friend one that the credits are theirs, or the grant is
 // held for ops' review; a grant ops reject is told to each side it would have given visits
 // (docs/decisions/0074-hand-offs-and-messages.md). A referrer who has since been erased gets nothing; their friend
@@ -16,7 +18,7 @@
 // (docs/decisions/0108-discount-codes.md).
 
 import { indiaDate, monthOf } from "../../lib/india-time.ts";
-import { FRAUD_SIGNALS, type FraudSignal } from "../../policy/fraud-holds.ts";
+import { FRAUD_SIGNALS, type FraudSignal, type HoldReason } from "../../policy/fraud-holds.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
 import { creditExpiry, type ReferralReward } from "../../policy/referral-reward.ts";
@@ -235,7 +237,8 @@ export const FIRST_FIT_COUNTS = `(a.one_visit IS NULL OR a.nothing_owed_at IS NO
 // save sorting the few pending referrals, and the cron would read them all on each run.
 const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased_at AS referrer_erased,
     r.referred_person_id, fp.name AS friend_name, fp.erased_at AS friend_erased, a.id AS first_fit_id,
-    a.window_start, r.via, pin.launched_at, r.referrer_visits, r.friend_visits, r.credit_valid_days, ${FIRST_FIT_COUNTS} AS paid
+    a.window_start, r.via, pin.launched_at, r.referrer_visits, r.friend_visits, r.credit_valid_days, ${FIRST_FIT_COUNTS} AS paid,
+    (SELECT s.state FROM fit_sign_offs s WHERE s.appointment_id = a.id) AS sign_off
   FROM referral_attributions r
   JOIN referral_codes rc ON rc.code = r.code JOIN people rp ON rp.id = rc.person_id
   JOIN people fp ON fp.id = r.referred_person_id
@@ -272,6 +275,8 @@ interface AttributionRow {
   credit_valid_days: number | null;
   /** 1 once the first fit counts (FIRST_FIT_COUNTS). */
   paid: number;
+  /** The friend's sign-off of the fit (ADR 0254); null where none was asked, as before sign-off was switched on. */
+  sign_off: "asked" | "flagged" | "signed" | "declined" | null;
 }
 
 /** The reward a referral was held under, or null where it was held before rewards were kept. */
@@ -326,8 +331,14 @@ export async function settleReferrals(
       outcome.expired += 1;
       continue;
     }
+    // Credits wait for the friend's own sign-off of the fit: while it is asked or flagged the referral stays pending,
+    // and a fit closed with it declined waits for ops to decide.
+    if (row.sign_off === "asked" || row.sign_off === "flagged") continue;
     const attribution = attributionFrom(row);
-    const signals = await fraudSignals(db, attribution, referralMonthlyCap);
+    const signals: HoldReason[] = [
+      ...(row.sign_off === "declined" ? (["fit_not_signed"] as const) : []),
+      ...(await fraudSignals(db, attribution, referralMonthlyCap)),
+    ];
     if (signals.length > 0) {
       await db
         .prepare(

@@ -7010,7 +7010,7 @@ export interface paths {
                                 };
                                 /** Format: date */
                                 fitted_on: string;
-                                signals: ("shared_address" | "shared_upi" | "monthly_cap" | "same_mobile" | "attached_after_fit")[];
+                                signals: ("shared_address" | "shared_upi" | "monthly_cap" | "same_mobile" | "attached_after_fit" | "fit_not_signed")[];
                                 /**
                                  * Format: date-time
                                  * @description When the fraud rules held it for review.
