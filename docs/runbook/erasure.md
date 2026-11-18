@@ -35,15 +35,15 @@ The console has two doors, and both run the same erasure, written to `audit_log`
    DELETE FROM evolution."IsOnWhatsapp" WHERE "remoteJid" = '<digits>@s.whatsapp.net';
    ```
 
-5. **Tell the person** it is done, in the chat they asked in.
+5. **Tell the person** it is done, in the chat they asked in, then delete that chat again: telling them made it anew.
 
 Someone who used the try-on but never passed the gate never gave a number, and their photo is deleted within the hour anyway.
 
-**Zoho's history.** Blanking the fields leaves the old values in the record's timeline, so every erasure, the automatic ones too, opens a Care task on Tasks, "Erased: finish in Zoho", naming the lead: delete it in Zoho, then delete it from the recycle bin as well, and close the task with what was deleted. D1's lead history is unaffected.
+**Zoho's history.** Blanking the fields leaves the old values in the record's timeline, so every erasure, the automatic ones too, opens a Care task on Tasks, "Erased: finish in Zoho", naming the lead and the person's ID: delete the record in Zoho, found by the lead or, where none is named or it has changed, by `D1_Person_ID`, then delete it from the recycle bin as well, and close the task with **Done**. No words are kept: the person is erased. D1's lead history is unaffected.
 
 **What stays a while.** D1's Time Travel keeps the erased rows for 30 days, and the weekly backups, encrypted, for 13 weeks (src/domain/platform/backups.ts). Both lapse by themselves; neither is read but to restore.
 
-**A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
+**A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) before deciding it, and again after telling them.
 
 Rejecting a request sends the client your reason on WhatsApp (`deletion_rejected_v1`), and their app shows it for 30 days, so write it for them to read.
 

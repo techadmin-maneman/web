@@ -27,8 +27,8 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   {
     what: "Erasures still to finish in the CRM",
     tables: ["erasure_follow_ups"],
-    leftAtT: "An erasure made since `<T>` is not on Tasks for Care to finish in Zoho",
-    putBackBy: "Adding the rows since `<T>`: they are only ever added",
+    leftAtT: "An erasure made since `<T>` is not on Tasks for Care to finish in Zoho, and one finished since is again",
+    putBackBy: "Adding a row for each erasure since `<T>` from `people.erased_at`; close again any finished since",
   },
   {
     what: "Revoked sessions and phones",

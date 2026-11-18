@@ -49,7 +49,7 @@ export interface Task {
   readonly group: TaskGroup;
   /**
    * Whose it is; null for an erased client, whose record is gone, but for a payment to refund, which names them as
-   * "Erased" and opens the record kept of their money. The mobile is there only on a move the client has not heard
+   * "Erased" and opens the record kept of their money, and an erasure to finish in the CRM, which names them so too. The mobile is there only on a move the client has not heard
    * of, for the call.
    */
   readonly person: { readonly id: string; readonly name: string; readonly mobile: string | null } | null;

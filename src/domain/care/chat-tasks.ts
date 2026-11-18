@@ -17,11 +17,12 @@ const CHATS_WAITING = `SELECT 'unanswered_chat' AS "group", c.id AS id, c.person
      AND m.author <> 'auto' AND m.sent_at >= c.last_inbound_at)`;
 
 /**
- * An erasure Care finish by hand in the CRM: the record found by its lead ID, deleted, then deleted again from the
- * recycle bin, which keeps the old name and number. From the erasure until Care close it.
+ * An erasure Care finish by hand in the CRM: the record found by its lead ID, or by the person's ID where the lead
+ * was never kept or has changed, deleted, then deleted again from the recycle bin, which keeps the old name and
+ * number. From the erasure until Care close it.
  */
 const ERASURES_TO_FOLLOW_UP = `SELECT 'erasure_follow_up' AS "group", f.person_id AS id, f.person_id AS person_id,
-         pe.name AS person_name, pe.zoho_lead_id AS detail, json_object('lead', pe.zoho_lead_id) AS facts,
+         pe.name AS person_name, pe.zoho_lead_id AS detail, json_object('lead', pe.zoho_lead_id, 'person', f.person_id) AS facts,
          f.erased_at AS since, NULL AS due_by, '' AS episode
     FROM erasure_follow_ups f JOIN people pe ON pe.id = f.person_id
    WHERE NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'erasure_follow_up' AND c.subject_id = f.person_id)`;

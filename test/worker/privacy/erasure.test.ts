@@ -336,7 +336,7 @@ describe("an erasure's CRM leftovers", () => {
     await env.DB.prepare("UPDATE people SET zoho_lead_id = '610500000001' WHERE id = ?1").bind(personId).run();
     expect(await statusOf(personId)).toBe(200);
 
-    expect(await followUps()).toMatchObject([{ id: personId, facts: { lead: "610500000001" } }]);
+    expect(await followUps()).toMatchObject([{ id: personId, facts: { lead: "610500000001", person: personId } }]);
     const closed = await request(ops(), `/api/tasks/erasure_follow_up/${personId}/close`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
@@ -345,6 +345,11 @@ describe("an erasure's CRM leftovers", () => {
     expect(closed.status).toBe(204);
     expect(await followUps()).toEqual([]);
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM erasure_follow_ups").first("n")).toBe(0);
+    // Nothing ops wrote is kept about a person already erased.
+    const kept = await env.DB.prepare(
+      "SELECT reason FROM task_closures WHERE task_group = 'erasure_follow_up'",
+    ).first();
+    expect(kept).toEqual({ reason: null });
   });
 });
 

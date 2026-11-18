@@ -913,7 +913,7 @@ export const clients = {
     anyway: "Erase anyway",
     done: {
       title: "Client erased",
-      body: "Tell them in the chat they asked in.",
+      body: "Tell them in the chat they asked in, then delete that chat.",
       back: "Find a client",
     },
     /** The page of a client erased since, which keeps only their visits and money. */

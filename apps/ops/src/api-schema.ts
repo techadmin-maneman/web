@@ -29571,7 +29571,7 @@ export interface components {
              * @description The queued row's own id, so the task can be reached where it is decided; for a first fit to book, the client's.
              */
             id: string;
-            /** @description Null for an erased client, whose record is gone. */
+            /** @description Null for an erased client, whose record is gone, but on a payment to refund or an erasure to finish in the CRM, which name them as Erased. */
             person: {
                 /** Format: uuid */
                 id: string;
@@ -29788,8 +29788,10 @@ export interface components {
         } | {
             /** @enum {string} */
             group: "erasure_follow_up";
-            /** @description The CRM lead the client was, to find and delete; null where they never reached the CRM. */
+            /** @description The CRM lead the client was, as kept; null where none was. */
             lead: string | null;
+            /** @description The person's ID, which the CRM record carries as D1 Person ID. */
+            person: string;
         } | {
             /** @enum {string} */
             group: "fit_unsigned";

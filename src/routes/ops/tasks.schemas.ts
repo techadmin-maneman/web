@@ -92,9 +92,11 @@ export const TaskFactsSchema = z
         .openapi({ description: "Each consumable recorded below what was expected; empty where nothing was used." }),
     }),
     facts("erasure_follow_up", {
-      lead: z.string().nullable().openapi({
-        description: "The CRM lead the client was, to find and delete; null where they never reached the CRM.",
-      }),
+      lead: z
+        .string()
+        .nullable()
+        .openapi({ description: "The CRM lead the client was, as kept; null where none was." }),
+      person: z.string().openapi({ description: "The person's ID, which the CRM record carries as D1 Person ID." }),
     }),
     facts("fit_unsigned", {
       kind,

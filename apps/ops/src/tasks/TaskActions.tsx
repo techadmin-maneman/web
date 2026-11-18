@@ -148,23 +148,27 @@ function CloseForm({
   const [reason, setReason] = useState("");
   const [fault, setFault] = useState("");
   const copy = tasks.close;
+  // An erasure finished in the CRM is closed with no words: its person is erased, and nothing is kept about them.
+  const asksWhy = group !== "erasure_follow_up";
   return (
     <div className={styles.form}>
-      <Field label={<Named label={closeWords(group).label} subject={subject} />}>
-        {(control) => (
-          <TextArea
-            {...control}
-            className={styles.reason}
-            autoFocus
-            maxLength={REASON_MAX_CHARS}
-            value={reason}
-            disabled={busy}
-            onChange={(event) => {
-              setReason(event.target.value);
-            }}
-          />
-        )}
-      </Field>
+      {asksWhy && (
+        <Field label={<Named label={closeWords(group).label} subject={subject} />}>
+          {(control) => (
+            <TextArea
+              {...control}
+              className={styles.reason}
+              autoFocus
+              maxLength={REASON_MAX_CHARS}
+              value={reason}
+              disabled={busy}
+              onChange={(event) => {
+                setReason(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+      )}
       {group === "fit_guarantee_claim" && personId !== null && (
         <AtFault clientId={personId} value={fault} disabled={busy} onChange={setFault} />
       )}
@@ -173,9 +177,9 @@ function CloseForm({
           variant="outline"
           size="small"
           busy={busy}
-          disabled={reason.trim() === ""}
+          disabled={asksWhy && reason.trim() === ""}
           onClick={() => {
-            onClose(reason.trim(), fault === "" ? null : fault);
+            onClose(asksWhy ? reason.trim() : copy.erasureFollowUp.open, fault === "" ? null : fault);
           }}
         >
           {busy ? copy.closing : copy.confirm}

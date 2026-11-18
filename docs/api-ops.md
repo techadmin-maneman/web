@@ -50753,7 +50753,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Null for an erased client, whose record is gone."
+      "description": "Null for an erased client, whose record is gone, but on a payment to refund or an erasure to finish in the CRM, which name them as Erased."
     },
     "visit": {
       "type": "object",
@@ -51634,12 +51634,17 @@ Request body:
             "string",
             "null"
           ],
-          "description": "The CRM lead the client was, to find and delete; null where they never reached the CRM."
+          "description": "The CRM lead the client was, as kept; null where none was."
+        },
+        "person": {
+          "type": "string",
+          "description": "The person's ID, which the CRM record carries as D1 Person ID."
         }
       },
       "required": [
         "group",
-        "lead"
+        "lead",
+        "person"
       ],
       "additionalProperties": false
     },

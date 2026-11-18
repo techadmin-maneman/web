@@ -113,6 +113,8 @@ test("keeps the delete unusable until ops say they have checked the request", as
   const send = page.getByRole("button", { name: ERASE });
   await expect(send).toBeDisabled();
   await page.getByRole("checkbox", { name: CHECKED }).check();
+  // The number is blanked by the deletion, so the chat on the phone goes first.
+  await expect(send).toBeDisabled();
   await page.getByRole("checkbox", { name: CHAT_DELETED }).check();
   await expect(send).toBeEnabled();
 });

@@ -93,8 +93,10 @@ export type TaskFacts =
     }
   | {
       readonly group: "erasure_follow_up";
-      /** The CRM lead the client was, to find and delete; null where they never reached the CRM. */
+      /** The CRM lead the client was, as kept; null where none was kept. */
       readonly lead: string | null;
+      /** The person's ID, which the CRM record carries as D1 Person ID whatever its lead. */
+      readonly person: string;
     }
   | {
       readonly group: "fit_unsigned";

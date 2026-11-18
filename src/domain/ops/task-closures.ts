@@ -16,6 +16,13 @@ interface Closing {
 }
 
 /**
+ * Ops' reason as it is kept: none for an erasure finished in the CRM, whose person is erased already, so nothing
+ * would ever blank what was written about them.
+ */
+const reasonKept = (group: TaskKey["group"], reason: string): string | null =>
+  group === "erasure_follow_up" ? null : reason;
+
+/**
  * Closes the task, with its audit entry in the same batch. Two members of staff
  * closing it at once close it once: the second writes nothing, and logs nothing.
  */
@@ -31,7 +38,7 @@ export async function closeTask(
         `INSERT INTO task_closures (id, task_group, subject_id, reason, closed_by, closed_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT (task_group, subject_id) DO NOTHING`,
       )
-      .bind(id, task.group, task.id, options.reason, options.by, options.now.toISOString()),
+      .bind(id, task.group, task.id, reasonKept(task.group, options.reason), options.by, options.now.toISOString()),
     auditStatementIfWritten(db, options.audit, options.now, { table: "task_closures", id }),
     // A shortfall checked leaves the open list its task is read from (migration 0198).
     ...(task.group === "consumables_short"
