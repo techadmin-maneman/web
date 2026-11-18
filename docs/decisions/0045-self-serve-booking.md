@@ -18,7 +18,7 @@ The prompt's P2-M5: "availability, holds, Razorpay checkout, credit redemption, 
 
 **Availability** (`GET /api/availability?type=&from=`): 14 days from tomorrow, three windows each, and for each window whether the client's regular technician (whoever did their latest visit) could come, another could, or nobody (full). It uses the clash check (ADR 0034) and the window-to-slot map (ADR 0035).
 
-**A hold** (`POST /api/holds`) takes the window for ten minutes: the regular technician if free, else whoever has least that day. It carries the price at that moment, the late fee a first fit or replacement would cost to move inside 24 hours, and when moving stops being free (24 hours before the window opens). A client has one hold at a time in the app; a new one lets the old go, unless it is paid for (ADR 0068).
+**A hold** (`POST /api/holds`) takes the window for ten minutes: the regular technician if free, else whoever has least that day. It carries the price at that moment, the late fee a first fit or replacement would cost to move inside 24 hours, and when moving stops being free (24 hours before the visit starts, as a change counts its notice). A client has one hold at a time in the app; a new one lets the old go, unless it is paid for (ADR 0068).
 
 **Paying** (`POST /api/bookings`, `src/domain/booking/bookings.ts`): the hold's Razorpay order, made once, whose notes carry the hold and the person, and what Checkout opens with. A free visit, a consultation, skips payment and goes straight to the queue.
 
