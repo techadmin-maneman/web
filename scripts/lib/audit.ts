@@ -20,8 +20,8 @@ export const ALLOWED: readonly Allowance[] = [
   {
     advisory: "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
     reason:
-      "picomatch 2, inside @prefresh/vite (the apps' dev-server refresh), matches only our own globs in development; " +
-      "no fixed 2.x release yet",
+      "picomatch, every release to 4.0.7: under vite, vitest, astro, knip and @prefresh/vite, and astro's unstorage " +
+      "through anymatch; build tools and the dev server only, in no shipped bundle; no fixed release yet",
     until: "2026-12-18",
   },
 ];
