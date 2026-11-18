@@ -9,7 +9,7 @@ import { REFUSALS_NOT_CHASED, type RefusedMessages } from "../../policy/message-
 import type { AlertOnce } from "../platform/alerts.ts";
 
 /** An alert's key for a kind refused too often; its kind is "messages_refused". */
-export const messagesRefusedKey = (kind: string): string => `messages_refused:${kind}`;
+const messagesRefusedKey = (kind: string): string => `messages_refused:${kind}`;
 
 /**
  * Tells Care of each kind of message refused past ops' share in the last day, of at least the fewest sent, and closes

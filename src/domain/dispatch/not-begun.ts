@@ -12,13 +12,13 @@ import type { TaskGroup } from "../../policy/tasks.ts";
 import { UNASSIGNED_VISITS, VISITS_LEFT_OPEN } from "./unassigned.ts";
 
 /** An alert's key for a visit not begun; its kind is "visit_not_begun". */
-export const visitNotBegunKey = (visitId: string): string => `visit_not_begun:${visitId}`;
+const visitNotBegunKey = (visitId: string): string => `visit_not_begun:${visitId}`;
 
 /**
  * The Tasks board's visits not begun past their arrival window. Each waits from the window's end. `?1` is now, `?2`
  * the arrival window's minutes, `?3` the start of today.
  */
-export const VISITS_NOT_BEGUN = `SELECT 'visit_not_begun' AS "group", a.id AS id, pe.id AS person_id,
+const VISITS_NOT_BEGUN = `SELECT 'visit_not_begun' AS "group", a.id AS id, pe.id AS person_id,
          pe.name AS person_name, a.window_start AS detail,
          json_object('kind', a.type, 'starts_at', a.window_start, 'technician', COALESCE(t.name, '')) AS facts,
          strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '+' || ?2 || ' minutes') AS since, NULL AS due_by,
