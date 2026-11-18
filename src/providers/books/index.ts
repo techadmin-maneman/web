@@ -77,19 +77,33 @@ export interface NewBooksTransfer {
   readonly description: string;
 }
 
+/**
+ * The GST a line or an expense carries, by which Books' own tax is found: its rate, and whether it stays within one
+ * state, as CGST and SGST (Books' GST group of the rate), or crosses one, as IGST.
+ */
+export interface BooksGst {
+  readonly percent: number;
+  readonly intraState: boolean;
+}
+
 /** An expense paid out of one of our accounts, as Razorpay's fee taken from a settlement. Amounts in paise. */
 export interface NewBooksExpense {
   /** The expense account it is booked to. */
   readonly accountId: string;
   readonly paidThroughAccountId: string;
-  /** GST included, where `taxId` names its tax. */
+  /** GST included, where it carries GST. */
   readonly amount: number;
   readonly date: string;
   /** Razorpay's settlement ID. */
   readonly reference: string;
   readonly description: string;
-  /** The GST it carries, claimed as input credit; null while GST is off in Books, the whole amount the expense. */
-  readonly taxId: string | null;
+  /**
+   * The GST in it, claimed as input credit: the supplier's GSTIN and state, as its tax invoice to us names them, and
+   * ours. Null where it carries none, or the supplier's GSTIN is not set, when the whole amount is the expense.
+   */
+  readonly gst:
+    | (BooksGst & { readonly supplierGstin: string; readonly sourceState: string; readonly destinationState: string })
+    | null;
 }
 
 /** A client as their Books customer holds them. */
@@ -133,6 +147,8 @@ export interface NewBooksInvoice {
     readonly rate: number;
     /** Taken off the rate, GST included, before Books works out the tax; 0 for none. */
     readonly discount: number;
+    /** The GST in the rate; null while GST is off in Books, which then refuses a tax. */
+    readonly tax: BooksGst | null;
   };
 }
 

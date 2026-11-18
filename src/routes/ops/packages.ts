@@ -8,7 +8,6 @@
 
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { opsRoute } from "../../http/session-routes.ts";
-import { withGst } from "../../config/gst.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import {
@@ -123,7 +122,7 @@ const PackagesSchema = z
     min_after_months: z.number().int(),
     max_after_months: z.number().int(),
     max_description: z.number().int(),
-    max_amount_ex_gst: z.number().int(),
+    max_amount: z.number().int(),
     max_gst_percent: z.number().int(),
   })
   .strict()
@@ -290,11 +289,7 @@ async function packagesBody(c: Context<AppEnv>) {
   const ownPrice = (item: string, tier: string): Price | null => {
     const row = pricesOf(item, tier).find((each) => each.in_force);
     if (row === undefined) return null;
-    return {
-      amount_ex_gst: row.amount_ex_gst,
-      amount: withGst(row.amount_ex_gst, row.gst_percent),
-      gst_percent: row.gst_percent,
-    };
+    return { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent };
   };
   const sold = (kind: string, code: string) =>
     services.find((service) => service.kind === kind && service.tier === code)?.price ?? null;
@@ -341,7 +336,7 @@ async function packagesBody(c: Context<AppEnv>) {
     min_after_months: REPLACE_AFTER_MONTHS.min,
     max_after_months: REPLACE_AFTER_MONTHS.max,
     max_description: DESCRIPTION_LENGTH,
-    max_amount_ex_gst: PRICE_BOUNDS.maxPaise,
+    max_amount: PRICE_BOUNDS.maxPaise,
     max_gst_percent: PRICE_BOUNDS.maxGstPercent,
   };
 }

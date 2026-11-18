@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0274. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0275. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -173,6 +173,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0209](0209-paid-at-the-visit-by-upi.md) Paid at the visit by UPI, while online payment is off
 - [0257](0257-razorpay-only.md) Razorpay is the only way to pay
 - [0261](0261-razorpay-money-in-books.md) Razorpay's money in Books, from payment to the bank
+- [0274](0274-gst-on.md) GST on: prices with their GST, and every invoice line and fee carrying its tax
 
 ### Privacy and accounts
 
@@ -383,7 +384,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0070](0070-vendor-correctness.md) | What we write to Zoho is right, written once, and asked for sparingly | 2026-09-25 | accepted | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
 | [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | superseded in part by 0212 on 18 October 2026: a setting or a record now changes where it reads | [0086](0086-the-next-visit-is-offered.md), [0212](0212-editing-in-place.md), [0221](0221-launches-scheduled-paused-and-checked.md) |
 | [0072](0072-ops-clients-and-queues.md) | The ops console's clients and queues | 2026-09-26 | accepted | [0092](0092-task-owners.md) |
-| [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md), [0103](0103-the-home-pages-first-copy-round.md), [0204](0204-the-sites-price-pipeline-removed.md) |
+| [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md), [0103](0103-the-home-pages-first-copy-round.md), [0204](0204-the-sites-price-pipeline-removed.md), [0274](0274-gst-on.md) |
 | [0074](0074-hand-offs-and-messages.md) | What each person learns when something changes for them | 2026-09-26 | accepted | [0092](0092-task-owners.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0099](0099-the-clients-note-in-fsm.md) |
 | [0075](0075-tests-held-to-the-contract-and-the-local-stack.md) | Tests held to the API's contract, and the whole system on a laptop | 2026-09-27 | accepted |  |
 | [0076](0076-one-ui-layer-and-one-api-client.md) | One component layer and one API client for the front ends | 2026-09-27 | accepted | [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) |
@@ -569,7 +570,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0258](0258-the-technician-design-pass.md) | The technician app's design pass | 2026-11-12 | accepted | [0268](0268-the-visits-design-check.md) |
 | [0259](0259-the-issue-log.md) | The issue log | 2026-11-16 | accepted |  |
 | [0260](0260-ratings.md) | Ratings | 2026-11-16 | accepted |  |
-| [0261](0261-razorpay-money-in-books.md) | Razorpay's money in Books, from payment to the bank | 2026-11-17 | accepted |  |
+| [0261](0261-razorpay-money-in-books.md) | Razorpay's money in Books, from payment to the bank | 2026-11-17 | accepted | [0274](0274-gst-on.md) |
 | [0262](0262-the-sites-typeface-and-palette.md) | The site's typeface and palette | 2026-11-17 | accepted | [0266](0266-the-sites-header-book-and-focus-ring.md) |
 | [0263](0263-the-home-pages-order-and-bands.md) | The home page's order and bands | 2026-11-17 | accepted |  |
 | [0264](0264-the-hero-restyled.md) | The hero, restyled | 2026-11-17 | accepted |  |
@@ -582,3 +583,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0271](0271-the-technician-follow-ups.md) | The technician follow-ups | 2026-11-17 | accepted |  |
 | [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) | The one visit is paid through Razorpay only | 2026-11-17 | accepted |  |
 | [0273](0273-why-a-hair-system-failed.md) | Why a hair system failed | 2026-11-18 | accepted |  |
+| [0274](0274-gst-on.md) | GST on: prices with their GST, and every invoice line and fee carrying its tax | 2026-11-18 | accepted |  |

@@ -16857,7 +16857,7 @@ export interface paths {
                             prices: components["schemas"]["Price"][];
                             /** Format: date */
                             today: string;
-                            max_amount_ex_gst: number;
+                            max_amount: number;
                             max_gst_percent: number;
                         };
                     };
@@ -30285,6 +30285,8 @@ export interface components {
             tier: string;
             /** @description In paise, before GST. */
             amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
             gst_percent: number;
             /**
              * Format: date
@@ -30301,7 +30303,8 @@ export interface components {
             item: "consultation" | "first_fit" | "service" | "replacement" | "hair_system" | "late_fee_first_fit" | "late_fee_replacement";
             /** @description For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard. */
             tier: string;
-            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
             gst_percent: number;
             /** Format: date */
             valid_from: string;
@@ -30314,7 +30317,8 @@ export interface components {
             item: "consultation" | "first_fit" | "service" | "replacement" | "hair_system" | "late_fee_first_fit" | "late_fee_replacement";
             /** @description For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard. */
             tier: string;
-            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
             gst_percent: number;
             /** Format: date */
             valid_from: string;
@@ -30413,6 +30417,8 @@ export interface components {
             item: "consultation" | "first_fit" | "service" | "replacement" | "hair_system" | "late_fee_first_fit" | "late_fee_replacement";
             tier: string;
             amount_ex_gst: number;
+            /** @description In paise, GST included. */
+            amount: number;
             gst_percent: number;
             /** Format: date */
             valid_from: string;
@@ -30436,7 +30442,8 @@ export interface components {
             /** @enum {string} */
             item: "consultation" | "first_fit" | "service" | "replacement" | "hair_system" | "late_fee_first_fit" | "late_fee_replacement";
             tier: string;
-            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
             gst_percent: number;
             /** Format: date */
             valid_from: string;
@@ -30583,7 +30590,7 @@ export interface components {
             max_minutes: number;
             /** @description The most characters a description may have. */
             max_description: number;
-            max_amount_ex_gst: number;
+            max_amount: number;
             max_gst_percent: number;
         };
         OpsService: {
@@ -30647,7 +30654,7 @@ export interface components {
             min_after_months: number;
             max_after_months: number;
             max_description: number;
-            max_amount_ex_gst: number;
+            max_amount: number;
             max_gst_percent: number;
         };
         Package: {

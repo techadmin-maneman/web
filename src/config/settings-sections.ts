@@ -112,7 +112,7 @@ function readZohoBooks(read: Reader, providers: ProvidersRead): ZohoBooksSetting
     refundAccountId: read.optionalText("BOOKS_REFUND_ACCOUNT_ID"),
     bankAccountId: read.optionalText("BOOKS_BANK_ACCOUNT_ID"),
     gatewayFeesAccountId: read.optionalText("BOOKS_GATEWAY_FEES_ACCOUNT_ID"),
-    gatewayFeesTaxId: read.optionalText("BOOKS_GATEWAY_FEES_TAX_ID"),
+    gateway: readGateway(read),
     gst: readGstRegistration(read),
     itemPush: read.flag("BOOKS_ITEM_PUSH"),
     billAccounts: readBillAccounts(read),
@@ -129,6 +129,22 @@ function readBillAccounts(read: Reader): ZohoBooksSettings["billAccounts"] {
   const hairSystems = read.optionalText("BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT");
   const consumables = read.optionalText("BOOKS_BILL_CONSUMABLES_ACCOUNT");
   return hairSystems === null || consumables === null ? null : { hairSystems, consumables };
+}
+
+/** Razorpay's GST registration, as its tax invoice to us names it; null until both are set. */
+function readGateway(read: Reader): ZohoBooksSettings["gateway"] {
+  const gstin = read.optionalText("BOOKS_GATEWAY_GSTIN");
+  const stateCode = read.optionalText("BOOKS_GATEWAY_GST_STATE");
+  if (gstin !== null && !GSTIN_FORMAT.test(gstin)) {
+    read.problems.push("BOOKS_GATEWAY_GSTIN is not a GSTIN: 15 characters, such as 29AAGCR4375J1ZU");
+  }
+  if (stateCode !== null && !STATE_CODE_FORMAT.test(stateCode)) {
+    read.problems.push("BOOKS_GATEWAY_GST_STATE must be the two-letter GST code of Razorpay's state, such as KA");
+  }
+  if ((gstin === null) !== (stateCode === null)) {
+    read.problems.push("BOOKS_GATEWAY_GSTIN and BOOKS_GATEWAY_GST_STATE are set together: Books needs both");
+  }
+  return gstin === null || stateCode === null ? null : { gstin, stateCode };
 }
 
 /** The GST registration, each part empty until the CA gives it. */

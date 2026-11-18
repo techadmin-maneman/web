@@ -11,7 +11,7 @@ import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
-import { rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { AddForm } from "@maneman/ui/AddForm";
@@ -51,7 +51,7 @@ const serviceOf = (price: CityPrice) => `${copy.items[price.item]} · ${price.ti
 const COLUMNS: readonly Column<CityPrice>[] = [
   { label: copy.columns.city, sort: (price) => price.city, choice: (price) => price.city },
   { label: copy.columns.service, sort: serviceOf, choice: (price) => copy.items[price.item] },
-  { label: copy.columns.before, sort: (price) => price.amount_ex_gst, figure: true },
+  { label: copy.columns.price, sort: (price) => price.amount, figure: true },
   { label: copy.columns.gst, sort: (price) => price.gst_percent, figure: true },
   { label: copy.columns.from, sort: (price) => price.valid_from },
 ];
@@ -77,7 +77,7 @@ function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => Promise<
             <tr key={`${price.city}/${price.item}/${price.tier}/${price.valid_from}`}>
               <RowHead>{price.city}</RowHead>
               <td>{serviceOf(price)}</td>
-              <td className={FIGURE}>{rupees(price.amount_ex_gst)}</td>
+              <td className={FIGURE}>{rupees(price.amount)}</td>
               <td className={FIGURE}>{price.gst_percent}%</td>
               <td>{price.in_force ? copy.inForce : plainDate(price.valid_from)}</td>
               <td className={ACTIONS}>
@@ -159,7 +159,7 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.amount} className={form.field} box="amount_ex_gst">
+      <Field label={copy.amount} className={form.field} box="amount">
         {(control) => (
           <NumberInput
             {...control}
@@ -212,12 +212,12 @@ function PriceForm(props: { cities: Cities; onAdded: () => Promise<void>; onCanc
       title={copy.add}
       words={{ add: cities.form.add }}
       errors={copy.errors}
-      boxes={["item", "tier", "amount_ex_gst", "gst_percent", "valid_from"]}
+      boxes={["item", "tier", "amount", "gst_percent", "valid_from"]}
       send={() =>
         citiesApi.addPrice(draft.city, {
           item: draft.item,
           tier: draft.tier.trim(),
-          amount_ex_gst: Number(draft.amount) * 100,
+          amount: paiseFromRupees(draft.amount),
           gst_percent: Number(draft.gst),
           valid_from: draft.from,
         })

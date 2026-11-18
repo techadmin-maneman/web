@@ -47,7 +47,7 @@ describe("validateStaticConfig: Zoho Books", () => {
       refundAccountId: null,
       bankAccountId: null,
       gatewayFeesAccountId: null,
-      gatewayFeesTaxId: null,
+      gateway: null,
       gst: { gstin: null, stateCode: null, sac: null },
       itemPush: false,
       billAccounts: null,
@@ -58,13 +58,26 @@ describe("validateStaticConfig: Zoho Books", () => {
       ...stagingBase,
       BOOKS_BANK_ACCOUNT_ID: "bank-kotak",
       BOOKS_GATEWAY_FEES_ACCOUNT_ID: "acct-fees",
-      BOOKS_GATEWAY_FEES_TAX_ID: "tax-18",
+      BOOKS_GATEWAY_GSTIN: "29AAGCR4375J1ZU",
+      BOOKS_GATEWAY_GST_STATE: "KA",
     });
     expect(settling.settings.zohoBooks).toMatchObject({
       bankAccountId: "bank-kotak",
       gatewayFeesAccountId: "acct-fees",
-      gatewayFeesTaxId: "tax-18",
+      gateway: { gstin: "29AAGCR4375J1ZU", stateCode: "KA" },
     });
+  });
+
+  it("refuses Razorpay's GST registration malformed, or half of it", () => {
+    expect(
+      problemsOf({ ...stagingBase, BOOKS_GATEWAY_GSTIN: "29AAGCR4375J", BOOKS_GATEWAY_GST_STATE: "Karnataka" }),
+    ).toEqual([
+      "BOOKS_GATEWAY_GSTIN is not a GSTIN: 15 characters, such as 29AAGCR4375J1ZU",
+      "BOOKS_GATEWAY_GST_STATE must be the two-letter GST code of Razorpay's state, such as KA",
+    ]);
+    expect(problemsOf({ ...stagingBase, BOOKS_GATEWAY_GSTIN: "29AAGCR4375J1ZU" })).toEqual([
+      "BOOKS_GATEWAY_GSTIN and BOOKS_GATEWAY_GST_STATE are set together: Books needs both",
+    ]);
   });
 
   it("reads the two accounts a bill posts to only when both are set", () => {

@@ -32,6 +32,7 @@ interface Row {
   item: string;
   tier: string;
   amount_ex_gst: number;
+  amount: number;
   valid_from: string;
   in_force: boolean;
 }
@@ -72,7 +73,7 @@ const auditFor = (action: string) =>
     .all<{ actor: string; subject_id: string; detail: string }>();
 
 const price = (item: string, tier: string, validFrom: string, paise = 4_000_000) =>
-  post("/api/prices", { item, tier, amount_ex_gst: paise, gst_percent: 0, valid_from: validFrom });
+  post("/api/prices", { item, tier, amount: paise, gst_percent: 0, valid_from: validFrom });
 
 /** A price in force since `validFrom`, as an earlier day's change leaves one: the console sets none from today. */
 const pricedSince = (item: string, tier: string, validFrom: string, paise = 4_000_000) =>
@@ -379,28 +380,29 @@ describe("correcting a price still to come", () => {
   const OCTOBER = {
     item: "service",
     tier: "standard",
-    amount_ex_gst: 250_000,
+    amount: 250_000,
     gst_percent: 18,
     valid_from: "2026-10-01",
   };
   const correct = (body: Record<string, unknown>) => post("/api/prices/correct", { ...OCTOBER, ...body });
   const serviceRows = async () =>
-    (await serviceNamed("Service visit")).prices.map((row) => [row.valid_from, row.amount_ex_gst]);
+    (await serviceNamed("Service visit")).prices.map((row) => [row.valid_from, row.amount]);
 
   it("takes the row back and sets its replacement, from another day, in one go", async () => {
     await post("/api/prices", OCTOBER);
 
-    const answer = await correct({ was_valid_from: "2026-10-01", valid_from: "2026-10-05", amount_ex_gst: 260_000 });
+    const answer = await correct({ was_valid_from: "2026-10-01", valid_from: "2026-10-05", amount: 260_000 });
 
     expect(answer.status).toBe(200);
     expect(await serviceRows()).toEqual([
       ["2026-10-05", 260_000],
       ["2026-09-22", 200_000],
-      ["2026-01-01", 200_000],
+      // January's row, 5% on its Rs. 2,000.
+      ["2026-01-01", 210_000],
     ]);
     // Both halves are on the record, as each would be alone.
     expect(JSON.parse((await auditFor("price.withdraw")).results[0]?.detail ?? "{}")).toMatchObject({
-      amount_ex_gst: 250_000,
+      amount: 250_000,
       valid_from: "2026-10-01",
     });
     expect(JSON.parse((await auditFor("price.set")).results.at(-1)?.detail ?? "{}")).toMatchObject({
@@ -411,7 +413,7 @@ describe("correcting a price still to come", () => {
 
   it("corrects the figure of the same day", async () => {
     await post("/api/prices", OCTOBER);
-    expect((await correct({ was_valid_from: "2026-10-01", amount_ex_gst: 240_000 })).status).toBe(200);
+    expect((await correct({ was_valid_from: "2026-10-01", amount: 240_000 })).status).toBe(200);
     expect((await serviceRows())[0]).toEqual(["2026-10-01", 240_000]);
   });
 

@@ -19,9 +19,9 @@ import styles from "./price-row.module.css";
 const copy = packagesCopy.price;
 const errors = packagesCopy.errors;
 
-/** "Rs. 2,200", with its GST where it has one. */
-export const priceText = (price: { readonly amount_ex_gst: number; readonly gst_percent: number }): string =>
-  copy.gstOf(rupees(price.amount_ex_gst), price.gst_percent);
+/** "Rs. 2,200", what the client pays, with the GST in it where it has some. */
+export const priceText = (price: { readonly amount: number; readonly gst_percent: number }): string =>
+  copy.gstOf(rupees(price.amount), price.gst_percent);
 
 interface Typed {
   readonly rupees: string;
@@ -71,7 +71,7 @@ function PriceEditor(props: PriceRowProps) {
     const answer = await pricesApi.setPrice({
       item: props.item,
       tier: props.tier,
-      amount_ex_gst: paiseFromRupees(typed.rupees),
+      amount: paiseFromRupees(typed.rupees),
       gst_percent: Number(typed.gst),
       valid_from: typed.from,
     });
@@ -97,7 +97,7 @@ function PriceEditor(props: PriceRowProps) {
         </span>
       }
       start={() => ({
-        rupees: startFrom === undefined ? "" : rupeesTyped(startFrom.amount_ex_gst),
+        rupees: startFrom === undefined ? "" : rupeesTyped(startFrom.amount),
         gst: startFrom === undefined ? "0" : String(startFrom.gst_percent),
         from: tomorrow,
       })}

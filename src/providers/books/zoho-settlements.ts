@@ -6,9 +6,12 @@
 //   POST /books/v3/banktransactions               { banktransaction }, its transaction_type transfer_fund
 //   GET  /books/v3/expenses&reference_number=     { expenses }
 //   POST /books/v3/expenses                       { expense }, paid through Razorpay's account
+//
+// Once GST is on, an expense with a tax must say whose it is: Books refuses one as "Out of Scope" (400 code 113104)
+// unless it names the supplier's GSTIN and both states.
 
 import { z } from "zod";
-import type { BooksProvider } from "./index.ts";
+import type { BooksGst, BooksProvider } from "./index.ts";
 import type { BooksApi } from "./zoho.ts";
 
 type Settlements = Pick<BooksProvider, "findTransfer" | "recordTransfer" | "findExpense" | "recordExpense">;
@@ -26,7 +29,7 @@ const ExpensesFound = z.object({
   expenses: z.array(z.object({ expense_id: z.string(), reference_number: z.string().nullish() })).default([]),
 });
 
-export function settlementCalls({ at, read }: BooksApi): Settlements {
+export function settlementCalls({ at, read }: BooksApi, taxOf: (gst: BooksGst) => Promise<string>): Settlements {
   return {
     async findTransfer(fromAccountId, reference) {
       const query = `&account_id=${encodeURIComponent(fromAccountId)}&reference_number=${encodeURIComponent(reference)}`;
@@ -70,8 +73,21 @@ export function settlementCalls({ at, read }: BooksApi): Settlements {
       return found.expenses.find((each) => each.reference_number === reference)?.expense_id ?? null;
     },
 
-    recordExpense: (expense) =>
-      read({
+    async recordExpense(expense) {
+      const { gst } = expense;
+      // The GST in the fee, claimed as input credit; the amount includes it.
+      const taxed =
+        gst === null
+          ? {}
+          : {
+              tax_id: await taxOf(gst),
+              is_inclusive_tax: true,
+              gst_treatment: "business_gst",
+              gst_no: gst.supplierGstin,
+              source_of_supply: gst.sourceState,
+              destination_of_supply: gst.destinationState,
+            };
+      return read({
         step: "record_expense",
         path: at("/expenses"),
         schema: z.string(),
@@ -85,10 +101,10 @@ export function settlementCalls({ at, read }: BooksApi): Settlements {
             date: expense.date,
             reference_number: expense.reference,
             description: expense.description,
-            // The GST in the fee, claimed as input credit once GST is on in Books; the amount includes it.
-            ...(expense.taxId === null ? {} : { tax_id: expense.taxId, is_inclusive_tax: true }),
+            ...taxed,
           },
         },
-      }),
+      });
+    },
   };
 }

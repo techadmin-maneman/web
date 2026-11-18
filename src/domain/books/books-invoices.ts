@@ -1,7 +1,9 @@
 // The invoice for a finished visit, raised in Books from our own figures.
 //
 // One line on the visit's Books item: the price book's GST-inclusive price on the day, less any discount code before
-// tax, under the appointment's ID as its reference, by which a later pass finds it. The line names the hair system and
+// tax, at the GST of that price, under the appointment's ID as its reference, by which a later pass finds it. With GST
+// on, a visit whose price that day had none is charged the GST of its service's price as it stands now; while that has
+// none too, it is not invoiced, as it would issue a tax invoice with none, and ops are told. The line names the hair system and
 // the visit: "Mane Man Active, First Fit"; "Service Visit, Mane Man Active". Books works out the total. The invoice is
 // sent, and the client may open it, only when it totals what the visit was sold for; otherwise it stays a draft and ops
 // are told. A visit a free-visit credit paid for is a zero-priced line, complimentary. A draft under any other
@@ -17,6 +19,7 @@ import { HOUR_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import { discounted } from "../../policy/discount-codes.ts";
+import { invoiceLine } from "../../policy/invoice-line.ts";
 import { invoiceHold, type InvoiceHold, type SoldVisit } from "../../policy/prepayment.ts";
 import type { BooksInvoice, BooksProvider, NewBooksInvoice } from "../../providers/books/index.ts";
 import { FAILURES_BEFORE_ALERT, PER_PASS, RECHECK_AFTER_MS, tellFailure as tellPassFailure } from "./vendor-pass.ts";
@@ -199,6 +202,11 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
     await tellUnpriced(pass, visit);
     return null;
   }
+  const gst = options.gst.gstin === null ? null : await gstOf(pass, visit, price);
+  if (gst === 0) {
+    await tellUntaxed(pass, visit);
+    return null;
+  }
   const item = await itemOf(db, visit);
   if (item === null) {
     // The hourly item check tells ops of a service Books has no item for.
@@ -213,10 +221,7 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
   // A visit paid for before its price changed was sold at what was paid, so that is its line; one a credit paid for,
   // for nothing.
   const { soldFor, paidWithCredit } = await soldVisit(db, visit, code?.off ?? 0);
-  const line =
-    paidWithCredit || soldFor === null || soldFor === listed.amount
-      ? { rate: paidWithCredit ? 0 : price.amount, discount: paidWithCredit ? 0 : price.amount - listed.amount }
-      : { rate: soldFor, discount: 0 };
+  const line = invoiceLine({ price, listed, soldFor, paidWithCredit, gst, off: code?.off ?? 0 });
   const day = indiaDate(new Date(visit.window_start));
   const product = await productOf(db, visit);
   const supply = (await supplyFor(db, options.gst))(visit.service_city);
@@ -231,12 +236,23 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
       name: lineName({ type: visit.type, service: item.name, product, complimentary: paidWithCredit }),
       description: options.labelAsTest ? STAGING_TEST : "",
       ...line,
+      tax: gst === null ? null : { percent: gst, intraState: supply.intraState },
     },
   };
   const raised = await deps.books.createInvoice(invoice);
   // Kept before it is sent: a later pass then reads this one rather than looking for it.
   await keepInvoice(pass, visit.id, raised.id);
   return raised;
+}
+
+/**
+ * The GST the visit is charged once GST is on: its price's on the day, else, where that had none, its service's price's
+ * now, which ops set with its GST from tomorrow at the earliest; 0 while neither has any.
+ */
+async function gstOf(pass: Pass, visit: Visit, price: Price): Promise<number> {
+  if (price.gst_percent > 0) return price.gst_percent;
+  const now = await listPrice(pass.db, { ...visit, window_start: pass.now.toISOString() });
+  return now?.gst_percent ?? 0;
 }
 
 /** What marks an invoice made on staging, in the line's description. */
@@ -451,6 +467,15 @@ async function tellUnpriced(pass: Pass, visit: Visit): Promise<void> {
   });
 }
 
+async function tellUntaxed(pass: Pass, visit: Visit): Promise<void> {
+  pass.log.warn("invoice_untaxed", { appointment_id: visit.id, type: visit.type, tier: visit.tier });
+  await pass.deps.alertOnce({
+    key: `invoice_untaxed:${visit.id}`,
+    message: ALERT_WORDS.invoice_untaxed({ visit: visit.id }),
+    link: linkTo(visit),
+  });
+}
+
 /** Tells ops a visit's invoice failed: Books' refusal at once, any other failure on its third time. */
 const tellFailure = (pass: Pass, visit: Visit, error: unknown): Promise<void> =>
   tellPassFailure(
@@ -482,7 +507,7 @@ async function markIssued(pass: Pass, appointmentId: string): Promise<void> {
     .prepare("UPDATE appointments SET invoice_issued_at = ?1 WHERE id = ?2")
     .bind(pass.now.toISOString(), appointmentId)
     .run();
-  for (const kind of ["invoice_draft", "invoice_refused", "invoice_failed", "invoice_unpriced"]) {
+  for (const kind of ["invoice_draft", "invoice_refused", "invoice_failed", "invoice_unpriced", "invoice_untaxed"]) {
     await pass.deps.resolveAlert(`${kind}:${appointmentId}`);
   }
 }

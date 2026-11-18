@@ -167,6 +167,10 @@ export const ALERT_WORDS = {
     `Raise a new invoice in Books if visit ${a.visit} still owes one: invoice ${a.invoice} is void.`,
   invoice_unpriced: (a: { readonly visit: string }) =>
     `Raise visit ${a.visit}'s invoice in Books by hand: the price book has no price for its day.`,
+  invoice_untaxed: (a: { readonly visit: string }) =>
+    `Set the price of visit ${a.visit} with its GST in Settings (a first fit's hair system, a replacement's ` +
+    `replacement): the price book has it with none. The visit is invoiced at that GST, at what it was sold for, ` +
+    `from the day the price applies.`,
   invoice_refused: (a: { readonly visit: string; readonly said: string }) =>
     `Raise visit ${a.visit}'s invoice in Books by hand, or correct what Books refused: "${a.said}".`,
   invoice_failed: (a: { readonly visit: string; readonly times: number; readonly reason: string }) =>

@@ -14,7 +14,9 @@ import { createStubBooks, type StubBooks } from "../../../src/providers/books/st
 import { NOW } from "../helpers.ts";
 import { later, openAlerts, optionsFor } from "./books-sync-fixtures.ts";
 
-const ACCOUNTS = { razorpay: "acct-razorpay", bank: "acct-kotak", fees: "acct-fees", feesTaxId: null };
+const ACCOUNTS = { razorpay: "acct-razorpay", bank: "acct-kotak", fees: "acct-fees", feesGst: null };
+/** Razorpay's registration in Karnataka, ours in Delhi. */
+const FEES_GST = { supplierGstin: "29AAGCR4375J1ZU", sourceState: "KA", destinationState: "DL" };
 
 /** What the pass told ops. */
 let told: string[];
@@ -79,7 +81,7 @@ describe("a settlement in Books", () => {
         date: "2026-09-20",
         reference: "setl_1",
         description: "Staging test: Razorpay's fee on settlement setl_1",
-        taxId: null,
+        gst: null,
       },
     ]);
     expect(await row("setl_1")).toEqual({
@@ -92,12 +94,31 @@ describe("a settlement in Books", () => {
     expect(books.made.expenses).toHaveLength(1);
   });
 
-  it("names the fee's tax once GST is on, and is found by its own ID where Razorpay gave no UTR", async () => {
+  it("carries the fee's GST at the rate Razorpay's figures come to, and is found by its own ID with no UTR", async () => {
     await settled("setl_2", { utr: null });
     const books = createStubBooks();
-    await pass(books, NOW, { settlementAccounts: { ...ACCOUNTS, feesTaxId: "tax-gst18" } });
+    await pass(books, NOW, { settlementAccounts: { ...ACCOUNTS, feesGst: FEES_GST } });
     expect(books.made.transfers).toEqual([expect.objectContaining({ reference: "setl_2" })]);
-    expect(books.made.expenses).toEqual([expect.objectContaining({ taxId: "tax-gst18" })]);
+    expect(books.made.expenses).toEqual([
+      expect.objectContaining({ amount: 47_200, gst: { ...FEES_GST, percent: 18, intraState: false } }),
+    ]);
+  });
+
+  it("carries the GST group within one state, and no GST on a fee Razorpay charged none on", async () => {
+    await settled("setl_6");
+    await env.DB.prepare(
+      `INSERT INTO razorpay_settlements (id, amount, fees, tax, utr, settled_at, received_at)
+       VALUES ('setl_7', 1900000, 40000, 0, 'UTR7', '2026-09-20T15:30:00.000Z', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const books = createStubBooks();
+    const sameState = { ...FEES_GST, sourceState: "DL" };
+    await pass(books, NOW, { settlementAccounts: { ...ACCOUNTS, feesGst: sameState } });
+    expect(books.made.expenses).toEqual([
+      expect.objectContaining({ reference: "setl_6", gst: { ...sameState, percent: 18, intraState: true } }),
+      expect.objectContaining({ reference: "setl_7", gst: null }),
+    ]);
   });
 
   it("has no expense where Razorpay took no fee", async () => {

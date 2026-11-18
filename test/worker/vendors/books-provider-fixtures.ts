@@ -19,7 +19,7 @@ export const SETTINGS: ZohoBooksSettings = {
   refundAccountId: null,
   bankAccountId: null,
   gatewayFeesAccountId: null,
-  gatewayFeesTaxId: null,
+  gateway: null,
   itemPush: false,
   billAccounts: null,
   gst: NO_GST,
@@ -30,6 +30,17 @@ export const ZOHO_TOKEN_URL = "https://accounts.zoho.in/oauth/v2/token";
 export const BOOKS_API = "https://www.zohoapis.in/books/v3";
 
 export const tokenIssued = () => json({ access_token: "books-access-1", expires_in: 3600, token_type: "Bearer" });
+
+/** Books' GST taxes as its list gives them, read on the org: the GST groups, which split as CGST and SGST, and IGST. */
+export const taxesListed = () =>
+  json({
+    code: 0,
+    taxes: [
+      { tax_id: "tax-gst5", tax_name: "GST5", tax_percentage: 5, tax_type: "tax_group", tax_specific_type: "" },
+      { tax_id: "tax-gst18", tax_name: "GST18", tax_percentage: 18, tax_type: "tax_group", tax_specific_type: "" },
+      { tax_id: "tax-igst18", tax_name: "IGST18", tax_percentage: 18, tax_type: "tax", tax_specific_type: "igst" },
+    ],
+  });
 
 export function zohoBooks(routes: Parameters<typeof fakeFetch>[0]) {
   const http = fakeFetch(routes);

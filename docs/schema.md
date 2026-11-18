@@ -606,7 +606,7 @@ Indexes:
 
 A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).
 
-Made by `0167_cities_as_data.sql`.
+Made by `0167_cities_as_data.sql`; changed by `0220_prices_with_gst.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -616,6 +616,7 @@ Made by `0167_cities_as_data.sql`.
 | `amount_ex_gst` | INTEGER | no |  |  |  |
 | `gst_percent` | INTEGER | no |  |  |  |
 | `valid_from` | TEXT | no |  | primary key |  |
+| `amount_paise` | INTEGER | yes |  |  | What the client pays in the city, in paise, GST included. |
 
 ## city_settings
 
@@ -2480,7 +2481,7 @@ Triggers: `po_lines_not_over_received`.
 
 Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 
-Made by `0016_booking.sql`.
+Made by `0016_booking.sql`; changed by `0220_prices_with_gst.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2489,6 +2490,7 @@ Made by `0016_booking.sql`.
 | `amount_ex_gst` | INTEGER | no |  |  | In paise, before GST. |
 | `gst_percent` | INTEGER | no |  |  |  |
 | `valid_from` | TEXT | no |  | primary key | India's calendar date it applies from. |
+| `amount_paise` | INTEGER | yes |  |  | What the client pays, in paise, GST included. |
 
 ## purchase_orders
 

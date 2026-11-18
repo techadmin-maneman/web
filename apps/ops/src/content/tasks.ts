@@ -480,6 +480,7 @@ export const needsAHand = {
     payment_link_failed: "Payment link failed",
     invoice_draft: "Invoice still a draft",
     invoice_unpriced: "Visit has no price to invoice",
+    invoice_untaxed: "Visit priced with no GST",
     invoice_refused: "Books refused an invoice",
     invoice_failed: "Invoice didn’t reach Books",
     books_unapplied: "Payment not matched to an invoice",

@@ -26,6 +26,12 @@ export async function stateRegistrations(db: D1Database): Promise<StateRegistrat
 export interface Supply {
   readonly placeOfSupply: string | null;
   readonly branchId: string | null;
+  /**
+   * Whether the visit is in the state of the registration that supplies it, so its GST is CGST and SGST; else IGST:
+   * its state's own where its invoice is raised under that one's Books branch, else the one in BOOKS_GSTIN. False while
+   * GST is off, when no tax is charged.
+   */
+  readonly intraState: boolean;
 }
 
 /** How a pass that raises many invoices works out each one's supply: the cities' states and the registrations, read once. */
@@ -34,9 +40,11 @@ export async function supplyFor(db: D1Database, head: GstRegistration): Promise<
   return (city) => {
     const state = city === null ? null : (states.get(city) ?? null);
     const own = registrations.find((each) => each.state_code === state?.code);
+    const place = placeOfSupply(state?.code ?? null, head);
     return {
-      placeOfSupply: placeOfSupply(state?.code ?? null, head),
+      placeOfSupply: place,
       branchId: head.gstin === null ? null : (own?.books_branch_id ?? null),
+      intraState: place !== null && ((own?.books_branch_id ?? null) !== null || place === head.stateCode),
     };
   };
 }

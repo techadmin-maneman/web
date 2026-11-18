@@ -21,6 +21,7 @@ import invoicesByReference from "../../fixtures/vendors/books/invoices-by-refere
 import {
   ZOHO_TOKEN_URL,
   BOOKS_API,
+  taxesListed,
   tokenIssued,
   zohoBooks,
   sent,
@@ -235,6 +236,7 @@ describe("Books: the invoices we raise", () => {
       description: "Staging test visit",
       rate: 200_000,
       discount: 15_000,
+      tax: null,
     },
   };
   const INVOICE_SENT = {
@@ -282,6 +284,36 @@ describe("Books: the invoices we raise", () => {
     });
     await expect(books.createInvoice({ ...INVOICE, placeOfSupply: "HR" })).rejects.toThrow(/Invalid Element/);
     expect(sent(booksCalls(calls)[0])).toEqual({ ...INVOICE_SENT, gst_treatment: "consumer", place_of_supply: "HR" });
+  });
+
+  it("puts the GST group of the rate on a line within the state and IGST across, reading Books' taxes once", async () => {
+    const { books, calls } = zohoBooks({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/settings/taxes`]: () => taxesListed(),
+      [`${BOOKS_API}/invoices`]: () => json(invoiceCreated, 201),
+    });
+    const taxed = (intraState: boolean) => ({
+      ...INVOICE,
+      line: { ...INVOICE.line, tax: { percent: 18, intraState } },
+    });
+    await books.createInvoice(taxed(true));
+    await books.createInvoice(taxed(false));
+    const written = booksCalls(calls).filter((call) => call.url.includes("/invoices"));
+    const lineTax = (call: (typeof written)[number] | undefined) =>
+      (sent(call) as { line_items: { tax_id?: string }[] }).line_items[0]?.tax_id;
+    expect([lineTax(written[0]), lineTax(written[1])]).toEqual(["tax-gst18", "tax-igst18"]);
+    expect(booksCalls(calls).filter((call) => call.url.includes("/settings/taxes"))).toHaveLength(1);
+  });
+
+  it("refuses a line whose rate Books has no tax for, raising nothing", async () => {
+    const { books, calls } = zohoBooks({
+      [ZOHO_TOKEN_URL]: () => tokenIssued(),
+      [`${BOOKS_API}/settings/taxes`]: () => taxesListed(),
+      [`${BOOKS_API}/invoices`]: () => json(invoiceCreated, 201),
+    });
+    const at12 = { ...INVOICE, line: { ...INVOICE.line, tax: { percent: 12, intraState: false } } };
+    await expect(books.createInvoice(at12)).rejects.toMatchObject({ code: "NO_TAX", refusal: true });
+    expect(booksCalls(calls).some((call) => call.url.includes("/invoices"))).toBe(false);
   });
 
   it("finds an invoice by our reference, matching it exactly", async () => {
