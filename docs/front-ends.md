@@ -113,4 +113,4 @@ A production build refuses copy still marked `PLACEHOLDER` in an app's `content.
 2. Call it through the app's client in `src/api.ts`.
 3. Put its words in `content.ts`, its values in tokens, and its parts from `@maneman/ui`. A value no board draws goes in `packages/brand/tokens.css`, with why, and a departure from a board is recorded in ADR 0025.
 4. Test it: its logic in `test/node/`, the screen in `e2e/<app>/`. In the console and the technician app, a new fake is typed with `satisfies` against the app's types, and the contract check holds it to the document.
-5. Shoot its fidelity pair against its board.
+5. Set it beside its design: a site screen as a fidelity pair against its board (`npm run fidelity`), an app's screen against its redesign's prototype, at 360 and 390 px, as it is reviewed (`docs/fidelity-method.md`).

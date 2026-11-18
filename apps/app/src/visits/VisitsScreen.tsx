@@ -7,7 +7,7 @@
 //
 // Beneath them, the client's own record, which the board draws nowhere: how
 // often they have been served, what they have bought, what they have paid, and
-// the month their piece falls due (docs/fidelity-method.md).
+// the month their piece falls due (docs/decisions/0059-a-clients-history.md).
 
 import { ICONS } from "@maneman/brand/icons";
 import { buttonLook } from "@maneman/ui/Button";

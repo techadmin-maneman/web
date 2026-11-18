@@ -19,19 +19,9 @@ Any difference in type, spacing, colour or order is a defect, but for the depart
 
 `npm run fidelity:ops` shoots the console's kit (`/_kit`, local builds alone) whole, in the light theme and the dark, to `docs/fidelity/ops/kit.png` and `kit-dark.png`: every part of `packages/ui` in its states, on paper and on the ink, and the console's frame. It has no board to pair with; it is how a part that changes is seen to change, and where a screen takes its parts from (`docs/patterns.md`).
 
-## Phase 2 boards
-
-The Phase 2 files in `design/phase2` run on the same prototype runtime. `test/node/architecture/briefs-and-designs.test.ts` checks that their `support.js` is byte-identical to `design/support.js`, so the same library routing renders them. Pairs for the client and technician apps follow the site's method above, with two differences:
-
-- **Compare frames, not boards.** A spec board draws several states side by side, with captions and notes around them. Crop the design to the one frame a screen matches, such as `A2 · Code · after 30 seconds`, and shoot the build in that state (a `?state=` preview, as the site has).
-- **Match the frame's width:**
-  - the client and technician apps at 390 px, the width of the phone frames.
-
-The board's own furniture is not part of the product: the canvas (`#CFCABE`), captions and notes. The Prototype is a reference for flow and timers only, and a spec board overrules it (`design/phase2/README.md`).
-
 ## The client and technician apps
 
-Their pairs against Phase 2's boards (`npm run fidelity:app` and `fidelity:tech`, in `docs/fidelity/client-app/` and `technician-app/`) are retired. Each app was rebuilt to its redesign's prototype (`design/client-redesign/`, `design/tech-redesign/`), which draws no boards to crop a frame from, so the Phase 2 pairs compared the apps with a design they no longer follow, and the client app's run stopped at its first screen. Each change to either app is checked against its prototype screen by screen as it is reviewed (`.claude/rules/review-before-push.md`), at 360 and 390 px and, for the technician app, with its text at 130%.
+No harness pairs them now (ADR 0275). Their pairs were cropped from Phase 2's boards in `design/phase2`, frame by frame at 390 px; each app was since rebuilt to its redesign's prototype (`design/client-redesign/`, `design/tech-redesign/`), which draws no boards to crop a frame from, so the pairs compared the apps with a design they no longer follow, and the client app's run stopped at Home. Each change to either app is checked against its prototype screen by screen as it is reviewed (`.claude/rules/review-before-push.md`), at 360 and 390 px and, for the technician app, with its text at 130%. The Phase 2 pairs, their method and their departures from the boards are in this file's history before ADR 0275.
 
 ## The referral landing
 
