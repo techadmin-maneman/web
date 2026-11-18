@@ -22,7 +22,7 @@ export function driveCheckOf(c: Context<AppEnv>): DriveCheck | null {
     answered: () => resolveAlert(ROUTES_REFUSED),
     // Google's drive beside the estimate a start was offered on, where it left the start no room.
     tooTight: (short) => {
-      c.var.log.info("start_too_tight_for_drive", short);
+      c.var.log.info("start_too_tight_for_drive", { ...short });
     },
   };
 }

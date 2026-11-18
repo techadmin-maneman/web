@@ -59,7 +59,7 @@ beforeEach(async () => {
   ).run();
   const technician = await aTechnician({ city: "Gurgaon" });
   const client = await aPerson();
-  await anAddress(client.id, { lat: 28.401, lng: 77.051 });
+  await anAddress(client.id ?? "", { lat: 28.401, lng: 77.051 });
   await aVisit({
     person_id: client.id,
     technician_id: technician.id,
@@ -76,7 +76,7 @@ describe("a number the site knows", () => {
     const held = await holdSlot({
       db: env.DB,
       input: {
-        personId: (await aPerson()).id,
+        personId: (await aPerson()).id ?? "",
         service: visit?.service ?? { type: "consultation", tier: "standard", minutes: 60 },
         date: ASKED.date,
         window: ASKED.window,
