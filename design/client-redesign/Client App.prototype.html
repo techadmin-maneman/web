@@ -843,7 +843,7 @@ SCREENS.payments=()=>{
  let g='',h='';
  items.forEach(it=>{if(it.g!==g){g=it.g;h+=`<div class="small" style="font-weight:600;color:var(--ink5);padding:18px 0 6px">${g}</div>`}
   h+=`<button class="row tap" data-a="go" data-v="payment" data-p="${it.id}" style="border-top:1px solid var(--line);border-bottom:0"><span class="grow"><span class="t" style="display:block">${it.t}</span><span class="s">${it.s}</span></span><span class="r"><span class="tab-num" style="display:block;font-weight:600">${it.amt}</span>${it.tag}</span><span class="chev">${I('right',18)}</span></button>`});
- return `${topBar('Payments and invoices',{back:1})}<div class="scroll"><div class="pad">${h}<div style="border-top:1px solid var(--line);margin-bottom:24px"></div><p class="xs muted" style="margin-bottom:28px">Prices include GST. Every payment goes to Mane Man, never to a technician.</p></div></div>`;
+ return `${topBar('Payments and invoices',{back:1})}<div class="scroll"><div class="pad">${h}<div style="border-top:1px solid var(--line);margin-bottom:24px"></div><p class="xs muted" style="margin-bottom:28px">Prices include GST. Every payment goes through Razorpay: in the app when you book, or by a Razorpay link we text you. Technicians never take cash or UPI.</p></div></div>`;
 };
 
 SCREENS.payment=(p)=>{

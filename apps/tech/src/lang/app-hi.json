@@ -1,6 +1,14 @@
 {
   "_note": "The technician app's own lines in Hindi, which the prototype's catalog (design/tech-redesign/strings-hi.json) does not word: states and refusals the prototype does not draw, and the words of the new parts. Read after the catalog, in the same way (apps/tech/src/lang/hindi.ts). Names, codes, product names, Rs. amounts and am/pm stay in English. Draft: have a native Hindi speaker review before launch.",
   "strings": {
+    "Next": "अगला",
+    "Prepaid": "पेमेंट हो चुका",
+    "prepaid": "पेमेंट हो चुका",
+    "Navigate": "रास्ता देखें",
+    "Me": "प्रोफ़ाइल",
+    "Day view": "पूरा दिन",
+    "Nothing booked": "कोई बुकिंग नहीं",
+    "Fix it and tap Next.": "ठीक करें और अगला दबाएँ।",
     "#1B": "#1B",
     "A 6-digit code is on its way.": "6 अंकों का कोड आ रहा है।",
     "A job": "एक जॉब",
@@ -424,6 +432,9 @@
     "Call ops.": "ऑप्स को कॉल करें।",
     "Type it instead": "इसके बजाय टाइप करें",
     "the rest to come": "बाकी आने वाले हैं"
+  },
+  "templates": {
+    "{rejectBody} Fix it and tap Next.": "{rejectBody} ठीक करें और अगला दबाएँ।"
   },
   "patterns": [
     {

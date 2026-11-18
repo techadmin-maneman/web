@@ -248,6 +248,12 @@ describe("the second copy round", () => {
     expect(referral.arrival.title).toBe("A hair system, fitted at home. The consultation is free.");
   });
 
+  // The brand's tagline, written as the brand writes it, ends the hero's turning line (ADR 0279).
+  it("ends the hero's line on the tagline as the brand writes it, and writes it no other way", () => {
+    expect(site.hero.sequence.at(-1)).toBe("Be the Main Man, again!");
+    expect(pages).not.toMatch(/Main Man again/);
+  });
+
   // /book and its search snippet opened "He measures your scalp", with nobody for "He" to be.
   it("names who comes on /book and in the try-on before anything is said of them", () => {
     expect(site.booking.intro[0]).toMatch(/^In just 60 minutes, a specialist measures/);

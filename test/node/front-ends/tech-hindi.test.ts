@@ -51,6 +51,14 @@ describe("a line in Hindi", () => {
     expect(toHindi("Next: clean the scalp")).toBe("अगला: स्कैल्प साफ़ करें");
   });
 
+  // ADR 0280: the app's corrections to the catalog's draft, which stays as received.
+  it("words a line or a template the catalog words too as the app's own file does", () => {
+    expect(catalog.strings.Next).toBe("आगे");
+    expect(toHindi("Next")).toBe("अगला");
+    expect(toHindi("Me")).toBe("प्रोफ़ाइल");
+    expect(toHindi("Before photos are blurred. Fix it and tap Next.")).toMatch(/ ठीक करें और अगला दबाएँ।$/);
+  });
+
   it("words what a rule holds, so a count, a date or a part in it is in Hindi too", () => {
     expect(toHindi("Map · 12 min drive")).toBe("नक्शा · 12 मिनट ड्राइव");
     expect(toHindi("Expired 31 Oct 2026")).toBe("31 अक्टू 2026 को एक्सपायर");

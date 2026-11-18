@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0279. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0281. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -156,6 +156,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0270](0270-the-design-checks-api-side.md) The design check's API side
 - [0271](0271-the-technician-follow-ups.md) The technician follow-ups
 - [0273](0273-why-a-hair-system-failed.md) Why a hair system failed
+- [0280](0280-the-technician-apps-hindi-corrected.md) The technician app's Hindi corrected, and the job card's arrival named
 
 ### Money and Books
 
@@ -177,6 +178,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0257](0257-razorpay-only.md) Razorpay is the only way to pay
 - [0261](0261-razorpay-money-in-books.md) Razorpay's money in Books, from payment to the bank
 - [0274](0274-gst-on.md) GST on: prices with their GST, and every invoice line and fee carrying its tax
+- [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) One rule for paying, and the tagline as written
 
 ### Privacy and accounts
 
@@ -526,7 +528,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
 | [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |
-| [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted | [0263](0263-the-home-pages-order-and-bands.md) |
+| [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted | [0263](0263-the-home-pages-order-and-bands.md), [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) |
 | [0214](0214-from-the-site-into-the-app.md) | From the site into the app, and the look on the page | 2026-10-19 | accepted | [0217](0217-the-try-ons-photo-taken-and-looked-at.md) |
 | [0215](0215-the-range-as-a-table.md) | The range as a table | 2026-10-19 | accepted |  |
 | [0216](0216-the-sites-polish-pass.md) | The site's polish pass | 2026-10-19 | accepted | [0262](0262-the-sites-typeface-and-palette.md), [0263](0263-the-home-pages-order-and-bands.md) |
@@ -564,13 +566,13 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0248](0248-safety.md) | A technician's safety on a visit | 2026-11-11 | accepted |  |
 | [0249](0249-schedule-kit-and-me.md) | Schedule, Kit and Me | 2026-11-11 | accepted | [0258](0258-the-technician-design-pass.md) |
 | [0250](0250-guides-and-alerts.md) | Guides and alerts | 2026-11-11 | accepted |  |
-| [0251](0251-hindi-and-the-sign-in.md) | Hindi on every screen, and the sign-in redrawn | 2026-11-11 | accepted |  |
+| [0251](0251-hindi-and-the-sign-in.md) | Hindi on every screen, and the sign-in redrawn | 2026-11-11 | accepted | [0280](0280-the-technician-apps-hindi-corrected.md) |
 | [0252](0252-client-app-redesign.md) | The client app redrawn: four tabs, the profile, and the client's look | 2026-11-12 | accepted |  |
 | [0253](0253-replacement-when-due-and-change-of-hair-system.md) | Changing hair system at the replacement booking, and when a replacement is booked | 2026-11-12 | accepted |  |
 | [0254](0254-client-signs-off-the-fit.md) | The client signs off the fit | 2026-11-12 | accepted |  |
 | [0255](0255-client-alerts-and-push.md) | Client alerts and push, and the live visit | 2026-11-12 | accepted |  |
 | [0256](0256-fit-guarantee-setting.md) | The fit guarantee's days as a setting, and a claim as a Tasks row | 2026-11-12 | accepted |  |
-| [0257](0257-razorpay-only.md) | Razorpay is the only way to pay | 2026-11-12 | accepted |  |
+| [0257](0257-razorpay-only.md) | Razorpay is the only way to pay | 2026-11-12 | accepted | [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) |
 | [0258](0258-the-technician-design-pass.md) | The technician app's design pass | 2026-11-12 | accepted | [0268](0268-the-visits-design-check.md) |
 | [0259](0259-the-issue-log.md) | The issue log | 2026-11-16 | accepted |  |
 | [0260](0260-ratings.md) | Ratings | 2026-11-16 | accepted |  |
@@ -592,3 +594,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0276](0276-a-message-whatsapp-refuses.md) | A message WhatsApp refuses | 2026-11-18 | accepted, on the owner's rulings of 18 November 2026 |  |
 | [0277](0277-alerts-that-come-sooner.md) | Alerts that come sooner | 2026-11-18 | accepted, on the owner's approval of the QA run's fix plan, 18 November 2026 |  |
 | [0278](0278-a-technician-in-training-takes-no-visits.md) | A technician in training takes no visits | 2026-11-18 | accepted, on the owner's ruling of 18 November 2026 |  |
+| [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) | One rule for paying, and the tagline as written | 2026-11-19 | accepted |  |
+| [0280](0280-the-technician-apps-hindi-corrected.md) | The technician app's Hindi corrected, and the job card's arrival named | 2026-11-19 | accepted |  |
