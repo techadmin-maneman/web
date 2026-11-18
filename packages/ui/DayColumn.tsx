@@ -39,13 +39,17 @@ interface Cell {
   /** The block's own words are in the cell it starts in alone. */
   readonly first: boolean;
   readonly atNow: boolean;
+  /** How many minutes into the block it is now, where now falls inside it; null otherwise. */
+  readonly nowWithin: number | null;
 }
 
 const onStep = (minute: number) => Math.round(minute / DAY_STEP) * DAY_STEP;
 
+type Stretch = Omit<Cell, "first" | "atNow" | "nowWithin">;
+
 /** The day in stretches, gap or block, each block clipped to the hours and to the end of the one before it. */
-function stretchesOf(from: number, to: number, blocks: readonly DayBlock[]): Omit<Cell, "first" | "atNow">[] {
-  const stretches: Omit<Cell, "first" | "atNow">[] = [];
+function stretchesOf(from: number, to: number, blocks: readonly DayBlock[]): Stretch[] {
+  const stretches: Stretch[] = [];
   let at = from;
   for (const block of [...blocks].sort((one, other) => one.start - other.start)) {
     const start = Math.max(at, onStep(block.start));
@@ -66,15 +70,21 @@ function stretchesOf(from: number, to: number, blocks: readonly DayBlock[]): Omi
   return stretches;
 }
 
-/** Each stretch cut where a gap crosses an hour, so its line shows, and where it is now, so the now-line does. */
+/**
+ * Each gap cut where it crosses an hour, so its line shows, and where it is now, so the now-line does. A block is
+ * never cut: the now-line crosses it over its words, as the design draws it, so its words and its link stay whole.
+ */
 function cellsOf(from: number, to: number, blocks: readonly DayBlock[], now: number | null): Cell[] {
   const nowAt = now === null || now <= from || now >= to ? null : onStep(now);
-  return stretchesOf(from, to, blocks).flatMap((stretch) => {
-    const cuts = new Set<number>();
-    if (stretch.block === null) {
-      for (let hour = Math.ceil((stretch.from + 1) / 60) * 60; hour < stretch.to; hour += 60) cuts.add(hour);
+  return stretchesOf(from, to, blocks).flatMap((stretch): Cell[] => {
+    const nowInside = nowAt !== null && nowAt > stretch.from && nowAt < stretch.to;
+    if (stretch.block !== null) {
+      const nowWithin = nowInside ? nowAt - stretch.from : null;
+      return [{ ...stretch, first: true, atNow: stretch.from === nowAt, nowWithin }];
     }
-    if (nowAt !== null && nowAt > stretch.from && nowAt < stretch.to) cuts.add(nowAt);
+    const cuts = new Set<number>();
+    for (let hour = Math.ceil((stretch.from + 1) / 60) * 60; hour < stretch.to; hour += 60) cuts.add(hour);
+    if (nowInside) cuts.add(nowAt);
     const edges = [stretch.from, ...[...cuts].sort((one, other) => one - other), stretch.to];
     return edges.slice(0, -1).map((edge, index) => ({
       ...stretch,
@@ -83,6 +93,7 @@ function cellsOf(from: number, to: number, blocks: readonly DayBlock[], now: num
       to: edges[index + 1] ?? stretch.to,
       first: index === 0,
       atNow: edge === nowAt,
+      nowWithin: null,
     }));
   });
 }
@@ -106,6 +117,26 @@ function Label({ block }: { readonly block: DayBlock }) {
     <Link className={styles.label} to={block.to}>
       {words}
     </Link>
+  );
+}
+
+/**
+ * The now-line across a block it falls inside, `at` minutes down its `minutes`, drawn over the block's words and in the
+ * way of no tap. A minute is a pixel down the column, so the drawing's units down are its minutes; its dot sits at the
+ * hours, as the now-line's does outside a block.
+ */
+function NowMark({ minutes, at }: { readonly minutes: number; readonly at: number }) {
+  return (
+    <svg
+      className={styles.nowMark}
+      viewBox={`0 0 1 ${String(minutes)}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <line className={styles.nowLine} x1={0} x2={1} y1={at} y2={at} />
+      <line className={styles.nowDot} x1={0} x2={0} y1={at} y2={at} />
+    </svg>
   );
 }
 
@@ -163,13 +194,15 @@ export function DayColumn({
                     styles.cell,
                     minute % 60 === 0 && styles.onHour,
                     cell.block !== null && LOOKS[cell.block.look],
-                    cell.block !== null && !cell.first && styles.continued,
                     cell.atNow && styles.now,
                   )}
                   rowSpan={(cell.to - cell.from) / DAY_STEP}
                 >
                   {cell.block !== null && cell.first && <Words block={cell.block} within={cell.within} />}
-                  {cell.atNow && nowLabel !== undefined && <VisuallyHidden>{nowLabel}</VisuallyHidden>}
+                  {cell.nowWithin !== null && <NowMark minutes={cell.to - cell.from} at={cell.nowWithin} />}
+                  {(cell.atNow || cell.nowWithin !== null) && nowLabel !== undefined && (
+                    <VisuallyHidden>{nowLabel}</VisuallyHidden>
+                  )}
                 </td>
               )}
             </tr>
