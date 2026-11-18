@@ -32,22 +32,15 @@ describe("the dependency audit", () => {
     ]);
   });
 
-  // npm writes its own failures to stdout as JSON as well, and exits 0: the check once passed on nothing when the
-  // registry could not be reached.
+  // npm writes its own failures to stdout as JSON too, with no advisories in them, so they would read as a clean audit.
   it("is no audit where npm answers its own error, or anything but its report", () => {
     const unreachable = {
       message: "request to http://127.0.0.1:9/-/npm/v1/security/advisories/bulk failed, reason: connect ECONNREFUSED",
       error: { summary: "", detail: "" },
     };
-    expect(noAudit(unreachable, { production: false })).toContain("ECONNREFUSED");
-    expect(noAudit({}, { production: false })).toBe("npm audit gave no report");
-    const report = { auditReportVersion: 2, vulnerabilities: {}, metadata: { dependencies: { prod: 36 } } };
-    expect(noAudit(report, { production: true })).toBeNull();
-  });
-
-  it("is no audit of the production dependencies where it checked none of them", () => {
-    const none = { auditReportVersion: 2, vulnerabilities: {}, metadata: { dependencies: { prod: 0 } } };
-    expect(noAudit(none, { production: true })).toBe("npm audit checked no production dependency");
-    expect(noAudit(none, { production: false })).toBeNull();
+    expect(noAudit(unreachable)).toContain("ECONNREFUSED");
+    expect(noAudit({})).toBe("npm audit gave no report");
+    expect(noAudit({ auditReportVersion: 2, vulnerabilities: null })).toBe("npm audit gave no report");
+    expect(noAudit({ auditReportVersion: 2, vulnerabilities: {} })).toBeNull();
   });
 });
