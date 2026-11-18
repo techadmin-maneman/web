@@ -91,13 +91,18 @@ function eventName(body: string): string {
 }
 
 /**
- * Whether the captured payment was made through Checkout: it pays the order a hold of ours made for it. A payment
- * link's pays the link's own order, a link sent for a hold included, so it says nothing of Checkout.
+ * Whether the captured payment was made through Checkout: it pays the order a hold booked through Checkout made for
+ * it. A payment link's pays the link's own order, which a hold paid by a link is given once paid, so neither says
+ * anything of Checkout.
  */
 export async function paidThroughCheckout(db: D1Database, event: { readonly payload?: unknown }): Promise<boolean> {
   const payment = (event.payload as { payment?: { entity?: { order_id?: unknown } } } | undefined)?.payment?.entity;
   const order = payment?.order_id;
   if (typeof order !== "string" || order === "") return false;
-  const hold = await db.prepare("SELECT 1 FROM slot_holds WHERE razorpay_order_id = ?1").bind(order).first();
+  // A hold paid by a link is given the link's order once paid, so only one booked through Checkout counts.
+  const hold = await db
+    .prepare("SELECT 1 FROM slot_holds WHERE razorpay_order_id = ?1 AND pay_by_link = 0")
+    .bind(order)
+    .first();
   return hold !== null;
 }

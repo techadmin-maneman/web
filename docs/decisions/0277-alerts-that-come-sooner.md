@@ -23,8 +23,9 @@ The QA run of 18 November found failures that reached ops late, or not at all:
 
 1. **A webhook refused at our door** three times in a row, with none taken between, raises the urgent
    `webhook_refused:<hook>` for Razorpay, MSG91 and Evolution alike; the next delivery taken closes it
-   (`src/domain/platform/hook-alerts.ts`). Told and closed once, it is not told again for a day, so posts anyone can
-   forge page once a day at most, and stray ones between real deliveries never stop a real mismatch from being told.
+   (`src/domain/platform/hook-alerts.ts`). Told once, its refusals are not counted again for a day, open or closed,
+   so posts anyone can forge page once a day at most, and stray ones between real deliveries never stop a real
+   mismatch from being told.
 2. **A Razorpay event that throws** counts each failure toward the urgent `razorpay_event_failing:<event>`, raised at
    its second, and keeps its backoff; applying it closes the alert (`src/queues/razorpay.ts`). A refund that came
    before its payment uses a try without failing, so one failure after it tells nobody. With D1 down, an alert that
@@ -32,8 +33,8 @@ The QA run of 18 November found failures that reached ops late, or not at all:
 3. **Checkout failing to load.** The client app reports a Checkout script that errors or times out, or that loaded
    with no Razorpay in it, as `checkout_unavailable`. Each signed-in client counts once an hour, and three within a
    quarter of an hour raise the urgent `checkout_failing`; a report from a page not signed in counts for nothing, so
-   nobody outside raises it. The next payment made through Checkout, on a hold's own order, closes it; a payment
-   link's does not, a link sent for a hold included. The client app's Content-Security-Policy now reports what it refuses to mm-api
+   nobody outside raises it. The next payment made through Checkout, on the order of a hold booked through it,
+   closes it; a payment link's does not, a link sent for a hold included, whose order the hold takes once paid. The client app's Content-Security-Policy now reports what it refuses to mm-api
    (`/api/csp-reports`, as the site's does), so a Checkout frame or script blocked from a new host is logged; the
    browser posts it itself, so the route takes it with no Origin.
 4. **A visit not begun past its arrival window** is a Tasks task for Operations, "Technician not arrived", due within

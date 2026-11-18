@@ -97,6 +97,14 @@ describe("a webhook refused at our door", () => {
     expect(await open("webhook_refused:razorpay")).toBeNull();
   });
 
+  // An open alert's retells at 30, 300 and 3,000 sightings would page again with no delivery between.
+  it("pages once for a long run of refusals with no delivery between", async () => {
+    const deps = fakeDependencies();
+    for (let refused = 0; refused < 30; refused += 1) await deliverRazorpay(captured, { deps, secret: WRONG });
+    expect(deps.alerts).toHaveLength(1);
+    expect(await open("webhook_refused:razorpay")).toEqual({ count: 3 });
+  });
+
   // Stray posts between real deliveries never form a run, and must not stop a real mismatch from being told.
   it("tells a real mismatch after stray refusals between real deliveries", async () => {
     const deps = fakeDependencies();
@@ -279,6 +287,14 @@ describe("Razorpay Checkout failing to load in the client app", () => {
       payload: { payment: { entity: { ...captured.payload.payment.entity, order_id: order, notes } } },
     });
     expect(await paidThroughCheckout(env.DB, paid("order_hold_1", {}))).toBe(true);
+    // A hold paid by a link takes the link's order once paid.
+    await aHold({
+      person_id: person.id,
+      technician_id: technician.id,
+      pay_by_link: 1,
+      razorpay_order_id: "order_link_2",
+    });
+    expect(await paidThroughCheckout(env.DB, paid("order_link_2", {}))).toBe(false);
     const link = paid("order_link_1", { hold_id: "33333333-3333-4333-8333-0000000000aa", person_id: person.id });
     expect(await paidThroughCheckout(env.DB, link)).toBe(false);
   });
