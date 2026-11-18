@@ -64,11 +64,18 @@ export const areas = {
       not_permitted: NOT_PERMITTED,
       not_found: "Unknown pincode. Add it first.",
       launch_in_future: "The launch date must be today or earlier.",
-      no_technician: "No technician works in this city yet. Add one in Technicians first.",
+      no_technician: "Nobody here can take a visit yet. Add a technician, or mark one’s training done, in Technicians.",
+      not_ready:
+        "Not ready: nobody here is trained to fit, or there’s no stockroom. Put that right first, or an Admin can launch it from Served with a reason.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
+  },
+  /** A launch refused for a city not ready, which an Admin may make all the same, with why. */
+  notReady: {
+    label: "Why launch now",
+    launch: "Launch anyway",
   },
   /** Opening a city from India Post's pincodes: a state, its districts, then the pincodes to add, unserved. */
   directory: {
@@ -114,7 +121,11 @@ export const areas = {
       `${city} · ${day} · ${count === 1 ? "1 pincode" : `${String(count)} pincodes`}`,
     states: { scheduled: "Scheduled", live: "Live", cancelled: "Cancelled" },
     told: (alerted: number) => (alerted === 1 ? "1 told" : `${String(alerted)} told`),
-    held: "Not live: no active technician in the city.",
+    /** Why the cron has not served it on its day, by the refusal it met. */
+    held: {
+      no_technician: "Not live: nobody in the city can take a visit yet.",
+      not_ready: "Not live: nobody in the city is trained to fit, or there’s no stockroom.",
+    },
     cancelLaunch: "Cancel launch",
     cancelLabel: (city: string, day: string) => `Cancel the ${city} launch on ${day}`,
     cancelCheck: (city: string, day: string) => `Cancel the ${city} launch on ${day}?`,
@@ -145,7 +156,9 @@ export const areas = {
     loading: "Checking…",
     checks: {
       technicians: (ready: boolean, count: number) =>
-        ready ? `${String(count)} active ${count === 1 ? "technician" : "technicians"}` : "No active technician",
+        ready
+          ? `${String(count)} ${count === 1 ? "technician" : "technicians"} out of training`
+          : "No technician out of training",
       fitters: (ready: boolean, count: number) =>
         ready ? `${String(count)} trained to fit` : "No technician trained to fit",
       hours: (ready: boolean, count: number) =>
@@ -157,8 +170,8 @@ export const areas = {
         ready ? "Every pincode on the map" : `${String(count)} not on the map yet: placed within the hour`,
     },
     fix: "Fix",
-    /** Only the first stops a launch; the rest are for ops to weigh. */
-    blocks: "Nothing can be booked without an active technician.",
+    /** A technician, one trained to fit and a stockroom stop a launch; the rest are for ops to weigh. */
+    blocks: "It won’t go live until someone here is trained to fit and there’s a stockroom.",
   },
   /** A city's map and its technicians' reach from home (docs/decisions/0223-reach-from-home.md). */
   reach: {
@@ -324,7 +337,10 @@ export const areas = {
       not_permitted: NOT_PERMITTED,
       no_service_area: "At least one pincode must stay served.",
       launch_in_future: "Launch dates must be today or earlier.",
-      no_technician: "No technician works in that city yet. Add one in Technicians first.",
+      no_technician:
+        "Nobody there can take a visit yet. Add a technician, or mark one’s training done, in Technicians.",
+      not_ready:
+        "Not ready: nobody here is trained to fit, or there’s no stockroom. Put that right first, or an Admin can launch with a reason.",
       /** A pincode we do not hold: one is added below, never by the file. */
       invalid_request: "Unknown pincode. Add it first.",
       offline: OFFLINE,

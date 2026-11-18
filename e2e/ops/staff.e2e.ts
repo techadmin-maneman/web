@@ -130,6 +130,32 @@ test("adds a person by their job, every grant it needs over the one place", asyn
   });
 });
 
+// A zonal head was a city head given a zone by hand, with every city on offer.
+test("adds a zonal head over a zone, offering zones alone", async ({ page }) => {
+  await open(page, { "POST /api/staff": json(BOOK) });
+  await page.getByRole("button", { name: copy.add }).click();
+  const form = page.getByRole("group", { name: copy.form.addTitle });
+  await form.getByLabel(copy.form.email).fill("ncr.head@maneman.in");
+  await form.getByLabel(copy.form.role).selectOption({ label: copy.form.roles.zonal_head });
+  const place = form.getByLabel(copy.form.place);
+  await expect(place).toHaveValue("zone:NCR");
+  await expect(place.getByRole("option")).toHaveCount(1);
+
+  const request = posted(page, "/api/staff");
+  await form.getByRole("button", { name: copy.form.add, exact: true }).click();
+  const over = { geography: "zone", place: "NCR" };
+  expect((await request).postDataJSON()).toEqual({
+    email: "ncr.head@maneman.in",
+    active: true,
+    grants: [
+      { department: "operations", level: "manage", ...over },
+      { department: "customer_care", level: "act", ...over },
+      { department: "finance", level: "view", ...over },
+      { department: "growth", level: "view", ...over },
+    ],
+  });
+});
+
 test("sends someone already listed to their record, rather than replacing their access unseen", async ({ page }) => {
   let sent = false;
   await open(page, {

@@ -268,7 +268,7 @@ export async function addStockrooms(sim: Sim, cities: readonly string[]): Promis
       {
         kind: "stockroom",
         name: `${city} stockroom`,
-        parent_id: catalogue.warehouse,
+        parent_id: catalogue.warehouse ?? stock.places.find((each) => each.kind === "warehouse")?.id,
         city,
       },
     );

@@ -54,6 +54,15 @@ describe("a city served with no active technician", () => {
     await tellOfUncoveredCities(env.DB, deps);
     expect(await openKeys()).toEqual([]);
   });
+
+  // A technician in training takes no visit, so a city whose only one is in training is served by nobody.
+  it("counts a technician in training as nobody", async () => {
+    await pincode("122018", "Sector 65", "Gurgaon", true);
+    await technician("t-gurgaon", "Gurgaon");
+    await env.DB.prepare("UPDATE technicians SET training_end_date = '2026-10-20' WHERE id = 't-gurgaon'").run();
+    await tellOfUncoveredCities(env.DB, deps);
+    expect(await openKeys()).toEqual(["city_uncovered:Gurgaon"]);
+  });
 });
 
 describe("a city booked up", () => {

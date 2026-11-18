@@ -130,6 +130,8 @@ export const AUDIT_ACTIONS = [
   // (docs/decisions/0198-cities-as-data.md).
   "city.add",
   "city.change",
+  // A zone that groups cities, which a grant of staff access may name (docs/decisions/0109-console-departments-and-access.md).
+  "zone.add",
   "city.rename",
   "gst_registration.set",
   "gst_registration.remove",

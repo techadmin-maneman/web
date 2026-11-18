@@ -83,6 +83,20 @@ test("sends no launch dated to a day still to come", async ({ page }) => {
   await expect(panel.getByRole("button", { name: "Send to 84" })).toBeDisabled();
 });
 
+// Mumbai went live weeks before anyone there could fit.
+test("says a city is not ready to go live, and where an Admin launches it anyway", async ({ page }) => {
+  await open(page, {
+    [LAUNCH_BANDRA]: (route) =>
+      (route.request().postDataJSON() as { confirm: boolean }).confirm
+        ? json({ error: { code: "not_ready", request_id: "test" } }, 409)(route)
+        : json(PREVIEW)(route),
+  });
+  await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
+  const panel = page.getByRole("region", { name: "Mark 400050 live" });
+  await panel.getByRole("button", { name: "Send to 84" }).click();
+  await expect(panel.getByRole("alert")).toHaveText(opsCopy.areas.launch.errors.not_ready);
+});
+
 // "Send to 0" only marked the pincode live, and "The 1 who did not opt in are".
 test("says what the press does when nobody asked to be told, in words that agree", async ({ page }) => {
   const quiet = { pincode: "400050", waiting: 1, alerts: 0, launched: false };

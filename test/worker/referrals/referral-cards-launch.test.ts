@@ -245,6 +245,19 @@ describe("the waitlist and a launch", () => {
     expect(pincode).toEqual({ served: 0, launched_at: null });
   });
 
+  // Mumbai went live weeks before anyone there could fit, and those told came to book first fits that could not be had.
+  it("refuses a launch in a city with nobody trained to fit, and sends nothing", async () => {
+    await waiting(true);
+    await env.DB.prepare("UPDATE technicians SET fits_trained = 0 WHERE city = 'Mumbai'").run();
+    const queue = fakeQueue();
+    const answer = await launch({ confirm: true }, queue);
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "not_ready" } });
+    expect(queue.sent).toEqual([]);
+    const pincode = await env.DB.prepare("SELECT served, launched_at FROM serviceable_pincodes").first();
+    expect(pincode).toEqual({ served: 0, launched_at: null });
+  });
+
   // Live where no technician works, the waitlist would be told we come and could book nothing (ADR 0117).
   it("refuses a launch in a city no technician works in, and sends nothing", async () => {
     await waiting(true);

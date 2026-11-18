@@ -14,6 +14,7 @@ export const citiesApi = {
   addCity: (body: Sent<paths["/api/cities"]["post"]>) => client.post("/api/cities", { body }),
   addGstRegistration: (body: Sent<paths["/api/gst-registrations"]["post"]>) =>
     client.post("/api/gst-registrations", { body }),
+  addZone: (body: Sent<paths["/api/zones"]["post"]>) => client.post("/api/zones", { body }),
   addPrice: (name: string, body: Sent<paths["/api/cities/{name}/prices"]["post"]>) =>
     client.post("/api/cities/{name}/prices", { path: { name }, body }),
   changeCity: (name: string, body: Sent<paths["/api/cities/{name}"]["patch"]>) =>

@@ -11430,7 +11430,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -11673,7 +11673,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description no_technician: no active technician works in the pincode's city yet */
+                /** @description no_technician: no active technician out of training works in the pincode's city yet; not_ready: nobody there is trained to fit, or it has no stockroom */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -11682,7 +11682,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "no_technician";
+                                code: "not_ready" | "no_technician";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -12289,7 +12289,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; not_trained; superseded, with what changed in fields; in_progress */
+                /** @description the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; not_trained; in_training; superseded, with what changed in fields; in_progress */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -12298,7 +12298,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "superseded" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress";
+                                code: "superseded" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_training" | "in_progress";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -12491,7 +12491,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
+                /** @description past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; in_training: to a technician still in training; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -12500,7 +12500,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "superseded" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress";
+                                code: "superseded" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_training" | "in_progress";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -12603,7 +12603,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One they have only checked in at moves with clear_check_in; one they have started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them */
+                /** @description past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; in_training: to a technician still in training; superseded, with what changed in fields; in_progress: the technician has begun the visit. One they have only checked in at moves with clear_check_in; one they have started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -12612,7 +12612,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "superseded" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "ask_the_client";
+                                code: "superseded" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_training" | "in_progress" | "ask_the_client";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -17259,7 +17259,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description no_technician: fields names a pincode it would begin serving in a city no active technician works in */
+                /** @description no_technician: fields names a pincode it would begin serving in a city no active technician out of training works in. not_ready: in a city with no one trained to fit or no stockroom, unless an Admin gives a reason */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -17268,7 +17268,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "no_technician";
+                                code: "not_ready" | "no_technician";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -18181,6 +18181,102 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/zones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A zone added, last in the order: a region of cities a grant of staff access may name */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NewZone"];
+                };
+            };
+            responses: {
+                /** @description The zones as they now stand, in order */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            zones: string[];
+                        };
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description taken: a zone goes by that name already, however it is cased */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "taken";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -26290,7 +26386,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "made_to_order" | "not_made_to_order" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "already_rated" | "visit_not_done" | "rating_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_training" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "made_to_order" | "not_made_to_order" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "already_rated" | "visit_not_done" | "rating_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -27319,7 +27415,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "made_to_order" | "not_made_to_order" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "already_rated" | "visit_not_done" | "rating_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_training" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "made_to_order" | "not_made_to_order" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "already_rated" | "visit_not_done" | "rating_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -28873,7 +28969,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;
@@ -29336,6 +29432,8 @@ export interface components {
                 mobile: string | null;
                 /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
                 fits_trained: boolean;
+                /** @description The day their training is expected to end; null when not in training. In training, no visits (ADR 0278). */
+                training_end_date: string | null;
                 /** @description Their visits still to come and not begun, which switching them off leaves with nobody. */
                 visits_to_come: number;
                 /** @description When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again. */
@@ -29372,6 +29470,8 @@ export interface components {
                 mobile: string | null;
                 /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
                 fits_trained: boolean;
+                /** @description The day their training is expected to end; null when not in training. In training, no visits (ADR 0278). */
+                training_end_date: string | null;
                 /** @description Their visits still to come and not begun, which switching them off leaves with nobody. */
                 visits_to_come: number;
             }[];
@@ -30087,6 +30187,11 @@ export interface components {
             city?: string | null;
             /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
             fits_trained?: boolean;
+            /**
+             * Format: date
+             * @description The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training.
+             */
+            training_end_date?: string | null;
         };
         /** @description Only what is sent changes. */
         TechnicianChange: {
@@ -30100,6 +30205,11 @@ export interface components {
             city?: string | null;
             /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
             fits_trained?: boolean;
+            /**
+             * Format: date
+             * @description The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training.
+             */
+            training_end_date?: string | null;
         };
         TechnicianDeactivated: {
             /** @description Their visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays theirs. Empty when they were switched off already. */
@@ -30375,6 +30485,8 @@ export interface components {
                 /** @description A better name for the area than its post office's. Left out, the name stays. */
                 area?: string;
             }[];
+            /** @description Why a pincode is served in a city not ready to launch (no one trained to fit, or no stockroom). A national Admin's to give. */
+            not_ready_reason?: string;
         };
         NewPincode: {
             pincode: string;
@@ -30484,6 +30596,9 @@ export interface components {
             state_code: string;
             gstin: string;
             books_branch_id: string | null;
+        };
+        NewZone: {
+            name: string;
         };
         SlotTimes: {
             in_force: {

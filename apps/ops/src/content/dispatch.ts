@@ -437,6 +437,7 @@ export const dispatch = {
     otherCity: (technician: string) => `${technician} doesn’t work in this visit’s city.`,
     /** A first fit or a replacement goes only to a technician trained to fit (ADR 0119). */
     notTrained: (technician: string) => `${technician} isn’t trained to fit.`,
+    inTraining: (technician: string) => `${technician} is still in training.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "That move isn’t possible. Choose another technician or time.",

@@ -11,7 +11,7 @@ import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { queuePacedMessages } from "../../http/queue-message.ts";
-import { routeReach } from "../../http/staff-access.ts";
+import { permits, routeReach } from "../../http/staff-access.ts";
 import { reachesCity } from "../../policy/access.ts";
 import { AREA_NAME } from "../../policy/area-names.ts";
 import { AreaSchema } from "../schemas/service-area.ts";
@@ -87,6 +87,17 @@ const setServiceAreaRoute = opsRoute({
               )
               .min(1)
               .max(500),
+            not_ready_reason: z
+              .string()
+              .trim()
+              .min(1)
+              .max(300)
+              .optional()
+              .openapi({
+                description:
+                  "Why a pincode is served in a city not ready to launch (no one trained to fit, or no stockroom). " +
+                  "A national Admin's to give.",
+              }),
           })
           .strict()
           .openapi("ServiceAreaChange"),
@@ -114,7 +125,9 @@ const setServiceAreaRoute = opsRoute({
         "serve from a day still to come. no_service_area: it would leave none served",
     ),
     409: errorResponse(
-      "no_technician: fields names a pincode it would begin serving in a city no active technician works in",
+      "no_technician: fields names a pincode it would begin serving in a city no active technician out of training " +
+        "works in. " +
+        "not_ready: in a city with no one trained to fit or no stockroom, unless an Admin gives a reason",
     ),
   },
 });
@@ -126,8 +139,15 @@ export function registerOpsServiceArea(app: App): void {
   });
 
   app.openapi(setServiceAreaRoute, async (c) => {
+    const body = c.req.valid("json");
+    const notReadyReason = body.not_ready_reason ?? null;
+    // Serving a city not ready to launch is a national Admin's call.
+    if (notReadyReason !== null && !(await permits(c, { department: "admin", level: "manage" }))) {
+      return refuse(c, "not_permitted");
+    }
     const result = await setServiceArea(c.env.DB, {
-      changes: c.req.valid("json").changes,
+      notReadyReason,
+      changes: body.changes,
       actor: actorOf(c),
       requestId: c.var.requestId,
       now: c.var.deps.now(),
@@ -139,6 +159,7 @@ export function registerOpsServiceArea(app: App): void {
         return refuse(c, "launch_in_future", result.pincodes);
       }
       if (result.kind === "no_technician") return refuse(c, "no_technician", result.pincodes);
+      if (result.kind === "not_ready") return refuse(c, "not_ready", result.pincodes);
       return refuse(c, "invalid_request", result.pincodes);
     }
     await queuePacedMessages(c, result.alerts);

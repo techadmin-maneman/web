@@ -17,12 +17,17 @@ export async function technician(id = IMRAN, name = "Imran Qureshi", initials = 
 
 /** An active technician in every city we hold, so a pincode anywhere may begin serving (ADR 0117). */
 export async function aTechnicianInEveryCity(): Promise<void> {
-  await env.DB.prepare(
-    `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city)
-     SELECT 'city-' || name, 'city-' || name, 'Kabir Sood', 'KS', 1, ?1, name FROM cities`,
-  )
-    .bind(NOW.toISOString())
-    .run();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city, fits_trained)
+       SELECT 'city-' || name, 'city-' || name, 'Kabir Sood', 'KS', 1, ?1, name, 1 FROM cities`,
+    ).bind(NOW.toISOString()),
+    // And a stockroom, so each city is ready to launch (src/domain/clients/launch-readiness.ts).
+    env.DB.prepare(
+      `INSERT INTO stock_places (id, kind, name, parent_id, city, created_by, created_at)
+       SELECT 'stockroom-' || name, 'stockroom', name || ' stockroom', 'central', name, 'test', ?1 FROM cities`,
+    ).bind(NOW.toISOString()),
+  ]);
 }
 
 /** A client with a saved address in Gurgaon, as booking asks for one before anything is held. */

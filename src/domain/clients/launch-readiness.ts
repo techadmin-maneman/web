@@ -1,7 +1,7 @@
 // What a city needs before its pincodes are served (ADR 0221), each check with what it counts, so the console can say
 // what is missing and where it is put right; and a served pincode paused, taking no new clients for a while, and what
-// stopping pincodes would leave behind. Only a city with no active technician stops a launch (setServiceArea); the
-// rest are for ops to weigh.
+// stopping pincodes would leave behind. A city with no active technician, nobody trained to fit or no stockroom stops a
+// launch (setServiceArea); the rest are for ops to weigh.
 
 import { indiaDate } from "../../lib/india-time.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
@@ -12,7 +12,10 @@ type ReadinessCheck = (typeof READINESS_CHECKS)[number];
 export interface Readiness {
   readonly check: ReadinessCheck;
   readonly ready: boolean;
-  /** What the check counts: the technicians, those trained to fit, those missing hours or a home pin, and so on. */
+  /**
+   * What the check counts: the technicians out of training (ADR 0278), those trained to fit, those missing hours or a
+   * home pin, and so on.
+   */
   readonly count: number;
 }
 
@@ -21,8 +24,10 @@ export async function launchReadiness(db: D1Database, city: string, pincodes: re
   const row = await db
     .prepare(
       `SELECT
-         (SELECT COUNT(*) FROM technicians t WHERE t.active = 1 AND t.city = ?1) AS technicians,
-         (SELECT COUNT(*) FROM technicians t WHERE t.active = 1 AND t.city = ?1 AND t.fits_trained = 1) AS fitters,
+         (SELECT COUNT(*) FROM technicians t
+            WHERE t.active = 1 AND t.city = ?1 AND t.training_end_date IS NULL) AS technicians,
+         (SELECT COUNT(*) FROM technicians t
+            WHERE t.active = 1 AND t.city = ?1 AND t.training_end_date IS NULL AND t.fits_trained = 1) AS fitters,
          (SELECT COUNT(*) FROM technicians t WHERE t.active = 1 AND t.city = ?1
             AND NOT EXISTS (SELECT 1 FROM technician_hours h WHERE h.technician_id = t.id)) AS without_hours,
          (SELECT COUNT(*) FROM technicians t WHERE t.active = 1 AND t.city = ?1 AND t.home_lat IS NULL) AS without_home,

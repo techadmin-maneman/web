@@ -105,6 +105,20 @@ export const cities = {
       not_found: changed("Gone already."),
     },
   },
+  /** The zones that group cities, which a grant of staff access may name (ADR 0109). */
+  zones: {
+    panel: "Zones",
+    columns: { zone: "Zone", cities: "Cities" },
+    noCities: "No city yet",
+    add: "Add a zone",
+    name: "Name",
+    added: "Zone added.",
+    errors: {
+      ...common,
+      name: "Letters first, up to 40 characters.",
+      taken: "A zone goes by that name already.",
+    },
+  },
   registrations: {
     panel: "GST registrations",
     columns: { state: "State", gstin: "GSTIN", branch: "Books branch", remove: "Remove" },
