@@ -39,7 +39,7 @@ const save = (body: unknown, personId = PERSON) => post(ops, `/api/clients/${per
 
 const current = () =>
   env.DB.prepare(
-    `SELECT line1, flat, place_id, lat IS NOT NULL AS pinned, geocode_source, given_to_staff, created_at
+    `SELECT line1, flat, place_id, lat IS NOT NULL AS pinned, pin_approximate, geocode_source, given_to_staff, created_at
      FROM addresses WHERE person_id = ?1 AND replaced_at IS NULL`,
   )
     .bind(PERSON)
@@ -73,6 +73,7 @@ describe("POST /api/clients/{id}/address", () => {
       flat: "Flat 1203",
       place_id: "stub-place-sunrise",
       pinned: 1,
+      pin_approximate: 0,
       geocode_source: "google_geocoding",
       given_to_staff: "ops@localhost",
       created_at: NOW.toISOString(),
@@ -115,10 +116,15 @@ describe("POST /api/clients/{id}/address", () => {
     ]);
   });
 
-  it("takes a typed address Google places no closer than its area, and saves no pin rather than a wrong one", async () => {
+  it("takes a typed address Google places no closer than its area, keeping its rough pin marked approximate", async () => {
     const typed = { ...GIVEN, building: null, place_id: null, session_token: null, line1: "House 4417, Tower C" };
     expect((await save(typed)).status).toBe(200);
-    expect(await current()).toMatchObject({ place_id: null, pinned: 0, given_to_staff: "ops@localhost" });
+    expect(await current()).toMatchObject({
+      place_id: null,
+      pinned: 1,
+      pin_approximate: 1,
+      given_to_staff: "ops@localhost",
+    });
   });
 
   it("refuses what the app's own save refuses", async () => {
