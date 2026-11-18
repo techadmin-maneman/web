@@ -153,7 +153,12 @@ describe("a one visit fitted whose link was never paid", () => {
 describe("a payment made by UPI outside Razorpay", () => {
   it("is never refunded through Razorpay: the refund is refused, for ops to make by UPI", async () => {
     const payments = createStubPayments();
-    const outcome = await askRefund(payments, "upi:412345678901", { amount: 220_000, receipt: "r-1", notes: {} });
+    const outcome = await askRefund(
+      payments,
+      "upi:412345678901",
+      { amount: 220_000, receipt: "r-1", notes: {} },
+      { record: { db: env.DB, now: NOW } },
+    );
     expect(outcome.kind).toBe("refused");
     expect(payments.made.refunds).toEqual([]);
   });
