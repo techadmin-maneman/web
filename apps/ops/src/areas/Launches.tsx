@@ -39,6 +39,12 @@ const FIX_AT: Readonly<Partial<Record<LaunchReadiness["check"], string>>> = {
 
 const STATE_TONE = { scheduled: "attention", live: "done", cancelled: "neutral" } as const;
 
+/** The checks that stop a launch (src/domain/clients/service-area.ts). */
+const STOPS: ReadonlySet<LaunchReadiness["check"]> = new Set(["technicians", "fitters", "stockroom"]);
+
+/** The cron's refusal, as "not_ready: 400050 400051", in ops' words. */
+const heldWhy = (because: string) => (because.startsWith("not_ready") ? copy.held.not_ready : copy.held.no_technician);
+
 function LaunchRow({ launch, onCancel }: { launch: PincodeLaunch; onCancel: (() => void) | null }) {
   const day = shortDate(launch.go_live_on);
   return (
@@ -49,7 +55,7 @@ function LaunchRow({ launch, onCancel }: { launch: PincodeLaunch; onCancel: (() 
         {launch.alerted !== null && ` · ${copy.told(launch.alerted)}`}
       </p>
       <p className={shared.note}>{launch.pincodes.map((each) => `${each.pincode} ${each.area}`).join(", ")}</p>
-      {launch.held_because !== null && <p className={shared.error}>{copy.held}</p>}
+      {launch.held_because !== null && <p className={shared.error}>{heldWhy(launch.held_because)}</p>}
       {onCancel !== null && (
         <Button
           variant="outline"
@@ -144,7 +150,7 @@ function Readiness({ city, pincodes }: { city: string; pincodes: readonly string
           );
         })}
       </ul>
-      {loaded.value.checks.some((each) => each.check === "technicians" && !each.ready) && (
+      {loaded.value.checks.some((each) => STOPS.has(each.check) && !each.ready) && (
         <CheckWarning>{words.blocks}</CheckWarning>
       )}
     </div>

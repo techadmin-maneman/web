@@ -6813,6 +6813,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "blackout",
             "other_city",
             "not_trained",
+            "in_training",
             "in_progress",
             "too_early_to_close",
             "no_check_in",

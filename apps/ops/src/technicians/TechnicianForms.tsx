@@ -22,6 +22,7 @@ import styles from "./technicians.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 import { SwitchOff, SwitchOn } from "./TechnicianSwitch.tsx";
+import { TrainingField, TrainingRow } from "./Training.tsx";
 import { refusal } from "./refusal.ts";
 
 /** The fields as typed and chosen; a city of "" is none. */
@@ -141,6 +142,7 @@ export function AddTechnician({
   // Staff kept to their cities give them one of theirs; national staff may leave them with none.
   const firstCity = useAccess().reaches(GIVING_NO_CITY) ? "" : (cities[0] ?? "");
   const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: firstCity, fitsTrained: false });
+  const [trainingEndDate, setTrainingEndsOn] = useState("");
   const [sending, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -159,6 +161,7 @@ export function AddTechnician({
         zone: zoneOf(typed.zone),
         city: cityOf(typed.city),
         fits_trained: typed.fitsTrained,
+        ...(trainingEndDate === "" ? {} : { training_end_date: trainingEndDate }),
       });
       if (!answer.ok) {
         setFailed(refusal(answer.code));
@@ -179,6 +182,7 @@ export function AddTechnician({
       }}
     >
       <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
+      <TrainingField value={trainingEndDate} onChange={setTrainingEndsOn} />
       <div className={styles.actions}>
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}
@@ -260,6 +264,11 @@ function DetailRows({
         ]}
         mayChange={mayChange}
         save={(fitting) => save({ fits_trained: fitting === "trained" })}
+      />
+      <TrainingRow
+        endsOn={technician.training_end_date}
+        mayChange={mayChange}
+        save={(endsOn) => save({ training_end_date: endsOn })}
       />
     </div>
   );

@@ -15812,7 +15812,7 @@ Request body:
 }
 ```
 
-**409**: no_technician: no active technician works in the pincode's city yet
+**409**: no_technician: no active technician out of training works in the pincode's city yet; not_ready: nobody there is trained to fit, or it has no stockroom
 
 ```json
 {
@@ -15829,6 +15829,7 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
+                "not_ready",
                 "no_technician"
               ]
             }
@@ -16617,7 +16618,7 @@ Request body:
 }
 ```
 
-**409**: the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; not_trained; superseded, with what changed in fields; in_progress
+**409**: the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; not_trained; in_training; superseded, with what changed in fields; in_progress
 
 ```json
 {
@@ -16644,6 +16645,7 @@ Request body:
                 "blackout",
                 "other_city",
                 "not_trained",
+                "in_training",
                 "in_progress"
               ]
             }
@@ -16907,7 +16909,7 @@ Request body:
 }
 ```
 
-**409**: past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
+**409**: past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; in_training: to a technician still in training; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
 
 ```json
 {
@@ -16934,6 +16936,7 @@ Request body:
                 "blackout",
                 "other_city",
                 "not_trained",
+                "in_training",
                 "in_progress"
               ]
             }
@@ -17082,7 +17085,7 @@ Request body:
 }
 ```
 
-**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One they have only checked in at moves with clear_check_in; one they have started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them
+**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; in_training: to a technician still in training; superseded, with what changed in fields; in_progress: the technician has begun the visit. One they have only checked in at moves with clear_check_in; one they have started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them
 
 ```json
 {
@@ -17109,6 +17112,7 @@ Request body:
                 "blackout",
                 "other_city",
                 "not_trained",
+                "in_training",
                 "in_progress",
                 "ask_the_client"
               ]
@@ -23442,7 +23446,7 @@ Request body:
 }
 ```
 
-**409**: no_technician: fields names a pincode it would begin serving in a city no active technician works in
+**409**: no_technician: fields names a pincode it would begin serving in a city no active technician out of training works in. not_ready: in a city with no one trained to fit or no stockroom, unless an Admin gives a reason
 
 ```json
 {
@@ -23459,6 +23463,7 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
+                "not_ready",
                 "no_technician"
               ]
             }
@@ -24736,6 +24741,147 @@ A state's registration taken off: its visits are supplied from the registration 
               "type": "string",
               "enum": [
                 "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/zones
+
+A zone added, last in the order: a region of cities a grant of staff access may name
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewZone"
+}
+```
+
+**201**: The zones as they now stand, in order
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "zones"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: taken: a zone goes by that name already, however it is cased
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken"
               ]
             }
           },
@@ -35772,6 +35918,7 @@ Request body:
             "blackout",
             "other_city",
             "not_trained",
+            "in_training",
             "in_progress",
             "too_early_to_close",
             "no_check_in",
@@ -40104,6 +40251,7 @@ Request body:
             "blackout",
             "other_city",
             "not_trained",
+            "in_training",
             "in_progress",
             "too_early_to_close",
             "no_check_in",
@@ -47704,6 +47852,7 @@ Request body:
         "launch.cancel",
         "city.add",
         "city.change",
+        "zone.add",
         "city.rename",
         "gst_registration.set",
         "gst_registration.remove",
@@ -49735,6 +49884,18 @@ Request body:
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
           },
+          "training_end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The day their training is expected to end; null when not in training. In training, no visits (ADR 0278)."
+          },
           "visits_to_come": {
             "type": "integer",
             "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
@@ -49848,6 +50009,7 @@ Request body:
           "city",
           "mobile",
           "fits_trained",
+          "training_end_date",
           "visits_to_come",
           "sign_in_stopped_at",
           "out_of_codes",
@@ -49908,6 +50070,18 @@ Request body:
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
           },
+          "training_end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The day their training is expected to end; null when not in training. In training, no visits (ADR 0278)."
+          },
           "visits_to_come": {
             "type": "integer",
             "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
@@ -49920,6 +50094,7 @@ Request body:
           "city",
           "mobile",
           "fits_trained",
+          "training_end_date",
           "visits_to_come"
         ],
         "additionalProperties": false
@@ -52777,6 +52952,14 @@ Request body:
     "fits_trained": {
       "type": "boolean",
       "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
+    },
+    "training_end_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training."
     }
   },
   "required": [
@@ -52833,6 +53016,14 @@ Request body:
     "fits_trained": {
       "type": "boolean",
       "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
+    },
+    "training_end_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training."
     }
   },
   "additionalProperties": false,
@@ -54140,6 +54331,12 @@ Request body:
       },
       "minItems": 1,
       "maxItems": 500
+    },
+    "not_ready_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why a pincode is served in a city not ready to launch (no one trained to fit, or no stockroom). A national Admin's to give."
     }
   },
   "required": [
@@ -54687,6 +54884,24 @@ Request body:
     "state_code",
     "gstin",
     "books_branch_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NewZone
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^\\p{L}[\\p{L}\\d .'-]{0,39}$/u"
+    }
+  },
+  "required": [
+    "name"
   ],
   "additionalProperties": false
 }

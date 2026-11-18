@@ -7847,6 +7847,7 @@ Request body:
             "blackout",
             "other_city",
             "not_trained",
+            "in_training",
             "in_progress",
             "too_early_to_close",
             "no_check_in",

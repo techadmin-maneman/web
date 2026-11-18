@@ -10,7 +10,7 @@ import { areasApi } from "./areas-api.ts";
 export type Saving =
   | { readonly step: "idle" | "saving" }
   | { readonly step: "saved"; readonly changed: number; readonly alerted: number }
-  | { readonly step: "failed"; readonly code: string };
+  | { readonly step: "failed"; readonly code: string; readonly changes: readonly AreaChange[] };
 
 /** Changes waiting on ops's yes: the launch check where they would message people, else the bar's own question. */
 export interface Asking {
@@ -27,12 +27,12 @@ export function useAreaSaves(
   const [saving, setSaving] = useState<Saving>({ step: "idle" });
   const [asking, setAsking] = useState<Asking | null>(null);
 
-  const send = async (changes: readonly AreaChange[]) => {
+  const send = async (changes: readonly AreaChange[], notReadyReason?: string) => {
     setSaving({ step: "saving" });
-    const answer = await areasApi.setServiceArea(changes);
+    const answer = await areasApi.setServiceArea(changes, notReadyReason);
     setAsking(null);
     if (!answer.ok) {
-      setSaving({ step: "failed", code: answer.code });
+      setSaving({ step: "failed", code: answer.code, changes });
       return;
     }
     setPincodes((held) => afterSave(held, changes));

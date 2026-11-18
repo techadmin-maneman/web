@@ -1,7 +1,7 @@
 // Admin › Cities (docs/decisions/0198-cities-as-data.md): our cities, each with its state for GST and its zone; the
-// rules and prices a city sets apart from the national ones; and the GST registrations a state's visits are supplied
-// from. Each value changes where it reads (docs/decisions/0212-editing-in-place.md), and the page reads itself again
-// after it.
+// zones that group them; the rules and prices a city sets apart from the national ones; and the GST registrations a
+// state's visits are supplied from. Each value changes where it reads (docs/decisions/0212-editing-in-place.md), and
+// the page reads itself again after it.
 
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
@@ -9,6 +9,7 @@ import form from "@maneman/ui/forms.module.css";
 import { CityList } from "./CityList.tsx";
 import { CityPrices } from "./CityPrices.tsx";
 import { Registrations } from "./Registrations.tsx";
+import { Zones } from "./Zones.tsx";
 import { citiesApi } from "./cities-api.ts";
 
 const loadCities = () => citiesApi.cities();
@@ -25,6 +26,7 @@ export function CitiesScreen() {
       {loaded.state === "loaded" && (
         <>
           <CityList cities={loaded.value} reread={reread} />
+          <Zones cities={loaded.value} reread={reread} />
           <CityPrices cities={loaded.value} reread={reread} />
           <Registrations cities={loaded.value} reread={reread} />
         </>

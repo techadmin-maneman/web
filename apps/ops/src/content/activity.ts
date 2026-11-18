@@ -92,6 +92,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "launch.cancel": "Launch cancelled",
   "city.add": "City added",
   "city.change": "City changed",
+  "zone.add": "Zone added",
   "city.rename": "City renamed",
   "gst_registration.set": "GST registration set",
   "gst_registration.remove": "GST registration removed",

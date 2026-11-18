@@ -32,14 +32,17 @@ export const ALERT_WORDS = {
   unassigned_visit: (a: { readonly visit: string }) =>
     `Send a technician to visit ${a.visit} from the Dispatch board: it is today, and has none.`,
   city_uncovered: (a: { readonly city: string; readonly pincodes: number }) =>
-    `Add a technician in ${a.city}, or stop serving its ${String(a.pincodes)} pincodes in Areas: no active technician ` +
-    "works there, so the site shows every day full.",
+    `Add a technician in ${a.city}, or stop serving its ${String(a.pincodes)} pincodes in Areas: nobody there can ` +
+    "take a visit, so the site shows every day full.",
   pincodes_unreached: (a: { readonly city: string; readonly pincodes: number }) =>
     `Set a technician's home or reach in ${a.city}, or stop serving them in Areas: ${String(a.pincodes)} served ` +
     "pincodes are out of every technician's reach, so clients there are offered no start.",
-  launch_held: (a: { readonly city: string; readonly day: string }) =>
-    `Add a technician in ${a.city}, or cancel the launch in Areas: its pincodes were due to be served on ${a.day}, ` +
-    "and with no active technician there they were not.",
+  launch_held: (a: { readonly city: string; readonly day: string; readonly notReady: boolean }) =>
+    a.notReady
+      ? `Train a technician to fit or set up a stockroom in ${a.city}, or cancel the launch in Areas: its pincodes ` +
+        `were due to be served on ${a.day}, and the city was not ready.`
+      : `Add a technician in ${a.city} or mark one's training done, or cancel the launch in Areas: its pincodes were ` +
+        `due to be served on ${a.day}, and nobody there could take a visit.`,
   fully_booked: (a: { readonly city: string; readonly days: number }) =>
     `Add a technician or open more hours in ${a.city}: the site has no window open in the next ${String(a.days)} ` +
     "days there, and sends clients to WhatsApp.",

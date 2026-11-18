@@ -223,7 +223,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
             onCancel={saves.cancel}
           />
         )}
-        <SaveNotes saving={saves.saving} />
+        <SaveNotes saving={saves.saving} onLaunch={(changes, reason) => void saves.send(changes, reason)} />
         <PincodeTable view={view} chosen={mayChange ? chosen : null} onChosen={setChosen} onSave={saveRow} />
       </Panel>
       {mayChange && (

@@ -8,7 +8,12 @@ import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { listCities } from "../../domain/cities/cities.ts";
 import { reachBinding, withinReach } from "../../domain/clients/places.ts";
-import { launchedPincode, pincodeOf, pincodesWithNoTechnician } from "../../domain/clients/service-area.ts";
+import {
+  launchedPincode,
+  pincodeOf,
+  pincodesNotReady,
+  pincodesWithNoTechnician,
+} from "../../domain/clients/service-area.ts";
 import { launchPincode, launchPreview, waitlistByPincode } from "../../domain/booking/waitlist.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -102,7 +107,11 @@ const launchRoute = opsRoute({
       ),
     },
     400: errorResponse("launch_in_future: launch_on is a day still to come; or invalid_request"),
-    409: errorResponse("no_technician: no active technician works in the pincode's city yet"),
+    409: errorResponse(
+      "no_technician: no active technician out of training works in the pincode's city yet; not_ready: nobody there " +
+        "is trained to " +
+        "fit, or it has no stockroom",
+    ),
     403: errorResponse("access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE"),
     404: errorResponse("not_found: the service area holds no such pincode, so it is added first"),
   },
@@ -193,6 +202,8 @@ export function registerOpsWaitlist(app: App): void {
     }
     // Nobody could book there yet, and the waitlist would be told we come.
     if ((await pincodesWithNoTechnician(db, [pin])).length > 0) return refuse(c, "no_technician");
+    // Nor where nobody can fit, or there is no stockroom: an Admin serves such a city from Served, saying why.
+    if ((await pincodesNotReady(db, [known])).length > 0) return refuse(c, "not_ready");
     const staff = actorOf(c);
     const { alerts } = await launchPincode(db, {
       pincode: launchedPincode(known),

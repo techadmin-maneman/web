@@ -94,6 +94,25 @@ describe("a city", () => {
   });
 });
 
+// Only NCR came with the migrations, and the console could put a city in no other zone.
+describe("a zone", () => {
+  it("is added in the console, last in the order, and audited; a city may then be put in it", async () => {
+    const added = await send("POST", "/api/zones", { name: "Deccan" });
+    expect(added.status).toBe(201);
+    expect(await added.json()).toEqual({ zones: ["NCR", "Deccan"] });
+    expect((await auditFor("zone.add")).results).toEqual([expect.objectContaining({ subject_id: "Deccan" })]);
+    expect((await send("POST", "/api/cities", { ...PUNE, zone: "Deccan" })).status).toBe(201);
+  });
+
+  it("refuses a name another zone goes by, however it is cased, and one that is not a name", async () => {
+    const taken = await send("POST", "/api/zones", { name: "ncr" });
+    expect(taken.status).toBe(409);
+    expect(await taken.json()).toMatchObject({ error: { code: "taken", fields: ["name"] } });
+    expect((await send("POST", "/api/zones", { name: "=SUM(A1)" })).status).toBe(400);
+    expect((await auditFor("zone.add")).results).toEqual([]);
+  });
+});
+
 describe("a city's own rules", () => {
   it("are set within the national rule's bounds, read in the city's inputs, and given back to the national rule", async () => {
     const set = await send("PATCH", "/api/cities/Mumbai/rules/checkin_radius_m", { value: 400 });

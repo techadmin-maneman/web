@@ -231,6 +231,30 @@ describe("changing a technician", () => {
     ]);
   });
 
+  it("puts them in training till a day, which the roster shows, and marks it done with null", async () => {
+    const ops = appIn("ops");
+    const added = await send(ops, "POST", "/api/technicians", {
+      name: "Naveen Rao",
+      mobile: "9810000007",
+      training_end_date: "2026-10-20",
+    });
+    const { id } = await added.json<{ id: string }>();
+    const listed = async () =>
+      (
+        await (
+          await send(ops, "GET", "/api/technicians")
+        ).json<{ technicians: { id: string; training_end_date: string | null }[] }>()
+      ).technicians.find((each) => each.id === id);
+    expect(await listed()).toMatchObject({ training_end_date: "2026-10-20" });
+
+    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { training_end_date: null })).status).toBe(200);
+    expect(await listed()).toMatchObject({ training_end_date: null });
+    const audit = await auditOf("technician.change");
+    expect(audit.results).toEqual([
+      { subject_kind: "technician", subject_id: id, detail: JSON.stringify({ fields: "training_end_date" }) },
+    ]);
+  });
+
   it("changes only what was sent", async () => {
     const ops = appIn("ops");
 
@@ -498,6 +522,7 @@ describe("the roster", () => {
         city: null,
         mobile: "+919810000008",
         fits_trained: false,
+        training_end_date: null,
         visits_to_come: 0,
       },
     ]);

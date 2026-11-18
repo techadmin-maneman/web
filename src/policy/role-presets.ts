@@ -18,6 +18,13 @@ export const ROLE_PRESETS = {
     { department: "customer_care", level: "act" },
     { department: "operations", level: "view" },
   ],
+  // A city head's grants over a zone of cities, which the Staff page offers over zones alone.
+  zonal_head: [
+    { department: "operations", level: "manage" },
+    { department: "customer_care", level: "act" },
+    { department: "finance", level: "view" },
+    { department: "growth", level: "view" },
+  ],
   city_head: [
     { department: "operations", level: "manage" },
     { department: "customer_care", level: "act" },

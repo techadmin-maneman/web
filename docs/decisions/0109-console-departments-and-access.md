@@ -1,6 +1,6 @@
 # 0109. The console by departments, and who may do what in it
 
-- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care, Operations, Finance and Growth by place
+- Status: accepted, on the owner's ruling of 2 October 2026 (audit decision 18, and its design answers); amended the same day for the navigation, for actions by level, and for where each record is; amended 4 October 2026 for Customer Care, Operations, Finance and Growth by place; amended 18 November 2026, on the owner's ruling, for zones added in the console and a zonal head
 - Date: 2026-10-02
 - Topic: The ops console
 
@@ -28,7 +28,7 @@ Until now anyone Cloudflare Access let into the ops console could do everything 
 
 Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/policy/console-routes.ts`. A test holds it to the API: a route with no line there fails CI, because the Staff list would refuse it to everyone. Where one route does both an Act and a Manage thing, the route asks Act and asks Manage inside it for the money: waiving a no-show (`WAIVING_A_NO_SHOW`) and refunding a disputed charge (`REFUNDING_A_DISPUTE`).
 
-**Geography: National, Zone, City.** A zone is a region made of cities: NCR is Delhi, Gurgaon, Noida, Ghaziabad and Faridabad (table `zones`, and `cities.zone`). A national grant reaches everything; a zone grant its zone and its cities; a city grant that city. A city in no zone (Mumbai, Bengaluru today) is reached only nationally or by its own name.
+**Geography: National, Zone, City.** A zone is a region made of cities: NCR is Delhi, Gurgaon, Noida, Ghaziabad and Faridabad (table `zones`, and `cities.zone`). A national grant reaches everything; a zone grant its zone and its cities; a city grant that city. A city in no zone (Mumbai, Bengaluru today) is reached only nationally or by its own name. Admin › Cities adds a zone (`POST /api/zones`), and a city is put in one from its own row. The Staff page's **zonal head** gives a city head's grants (Operations · Manage, Customer Care · Act, Finance · View, Growth · View) over a zone, and offers zones alone (`src/policy/role-presets.ts`).
 
 **A grant is a department, at a level, over a place.** A person may hold several: Finance · Act · Delhi and Operations · View · NCR zone, say. The rules are `src/policy/access.ts`.
 
