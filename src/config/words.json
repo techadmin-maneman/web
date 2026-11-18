@@ -2296,6 +2296,14 @@
     "reviewed": true
   },
   {
+    "key": "site:tryon/tryOn.gate.nameLetters",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Use letters only.",
+    "reviewed": false
+  },
+  {
     "key": "site:tryon/tryOn.gate.mobile",
     "surface": "site",
     "group": "Try-on",
@@ -4894,6 +4902,14 @@
     "where": "referral",
     "text": "Enter your name.",
     "reviewed": true
+  },
+  {
+    "key": "site:referral/referral.form.nameLetters",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Use letters only.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.form.mobile",
