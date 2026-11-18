@@ -35,7 +35,7 @@ const ReceiptSchema = z
               .openapi({
                 description:
                   "What a hair system's failed pieces failed, of the checks ops make (receipt_checks); needed where " +
-                  "a hair system's line has qc_failed, and named on no other line.",
+                  "a hair system's line has qc_failed while ops check any point, and named on no other line.",
               }),
             lot_code: z.string().trim().min(1).max(40).nullable(),
             expires_on: z.iso.date().nullable(),

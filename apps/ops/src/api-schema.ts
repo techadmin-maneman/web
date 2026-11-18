@@ -31523,7 +31523,7 @@ export interface components {
                 received: number;
                 damaged: number;
                 qc_failed: number;
-                /** @description What a hair system's failed pieces failed, of the checks ops make (receipt_checks); needed where a hair system's line has qc_failed, and named on no other line. */
+                /** @description What a hair system's failed pieces failed, of the checks ops make (receipt_checks); needed where a hair system's line has qc_failed while ops check any point, and named on no other line. */
                 qc_failed_points?: ("base_size" | "colour" | "density" | "lace_knots" | "label")[];
                 lot_code: string | null;
                 /** Format: date */

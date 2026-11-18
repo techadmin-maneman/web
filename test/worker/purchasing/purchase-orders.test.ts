@@ -117,6 +117,12 @@ describe("approving an order", () => {
     expect(await firstOrder(once)).toMatchObject({ state: "approved", needs_second_approval: false });
 
     await job.opsPost("/api/settings/po_own_approval", { value: { drafter: "second" } });
+    // One its drafter approved before the setting changed owes nothing more.
+    const listed = await (await request(job.ops, "/api/purchase-orders")).json<Orders>();
+    expect(listed.orders.find((each) => each.id === alone)).toMatchObject({
+      state: "approved",
+      needs_second_approval: false,
+    });
     const id = (await firstOrder(await small()))?.id ?? "";
     const first = await job.opsPost(`/api/purchase-orders/${id}/approve`);
     expect(await firstOrder(first)).toMatchObject({ state: "drafted", needs_second_approval: true });

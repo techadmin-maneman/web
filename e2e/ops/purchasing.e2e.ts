@@ -253,7 +253,8 @@ test("receives what arrived of a sent order, and lists the receipt with its land
 });
 
 // A receipt's quality check was one number: the supplier was told how many failed, never what was wrong.
-test("asks what a hair system's failed pieces failed, of the checks ops make, and sends it", async ({ page }) => {
+/** A sent order of three hair systems, its receive form open with two accepted and one failed, as ops check `checks`. */
+async function receivingHair(page: Page, checks: readonly ("colour" | "density")[]) {
   const hairLine = {
     id: "pl-2",
     consumable_code: "hs_essential",
@@ -265,7 +266,7 @@ test("asks what a hair system's failed pieces failed, of the checks ops make, an
   const sent = {
     ...BOOK,
     consumables: [...BOOK.consumables, { code: "hs_essential", name: "Essential 8x10", unit: "piece", unit_cost: 0 }],
-    receipt_checks: ["colour" as const, "density" as const],
+    receipt_checks: [...checks],
     orders: [{ ...ORDER, state: "sent" as const, approved_by: "a@maneman.in", lines: [hairLine] }],
   };
   await open(page, {
@@ -278,6 +279,11 @@ test("asks what a hair system's failed pieces failed, of the checks ops make, an
   const form = panel.getByRole("group", { name: copy.receive.title });
   await form.getByLabel(copy.receive.received).fill("2");
   await form.getByLabel(copy.receive.failed).fill("1");
+  return form;
+}
+
+test("asks what a hair system's failed pieces failed, of the checks ops make, and sends it", async ({ page }) => {
+  const form = await receivingHair(page, ["colour", "density"]);
   const failed = form.getByRole("group", { name: copy.receive.failedPoints });
   await expect(failed.getByRole("checkbox")).toHaveCount(2);
   const send = form.getByRole("button", { name: copy.receive.send });
@@ -289,6 +295,19 @@ test("asks what a hair system's failed pieces failed, of the checks ops make, an
   expect((await posted_).postDataJSON()).toMatchObject({
     lines: [{ po_line_id: "pl-2", received: 2, qc_failed: 1, qc_failed_points: ["density"] }],
   });
+});
+
+// With every check switched off, the form asked for a point there was none to tick, and held the receipt for good.
+test("asks nothing of a hair system's failed pieces while ops check none of the points", async ({ page }) => {
+  const form = await receivingHair(page, []);
+  await expect(form.getByRole("group", { name: copy.receive.failedPoints })).toHaveCount(0);
+  const send = form.getByRole("button", { name: copy.receive.send });
+  await expect(send).toBeEnabled();
+  const posted_ = posted(page, "/api/purchase-orders/po-1/receipts");
+  await send.click();
+  const [line] = ((await posted_).postDataJSON() as { lines: Record<string, unknown>[] }).lines;
+  expect(line).toMatchObject({ po_line_id: "pl-2", qc_failed: 1 });
+  expect(line).not.toHaveProperty("qc_failed_points");
 });
 
 // The printed order gave no company, no GSTIN, no delivery address, none of the supplier's own codes, and no unit.
