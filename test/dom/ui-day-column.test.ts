@@ -61,4 +61,15 @@ describe("a day down the hours", () => {
     expect(draw([visit("a", 9 * 60, 60)], 9 * 60 + 15)).toContain(">Now<");
     expect(draw([])).not.toContain(">Now<");
   });
+
+  // A visit cut at the now-line kept its words and its link above the line alone, a sliver early in the visit, and
+  // the part below covered them: the technician could neither read the visit on now nor open it from Schedule.
+  it("keeps a visit whole with now inside it, its words and link on top, the now-line drawn over it at the minute", () => {
+    const markup = draw([visit("a", 9 * 60 + 30, 90)], 9 * 60 + 35);
+    expect(rowsOf(markup, "Visit a")).toBe(18);
+    expect(markup.match(/href="\/jobs\/a"/g)).toHaveLength(1);
+    expect(markup).toContain('viewBox="0 0 1 90"');
+    expect(markup).toMatch(/<line[^>]*y1="5"[^>]*y2="5"/);
+    expect(markup).toContain(">Now<");
+  });
 });

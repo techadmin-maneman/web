@@ -107,7 +107,10 @@ test("keeps the days it showed when it reads the week again with no signal", asy
   await expect(page.getByText(copy.dayFailed)).toHaveCount(0);
 });
 
-test("a job today opened from Schedule goes back to Schedule", async ({ page }) => {
+// At 9:35 am in India, inside the fixture's 9:30 job, so the now-line crosses it: it was cut there once, its link left
+// above the line under the part below, and the job could not be opened from Schedule while it was on.
+test("a job on now opened from Schedule goes back to Schedule", async ({ page }) => {
+  await page.clock.install({ time: new Date(`${todayInIndia()}T04:05:00.000Z`) });
   await fakeTech(page);
   await page.goto("/week");
   await page.locator(`a[href="/jobs/${JOB_ID}"]`).click();
