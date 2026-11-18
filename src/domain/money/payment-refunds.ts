@@ -28,7 +28,7 @@ type PaidRow = {
   amount: number;
   /** The refunds Razorpay has taken of it, by any path, which numbers the next ops refund's receipt. */
   refunds: number;
-  /** Refunded, asked for and not yet processed, or owed by a cancel and not yet asked for. */
+  /** Refunded, asked for and not yet processed, or owed by a cancel or a no-show ruling and not yet asked for. */
   refunded: number;
 };
 
@@ -42,7 +42,9 @@ export function capturedPayment(db: D1Database, paymentId: string): Promise<Paid
                                         WHERE r.payment_id = p.id AND r.status = 'created'), 0)
            + COALESCE((SELECT SUM(c.refund_amount) FROM visit_changes c
                         WHERE c.payment_id = p.id AND c.refund_amount > 0
-                          AND c.razorpay_refund_id IS NULL AND c.refund_settled_at IS NULL), 0) AS refunded
+                          AND c.razorpay_refund_id IS NULL AND c.refund_settled_at IS NULL), 0)
+           + COALESCE((SELECT SUM(n.amount) FROM no_show_refunds n
+                        WHERE n.appointment_id = p.appointment_id AND n.settled_at IS NULL), 0) AS refunded
        FROM payments p WHERE p.id = ?1 AND p.captured_at IS NOT NULL AND p.person_id IS NOT NULL`,
     )
     .bind(paymentId)

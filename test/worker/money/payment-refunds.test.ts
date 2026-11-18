@@ -112,6 +112,25 @@ describe("POST /api/payments/{id}/refund", () => {
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_twice", amount: 400_000 }]);
   });
 
+  // A no-show ruling owes the client part of the visit's payment back: until that refund is asked of Razorpay, it is
+  // not what is left here either.
+  it("leaves out a no-show ruling's refund still owed", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+         VALUES ('visit-2', 'visit-2', ?1, 'service', 'terminated', ?2, ?2, ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare("UPDATE payments SET appointment_id = 'visit-2' WHERE id = ?1").bind(PAYMENT),
+      env.DB.prepare(
+        `INSERT INTO no_show_refunds (id, appointment_id, why, amount, created_at)
+         VALUES ('nsr-1', 'visit-2', 'waived', 2_900_000, ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+    const answer = await refund();
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toEqual({ amount: 100_000 });
+  });
+
   // A goodwill or part refund: Finance give back an amount up to what is left, and the rest stays refundable.
   it("refunds part of a payment, then the rest, each under a receipt of its own", async () => {
     const part = await refund("Visit cut short", 500_000);
