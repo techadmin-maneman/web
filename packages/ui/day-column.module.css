@@ -70,11 +70,6 @@
     color: var(--ui-text);
   }
 
-  /* A block split by the now-line: its second part goes on without a line of its own. */
-  .continued {
-    border-top: 0;
-  }
-
   .now {
     border-top: var(--rule-strong) solid var(--ui-accent);
   }
@@ -89,6 +84,32 @@
     height: var(--sp-8);
     border-radius: 50%;
     background: var(--ui-accent);
+  }
+
+  /* The now-line across a block it falls inside: over its words, as the design draws it, and in the way of no tap. */
+  .nowMark {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .nowLine,
+  .nowDot {
+    stroke: var(--ui-accent);
+    vector-effect: non-scaling-stroke;
+  }
+
+  .nowLine {
+    stroke-width: var(--rule-strong);
+  }
+
+  /* A line of no length, its round ends making the dot the now-line starts in outside a block. */
+  .nowDot {
+    stroke-width: var(--sp-8);
+    stroke-linecap: round;
   }
 
   /* The block's words fill it from the top, cut where it ends rather than making the rows taller; a block wholly
