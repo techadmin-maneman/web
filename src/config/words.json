@@ -5896,11 +5896,11 @@
     "reviewed": false
   },
   {
-    "key": "message:fit_aftercare_v2",
+    "key": "message:fit_aftercare_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "fit_aftercare_v2",
-    "text": "Hi {{1}}, your visit today is done.\nHow to look after your hair system: {{2}}\nAny question, reply here.",
+    "where": "fit_aftercare_v3",
+    "text": "Hi {{1}}, your visit today is done.\nYour aftercare guide: {{2}}\nAny question, reply here.",
     "reviewed": false
   },
   {

@@ -44,7 +44,7 @@ const SAMPLES: Partial<Record<TemplateName, readonly string[]>> = {
   credits_expiring_v2: ["Rohit", "2 service visits", "31 Dec 2026"],
   address_not_served_v3: ["Rohit", "400050"],
   deletion_rejected_v1: ["Rohit", "a visit of yours is booked for tomorrow."],
-  fit_aftercare_v2: ["Rohit", "https://maneman.in/guides/looking-after-a-hair-system"],
+  fit_aftercare_v3: ["Rohit", "https://maneman.in/guides/looking-after-a-hair-system"],
 };
 
 /** The template's samples, in our params' order. */

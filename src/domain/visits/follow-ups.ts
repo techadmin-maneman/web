@@ -128,7 +128,7 @@ function composedOf(message: { readonly kind: FollowUpKind; readonly origin: str
     case "consultation_follow_up":
       return { template: "consultation_follow_up_v3", params: [name] };
     case "fit_aftercare":
-      return { template: "fit_aftercare_v2", params: [name, `${message.origin}${CARE_GUIDE}`] };
+      return { template: "fit_aftercare_v3", params: [name, `${message.origin}${CARE_GUIDE}`] };
     case "first_check_in":
       return { template: "first_check_in_v1", params: [name] };
     case "second_check_in":
