@@ -202,7 +202,7 @@ async function claimsAnswer(c: Context<AppEnv>) {
       sent_at: claim.sentAt,
       decided_at: claim.decidedAt,
       photo_id: claim.photoId,
-      failed_points: claim.failedPoints,
+      failed_points: claim.failedPoints === null ? null : [...claim.failedPoints],
     })),
     returns: returns.map((piece) => ({
       id: piece.id,

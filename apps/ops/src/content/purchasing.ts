@@ -123,6 +123,8 @@ export const purchasing = {
     failed: "Failed check",
     /** Over the checks a hair system's failed pieces failed. */
     failedPoints: "What they failed",
+    /** Under the checks while none is ticked. */
+    tickOne: "Tick at least one.",
     lot: "Lot (optional)",
     expires: "Expires (optional)",
     invoice: "Supplier invoice (optional)",

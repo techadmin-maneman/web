@@ -89,7 +89,11 @@ type Refused = (box: string) => string | null;
 function FailedPoints(props: { checks: readonly QcPoint[]; draft: LineDraft; onDraft: (draft: LineDraft) => void }) {
   const { draft, onDraft } = props;
   return (
-    <ChoiceGroup legend={copy.receive.failedPoints} ruled>
+    <ChoiceGroup
+      legend={copy.receive.failedPoints}
+      ruled
+      hint={draft.points.length === 0 ? copy.receive.tickOne : undefined}
+    >
       {props.checks.map((point) => (
         <Checkbox
           key={point}
@@ -217,8 +221,8 @@ function ExtrasFields({
   );
 }
 
-/** The receipt as the API takes it, from what was typed. */
-function receiptBody(order: Order, lines: readonly LineDraft[], extras: Extras) {
+/** The receipt as the API takes it, from what was typed; `checking` while ops check any point of a hair system. */
+function receiptBody(order: Order, lines: readonly LineDraft[], extras: Extras, checking: boolean) {
   return {
     lines: order.lines.map((line, index) => {
       const draft = lines[index];
@@ -227,7 +231,9 @@ function receiptBody(order: Order, lines: readonly LineDraft[], extras: Extras) 
         received: Number(draft?.received ?? 0),
         damaged: Number(draft?.damaged ?? 0),
         qc_failed: Number(draft?.failed ?? 0),
-        ...(draft !== undefined && namesPoints(draft, line.hair_system) ? { qc_failed_points: [...draft.points] } : {}),
+        ...(draft !== undefined && namesPoints(draft, line.hair_system && checking)
+          ? { qc_failed_points: [...draft.points] }
+          : {}),
         lot_code: draft === undefined || draft.lot.trim() === "" ? null : draft.lot.trim(),
         expires_on: draft === undefined || draft.expires === "" ? null : draft.expires,
       };
@@ -261,16 +267,19 @@ export function ReceiveForm(props: {
   const [extras, setExtras] = useState<Extras>({ invoice: "", rate: "", freight: "0", duty: "0", clearing: "0" });
   const [failure, setFailure] = useState<Failure | null>(null);
   const foreign = order.currency !== "INR";
+  // A hair system's failed pieces name what they failed while ops check any point.
+  const checking = orders.receipt_checks.length > 0;
   const named = (code: string) => orders.consumables.find((each) => each.code === code)?.name ?? code;
   const ready =
     lines.every((line) => [line.received, line.damaged, line.failed].every((figure) => WHOLE.test(figure.trim()))) &&
     lines.every(
-      (line, index) => !namesPoints(line, order.lines[index]?.hair_system ?? false) || line.points.length > 0,
+      (line, index) =>
+        !namesPoints(line, (order.lines[index]?.hair_system ?? false) && checking) || line.points.length > 0,
     ) &&
     [extras.freight, extras.duty, extras.clearing].every((amount) => RUPEES.test(amount.trim())) &&
     (!foreign || RUPEES.test(extras.rate.trim()));
   const send = async () => {
-    const body = receiptBody(order, lines, extras);
+    const body = receiptBody(order, lines, extras, checking);
     const answer = await purchasingApi.receive(order.id, body);
     if (answer.ok) props.onReceived(answer.body, copy.receive.done);
     else setFailure({ code: answer.code, fields: answer.fields });
@@ -282,7 +291,7 @@ export function ReceiveForm(props: {
           key={line.id}
           name={named(line.consumable_code)}
           draft={lines[index] ?? EMPTY_LINE}
-          checks={line.hair_system ? orders.receipt_checks : null}
+          checks={line.hair_system && checking ? orders.receipt_checks : null}
           onDraft={(draft) => {
             setLines(lines.map((each, at) => (at === index ? draft : each)));
           }}

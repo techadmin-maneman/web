@@ -28,7 +28,7 @@ export interface Receipt {
   readonly receivedBy: string;
   readonly receivedAt: string;
   readonly supplierInvoice: string | null;
-  readonly lines: readonly (ReceiptLine & { readonly landedUnitPaise: number })[];
+  readonly lines: readonly (Omit<ReceiptLine, "qcFailedPoints"> & { readonly landedUnitPaise: number })[];
 }
 
 type Refused = Refusal<"invalid_request"> | Refusal<"order_state"> | Refusal<"not_found">;
@@ -65,9 +65,12 @@ function refusedField(error: unknown): string | null {
   return message.includes("over_received") ? "lines" : null;
 }
 
-/** Whether a line names the points its failed pieces failed where it must, and none where it must not. */
+/**
+ * Whether a line names the points its failed pieces failed where it must, and none where it must not: a hair system's
+ * line with failed pieces names one or more while ops check any; with every check off, none.
+ */
 const pointsFit = (line: ReceiptLine, hairSystem: boolean, checks: readonly string[]): boolean =>
-  hairSystem && line.qcFailed > 0
+  hairSystem && line.qcFailed > 0 && checks.length > 0
     ? line.qcFailedPoints.length > 0 && line.qcFailedPoints.every((point) => checks.includes(point))
     : line.qcFailedPoints.length === 0;
 

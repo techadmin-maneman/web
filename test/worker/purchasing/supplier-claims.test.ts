@@ -210,6 +210,14 @@ describe("a hair system's failed check", () => {
     expect(claim).toMatchObject({ reason: "qc_failed", quantity: 2, failed_points: ["colour", "density"] });
   });
 
+  it("is not asked for while ops check none of the points", async () => {
+    const { order, hairLine } = await sentAgain();
+    const none = { base_size: "skipped", colour: "skipped", density: "skipped", lace_knots: "skipped" };
+    await job.opsPost("/api/settings/receipt_checks", { value: { ...none, label: "skipped" } });
+    const failed = await receive(order, [{ po_line_id: hairLine, received: 2, qc_failed: 1 }]);
+    expect(failed.status).toBe(200);
+  });
+
   it("is named on a hair system's line alone, and only for pieces that failed", async () => {
     const { order, hairLine, solventLine } = await sentAgain();
     const onSolvent = await receive(order, [
@@ -225,7 +233,14 @@ describe("a hair system's failed check", () => {
 describe("a claim on a supplier", () => {
   it("is drafted with its receipt for what arrived damaged and what failed its check, at the order's price", async () => {
     expect((await claims()).claims).toEqual([
-      expect.objectContaining({ number: A_NUMBER, reason: "qc_failed", quantity: 1, unit_price: 250, currency: "USD" }),
+      expect.objectContaining({
+        number: A_NUMBER,
+        reason: "qc_failed",
+        quantity: 1,
+        unit_price: 250,
+        currency: "USD",
+        failed_points: null,
+      }),
       expect.objectContaining({
         number: A_NUMBER,
         reason: "damaged",

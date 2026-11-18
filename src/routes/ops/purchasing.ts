@@ -317,7 +317,7 @@ export async function ordersAnswer(c: Context<AppEnv>) {
       cancel_reason: order.cancelReason,
       needs_second_approval:
         needsSecondApproval(order, above, inputs.poRupeesToOne) ||
-        ownApprovalNeedsSecond(order, order.approvedBy, inputs.poOwnApproval),
+        (order.state === "drafted" && ownApprovalNeedsSecond(order, order.approvedBy, inputs.poOwnApproval)),
       receipts: receipts
         .filter((receipt) => receipt.poId === order.id)
         .map((receipt) => ({
