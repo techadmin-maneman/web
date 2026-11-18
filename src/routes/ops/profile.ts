@@ -156,7 +156,10 @@ const deletionDecisionRoute = opsRoute({
   responses: {
     200: { description: "Decided", ...json(z.object({ state: z.enum(["done", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a rejection needs a reason"),
-    403: errorResponse("access_required: a service token, which names no member of staff"),
+    403: errorResponse(
+      "access_required: no Access identity, or a service token, which names no member of staff; not_permitted: the " +
+        "caller's grants do not reach this route",
+    ),
     404: errorResponse("not_found: no request waiting for ops by that ID in the caller's cities"),
     409: {
       description:
