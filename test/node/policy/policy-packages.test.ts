@@ -11,13 +11,25 @@ const price = (amountExGst: number, gstPercent: number) => ({
   gst_percent: gstPercent,
 });
 
+/** A price as ops set it: what the client pays, its GST in it. */
+const paid = (amount: number, gstPercent: number) => ({
+  amount_ex_gst: Math.round((amount * 100) / (100 + gstPercent)),
+  amount,
+  gst_percent: gstPercent,
+});
+
 describe("a visit's price from its parts", () => {
-  it("adds the parts before GST, at the GST of the first, what the visit is chiefly for", () => {
-    expect(priceOfParts([price(2_980_000, 18), price(220_000, 5)])).toEqual({
-      amount_ex_gst: 3_200_000,
-      amount: 3_776_000,
+  it("adds what the client pays for each part, at the GST of the first, what the visit is chiefly for", () => {
+    expect(priceOfParts([paid(2_980_000, 18), paid(220_000, 5)])).toEqual({
+      amount_ex_gst: 2_711_864,
+      amount: 3_200_000,
       gst_percent: 18,
     });
+  });
+
+  // Rs. 29,800 and Rs. 2,200, each set with its GST in it, make Rs. 32,000, not a paisa either way.
+  it("keeps round parts round at 18%", () => {
+    expect(priceOfParts([paid(2_980_000, 18), paid(220_000, 18)])?.amount).toBe(3_200_000);
   });
 
   it("is no price where a part has none: nothing is sold at no price", () => {

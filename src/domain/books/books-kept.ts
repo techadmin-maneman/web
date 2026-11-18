@@ -1,8 +1,10 @@
 // A charge we keep, invoiced in Books (docs/decisions/0261-razorpay-money-in-books.md): what a late cancel or
 // replacement kept, a no-show's charge, and a late fee. Each Books pass (src/domain/books/books-sync.ts) raises the
-// kept part's own invoice on the visit's Books item, GST included in it, sends it, and sets the payment against it, so
-// the money is the business's and not the client's credit. A no-show's charge waits until its dispute window has
-// closed with no dispute open, as a dispute may give it all back. An erased client's is told to ops instead.
+// kept part's own invoice on the visit's Books item, GST included in it at the rate the payment was taken at, sends
+// it, and sets the payment against it, so the money is the business's and not the client's credit. With GST on, one
+// taken with no GST in its price is told to ops, as its invoice would carry none. A no-show's charge waits until its
+// dispute window has closed with no dispute open, as a dispute may give it all back. An erased client's is told to ops
+// instead.
 
 import { STANDARD_TIER, VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -36,6 +38,8 @@ interface KeptRow {
   kind: "visit" | "late_fee";
   amount: number;
   refunded_amount: number;
+  /** The GST in what was paid; null on a payment recorded before it was kept. */
+  gst_percent: number | null;
   change: "cancelled" | "replaced" | null;
   change_kept: number | null;
   no_show_kept: number | null;
@@ -57,7 +61,7 @@ export async function keptMoney(pass: Pass): Promise<KeptRow[]> {
   const { results } = await pass.db
     .prepare(
       `SELECT p.id, p.person_id, p.books_payment_id, pe.books_customer_id, p.appointment_id, p.kind, p.amount,
-         p.refunded_amount, c.kind AS change, c.kept_amount AS change_kept, n.kept_amount AS no_show_kept,
+         p.refunded_amount, p.gst_percent, c.kind AS change, c.kept_amount AS change_kept, n.kept_amount AS no_show_kept,
          a.type, a.tier, a.service_city, s.books_item_id, pe.erased_at IS NOT NULL AS erased
        FROM payments p JOIN people pe ON pe.id = p.person_id JOIN appointments a ON a.id = p.appointment_id
        LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, ?3)
@@ -114,6 +118,7 @@ async function keptInvoice(pass: Pass, kept: KeptRow, itemId: string): Promise<N
       description: pass.options.labelAsTest ? "Staging test" : "",
       rate: keptAmount(kept),
       discount: 0,
+      tax: pass.options.gst.gstin === null ? null : { percent: kept.gst_percent ?? 0, intraState: supply.intraState },
     },
   };
 }
@@ -130,6 +135,11 @@ export async function invoiceKept(pass: Pass, kept: KeptRow): Promise<boolean> {
   } as const;
   if (kept.erased === 1) {
     await tellUnapplied(pass.deps.alertOnce, kept, "the client was erased before its invoice was raised");
+    await markApplied(pass, kept.id);
+    return false;
+  }
+  if (pass.options.gst.gstin !== null && (kept.gst_percent ?? 0) === 0) {
+    await tellUnapplied(pass.deps.alertOnce, kept, "it was taken with no GST in its price");
     await markApplied(pass, kept.id);
     return false;
   }

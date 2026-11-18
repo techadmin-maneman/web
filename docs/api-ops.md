@@ -22816,7 +22816,7 @@ The price book: every price, past, present and scheduled
       "type": "string",
       "format": "date"
     },
-    "max_amount_ex_gst": {
+    "max_amount": {
       "type": "integer"
     },
     "max_gst_percent": {
@@ -22826,7 +22826,7 @@ The price book: every price, past, present and scheduled
   "required": [
     "prices",
     "today",
-    "max_amount_ex_gst",
+    "max_amount",
     "max_gst_percent"
   ],
   "additionalProperties": false
@@ -53795,6 +53795,10 @@ Request body:
       "type": "integer",
       "description": "In paise, before GST."
     },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included: what the client pays."
+    },
     "gst_percent": {
       "type": "integer"
     },
@@ -53811,6 +53815,7 @@ Request body:
     "item",
     "tier",
     "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from",
     "in_force"
@@ -53843,10 +53848,11 @@ Request body:
       "pattern": "^[a-z][a-z0-9_]{0,31}$",
       "description": "For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard."
     },
-    "amount_ex_gst": {
+    "amount": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 100000000
+      "maximum": 100000000,
+      "description": "In paise, GST included: what the client pays."
     },
     "gst_percent": {
       "type": "integer",
@@ -53861,7 +53867,7 @@ Request body:
   "required": [
     "item",
     "tier",
-    "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from"
   ],
@@ -53893,10 +53899,11 @@ Request body:
       "pattern": "^[a-z][a-z0-9_]{0,31}$",
       "description": "For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard."
     },
-    "amount_ex_gst": {
+    "amount": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 100000000
+      "maximum": 100000000,
+      "description": "In paise, GST included: what the client pays."
     },
     "gst_percent": {
       "type": "integer",
@@ -53916,7 +53923,7 @@ Request body:
   "required": [
     "item",
     "tier",
-    "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from",
     "was_valid_from"
@@ -54365,6 +54372,10 @@ Request body:
     "amount_ex_gst": {
       "type": "integer"
     },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
     "gst_percent": {
       "type": "integer"
     },
@@ -54381,6 +54392,7 @@ Request body:
     "item",
     "tier",
     "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from",
     "in_force"
@@ -54489,10 +54501,11 @@ Request body:
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]{0,31}$"
     },
-    "amount_ex_gst": {
+    "amount": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 100000000
+      "maximum": 100000000,
+      "description": "In paise, GST included: what the client pays."
     },
     "gst_percent": {
       "type": "integer",
@@ -54507,7 +54520,7 @@ Request body:
   "required": [
     "item",
     "tier",
-    "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from"
   ],
@@ -55049,7 +55062,7 @@ Request body:
       "type": "integer",
       "description": "The most characters a description may have."
     },
-    "max_amount_ex_gst": {
+    "max_amount": {
       "type": "integer"
     },
     "max_gst_percent": {
@@ -55064,7 +55077,7 @@ Request body:
     "min_minutes",
     "max_minutes",
     "max_description",
-    "max_amount_ex_gst",
+    "max_amount",
     "max_gst_percent"
   ],
   "additionalProperties": false
@@ -55329,7 +55342,7 @@ Request body:
     "max_description": {
       "type": "integer"
     },
-    "max_amount_ex_gst": {
+    "max_amount": {
       "type": "integer"
     },
     "max_gst_percent": {
@@ -55346,7 +55359,7 @@ Request body:
     "min_after_months",
     "max_after_months",
     "max_description",
-    "max_amount_ex_gst",
+    "max_amount",
     "max_gst_percent"
   ],
   "additionalProperties": false

@@ -255,7 +255,7 @@ describe("ops, when the audit entry cannot be written", () => {
     const correction = {
       item: "service",
       tier: "standard",
-      amount_ex_gst: 260_000,
+      amount: 260_000,
       gst_percent: 0,
       valid_from: "2026-10-05",
       was_valid_from: "2026-10-01",

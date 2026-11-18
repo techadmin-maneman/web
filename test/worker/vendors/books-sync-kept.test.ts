@@ -29,6 +29,9 @@ import {
   bothLooking,
 } from "./books-sync-fixtures.ts";
 
+/** Registered in Haryana, where the visit is. */
+const REGISTERED = { gstin: "06AAACM0000A1Z5", stateCode: "HR", sac: null };
+
 /** What the pass told ops. */
 let told: string[];
 
@@ -151,6 +154,7 @@ describe("a charge we keep", () => {
           description: "Staging test",
           rate: 400000,
           discount: 0,
+          tax: null,
         },
       },
     ]);
@@ -165,6 +169,31 @@ describe("a charge we keep", () => {
 
     await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2));
     expect(books.made.invoices).toHaveLength(1);
+  });
+
+  it("carries the GST the payment was taken at once GST is on, the GST group within the registration's state", async () => {
+    await payment();
+    await env.DB.prepare("UPDATE payments SET gst_percent = 18 WHERE id = ?1").bind(PAYMENT).run();
+    await cancelled("cancelled", 400000);
+    const books = createStubBooks();
+    await pass(books, "books-customer-9", NOW, { gst: REGISTERED });
+    expect(books.made.invoices).toEqual([
+      expect.objectContaining({
+        placeOfSupply: "HR",
+        line: expect.objectContaining({ rate: 400000, tax: { percent: 18, intraState: true } }) as unknown,
+      }),
+    ]);
+  });
+
+  it("taken with no GST in its price is told to ops once GST is on, not invoiced", async () => {
+    await payment();
+    await cancelled("cancelled", 400000);
+    const books = createStubBooks();
+    expect(await pass(books, "books-customer-9", NOW, { gst: REGISTERED })).toMatchObject({ kept: 0 });
+    expect(books.made.invoices).toEqual([]);
+    expect(told).toEqual([expect.stringContaining("it was taken with no GST in its price")]);
+    await pass(books, "books-customer-9", later(RECHECK_AFTER_MS * 2), { gst: REGISTERED });
+    expect(told).toHaveLength(1);
   });
 
   describe("refunded after it is invoiced", () => {

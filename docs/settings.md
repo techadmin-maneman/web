@@ -15,9 +15,10 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `BOOKS_BILL_CONSUMABLES_ACCOUNT` | — | `4242595000000034057` | `4242595000000034057` |
 | `BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT` | — | `4242595000000000567` | `4242595000000000567` |
 | `BOOKS_GATEWAY_FEES_ACCOUNT_ID` | — | — | `4242595000000000507` |
-| `BOOKS_GATEWAY_FEES_TAX_ID` | — | — | — |
-| `BOOKS_GSTIN` | — | — | — |
-| `BOOKS_GST_STATE` | — | — | — |
+| `BOOKS_GATEWAY_GSTIN` | — | — | — |
+| `BOOKS_GATEWAY_GST_STATE` | — | — | — |
+| `BOOKS_GSTIN` | — | `07AAVCM6347C1Z5` | `07AAVCM6347C1Z5` |
+| `BOOKS_GST_STATE` | — | `DL` | `DL` |
 | `BOOKS_ITEM_PUSH` | `false` | `true` | `false` |
 | `BOOKS_PROVIDER` | `stub` | `zoho` | `none` |
 | `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000001556003` | `4242595000001556003` |

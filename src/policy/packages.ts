@@ -4,7 +4,7 @@
 // replacement with a service visit. Each part's time, price and how often it falls due are ops' to set.
 
 import type { VisitType } from "../config/visit-types.ts";
-import { withGst } from "../config/gst.ts";
+import { exGst } from "../config/gst.ts";
 
 /** A price as the book holds it, and with GST, the rate between (src/domain/money/price-lookup.ts). */
 interface Price {
@@ -40,18 +40,15 @@ export function serviceNameOf(packageName: string, kind: PackageKind): string {
 }
 
 /**
- * A visit's price from its parts: their prices before GST added up, at the GST of the first, which is what the visit
- * is chiefly for (the hair system, or the replacement). Null where a part has no price: nothing is sold at no price.
+ * A visit's price from its parts: what the client pays for each, added up, at the GST of the first, which is what the
+ * visit is chiefly for (the hair system, or the replacement). Null where a part has no price: nothing is sold at no
+ * price.
  */
 export function priceOfParts(parts: readonly (Price | null)[]): Price | null {
   const [principal] = parts;
   if (principal === undefined || principal === null || parts.some((part) => part === null)) return null;
-  const amountExGst = parts.reduce((sum, part) => sum + (part?.amount_ex_gst ?? 0), 0);
-  return {
-    amount_ex_gst: amountExGst,
-    amount: withGst(amountExGst, principal.gst_percent),
-    gst_percent: principal.gst_percent,
-  };
+  const amount = parts.reduce((sum, part) => sum + (part?.amount ?? 0), 0);
+  return { amount_ex_gst: exGst(amount, principal.gst_percent), amount, gst_percent: principal.gst_percent };
 }
 
 /**

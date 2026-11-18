@@ -111,6 +111,14 @@ async function paid(amount: number, appointmentId = VISIT) {
     .run();
 }
 
+/** The standard service visit at Rs. 2,200 with its 18% GST in it, from the day of the visits here. */
+async function pricedWithGst() {
+  await env.DB.prepare(
+    `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, amount, valid_from)
+     VALUES ('service', 'standard', 186441, 18, 220000, '2026-09-23')`,
+  ).run();
+}
+
 async function itemKept(kind: string, tier: string, itemId: string) {
   await env.DB.prepare("UPDATE services SET books_item_id = ?3 WHERE kind = ?1 AND tier = ?2")
     .bind(kind, tier, itemId)
@@ -191,6 +199,7 @@ describe("the invoice a finished visit gets", () => {
           description: "Staging test",
           rate: 3_000_000,
           discount: 0,
+          tax: null,
         },
       },
     ]);
@@ -349,18 +358,47 @@ describe("the invoice a finished visit gets", () => {
     expect(await invoicePass(books)).toEqual({ raised: 0, issued: 0 });
   });
 
-  it("names the visit's state as the place of supply once GST is on", async () => {
+  it("names the visit's state as the place of supply once GST is on, and its GST: IGST across states", async () => {
+    await pricedWithGst();
     await visit({ city: "Delhi" });
     await visit({ id: NEXT, city: null });
     const books = createStubBooks();
     await invoicePass(books, AFTER, { gst: REGISTERED });
-    const places = books.made.invoices.map((invoice) => [invoice.reference, invoice.placeOfSupply]);
+    const places = books.made.invoices.map((invoice) => [invoice.reference, invoice.placeOfSupply, invoice.line.tax]);
     expect(places).toEqual(
       expect.arrayContaining([
-        [VISIT, "DL"],
-        [NEXT, "HR"],
+        [VISIT, "DL", { percent: 18, intraState: false }],
+        [NEXT, "HR", { percent: 18, intraState: true }],
       ]),
     );
+    expect(books.made.invoices.map((invoice) => invoice.line.rate)).toEqual([220_000, 220_000]);
+  });
+
+  it("charges no tax while GST is off", async () => {
+    await visit();
+    const books = createStubBooks();
+    await invoicePass(books);
+    expect(books.made.invoices.map((invoice) => invoice.line.tax)).toEqual([null]);
+  });
+
+  it("holds a visit the book prices with no GST once GST is on, tells ops once, and invoices it once it has GST", async () => {
+    await visit();
+    const books = createStubBooks();
+    expect(await invoicePass(books, AFTER, { gst: REGISTERED })).toEqual({ raised: 0, issued: 0 });
+    expect(await invoicePass(books, later(RECHECK_AFTER_MS * 2), { gst: REGISTERED })).toEqual({
+      raised: 0,
+      issued: 0,
+    });
+    expect(books.made.invoices).toEqual([]);
+    expect(alerted).toEqual([expect.stringContaining("the price book has it with no GST")]);
+
+    await pricedWithGst();
+    expect(await invoicePass(books, later(RECHECK_AFTER_MS * 4), { gst: REGISTERED })).toEqual({
+      raised: 1,
+      issued: 1,
+    });
+    const open = await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL").all<{ key: string }>();
+    expect(open.results).toEqual([]);
   });
 
   it("waits for its service's Books item, and raises it once the item is kept", async () => {

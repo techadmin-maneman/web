@@ -327,7 +327,14 @@ describe("the stand-ins", () => {
       date: "2026-10-02",
       placeOfSupply: null,
       branchId: null,
-      line: { itemId: "stub-item-1", name: "First fit", description: "First fit", rate: 200_000, discount: 15_000 },
+      line: {
+        itemId: "stub-item-1",
+        name: "First fit",
+        description: "First fit",
+        rate: 200_000,
+        discount: 15_000,
+        tax: null,
+      },
     };
     books.loseAnswer("createInvoice");
     await expect(books.createInvoice(invoice)).rejects.toThrow(/its answer never came/);
@@ -354,7 +361,14 @@ describe("the stand-ins", () => {
       supply: "s",
       depositAccountId: null,
     });
-    const line = { itemId: "stub-item-1", name: "First fit", description: "First fit", rate: 100, discount: 0 };
+    const line = {
+      itemId: "stub-item-1",
+      name: "First fit",
+      description: "First fit",
+      rate: 100,
+      discount: 0,
+      tax: null,
+    };
     await books.createInvoice({
       customerId: invoiced,
       reference: "a-1",

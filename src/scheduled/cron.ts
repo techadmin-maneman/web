@@ -381,7 +381,8 @@ export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
 
 /**
  * Where Razorpay's settlements post; null until Razorpay's, the bank's and the fee's accounts are all set, and
- * outside production, as the one Books organisation's bank is the real one.
+ * outside production, as the one Books organisation's bank is the real one. The fee carries its GST once GST is on and
+ * Razorpay's GSTIN is set.
  */
 function settlementAccountsOf(config: StaticConfig): SettlementAccounts | null {
   if (config.environment !== "production") return null;
@@ -390,7 +391,13 @@ function settlementAccountsOf(config: StaticConfig): SettlementAccounts | null {
   const bank = books?.bankAccountId ?? null;
   const fees = books?.gatewayFeesAccountId ?? null;
   if (razorpay === null || bank === null || fees === null) return null;
-  return { razorpay, bank, fees, feesTaxId: books?.gatewayFeesTaxId ?? null };
+  const ours = booksGst(config).stateCode;
+  const gateway = books?.gateway ?? null;
+  const feesGst =
+    gateway === null || ours === null
+      ? null
+      : { supplierGstin: gateway.gstin, sourceState: gateway.stateCode, destinationState: ours };
+  return { razorpay, bank, fees, feesGst };
 }
 
 /** The GST registration Books carries here; none where Books is not Zoho's. */

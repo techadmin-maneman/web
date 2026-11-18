@@ -205,6 +205,7 @@ export interface Rows {
     readonly amount_ex_gst: number;
     readonly gst_percent: number;
     readonly valid_from: string;
+    readonly amount: number | null;
   };
   readonly city_settings: {
     readonly city: string;
@@ -1145,6 +1146,7 @@ export interface Rows {
     readonly amount_ex_gst: number;
     readonly gst_percent: number;
     readonly valid_from: string;
+    readonly amount: number | null;
   };
   readonly purchase_orders: {
     readonly id: string;

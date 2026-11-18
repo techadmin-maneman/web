@@ -49,6 +49,16 @@ describe("discount codes", () => {
     expect(amountOff({ kind: "percent", value: 15, cap: null }, 254_300)).toBe(38_100);
   });
 
+  it("keeps the price ops set, GST included, when nothing is off", () => {
+    // Rs. 32,000 with its 18% in it, kept as set rather than worked back from what it is before GST.
+    const price = { amount_ex_gst: 2_711_864, amount: 3_200_000, gst_percent: 18 };
+    expect(discounted(price, 0)).toEqual(price);
+    // Rs. 2,000 at 18% is Rs. 1,694.92 before GST, which GST added back makes Rs. 2,000.01.
+    const odd = { amount_ex_gst: 169_492, amount: 200_000, gst_percent: 18 };
+    expect(discounted(odd, 0).amount).toBe(200_000);
+    expect(discounted({ amount_ex_gst: odd.amount_ex_gst, gst_percent: 18 }, 0).amount).toBe(200_001);
+  });
+
   it("takes whole rupees off, so GST at 18% is two equal halves, as Books works it out", () => {
     // Rs. 2,547 less 15% was charged Rs. 2,554.64, while Books' CGST 9% and SGST 9% came to Rs. 2,554.65.
     const halfOfGst = (exGst: number) => Math.round((exGst * 9) / 100);

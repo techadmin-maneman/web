@@ -1,7 +1,8 @@
 // The invoice for a finished visit, raised in Books from our own figures.
 //
 // One line on the visit's Books item: the price book's GST-inclusive price on the day, less any discount code before
-// tax, under the appointment's ID as its reference, by which a later pass finds it. The line names the hair system and
+// tax, at the GST of that price, under the appointment's ID as its reference, by which a later pass finds it. With GST
+// on, a price the book holds with no GST is not invoiced, as it would issue a tax invoice with none: ops are told. The line names the hair system and
 // the visit: "Mane Man Active, First Fit"; "Service Visit, Mane Man Active". Books works out the total. The invoice is
 // sent, and the client may open it, only when it totals what the visit was sold for; otherwise it stays a draft and ops
 // are told. A visit a free-visit credit paid for is a zero-priced line, complimentary. A draft under any other
@@ -199,6 +200,11 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
     await tellUnpriced(pass, visit);
     return null;
   }
+  const gstOn = options.gst.gstin !== null;
+  if (gstOn && price.gst_percent === 0) {
+    await tellUntaxed(pass, visit);
+    return null;
+  }
   const item = await itemOf(db, visit);
   if (item === null) {
     // The hourly item check tells ops of a service Books has no item for.
@@ -231,6 +237,7 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
       name: lineName({ type: visit.type, service: item.name, product, complimentary: paidWithCredit }),
       description: options.labelAsTest ? STAGING_TEST : "",
       ...line,
+      tax: gstOn ? { percent: price.gst_percent, intraState: supply.intraState } : null,
     },
   };
   const raised = await deps.books.createInvoice(invoice);
@@ -451,6 +458,15 @@ async function tellUnpriced(pass: Pass, visit: Visit): Promise<void> {
   });
 }
 
+async function tellUntaxed(pass: Pass, visit: Visit): Promise<void> {
+  pass.log.warn("invoice_untaxed", { appointment_id: visit.id, type: visit.type, tier: visit.tier });
+  await pass.deps.alertOnce({
+    key: `invoice_untaxed:${visit.id}`,
+    message: ALERT_WORDS.invoice_untaxed({ visit: visit.id }),
+    link: linkTo(visit),
+  });
+}
+
 /** Tells ops a visit's invoice failed: Books' refusal at once, any other failure on its third time. */
 const tellFailure = (pass: Pass, visit: Visit, error: unknown): Promise<void> =>
   tellPassFailure(
@@ -482,7 +498,7 @@ async function markIssued(pass: Pass, appointmentId: string): Promise<void> {
     .prepare("UPDATE appointments SET invoice_issued_at = ?1 WHERE id = ?2")
     .bind(pass.now.toISOString(), appointmentId)
     .run();
-  for (const kind of ["invoice_draft", "invoice_refused", "invoice_failed", "invoice_unpriced"]) {
+  for (const kind of ["invoice_draft", "invoice_refused", "invoice_failed", "invoice_unpriced", "invoice_untaxed"]) {
     await pass.deps.resolveAlert(`${kind}:${appointmentId}`);
   }
 }

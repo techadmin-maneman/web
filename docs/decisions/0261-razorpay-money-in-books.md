@@ -32,8 +32,8 @@ staging and production, and its one account for Razorpay's money is "Razorpay Cl
    - a transfer of the amount paid out from Razorpay Clearing to the bank (`BOOKS_BANK_ACCOUNT_ID`), under the payout's
      UTR, which the bank's line carries, else the settlement's ID;
    - Razorpay's fee as an expense in `BOOKS_GATEWAY_FEES_ACCOUNT_ID`, paid out of Razorpay Clearing, under the
-     settlement's ID. Once GST is on, `BOOKS_GATEWAY_FEES_TAX_ID` names the fee's tax, the amount including it, so its
-     GST is input credit.
+     settlement's ID. Once GST is on, the fee carries its GST, the amount including it, so its GST is input credit
+     (amended by [0274](0274-gst-on.md)).
      Razorpay Clearing then holds what Razorpay still owes us, and staging's labelled test payments and refunds until
      staging's records are cleared. Settlements are recorded in production alone, once Razorpay Clearing, the bank and
      the fee's account are all set, as the one Books organisation's bank is the real one; a failure is asked again each

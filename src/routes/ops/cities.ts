@@ -67,6 +67,7 @@ const CityPriceSchema = z
     item: z.enum(PRICE_ITEMS),
     tier: z.string(),
     amount_ex_gst: z.number().int(),
+    amount: z.number().int().openapi({ description: "In paise, GST included." }),
     gst_percent: z.number().int(),
     valid_from: z.iso.date(),
     in_force: z.boolean(),
@@ -187,7 +188,12 @@ const setPriceRoute = opsRoute({
           .object({
             item: z.enum(PRICE_ITEMS),
             tier: z.string().regex(PRICE_TIER),
-            amount_ex_gst: z.number().int().min(PRICE_BOUNDS.minPaise).max(PRICE_BOUNDS.maxPaise),
+            amount: z
+              .number()
+              .int()
+              .min(PRICE_BOUNDS.minPaise)
+              .max(PRICE_BOUNDS.maxPaise)
+              .openapi({ description: "In paise, GST included: what the client pays." }),
             gst_percent: z.number().int().min(PRICE_BOUNDS.minGstPercent).max(PRICE_BOUNDS.maxGstPercent),
             valid_from: z.iso.date(),
           })

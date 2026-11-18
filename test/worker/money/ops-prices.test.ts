@@ -12,7 +12,7 @@ import { aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { lateFeeOn } from "../../../src/domain/money/price-book.ts";
+import { lateFeeOn, priceOf } from "../../../src/domain/money/price-book.ts";
 import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
 import { POST, auditFor } from "../ops/ops-settings-fixtures.ts";
 
@@ -31,7 +31,7 @@ describe("the price book", () => {
     await post("/api/prices", {
       item: "service",
       tier: "standard",
-      amount_ex_gst: 250_000,
+      amount: 250_000,
       gst_percent: 0,
       valid_from: "2026-10-01",
     });
@@ -50,7 +50,7 @@ describe("the price book", () => {
     const answer = await post("/api/prices", {
       item: "consultaton",
       tier: "standard",
-      amount_ex_gst: 50_000,
+      amount: 50_000,
       gst_percent: 0,
       valid_from: "2026-09-22",
     });
@@ -62,7 +62,7 @@ describe("the price book", () => {
     const answer = await post("/api/prices", {
       item: "service",
       tier: "standard",
-      amount_ex_gst: 250_000,
+      amount: 250_000,
       gst_percent: 0,
       valid_from: "2026-09-01",
     });
@@ -72,7 +72,7 @@ describe("the price book", () => {
 
   // A price from today changed what a client had been quoted that day.
   it("takes a new price from tomorrow at the earliest, and leaves today's as it was", async () => {
-    const change = { item: "late_fee_first_fit", tier: "standard", amount_ex_gst: 600_000, gst_percent: 0 };
+    const change = { item: "late_fee_first_fit", tier: "standard", amount: 600_000, gst_percent: 0 };
     const today = await post("/api/prices", { ...change, valid_from: "2026-09-21" });
     expect(today.status).toBe(400);
     expect(await today.json()).toMatchObject({ error: { code: "invalid_request", fields: ["valid_from"] } });
@@ -85,10 +85,41 @@ describe("the price book", () => {
 
   it("refuses part of a rupee, and a rate no GST slab reaches", async () => {
     const base = { item: "service", tier: "standard", gst_percent: 0, valid_from: "2026-09-22" };
-    const partRupee = await post("/api/prices", { ...base, amount_ex_gst: 250_050 });
-    expect(await partRupee.json()).toMatchObject({ error: { fields: ["amount_ex_gst"] } });
-    const noSlab = await post("/api/prices", { ...base, amount_ex_gst: 250_000, gst_percent: 40 });
+    const partRupee = await post("/api/prices", { ...base, amount: 250_050 });
+    expect(await partRupee.json()).toMatchObject({ error: { fields: ["amount"] } });
+    const noSlab = await post("/api/prices", { ...base, amount: 250_000, gst_percent: 40 });
     expect(await noSlab.json()).toMatchObject({ error: { fields: ["gst_percent"] } });
+  });
+
+  // Ops set what the client pays; a round price stays round at any rate (docs/decisions/0274-gst-on.md).
+  it("takes a price as the client pays it, GST included, and keeps the part before GST beside it", async () => {
+    const price = { item: "service", tier: "standard", amount: 3_200_000, gst_percent: 18, valid_from: "2026-09-22" };
+    expect((await post("/api/prices", price)).status).toBe(200);
+    const body = await (await request(ops, "/api/prices")).json<{ prices: Record<string, unknown>[] }>();
+    expect(body.prices).toContainEqual(
+      expect.objectContaining({
+        item: "service",
+        valid_from: "2026-09-22",
+        amount: 3_200_000,
+        amount_ex_gst: 2_711_864,
+      }),
+    );
+    const row = await env.DB.prepare(
+      "SELECT amount, amount_ex_gst FROM price_book WHERE item = 'service' AND tier = 'standard' AND valid_from = '2026-09-22'",
+    ).first();
+    expect(row).toEqual({ amount: 3_200_000, amount_ex_gst: 2_711_864 });
+  });
+
+  // The Worker from before amounts writes only the figure before GST, while the two are deployed one after the other.
+  it("reads a row changed by the Worker from before amounts by its figure before GST", async () => {
+    await env.DB.prepare(
+      "UPDATE price_book SET amount_ex_gst = 300000 WHERE item = 'service' AND tier = 'standard' AND valid_from = '2026-09-22'",
+    ).run();
+    expect(await priceOf(env.DB, "service", { on: "2026-09-22", tier: "standard" })).toEqual({
+      amount_ex_gst: 300_000,
+      amount: 300_000,
+      gst_percent: 0,
+    });
   });
 
   // A tier is a service now, added in the console before it is priced (docs/decisions/0085-services-ops-can-edit.md).
@@ -97,7 +128,7 @@ describe("the price book", () => {
     const answer = await post("/api/prices", {
       item: "consultation",
       tier: "lace",
-      amount_ex_gst: 4_000_000,
+      amount: 4_000_000,
       gst_percent: 0,
       valid_from: "2026-09-22",
     });
@@ -111,7 +142,7 @@ describe("the price book", () => {
   // A hair system sells at a price of its own, by its stock code (docs/decisions/0211-packages.md).
   it("prices a hair system by its stock code, and refuses a code no hair system has", async () => {
     const { hairSystem } = await aPackage({ code: "lace", name: "Lace", firstFit: 3_000_000 });
-    const priced = { item: "hair_system", amount_ex_gst: 3_200_000, gst_percent: 18, valid_from: "2026-09-22" };
+    const priced = { item: "hair_system", amount: 3_200_000, gst_percent: 18, valid_from: "2026-09-22" };
     expect((await post("/api/prices", { ...priced, tier: hairSystem })).status).toBe(200);
     const unknown = await post("/api/prices", { ...priced, tier: "hs_nothing" });
     expect(unknown.status).toBe(400);
@@ -123,7 +154,7 @@ describe("the price book", () => {
     const answer = await post("/api/prices", {
       item: "consultation",
       tier: "lace",
-      amount_ex_gst: 4_000_000,
+      amount: 4_000_000,
       gst_percent: 0,
       valid_from: "2026-09-22",
     });
@@ -133,7 +164,7 @@ describe("the price book", () => {
   });
 
   it("keeps a late fee to one figure a kind, its standard tier's", async () => {
-    const fee = { item: "late_fee_first_fit", amount_ex_gst: 500_000, gst_percent: 0, valid_from: "2026-09-22" };
+    const fee = { item: "late_fee_first_fit", amount: 500_000, gst_percent: 0, valid_from: "2026-09-22" };
     expect((await post("/api/prices", { ...fee, tier: "standard" })).status).toBe(200);
     const answer = await post("/api/prices", { ...fee, tier: "premium" });
     expect(answer.status).toBe(400);
@@ -144,14 +175,15 @@ describe("the price book", () => {
     await post("/api/prices", {
       item: "service",
       tier: "standard",
-      amount_ex_gst: 250_000,
+      amount: 250_000,
       gst_percent: 0,
       valid_from: "2026-10-01",
     });
     const { results } = await auditFor("price.set");
     expect(results[0]).toMatchObject({ actor: "ops@localhost", subject_id: "service/standard" });
     expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({
-      from: 200_000,
+      // January's row, 5% on its Rs. 2,000.
+      from: 210_000,
       to: 250_000,
       gst_percent: 0,
       valid_from: "2026-10-01",
@@ -164,7 +196,7 @@ describe("the price book", () => {
     await post("/api/prices", {
       item: "consultation",
       tier: "lace",
-      amount_ex_gst: 4_000_000,
+      amount: 4_000_000,
       gst_percent: 0,
       valid_from: "2026-09-22",
     });
@@ -178,7 +210,7 @@ describe("withdrawing a price still to come", () => {
   const OCTOBER = {
     item: "service",
     tier: "standard",
-    amount_ex_gst: 250_000,
+    amount: 250_000,
     gst_percent: 18,
     valid_from: "2026-10-01",
   };
@@ -201,7 +233,7 @@ describe("withdrawing a price still to come", () => {
     const { results } = await auditFor("price.withdraw");
     expect(results[0]).toMatchObject({ actor: "ops@localhost", subject_id: "service/standard" });
     expect(JSON.parse(results[0]?.detail ?? "{}")).toEqual({
-      amount_ex_gst: 250_000,
+      amount: 250_000,
       gst_percent: 18,
       valid_from: "2026-10-01",
     });

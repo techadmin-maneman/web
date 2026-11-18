@@ -127,13 +127,13 @@ describe("a city's own rules", () => {
 });
 
 describe("a city's own prices", () => {
-  it("come before the book's there from their day, and a price still to come is taken back", async () => {
+  it("come before the book's there from their day, as the client pays them, and one still to come is taken back", async () => {
     const book = await priceOf(env.DB, "service", { on: "2026-09-30", tier: "standard" });
     expect(book).not.toBeNull();
     const set = await send("POST", "/api/cities/Mumbai/prices", {
       item: "service",
       tier: "standard",
-      amount_ex_gst: 400_000,
+      amount: 472_000,
       gst_percent: 18,
       valid_from: "2026-09-25",
     });
@@ -155,7 +155,7 @@ describe("a city's own prices", () => {
     const today = await send("POST", "/api/cities/Mumbai/prices", {
       item: "service",
       tier: "standard",
-      amount_ex_gst: 400_000,
+      amount: 472_000,
       gst_percent: 18,
       valid_from: "2026-09-21",
     });
@@ -166,7 +166,7 @@ describe("a city's own prices", () => {
     await send("POST", "/api/cities/Mumbai/prices", {
       item: "service",
       tier: "standard",
-      amount_ex_gst: 400_000,
+      amount: 472_000,
       gst_percent: 18,
       valid_from: "2026-09-22",
     });
@@ -179,7 +179,7 @@ describe("a city's own prices", () => {
 describe("a state's GST registration", () => {
   const HEAD = { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" };
 
-  it("supplies the visits in its state from its Books branch; any other state's from the registration in force", async () => {
+  it("supplies the visits in its state from its Books branch, within the state; any other's from the one in force", async () => {
     const set = await send("POST", "/api/gst-registrations", {
       state_code: "MH",
       gstin: "27AAACM1234A1Z1",
@@ -187,10 +187,16 @@ describe("a state's GST registration", () => {
     });
     expect(set.status).toBe(201);
     const supply = await supplyFor(env.DB, HEAD);
-    expect(supply("Mumbai")).toEqual({ placeOfSupply: "MH", branchId: "branch-mh" });
-    expect(supply("Delhi")).toEqual({ placeOfSupply: "DL", branchId: null });
-    expect(supply(null)).toEqual({ placeOfSupply: "HR", branchId: null });
-    expect((await supplyFor(env.DB, NO_GST))("Mumbai")).toEqual({ placeOfSupply: null, branchId: null });
+    expect(supply("Mumbai")).toEqual({ placeOfSupply: "MH", branchId: "branch-mh", intraState: true });
+    // Supplied from Haryana: CGST and SGST within it, IGST across into Delhi.
+    expect(supply("Gurgaon")).toEqual({ placeOfSupply: "HR", branchId: null, intraState: true });
+    expect(supply("Delhi")).toEqual({ placeOfSupply: "DL", branchId: null, intraState: false });
+    expect(supply(null)).toEqual({ placeOfSupply: "HR", branchId: null, intraState: true });
+    expect((await supplyFor(env.DB, NO_GST))("Mumbai")).toEqual({
+      placeOfSupply: null,
+      branchId: null,
+      intraState: false,
+    });
 
     expect(
       (

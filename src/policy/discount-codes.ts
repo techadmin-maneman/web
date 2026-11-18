@@ -71,11 +71,17 @@ function percentOff(terms: DiscountTerms, priceExGst: number): number {
   return terms.cap === null ? off : Math.min(off, terms.cap);
 }
 
-/** A price with the discount taken off before GST, and GST charged on what is left. */
+/**
+ * A price with the discount taken off before GST, and GST charged on what is left. With nothing off, a price that
+ * carries what the client pays keeps it, as ops set it with its GST.
+ */
 export function discounted(
-  price: { readonly amount_ex_gst: number; readonly gst_percent: number },
+  price: { readonly amount_ex_gst: number; readonly gst_percent: number; readonly amount?: number },
   off: number,
 ): { amount_ex_gst: number; amount: number; gst_percent: number } {
+  if (off <= 0 && price.amount !== undefined) {
+    return { amount_ex_gst: price.amount_ex_gst, amount: price.amount, gst_percent: price.gst_percent };
+  }
   const exGst = Math.max(0, price.amount_ex_gst - off);
   return { amount_ex_gst: exGst, amount: withGst(exGst, price.gst_percent), gst_percent: price.gst_percent };
 }

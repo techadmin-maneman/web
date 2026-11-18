@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { NO_GST } from "../../../src/config/gst.ts";
+import { NO_GST, type GstRegistration } from "../../../src/config/gst.ts";
 import { CALLS_PER_VISIT as BOOKS_CALLS_PER_VISIT } from "../../../src/domain/books/books-invoices.ts";
 import { startRun } from "../../../src/domain/platform/cron-runs.ts";
 import type { StaticConfig } from "../../../src/guard.ts";
@@ -283,7 +283,7 @@ describe("the Books pass's options", () => {
     refundAccountId: "bank-7",
     bankAccountId: null,
     gatewayFeesAccountId: null,
-    gatewayFeesTaxId: null,
+    gateway: null,
     gst: { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" },
     itemPush: true,
     billAccounts: { hairSystems: "acct-cogs", consumables: "acct-raw" },
@@ -311,18 +311,42 @@ describe("the Books pass's options", () => {
       environment,
       settings: {
         ...LOCAL_CONFIG.settings,
-        zohoBooks: { ...zohoBooks, bankAccountId, gatewayFeesAccountId: "acct-fees", gatewayFeesTaxId: "tax-18" },
+        zohoBooks: { ...zohoBooks, bankAccountId, gatewayFeesAccountId: "acct-fees", gateway: null },
       },
     });
     expect(booksSyncOptions(withAccounts("bank-kotak")).settlementAccounts).toEqual({
       razorpay: "bank-7",
       bank: "bank-kotak",
       fees: "acct-fees",
-      feesTaxId: "tax-18",
+      feesGst: null,
     });
     expect(booksSyncOptions(withAccounts(null)).settlementAccounts).toBeNull();
     // The one Books organisation's bank is the real one.
     expect(booksSyncOptions(withAccounts("bank-kotak", "staging")).settlementAccounts).toBeNull();
+  });
+
+  it("gives the fee Razorpay's GSTIN and state, and ours, once both registrations are set", () => {
+    const settling = (gst: GstRegistration): StaticConfig => ({
+      ...LOCAL_CONFIG,
+      environment: "production",
+      settings: {
+        ...LOCAL_CONFIG.settings,
+        zohoBooks: {
+          ...zohoBooks,
+          bankAccountId: "bank-kotak",
+          gatewayFeesAccountId: "acct-fees",
+          gateway: { gstin: "29AAGCR4375J1ZU", stateCode: "KA" },
+          gst,
+        },
+      },
+    });
+    expect(booksSyncOptions(settling(zohoBooks.gst)).settlementAccounts?.feesGst).toEqual({
+      supplierGstin: "29AAGCR4375J1ZU",
+      sourceState: "KA",
+      destinationState: "HR",
+    });
+    const off = { gstin: null, stateCode: null, sac: null };
+    expect(booksSyncOptions(settling(off)).settlementAccounts?.feesGst).toBeNull();
   });
 
   it("has no refund account or GST without Books' settings, and labels nothing as a test in production", () => {

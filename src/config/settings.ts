@@ -113,7 +113,8 @@ export interface ZohoBooksSettings {
    */
   readonly bankAccountId: string | null;
   readonly gatewayFeesAccountId: string | null;
-  readonly gatewayFeesTaxId: string | null;
+  /** Razorpay's GSTIN and its state, as its tax invoice to us names them, so its fee's GST is input credit. */
+  readonly gateway: { readonly gstin: string; readonly stateCode: string } | null;
   /** Empty while GST is off in Books; the CA's figures once it is on. */
   readonly gst: GstRegistration;
   /**

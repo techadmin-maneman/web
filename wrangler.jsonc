@@ -120,8 +120,10 @@
     "BOOKS_REFUND_ACCOUNT_ID": "",
     "BOOKS_BANK_ACCOUNT_ID": "",
     "BOOKS_GATEWAY_FEES_ACCOUNT_ID": "",
-    "BOOKS_GATEWAY_FEES_TAX_ID": "",
-    // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
+    // Razorpay's GSTIN and its state, as its tax invoice to us names them, so its fee's GST is input credit.
+    "BOOKS_GATEWAY_GSTIN": "",
+    "BOOKS_GATEWAY_GST_STATE": "",
+    // GST in Books: empty here, where Books is the stub.
     "BOOKS_GSTIN": "",
     "BOOKS_ITEM_PUSH": "false",
     "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "",
@@ -268,13 +270,16 @@
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000001556003",
         "BOOKS_BANK_ACCOUNT_ID": "",
         "BOOKS_GATEWAY_FEES_ACCOUNT_ID": "",
-        "BOOKS_GATEWAY_FEES_TAX_ID": "",
-        // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
-        "BOOKS_GSTIN": "",
+        // Razorpay's GSTIN and its state, as its tax invoice to us names them, so its fee's GST is input credit.
+        "BOOKS_GATEWAY_GSTIN": "",
+        "BOOKS_GATEWAY_GST_STATE": "",
+        // GST in Books (docs/decisions/0274-gst-on.md): the GSTIN and the state it is registered in; the SAC code once
+        // the CA gives it.
+        "BOOKS_GSTIN": "07AAVCM6347C1Z5",
         "BOOKS_ITEM_PUSH": "true",
         "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "4242595000000000567",
         "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
-        "BOOKS_GST_STATE": "",
+        "BOOKS_GST_STATE": "DL",
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         // Staging alone: the Staff list's test operator, whose grants the test runs' service token acts with. An admin
         // gives it grants on Staff for a run and takes them away after; with none, the token changes nothing.
@@ -416,13 +421,16 @@
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000001556003",
         "BOOKS_BANK_ACCOUNT_ID": "4242595000001689024",
         "BOOKS_GATEWAY_FEES_ACCOUNT_ID": "4242595000000000507",
-        "BOOKS_GATEWAY_FEES_TAX_ID": "",
-        // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
-        "BOOKS_GSTIN": "",
+        // Razorpay's GSTIN and its state, as its tax invoice to us names them, so its fee's GST is input credit.
+        "BOOKS_GATEWAY_GSTIN": "",
+        "BOOKS_GATEWAY_GST_STATE": "",
+        // GST in Books (docs/decisions/0274-gst-on.md): the GSTIN and the state it is registered in; the SAC code once
+        // the CA gives it.
+        "BOOKS_GSTIN": "07AAVCM6347C1Z5",
         "BOOKS_ITEM_PUSH": "false",
         "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "4242595000000000567",
         "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
-        "BOOKS_GST_STATE": "",
+        "BOOKS_GST_STATE": "DL",
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         "SERVICE_TOKEN_ACTS_AS": "",
         "BOOKS_SAC": "",

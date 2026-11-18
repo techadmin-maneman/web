@@ -21,13 +21,15 @@
 //   POST   /books/v3/items                           201 { item }; PUT .../{id} writes over one
 //
 // Books refuses gst_treatment, place_of_contact and place_of_supply while GST is off in the org (400 code 8,
-// "Invalid Element"), so they are sent only with a state code.
+// "Invalid Element"), so they are sent only with a state code. Once GST is on, it refuses a line with no tax (400 code
+// 110802), so each invoice line carries its tax, found by rate (./zoho-taxes.ts).
 //
 // Read from Books' documentation and not yet tried on the org: writing a discount onto a draft (docs/open-points.md,
 // item 181). scripts/release/zoho-contract-probe.ts tries every read on the org.
 
 import { purchaseCalls } from "./zoho-purchases.ts";
 import { settlementCalls } from "./zoho-settlements.ts";
+import { taxFinder } from "./zoho-taxes.ts";
 import { z } from "zod";
 import type { ZohoBooksSettings } from "../../config/settings.ts";
 import type {
@@ -35,6 +37,7 @@ import type {
   BooksInvoice,
   BooksItem,
   BooksItemDetails,
+  BooksGst,
   BooksProvider,
   NewBooksCustomer,
   NewBooksInvoice,
@@ -61,14 +64,15 @@ const ERASED_NAME = "Erased client";
 
 export function createZohoBooks(settings: ZohoBooksSettings, deps: ZohoRequesterDependencies): BooksProvider {
   const books = booksApi(createZohoRequester("books", settings, deps), settings.orgId);
+  const taxOf = taxFinder(books);
   return {
     ...documentCalls(books),
     ...paymentCalls(books),
     ...customerCalls(books),
-    ...invoiceCalls(books),
+    ...invoiceCalls(books, taxOf),
     ...itemCalls(books),
     ...purchaseCalls(books),
-    ...settlementCalls(books),
+    ...settlementCalls(books, taxOf),
   };
 }
 
@@ -374,8 +378,8 @@ function customerCalls({ request, at, read }: BooksApi): Customers {
 
 const InvoicesFound = z.object({ invoices: z.array(Invoice.extend({ reference_number: z.string() })) });
 
-/** One line on the visit's item, its rate GST-inclusive and its discount taken before tax. */
-function invoiceBody(invoice: NewBooksInvoice) {
+/** One line on the visit's item, its rate GST-inclusive, its discount taken before tax, and its tax's ID. */
+function invoiceBody(invoice: NewBooksInvoice, taxId: string | null) {
   const { line } = invoice;
   const place = invoice.placeOfSupply;
   return {
@@ -395,6 +399,7 @@ function invoiceBody(invoice: NewBooksInvoice) {
         rate: rupees(line.rate),
         quantity: 1,
         discount: rupees(line.discount),
+        ...(taxId === null ? {} : { tax_id: taxId }),
       },
     ],
   };
@@ -402,7 +407,7 @@ function invoiceBody(invoice: NewBooksInvoice) {
 
 type InvoicesWeRaise = Pick<BooksProvider, "findInvoice" | "createInvoice">;
 
-function invoiceCalls({ at, read }: BooksApi): InvoicesWeRaise {
+function invoiceCalls({ at, read }: BooksApi, taxOf: (gst: BooksGst) => Promise<string>): InvoicesWeRaise {
   return {
     async findInvoice(reference) {
       const query = `&reference_number=${encodeURIComponent(reference)}`;
@@ -417,6 +422,7 @@ function invoiceCalls({ at, read }: BooksApi): InvoicesWeRaise {
     },
 
     async createInvoice(invoice) {
+      const taxId = invoice.line.tax === null ? null : await taxOf(invoice.line.tax);
       const made = await read({
         step: "create_invoice",
         path: at("/invoices"),
@@ -424,7 +430,7 @@ function invoiceCalls({ at, read }: BooksApi): InvoicesWeRaise {
         under: ["invoice"],
         write: {
           method: "POST",
-          body: invoiceBody(invoice),
+          body: invoiceBody(invoice, taxId),
         },
       });
       return booksInvoiceOf(made);

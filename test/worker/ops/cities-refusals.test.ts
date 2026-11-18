@@ -43,7 +43,7 @@ describe("a change to a city", () => {
   it("refuses a rule or a price for a city we do not hold, and a price still to come that is not there", async () => {
     expect((await send("PATCH", "/api/cities/Atlantis/rules/reminder_hour", { value: 10 })).status).toBe(404);
     expect((await send("DELETE", "/api/cities/Atlantis/rules/reminder_hour")).status).toBe(404);
-    const price = { item: "service", tier: "standard", amount_ex_gst: 1, gst_percent: 18, valid_from: "2026-10-01" };
+    const price = { item: "service", tier: "standard", amount: 100, gst_percent: 18, valid_from: "2026-10-01" };
     expect((await send("POST", "/api/cities/Atlantis/prices", price)).status).toBe(404);
     expect((await send("DELETE", "/api/cities/Mumbai/prices/service/standard/2026-10-01")).status).toBe(404);
   });
@@ -66,7 +66,7 @@ describe("a city's own rule or price, refused", () => {
     const retired = await send("POST", "/api/cities/Mumbai/prices", {
       item: "service",
       tier: "standard",
-      amount_ex_gst: 400_000,
+      amount: 472_000,
       gst_percent: 18,
       valid_from: "2026-09-30",
     });
@@ -119,7 +119,7 @@ describe("where a visit, a pincode and a client are", () => {
   it("supplies a city whose state is not set from the registration in force", async () => {
     await env.DB.prepare("INSERT INTO cities (name, served, active, sort) VALUES ('Atlantis', 0, 1, 99)").run();
     const supply = await supplyFor(env.DB, { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" });
-    expect(supply("Atlantis")).toEqual({ placeOfSupply: "HR", branchId: null });
+    expect(supply("Atlantis")).toEqual({ placeOfSupply: "HR", branchId: null, intraState: true });
   });
 
   it("prices nothing a lookup found none for", () => {

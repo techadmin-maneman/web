@@ -193,7 +193,7 @@ const connected = {
       refundAccountId: null,
       bankAccountId: null,
       gatewayFeesAccountId: null,
-      gatewayFeesTaxId: null,
+      gateway: null,
       itemPush: false,
       billAccounts: null,
       gst: NO_GST,

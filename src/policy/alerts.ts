@@ -73,6 +73,7 @@ const FINANCE_KINDS = [
   "payment_link_failed",
   "invoice_draft",
   "invoice_unpriced",
+  "invoice_untaxed",
   "invoice_refused",
   "invoice_failed",
   "books_item",
