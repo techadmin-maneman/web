@@ -307,6 +307,10 @@ export const ALERT_WORDS = {
     `Look into the cron's ${a.job} job: it failed ${String(a.runs)} runs in a row (${a.reason}).`,
   cron_job_missed: (a: { readonly job: string; readonly since: string }) =>
     `Look into the cron's ${a.job} job (runbook, "Alerts and the cron"): it has not run well since ${a.since}.`,
+  messages_refused: (a: { readonly kind: string; readonly refused: number; readonly sent: number }) =>
+    `Look into the ${a.kind} WhatsApp (runbook, "WhatsApp refused"): WhatsApp refused ${String(a.refused)} of the ` +
+    `${String(a.sent)} sent in the last day, so most clients are not getting it. Its template may be filed as ` +
+    "marketing, or the sender rated low; each refused message is a task for Care.",
   webhook_refused: (a: { readonly hook: "razorpay" | "msg91" | "evolution"; readonly times: number }) =>
     `Check the ${WEBHOOK_NAMES[a.hook]} webhook's secret now (runbook, "A webhook refused"): its last ` +
     `${String(a.times)} deliveries were refused as unsigned, so what it reports is not reaching us. A secret changed on ` +

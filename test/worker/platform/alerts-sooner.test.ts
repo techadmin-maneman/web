@@ -9,6 +9,7 @@ import { createLogger } from "../../../src/log.ts";
 import { handleRazorpayBatch } from "../../../src/queues/razorpay.ts";
 import { fakeBatch } from "../batches.ts";
 import { JOB, working } from "../job-fixtures.ts";
+import { alertRefusalRates } from "../../../src/domain/messages/refusal-rates.ts";
 import { alertVisitsNotBegun } from "../../../src/domain/dispatch/not-begun.ts";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
@@ -212,5 +213,55 @@ describe("a visit its technician has not begun past its arrival window", () => {
       await alertVisitsNotBegun(env.DB, job.deps.alertOnce, { now: LATE, todayStarts: TODAY_STARTS, arrival: 30 }),
     ).toBe(0);
     expect(await open(`visit_not_begun:${JOB}`)).toBeNull();
+  });
+});
+
+describe("a kind of WhatsApp refused too often", () => {
+  const LIMIT = { share: 20, least: 5 };
+  const AT = new Date("2026-09-21T06:30:00.000Z");
+
+  async function sentToday(kind: string, refused: number, delivered: number) {
+    await env.DB.prepare(
+      "INSERT OR IGNORE INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, '+919810000001', 'Arjun Mehta')",
+    )
+      .bind(AT.toISOString())
+      .run();
+    for (let each = 0; each < refused + delivered; each += 1) {
+      await env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, provider_message_id, sent_at,
+           last_error)
+         VALUES (?1, ?2, 'p1', ?3, ?1, ?4, ?1, ?2, ?5)`,
+      )
+        .bind(
+          crypto.randomUUID(),
+          "2026-09-21T03:00:00.000Z",
+          kind,
+          each < refused ? "failed" : "sent",
+          each < refused ? "refused 131049" : null,
+        )
+        .run();
+    }
+  }
+
+  it("tells Care once a day's share refused reaches ops' setting, and closes it once under", async () => {
+    const deps = fakeDependencies();
+    await sentToday("visit_cancelled", 1, 4);
+    await sentToday("visit_reminder", 0, 9);
+    expect(await alertRefusalRates(env.DB, deps.alertOnce, { now: AT, limit: LIMIT })).toBe(1);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining(
+        'Look into the visit_cancelled WhatsApp (runbook, "WhatsApp refused"): WhatsApp refused 1 of the 5',
+      ) as string,
+    ]);
+
+    await sentToday("visit_cancelled", 0, 5);
+    expect(await alertRefusalRates(env.DB, deps.alertOnce, { now: AT, limit: LIMIT })).toBe(0);
+    expect(await open("messages_refused:visit_cancelled")).toBeNull();
+  });
+
+  it("counts nothing until the fewest sent", async () => {
+    const deps = fakeDependencies();
+    await sentToday("visit_cancelled", 2, 2);
+    expect(await alertRefusalRates(env.DB, deps.alertOnce, { now: AT, limit: LIMIT })).toBe(0);
   });
 });

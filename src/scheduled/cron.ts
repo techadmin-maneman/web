@@ -10,6 +10,7 @@
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
 // invocation may send (docs/decisions/0112-workers-paid.md).
 
+import { alertRefusalRates } from "../domain/messages/refusal-rates.ts";
 import { createAlert } from "../providers/alerts.ts";
 import { alertVisitsNotBegun } from "../domain/dispatch/not-begun.ts";
 import { YOUCAM_UNIT_FLOOR } from "../config/tryon.ts";
@@ -422,6 +423,12 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
 
 const youcamUnitsJob = (context: CronContext) => checkYoucamUnits(context, YOUCAM_UNIT_FLOOR);
 
+async function refusalRatesJob({ env, deps, inputs, log }: CronContext): Promise<void> {
+  const { refusedMessages } = await inputs();
+  const past = await alertRefusalRates(env.DB, deps.alertOnce, { now: deps.now(), limit: refusedMessages });
+  if (past > 0) log.info("messages_refused", { kinds: past });
+}
+
 async function visitsNotBegunJob({ env, deps, inputs, log }: CronContext): Promise<void> {
   const now = deps.now();
   const { bookingRules } = await inputs();
@@ -500,6 +507,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "analytics_nightly", needs: "nothing", every: 60, at: 31, slot: { hour: 3 }, run: analyticsJob },
   // When each task opened and closed, for the reporting copy (docs/decisions/0147-task-spans.md).
   { name: "task_spans", needs: "nothing", every: 60, at: 26, slot: { hour: 23 }, run: taskSpansJob },
+  // A kind of WhatsApp refused too often in the last day (docs/decisions/0277-alerts-that-come-sooner.md).
+  { name: "refusal_rates", needs: "nothing", every: 60, at: 47, run: refusalRatesJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
   // A visit today with no technician, told each hour until someone is sent (src/domain/dispatch/unassigned.ts).

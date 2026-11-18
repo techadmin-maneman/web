@@ -68,6 +68,7 @@ export const isUrgent = (key: string): boolean => URGENT_KINDS.includes(alertKin
 /** About the client themselves: their messages, contact and notes. */
 export const CUSTOMER_CARE_KINDS = [
   "message_failed",
+  "messages_refused",
   "messages_unsent",
   "crm_lead",
   "crm_erasure",
