@@ -20,6 +20,7 @@ import { ZohoError } from "../../../src/providers/zoho-http.ts";
 import { IMRAN, technician } from "../clients.ts";
 import { captureLogs, NOW } from "../helpers.ts";
 import { RECHECK_AFTER_MS } from "../../../src/domain/books/vendor-pass.ts";
+import { DAY_MS } from "../../../src/lib/durations.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -111,12 +112,14 @@ async function paid(amount: number, appointmentId = VISIT) {
     .run();
 }
 
-/** The standard service visit at Rs. 2,200 with its 18% GST in it, from the day of the visits here. */
-async function pricedWithGst() {
+/** The standard service visit at Rs. 2,200 with its 18% GST in it, from the day of the visits here unless told. */
+async function pricedWithGst(validFrom = "2026-09-23") {
   await env.DB.prepare(
-    `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, amount, valid_from)
-     VALUES ('service', 'standard', 186441, 18, 220000, '2026-09-23')`,
-  ).run();
+    `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, amount_paise, valid_from)
+     VALUES ('service', 'standard', 186441, 18, 220000, ?1)`,
+  )
+    .bind(validFrom)
+    .run();
 }
 
 async function itemKept(kind: string, tier: string, itemId: string) {
@@ -252,6 +255,32 @@ describe("the invoice a finished visit gets", () => {
     expect(fixed).toEqual({ amount_off: 20_000 });
   });
 
+  it("names the code's figure before GST as the discount once GST is on, so Books' total is what was paid", async () => {
+    // Rs. 2,200 with its 18% in it; 10% of its Rs. 1,864.41 before GST is Rs. 186, Rs. 219.48 with its GST.
+    await pricedWithGst();
+    await visit();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO discount_codes (id, code, kind, value, covers_first_fit, covers_service, covers_replacement,
+           once_per_client, created_by, created_at)
+         VALUES ('code-1', 'TENPC', 'percent', 10, 0, 1, 0, 1, 'ops@localhost', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO discount_code_uses (id, code_id, person_id, appointment_id, given_by, given_by_id, created_at)
+         VALUES ('use-1', 'code-1', ?1, ?2, 'ops', 'ops@localhost', ?3)`,
+      ).bind(PERSON, VISIT, NOW.toISOString()),
+    ]);
+    await paid(198_052);
+    const books = createStubBooks();
+
+    expect(await invoicePass(books, AFTER, { gst: REGISTERED })).toEqual({ raised: 1, issued: 1 });
+    expect(books.made.invoices[0]?.line).toMatchObject({
+      rate: 220_000,
+      discount: 18_600,
+      tax: { percent: 18, intraState: true },
+    });
+  });
+
   it("finds by its reference an invoice whose answer never came, and raises no second one", async () => {
     await visit();
     await paid(200_000);
@@ -381,7 +410,7 @@ describe("the invoice a finished visit gets", () => {
     expect(books.made.invoices.map((invoice) => invoice.line.tax)).toEqual([null]);
   });
 
-  it("holds a visit the book prices with no GST once GST is on, tells ops once, and invoices it once it has GST", async () => {
+  it("holds a visit priced with no GST once GST is on, tells ops once, and invoices it at the GST its service gets next", async () => {
     await visit();
     const books = createStubBooks();
     expect(await invoicePass(books, AFTER, { gst: REGISTERED })).toEqual({ raised: 0, issued: 0 });
@@ -390,13 +419,17 @@ describe("the invoice a finished visit gets", () => {
       issued: 0,
     });
     expect(books.made.invoices).toEqual([]);
-    expect(alerted).toEqual([expect.stringContaining("the price book has it with no GST")]);
+    expect(alerted).toEqual([expect.stringContaining("the price book has it with none")]);
 
-    await pricedWithGst();
+    // Ops set the service's price with its GST from the next day, as the console allows; from then the visit is
+    // invoiced at that GST, at its own day's price.
+    await pricedWithGst("2026-09-24");
     expect(await invoicePass(books, later(RECHECK_AFTER_MS * 4), { gst: REGISTERED })).toEqual({
-      raised: 1,
-      issued: 1,
+      raised: 0,
+      issued: 0,
     });
+    expect(await invoicePass(books, later(DAY_MS), { gst: REGISTERED })).toEqual({ raised: 1, issued: 1 });
+    expect(books.made.invoices[0]?.line).toMatchObject({ rate: 200_000, tax: { percent: 18, intraState: true } });
     const open = await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL").all<{ key: string }>();
     expect(open.results).toEqual([]);
   });

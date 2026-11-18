@@ -105,9 +105,9 @@ describe("the price book", () => {
       }),
     );
     const row = await env.DB.prepare(
-      "SELECT amount, amount_ex_gst FROM price_book WHERE item = 'service' AND tier = 'standard' AND valid_from = '2026-09-22'",
+      "SELECT amount_paise, amount_ex_gst FROM price_book WHERE item = 'service' AND tier = 'standard' AND valid_from = '2026-09-22'",
     ).first();
-    expect(row).toEqual({ amount: 3_200_000, amount_ex_gst: 2_711_864 });
+    expect(row).toEqual({ amount_paise: 3_200_000, amount_ex_gst: 2_711_864 });
   });
 
   // The Worker from before amounts writes only the figure before GST, while the two are deployed one after the other.

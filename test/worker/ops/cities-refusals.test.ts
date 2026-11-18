@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { cityOfPerson, cityOfPincode, cityOfVisit } from "../../../src/domain/cities/cities.ts";
 import { cityRules, rulesFrom, setCityRule } from "../../../src/domain/cities/city-rules.ts";
-import { supplyFor } from "../../../src/domain/cities/gst-registrations.ts";
+import { setRegistration, supplyFor } from "../../../src/domain/cities/gst-registrations.ts";
 import { priceFrom } from "../../../src/domain/money/price-lookup.ts";
 import type { App } from "../../../src/http/context.ts";
 import { anAddress, aPerson, aVisit } from "../fixtures/index.ts";
@@ -120,6 +120,14 @@ describe("where a visit, a pincode and a client are", () => {
     await env.DB.prepare("INSERT INTO cities (name, served, active, sort) VALUES ('Atlantis', 0, 1, 99)").run();
     const supply = await supplyFor(env.DB, { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" });
     expect(supply("Atlantis")).toEqual({ placeOfSupply: "HR", branchId: null, intraState: true });
+  });
+
+  it("supplies a state whose registration has no Books branch from the one in force, across a state line", async () => {
+    const audit = { surface: "ops", actor: { kind: "staff", id: "ops@localhost" }, requestId: null } as const;
+    const mumbai = { stateCode: "MH", gstin: "27AAACM1234A1Z1", booksBranchId: null };
+    expect(await setRegistration(env.DB, mumbai, audit, NOW)).toBe("set");
+    const supply = await supplyFor(env.DB, { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" });
+    expect(supply("Mumbai")).toEqual({ placeOfSupply: "MH", branchId: null, intraState: false });
   });
 
   it("prices nothing a lookup found none for", () => {

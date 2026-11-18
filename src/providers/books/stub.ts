@@ -1,6 +1,7 @@
 // Books' local and test stand-in (./index.ts chooses it): it records what it was asked, and a test can make any
 // call fail or never answer.
 
+import { withGst } from "../../config/gst.ts";
 import { ProviderError } from "../provider-error.ts";
 import type {
   BooksInvoice,
@@ -276,12 +277,13 @@ function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, control
       const found = invoicesByReference.get(reference);
       return found === undefined ? null : { ...found, status: issuedOrDraft(found.id) };
     },
-    // A draft's total is its rate less its discount, as Books works it out with GST at 0%.
+    // A draft's total is its rate, GST included, less its discount with the line's GST added, as Books works out a
+    // discount taken before tax off an inclusive line.
     async createInvoice(invoice) {
       await controls.check("createInvoice");
       made.invoices.push(invoice);
       const id = `stub-invoice-${crypto.randomUUID()}`;
-      const total = invoice.line.rate - invoice.line.discount;
+      const total = invoice.line.rate - withGst(invoice.line.discount, invoice.line.tax?.percent ?? 0);
       const number = `INV-${String(made.invoices.length).padStart(6, "0")}`;
       const raised = {
         id,

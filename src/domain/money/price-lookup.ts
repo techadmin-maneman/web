@@ -16,14 +16,14 @@ export interface Price {
 
 /**
  * The price in force for an item's tier on a day in a city, as SQL over the expressions given, answering
- * json_array(amount_ex_gst, gst_percent, amount), or null: the city's own price where it sets one (city_prices), else
- * the book's. A null city reads the book alone.
+ * json_array(amount_ex_gst, gst_percent, amount_paise), or null: the city's own price where it sets one
+ * (city_prices), else the book's. A null city reads the book alone.
  */
 export const priceInForce = (item: string, tier: string, on: string, city: string): string => `COALESCE(
-  (SELECT json_array(c.amount_ex_gst, c.gst_percent, c.amount) FROM city_prices c
+  (SELECT json_array(c.amount_ex_gst, c.gst_percent, c.amount_paise) FROM city_prices c
     WHERE c.item = ${item} AND c.tier = ${tier} AND c.city = ${city} AND c.valid_from <= ${on}
     ORDER BY c.valid_from DESC LIMIT 1),
-  (SELECT json_array(b.amount_ex_gst, b.gst_percent, b.amount) FROM price_book b
+  (SELECT json_array(b.amount_ex_gst, b.gst_percent, b.amount_paise) FROM price_book b
     WHERE b.item = ${item} AND b.tier = ${tier} AND b.valid_from <= ${on}
     ORDER BY b.valid_from DESC LIMIT 1))`;
 

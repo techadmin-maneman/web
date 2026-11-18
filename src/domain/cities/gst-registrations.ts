@@ -27,8 +27,9 @@ export interface Supply {
   readonly placeOfSupply: string | null;
   readonly branchId: string | null;
   /**
-   * Whether the visit is in the state of the registration that supplies it, so its GST is CGST and SGST; else IGST.
-   * False while GST is off, when no tax is charged.
+   * Whether the visit is in the state of the registration that supplies it, so its GST is CGST and SGST; else IGST:
+   * its state's own where its invoice is raised under that one's Books branch, else the one in BOOKS_GSTIN. False while
+   * GST is off, when no tax is charged.
    */
   readonly intraState: boolean;
 }
@@ -43,7 +44,7 @@ export async function supplyFor(db: D1Database, head: GstRegistration): Promise<
     return {
       placeOfSupply: place,
       branchId: head.gstin === null ? null : (own?.books_branch_id ?? null),
-      intraState: place !== null && (own !== undefined || place === head.stateCode),
+      intraState: place !== null && ((own?.books_branch_id ?? null) !== null || place === head.stateCode),
     };
   };
 }

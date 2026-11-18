@@ -2,7 +2,8 @@
 //
 // One line on the visit's Books item: the price book's GST-inclusive price on the day, less any discount code before
 // tax, at the GST of that price, under the appointment's ID as its reference, by which a later pass finds it. With GST
-// on, a price the book holds with no GST is not invoiced, as it would issue a tax invoice with none: ops are told. The line names the hair system and
+// on, a visit whose price that day had none is charged the GST of its service's price as it stands now; while that has
+// none too, it is not invoiced, as it would issue a tax invoice with none, and ops are told. The line names the hair system and
 // the visit: "Mane Man Active, First Fit"; "Service Visit, Mane Man Active". Books works out the total. The invoice is
 // sent, and the client may open it, only when it totals what the visit was sold for; otherwise it stays a draft and ops
 // are told. A visit a free-visit credit paid for is a zero-priced line, complimentary. A draft under any other
@@ -200,8 +201,8 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
     await tellUnpriced(pass, visit);
     return null;
   }
-  const gstOn = options.gst.gstin !== null;
-  if (gstOn && price.gst_percent === 0) {
+  const gst = options.gst.gstin === null ? null : await gstOf(pass, visit, price);
+  if (gst === 0) {
     await tellUntaxed(pass, visit);
     return null;
   }
@@ -219,9 +220,12 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
   // A visit paid for before its price changed was sold at what was paid, so that is its line; one a credit paid for,
   // for nothing.
   const { soldFor, paidWithCredit } = await soldVisit(db, visit, code?.off ?? 0);
+  // Books takes a line's discount before tax: with a tax, it adds the tax to it, so the line names the code's figure
+  // before GST; without one, what it takes off the price as paid.
+  const discount = gst === null ? price.amount - listed.amount : (code?.off ?? 0);
   const line =
     paidWithCredit || soldFor === null || soldFor === listed.amount
-      ? { rate: paidWithCredit ? 0 : price.amount, discount: paidWithCredit ? 0 : price.amount - listed.amount }
+      ? { rate: paidWithCredit ? 0 : price.amount, discount: paidWithCredit ? 0 : discount }
       : { rate: soldFor, discount: 0 };
   const day = indiaDate(new Date(visit.window_start));
   const product = await productOf(db, visit);
@@ -237,13 +241,23 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
       name: lineName({ type: visit.type, service: item.name, product, complimentary: paidWithCredit }),
       description: options.labelAsTest ? STAGING_TEST : "",
       ...line,
-      tax: gstOn ? { percent: price.gst_percent, intraState: supply.intraState } : null,
+      tax: gst === null ? null : { percent: gst, intraState: supply.intraState },
     },
   };
   const raised = await deps.books.createInvoice(invoice);
   // Kept before it is sent: a later pass then reads this one rather than looking for it.
   await keepInvoice(pass, visit.id, raised.id);
   return raised;
+}
+
+/**
+ * The GST the visit is charged once GST is on: its price's on the day, else, where that had none, its service's price's
+ * now, which ops set with its GST from tomorrow at the earliest; 0 while neither has any.
+ */
+async function gstOf(pass: Pass, visit: Visit, price: Price): Promise<number> {
+  if (price.gst_percent > 0) return price.gst_percent;
+  const now = await listPrice(pass.db, { ...visit, window_start: pass.now.toISOString() });
+  return now?.gst_percent ?? 0;
 }
 
 /** What marks an invoice made on staging, in the line's description. */

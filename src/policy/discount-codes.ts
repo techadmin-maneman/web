@@ -72,18 +72,23 @@ function percentOff(terms: DiscountTerms, priceExGst: number): number {
 }
 
 /**
- * A price with the discount taken off before GST, and GST charged on what is left. With nothing off, a price that
- * carries what the client pays keeps it, as ops set it with its GST.
+ * A price with the discount taken off before GST. A price that carries what the client pays, as ops set it with its
+ * GST, loses the discount with its GST added, as Books takes a discount before tax off a GST-inclusive line, so the
+ * invoice totals what was paid and the code taken off again gives back the price as set; any other is charged GST on
+ * what is left.
  */
 export function discounted(
   price: { readonly amount_ex_gst: number; readonly gst_percent: number; readonly amount?: number },
   off: number,
 ): { amount_ex_gst: number; amount: number; gst_percent: number } {
-  if (off <= 0 && price.amount !== undefined) {
-    return { amount_ex_gst: price.amount_ex_gst, amount: price.amount, gst_percent: price.gst_percent };
-  }
   const exGst = Math.max(0, price.amount_ex_gst - off);
-  return { amount_ex_gst: exGst, amount: withGst(exGst, price.gst_percent), gst_percent: price.gst_percent };
+  const amount =
+    price.amount === undefined
+      ? withGst(exGst, price.gst_percent)
+      : exGst === 0
+        ? 0
+        : Math.max(0, price.amount - withGst(off, price.gst_percent));
+  return { amount_ex_gst: exGst, amount, gst_percent: price.gst_percent };
 }
 
 /** A code as it stands when it is entered: whether it is on, its limits, and how far they are used. */

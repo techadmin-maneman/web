@@ -49,6 +49,13 @@ describe("discount codes", () => {
     expect(amountOff({ kind: "percent", value: 15, cap: null }, 254_300)).toBe(38_100);
   });
 
+  it("takes a code with its GST off a price set with its GST in it, as Books does, and never below nothing", () => {
+    const price = { amount_ex_gst: 2_711_864, amount: 3_200_000, gst_percent: 18 };
+    // Rs. 3,000 off before GST is Rs. 3,540 with it.
+    expect(discounted(price, 300_000)).toEqual({ amount_ex_gst: 2_411_864, amount: 2_846_000, gst_percent: 18 });
+    expect(discounted(price, 2_711_864)).toEqual({ amount_ex_gst: 0, amount: 0, gst_percent: 18 });
+  });
+
   it("keeps the price ops set, GST included, when nothing is off", () => {
     // Rs. 32,000 with its 18% in it, kept as set rather than worked back from what it is before GST.
     const price = { amount_ex_gst: 2_711_864, amount: 3_200_000, gst_percent: 18 };

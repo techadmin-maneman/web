@@ -75,7 +75,7 @@ export interface PriceRow {
 export async function priceBook(db: D1Database, on: string): Promise<PriceRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT item, tier, amount_ex_gst, gst_percent, amount, valid_from FROM price_book
+      `SELECT item, tier, amount_ex_gst, gst_percent, amount_paise AS amount, valid_from FROM price_book
        ORDER BY item, tier, valid_from DESC`,
     )
     .all<Omit<PriceRow, "in_force" | "amount"> & { amount: number | null }>();
@@ -197,7 +197,7 @@ async function toTakeBack(
 ): Promise<HeldPrice | "not_found" | "not_to_come"> {
   const held = await db
     .prepare(
-      "SELECT amount_ex_gst, gst_percent, amount FROM price_book WHERE item = ?1 AND tier = ?2 AND valid_from = ?3",
+      "SELECT amount_ex_gst, gst_percent, amount_paise AS amount FROM price_book WHERE item = ?1 AND tier = ?2 AND valid_from = ?3",
     )
     .bind(row.item, row.tier, row.valid_from)
     .first<HeldPrice>();
@@ -250,10 +250,10 @@ async function setting(db: D1Database, price: PriceChange, write: PriceWrite): P
     auditStatement(db, entry, write.now),
     db
       .prepare(
-        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, amount, valid_from)
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, amount_paise, valid_from)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6)
          ON CONFLICT (item, tier, valid_from) DO UPDATE SET
-           amount_ex_gst = excluded.amount_ex_gst, gst_percent = excluded.gst_percent, amount = excluded.amount`,
+           amount_ex_gst = excluded.amount_ex_gst, gst_percent = excluded.gst_percent, amount_paise = excluded.amount_paise`,
       )
       .bind(
         price.item,

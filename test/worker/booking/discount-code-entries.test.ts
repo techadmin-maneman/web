@@ -75,6 +75,23 @@ describe("the client, at the app's pay step", () => {
     expect(entered.price).toEqual({ amount_ex_gst: 180_000, amount: 212_400, gst_percent: 18 });
   });
 
+  // Rs. 2,000 with its 18% in it is Rs. 1,694.92 before GST, which GST added back makes Rs. 2,000.01.
+  it("takes the code with its GST off a price set with its GST in it, and gives that price back to the paisa", async () => {
+    await env.DB.prepare(
+      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, amount_paise, valid_from)
+       VALUES ('service', 'standard', 169492, 18, 200000, '2026-09-23')`,
+    ).run();
+    await make();
+    const hold = await heldService(PERSON);
+    expect(hold.price).toEqual({ amount_ex_gst: 169_492, amount: 200_000, gst_percent: 18 });
+    // 10% of Rs. 1,694.92 is Rs. 169 in whole rupees, Rs. 199.42 with its GST.
+    const entered = await (await enter(PERSON, hold.id, "TENPC")).json<HoldAnswer>();
+    expect(entered.price).toEqual({ amount_ex_gst: 152_592, amount: 180_058, gst_percent: 18 });
+    expect(entered.discount?.list_price).toMatchObject({ amount: 200_000 });
+    const removed = await call(PERSON, `/api/holds/${hold.id}/discount-code`, { method: "DELETE" });
+    expect(await removed.json()).toMatchObject({ price: { amount_ex_gst: 169_492, amount: 200_000 } });
+  });
+
   it("says only that a code does not apply, whatever the reason, and changes nothing", async () => {
     await make({ code: "FT25", covers: ["first_fit"] });
     await make({ code: "EXP25", expiresOn: "2026-09-20" });

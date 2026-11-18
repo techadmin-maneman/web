@@ -25,7 +25,7 @@ export interface CityPrice {
 export async function cityPrices(db: D1Database, on: string): Promise<CityPrice[]> {
   const { results } = await db
     .prepare(
-      `SELECT city, item, tier, amount_ex_gst, gst_percent, amount, valid_from FROM city_prices
+      `SELECT city, item, tier, amount_ex_gst, gst_percent, amount_paise AS amount, valid_from FROM city_prices
        ORDER BY city, item, tier, valid_from DESC`,
     )
     .all<Omit<CityPrice, "in_force" | "amount"> & { amount: number | null }>();
@@ -63,10 +63,10 @@ export async function setCityPrice(
   await db.batch([
     db
       .prepare(
-        `INSERT INTO city_prices (item, tier, city, amount_ex_gst, gst_percent, amount, valid_from)
+        `INSERT INTO city_prices (item, tier, city, amount_ex_gst, gst_percent, amount_paise, valid_from)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
          ON CONFLICT (item, tier, city, valid_from) DO UPDATE SET
-           amount_ex_gst = excluded.amount_ex_gst, gst_percent = excluded.gst_percent, amount = excluded.amount`,
+           amount_ex_gst = excluded.amount_ex_gst, gst_percent = excluded.gst_percent, amount_paise = excluded.amount_paise`,
       )
       .bind(
         price.item,
