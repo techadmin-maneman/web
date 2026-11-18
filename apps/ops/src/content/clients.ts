@@ -901,7 +901,7 @@ export const clients = {
     /** To erase today all the same, when what is owed cannot be settled first. */
     settle: {
       visit_booked: "Cancel it and refund them in full.",
-      payment_held: "I’ll refund it from Tasks today.",
+      payment_held: "I’ll make sure it’s refunded today.",
       payment_owed: "Cancel the link and write off what’s owed.",
     },
     anyway: "Erase anyway",

@@ -7,8 +7,18 @@ import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
 import { REFUND_OWED_LET_GO } from "../../../src/domain/money/payment-refunds.ts";
-import { aPayment } from "../fixtures/index.ts";
-import { captureLogs, fakeDependencies, LOCAL_CONFIG, markDatabase, NOW } from "../helpers.ts";
+import { ProviderError } from "../../../src/providers/provider-error.ts";
+import { aPayment, aVisit } from "../fixtures/index.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  LOCAL_CONFIG,
+  markDatabase,
+  NOW,
+  request,
+} from "../helpers.ts";
 import { book, bookedVisit, erase, fittedVisitUnpaid, statusOf } from "./erasure-fixtures.ts";
 
 beforeEach(async () => {
@@ -159,8 +169,56 @@ describe("erasure while something is still owed", () => {
     expect((deps.payments as StubPayments).made.refunds).toEqual([{ paymentId: "pay_live", amount: 270000 }]);
     const entry = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'person.erase'").first("detail");
     expect(entry).toBe(JSON.stringify({ settled_by_hand: true, visits: 1, bookings: 0, payments: 1, links: 0 }));
+    const told = await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages WHERE state = 'queued'").first("n");
+    expect(told).toBe(0);
+  });
+
+  it("leaves a visit already begun for ops to close, and erases all the same", async () => {
+    const personId = await book();
+    await aVisit({
+      id: "visit-begun",
+      person_id: personId,
+      status: "in_progress",
+      window_start: "2026-09-21T05:00:00.000Z",
+    });
+
+    expect(await statusOf(personId, { body: { override_open_bookings: true } })).toBe(200);
+
+    const visit = await env.DB.prepare("SELECT status FROM appointments WHERE id = 'visit-begun'").first("status");
+    expect(visit).toBe("in_progress");
+  });
+
+  // A cancel that fails must not stop the erasure the client is owed today.
+  it("erases all the same when a cancel fails, and logs which visit", async () => {
+    const logs = captureLogs();
+    const personId = await book();
+    await bookedVisit(personId);
+    const failing = cancelsFail(env.DB);
+
+    const erasing = { body: { override_open_bookings: true }, queues: { CRM_QUEUE: fakeQueue(), DB: failing } };
+    expect(await statusOf(personId, erasing)).toBe(200);
+
+    expect(
+      await env.DB.prepare("SELECT erased_at FROM people WHERE id = ?1").bind(personId).first("erased_at"),
+    ).not.toBeNull();
+    expect(logs.lines()).toContainEqual(
+      expect.objectContaining({ event: "erasure_cancel_failed", appointment_id: "visit-live" }),
+    );
   });
 });
+
+/** The database, failing the write that claims a visit's cancel. */
+function cancelsFail(db: D1Database): D1Database {
+  return new Proxy(db, {
+    get(target, property, receiver) {
+      if (property !== "prepare") return Reflect.get(target, property, receiver) as unknown;
+      return (sql: string): D1PreparedStatement => {
+        if (sql.includes("INSERT INTO visit_changes")) throw new Error("D1_ERROR: simulated write failure");
+        return target.prepare(sql);
+      };
+    },
+  });
+}
 
 /** Imran, whose Wednesday a booking holds. */
 async function technician(): Promise<void> {
@@ -293,9 +351,8 @@ describe("erasure while a booking is not yet a visit, or a payment link is unpai
     expect((deps.payments as StubPayments).made.cancelledLinks).toEqual([]);
   });
 
-  // Its payment is left for ops to refund on Tasks, which must still show it once the client is erased.
-  it("keeps a booking's payment on Tasks to refund after erasing anyway", async () => {
-    const personId = await book();
+  /** A paid booking not yet a visit, Rs. 2,000 by card on the order "order_paid". */
+  async function paidBooking(personId: string): Promise<void> {
     await holding(personId, {
       id: "hold-paid",
       amount: 200000,
@@ -308,12 +365,50 @@ describe("erasure while a booking is not yet a visit, or a payment link is unpai
       razorpay_order_id: "order_paid",
       razorpay_payment_id: "pay_held",
       amount: 200000,
+      method: "card",
     });
+  }
 
-    expect(await statusOf(personId, { body: { override_open_bookings: true } })).toBe(200);
+  const owedOnTasks = async () =>
+    (await env.DB.prepare(REFUND_OWED_LET_GO).all<{ person_name: string; detail: string }>()).results;
 
-    const owed = await env.DB.prepare(REFUND_OWED_LET_GO).all<{ person_name: string; detail: string }>();
-    expect(owed.results).toMatchObject([{ person_name: "Erased", detail: "let_go 200000 pay_held" }]);
+  it("refunds a booking's payment when erasing anyway, and leaves nothing on Tasks", async () => {
+    const personId = await book();
+    await paidBooking(personId);
+    const deps = fakeDependencies();
+
+    expect(await statusOf(personId, { deps, body: { override_open_bookings: true } })).toBe(200);
+
+    expect((deps.payments as StubPayments).made.refunds).toEqual([{ paymentId: "pay_held", amount: 200000 }]);
+    expect(await owedOnTasks()).toEqual([]);
+  });
+
+  // An erased client's record keeps their money, so ops refund from it what Razorpay refused.
+  it("keeps on Tasks a booking's refund Razorpay refuses, which ops then refund from the erased record", async () => {
+    const personId = await book();
+    await paidBooking(personId);
+    const refusing = createStubPayments();
+    const refused = { ...refusing, refund: () => Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "no")) };
+
+    const erased = { deps: fakeDependencies({ payments: refused }), body: { override_open_bookings: true } };
+    expect(await statusOf(personId, erased)).toBe(200);
+    expect(await owedOnTasks()).toMatchObject([{ person_name: "Erased", detail: "let_go 200000 pay_held" }]);
+
+    const payments = createStubPayments();
+    const paymentId = await env.DB.prepare("SELECT id FROM payments WHERE razorpay_payment_id = 'pay_held'").first(
+      "id",
+    );
+    const refund = await request(
+      appFor("local", fakeDependencies({ payments }), {}, "ops"),
+      `/api/payments/${String(paymentId)}/refund`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+        body: JSON.stringify({ reason: "The client asked to be erased." }),
+      },
+    );
+    expect(refund.status).toBe(200);
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_held", amount: 200000 }]);
   });
 
   it("erases anyway when ops say so: lets go of the bookings and their time, and cancels the open links", async () => {

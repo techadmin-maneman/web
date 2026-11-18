@@ -114,7 +114,8 @@ export async function refundPayment(
 
 /**
  * The Tasks board's payment to refund, a hold let go whose refund Razorpay would not make: what is owed back in paise
- * and the Razorpay payment, for ops to refund. It goes once a refund of the payment is made (migration 0096's indexes).
+ * and the Razorpay payment, for ops to refund, an erased client's included. It goes once a refund of the payment is
+ * made (migration 0096's indexes).
  */
 export const REFUND_OWED_LET_GO = `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
          'let_go ' || (p.amount - p.refunded_amount) || ' ' || p.razorpay_payment_id AS detail,

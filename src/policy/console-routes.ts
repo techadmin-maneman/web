@@ -64,7 +64,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/visits/{id}/close": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/let-in": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/send-back": inOwnPlaces("operations", "act"),
-  // A technician's SOS, on every screen of national Operations, who mark it handled (docs/decisions/0248-safety.md).
+  // A technician's SOS, on every screen of Operations in the technician's city, who mark it handled
+  // (docs/decisions/0248-safety.md).
   "GET /api/sos": inOwnPlaces("operations", "view"),
   "POST /api/sos/{id}/handled": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/lost-reason": inOwnPlaces("customer_care", "act"),

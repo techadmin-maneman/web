@@ -77,7 +77,8 @@ export interface ReadAt {
  * One queue: its tasks, each column named as Row names it, and the parameters it binds, `?1` on. Every queue is read
  * in one batch, a round trip in all, each capped at READ_CAP, which bounds what one look at the board can cost. A
  * person who has been erased is left out everywhere: their record is gone, and a task about them could not be done.
- * A no-show and a disputed charge still wait without them, since each still needs a ruling.
+ * A no-show and a disputed charge still wait without them, since each still needs a ruling, and so does a payment to
+ * refund, which their record of money keeps.
  */
 export interface Queue {
   /** The group its tasks are, whose record says where each is (./task-reach.ts). */

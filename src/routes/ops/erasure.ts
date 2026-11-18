@@ -3,7 +3,7 @@
 // (src/routes/ops/profile.ts); both erase through eraseAndQueue, audited under the member of staff who did it, and
 // keep to the caller's cities. Refused while the client has a visit or booking still to happen, a payment held or a
 // payment link unpaid, unless ops say to erase anyway (docs/decisions/0066-erasure-all-or-nothing.md): then each visit
-// still to come is cancelled free to the client, as a cancel on Visits is, and refunded in full.
+// still to come is cancelled free to the client, as a cancel on Visits is, and each booking let go refunded.
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
@@ -18,6 +18,8 @@ import {
   type ErasureBlockers,
   type ErasureSummary,
 } from "../../domain/privacy/erasure.ts";
+import { giveBack, RefundNotDone } from "../../domain/booking/give-back.ts";
+import { auditStatement } from "../../domain/platform/audit.ts";
 import { cancelVisit, type OpsCancel } from "../../domain/visits/visit-cancel.ts";
 import { changeableVisitFor, changeTerms, opsCancelTerms, termsInForce } from "../../domain/visits/visit-changes.ts";
 import { actorOf, staffMemberOf } from "../../http/audit.ts";
@@ -101,8 +103,8 @@ const ErasureSchema = z
       .openapi({
         description:
           "Erase even with a visit or booking still to happen, a payment held or a link unpaid. Visits still to come " +
-          "are cancelled free to the client and refunded in full; bookings not yet visits are let go, their payments " +
-          "left on Tasks to refund; open payment links are cancelled.",
+          "are cancelled free to the client and refunded in full; bookings not yet visits are let go and refunded, one " +
+          "Razorpay refuses left on Tasks; open payment links are cancelled.",
       }),
   })
   .strict()
@@ -192,6 +194,33 @@ async function cancelStillToCome(c: Context<AppEnv>, visits: ErasureBlockers["vi
   }
 }
 
+/**
+ * Erasing anyway: each booking not yet a visit is let go and what was paid for it refunded, once, as a lapsed hold's
+ * is. One Razorpay will not refund is let go by the erasure all the same, and waits under Tasks' payments to refund.
+ */
+async function giveBookingsBack(c: Context<AppEnv>, bookings: ErasureBlockers["bookings"], now: Date): Promise<void> {
+  const db = c.env.DB;
+  const { deps, log, requestId } = c.var;
+  for (const { id } of bookings) {
+    const entry = {
+      surface: "ops",
+      actor: actorOf(c),
+      action: "booking.give_back",
+      subject: { kind: "hold", id },
+      requestId,
+      detail: { reason: ERASED_REASON },
+    } as const;
+    try {
+      await giveBack({ db, payments: deps.payments, now }, id, ERASED_REASON, {
+        alongside: [auditStatement(db, entry, now)],
+      });
+    } catch (error) {
+      if (error instanceof RefundNotDone) log.warn("erasure_refund_not_done", { hold_id: id, outcome: error.outcome });
+      else log.error("erasure_give_back_failed", { hold_id: id, error });
+    }
+  }
+}
+
 export function registerOpsErasure(app: App): void {
   app.openapi(erasureRoute, async (c) => {
     const { id } = c.req.valid("param");
@@ -214,7 +243,10 @@ export function registerOpsErasure(app: App): void {
       links: blockers.links.length,
     };
     if (settledByHand) log.warn("erasure_override", { person_id: id, ...counts });
-    if (settledByHand) await cancelStillToCome(c, blockers.visits, now);
+    if (settledByHand) {
+      await cancelStillToCome(c, blockers.visits, now);
+      await giveBookingsBack(c, blockers.bookings, now);
+    }
 
     const audit: AuditEntry = {
       surface: "ops",

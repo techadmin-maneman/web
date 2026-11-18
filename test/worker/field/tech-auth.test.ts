@@ -75,6 +75,17 @@ describe("POST /api/tech/auth/otp", () => {
     expect(deps.sentCodes).toEqual([]);
     const missing = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
     expect(missing.status).toBe(400);
+
+    // Nothing was counted against the number: its day's codes are all still there.
+    tech = appFor("local", fakeDependencies(), {}, "tech");
+    for (let sent = 0; sent < LOCAL_SETTINGS.login.codeMobileDailyLimit; sent += 1) {
+      const asked = await post("/api/tech/auth/otp", {
+        mobile: "98100 00009",
+        device_id: DEVICE,
+        turnstile_token: "x",
+      });
+      expect(asked.status).toBe(202);
+    }
   });
 
   it("sends a code to a technician the roster holds as active", async () => {

@@ -44649,7 +44649,7 @@ Request body:
   "properties": {
     "override_open_bookings": {
       "type": "boolean",
-      "description": "Erase even with a visit or booking still to happen, a payment held or a link unpaid. Visits still to come are cancelled free to the client and refunded in full; bookings not yet visits are let go, their payments left on Tasks to refund; open payment links are cancelled."
+      "description": "Erase even with a visit or booking still to happen, a payment held or a link unpaid. Visits still to come are cancelled free to the client and refunded in full; bookings not yet visits are let go and refunded, one Razorpay refuses left on Tasks; open payment links are cancelled."
     }
   },
   "additionalProperties": false

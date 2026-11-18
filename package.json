@@ -108,7 +108,6 @@
     "openapi-typescript": "7.13.0",
     "prettier": "3.9.9",
     "prettier-plugin-astro": "1.1.0",
-    "fast-uri": "3.1.9",
     "sharp": "0.35.5",
     "subset-font": "2.9.0",
     "typescript": "6.0.3",
@@ -122,6 +121,7 @@
     "@cloudflare/vitest-plugin": {
       "zod": "$zod"
     },
+    "fast-uri": "3.1.9",
     "sharp": "0.35.5",
     "miniflare": {
       "undici": "7.30.1"

@@ -195,6 +195,8 @@ async function askForCode(
   digits: string,
   turnstile: ReturnType<typeof useTurnstile>,
 ): Promise<{ readonly ok: true; readonly challenge: Challenge } | { readonly ok: false; readonly error: Refusal }> {
+  // Offline, Turnstile cannot load, so the phone says why before waiting on it.
+  if (!navigator.onLine) return { ok: false, error: refusedWith("offline") };
   const token = await turnstile.token();
   if (token === null) return { ok: false, error: refusedWith("turnstile_failed") };
   try {
