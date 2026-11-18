@@ -54,7 +54,7 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 | Script                      | What it does                                                                                                                       | Run by                           | Writes |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------ |
 | `already-checked.ts`        | which checks these very files already passed                                                                                       | `ci.yml`                         | no     |
-| `audit.ts`                  | `npm audit`, with the reviewed allowlist                                                                                           | `npm run audit`, CI              | no     |
+| `audit.ts`                  | `npm audit`, with the reviewed allowlist, and the production dependencies with none                                                | `npm run audit`, CI              | no     |
 | `auto-merge.ts`             | merges a pull request that passed and should merge itself                                                                          | `auto-merge.yml`                 | GitHub |
 | `production-pages.ts`       | production's built pages opened in Chromium from a local server, failing on an error                                               | `npm run build` first            | no     |
 | `site-production-gate.ts`   | the production site built as it will go live: refused only on what waits for approval, or built with none of the design's material | CI's build job                   | no     |

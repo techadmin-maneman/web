@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { failingAdvisories, type Allowance } from "../../../scripts/lib/audit.ts";
+import { failingAdvisories, noAudit, type Allowance } from "../../../scripts/lib/audit.ts";
 
 const ADVISORY = "https://github.com/advisories/GHSA-aaaa-bbbb-cccc";
 const report = (severity: string, url = ADVISORY) => ({
@@ -30,5 +30,17 @@ describe("the dependency audit", () => {
     expect(failingAdvisories(report("high", other), "2026-10-04", allowed)).toEqual([
       `left: Left is unsafe (${other})`,
     ]);
+  });
+
+  // npm writes its own failures to stdout as JSON too, with no advisories in them, so they would read as a clean audit.
+  it("is no audit where npm answers its own error, or anything but its report", () => {
+    const unreachable = {
+      message: "request to http://127.0.0.1:9/-/npm/v1/security/advisories/bulk failed, reason: connect ECONNREFUSED",
+      error: { summary: "", detail: "" },
+    };
+    expect(noAudit(unreachable)).toContain("ECONNREFUSED");
+    expect(noAudit({})).toBe("npm audit gave no report");
+    expect(noAudit({ auditReportVersion: 2, vulnerabilities: null })).toBe("npm audit gave no report");
+    expect(noAudit({ auditReportVersion: 2, vulnerabilities: {} })).toBeNull();
   });
 });
