@@ -3,6 +3,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
+import { FormActions } from "@maneman/ui/FormActions";
 import { useState } from "react";
 import { areas } from "../content.ts";
 import type { AreaChange } from "../api.ts";
@@ -26,29 +27,33 @@ export function NotReady({
   if (!access.reaches({ department: "admin", level: "manage" })) return null;
   const { changes } = saving;
   return (
-    <div className={form.fields}>
-      <Field label={copy.label}>
-        {(control) => (
-          <TextInput
-            {...control}
-            maxLength={300}
-            value={reason}
-            onChange={(event) => {
-              setReason(event.target.value);
-            }}
-          />
-        )}
-      </Field>
-      <Button
-        variant="outline"
-        size="small"
-        disabled={reason.trim() === ""}
-        onClick={() => {
-          onLaunch(changes, reason.trim());
-        }}
-      >
-        {copy.launch}
-      </Button>
-    </div>
+    <>
+      <div className={form.fields}>
+        <Field label={copy.label}>
+          {(control) => (
+            <TextInput
+              {...control}
+              maxLength={300}
+              value={reason}
+              onChange={(event) => {
+                setReason(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+      </div>
+      <FormActions>
+        <Button
+          variant="outline"
+          size="small"
+          disabled={reason.trim() === ""}
+          onClick={() => {
+            onLaunch(changes, reason.trim());
+          }}
+        >
+          {copy.launch}
+        </Button>
+      </FormActions>
+    </>
   );
 }

@@ -121,7 +121,11 @@ export const areas = {
       `${city} · ${day} · ${count === 1 ? "1 pincode" : `${String(count)} pincodes`}`,
     states: { scheduled: "Scheduled", live: "Live", cancelled: "Cancelled" },
     told: (alerted: number) => (alerted === 1 ? "1 told" : `${String(alerted)} told`),
-    held: "Not live: no active technician in the city.",
+    /** Why the cron has not served it on its day, by the refusal it met. */
+    held: {
+      no_technician: "Not live: no active technician in the city.",
+      not_ready: "Not live: nobody in the city is trained to fit, or there’s no stockroom.",
+    },
     cancelLaunch: "Cancel launch",
     cancelLabel: (city: string, day: string) => `Cancel the ${city} launch on ${day}`,
     cancelCheck: (city: string, day: string) => `Cancel the ${city} launch on ${day}?`,
@@ -164,8 +168,8 @@ export const areas = {
         ready ? "Every pincode on the map" : `${String(count)} not on the map yet: placed within the hour`,
     },
     fix: "Fix",
-    /** Only the first stops a launch; the rest are for ops to weigh. */
-    blocks: "Nothing can be booked without an active technician.",
+    /** A technician, one trained to fit and a stockroom stop a launch; the rest are for ops to weigh. */
+    blocks: "It won’t go live until someone here is trained to fit and there’s a stockroom.",
   },
   /** A city's map and its technicians' reach from home (docs/decisions/0223-reach-from-home.md). */
   reach: {

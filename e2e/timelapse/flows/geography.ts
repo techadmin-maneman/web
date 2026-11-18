@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto";
 import { Wire, techSignIn } from "../actors.ts";
 import { dateOf } from "../sim.ts";
 import { check } from "../steps.ts";
+import { addStockrooms } from "./catalog.ts";
 import { sees } from "../ui.ts";
 import { mobileFor, type Sim, type Technician } from "../world.ts";
 
@@ -179,6 +180,18 @@ export async function openCities(
       const technician = await addTechnician(sim, wave, plan.city, person);
       if (technician !== undefined) await setUpTechnician(sim, wave, technician);
     }
+    // And its stockroom, without which the city is not ready to go live.
+    await steps.run(
+      {
+        wave,
+        workflow: "Stock places",
+        app: "ops",
+        screen: "/stock › Places",
+        action: `${plan.city}: a stockroom`,
+        mode: "api",
+      },
+      () => addStockrooms(sim, [plan.city]),
+    );
     await staffed(plan.city);
 
     // The first of its pincodes served from today; the rest scheduled to go live in a week, through Launches.

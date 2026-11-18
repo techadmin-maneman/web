@@ -41,6 +41,7 @@ const LAUNCH: PincodeLaunch = {
 let page: HTMLDivElement;
 let root: Root;
 let sent: { path: string; body: unknown }[];
+let listed: PincodeLaunch[];
 
 const button = (text: string) =>
   [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text) ?? null;
@@ -54,6 +55,7 @@ async function press(element: HTMLElement | null) {
 
 beforeEach(() => {
   sent = [];
+  listed = [LAUNCH];
   vi.stubGlobal(
     "fetch",
     contractChecked("ops", (url: string, init?: RequestInit) => {
@@ -67,7 +69,7 @@ beforeEach(() => {
       if (path === "/api/pincode-launches" && init?.method === "POST") {
         return Promise.resolve(Response.json(LAUNCH, { status: 201 }));
       }
-      if (path === "/api/pincode-launches") return Promise.resolve(Response.json({ launches: [LAUNCH] }));
+      if (path === "/api/pincode-launches") return Promise.resolve(Response.json({ launches: listed }));
       if (path.endsWith("/cancel"))
         return Promise.resolve(Response.json({ ...LAUNCH, state: "cancelled", cancelled_at: LAUNCH.created_at }));
       if (path === "/api/pincode-launches/readiness") {
@@ -99,6 +101,19 @@ afterEach(() => {
 });
 
 describe("the launches", () => {
+  it("says why a launch the cron held is not live: no technician, or a city not ready", async () => {
+    listed = [
+      { ...LAUNCH, held_because: "not_ready: 400050" },
+      { ...LAUNCH, id: "22222222-2222-4222-8222-222222222222", city: "Pune", held_because: "no_technician: 411001" },
+    ];
+    act(() => {
+      root.render(createElement(LaunchList));
+    });
+    await answered();
+    expect(page.textContent).toContain(areas.launches.held.not_ready);
+    expect(page.textContent).toContain(areas.launches.held.no_technician);
+  });
+
   it("lists a launch scheduled, and cancels it once asked", async () => {
     act(() => {
       root.render(createElement(LaunchList));
@@ -127,6 +142,8 @@ describe("the chosen bar", () => {
     await press(button(areas.launches.schedule));
     await answered();
     expect(page.textContent).toContain(areas.readiness.checks.stockroom(false));
+    // Without a stockroom the city will not go live.
+    expect(page.textContent).toContain(areas.readiness.blocks);
     expect(page.textContent).toContain(areas.readiness.checks.technicians(true, 2));
     await press(button(areas.launches.schedule));
     expect(sent[0]).toMatchObject({ path: "/api/pincode-launches", body: { city: "Mumbai", pincodes: ["400050"] } });

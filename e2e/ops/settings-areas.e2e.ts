@@ -9,12 +9,13 @@
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { BLACKOUTS, fails, json, SERVICE_AREA } from "./fixtures.ts";
+import { BLACKOUTS, fails, json, SERVICE_AREA, type Answer, type OpsReply } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 import { pressTwice } from "./twice.ts";
 import { shortDate } from "../../packages/web-kit/dates.ts";
+import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 
 test.describe("the service area", () => {
   const served = opsCopy.areas.served;
@@ -145,6 +146,8 @@ test.describe("the service area", () => {
     await page.getByRole("button", { name: words.launches.schedule }).click();
     const form = page.getByRole("group", { name: words.launches.scheduleTitle(1, "Delhi") });
     await expect(form.getByText(words.readiness.checks.stockroom(false))).toBeVisible();
+    // Without a stockroom the launch waits, as the cron serves it on its day.
+    await expect(form.getByText(words.readiness.blocks)).toBeVisible();
     await form.getByLabel(words.launches.day).fill("2026-11-05");
     const sent = posted(page, "/api/pincode-launches");
     await form.getByRole("button", { name: words.launches.schedule }).click();
@@ -207,6 +210,58 @@ test.describe("the service area", () => {
     await change(page, "110017", { served: false });
     await expect(page.getByRole("alert")).toContainText(opsCopy.areas.served.errors.no_service_area);
     await expect(row(page, "110017")).toContainText(served.yes);
+  });
+
+  /** Serves Lajpat Nagar through the launch panel, which a city not ready refuses. */
+  async function serveLajpatNagar(page: Page): Promise<void> {
+    await change(page, "110024", { served: true });
+    const panel = page.getByRole("region", { name: "Mark 110024 live" });
+    await panel.getByRole("button", { name: "Save and send to 3" }).click();
+    await expect(page.getByRole("alert")).toContainText(served.errors.not_ready);
+  }
+
+  // Mumbai went live weeks before anyone there could fit, so its first fits could not be booked.
+  test("holds a launch in a city not ready, which an Admin may make all the same, saying why", async ({ page }) => {
+    const refusedUnlessWhy: Answer = (route) =>
+      (route.request().postDataJSON() as { not_ready_reason?: string }).not_ready_reason === undefined
+        ? fails(409, "not_ready", ["110024"])(route)
+        : json({ changed: 1, served: 2, alerted: 3 })(route);
+    await open(page, "/settings/areas", { "POST /api/service-area": refusedUnlessWhy });
+    await serveLajpatNagar(page);
+    await expect(row(page, "110024")).toContainText(served.no);
+
+    const anyway = page.getByRole("button", { name: opsCopy.areas.notReady.launch });
+    await expect(anyway).toBeDisabled();
+    await page.getByLabel(opsCopy.areas.notReady.label).fill("Fitter from Delhi travelling in for the first fits");
+    const sent = posted(page, "/api/service-area");
+    await anyway.click();
+    expect((await sent).postDataJSON()).toEqual({
+      changes: [{ pincode: "110024", served: true, launch_on: null }],
+      not_ready_reason: "Fitter from Delhi travelling in for the first fits",
+    });
+    await expect(page.getByRole("status").filter({ hasText: "3 WhatsApp messages sending." })).toBeVisible();
+    await expect(row(page, "110024")).toContainText(served.yes);
+  });
+
+  test("offers no way past a city not ready to one who is not a national Admin", async ({ page }) => {
+    await open(page, "/settings/areas", {
+      "GET /api/whoami": json({
+        signed_in_as: "growth@maneman.in",
+        sign_out: null,
+        staff: {
+          enforced: true,
+          listed: true,
+          grants: [{ department: "growth", level: "manage", geography: "national", place: null }],
+          may_call: Object.keys(ROUTE_NEEDS),
+        },
+        cities: ["Delhi", "Gurgaon"],
+        every_city: true,
+      } satisfies OpsReply<"/api/whoami">),
+      "POST /api/service-area": fails(409, "not_ready", ["110024"]),
+    });
+    await serveLajpatNagar(page);
+    await expect(page.getByLabel(opsCopy.areas.notReady.label)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: opsCopy.areas.notReady.launch })).toHaveCount(0);
   });
 
   const upload = (page: Page, csv: string) =>

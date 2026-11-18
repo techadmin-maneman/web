@@ -1,7 +1,7 @@
 // What a city needs before its pincodes are served (ADR 0221), each check with what it counts, so the console can say
 // what is missing and where it is put right; and a served pincode paused, taking no new clients for a while, and what
-// stopping pincodes would leave behind. Only a city with no active technician stops a launch (setServiceArea); the
-// rest are for ops to weigh.
+// stopping pincodes would leave behind. A city with no active technician, nobody trained to fit or no stockroom stops a
+// launch (setServiceArea); the rest are for ops to weigh.
 
 import { indiaDate } from "../../lib/india-time.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
