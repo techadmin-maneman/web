@@ -261,7 +261,7 @@ const CALLS: Readonly<Partial<Record<string, string>>> = {
   "POST /api/me/problems/{reference}/sorted": "Marked an issue sorted",
   "POST /api/me/problems/{reference}/photos": "Added a photograph to an issue",
   "POST /api/me/alerts/read": "Read their alerts",
-  "POST /api/csp-reports": "Their app reported what its security policy refused",
+  "POST /api/csp-reports": "Their app blocked something",
   "POST /api/photos/try-on/{id}/shown": "Saw a try-on look WhatsApp refused",
   "POST /api/me/push-subscriptions": "Turned on notifications on a phone",
   "POST /api/grievances": "Raised a concern",

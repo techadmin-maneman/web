@@ -370,6 +370,28 @@ describe("a telling the chat did not take", () => {
     expect(urgent[0]).toMatch(/… and \d+ more on Tasks\.$/);
   });
 
+  // A count that cannot be kept cannot reach `after` (docs/decisions/0277-alerts-that-come-sooner.md).
+  it("tells nothing of an alert that waits for several sightings while nothing can be kept", async () => {
+    const told: string[] = [];
+    const broken = {
+      prepare: () => {
+        throw new Error("D1_ERROR: overloaded");
+      },
+    } as unknown as D1Database;
+    const once = createAlertOnce({
+      db: broken,
+      alert: (message) => {
+        told.push(message);
+        return Promise.resolve(true);
+      },
+      now: () => NOW,
+      environment: "staging",
+      log: createLogger(),
+    });
+    await once({ key: "razorpay_event_failing:evt_1", message: "Event evt_1 failed.", after: 2 });
+    expect(told).toEqual([]);
+  });
+
   it("tells the chat of a key once in ten minutes while nothing can be kept", async () => {
     const broken = {
       prepare: () => {

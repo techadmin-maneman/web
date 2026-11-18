@@ -10,7 +10,7 @@ import { handleRazorpayBatch, paidThroughCheckout } from "../../../src/queues/ra
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { fakeBatch } from "../batches.ts";
 import { JOB, working } from "../job-fixtures.ts";
-import { aPerson } from "../fixtures/index.ts";
+import { aHold, aPerson, aTechnician } from "../fixtures/index.ts";
 import { alertRefusalRates } from "../../../src/domain/messages/refusal-rates.ts";
 import { alertVisitsNotBegun } from "../../../src/domain/dispatch/not-begun.ts";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
@@ -95,6 +95,17 @@ describe("a webhook refused at our door", () => {
     for (let refused = 0; refused < 3; refused += 1) await deliverRazorpay(captured, { deps, secret: WRONG });
     expect(deps.alerts).toHaveLength(1);
     expect(await open("webhook_refused:razorpay")).toBeNull();
+  });
+
+  // Stray posts between real deliveries never form a run, and must not stop a real mismatch from being told.
+  it("tells a real mismatch after stray refusals between real deliveries", async () => {
+    const deps = fakeDependencies();
+    for (let stray = 0; stray < 3; stray += 1) {
+      await deliverRazorpay(captured, { deps, secret: WRONG });
+      await deliverRazorpay(captured, { deps });
+    }
+    for (let refused = 0; refused < 3; refused += 1) await deliverRazorpay(captured, { deps, secret: WRONG });
+    expect(deps.alerts).toEqual([expect.stringContaining("Check the Razorpay webhook's secret now") as string]);
   });
 
   it("does the same for Evolution's webhook", async () => {
@@ -259,13 +270,17 @@ describe("Razorpay Checkout failing to load in the client app", () => {
     expect(await open("checkout_failing")).toEqual({ count: 1 });
   });
 
-  it("is closed by a payment made through Checkout, and not by a payment link's", () => {
-    const paid = (notes: unknown) => ({
-      payload: { payment: { entity: { ...captured.payload.payment.entity, notes } } },
+  // A link sent for a hold carries the hold in its notes too, so only the order tells a Checkout payment apart.
+  it("is closed by a payment made through Checkout, on a hold's own order, and not by a payment link's", async () => {
+    const person = await aPerson();
+    const technician = await aTechnician();
+    await aHold({ person_id: person.id, technician_id: technician.id, razorpay_order_id: "order_hold_1" });
+    const paid = (order: string, notes: unknown) => ({
+      payload: { payment: { entity: { ...captured.payload.payment.entity, order_id: order, notes } } },
     });
-    expect(paidThroughCheckout(paid({ hold_id: "33333333-3333-4333-8333-0000000000aa", person_id: "p" }))).toBe(true);
-    expect(paidThroughCheckout(paid({ payment_link: "plink_1" }))).toBe(false);
-    expect(paidThroughCheckout(paid([]))).toBe(false);
+    expect(await paidThroughCheckout(env.DB, paid("order_hold_1", {}))).toBe(true);
+    const link = paid("order_link_1", { hold_id: "33333333-3333-4333-8333-0000000000aa", person_id: person.id });
+    expect(await paidThroughCheckout(env.DB, link)).toBe(false);
   });
 });
 

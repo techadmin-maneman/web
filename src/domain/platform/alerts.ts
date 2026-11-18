@@ -128,9 +128,10 @@ export function createAlertOnce(deps: {
       if (!isTellingDue(sighting, after, retellAfterMs(key), at)) return;
       if (!(await markTold(db, sighting, at))) return;
     } catch (error) {
-      // With nothing kept there is no knowing whether ops were told already, so they are told, once in a while.
+      // With nothing kept there is no knowing whether ops were told already, so they are told, once in a while; but a
+      // count that cannot be kept cannot reach `after`, so an alert that waits for several sightings is not told.
       log.error("alert_not_stored", { key, error });
-      if (!toldUnstoredLately(key, at)) await alert(text);
+      if (after <= 1 && !toldUnstoredLately(key, at)) await alert(text);
       return;
     }
 

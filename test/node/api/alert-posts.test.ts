@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import { createLogger } from "../../../src/log.ts";
-import { createAlert } from "../../../src/providers/alerts.ts";
+import { createAlert, createLeadNotice } from "../../../src/providers/alerts.ts";
 
 function posted(webhookUrl: string) {
   const calls: { url: string; init: RequestInit }[] = [];
@@ -56,6 +56,25 @@ describe("a chat that refuses a post as too many", () => {
     } finally {
       Date.now = realNow;
     }
+    expect(calls).toEqual(["post", "post"]);
+  });
+});
+
+// A lead notice is never told again, so the chat resting after a 429 does not stop one from being tried.
+describe("a lead notice while the chat rests", () => {
+  it("is still posted", async () => {
+    const calls: string[] = [];
+    let answer = new Response("slow down", { status: 429, headers: { "Retry-After": "60" } });
+    const fetch: typeof globalThis.fetch = () => {
+      calls.push("post");
+      return Promise.resolve(answer);
+    };
+    const webhookUrl = "https://chat.googleapis.com/v1/spaces/leads/messages?key=k";
+    const alert = createAlert({ webhookUrl, environment: "staging", fetch, log: createLogger() });
+    const notice = createLeadNotice({ webhookUrl, environment: "staging", fetch, log: createLogger() });
+    expect(await alert("An alert")).toBe(false);
+    answer = new Response("ok");
+    expect(await notice("A new lead")).toBe(true);
     expect(calls).toEqual(["post", "post"]);
   });
 });

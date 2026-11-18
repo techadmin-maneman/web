@@ -86,6 +86,16 @@ describe("POST /api/csp-reports", () => {
     expect((await send(JSON.stringify(ONE), "application/csp-report", "ops")).status).toBe(404);
   });
 
+  // The browser posts a report itself, perhaps with no Origin; the client host's same-origin rule lets it through.
+  it("takes a report on the client host with no Origin", async () => {
+    const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/csp-reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/csp-report", "CF-Connecting-IP": "203.0.113.31" },
+      body: JSON.stringify(ONE),
+    });
+    expect(answer.status).toBe(204);
+  });
+
   it("takes only so many reports an hour from one address", async () => {
     const answers = [];
     for (let sent = 0; sent < 21; sent += 1)

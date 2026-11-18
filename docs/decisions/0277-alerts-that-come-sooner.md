@@ -23,17 +23,19 @@ The QA run of 18 November found failures that reached ops late, or not at all:
 
 1. **A webhook refused at our door** three times in a row, with none taken between, raises the urgent
    `webhook_refused:<hook>` for Razorpay, MSG91 and Evolution alike; the next delivery taken closes it
-   (`src/domain/platform/hook-alerts.ts`). Only the first three refusals of a day count, so posts anyone can forge
-   raise it once a day at most.
+   (`src/domain/platform/hook-alerts.ts`). Told and closed once, it is not told again for a day, so posts anyone can
+   forge page once a day at most, and stray ones between real deliveries never stop a real mismatch from being told.
 2. **A Razorpay event that throws** counts each failure toward the urgent `razorpay_event_failing:<event>`, raised at
    its second, and keeps its backoff; applying it closes the alert (`src/queues/razorpay.ts`). A refund that came
-   before its payment uses a try without failing, so one failure after it tells nobody.
+   before its payment uses a try without failing, so one failure after it tells nobody. With D1 down, an alert that
+   waits for several sightings is not told on its first, since its count cannot be kept.
 3. **Checkout failing to load.** The client app reports a Checkout script that errors or times out, or that loaded
    with no Razorpay in it, as `checkout_unavailable`. Each signed-in client counts once an hour, and three within a
    quarter of an hour raise the urgent `checkout_failing`; a report from a page not signed in counts for nothing, so
-   nobody outside raises it. The next payment made through Checkout, one whose order names its hold, closes it; a
-   payment link's does not. The client app's Content-Security-Policy now reports what it refuses to mm-api
-   (`/api/csp-reports`, as the site's does), so a Checkout frame or script blocked from a new host is logged.
+   nobody outside raises it. The next payment made through Checkout, on a hold's own order, closes it; a payment
+   link's does not, a link sent for a hold included. The client app's Content-Security-Policy now reports what it refuses to mm-api
+   (`/api/csp-reports`, as the site's does), so a Checkout frame or script blocked from a new host is logged; the
+   browser posts it itself, so the route takes it with no Origin.
 4. **A visit not begun past its arrival window** is a Tasks task for Operations, "Technician not arrived", due within
    the hour, which opens the visit on the board, and an urgent alert from the five-minute cron,
    `visit_not_begun:<visit>`, except for a script's test record. A check-in, a close or a cancel

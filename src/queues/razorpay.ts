@@ -58,8 +58,8 @@ export function handleRazorpayBatch({
         return { retryAfterSeconds: backoffSeconds(attempts, REFUND_EARLY_RETRY_SECONDS) };
       }
       eventLog.info("razorpay_hook_taken", { event: event.data.event });
-      // A payment made through Checkout, whose order names its hold: it loads again. A link's payment says nothing of it.
-      if (event.data.event === "payment.captured" && paidThroughCheckout(event.data)) {
+      // A payment made through Checkout, on a hold's own order: it loads again. A link's payment says nothing of it.
+      if (event.data.event === "payment.captured" && (await paidThroughCheckout(env.DB, event.data))) {
         await deps.resolveAlert(CHECKOUT_FAILING_KEY);
       }
       // An event counted as failing is put right once it applies; one on its first try never failed.
@@ -90,9 +90,14 @@ function eventName(body: string): string {
   }
 }
 
-/** Whether the captured payment was made through Checkout: its order's notes name the hold it pays for. */
-export function paidThroughCheckout(event: { readonly payload?: unknown }): boolean {
-  const payment = (event.payload as { payment?: { entity?: { notes?: unknown } } } | undefined)?.payment?.entity;
-  const notes = payment?.notes;
-  return typeof notes === "object" && notes !== null && !Array.isArray(notes) && "hold_id" in notes;
+/**
+ * Whether the captured payment was made through Checkout: it pays the order a hold of ours made for it. A payment
+ * link's pays the link's own order, a link sent for a hold included, so it says nothing of Checkout.
+ */
+export async function paidThroughCheckout(db: D1Database, event: { readonly payload?: unknown }): Promise<boolean> {
+  const payment = (event.payload as { payment?: { entity?: { order_id?: unknown } } } | undefined)?.payment?.entity;
+  const order = payment?.order_id;
+  if (typeof order !== "string" || order === "") return false;
+  const hold = await db.prepare("SELECT 1 FROM slot_holds WHERE razorpay_order_id = ?1").bind(order).first();
+  return hold !== null;
 }
