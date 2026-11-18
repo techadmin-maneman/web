@@ -123,6 +123,8 @@ const RECORD_PLACES = {
   reschedule_request: { table: "reschedule_requests", city: (row) => cityOfVisit(`${row}.appointment_id`) },
   // A chat's is its client's; a number we don't know is in no city.
   conversation: { table: "conversations", city: (row) => clientCity(`${row}.person_id`) },
+  // A message's is its client's; one to a number that is no client yet is in no city.
+  message: { table: "outbound_messages", city: (row) => clientCity(`${row}.person_id`) },
   // A City matter's is the city it was sent to.
   city_matter: { table: "city_matters", city: (row) => `${row}.city` },
   remedy: { table: "remedies", city: (row) => clientCity(`${row}.person_id`) },

@@ -108,7 +108,7 @@ export const EXPORT_QUERIES = {
       utm_medium, utm_campaign, utm_content, gclid, fbclid, found_us, created_at
     FROM leads WHERE person_id = ?1 ORDER BY created_at`,
   try_ons: `SELECT stage, preset, hair_color, state, photo_consent_version, photo_consent_at, kept_at, upload_deleted_at,
-      created_at
+      look_shown_at, created_at
     FROM tryon_jobs WHERE person_id = ?1 ORDER BY created_at`,
   // What was sent and when, never its words.
   messages: `SELECT kind, state, created_at, sent_at, delivered_at, read_at FROM outbound_messages WHERE person_id = ?1

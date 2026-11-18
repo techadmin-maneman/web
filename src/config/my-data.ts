@@ -336,6 +336,7 @@ export const MY_DATA = {
         photo_consent_at: time("Agreed"),
         kept_at: time("Kept in the app"),
         upload_deleted_at: time("Your photograph deleted"),
+        look_shown_at: time("Shown in the app"),
         created_at: time("When"),
       },
     },

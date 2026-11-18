@@ -23,6 +23,7 @@ import type { LinkedLogin } from "./login/linked-mobile.ts";
 import { go, movedTo, redirect, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext } from "./session.ts";
 import { useKeptPush } from "./alerts/kept-push.ts";
+import { useRefusedLook } from "./photos/refused-look.ts";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
 import { LoadFailed } from "./frame/LoadFailed.tsx";
 import { PageLoading } from "./frame/PageLoading.tsx";
@@ -203,6 +204,8 @@ export function App({ linked }: { linked: LinkedLogin }) {
   useSessionEnd(signedIn, setSession);
   useConnection(setSession, refreshSoon);
   useKeptPush(signedIn);
+  // A Home kept offline asks nothing of the API.
+  useRefusedLook(session.kind === "in" && !session.offline ? session.me.look_to_show : null);
 
   // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind. The
   // login names its own steps.

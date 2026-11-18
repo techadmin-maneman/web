@@ -5480,12 +5480,12 @@
     "reviewed": true
   },
   {
-    "key": "message:visit_fitted_code_v1",
+    "key": "message:visit_fitted_code_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "visit_fitted_code_v1",
-    "text": "Hi {{1}}, welcome to Mane Man.\nYour discount code covers your hair system: nothing to pay.",
-    "reviewed": true
+    "where": "visit_fitted_code_v3",
+    "text": "Hi {{1}}, your visit is done.\nYour discount code covers your hair system: nothing to pay.",
+    "reviewed": false
   },
   {
     "key": "message:visit_reminder_v1",
@@ -5544,12 +5544,12 @@
     "reviewed": true
   },
   {
-    "key": "message:no_show_missed_v1",
+    "key": "message:no_show_missed_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "no_show_missed_v1",
-    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. Book a new time in the Mane Man app.",
-    "reviewed": true
+    "where": "no_show_missed_v2",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you.",
+    "reviewed": false
   },
   {
     "key": "message:no_show_charged_paid_v1",
@@ -5576,12 +5576,12 @@
     "reviewed": true
   },
   {
-    "key": "message:no_show_waived_v1",
+    "key": "message:no_show_waived_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "no_show_waived_v1",
-    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Book a new time in the Mane Man app.",
-    "reviewed": true
+    "where": "no_show_waived_v2",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge.",
+    "reviewed": false
   },
   {
     "key": "message:no_show_waived_paid_v1",
@@ -5592,12 +5592,12 @@
     "reviewed": true
   },
   {
-    "key": "message:no_show_waived_credit_v1",
+    "key": "message:no_show_waived_credit_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "no_show_waived_credit_v1",
-    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Message us about the free service visit it used.",
-    "reviewed": true
+    "where": "no_show_waived_credit_v2",
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Reply here about the free service visit it used.",
+    "reviewed": false
   },
   {
     "key": "message:no_show_waived_refund_v1",
@@ -5672,12 +5672,12 @@
     "reviewed": true
   },
   {
-    "key": "message:visit_cancelled_v1",
+    "key": "message:visit_cancelled_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "visit_cancelled_v1",
-    "text": "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. Book a new time whenever suits you, in the Mane Man app.",
-    "reviewed": true
+    "where": "visit_cancelled_v2",
+    "text": "Hi {{1}}, your booking is cancelled.\nYour {{2}} on {{3}} is no longer booked.",
+    "reviewed": false
   },
   {
     "key": "message:visit_missed_by_us_v1",
@@ -5792,12 +5792,12 @@
     "reviewed": true
   },
   {
-    "key": "message:credits_expiring_v1",
+    "key": "message:credits_expiring_v2",
     "surface": "message",
     "group": "Messages",
-    "where": "credits_expiring_v1",
-    "text": "Hi {{1}}, you have {{2}} free to book by {{3}}.\nA visit booked by then is covered, even on a later date. Book in the Mane Man app.",
-    "reviewed": true
+    "where": "credits_expiring_v2",
+    "text": "Hi {{1}}, you have {{2}} to book by {{3}}.\nA visit booked by then is covered, even on a later date.",
+    "reviewed": false
   },
   {
     "key": "message:visit_cancelled_refund_v1",
@@ -5808,27 +5808,27 @@
     "reviewed": true
   },
   {
-    "key": "message:booking_refunded_v2",
+    "key": "message:booking_refunded_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "booking_refunded_v2",
-    "text": "Hi {{1}}, your booking didn't go through.\nWe've refunded {{6}} for your {{2}} on {{3}} to your {{8}} (5 to 7 working days). Book another time in the Mane Man app.",
+    "where": "booking_refunded_v3",
+    "text": "Hi {{1}}, your booking didn't go through.\nWe've refunded {{6}} for your {{2}} on {{3}} to your {{8}} (5 to 7 working days).",
     "reviewed": false
   },
   {
-    "key": "message:booking_not_made_v2",
+    "key": "message:booking_not_made_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "booking_not_made_v2",
-    "text": "Hi {{1}}, your booking didn't go through.\nYour {{2}} on {{3}} isn't booked. Book another time in the Mane Man app.",
+    "where": "booking_not_made_v3",
+    "text": "Hi {{1}}, your booking didn't go through.\nYour {{2}} on {{3}} isn't booked.",
     "reviewed": false
   },
   {
-    "key": "message:booking_not_made_credit_v2",
+    "key": "message:booking_not_made_credit_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "booking_not_made_credit_v2",
-    "text": "Hi {{1}}, your booking didn't go through.\nYour {{2}} on {{3}} isn't booked, and your free service visit is still yours. Book another time in the Mane Man app.",
+    "where": "booking_not_made_credit_v3",
+    "text": "Hi {{1}}, your booking didn't go through.\nYour {{2}} on {{3}} isn't booked, and your free service visit is still yours.",
     "reviewed": false
   },
   {
@@ -5872,11 +5872,11 @@
     "reviewed": true
   },
   {
-    "key": "message:address_not_served_v2",
+    "key": "message:address_not_served_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "address_not_served_v2",
-    "text": "Hi {{1}}, nothing was booked on our site.\nWe don't come to pincode {{2}}, your address on file, yet. Moved? Change your address in the Mane Man app and book there.",
+    "where": "address_not_served_v3",
+    "text": "Hi {{1}}, nothing was booked on our site.\nWe don't come to pincode {{2}}, your address on file, yet. If you've moved, change your address in the Mane Man app.",
     "reviewed": false
   },
   {
@@ -5888,20 +5888,20 @@
     "reviewed": true
   },
   {
-    "key": "message:consultation_follow_up_v2",
+    "key": "message:consultation_follow_up_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "consultation_follow_up_v2",
-    "text": "Hi {{1}}, thank you for today.\nYour technician's recommendation is in the Mane Man app. Book your fit there when you're ready, or reply here.",
+    "where": "consultation_follow_up_v3",
+    "text": "Hi {{1}}, your consultation is done.\nYour technician's recommendation is in the Mane Man app. Any question, reply here.",
     "reviewed": false
   },
   {
-    "key": "message:fit_aftercare_v1",
+    "key": "message:fit_aftercare_v4",
     "surface": "message",
     "group": "Messages",
-    "where": "fit_aftercare_v1",
-    "text": "Hi {{1}}, thank you for today.\nHow to look after your hair system: {{2}}\nAny question at all, reply here.",
-    "reviewed": true
+    "where": "fit_aftercare_v4",
+    "text": "Hi {{1}}, your visit is done.\nYour aftercare guide: {{2}}\nAny question, reply here.",
+    "reviewed": false
   },
   {
     "key": "message:first_check_in_v1",
@@ -5912,12 +5912,12 @@
     "reviewed": true
   },
   {
-    "key": "message:second_check_in_v1",
+    "key": "message:second_check_in_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "second_check_in_v1",
-    "text": "Hi {{1}}, a few weeks on: how is everything?\nIf anything needs a look, reply here. Your next service visit is in the Mane Man app.",
-    "reviewed": true
+    "where": "second_check_in_v3",
+    "text": "Hi {{1}}, how is everything a few weeks on?\nIf anything feels off, reply here and we'll put it right.",
+    "reviewed": false
   },
   {
     "key": "message:recall_notice_v1",

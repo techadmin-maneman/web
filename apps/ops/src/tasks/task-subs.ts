@@ -8,6 +8,7 @@ import { rupees } from "@maneman/web-kit/money";
 import type { Task } from "../api.ts";
 import { dispatch, referrals, tasks } from "../content.ts";
 import { untoldMoveOf } from "./untold-move.ts";
+import { messageKindName } from "../care/index.ts";
 
 type Facts = Task["facts"];
 type Group = Facts["group"];
@@ -94,6 +95,8 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   },
   // Anything the client flagged first, why they did not sign, and whose job.
   fit_unsigned: (facts) => copy.fit_unsigned(facts.reason, facts.technician, facts.flag),
+  // Which message, and WhatsApp's code for why it refused.
+  message_undelivered: (facts) => copy.message_undelivered(messageKindName(facts.kind), facts.code),
   // The stars, the visit and its day, and whose job.
   low_rating: (facts) =>
     copy.low_rating(facts.stars, `${dispatch.typeNames[facts.kind]} ${shortDate(facts.visited_on)}`, facts.technician),

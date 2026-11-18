@@ -92,7 +92,7 @@ async function addressNotServed(db: D1Database, personId: string, firstName: str
   const address = await currentAddress(db, personId);
   if (address === null) return { skip: "no address on the account" };
   if (await isServed(db, address.pincode)) return { skip: "we come to the address on the account now" };
-  return { template: "address_not_served_v2", params: [firstName, address.pincode] };
+  return { template: "address_not_served_v3", params: [firstName, address.pincode] };
 }
 
 /** What a queued notice says, as the person stands now; or why it is not sent. */

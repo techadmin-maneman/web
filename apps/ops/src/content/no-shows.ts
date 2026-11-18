@@ -132,8 +132,9 @@ export const noShows = {
      */
     message: {
       delivered: (when: string) => `Delivered ${when}`,
-      // The board's receipt always arrived; the other four are ours.
+      // The board's receipt always arrived; the other five are ours.
       sent: "Sent, not delivered",
+      not_delivered: "Not delivered · WhatsApp refused it",
       no_consent: "Not sent · client hasn’t opted in to WhatsApp",
       not_sent: "Not sent",
       none: "No reminder sent",

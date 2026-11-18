@@ -3,7 +3,7 @@
 // message ("{{5}} is at your door for your {{2}}"). So each is renumbered here, and a send maps our params onto it.
 // A link a text ends with becomes a button, since a template may not end on a variable.
 
-import { sendsToApp, TEMPLATES, type TemplateName } from "./message-templates.ts";
+import { RESULT_TEMPLATE, sendsToApp, TEMPLATES, type TemplateName } from "./message-templates.ts";
 
 /** How WhatsApp prices and polices a template: a login code, or a message about something the person has. */
 type TemplateCategory = "authentication" | "utility";
@@ -50,7 +50,7 @@ const DIFFERS: Partial<Record<TemplateName, { readonly text?: string; readonly b
     },
     visit_reminder_v1: { buttons: [STOP] },
     next_visit_due_v1: { buttons: [STOP] },
-    credits_expiring_v1: { buttons: [STOP] },
+    credits_expiring_v2: { buttons: [STOP] },
   };
 
 /**
@@ -91,7 +91,7 @@ function approved(name: TemplateName): ApprovedTemplate {
     category: "utility",
     body,
     takes,
-    imageHeader: name === "tryon_result_v1",
+    imageHeader: name === RESULT_TEMPLATE,
     // A message that sends the client to the app has its button, after any of its own.
     buttons: [...(differs?.buttons ?? []), ...(sendsToApp(name) ? [APP] : [])],
   };

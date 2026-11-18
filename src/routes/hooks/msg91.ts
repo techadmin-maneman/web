@@ -2,7 +2,8 @@
 // (docs/decisions/0114-whatsapp-business-platform-through-msg91.md, 0197-one-inbound-port.md), read as its webhook
 // documents it ("How to receive WhatsApp delivery reports via webhook (new)", msg91.com/help): an outbound report
 // (`direction` "1") whose `eventName` is delivered or read is a receipt for the message its `requestId` names, as our
-// send answered; an inbound message (`direction` "0") from `customerNumber` carries its words in `text`, or in the
+// send answered, and one that is failed is WhatsApp refusing it, with its code at the head of `reason`
+// (docs/decisions/0276-a-message-whatsapp-refuses.md); an inbound message (`direction` "0") from `customerNumber` carries its words in `text`, or in the
 // stringified JSON of `content`, `button` (a quick reply, STOP among them) or `messages`. Both go to the inbound port
 // every provider feeds (src/domain/messages/inbound.ts).
 //
@@ -17,6 +18,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { bearerToken, inboundContext } from "../../http/inbound-context.ts";
 import { secretsMatch } from "../../lib/hash.ts";
 import { takeInbound, type Inbound } from "../../domain/messages/inbound.ts";
+import { refusalCodeOf } from "../../policy/message-refusals.ts";
 
 // Loose on purpose: whatever else MSG91 sends is ignored, not refused, so MSG91 does not retry it.
 const EventSchema = z.looseObject({
@@ -25,6 +27,7 @@ const EventSchema = z.looseObject({
   customerNumber: z.string().optional(),
   requestId: z.string().optional(),
   uuid: z.string().optional(),
+  reason: z.string().nullish(),
   text: z.string().nullish(),
   content: z.string().nullish(),
   button: z.string().nullish(),
@@ -67,13 +70,15 @@ function numberOf(customerNumber: string | undefined): string | null {
   return /^\d{8,15}$/.test(digits) ? `+${digits}` : null;
 }
 
-/** One event of MSG91's, for the inbound port: a receipt, a message, or nothing we use. */
+/** One event of MSG91's, for the inbound port: a receipt, a refusal, a message, or nothing we use. */
 function inboundOf(event: Msg91Event): Inbound[] {
   const direction = String(event.direction ?? "");
   const status = event.eventName?.toLowerCase() ?? "";
   if (direction === "1") {
     const providerMessageId = event.requestId ?? event.uuid;
-    if (providerMessageId === undefined || (status !== "delivered" && status !== "read")) return [];
+    if (providerMessageId === undefined) return [];
+    if (status === "failed") return [{ kind: "refusal", providerMessageId, code: refusalCodeOf(event.reason) }];
+    if (status !== "delivered" && status !== "read") return [];
     return [{ kind: "receipt", providerMessageId, read: status === "read" }];
   }
   if (direction !== "0") return [];

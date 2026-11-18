@@ -25,7 +25,7 @@ export const RAZORPAY_EVENT_MONTHS = 12;
 /** The closed chat of a number we never knew, nor any technician's. */
 export const STRANGER_CHAT_MONTHS = 12;
 
-/** A message we sent, unless a no-show or a move holds it as its evidence. */
+/** A message we sent, unless a no-show or a move holds it as its evidence, or a closed task names it. */
 export const SENT_MESSAGE_MONTHS = 24;
 
 /**

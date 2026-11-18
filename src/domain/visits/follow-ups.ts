@@ -126,12 +126,12 @@ function composedOf(message: { readonly kind: FollowUpKind; readonly origin: str
   switch (message.kind) {
     // The recommendation itself is in the app, on Home: no queue reads the hair profile.
     case "consultation_follow_up":
-      return { template: "consultation_follow_up_v2", params: [name] };
+      return { template: "consultation_follow_up_v3", params: [name] };
     case "fit_aftercare":
-      return { template: "fit_aftercare_v1", params: [name, `${message.origin}${CARE_GUIDE}`] };
+      return { template: "fit_aftercare_v4", params: [name, `${message.origin}${CARE_GUIDE}`] };
     case "first_check_in":
       return { template: "first_check_in_v1", params: [name] };
     case "second_check_in":
-      return { template: "second_check_in_v1", params: [name] };
+      return { template: "second_check_in_v3", params: [name] };
   }
 }

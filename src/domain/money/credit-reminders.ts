@@ -109,7 +109,7 @@ export async function composeCreditsExpiring(
   if (row.expires_at <= now.toISOString()) return { skip: "the visits have expired" };
   if (row.visits <= 0) return { skip: "no free service visits left to book" };
   return {
-    template: "credits_expiring_v1",
+    template: "credits_expiring_v2",
     params: [firstNameOf(row.name), serviceVisits(row.visits), fullDate(indiaDate(new Date(row.expires_at)))],
   };
 }

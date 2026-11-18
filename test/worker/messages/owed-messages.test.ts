@@ -253,7 +253,7 @@ describe("the no-show ruling", () => {
   });
 
   it("says only that nobody was home, of a visit nothing was paid for", async () => {
-    expect((await send(await ruled("charged", "nothing"))).text).toBe(`${MISSED} Book a new time in the Mane Man app.`);
+    expect((await send(await ruled("charged", "nothing"))).text).toBe(MISSED);
   });
 
   // A waiver gives back what the visit took.
@@ -287,9 +287,7 @@ describe("the no-show ruling", () => {
   });
 
   it("says a waiver of a visit nothing was paid for charges nothing", async () => {
-    expect((await send(await ruled("waived", "nothing"))).text).toBe(
-      `${MISSED} There's no charge. Book a new time in the Mane Man app.`,
-    );
+    expect((await send(await ruled("waived", "nothing"))).text).toBe(`${MISSED} There's no charge.`);
   });
 
   it("is not sent before ops have ruled, or without the client's consent to WhatsApp about visits", async () => {

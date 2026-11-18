@@ -66,6 +66,15 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
           read_at: "2026-09-20T05:00:00.000Z",
         },
         { kind: "in", at: ARJUN.last_message_at, author: "client", text: ARJUN.last_line, delivery: null },
+        // One WhatsApp refused after it was sent (docs/decisions/0276-a-message-whatsapp-refuses.md).
+        {
+          kind: "auto",
+          at: "2026-09-21T06:00:01.000Z",
+          message: "visit_cancelled",
+          state: "failed",
+          delivered_at: null,
+          read_at: null,
+        },
       ],
       close_reason: null,
       piece_report: null,
@@ -87,6 +96,7 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
   await expect(
     page.getByText(copy.thread.auto("Visit reminder", [copy.thread.delivered, copy.thread.read])),
   ).toBeVisible();
+  await expect(page.getByText(copy.thread.auto("Visit cancelled", [copy.thread.notDelivered]))).toBeVisible();
   await expect(page.getByRole("link", { name: copy.panel.links.visits })).toHaveAttribute(
     "href",
     `/clients/${ARJUN.person?.id ?? ""}/visits`,

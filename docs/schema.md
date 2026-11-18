@@ -1987,7 +1987,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`, `0221_refused_messages.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2015,6 +2015,7 @@ Indexes:
 - `outbound_messages_by_state`: on (`state`, `queued_at`)
 - `outbound_messages_by_subject`: on (`subject_id`)
 - `outbound_messages_one_arrival`: unique on (`subject_id`), where `kind = 'arrival_notice'`
+- `outbound_messages_refused`: on (`created_at`), where `state = 'failed' AND provider_message_id IS NOT NULL`
 
 Triggers: `client_app_alerts_beside_messages`, `client_app_alerts_beside_messages_ready`.
 
@@ -3824,7 +3825,7 @@ Triggers: `terms_acceptances_no_delete`, `terms_acceptances_no_update`.
 
 One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 
-Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0074_number_codes.sql`, `0171_tryon_on_youcam.sql`.
+Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0074_number_codes.sql`, `0171_tryon_on_youcam.sql`, `0221_refused_messages.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3869,6 +3870,7 @@ Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons
 | `failure_reason` | TEXT | yes |  |  |  |
 | `render_key` | TEXT | yes |  |  | A sha256 over the photograph's own bytes, the look and the references' version. |
 | `renders` | INTEGER | no | `0` |  | The renders YouCam took for the job: one more is made when its model fails or runs out of time. |
+| `look_shown_at` | TEXT | yes |  |  | When the client app showed a look WhatsApp refused, once, after sign-in; null until then, or for a look delivered. |
 
 Indexes:
 

@@ -101,6 +101,13 @@ export type TaskFacts =
       readonly flag: string | null;
     }
   | {
+      readonly group: "message_undelivered";
+      /** The message's kind, as its outbox row keeps it. */
+      readonly kind: string;
+      /** WhatsApp's code for why it refused, as 131049; null where the report gave none. */
+      readonly code: string | null;
+    }
+  | {
       readonly group: "low_rating";
       readonly kind: VisitType;
       /** The client's stars, low under ops' setting when given. */

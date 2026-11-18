@@ -83,6 +83,7 @@ export const TASK_GROUPS = [
   "unassigned_visit",
   "recall_call",
   "unanswered_chat",
+  "message_undelivered",
   "city_matter",
   "remedy_approval",
   "leave_conflict",
@@ -150,6 +151,9 @@ export const TASK_SLA_HOURS: Slas = {
   recall_call: 24,
   // Due by the reply clock (src/policy/care-hours.ts), which always comes first; a day bounds it.
   unanswered_chat: 24,
+  // A message about the client's visit, money or look that WhatsApp refused: Care tell them another way within the day
+  // (docs/decisions/0276-a-message-whatsapp-refuses.md).
+  message_undelivered: 24,
   // A client waiting on their city: within the day.
   city_matter: 24,
   // A client promised something waits on a manager: within the day.
@@ -209,8 +213,9 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
  * The groups ops close with a reason: a visit left partly done, whose follow-up the client may never want; an at-risk
  * client, a fit closed without the client's sign-off, a fit guarantee claim and a low rating, each closed with what
  * came of the call; a City matter, closed with what was done; consumables short of what a job expects, closed once
- * checked against the kit; a technician's asks, for their kit and to move a visit, and a client's ask for a hair system
- * made to order, closed with what was done. Every other group leaves the board only when its thing is done.
+ * checked against the kit; a technician's asks, for their kit and to move a visit, a client's ask for a hair system
+ * made to order, and a message WhatsApp refused, closed with what was done. Every other group leaves the board only
+ * when its thing is done.
  */
 export const CLOSABLE_TASK_GROUPS = [
   "partial_visit",
@@ -223,6 +228,7 @@ export const CLOSABLE_TASK_GROUPS = [
   "kit_request",
   "reschedule_request",
   "made_to_order_ask",
+  "message_undelivered",
 ] as const satisfies readonly TaskGroup[];
 
 export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS as readonly TaskGroup[]).includes(group);

@@ -57,7 +57,7 @@ export const words = {
     turnstile: "Robot check failed",
     noFace: "No face found",
     first_check_in_v1: "First follow-up",
-    second_check_in_v1: "Second follow-up",
+    second_check_in_v3: "Second follow-up",
   } as Readonly<Record<string, string | undefined>>,
   /** The site's page a line sits on, opened beside the console to see it in place. */
   seePage: "See it on the site",
