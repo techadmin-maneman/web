@@ -274,8 +274,10 @@
               "error",
               "unhandled_rejection",
               "render",
-              "outbox_gave_up"
-            ]
+              "outbox_gave_up",
+              "checkout_unavailable"
+            ],
+            "description": "checkout_unavailable: Razorpay Checkout's script did not load, so no payment could be made."
           },
           "message": {
             "type": "string",
@@ -6374,6 +6376,55 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "rate_limited: this address has sent its reports for the hour, or every address has",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/csp-reports": {
+      "post": {
+        "summary": "Report what a page's content security policy refused",
+        "description": "A browser's own report, application/reports+json from report-to or application/csp-report from report-uri. Anything else, or more than 16 KB, is let go unread.",
+        "responses": {
+          "204": {
+            "description": "Logged, or let go"
           },
           "429": {
             "description": "rate_limited: this address has sent its reports for the hour, or every address has",

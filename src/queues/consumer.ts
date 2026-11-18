@@ -33,7 +33,10 @@ export interface Consumer<T> {
   readonly onError?: (data: T, attempts: number, error: unknown, log: Logger) => Promise<Settle>;
 }
 
-const afterError = (attempts: number): Settle => ({ retryAfterSeconds: backoffSeconds(attempts, ERROR_RETRY_SECONDS) });
+/** What becomes of a message whose work threw, as every consumer has it: tried again, later each time. */
+export const afterError = (attempts: number): Settle => ({
+  retryAfterSeconds: backoffSeconds(attempts, ERROR_RETRY_SECONDS),
+});
 
 export async function runConsumer<T>(batch: MessageBatch, consumer: Consumer<T>): Promise<void> {
   for (const message of batch.messages) {

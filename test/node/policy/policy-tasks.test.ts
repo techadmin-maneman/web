@@ -59,6 +59,8 @@ describe("tasks", () => {
       untold_move: 4,
       // A move to another day the client has not answered (ADR 0115).
       move_unanswered: 4,
+      // A visit its technician has not begun past its arrival window: the client is waiting (ADR 0277).
+      visit_not_begun: 1,
       // A visit nobody attended or closed: the client is owed a new time the next day.
       visit_left_open: 24,
       // A visit with no technician falls due the day before it in any case.

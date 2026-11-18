@@ -128,6 +128,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerHealth,
     // What goes wrong in the app's own page; the console and the technician app have it too.
     registerClientErrors,
+    // What the app's content security policy refused: Razorpay Checkout's frame or scripts among them.
+    registerCspReports,
     registerClientAuth,
     registerClientMe,
     registerClientProfile,

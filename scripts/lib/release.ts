@@ -33,6 +33,8 @@ export interface Target {
   readonly worker: WorkerEntry;
   readonly environment: Environment;
   readonly wrangler: Wrangler;
+  /** Waits this many milliseconds; a test's records the wait instead. */
+  readonly wait?: (ms: number) => void;
 }
 
 /** What `wrangler deployments status --json` prints. */
@@ -153,6 +155,42 @@ export function uploadVersion(target: Target, tag: string, message: string, outd
 /** A git commit's SHA, as the deploy workflows tag a version with it. */
 const COMMIT = /^[0-9a-f]{7,40}$/;
 
+/** How Cloudflare says it cannot find a version, as it can for a second after taking it. */
+const NOT_FOUND_YET = "[code: 100146]";
+/** The waits before each try again while it cannot, about half a minute in all. */
+const NOT_FOUND_WAITS = [2_000, 4_000, 8_000, 16_000];
+
+function notFoundYet(error: unknown): boolean {
+  const said = error instanceof Error && "stderr" in error ? String(error.stderr) : "";
+  const message = error instanceof Error ? error.message : "";
+  return said.includes(NOT_FOUND_YET) || message.includes(NOT_FOUND_YET);
+}
+
+/** Blocks for `ms`, as the release's wrangler calls do. */
+function pause(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Sets the split, asking again while Cloudflare cannot yet find a version it took a moment ago. A split refused that
+ * way changed nothing, so asking again cannot set it twice.
+ */
+function deployVersions(target: Target, args: readonly string[]): void {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      target.wrangler(args);
+      return;
+    } catch (error) {
+      const wait = NOT_FOUND_WAITS[attempt];
+      if (wait === undefined || !notFoundYet(error)) throw error;
+      console.error(
+        `${deployedName(target)}: Cloudflare cannot find the version yet; asking again in ${String(wait / 1000)} s`,
+      );
+      (target.wait ?? pause)(wait);
+    }
+  }
+}
+
 /** Sets how traffic is split between versions, e.g. ["<id>@10", "<id>@90"]. The shares must total 100. */
 export function deploySplit(target: Target, splits: readonly string[], message: string): void {
   const valid = splits.every((split) => /^[0-9a-f-]{36}@\d{1,3}$/.test(split));
@@ -161,7 +199,7 @@ export function deploySplit(target: Target, splits: readonly string[], message: 
     throw new Error(`--split must be <version-id>@<percent>, totalling 100; got: ${splits.join(" ")}`);
   }
   try {
-    target.wrangler(["versions", "deploy", ...splits, "--yes", "--message", message]);
+    deployVersions(target, ["versions", "deploy", ...splits, "--yes", "--message", message]);
   } catch (error) {
     // The same lost reply: the split may already be live, so ask what is serving before failing.
     const wanted = splits.length === 1 ? (splits[0]?.split("@")[0] ?? "") : "";

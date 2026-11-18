@@ -21,7 +21,7 @@ import {
 } from "../../config/statuses.ts";
 import type { SqlValue } from "../../lib/sql.ts";
 import { REFUND_OWED_FAILED, REFUND_OWED_LET_GO } from "../money/payment-refunds.ts";
-import { UNASSIGNED_VISITS, VISITS_LEFT_OPEN } from "../dispatch/unassigned.ts";
+import { VISIT_QUEUES } from "../dispatch/not-begun.ts";
 
 /**
  * When a number change `nc` started waiting for ops: once the second code was
@@ -69,6 +69,8 @@ export interface ReadAt {
   readonly toBookBefore: string;
   /** The latest a payment link with no close of its own can have been sent and be closed now. */
   readonly linksClosedIfSentBy: string;
+  /** The arrival window's minutes after a visit's start (src/policy/start-times.ts). */
+  readonly arrival: number;
 }
 
 /**
@@ -246,10 +248,8 @@ export const QUEUES: readonly Queue[] = [
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL
      AND a.deleted_at IS NULL AND a.books_invoice_id IS NOT NULL AND pe.erased_at IS NULL`,
   },
-  // A visit with no technician, due the day before it (src/domain/dispatch/unassigned.ts).
-  { group: "unassigned_visit", sql: UNASSIGNED_VISITS, binds: (at) => [at.now] },
-  // A visit still open once its day is over (src/domain/dispatch/unassigned.ts).
-  { group: "visit_left_open", sql: VISITS_LEFT_OPEN, binds: (at) => [at.todayStarts] },
+  // A visit with no technician, one not begun past its arrival window, one still open once its day is over.
+  ...VISIT_QUEUES,
   // A job still booked on a day its technician is away: leave moves nothing, so ops move it. It waits from when the
   // leave was recorded, and falls due by the job. The client is named where there is one on our records.
   // A technician's ask for leave, from their phone, still to approve or decline (../dispatch/leave-requests.ts).

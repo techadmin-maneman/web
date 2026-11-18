@@ -42,6 +42,12 @@ export type TaskFacts =
   | { readonly group: "no_show_decision"; readonly technician: string | null }
   | { readonly group: "draft_invoice"; readonly invoice_id: string }
   | { readonly group: "unassigned_visit"; readonly kind: VisitType; readonly starts_at: Instant }
+  | {
+      readonly group: "visit_not_begun";
+      readonly kind: VisitType;
+      readonly starts_at: Instant;
+      readonly technician: string;
+    }
   | { readonly group: "visit_left_open"; readonly status: string; readonly starts_at: Instant }
   | { readonly group: "leave_conflict"; readonly starts_at: Instant; readonly technician: string }
   | {

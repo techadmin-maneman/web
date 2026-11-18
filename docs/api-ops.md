@@ -35968,8 +35968,10 @@ Request body:
         "error",
         "unhandled_rejection",
         "render",
-        "outbox_gave_up"
-      ]
+        "outbox_gave_up",
+        "checkout_unavailable"
+      ],
+      "description": "checkout_unavailable: Razorpay Checkout's script did not load, so no payment could be made."
     },
     "message": {
       "type": "string",
@@ -50620,6 +50622,7 @@ Request body:
               "untold_move",
               "move_unanswered",
               "reschedule_request",
+              "visit_not_begun",
               "visit_left_open",
               "unassigned_visit",
               "recall_call",
@@ -51240,6 +51243,40 @@ Request body:
         "group",
         "kind",
         "starts_at"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "visit_not_begun"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "technician": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "starts_at",
+        "technician"
       ],
       "additionalProperties": false
     },
@@ -53483,6 +53520,7 @@ Request body:
         "tryon_look_days",
         "leave_notice_min",
         "day_ahead_hour",
+        "refused_messages",
         "stock_watch",
         "stock_usage",
         "stock_quality",
@@ -53682,6 +53720,7 @@ Request body:
         "tryon_look_days",
         "leave_notice_min",
         "day_ahead_hour",
+        "refused_messages",
         "stock_watch",
         "stock_usage",
         "stock_quality",

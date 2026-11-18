@@ -291,6 +291,107 @@ describe("a telling the chat did not take", () => {
     expect(await toldTimes()).toMatchObject({ last_told_at: hoursAfter(NOW, 0.1).toISOString() });
   });
 
+  // A burst that hit the chat's limit was told back one post at a time, a pass stopping at the first refused
+  // (docs/decisions/0277-alerts-that-come-sooner.md).
+  it("tells the chat of every first telling it missed in one post", async () => {
+    const missed = createAlertOnce({
+      db: env.DB,
+      alert: () => Promise.resolve(false),
+      now: () => NOW,
+      environment: "staging",
+      log: createLogger(),
+    });
+    await missed({ key: "r1", message: "Refund rfnd_1 was refused." });
+    await missed({ key: "r2", message: "Refund rfnd_2 was refused." });
+    const retold: string[] = [];
+    expect(await retell(retold)).toBe(2);
+    expect(retold).toEqual([
+      ["2 alerts the chat missed:", "• Refund rfnd_1 was refused.", "• Refund rfnd_2 was refused."].join("\n"),
+    ]);
+  });
+
+  it("tells the urgent space what the chat still refuses once it has waited ten minutes", async () => {
+    const missed = createAlertOnce({
+      db: env.DB,
+      alert: () => Promise.resolve(false),
+      now: () => NOW,
+      environment: "staging",
+      log: createLogger(),
+    });
+    await missed({ key: "r1", message: "Refund rfnd_1 was refused." });
+    const urgent: string[] = [];
+    const pass = (minutes: number) =>
+      retellUndelivered({
+        db: env.DB,
+        alert: () => Promise.resolve(false),
+        urgent: (message) => {
+          urgent.push(message);
+          return Promise.resolve(true);
+        },
+        now: () => new Date(NOW.getTime() + minutes * 60_000),
+        environment: "staging",
+        log: createLogger(),
+      });
+    expect(await pass(5)).toBe(0);
+    expect(urgent).toEqual([]);
+    expect(await pass(10)).toBe(1);
+    expect(urgent).toEqual(["The alert space is refusing posts. Refund rfnd_1 was refused."]);
+    expect(await pass(15)).toBe(0);
+    expect(urgent).toHaveLength(1);
+  });
+
+  it("keeps what it tells the urgent space within a phone push", async () => {
+    const missed = createAlertOnce({
+      db: env.DB,
+      alert: () => Promise.resolve(false),
+      now: () => NOW,
+      environment: "staging",
+      log: createLogger(),
+    });
+    for (let each = 0; each < 25; each += 1) {
+      await missed({
+        key: `long${String(each)}`,
+        message: `Refund rfnd_${String(each)} was refused. ${"x".repeat(200)}`,
+      });
+    }
+    const urgent: string[] = [];
+    await retellUndelivered({
+      db: env.DB,
+      alert: () => Promise.resolve(false),
+      urgent: (message) => {
+        urgent.push(message);
+        return Promise.resolve(true);
+      },
+      now: () => new Date(NOW.getTime() + 11 * 60_000),
+      environment: "staging",
+      log: createLogger(),
+    });
+    expect(new TextEncoder().encode(urgent[0] ?? "").length).toBeLessThanOrEqual(3_500);
+    expect(urgent[0]).toMatch(/… and \d+ more on Tasks\.$/);
+  });
+
+  // A count that cannot be kept cannot reach `after` (docs/decisions/0277-alerts-that-come-sooner.md).
+  it("tells nothing of an alert that waits for several sightings while nothing can be kept", async () => {
+    const told: string[] = [];
+    const broken = {
+      prepare: () => {
+        throw new Error("D1_ERROR: overloaded");
+      },
+    } as unknown as D1Database;
+    const once = createAlertOnce({
+      db: broken,
+      alert: (message) => {
+        told.push(message);
+        return Promise.resolve(true);
+      },
+      now: () => NOW,
+      environment: "staging",
+      log: createLogger(),
+    });
+    await once({ key: "razorpay_event_failing:evt_1", message: "Event evt_1 failed.", after: 2 });
+    expect(told).toEqual([]);
+  });
+
   it("tells the chat of a key once in ten minutes while nothing can be kept", async () => {
     const broken = {
       prepare: () => {

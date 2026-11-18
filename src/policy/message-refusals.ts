@@ -37,3 +37,13 @@ export const REFUSALS_NOT_CHASED = [
   "arrival_notice",
   "technician_update",
 ] as const satisfies readonly MessageKind[];
+
+export const REFUSED_MESSAGES_KEYS = ["share", "least"] as const;
+/**
+ * When a kind of message is refused too often (docs/decisions/0277-alerts-that-come-sooner.md): the share of a day's
+ * messages of a kind WhatsApp refused, in per cent, from which Care are told, counted once at least so many were sent.
+ * Ops set them in Settings.
+ */
+export type RefusedMessages = Readonly<Record<(typeof REFUSED_MESSAGES_KEYS)[number], number>>;
+
+export const REFUSED_MESSAGES: RefusedMessages = { share: 20, least: 5 };

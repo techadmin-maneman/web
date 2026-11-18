@@ -15,6 +15,8 @@ export interface AppPolicy {
   readonly popups?: boolean;
   /** Allows style elements and attributes a third-party script writes into the page. Inline scripts stay refused. */
   readonly inlineStyles?: boolean;
+  /** Where the browser reports what the policy refused, by both ways browsers have: the app's own /api path. */
+  readonly reports?: string;
 }
 
 /** Denied unless an app grants itself one. */
@@ -35,6 +37,7 @@ export function contentSecurityPolicy(policy: AppPolicy): string {
     "frame-ancestors 'none'",
     "base-uri 'none'",
     "form-action 'self'",
+    ...(policy.reports === undefined ? [] : [`report-uri ${policy.reports}`, "report-to csp"]),
   ].join("; ");
 }
 
@@ -53,6 +56,7 @@ export function headersFile(policy: AppPolicy): string {
     "  X-Content-Type-Options: nosniff",
     "  Referrer-Policy: strict-origin-when-cross-origin",
     `  Cross-Origin-Opener-Policy: ${policy.popups === true ? "same-origin-allow-popups" : "same-origin"}`,
+    ...(policy.reports === undefined ? [] : [`  Reporting-Endpoints: csp="${policy.reports}"`]),
     // The apps are behind a login; nothing in them is for a search engine.
     "  X-Robots-Tag: noindex, nofollow",
     "/assets/*",

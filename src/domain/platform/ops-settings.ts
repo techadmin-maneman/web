@@ -13,6 +13,7 @@
 // the committed default. The system runs on the numbers in the code until
 // somebody sets one, and it never runs on a nought.
 
+import type { RefusedMessages } from "../../policy/message-refusals.ts";
 import type { Ratings } from "../../policy/ratings.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
 import type { BookingRules, WorkingHours } from "../../policy/start-times.ts";
@@ -100,6 +101,8 @@ export interface OpsInputs {
   /** How long before setting off a technician is told to leave, and when the next day's jobs are sent (ADR 0250). */
   readonly leaveNoticeMin: number;
   readonly dayAheadHour: number;
+  /** When a kind of WhatsApp refused too often tells Care (src/policy/message-refusals.ts). */
+  readonly refusedMessages: RefusedMessages;
   /** Hours a move to another day waits for the client (src/policy/dispatch.ts). */
   readonly moveProposalHours: number;
   /** Days after a first fit a client may claim the fit guarantee (src/policy/fit-guarantee.ts). */
@@ -168,6 +171,7 @@ function shape(values: OpsValues): OpsInputs {
     arrivalNoticeMin: values.arrival_notice_min,
     leaveNoticeMin: values.leave_notice_min,
     dayAheadHour: values.day_ahead_hour,
+    refusedMessages: values.refused_messages,
     moveProposalHours: values.move_proposal_hours,
     guaranteeDays: values.guarantee_days,
     ratings: values.ratings,

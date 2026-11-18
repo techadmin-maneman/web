@@ -12,7 +12,16 @@ import { FIRST_FIT_COUNTS } from "./referral-grants.ts";
 /** How many partners' friends one pass settles. */
 const PER_PASS = 10;
 
+/**
+ * The friend's own sign-off of the first fit: signed, or none asked, as before sign-off was switched on. One closed
+ * declined waits for ops to close its task. Kept in the query, so a friend still waiting never takes a pass's place.
+ */
+const SIGNED_OFF = `NOT EXISTS (SELECT 1 FROM fit_sign_offs s WHERE s.appointment_id = a.id
+    AND (s.state IN ('asked', 'flagged') OR (s.state = 'declined' AND NOT EXISTS (
+      SELECT 1 FROM task_closures tc WHERE tc.task_group = 'fit_unsigned' AND tc.subject_id = a.id))))`;
+
 const PENDING = `SELECT r.id, r.referred_person_id, r.via, pin.launched_at, a.id AS first_fit_id,
+    a.window_start AS fitted_at,
     c.friend_visits, c.valid_days, c.commission
   FROM channel_attributions r
   JOIN referral_channels c ON c.id = r.channel_id
@@ -21,7 +30,7 @@ const PENDING = `SELECT r.id, r.referred_person_id, r.via, pin.launched_at, a.id
     AND a.deleted_at IS NULL
   JOIN visit_outcomes v ON v.appointment_id = a.id AND v.outcome = 'done'
   LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode
-  WHERE r.grant_state = 'pending' AND fp.erased_at IS NULL AND ${FIRST_FIT_COUNTS}
+  WHERE r.grant_state = 'pending' AND fp.erased_at IS NULL AND ${FIRST_FIT_COUNTS} AND ${SIGNED_OFF}
   ORDER BY a.window_start LIMIT ?1`;
 
 interface Pending {
@@ -30,6 +39,7 @@ interface Pending {
   readonly via: "consultation" | "waitlist";
   readonly launched_at: string | null;
   readonly first_fit_id: string;
+  readonly fitted_at: string;
   readonly friend_visits: number;
   readonly valid_days: number;
   readonly commission: number;
@@ -91,7 +101,10 @@ export async function settlePartnerReferrals(
     // A friend with two first fits done comes once for each; the earliest settles it.
     if (settled.has(row.id)) continue;
     settled.add(row.id);
-    if (row.via === "waitlist" && row.launched_at !== null && inviteLapsed(new Date(row.launched_at), now)) {
+    // An invite from a waitlist holds for fits up to 12 months after its area launched: judged at the fit, so one
+    // waiting for ops to close its task does not lapse while it waits.
+    const fitted = new Date(row.fitted_at);
+    if (row.via === "waitlist" && row.launched_at !== null && inviteLapsed(new Date(row.launched_at), fitted)) {
       await db
         .prepare(
           "UPDATE channel_attributions SET grant_state = 'expired', updated_at = ?2 WHERE id = ?1 AND grant_state = 'pending'",
