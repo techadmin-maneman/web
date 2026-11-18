@@ -20,7 +20,7 @@ describe("Evolution API", () => {
 
     const result = await evolution.send({
       to: "+919810000001",
-      template: "tryon_result_v1",
+      template: "tryon_result_v2",
       params: ["Arjun", "https://maneman.in/book"],
       media: { url: "https://x.test/r.png", type: "image/png" },
     });
@@ -31,7 +31,7 @@ describe("Evolution API", () => {
       number: "919810000001",
       mediatype: "image",
       mimetype: "image/png",
-      caption: expect.stringMatching(/^Hi Arjun, here's your new look\./) as string,
+      caption: expect.stringMatching(/^Hi Arjun, here's the look you asked for\./) as string,
       media: "https://x.test/r.png",
       fileName: "mane-man.png",
     });
@@ -43,7 +43,7 @@ describe("Evolution API", () => {
     const evolution = createEvolutionMessaging(settings, { fetch: http.fetch, log });
     await evolution.send({
       to: "+919810000001",
-      template: "tryon_result_v1",
+      template: "tryon_result_v2",
       params: ["Arjun", "https://maneman.in/book"],
       media: { url: "https://x.test/r.jpg", type: "image/jpeg" },
     });
@@ -56,11 +56,11 @@ describe("Evolution API", () => {
     expect(
       await evolution.send({
         to: "+919810000001",
-        template: "tryon_result_v1",
+        template: "tryon_result_v2",
         params: ["Arjun", "https://maneman.in/book"],
       }),
     ).toMatchObject({ ok: true });
-    expect(await evolution.send({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun"] })).toMatchObject(
+    expect(await evolution.send({ to: "+919810000001", template: "waitlist_listed_v1", params: ["Arjun"] })).toMatchObject(
       {
         ok: false,
         transient: false,
@@ -86,7 +86,7 @@ describe("Evolution API", () => {
   const sendImage = (evolution: MessagingProvider) =>
     evolution.send({
       to: "+919810000001",
-      template: "tryon_result_v1",
+      template: "tryon_result_v2",
       params: ["A", "https://maneman.in/book"],
       media: { url: "https://x.test/r.png", type: "image/png" },
     });
@@ -126,7 +126,7 @@ describe("Evolution API", () => {
     expect(
       await evolution.send({
         to: "+919810000001",
-        template: "tryon_result_v1",
+        template: "tryon_result_v2",
         params: ["A", "https://maneman.in/book"],
         media: { url: "https://x.test/r.png", type: "image/png" },
       }),
@@ -147,7 +147,7 @@ describe("Evolution API", () => {
     expect(
       await evolution.send({
         to: "+919810000001",
-        template: "tryon_result_v1",
+        template: "tryon_result_v2",
         params: ["A", "https://maneman.in/book"],
         media: { url: "https://x.test/r.png", type: "image/png" },
       }),

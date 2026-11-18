@@ -38,7 +38,7 @@ describe("MSG91", () => {
     // "{{5}} waited {{9}} minutes for your {{2}} on {{3}}" is approved as "{{2}} waited {{3}} minutes for your {{4}} on {{5}}".
     const result = await msg91.send({
       to: "+919810000001",
-      template: "no_show_missed_v1",
+      template: "no_show_missed_v2",
       params: ["Arjun", "service visit", "Thu 24 Sep", "12–4 pm", "Imran", "", "", "", "15"],
     });
 
@@ -46,7 +46,7 @@ describe("MSG91", () => {
     expect(http.calls[0]?.headers.get("authkey")).toBe("msg91-key");
     const { body, template, to, components } = sent(http);
     expect(body).toMatchObject({ integrated_number: "919800000000", content_type: "template" });
-    expect(template).toMatchObject({ name: "no_show_missed_v1", language: { code: "en" } });
+    expect(template).toMatchObject({ name: "no_show_missed_v2", language: { code: "en" } });
     expect(to).toEqual(["919810000001"]);
     expect(components).toEqual({
       body_1: { type: "text", value: "Arjun" },
@@ -72,7 +72,7 @@ describe("MSG91", () => {
     const msg91 = createMsg91Messaging(settings, { fetch: http.fetch, log });
     await msg91.send({
       to: "+919810000001",
-      template: "tryon_result_v1",
+      template: "tryon_result_v2",
       params: ["Arjun", "https://maneman.in/book"],
       media: { url: "https://x.test/r.png", type: "image/png" },
     });
@@ -85,7 +85,6 @@ describe("MSG91", () => {
     expect(sent(http).components).toEqual({
       body_1: { type: "text", value: "Arjun" },
       header_1: { type: "image", value: "https://x.test/r.png" },
-      button_1: { subtype: "url", type: "text", value: "book" },
     });
     const reminder = JSON.parse(http.calls[1]?.body ?? "{}") as {
       payload: { template: { to_and_components: { components: Record<string, unknown> }[] } };
@@ -98,10 +97,10 @@ describe("MSG91", () => {
   it("refuses without calling out a send missing what its template takes", async () => {
     const http = fakeFetch({ [SEND_URL]: accepted });
     const msg91: MessagingProvider = createMsg91Messaging(settings, { fetch: http.fetch, log });
-    const missingParam = await msg91.send({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun"] });
+    const missingParam = await msg91.send({ to: "+919810000001", template: "tryon_result_v2", params: ["Arjun"] });
     const missingImage = await msg91.send({
       to: "+919810000001",
-      template: "tryon_result_v1",
+      template: "tryon_result_v2",
       params: ["Arjun", "https://maneman.in/book"],
     });
     const missingStopLink = await msg91.send({

@@ -58,13 +58,13 @@ const STILL_TRUE_WHILE: Readonly<Record<VisitMessageKind, readonly AppointmentSt
 const CHARGED_TEMPLATES = {
   payment: "no_show_charged_paid_v1",
   credit: "no_show_charged_credit_v1",
-  nothing: "no_show_missed_v1",
+  nothing: "no_show_missed_v2",
 } as const;
 
 function waivedTemplate(paid: PaidAhead["kind"], waiver: Waiver, credit: VisitCredit): TemplateName {
   if (paid === "payment") return waiver.payment === "refunded" ? "no_show_waived_refund_v1" : "no_show_waived_paid_v1";
-  if (paid === "nothing") return "no_show_waived_v1";
-  if (waiver.credit === "spent") return "no_show_waived_credit_v1";
+  if (paid === "nothing") return "no_show_waived_v2";
+  if (waiver.credit === "spent") return "no_show_waived_credit_v2";
   return credit === "restored" ? "no_show_waived_credit_back_v1" : "no_show_waived_credit_gone_v1";
 }
 
@@ -177,7 +177,7 @@ async function composeVisitText(
   if (kind === "consultation_confirmation") {
     return { template: visit.one_visit === null ? "consultation_booked_v1" : "one_visit_booked_v1", params };
   }
-  if (kind === "nothing_to_pay") return { template: "visit_fitted_code_v1", params };
+  if (kind === "nothing_to_pay") return { template: "visit_fitted_code_v2", params };
   if (kind === "visit_reminder") return { template: "visit_reminder_v1", params };
   const arrivedAt = { id: appointmentId, technicianId: visit.technician_id, start };
   if (kind === "arrival_notice") return arrivalMessage(db, arrivedAt, params);
@@ -230,7 +230,7 @@ async function cancelMessage(db: D1Database, appointmentId: string, params: stri
     const keptAsLate = cancelled.notice === "late" && cancelled.ops_terms !== "free";
     return { template: keptAsLate ? "visit_cancelled_credit_lost_v2" : "visit_cancelled_credit_gone_v1", params };
   }
-  if (cancelled.refund_amount === 0) return { template: "visit_cancelled_v1", params };
+  if (cancelled.refund_amount === 0) return { template: "visit_cancelled_v2", params };
   params[5] = rupees(cancelled.refund_amount);
   params[7] = DESTINATIONS[cancelled.method ?? ""] ?? "payment method";
   return { template: "visit_cancelled_refund_v1", params };
@@ -318,7 +318,7 @@ async function chargedMessage(
 ): Promise<Composed> {
   if (charge.kept + charge.refund === 0) {
     const credit = await creditOfVisit(db, appointmentId);
-    if (credit === "none") return { template: "no_show_missed_v1", params };
+    if (credit === "none") return { template: "no_show_missed_v2", params };
     if (charge.charge !== "nothing") return { template: "no_show_charged_credit_v1", params };
     return {
       template: credit === "restored" ? "no_show_waived_credit_back_v1" : "no_show_waived_credit_gone_v1",
