@@ -12,6 +12,7 @@ import type { App } from "../http/context.ts";
 import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { visitorOf } from "../http/visitor.ts";
+import { isForeignError } from "../policy/client-errors.ts";
 
 /**
  * An invite's landing, "/r/MM4417": its code is a person's own, so it is taken out of every part of a report that can
@@ -70,7 +71,9 @@ export function registerClientErrors(app: App): void {
     if (!within) return refuse(c, "rate_limited");
 
     const { request_id: refusedRequestId, ...report } = c.req.valid("json");
-    c.var.log.error("client_error", {
+    // Thrown by code the browser put into the page, not ours: kept, but out of Sentry's errors.
+    const foreign = isForeignError(report, new URL(c.req.url).origin);
+    c.var.log[foreign ? "info" : "error"](foreign ? "client_error_foreign" : "client_error", {
       app: c.var.surface,
       ...report,
       path: report.path.replace(INVITE_LANDING, "/r/"),
