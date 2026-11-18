@@ -34,7 +34,7 @@ describe("the registry signatures step", () => {
   // npm's signature check fails for days at a time, so it runs only where a package comes in: a signature is
   // verified when a lockfile brings the package in, and the lockfile's integrity hash holds every later install to
   // those bytes.
-  it("runs when a pull request changes a package.json or the lockfile, and only then", () => {
+  it("runs when a pull request changes a package.json, the lockfile or the audit, and only then", () => {
     expect(signatures.if).toBe("needs.changes.outputs.dependencies == 'true'");
     expect(jobOf(CI, "changes").outputs?.dependencies).toBe("${{ steps.filter.outputs.dependencies }}");
     const filter = stepOf(jobOf(CI, "changes"), "Anything a build, a Worker or a browser can see, and any migration");
@@ -44,7 +44,9 @@ describe("the registry signatures step", () => {
         .outputs.dependencies;
     expect(changed(["src/app.ts", "apps/app/package.json"])).toBe("true");
     expect(changed(["package-lock.json"])).toBe("true");
-    expect(changed(["src/app.ts", "docs/runbook.md"])).not.toBe("true");
+    expect(changed(["scripts/ci/audit.ts"])).toBe("true");
+    expect(changed(["scripts/lib/audit.ts"])).toBe("true");
+    expect(changed(["src/app.ts", "docs/runbook.md", "scripts/lib/audit-log.ts"])).not.toBe("true");
   });
 });
 
