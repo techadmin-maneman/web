@@ -14296,7 +14296,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -14394,7 +14394,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "at_risk_client" | "city_matter" | "kit_request" | "reschedule_request" | "made_to_order_ask";
+                    group: "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "at_risk_client" | "city_matter" | "kit_request" | "reschedule_request" | "made_to_order_ask" | "message_undelivered";
                     id: string;
                 };
                 cookie?: never;
@@ -29260,7 +29260,7 @@ export interface components {
              * @description Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.
              * @enum {string}
              */
-            message_state: "delivered" | "sent" | "not_sent" | "no_consent" | "none";
+            message_state: "delivered" | "sent" | "not_delivered" | "not_sent" | "no_consent" | "none";
             /** @description When WhatsApp reported it delivered; null if it never did. */
             message_delivered_at: string | null;
             /** Format: date-time */
@@ -29529,7 +29529,7 @@ export interface components {
              * @description What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.
              * @enum {string}
              */
-            message_state: "delivered" | "sent" | "not_sent" | "no_consent" | "none";
+            message_state: "delivered" | "sent" | "not_delivered" | "not_sent" | "no_consent" | "none";
             message_delivered_at: string | null;
             closed_at: string | null;
         };
@@ -29553,7 +29553,7 @@ export interface components {
             lapsed: number;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -29784,6 +29784,13 @@ export interface components {
             technician: string;
             /** @description What the client last said wasn't right before then; null where they never flagged. */
             flag: string | null;
+        } | {
+            /** @enum {string} */
+            group: "message_undelivered";
+            /** @description The message's kind, as visit_cancelled or tryon_result. */
+            kind: string;
+            /** @description WhatsApp's code for why it refused, as 131049 (its cap on marketing messages); null for none. */
+            code: string | null;
         } | {
             /** @enum {string} */
             group: "low_rating";

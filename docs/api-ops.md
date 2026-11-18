@@ -49346,6 +49346,7 @@ Request body:
       "enum": [
         "delivered",
         "sent",
+        "not_delivered",
         "not_sent",
         "no_consent",
         "none"
@@ -50493,6 +50494,7 @@ Request body:
       "enum": [
         "delivered",
         "sent",
+        "not_delivered",
         "not_sent",
         "no_consent",
         "none"
@@ -50621,6 +50623,7 @@ Request body:
               "unassigned_visit",
               "recall_call",
               "unanswered_chat",
+              "message_undelivered",
               "city_matter",
               "remedy_approval",
               "leave_conflict",
@@ -51599,6 +51602,34 @@ Request body:
         "reason",
         "technician",
         "flag"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "message_undelivered"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "description": "The message's kind, as visit_cancelled or tryon_result."
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "WhatsApp's code for why it refused, as 131049 (its cap on marketing messages); null for none."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "code"
       ],
       "additionalProperties": false
     },

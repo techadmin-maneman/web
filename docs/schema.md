@@ -1987,7 +1987,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`, `0221_refused_messages.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2015,6 +2015,7 @@ Indexes:
 - `outbound_messages_by_state`: on (`state`, `queued_at`)
 - `outbound_messages_by_subject`: on (`subject_id`)
 - `outbound_messages_one_arrival`: unique on (`subject_id`), where `kind = 'arrival_notice'`
+- `outbound_messages_refused`: on (`created_at`), where `state = 'failed' AND provider_message_id IS NOT NULL`
 
 Triggers: `client_app_alerts_beside_messages`, `client_app_alerts_beside_messages_ready`.
 

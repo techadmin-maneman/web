@@ -1,11 +1,14 @@
 // What any messaging provider reports to us, in one shape (docs/decisions/0197-one-inbound-port.md): a receipt for a
-// message we sent, which fills in outbound_messages.delivered_at and read_at for the no-show evidence; or a message
+// message we sent, which fills in outbound_messages.delivered_at and read_at for the no-show evidence; WhatsApp's
+// refusal of one, which marks it failed with WhatsApp's code for Care to tell the client another way
+// (docs/decisions/0276-a-message-whatsapp-refuses.md); or a message
 // someone sent our number, filed in the Care inbox, answered out of hours, and, a STOP among them, withdrawing its
 // sender's WhatsApp consents (src/domain/messages/stop-messages.ts). Each provider's hook reads its own payloads into
 // these (src/routes/hooks/), so receipts, replies and STOP work the same whichever sends.
 
 import type { MessagingSettings } from "../../config/settings.ts";
 import type { CareHours } from "../../policy/care-hours.ts";
+import { refusalError } from "../../policy/message-refusals.ts";
 import { isStopReply } from "../../policy/consents.ts";
 import type { MessagingProvider } from "../../providers/messaging/index.ts";
 import { answerAfterHours } from "../care/after-hours.ts";
@@ -18,6 +21,13 @@ export type Inbound =
       /** The provider's ID for the message we sent, as its send answered. */
       readonly providerMessageId: string;
       readonly read: boolean;
+    }
+  | {
+      readonly kind: "refusal";
+      /** The provider's ID for the message we sent, as its send answered. */
+      readonly providerMessageId: string;
+      /** WhatsApp's code for why, as 131049; null where the report gave none. */
+      readonly code: string | null;
     }
   | {
       readonly kind: "message";
@@ -42,14 +52,19 @@ export interface InboundContext {
 /** A request carrying more than this many receipts or messages has the rest ignored. */
 const MOST_INBOUND = 50;
 
-/** Takes what a provider reported; how many receipts were new, messages filed and senders stopped. */
+/** Takes what a provider reported; how many receipts and refusals were new, messages filed and senders stopped. */
 export async function takeInbound(context: InboundContext, events: readonly Inbound[]) {
   let receipts = 0;
+  let refused = 0;
   let filed = 0;
   let stopped = 0;
   for (const event of events.slice(0, MOST_INBOUND)) {
     if (event.kind === "receipt") {
       receipts += await recordReceipt(context, event);
+      continue;
+    }
+    if (event.kind === "refusal") {
+      refused += await recordRefusal(context, event);
       continue;
     }
     // A message reported again, or a captured request replayed, files nothing and answers or stops nothing again.
@@ -72,7 +87,25 @@ export async function takeInbound(context: InboundContext, events: readonly Inbo
     stopped += 1;
     await context.queue(answerId);
   }
-  return { receipts, filed, stopped };
+  return { receipts, refused, filed, stopped };
+}
+
+/**
+ * Marks our message failed, with WhatsApp's code: one sent and not yet delivered, so a report repeated, or one coming
+ * after a receipt, changes nothing.
+ */
+async function recordRefusal(
+  { db }: InboundContext,
+  refusal: Extract<Inbound, { kind: "refusal" }>,
+): Promise<number> {
+  const result = await db
+    .prepare(
+      `UPDATE outbound_messages SET state = 'failed', last_error = ?2
+       WHERE provider_message_id = ?1 AND state = 'sent' AND delivered_at IS NULL`,
+    )
+    .bind(refusal.providerMessageId, refusalError(refusal.code))
+    .run();
+  return result.meta.changes;
 }
 
 /** Marks our message delivered, and read if it was. The first report of each wins. */

@@ -86,6 +86,8 @@ export const tasks = {
     recall_call: "Recall call",
     // Not drawn: a chat past its reply-by time (docs/decisions/0132-the-reply-clock.md).
     unanswered_chat: "Unanswered chat",
+    // Not drawn: a message WhatsApp refused (docs/decisions/0276-a-message-whatsapp-refuses.md).
+    message_undelivered: "Message not delivered",
     // Not drawn: a matter Care sent to the city (docs/decisions/0135-city-matters.md).
     city_matter: "City matter",
     // Not drawn: a remedy above the limit, for a manager (docs/decisions/0143-remedies.md).
@@ -304,6 +306,9 @@ export const tasks = {
     disputedCredit: "a free service visit",
     /** "Waiting since 21 Sep, 9:12 pm": the client's last message, unanswered past its reply-by time. */
     unanswered_chat: (since: string) => `Waiting since ${since}`,
+    /** "Visit cancelled · WhatsApp refused it (131049)". */
+    message_undelivered: (kind: string, code: string | null) =>
+      `${kind} · WhatsApp refused it${code === null ? "" : ` (${code})`}`,
     /** Care's note to the city team, as they wrote it. */
     city_matter: (note: string) => note,
     /** "2 free service visits"; why is in the Remedies panel on Messages. */
@@ -382,6 +387,8 @@ export const tasks = {
     consumablesShort: { open: "Checked", label: "What the kit showed" },
     /** A fit closed without sign-off closes once Care have called the client. */
     fitUnsigned: { open: "Called", label: "What the client said" },
+    /** A message not delivered closes once Care have told the client another way, with how. */
+    messageUndelivered: { open: "Told", label: "How the client was told" },
     /** A fit guarantee claim closes with what was done: a refit, or a refund. */
     guaranteeClaim: { open: "Done", label: "What was done" },
     /** A low rating closes once Care have called, with what the client said. */

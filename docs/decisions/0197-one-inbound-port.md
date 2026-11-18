@@ -1,6 +1,6 @@
 # 0197. One inbound port
 
-- Status: accepted, on the owner's ruling of 13 October 2026
+- Status: accepted, on the owner's ruling of 13 October 2026. Amended 18 November 2026 by [0276](0276-a-message-whatsapp-refuses.md): the port takes WhatsApp's refusal of a message as well as its receipt.
 - Date: 2026-10-13
 - Topic: Messages and the CRM
 - Amends [0114](0114-whatsapp-business-platform-through-msg91.md)
