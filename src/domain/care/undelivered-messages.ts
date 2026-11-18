@@ -1,6 +1,6 @@
 // A WhatsApp message WhatsApp refused after the provider took it (docs/decisions/0276-a-message-whatsapp-refuses.md),
 // as Care's Tasks board reads it: about the client's visit, money or look, so Care tell them another way, and close
-// the task with what was done. The inbound port marks it failed (./inbound.ts).
+// the task with what was done. The inbound port marks it failed (../messages/inbound.ts).
 
 import { REFUSALS_NOT_CHASED } from "../../policy/message-refusals.ts";
 

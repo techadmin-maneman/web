@@ -21,7 +21,6 @@ import {
 } from "../../config/statuses.ts";
 import type { SqlValue } from "../../lib/sql.ts";
 import { REFUND_OWED_FAILED, REFUND_OWED_LET_GO } from "../money/payment-refunds.ts";
-import { MESSAGES_UNDELIVERED } from "../messages/refused-messages.ts";
 import { UNASSIGNED_VISITS, VISITS_LEFT_OPEN } from "../dispatch/unassigned.ts";
 
 /**
@@ -331,10 +330,6 @@ export const QUEUES: readonly Queue[] = [
    WHERE s.state = 'declined' AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'fit_unsigned' AND c.subject_id = a.id)`,
   },
-  // A message about the client's visit, money or look that WhatsApp refused
-  // (docs/decisions/0276-a-message-whatsapp-refuses.md): from its send, until Care have told the client another way
-  // and closed it with what was done.
-  { group: "message_undelivered", sql: MESSAGES_UNDELIVERED },
   // A visit the client rated low, under ops' setting when rated (docs/decisions/0260-ratings.md): from the rating, until
   // Care have called the client and closed it with what came of it.
   {

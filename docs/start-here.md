@@ -236,7 +236,7 @@ this map, or when the map names something that no longer exists.
 ### Messages
 
 - **Database work** (`src/domain/messages/`): `queued-messages`, `visit-messages`, `visit-message-text`, `technician-updates` (a word from the job card), `move-proposal-text`, `stop-messages`, `inbound` (what any provider reports, in one shape),
-  `paced-line`, `refused-messages` (Care's queue of messages WhatsApp refused)
+  `paced-line`
 - **Rules** (`src/policy/`): `message-pacing`, `message-refusals`
 - **Data** (`src/config/`): `message-templates`, `message-kinds`
 - **Vendor** (`src/providers/`): `messaging/`
@@ -247,7 +247,7 @@ this map, or when the map names something that no longer exists.
 
 ### The Care inbox
 
-- **Database work** (`src/domain/care/`): `inbox`, `chat-opened` (the chat a client's words open, from WhatsApp or the app), `replies`, `care-people` (each client's named Care person), `chat-tasks` (a chat past its reply-by time, on Tasks), `after-hours` (the answer to a message sent while Care are off), `cover` (the team's days off and who covers them), `city-matters` (what Care send to a client's city), `strangers` (a chat from a number we don't know, linked or saved), `quick-replies` (saved answers), `remedies` (free visits Care give, and their approval), `care-numbers` (whether the same-day promise holds), `app-reports` (something wrong told from the app), `issue-log` (the client's reports with their state and thread), `report-photos` (the photographs sent with them), `chat-archive` (a client's thread quiet a year, moved to the backups bucket)
+- **Database work** (`src/domain/care/`): `inbox`, `chat-opened` (the chat a client's words open, from WhatsApp or the app), `replies`, `care-people` (each client's named Care person), `chat-tasks` (a chat past its reply-by time, on Tasks), `undelivered-messages` (a message WhatsApp refused, on Tasks), `after-hours` (the answer to a message sent while Care are off), `cover` (the team's days off and who covers them), `city-matters` (what Care send to a client's city), `strangers` (a chat from a number we don't know, linked or saved), `quick-replies` (saved answers), `remedies` (free visits Care give, and their approval), `care-numbers` (whether the same-day promise holds), `app-reports` (something wrong told from the app), `issue-log` (the client's reports with their state and thread), `report-photos` (the photographs sent with them), `chat-archive` (a client's thread quiet a year, moved to the backups bucket)
 - **Routes** (`src/routes/`): `ops/conversations`, `ops/care-people`, `ops/care-rota`, `ops/city-matters`, `ops/strangers`, `ops/quick-replies`, `ops/remedies`, `ops/care-numbers`, `hooks/evolution` (files what clients write), `client/problems`
 - **Screens:** `apps/ops/src/care/` (Messages, the thread, its client panel, City matters, remedies, quick replies, the Care team and its numbers)
 - **Tests:** `test/worker/care/`, `test/dom/ops-messages.test.ts`, `test/dom/ops-care-numbers.test.ts`, `e2e/ops/messages.e2e.ts`

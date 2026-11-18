@@ -94,10 +94,7 @@ export async function takeInbound(context: InboundContext, events: readonly Inbo
  * Marks our message failed, with WhatsApp's code: one sent and not yet delivered, so a report repeated, or one coming
  * after a receipt, changes nothing.
  */
-async function recordRefusal(
-  { db }: InboundContext,
-  refusal: Extract<Inbound, { kind: "refusal" }>,
-): Promise<number> {
+async function recordRefusal({ db }: InboundContext, refusal: Extract<Inbound, { kind: "refusal" }>): Promise<number> {
   const result = await db
     .prepare(
       `UPDATE outbound_messages SET state = 'failed', last_error = ?2

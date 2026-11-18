@@ -35,7 +35,8 @@ export const TEMPLATES = {
   visit_booked_code_v1:
     "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. Your discount code covers it: nothing to pay.",
   // A consultation and fit in one visit a discount code made free, once the client is fitted.
-  visit_fitted_code_v2: "Hi {{1}}, your visit today is done.\nYour discount code covers your hair system: nothing to pay.",
+  visit_fitted_code_v2:
+    "Hi {{1}}, your visit today is done.\nYour discount code covers your hair system: nothing to pay.",
   visit_reminder_v1:
     "Hi {{1}}, see you tomorrow.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. Need to move it? Open the Mane Man app.",
   visit_moved_v1:
