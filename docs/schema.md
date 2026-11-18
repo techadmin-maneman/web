@@ -3870,7 +3870,7 @@ Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons
 | `failure_reason` | TEXT | yes |  |  |  |
 | `render_key` | TEXT | yes |  |  | A sha256 over the photograph's own bytes, the look and the references' version. |
 | `renders` | INTEGER | no | `0` |  | The renders YouCam took for the job: one more is made when its model fails or runs out of time. |
-| `look_shown_at` | TEXT | yes |  |  |  |
+| `look_shown_at` | TEXT | yes |  |  | When the client app showed a look WhatsApp refused, once, after sign-in; null until then, or for a look delivered. |
 
 Indexes:
 

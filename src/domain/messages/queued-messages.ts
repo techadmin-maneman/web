@@ -27,7 +27,8 @@ export function queueMessage(db: D1Database, message: QueuedMessage): D1Prepared
 
 /**
  * Messages sent before `before`, the oldest first, at most `limit` of them, deleted, unless a no-show or a move holds
- * one as its evidence (src/policy/retention.ts).
+ * one as its evidence, or a closed "Message not delivered" task names it, so erasing the client still finds Care's
+ * words on it (src/policy/retention.ts).
  */
 export function expiredMessagesStatement(db: D1Database, before: string, limit: number): D1PreparedStatement {
   return db
