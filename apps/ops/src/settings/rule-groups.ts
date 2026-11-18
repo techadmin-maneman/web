@@ -57,7 +57,14 @@ export const RULE_GROUPS = [
   { id: "stock", rules: ["stock_watch", "stock_usage", "stock_quality", "cycle_counts", "kit_check"] },
   {
     id: "purchasing",
-    rules: ["po_second_approval_above_rupees", "po_rupees_to_one", "custom_order_grace_days", "scorecard_days"],
+    rules: [
+      "po_second_approval_above_rupees",
+      "po_own_approval",
+      "po_rupees_to_one",
+      "receipt_checks",
+      "custom_order_grace_days",
+      "scorecard_days",
+    ],
   },
   { id: "supply_plan", rules: ["planning_period_days", "planning_horizon_periods", "forecast_assumptions"] },
   { id: "limits", rules: ["daily_ceilings"] },

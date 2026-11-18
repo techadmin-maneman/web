@@ -11,6 +11,8 @@ import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
+import { checkedPoints, QC_POINTS } from "../../policy/receipt-checks.ts";
 import { after, Note, orderPath, ORDERS, ordersAnswer, written } from "./purchasing.ts";
 
 const Count = z.number().int().min(0).max(1_000_000);
@@ -26,6 +28,15 @@ const ReceiptSchema = z
             received: Count.openapi({ description: "Accepted into stock; a hair system's at most MAX_LABELLED." }),
             damaged: Count,
             qc_failed: Count,
+            qc_failed_points: z
+              .array(z.enum(QC_POINTS))
+              .max(QC_POINTS.length)
+              .optional()
+              .openapi({
+                description:
+                  "What a hair system's failed pieces failed, of the checks ops make (receipt_checks); needed where " +
+                  "a hair system's line has qc_failed while ops check any point, and named on no other line.",
+              }),
             lot_code: z.string().trim().min(1).max(40).nullable(),
             expires_on: z.iso.date().nullable(),
           })
@@ -102,10 +113,12 @@ export function registerOpsReceipts(app: App): void {
           received: line.received,
           damaged: line.damaged,
           qcFailed: line.qc_failed,
+          qcFailedPoints: line.qc_failed_points ?? [],
           lotCode: line.lot_code,
           expiresOn: line.expires_on,
         })),
         supplierInvoice: body.supplier_invoice,
+        checks: checkedPoints((await opsInputs(c)).receiptChecks),
         rateMicro: rateOf(body),
         extras: { freight: body.freight_paise, duty: body.duty_paise, clearing: body.clearing_paise },
         note: body.note,

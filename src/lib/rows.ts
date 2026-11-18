@@ -1663,6 +1663,7 @@ export interface Rows {
     readonly photo_id: string | null;
     readonly books_credit_id: string | null;
     readonly books_checked_at: string | null;
+    readonly failed_points: string | null;
   };
   readonly supplier_items: {
     readonly supplier_id: string;

@@ -18,6 +18,7 @@ const BOOK = {
   suppliers: [],
   consumables: [],
   second_approval_above_rupees: 0,
+  receipt_checks: [],
   letterhead: null,
 } satisfies Orders;
 

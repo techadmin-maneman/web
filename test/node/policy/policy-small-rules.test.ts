@@ -135,6 +135,14 @@ describe("the limits on each counted use", () => {
 describe("the stock settings", () => {
   it("each hold their committed figures within their own bounds", () => {
     for (const setting of STOCK_SETTINGS) {
+      // A rule of choices holds one of each key's own choices.
+      if ("choices" in setting) {
+        const choices: Readonly<Record<string, readonly string[]>> = setting.choices;
+        for (const [key, value] of Object.entries(setting.fallback as Readonly<Record<string, string>>)) {
+          expect(choices[key]?.includes(value), `${setting.name}.${key} = ${value}`).toBe(true);
+        }
+        continue;
+      }
       const fallback = setting.fallback as unknown as Readonly<Record<string, number>> | number;
       const values = typeof fallback === "number" ? { value: fallback } : fallback;
       for (const [key, value] of Object.entries(values)) {

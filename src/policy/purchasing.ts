@@ -16,6 +16,21 @@ export const PO_SECOND_APPROVAL_ABOVE_RUPEES = 50_000;
  */
 export const PO_RUPEES_TO_ONE: Readonly<Record<string, number>> = { default: 0 };
 
+/**
+ * Whether an order approved by the Operations manager who drafted it needs a second approver for that alone. Until ops
+ * set it, not: one manager drafts and approves most orders, and the amount above already asks for two.
+ */
+export const PO_OWN_APPROVAL_KEYS = ["drafter"] as const;
+export const PO_OWN_APPROVAL_CHOICES = ["alone", "second"] as const;
+export const PO_OWN_APPROVAL: Readonly<Record<(typeof PO_OWN_APPROVAL_KEYS)[number], string>> = { drafter: "alone" };
+
+/** Whether this order's first approver drafted it, where ops have set such an order to need a second approver. */
+export const ownApprovalNeedsSecond = (
+  order: { readonly draftedBy: string },
+  firstApprover: string | null,
+  ownApproval: string,
+): boolean => ownApproval === "second" && firstApprover !== null && firstApprover === order.draftedBy;
+
 export const PO_STATES = ["drafted", "approved", "sent", "part_received", "received", "closed", "cancelled"] as const;
 export type PoState = (typeof PO_STATES)[number];
 

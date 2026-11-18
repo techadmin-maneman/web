@@ -11,7 +11,15 @@ import {
 } from "./forecast.ts";
 import { KIT_CHECK, KIT_CHECK_KEYS } from "./kit-check.ts";
 import type { OpsSetting } from "./ops-settings.ts";
-import { CUSTOM_ORDER_GRACE_DAYS, PO_RUPEES_TO_ONE, PO_SECOND_APPROVAL_ABOVE_RUPEES } from "./purchasing.ts";
+import {
+  CUSTOM_ORDER_GRACE_DAYS,
+  PO_OWN_APPROVAL,
+  PO_OWN_APPROVAL_CHOICES,
+  PO_OWN_APPROVAL_KEYS,
+  PO_RUPEES_TO_ONE,
+  PO_SECOND_APPROVAL_ABOVE_RUPEES,
+} from "./purchasing.ts";
+import { QC_CHOICES, QC_POINTS, RECEIPT_CHECKS } from "./receipt-checks.ts";
 import { STOCK_WATCH, STOCK_WATCH_KEYS } from "./stock.ts";
 import { STOCK_QUALITY, STOCK_QUALITY_KEYS } from "./stock-quality.ts";
 import { STOCK_USAGE, STOCK_USAGE_KEYS } from "./stock-usage.ts";
@@ -128,6 +136,23 @@ export const STOCK_SETTINGS = [
     max: 100_000_000,
     keys: null,
     fallback: PO_SECOND_APPROVAL_ABOVE_RUPEES,
+  },
+  {
+    name: "po_own_approval",
+    title: "An order its drafter approves",
+    note: "Whether an order approved by the Operations manager who drafted it needs a second manager to approve it too, whatever it is worth.",
+    keys: PO_OWN_APPROVAL_KEYS,
+    choices: { drafter: PO_OWN_APPROVAL_CHOICES },
+    fallback: PO_OWN_APPROVAL,
+  },
+  {
+    // What a hair system is checked against as it arrives (docs/decisions/0169-supplier-claims.md).
+    name: "receipt_checks",
+    title: "Checks on a hair system that arrives",
+    note: "Which points each hair system is checked against as it arrives. A piece that fails names those it failed, and its claim on the supplier carries them.",
+    keys: QC_POINTS,
+    choices: Object.fromEntries(QC_POINTS.map((point) => [point, QC_CHOICES])),
+    fallback: RECEIPT_CHECKS,
   },
   {
     name: "po_rupees_to_one",
