@@ -7010,7 +7010,7 @@ export interface paths {
                                 };
                                 /** Format: date */
                                 fitted_on: string;
-                                signals: ("shared_address" | "shared_upi" | "monthly_cap" | "same_mobile" | "attached_after_fit")[];
+                                signals: ("shared_address" | "shared_upi" | "monthly_cap" | "same_mobile" | "attached_after_fit" | "fit_not_signed")[];
                                 /**
                                  * Format: date-time
                                  * @description When the fraud rules held it for review.
@@ -14873,7 +14873,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** What is left of a captured payment refunded, with why: one the client made twice */
+        /** What is left of a captured payment, or part of it, refunded with why: one the client made twice */
         post: {
             parameters: {
                 query?: never;
@@ -14898,7 +14898,7 @@ export interface paths {
                         "application/json": components["schemas"]["PaymentRefunded"];
                     };
                 };
-                /** @description invalid_request: no reason given */
+                /** @description invalid_request: no reason given, an amount of nothing or above what is left, or a part with no key (fields) */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -30039,6 +30039,13 @@ export interface components {
         };
         PaymentRefund: {
             reason: string;
+            /** @description In paise: part of what is left, given back. Left out, all that is left goes back. */
+            amount?: number;
+            /**
+             * Format: uuid
+             * @description With an amount: the key the console's drawer made once, when it opened. A part refund pressed again from the same drawer shares it, so Razorpay makes it once.
+             */
+            key?: string;
         };
         PaymentLinkResent: {
             /**

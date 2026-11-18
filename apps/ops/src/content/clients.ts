@@ -547,13 +547,17 @@ export const clients = {
     refundOpen: "Refund",
     refundLabel: (amount: string) => `Refund ${amount} of this payment`,
     refundReason: "Why",
+    refundAmount: "Amount, Rs.",
+    /** What is wrong with the amount typed: more than is left, or nothing. */
+    refundAmountOver: (left: string) => `No more than ${left}.`,
+    refundAmountNone: "Enter an amount.",
     refundConfirm: (amount: string) => `Refund ${amount}`,
     refundAsked: (amount: string) => `Refund of ${amount} on its way.`,
     refundErrors: {
       refund_not_due: "Already refunded, or a refund is on its way.",
       paid_by_upi: "Paid by UPI at the visit: refund it by UPI from the bank.",
       unavailable: "Razorpay didn’t make the refund. Make it by hand in Razorpay, once.",
-      invalid_request: "Say why.",
+      invalid_request: "Say why, and give an amount no more than is left.",
       not_found: "This payment can’t be refunded here.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,

@@ -66,7 +66,7 @@ describe("POST /api/holds", () => {
       technician: { name: "Imran Qureshi", initials: "IQ" },
       price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
       late_fee: null,
-      // Moving is free until 24 hours before the window opens, and a service visit moved later is charged.
+      // Moving is free until 24 hours before the visit starts, and a service visit moved later is charged.
       free_until: "2026-09-21T06:30:00.000Z",
       change_notice_hours: 24,
       late_change_charge: "visit",
@@ -74,6 +74,19 @@ describe("POST /api/holds", () => {
       // A payment still counts for the two minutes' grace after the ten.
       pay_by: "2026-09-21T06:42:00.000Z",
       state: "held",
+    });
+  });
+
+  // A start inside a window counts its notice from itself: 10:30 is free to change until 10:30 the day before, not
+  // until 09:00, when the morning window opens.
+  it("is free to change until 24 hours before the start chosen", async () => {
+    const rohit = await client();
+    const morning = { type: "service", date: "2026-09-22", starts_at: "2026-09-22T05:00:00.000Z" };
+    const answer = await hold(rohit, morning);
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({
+      starts_at: "2026-09-22T05:00:00.000Z",
+      free_until: "2026-09-21T05:00:00.000Z",
     });
   });
 

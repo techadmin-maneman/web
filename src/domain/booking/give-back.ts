@@ -160,11 +160,12 @@ async function refundOnce({
     .bind(now.toISOString(), holdId)
     .first<string>("person_id");
   if (claimedFor === null) return { kind: "refunded_before", paymentId: payment.razorpay_payment_id };
-  const asked = await askRefund(payments, payment.razorpay_payment_id, {
-    amount: payment.amount,
-    notes: { hold_id: holdId, reason },
-    receipt: refundReceipt({ kind: "hold", holdId }),
-  });
+  const asked = await askRefund(
+    payments,
+    payment.razorpay_payment_id,
+    { amount: payment.amount, notes: { hold_id: holdId, reason }, receipt: refundReceipt({ kind: "hold", holdId }) },
+    { record: { db, now } },
+  );
   if (asked.kind === "refunded") {
     return { kind: "refunded", paymentId: payment.razorpay_payment_id, amount: payment.amount };
   }

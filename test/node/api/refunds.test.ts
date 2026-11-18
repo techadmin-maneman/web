@@ -7,6 +7,22 @@ import { PaymentUnanswered } from "../../../src/providers/provider-error.ts";
 
 const ASKED = { amount: 50_000, notes: { appointment_id: "visit-1" }, receipt: "c-visit-1" };
 
+/** Where a refund Razorpay took is written down: here a database that takes the write and keeps it. */
+const written: unknown[][] = [];
+const RECORD = {
+  db: {
+    prepare: () => ({
+      bind: (...values: unknown[]) => ({
+        run: () => {
+          written.push(values);
+          return Promise.resolve({});
+        },
+      }),
+    }),
+  } as unknown as D1Database,
+  now: new Date("2026-09-21T06:30:00.000Z"),
+};
+
 /** Razorpay answering each ask in turn: a refund's ID, a refusal, or no answer. */
 function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[]) {
   const asked: string[] = [];
@@ -33,45 +49,69 @@ function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[])
 }
 
 describe("askRefund", () => {
+  // The refund is made by the time the write fails: calling it refused would send ops to refund it again by hand.
+  it("lets a failed write of a refund Razorpay made go up, never answering it as refused", async () => {
+    const { payments, asked } = razorpay("made");
+    const failing = {
+      db: {
+        prepare: () => ({ bind: () => ({ run: () => Promise.reject(new Error("D1_ERROR: overloaded")) }) }),
+      } as unknown as D1Database,
+      now: RECORD.now,
+    };
+    await expect(askRefund(payments, "pay_1", ASKED, { record: failing })).rejects.toThrow("D1_ERROR");
+    expect(asked).toEqual(["c-visit-1"]);
+  });
+
   it("answers the refund Razorpay made", async () => {
     const { payments, asked } = razorpay("made");
-    expect(await askRefund(payments, "pay_1", ASKED)).toEqual({ kind: "refunded", refundId: "rfnd_1" });
+    expect(await askRefund(payments, "pay_1", ASKED, { record: RECORD })).toEqual({
+      kind: "refunded",
+      refundId: "rfnd_1",
+    });
     expect(asked).toEqual(["c-visit-1"]);
   });
 
   it("takes a refusal as one, and asks nothing more", async () => {
     const { payments, asked } = razorpay("refused", "made");
-    expect(await askRefund(payments, "pay_1", ASKED)).toMatchObject({ kind: "refused" });
+    expect(await askRefund(payments, "pay_1", ASKED, { record: RECORD })).toMatchObject({ kind: "refused" });
     expect(asked).toHaveLength(1);
   });
 
   it("asks once more, under the same receipt, when Razorpay gave no answer", async () => {
     const made = razorpay("silent", "made");
-    expect(await askRefund(made.payments, "pay_1", ASKED)).toEqual({ kind: "refunded", refundId: "rfnd_1" });
+    expect(await askRefund(made.payments, "pay_1", ASKED, { record: RECORD })).toEqual({
+      kind: "refunded",
+      refundId: "rfnd_1",
+    });
     expect(made.asked).toEqual(["c-visit-1", "c-visit-1"]);
 
     const madeBefore = razorpay("silent", "made before");
-    expect(await askRefund(madeBefore.payments, "pay_1", ASKED)).toEqual({ kind: "refunded", refundId: null });
+    expect(await askRefund(madeBefore.payments, "pay_1", ASKED, { record: RECORD })).toEqual({
+      kind: "refunded",
+      refundId: null,
+    });
   });
 
   it("leaves it unanswered after two silences, or a refusal after one, since the first may have refunded", async () => {
-    expect(await askRefund(razorpay("silent", "silent").payments, "pay_1", ASKED)).toMatchObject({
+    expect(await askRefund(razorpay("silent", "silent").payments, "pay_1", ASKED, { record: RECORD })).toMatchObject({
       kind: "unanswered",
     });
     const refusedAfter = razorpay("silent", "refused", "made");
-    expect(await askRefund(refusedAfter.payments, "pay_1", ASKED)).toMatchObject({ kind: "unanswered" });
+    expect(await askRefund(refusedAfter.payments, "pay_1", ASKED, { record: RECORD })).toMatchObject({
+      kind: "unanswered",
+    });
     expect(refusedAfter.asked).toHaveLength(2);
   });
 
   it("takes no refusal as one for a refund asked before, which may have been made then", async () => {
     const refused = razorpay("refused", "refused", "made");
-    expect(await askRefund(refused.payments, "pay_1", ASKED, { askedBefore: true })).toMatchObject({
+    expect(await askRefund(refused.payments, "pay_1", ASKED, { askedBefore: true, record: RECORD })).toMatchObject({
       kind: "unanswered",
     });
     expect(refused.asked).toHaveLength(2);
 
     const madeBefore = razorpay("made before");
-    expect(await askRefund(madeBefore.payments, "pay_1", ASKED, { askedBefore: true })).toEqual({
+    expect(await askRefund(madeBefore.payments, "pay_1", ASKED, { askedBefore: true, record: RECORD })).toEqual({
       kind: "refunded",
       refundId: null,
     });
@@ -88,9 +128,24 @@ describe("refundReceipt", () => {
       refundReceipt({ kind: "no_show", why: "waived", appointmentId: ID }),
       refundReceipt({ kind: "no_show", why: "charged", appointmentId: ID }),
       refundReceipt({ kind: "no_show", why: "refunded on dispute", appointmentId: ID }),
+      refundReceipt({ kind: "payment", paymentId: ID }),
+      refundReceipt({ kind: "payment_part", key: ID }),
+      refundReceipt({ kind: "custom_order", orderId: ID }),
     ];
     expect(new Set(receipts).size).toBe(receipts.length);
     for (const receipt of receipts) expect(receipt.length).toBeLessThanOrEqual(40);
     expect(receipts[0]).toBe(`h-${ID}`);
+  });
+
+  // Each part has the key of the drawer it was asked from, so a part pressed again shares its receipt, and the next
+  // part, from a drawer opened again, has its own.
+  it("gives a part the key of its drawer, and all that is left the payment's own", () => {
+    const again = "33333333-3333-4333-8333-333333333333";
+    expect(refundReceipt({ kind: "payment", paymentId: ID })).toBe(`p-${ID}`);
+    expect(refundReceipt({ kind: "payment_part", key: ID })).toBe(`pp-${ID}`);
+    expect(refundReceipt({ kind: "payment_part", key: ID })).toBe(refundReceipt({ kind: "payment_part", key: ID }));
+    expect(refundReceipt({ kind: "payment_part", key: again })).not.toBe(
+      refundReceipt({ kind: "payment_part", key: ID }),
+    );
   });
 });

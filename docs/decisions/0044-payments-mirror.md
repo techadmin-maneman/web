@@ -1,6 +1,6 @@
 # 0044. The payments mirror
 
-- Status: accepted. Amended by ADR 0068: a refusal from Books is told to ops, once, as well as logged. Amended by ADR 0068: a capture confirms its hold, and a payment keeps its GST. Amended 2 October 2026: payment links number from the same series, and a link's payment takes the reference its link was made under. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a payment is applied to the Books invoice we make, not to one of FSM's.
+- Status: accepted. Amended by ADR 0068: a refusal from Books is told to ops, once, as well as logged. Amended by ADR 0068: a capture confirms its hold, and a payment keeps its GST. Amended 2 October 2026: payment links number from the same series, and a link's payment takes the reference its link was made under. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a payment is applied to the Books invoice we make, not to one of FSM's. Amended 18 November 2026: a refund we ask for is written when Razorpay takes it, before its event.
 - Date: 2026-09-22
 - Topic: Money and Books
 
@@ -24,7 +24,7 @@ Checkout, orders and refunds from our side arrive with self-serve booking (P2-M5
 - It checks the signature over the raw body before anything else. Without `RAZORPAY_WEBHOOK_SECRET` the route answers 404, as the other hooks do without their secret. The secret must be at least 32 characters, and self-serve booking does not start without it.
 - Each event is kept once in `razorpay_events`, by its event ID. A repeat is acknowledged and changes nothing.
 
-**`payments` and `refunds` follow the events** (migration 0014, `src/domain/money/payments.ts`).
+**`payments` and `refunds` follow the events** (migration 0014, `src/domain/money/payments.ts`). **Amended 18 November 2026:** a refund we ask for is also written, as `created`, the moment Razorpay takes it (`askRefund`, `src/domain/money/refunds.ts`), so what is left of its payment counts it before the event lands. The event then finds the row by its refund ID and moves it on.
 
 - **A payment's state only moves forward:** failed, authorized, captured, partially refunded, refunded. An authorization arriving after its capture changes nothing. A late authorization does overtake a failure, as Razorpay's late authorisations can.
 - **A refund's processed amount** sets the payment's refunded total and state.

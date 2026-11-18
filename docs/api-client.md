@@ -13578,7 +13578,7 @@ Request body:
     },
     "change_notice_hours": {
       "type": "integer",
-      "description": "The notice it is sold under: how many hours before its window moving or cancelling stops being free, as ops set it when the hold was made (24 to begin with)."
+      "description": "The notice it is sold under: how many hours before its start moving or cancelling stops being free, as ops set it when the hold was made (24 to begin with)."
     },
     "late_change_charge": {
       "type": "string",
@@ -13893,7 +13893,7 @@ Request body:
         "free",
         "late"
       ],
-      "description": "free: before the notice the visit was booked under starts, counted back from its window; late: inside it."
+      "description": "free: before the notice the visit was booked under starts, counted back from its start; late: inside it."
     },
     "notice_hours": {
       "type": "integer",
@@ -13982,7 +13982,7 @@ Request body:
         "free",
         "late"
       ],
-      "description": "free: before the notice the visit was booked under starts, counted back from its window; late: inside it."
+      "description": "free: before the notice the visit was booked under starts, counted back from its start; late: inside it."
     },
     "notice_hours": {
       "type": "integer",

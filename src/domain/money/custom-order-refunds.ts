@@ -87,7 +87,7 @@ export async function refundCustomOrder(
       receipt: refundReceipt({ kind: "custom_order", orderId: asked.orderId }),
       notes: { custom_order_id: asked.orderId },
     },
-    { askedBefore },
+    { askedBefore, record: { db, now: written.now } },
   );
   const number = `CU-${String(order.number).padStart(4, "0")}`;
   if (outcome.kind !== "refunded") {

@@ -15,7 +15,10 @@ export async function linkReference(): Promise<string> {
   return (await env.DB.prepare("SELECT reference FROM payment_links").first<string>("reference")) ?? "";
 }
 
-/** Fourteen days after NOW, when a link made at NOW stops taking payment. */
+/** Midnight in India after NOW's day, when a one visit's link made at NOW stops taking payment: it is paid that day. */
+export const END_OF_DAY = new Date("2026-09-21T18:30:00.000Z");
+
+/** Fourteen days after NOW, by when a consultation's First fit to book has long been due. */
 export const TWO_WEEKS_ON = new Date("2026-10-05T06:30:00.000Z");
 
 export const path = (step: string) => `/api/tech/jobs/${JOB}/${step}`;

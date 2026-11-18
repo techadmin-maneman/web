@@ -28,7 +28,7 @@ import { moveTermsFor, startCheckout } from "../../http/client-booking.ts";
 
 const NoticeSchema = z.enum(["free", "late"]).openapi({
   description:
-    "free: before the notice the visit was booked under starts, counted back from its window; late: inside it.",
+    "free: before the notice the visit was booked under starts, counted back from its start; late: inside it.",
 });
 
 const termsOf = (terms: ChangeTerms) => ({
