@@ -28,6 +28,11 @@ const NOT_FOUND = wranglerError("✘ [ERROR] This Worker does not exist on your 
 const UNAUTHORISED = wranglerError("✘ [ERROR] Authentication error [code: 10000]");
 const LOST = wranglerError("✘ [ERROR] fetch failed: terminated");
 const RESET = wranglerError("✘ [ERROR] read ECONNRESET");
+/** What Cloudflare says of a version it took a second before, while it cannot yet find it. */
+const NOT_LISTED_YET = wranglerError(
+  "✘ [ERROR] The requested Worker version could not be found, please check the ID being passed and try again. " +
+    "[code: 100146]",
+);
 
 /** The first line wrangler writes to WRANGLER_OUTPUT_FILE_PATH, before the one naming the version. */
 const SESSION_LINE = JSON.stringify({ type: "wrangler-session", version: 1 });
@@ -200,6 +205,8 @@ interface AccountOptions {
   readonly upload?: Reply;
   readonly deploy?: Reply;
   readonly listRepliesLost?: number;
+  /** How many splits Cloudflare refuses first, not finding the version it took a moment ago. */
+  readonly notListedFor?: number;
 }
 
 function valueAfter(args: readonly string[], flag: string): string {
@@ -215,6 +222,7 @@ function fakeAccount(options: AccountOptions = {}) {
   const versions = [{ id: OLD, tag: "previous" }];
   let split = [{ version_id: serving, percentage: 100 }];
   let listRepliesToLose = options.listRepliesLost ?? 0;
+  let notListedFor = options.notListedFor ?? 0;
   const calls: string[] = [];
 
   function answerUpload(args: readonly string[], outputFile: string): string {
@@ -226,6 +234,10 @@ function fakeAccount(options: AccountOptions = {}) {
   }
 
   function answerDeploy(args: readonly string[]): string {
+    if (notListedFor > 0) {
+      notListedFor--;
+      throw NOT_LISTED_YET;
+    }
     if (deploy === "lost before landing") throw RESET;
     split = args.slice(2, args.indexOf("--yes")).map((share) => {
       const [versionId = "", percentage = ""] = share.split("@");
@@ -367,5 +379,30 @@ describe("a release and a rollback whose replies Cloudflare drops", () => {
     const account = fakeAccount({ serving: NEW, deploy: "lost before landing" });
     expect(() => restore(target("mm-api", "production", account.wrangler), OLD, "rollback")).toThrow("ECONNRESET");
     expect(account.split()).toEqual([{ version_id: NEW, percentage: 100 }]);
+  });
+});
+
+// A version Cloudflare took a second before could not yet be found to send traffic to, twice in a row.
+describe("a split Cloudflare cannot find the new version for yet", () => {
+  it("is asked for again after a wait, and lands", () => {
+    const account = fakeAccount({ notListedFor: 2 });
+    const waits: number[] = [];
+    const site = { ...target("mm-site", "staging", account.wrangler), wait: (ms: number) => waits.push(ms) };
+    expect(() => {
+      deploySplit(site, [`${NEW}@100`], "staging abc123");
+    }).not.toThrow();
+    expect(account.split()).toEqual([{ version_id: NEW, percentage: 100 }]);
+    expect(waits).toEqual([2_000, 4_000]);
+  });
+
+  it("fails after about half a minute of not finding it", () => {
+    const account = fakeAccount({ notListedFor: 9 });
+    const waits: number[] = [];
+    const site = { ...target("mm-site", "staging", account.wrangler), wait: (ms: number) => waits.push(ms) };
+    expect(() => {
+      deploySplit(site, [`${NEW}@100`], "staging abc123");
+    }).toThrow("100146");
+    expect(waits).toEqual([2_000, 4_000, 8_000, 16_000]);
+    expect(account.split()).toEqual([{ version_id: OLD, percentage: 100 }]);
   });
 });
