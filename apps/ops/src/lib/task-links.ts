@@ -47,14 +47,14 @@ export function decidedAt(group: Group, task: Task): string | null {
 }
 
 /**
- * A task's first line: the client's name, or, with no client to name, an erased client's visit, a disputed charge, an
- * erasure to finish in Zoho, or the number a chat came from.
+ * A task's first line: the client's name, or, with no client to name, an erased client's visit, a disputed charge, or
+ * the number a chat came from.
  */
 export function subjectOf(group: Group, task: Task): string {
   if (task.person !== null) return task.person.name;
   if (task.facts.group === "leave_request") return task.facts.technician;
   if (task.facts.group === "kit_request") return task.facts.technician;
-  if (group === "no_show_dispute" || group === "erasure_follow_up") return tasks.disputeErased;
+  if (group === "no_show_dispute") return tasks.disputeErased;
   if (task.facts.group === "unanswered_chat") return task.facts.mobile;
   return tasks.visit(shortDate(indiaDate(task.since)));
 }

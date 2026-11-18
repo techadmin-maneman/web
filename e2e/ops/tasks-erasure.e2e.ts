@@ -22,7 +22,7 @@ export const ERASURE_BOARD: OpsReply<"/api/tasks"> = {
       tasks: [
         {
           id: "99000000-0000-4000-8000-000000000001",
-          person: null,
+          person: { id: "11000000-0000-4000-8000-000000000001", name: "Erased" },
           facts: { group: "erasure_follow_up", lead: "610500000001", person: "11000000-0000-4000-8000-000000000001" },
           detail: "610500000001",
           since: "2027-09-21T06:00:00.000Z",
@@ -31,7 +31,7 @@ export const ERASURE_BOARD: OpsReply<"/api/tasks"> = {
         },
         {
           id: "99000000-0000-4000-8000-000000000002",
-          person: null,
+          person: { id: "11000000-0000-4000-8000-000000000002", name: "Erased" },
           facts: { group: "erasure_follow_up", lead: null, person: "11000000-0000-4000-8000-000000000002" },
           detail: null,
           since: "2027-09-21T07:00:00.000Z",
@@ -61,7 +61,8 @@ test("lists an erasure's leftovers in Zoho, naming the lead, and closes one once
   expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("button", { name: lead }).click();
-  const drawer = page.getByRole("dialog", { name: opsCopy.tasks.disputeErased });
+  // The board names the erased person as their record does: Erased.
+  const drawer = page.getByRole("dialog", { name: "Erased" });
   await drawer.getByRole("button", { name: opsCopy.tasks.close.erasureFollowUp.open }).click();
   // Nothing is asked of ops: the person is erased, and no words are kept about them.
   await expect(drawer.getByRole("textbox")).toHaveCount(0);

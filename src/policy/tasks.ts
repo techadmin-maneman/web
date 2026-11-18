@@ -218,8 +218,8 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
  * client, a fit closed without the client's sign-off, a fit guarantee claim and a low rating, each closed with what
  * came of the call; a City matter, closed with what was done; consumables short of what a job expects, closed once
  * checked against the kit; a technician's asks, for their kit and to move a visit, a client's ask for a hair system
- * made to order, and a message WhatsApp refused, closed with what was done. Every other group leaves the board only
- * when its thing is done.
+ * made to order, and a message WhatsApp refused, closed with what was done; and an erasure finished in the CRM, closed
+ * with no words kept, since its person is erased. Every other group leaves the board only when its thing is done.
  */
 export const CLOSABLE_TASK_GROUPS = [
   "erasure_follow_up",

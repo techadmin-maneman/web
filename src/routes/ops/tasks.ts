@@ -241,7 +241,7 @@ const closeRoute = opsRoute({
           .object({
             reason: z.string().trim().min(1).max(REASON_MAX_CHARS).openapi({
               description:
-                "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased.",
+                "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased, and not kept at all for an erasure finished in the CRM.",
             }),
             failure_reason: z
               .string()

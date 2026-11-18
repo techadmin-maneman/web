@@ -29902,7 +29902,7 @@ export interface components {
             owner: string | null;
         };
         TaskClosing: {
-            /** @description Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased. */
+            /** @description Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased, and not kept at all for an erasure finished in the CRM. */
             reason: string;
             /** @description A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0273). */
             failure_reason?: string;

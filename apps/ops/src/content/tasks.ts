@@ -137,7 +137,7 @@ export const tasks = {
   } satisfies Readonly<Record<Group, string>>,
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */
   visit: (date: string) => `Visit of ${date}`,
-  /** A disputed charge whose client has since been erased, or an erasure to finish in Zoho: no name is kept. */
+  /** A disputed charge whose client has since been erased. */
   disputeErased: "Erased client",
   /** A queue whose row has lost the client it was about. */
   unknown: "Client unknown",

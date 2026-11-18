@@ -15402,7 +15402,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 300,
-            "description": "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased."
+            "description": "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased, and not kept at all for an erasure finished in the CRM."
           },
           "failure_reason": {
             "type": "string",
