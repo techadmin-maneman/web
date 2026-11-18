@@ -125,7 +125,8 @@ const setServiceAreaRoute = opsRoute({
         "serve from a day still to come. no_service_area: it would leave none served",
     ),
     409: errorResponse(
-      "no_technician: fields names a pincode it would begin serving in a city no active technician works in. " +
+      "no_technician: fields names a pincode it would begin serving in a city no active technician out of training " +
+        "works in. " +
         "not_ready: in a city with no one trained to fit or no stockroom, unless an Admin gives a reason",
     ),
   },

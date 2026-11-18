@@ -11673,7 +11673,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description no_technician: no active technician works in the pincode's city yet; not_ready: nobody there is trained to fit, or it has no stockroom */
+                /** @description no_technician: no active technician out of training works in the pincode's city yet; not_ready: nobody there is trained to fit, or it has no stockroom */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -17259,7 +17259,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description no_technician: fields names a pincode it would begin serving in a city no active technician works in. not_ready: in a city with no one trained to fit or no stockroom, unless an Admin gives a reason */
+                /** @description no_technician: fields names a pincode it would begin serving in a city no active technician out of training works in. not_ready: in a city with no one trained to fit or no stockroom, unless an Admin gives a reason */
                 409: {
                     headers: {
                         [name: string]: unknown;

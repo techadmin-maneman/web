@@ -64,7 +64,7 @@ export const areas = {
       not_permitted: NOT_PERMITTED,
       not_found: "Unknown pincode. Add it first.",
       launch_in_future: "The launch date must be today or earlier.",
-      no_technician: "No technician works in this city yet. Add one in Technicians first.",
+      no_technician: "Nobody here can take a visit yet. Add a technician, or mark one’s training done, in Technicians.",
       not_ready:
         "Not ready: nobody here is trained to fit, or there’s no stockroom. Put that right first, or an Admin can launch it from Served with a reason.",
       offline: OFFLINE,
@@ -123,7 +123,7 @@ export const areas = {
     told: (alerted: number) => (alerted === 1 ? "1 told" : `${String(alerted)} told`),
     /** Why the cron has not served it on its day, by the refusal it met. */
     held: {
-      no_technician: "Not live: no active technician in the city.",
+      no_technician: "Not live: nobody in the city can take a visit yet.",
       not_ready: "Not live: nobody in the city is trained to fit, or there’s no stockroom.",
     },
     cancelLaunch: "Cancel launch",
@@ -156,7 +156,9 @@ export const areas = {
     loading: "Checking…",
     checks: {
       technicians: (ready: boolean, count: number) =>
-        ready ? `${String(count)} active ${count === 1 ? "technician" : "technicians"}` : "No active technician",
+        ready
+          ? `${String(count)} ${count === 1 ? "technician" : "technicians"} out of training`
+          : "No technician out of training",
       fitters: (ready: boolean, count: number) =>
         ready ? `${String(count)} trained to fit` : "No technician trained to fit",
       hours: (ready: boolean, count: number) =>
@@ -335,7 +337,8 @@ export const areas = {
       not_permitted: NOT_PERMITTED,
       no_service_area: "At least one pincode must stay served.",
       launch_in_future: "Launch dates must be today or earlier.",
-      no_technician: "No technician works in that city yet. Add one in Technicians first.",
+      no_technician:
+        "Nobody there can take a visit yet. Add a technician, or mark one’s training done, in Technicians.",
       not_ready:
         "Not ready: nobody here is trained to fit, or there’s no stockroom. Put that right first, or an Admin can launch with a reason.",
       /** A pincode we do not hold: one is added below, never by the file. */

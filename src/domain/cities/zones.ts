@@ -18,7 +18,8 @@ export async function addZone(
 ): Promise<"added" | "taken"> {
   const taken = await db.prepare("SELECT 1 FROM zones WHERE lower(name) = lower(?1)").bind(name).first();
   if (taken !== null) return "taken";
-  // Another added at the same moment, however cased, leaves this one unwritten, and its entry with it.
+  // Another added at the same moment, however cased, leaves this one unwritten: its entry is written only for the
+  // zone it names, and only once, since a zone is never deleted.
   const [inserted] = await db.batch([
     db
       .prepare(
@@ -27,7 +28,8 @@ export async function addZone(
       )
       .bind(name),
     auditStatementWhen(db, { ...audit, action: "zone.add", subject: { kind: "zone", id: name } }, now, {
-      sql: "EXISTS (SELECT 1 FROM zones WHERE name = ?10)",
+      sql: `EXISTS (SELECT 1 FROM zones WHERE name = ?10) AND NOT EXISTS (
+              SELECT 1 FROM audit_log WHERE subject_kind = 'zone' AND subject_id = ?10 AND action = 'zone.add')`,
       binds: [name],
     }),
   ]);

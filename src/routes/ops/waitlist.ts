@@ -108,7 +108,8 @@ const launchRoute = opsRoute({
     },
     400: errorResponse("launch_in_future: launch_on is a day still to come; or invalid_request"),
     409: errorResponse(
-      "no_technician: no active technician works in the pincode's city yet; not_ready: nobody there is trained to " +
+      "no_technician: no active technician out of training works in the pincode's city yet; not_ready: nobody there " +
+        "is trained to " +
         "fit, or it has no stockroom",
     ),
     403: errorResponse("access_required, or not_permitted: the pincode's city is outside the caller's Growth MANAGE"),

@@ -41,8 +41,8 @@ export const ALERT_WORDS = {
     a.notReady
       ? `Train a technician to fit or set up a stockroom in ${a.city}, or cancel the launch in Areas: its pincodes ` +
         `were due to be served on ${a.day}, and the city was not ready.`
-      : `Add a technician in ${a.city}, or cancel the launch in Areas: its pincodes were due to be served on ${a.day}, ` +
-        "and with no active technician there they were not.",
+      : `Add a technician in ${a.city} or mark one's training done, or cancel the launch in Areas: its pincodes were ` +
+        `due to be served on ${a.day}, and nobody there could take a visit.`,
   fully_booked: (a: { readonly city: string; readonly days: number }) =>
     `Add a technician or open more hours in ${a.city}: the site has no window open in the next ${String(a.days)} ` +
     "days there, and sends clients to WhatsApp.",
