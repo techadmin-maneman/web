@@ -38,7 +38,7 @@ describe("MSG91", () => {
     // "{{5}} waited {{9}} minutes for your {{2}} on {{3}}" is approved as "{{2}} waited {{3}} minutes for your {{4}} on {{5}}".
     const result = await msg91.send({
       to: "+919810000001",
-      template: "no_show_missed_v1",
+      template: "no_show_missed_v2",
       params: ["Arjun", "service visit", "Thu 24 Sep", "12–4 pm", "Imran", "", "", "", "15"],
     });
 
@@ -46,7 +46,7 @@ describe("MSG91", () => {
     expect(http.calls[0]?.headers.get("authkey")).toBe("msg91-key");
     const { body, template, to, components } = sent(http);
     expect(body).toMatchObject({ integrated_number: "919800000000", content_type: "template" });
-    expect(template).toMatchObject({ name: "no_show_missed_v1", language: { code: "en" } });
+    expect(template).toMatchObject({ name: "no_show_missed_v2", language: { code: "en" } });
     expect(to).toEqual(["919810000001"]);
     expect(components).toEqual({
       body_1: { type: "text", value: "Arjun" },

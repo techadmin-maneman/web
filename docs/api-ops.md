@@ -49347,11 +49347,12 @@ Request body:
       "enum": [
         "delivered",
         "sent",
+        "not_delivered",
         "not_sent",
         "no_consent",
         "none"
       ],
-      "description": "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+      "description": "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed to send; not_delivered: sent, then refused by WhatsApp; sent: no receipt came back; delivered."
     },
     "message_delivered_at": {
       "anyOf": [
@@ -50494,11 +50495,12 @@ Request body:
       "enum": [
         "delivered",
         "sent",
+        "not_delivered",
         "not_sent",
         "no_consent",
         "none"
       ],
-      "description": "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+      "description": "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed to send; not_delivered: sent, then refused by WhatsApp; sent: no receipt came back; delivered."
     },
     "message_delivered_at": {
       "anyOf": [
@@ -50622,6 +50624,7 @@ Request body:
               "unassigned_visit",
               "recall_call",
               "unanswered_chat",
+              "message_undelivered",
               "city_matter",
               "remedy_approval",
               "leave_conflict",
@@ -51600,6 +51603,34 @@ Request body:
         "reason",
         "technician",
         "flag"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "message_undelivered"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "description": "The message's kind, as visit_cancelled or tryon_result."
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "WhatsApp's code for why it refused, as 131049 (its cap on marketing messages); null for none."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "code"
       ],
       "additionalProperties": false
     },

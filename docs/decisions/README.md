@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0276. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0277. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -225,6 +225,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0255](0255-client-alerts-and-push.md) Client alerts and push, and the live visit
 - [0259](0259-the-issue-log.md) The issue log
 - [0260](0260-ratings.md) Ratings
+- [0276](0276-a-message-whatsapp-refuses.md) A message WhatsApp refuses
 
 ### Referrals
 
@@ -414,7 +415,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0101](0101-phase-1s-path-into-fsm-removed.md) | Phase 1's path into FSM is removed, and no booking carries a Request | 2026-10-01 | superseded by 0110 on 4 October 2026: with FSM gone there is no path into it to remove | [0110](0110-field-work-without-fsm.md) |
 | [0102](0102-window-times.md) | The window times in the console | 2026-10-01 | accepted, on the owner's rulings of 30 September and 1 October 2026 | [0210](0210-booking-by-start-time.md) |
 | [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted | [0213](0213-the-sites-second-copy-round.md), [0215](0215-the-range-as-a-table.md) |
-| [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 | [0214](0214-from-the-site-into-the-app.md), [0217](0217-the-try-ons-photo-taken-and-looked-at.md), [0219](0219-one-line-consents.md) |
+| [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 | [0214](0214-from-the-site-into-the-app.md), [0217](0217-the-try-ons-photo-taken-and-looked-at.md), [0219](0219-one-line-consents.md), [0276](0276-a-message-whatsapp-refuses.md) |
 | [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length |  |
 | [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 | [0240](0240-consultation-rules-and-inches.md), [0270](0270-the-design-checks-api-side.md) |
 | [0107](0107-referral-rewards-in-the-console.md) | What a referral earns, set in the console, each side apart | 2026-10-01 | accepted, on the owner's ruling of 1 October 2026 |  |
@@ -507,7 +508,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0194](0194-the-build-on-workers-paid.md) | The build on Workers Paid | 2026-10-13 | accepted |  |
 | [0195](0195-the-cron-a-job-at-a-time.md) | The cron a job at a time | 2026-10-13 | accepted |  |
 | [0196](0196-long-work-in-workflows.md) | Long work in Workflows | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 |  |
-| [0197](0197-one-inbound-port.md) | One inbound port | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 |  |
+| [0197](0197-one-inbound-port.md) | One inbound port | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 | [0276](0276-a-message-whatsapp-refuses.md) |
 | [0198](0198-cities-as-data.md) | Cities as data | 2026-10-14 | accepted |  |
 | [0199](0199-derived-state-in-the-domain.md) | Derived state in the domain | 2026-10-14 | accepted |  |
 | [0200](0200-staging-tenants-of-its-own.md) | Staging's tenants of its own | 2026-10-14 | accepted | [0261](0261-razorpay-money-in-books.md) |
@@ -586,3 +587,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0273](0273-why-a-hair-system-failed.md) | Why a hair system failed | 2026-11-18 | accepted |  |
 | [0274](0274-gst-on.md) | GST on: prices with their GST, and every invoice line and fee carrying its tax | 2026-11-18 | accepted |  |
 | [0275](0275-the-apps-phase-2-pairs-retired.md) | The apps' Phase 2 fidelity pairs retired | 2026-11-18 | accepted |  |
+| [0276](0276-a-message-whatsapp-refuses.md) | A message WhatsApp refuses | 2026-11-18 | accepted, on the owner's rulings of 18 November 2026 |  |

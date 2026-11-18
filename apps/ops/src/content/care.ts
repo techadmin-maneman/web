@@ -46,6 +46,7 @@ export const care = {
     /** "Visit reminder · delivered · read" */
     auto: (kind: string, seen: readonly string[]) => [kind, ...seen].join(" · "),
     delivered: "delivered",
+    notDelivered: "not delivered",
     read: "read",
     queued: "waiting to send",
     close: "Close",

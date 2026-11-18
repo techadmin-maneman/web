@@ -96,6 +96,34 @@ describe("the Care inbox", () => {
     ]);
   });
 
+  // A message WhatsApp refused after it was sent is one the client never got, and Care see it, marked not delivered
+  // (docs/decisions/0276-a-message-whatsapp-refuses.md); one that failed before it was sent never left us.
+  it("lists a message WhatsApp refused in the thread, and not one that failed before it was sent", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, provider_message_id,
+           queued_at, sent_at, last_error)
+         VALUES ('m2', '2026-09-20T05:00:00Z', 'p1', 'visit_cancelled', 'a2', 'failed', 'wa-2',
+           '2026-09-20T05:00:00Z', '2026-09-20T05:00:01Z', 'refused 131049')`,
+      ),
+      env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, queued_at, last_error)
+         VALUES ('m3', '2026-09-20T06:00:00Z', 'p1', 'booking_refunded', 'h3', 'failed', '2026-09-20T06:00:00Z',
+           'not sent within a day')`,
+      ),
+    ]);
+    await post(written("Did you cancel my visit?"));
+    const [thread] = await listed();
+    const opened = await (
+      await request(ops, `/api/conversations/${thread?.id ?? ""}`)
+    ).json<{ items: { kind: string; message?: string; state?: string }[] }>();
+    const autos = opened.items.filter((item) => item.kind === "auto").map(({ message, state }) => ({ message, state }));
+    expect(autos).toEqual([
+      { message: "visit_reminder", state: "sent" },
+      { message: "visit_cancelled", state: "failed" },
+    ]);
+  });
+
   it("files a message the bridge reports twice once, and keeps one thread a number", async () => {
     const same = written("Hello", "919810000001", "3EB0SAME");
     await post(same);

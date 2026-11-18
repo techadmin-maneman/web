@@ -15,6 +15,7 @@
 // The ruling reaches the client: a WhatsApp about it, and their visit's page
 // and Payments say it (docs/decisions/0074-hand-offs-and-messages.md); what they say is ./no-show-notes.ts.
 
+import { wasRefused } from "../../policy/message-refusals.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import type { PlacesReached } from "../../policy/access.ts";
@@ -44,10 +45,11 @@ import { creditSpentOn } from "../visits/visit-facts.ts";
 
 /**
  * What became of the WhatsApp ops read the receipt of. A reminder that was never
- * sent is not one that was sent and never arrived, and a client who never agreed
- * to WhatsApp about visits was never going to get one.
+ * sent is not one that was sent and never arrived, one WhatsApp refused never
+ * reached the client (docs/decisions/0276-a-message-whatsapp-refuses.md), and a
+ * client who never agreed to WhatsApp about visits was never going to get one.
  */
-export const MESSAGE_STATES = ["delivered", "sent", "not_sent", "no_consent", "none"] as const;
+export const MESSAGE_STATES = ["delivered", "sent", "not_delivered", "not_sent", "no_consent", "none"] as const;
 export type MessageState = (typeof MESSAGE_STATES)[number];
 
 /** The three facts, with what ops need to read the first one by. */
@@ -134,6 +136,7 @@ export function messageStateOf(message: Omit<EvidenceMessage, "id"> | null): Mes
   if (message === null) return "none";
   if (message.delivered_at !== null) return "delivered";
   if (message.state === "sent") return "sent";
+  if (message.state === "failed" && wasRefused(message.last_error)) return "not_delivered";
   if (message.state === "skipped" && message.last_error === NO_VISITS_CONSENT) return "no_consent";
   return "not_sent";
 }

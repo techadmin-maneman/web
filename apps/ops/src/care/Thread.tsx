@@ -2,6 +2,7 @@
 // chat; what the client wrote, our replies and notes, and our automatic messages with how far each got, a row of them
 // folded into one line; and the reply box at its foot. Who it is with is beside it (./ChatClient.tsx).
 
+import { messageKindName } from "./message-kind.ts";
 import { Toast } from "@maneman/ui/Toast";
 import { classes } from "@maneman/ui/classes";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -37,12 +38,6 @@ const themOf = (conversation: Conversation): string => {
   return named === undefined ? thread.client : (named.split(" ")[0] ?? named);
 };
 
-/** "Visit reminder" from "visit_reminder". */
-const kindName = (kind: string): string => {
-  const words = kind.replace(/_/g, " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
-};
-
 /** "21 Sep, 11:42 am". */
 const whenOf = (at: string): string => `${shortDate(indiaDate(at))}, ${indiaClock(at)}`;
 
@@ -56,12 +51,14 @@ function Item({ item, them }: { item: ThreadItem; them: string }) {
   if (item.kind === "auto") {
     const seen = [
       item.state === "queued" ? thread.queued : null,
+      // Taken by the provider, then refused by WhatsApp (docs/decisions/0276-a-message-whatsapp-refuses.md).
+      item.state === "failed" ? thread.notDelivered : null,
       item.delivered_at === null ? null : thread.delivered,
       item.read_at === null ? null : thread.read,
     ].filter((each) => each !== null);
     return (
       <li className={styles.auto}>
-        <span className={styles.when}>{whenOf(item.at)}</span> {thread.auto(kindName(item.message), seen)}
+        <span className={styles.when}>{whenOf(item.at)}</span> {thread.auto(messageKindName(item.message), seen)}
       </li>
     );
   }

@@ -1856,6 +1856,7 @@ export interface Rows {
     readonly failure_reason: string | null;
     readonly render_key: string | null;
     readonly renders: number;
+    readonly look_shown_at: string | null;
   };
   readonly tryon_sessions: {
     readonly id: string;

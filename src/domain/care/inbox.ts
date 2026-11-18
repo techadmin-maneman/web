@@ -296,7 +296,8 @@ export async function conversationThread(
       db
         .prepare(
           `SELECT 'auto' AS kind, COALESCE(sent_at, queued_at) AS at, kind AS message, state, delivered_at, read_at
-         FROM outbound_messages WHERE person_id = ?1 AND state IN ('sent', 'queued')
+         FROM outbound_messages WHERE person_id = ?1
+           AND (state IN ('sent', 'queued') OR (state = 'failed' AND provider_message_id IS NOT NULL))
          ORDER BY created_at DESC LIMIT ?2`,
         )
         .bind(row.person_id, THREAD_ITEMS),

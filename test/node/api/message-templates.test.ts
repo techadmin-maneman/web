@@ -95,7 +95,7 @@ const SECOND_IS_NOT_THE_VISIT: ReadonlySet<string> = new Set([
   "friend_fitted_yours_v1",
   "friend_fitted_thanks_v1",
   "referral_rejected_referrer_v1",
-  "credits_expiring_v1",
+  "credits_expiring_v2",
 ]);
 
 // A phone shows a message's first line on its lock screen, to anyone near it.

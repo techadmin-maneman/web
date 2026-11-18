@@ -58,7 +58,7 @@ describe("the templates submitted to WhatsApp", () => {
   });
 
   it("give every reminder sent with a stop link a button to stop it", () => {
-    for (const name of ["visit_reminder_v1", "next_visit_due_v1", "credits_expiring_v1", "launch_alert_v1"] as const) {
+    for (const name of ["visit_reminder_v1", "next_visit_due_v1", "credits_expiring_v2", "launch_alert_v1"] as const) {
       expect(
         approvedTemplate(name)?.buttons.some((button) => button.kind === "stop"),
         name,

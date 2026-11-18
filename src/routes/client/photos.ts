@@ -12,6 +12,7 @@ import {
   ownTryOnImage,
 } from "../../domain/try-on/client-try-ons.ts";
 import { listVisits, photoSets } from "../../domain/visits/client-visits.ts";
+import { markLookShown } from "../../domain/try-on/refused-looks.ts";
 import { ownPhotoKey } from "../../domain/visits/client-photo-keys.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
@@ -165,7 +166,23 @@ const tryOnFileRoute = clientRoute({
   },
 });
 
+const lookShownRoute = clientRoute({
+  method: "post",
+  path: "/api/photos/try-on/{id}/shown",
+  summary: "A try-on look WhatsApp refused, shown once: the app opened Photos for it after sign-in",
+  request: { params: z.object({ id: z.uuid() }) },
+  responses: {
+    204: { description: "Shown" },
+    401: errorResponse("session_required"),
+    404: errorResponse("not_found: not this client's try-on, or shown already"),
+  },
+});
+
 export function registerClientPhotos(app: App): void {
+  app.openapi(lookShownRoute, async (c) => {
+    const shown = await markLookShown(c.env.DB, clientOf(c).subjectId, c.req.valid("param").id, c.var.deps.now());
+    return shown ? c.body(null, 204) : refuse(c, "not_found");
+  });
   app.openapi(timelineRoute, async (c) => {
     const session = clientOf(c);
     const signingKey = c.var.config.settings.tryon.linkSigningKey;

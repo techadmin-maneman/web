@@ -360,13 +360,15 @@ async function lastVisitOf(db: D1Database, row: JobRow): Promise<LastVisit | nul
 
 /**
  * The WhatsApp ops read the receipt of on a no-show (src/domain/no-shows/no-shows.ts): delivered, sent, or still on its
- * way, as an arrival notice is the moment the technician checks in; null where none went, or one was skipped or failed.
+ * way, as an arrival notice is the moment the technician checks in; one WhatsApp refused reads as sent and never
+ * delivered, which it is; null where none went, or one was skipped or failed to send.
  */
 async function reminderOf(db: D1Database, appointmentId: string): Promise<JobDetail["reminder"]> {
   const message = await evidenceMessage(db, appointmentId);
   if (message === null) return null;
   const state = messageStateOf(message);
   if (state === "delivered" || state === "sent") return { state, delivered_at: message.delivered_at };
+  if (state === "not_delivered") return { state: "sent", delivered_at: null };
   if (message.state === "queued" || message.state === "waiting") return { state: "on_its_way", delivered_at: null };
   return null;
 }

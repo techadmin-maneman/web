@@ -83,11 +83,11 @@ describe("what follows a visit", () => {
       { kind: "fit_aftercare", subject_id: fitted },
     ]);
     expect(await compose("consultation_follow_up", consulted)).toEqual({
-      template: "consultation_follow_up_v2",
+      template: "consultation_follow_up_v3",
       params: ["Rohit"],
     });
     expect(await compose("fit_aftercare", fitted)).toEqual({
-      template: "fit_aftercare_v1",
+      template: "fit_aftercare_v4",
       params: ["Rohit", `${ORIGIN}/guides/looking-after-a-hair-system`],
     });
   });

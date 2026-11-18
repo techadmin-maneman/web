@@ -41,10 +41,10 @@ const SAMPLES: Partial<Record<TemplateName, readonly string[]>> = {
   friend_credited_v2: ["Karan", "3 service visits", "31 Dec 2026"],
   referral_rejected_referrer_v1: ["Rohit", "Karan"],
   referral_rejected_friend_v1: ["Karan"],
-  credits_expiring_v1: ["Rohit", "2 service visits", "31 Dec 2026"],
-  address_not_served_v2: ["Rohit", "400050"],
+  credits_expiring_v2: ["Rohit", "2 service visits", "31 Dec 2026"],
+  address_not_served_v3: ["Rohit", "400050"],
   deletion_rejected_v1: ["Rohit", "a visit of yours is booked for tomorrow."],
-  fit_aftercare_v1: ["Rohit", "https://maneman.in/guides/looking-after-a-hair-system"],
+  fit_aftercare_v4: ["Rohit", "https://maneman.in/guides/looking-after-a-hair-system"],
 };
 
 /** The template's samples, in our params' order. */

@@ -341,6 +341,15 @@ describe("the card", () => {
       expect((await card(TODAY_JOB)).reminder).toEqual({ state: "on_its_way", delivered_at: null });
     });
 
+    // One WhatsApp refused after it was sent (docs/decisions/0276-a-message-whatsapp-refuses.md) never arrived.
+    it("has one WhatsApp refused as sent and never delivered", async () => {
+      await message("m1", "visit_reminder", "failed", "2026-09-20T12:30:00Z");
+      await env.DB.prepare(
+        "UPDATE outbound_messages SET provider_message_id = 'req-1', last_error = 'refused 131049'",
+      ).run();
+      expect((await card(TODAY_JOB)).reminder).toEqual({ state: "sent", delivered_at: null });
+    });
+
     it("has one sent and never delivered", async () => {
       await message("m1", "visit_reminder", "sent", "2026-09-20T12:30:00Z");
       expect((await card(TODAY_JOB)).reminder).toEqual({ state: "sent", delivered_at: null });

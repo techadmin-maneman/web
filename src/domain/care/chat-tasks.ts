@@ -5,6 +5,7 @@ import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import type { TaskGroup } from "../../policy/tasks.ts";
 import { CITY_MATTERS_OPEN } from "./city-matters.ts";
 import { REMEDIES_AWAITING } from "./remedies.ts";
+import { MESSAGES_UNDELIVERED } from "./undelivered-messages.ts";
 
 /** Every chat waiting on us: open, with nothing sent since the client last wrote but the after-hours answer. */
 const CHATS_WAITING = `SELECT 'unanswered_chat' AS "group", c.id AS id, c.person_id AS person_id,
@@ -16,11 +17,13 @@ const CHATS_WAITING = `SELECT 'unanswered_chat' AS "group", c.id AS id, c.person
      AND m.author <> 'auto' AND m.sent_at >= c.last_inbound_at)`;
 
 /**
- * The board's queues from Customer Care's work: a chat waiting on us, kept once its reply-by time passes; a matter sent
- * to a city (./city-matters.ts); and a remedy awaiting a manager (./remedies.ts).
+ * The board's queues from Customer Care's work: a chat waiting on us, kept once its reply-by time passes; a message
+ * WhatsApp refused, until Care have told the client another way (./undelivered-messages.ts); a matter sent to a
+ * city (./city-matters.ts); and a remedy awaiting a manager (./remedies.ts).
  */
 export const CARE_QUEUES: readonly { readonly group: TaskGroup; readonly sql: string }[] = [
   { group: "unanswered_chat", sql: CHATS_WAITING },
+  { group: "message_undelivered", sql: MESSAGES_UNDELIVERED },
   { group: "city_matter", sql: CITY_MATTERS_OPEN },
   { group: "remedy_approval", sql: REMEDIES_AWAITING },
 ];

@@ -7,7 +7,7 @@ describe("the texts file", () => {
   it("holds every WhatsApp message, with the note written above it", () => {
     const messages = messageTexts(TEMPLATES, readFileSync("src/config/message-templates.ts", "utf8"));
     expect(messages.map((message) => message.name)).toEqual(Object.keys(TEMPLATES));
-    const reminder = messages.find((message) => message.name === "no_show_missed_v1");
+    const reminder = messages.find((message) => message.name === "no_show_missed_v2");
     expect(reminder?.note).toContain("Ops' ruling on a visit the client was not home for");
   });
 

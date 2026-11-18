@@ -98,6 +98,12 @@ export const TaskFactsSchema = z
         description: "What the client last said wasn't right before then; null where they never flagged.",
       }),
     }),
+    facts("message_undelivered", {
+      kind: z.string().openapi({ description: "The message's kind, as visit_cancelled or tryon_result." }),
+      code: z.string().nullable().openapi({
+        description: "WhatsApp's code for why it refused, as 131049 (its cap on marketing messages); null for none.",
+      }),
+    }),
     facts("low_rating", {
       kind,
       stars: z.number().int().openapi({ description: "The client's stars, low under ops' setting when given." }),

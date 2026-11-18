@@ -183,7 +183,7 @@ describe("an address on the account in a pincode we do not come to", () => {
   it("is why nothing was booked, which the number is told with its pincode alone", async () => {
     const { text } = await send("address_not_served");
     expect(text).toBe(
-      "Hi Karan, nothing was booked on our site.\nWe don't come to pincode 400050, your address on file, yet. Moved? Change your address in the Mane Man app and book there.",
+      "Hi Karan, nothing was booked on our site.\nWe don't come to pincode 400050, your address on file, yet. If you've moved, change your address in the Mane Man app.",
     );
     expect(text).not.toContain("House 12");
   });

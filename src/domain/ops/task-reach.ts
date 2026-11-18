@@ -13,6 +13,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   visit_left_open: "visit",
   unassigned_visit: "visit",
   unanswered_chat: "conversation",
+  message_undelivered: "message",
   city_matter: "city_matter",
   remedy_approval: "remedy",
   leave_conflict: "visit",

@@ -91,6 +91,14 @@ export const MeSchema = z
       .number()
       .int()
       .openapi({ description: "How many issues in the client's log are not yet resolved: Visits' count." }),
+    look_to_show: z
+      .uuid()
+      .nullable()
+      .openapi({
+        description:
+          "A try-on look WhatsApp refused, still held and not yet shown: the app opens Photos once and says so " +
+          "(POST /api/photos/try-on/{id}/shown); null for none (docs/decisions/0276-a-message-whatsapp-refuses.md).",
+      }),
     credits: z
       .union([CreditsSchema, z.null()])
       .openapi({ description: "The credit tile: balance and earliest expiry; null with none left." }),
