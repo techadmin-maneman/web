@@ -20,5 +20,9 @@ export function driveCheckOf(c: Context<AppEnv>): DriveCheck | null {
       await alertOnce({ key: ROUTES_REFUSED, message: ALERT_WORDS.routes_refused({ detail }) });
     },
     answered: () => resolveAlert(ROUTES_REFUSED),
+    // How far Google's drives run over the estimate a start was offered on.
+    tooTight: (short) => {
+      c.var.log.info("start_too_tight_for_drive", short);
+    },
   };
 }

@@ -20,6 +20,8 @@ export interface DriveCheck {
   readonly refused: (detail: string) => Promise<void>;
   /** Google answered: an alert about its refusing closes. */
   readonly answered: () => Promise<void>;
+  /** A start Google's drive leaves no room for, and by how many minutes: what tunes the estimate the starts are offered on. */
+  readonly tooTight?: (short: { readonly leg: "before" | "after"; readonly minutes: number }) => void;
 }
 
 const minutesOf = (seconds: number): number => Math.ceil(seconds / 60);
@@ -52,11 +54,19 @@ export async function drivesFit(
   const [first, second] = answer.legs;
   if (from !== null && first !== undefined) {
     const readyFrom = before === undefined ? day.opens : before.end + wrap;
-    if (readyFrom + minutesOf(first.seconds) + parking > start) return false;
+    const over = readyFrom + minutesOf(first.seconds) + parking - start;
+    if (over > 0) {
+      check.tooTight?.({ leg: "before", minutes: over });
+      return false;
+    }
   }
   const leaving = from === null ? first : second;
   if (after !== undefined && to !== null && leaving !== undefined) {
-    if (end + wrap + minutesOf(leaving.seconds) + parking > after.start) return false;
+    const over = end + wrap + minutesOf(leaving.seconds) + parking - after.start;
+    if (over > 0) {
+      check.tooTight?.({ leg: "after", minutes: over });
+      return false;
+    }
   }
   return true;
 }
