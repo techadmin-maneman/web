@@ -19,6 +19,7 @@ import { HOUR_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import { discounted } from "../../policy/discount-codes.ts";
+import { invoiceLine } from "../../policy/invoice-line.ts";
 import { invoiceHold, type InvoiceHold, type SoldVisit } from "../../policy/prepayment.ts";
 import type { BooksInvoice, BooksProvider, NewBooksInvoice } from "../../providers/books/index.ts";
 import { FAILURES_BEFORE_ALERT, PER_PASS, RECHECK_AFTER_MS, tellFailure as tellPassFailure } from "./vendor-pass.ts";
@@ -220,11 +221,7 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
   // A visit paid for before its price changed was sold at what was paid, so that is its line; one a credit paid for,
   // for nothing.
   const { soldFor, paidWithCredit } = await soldVisit(db, visit, code?.off ?? 0);
-  const line = paidWithCredit
-    ? { rate: 0, discount: 0 }
-    : soldFor !== null && soldFor !== listed.amount
-      ? { rate: soldFor, discount: 0 }
-      : lineOf(price, listed, gst, code?.off ?? 0);
+  const line = invoiceLine({ price, listed, soldFor, paidWithCredit, gst, off: code?.off ?? 0 });
   const day = indiaDate(new Date(visit.window_start));
   const product = await productOf(db, visit);
   const supply = (await supplyFor(db, options.gst))(visit.service_city);
@@ -246,19 +243,6 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
   // Kept before it is sent: a later pass then reads this one rather than looking for it.
   await keepInvoice(pass, visit.id, raised.id);
   return raised;
-}
-
-/**
- * The line of a visit sold at its listed price: the price and the discount code's part of it, as Books takes a
- * discount before tax. With no tax, what the code took off the price as paid; with one, Books adds the tax to the
- * discount, so the line names the code's figure before GST, which comes to what was paid where the code is in whole
- * rupees at the price's own GST. Otherwise, as for a visit charged a GST its day's price had not, or a code worth the
- * whole price, the line is what was paid, with no discount: Books keeps a GST-inclusive line's total to the paisa.
- */
-function lineOf(price: Price, listed: Price, gst: number | null, off: number): { rate: number; discount: number } {
-  if (gst === null) return { rate: price.amount, discount: price.amount - listed.amount };
-  if (gst === price.gst_percent && off % 100 === 0) return { rate: price.amount, discount: off };
-  return { rate: listed.amount, discount: 0 };
 }
 
 /**

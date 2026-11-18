@@ -82,13 +82,10 @@ export function discounted(
   off: number,
 ): { amount_ex_gst: number; amount: number; gst_percent: number } {
   const exGst = Math.max(0, price.amount_ex_gst - off);
-  const amount =
-    price.amount === undefined
-      ? withGst(exGst, price.gst_percent)
-      : exGst === 0
-        ? 0
-        : Math.max(0, price.amount - withGst(off, price.gst_percent));
-  return { amount_ex_gst: exGst, amount, gst_percent: price.gst_percent };
+  const left = (amount: number) => ({ amount_ex_gst: exGst, amount, gst_percent: price.gst_percent });
+  if (price.amount === undefined) return left(withGst(exGst, price.gst_percent));
+  if (exGst === 0) return left(0);
+  return left(Math.max(0, price.amount - withGst(off, price.gst_percent)));
 }
 
 /** A code as it stands when it is entered: whether it is on, its limits, and how far they are used. */
