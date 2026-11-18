@@ -8,7 +8,12 @@ import type { Dependencies } from "../dependencies.ts";
 import { applyRazorpayEvent, RazorpayEventSchema } from "../domain/money/razorpay-events.ts";
 import { notifyMessage } from "../domain/platform/enqueue.ts";
 import type { Logger } from "../log.ts";
-import { backoffSeconds, DONE, runConsumer } from "./consumer.ts";
+import { afterError, backoffSeconds, DONE, runConsumer } from "./consumer.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
+import { razorpayEventFailingKey } from "../policy/alerts.ts";
+
+/** Tries an event has failed before ops are told: one can be a passing D1 hiccup, two are not. */
+const FAILING_AFTER_ATTEMPTS = 2;
 
 /** The first wait for a payment a refund's event came before: its own event is seconds behind, as a rule. */
 const REFUND_EARLY_RETRY_SECONDS = 60;
@@ -53,7 +58,31 @@ export function handleRazorpayBatch({
         return { retryAfterSeconds: backoffSeconds(attempts, REFUND_EARLY_RETRY_SECONDS) };
       }
       eventLog.info("razorpay_hook_taken", { event: event.data.event });
+      // An event told as failing is put right once it applies; one that never failed has nothing to close.
+      if (attempts >= FAILING_AFTER_ATTEMPTS) await deps.resolveAlert(razorpayEventFailingKey(data.event_id));
       return DONE;
     },
+    // Each try that throws is tried again, later each time; from the second, ops are told at once, so a payment or a
+    // refund that cannot be applied is not left for the dead letters hours later.
+    onError: async (data, attempts) => {
+      if (attempts >= FAILING_AFTER_ATTEMPTS) {
+        await deps.alertOnce({
+          key: razorpayEventFailingKey(data.event_id),
+          message: ALERT_WORDS.razorpay_event_failing({ event: data.event_id, name: eventName(data.body), attempts }),
+        });
+      }
+      return afterError(attempts);
+    },
   });
+}
+
+/** The event's name, as "payment.captured"; "unknown" for a body that is not one. */
+function eventName(body: string): string {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    const name = typeof parsed === "object" && parsed !== null ? (parsed as { event?: unknown }).event : undefined;
+    return typeof name === "string" ? name : "unknown";
+  } catch {
+    return "unknown";
+  }
 }

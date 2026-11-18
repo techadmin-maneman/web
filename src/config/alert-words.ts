@@ -16,6 +16,9 @@ interface RefundLeft {
   readonly amount: number;
 }
 
+/** The webhooks' names as ops know them in each provider's dashboard. */
+const WEBHOOK_NAMES = { razorpay: "Razorpay", msg91: "MSG91 WhatsApp", evolution: "Evolution" } as const;
+
 /** Why a visit's invoice is held as a draft in Books. */
 export type DraftHeld = "price_differs" | "price_unknown" | "credit_missing";
 
@@ -301,6 +304,14 @@ export const ALERT_WORDS = {
     `Look into the cron's ${a.job} job: it failed ${String(a.runs)} runs in a row (${a.reason}).`,
   cron_job_missed: (a: { readonly job: string; readonly since: string }) =>
     `Look into the cron's ${a.job} job (runbook, "Alerts and the cron"): it has not run well since ${a.since}.`,
+  webhook_refused: (a: { readonly hook: "razorpay" | "msg91" | "evolution"; readonly times: number }) =>
+    `Check the ${WEBHOOK_NAMES[a.hook]} webhook's secret now (runbook, "A webhook refused"): its last ` +
+    `${String(a.times)} deliveries were refused as unsigned, so what it reports is not reaching us. A secret changed on ` +
+    "one side only does this, as does someone posting to it.",
+  razorpay_event_failing: (a: { readonly event: string; readonly name: string; readonly attempts: number }) =>
+    `Look into Razorpay event ${a.event} (${a.name}) now (runbook, "A queue gave up"): it failed to apply ` +
+    `${String(a.attempts)} times and is being tried again, later each time; until it applies, the payment or refund it ` +
+    "carries is not on our books.",
   cron_run_cut_short: (a: { readonly started: string }) =>
     `Look into the cron (runbook, "A cron run cut short"): the run started at ${a.started} never finished, so the ` +
     "jobs after where it stopped did not run.",

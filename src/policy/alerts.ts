@@ -18,6 +18,13 @@ export const crmLeadKey = (leadId: string): string => `crm_lead:${leadId}`;
 export const crmErasureKey = (personId: string): string => `crm_erasure:${personId}`;
 /** A deletion request near the end of the days it must be decided in. */
 export const deletionWaitingKey = (requestId: string): string => `deletion_waiting:${requestId}`;
+/** The webhooks a provider posts to us, each refused at our door when its signature or token does not match. */
+export type Webhook = "razorpay" | "msg91" | "evolution";
+/** Deliveries refused in a row before ops are told: one can be a stray post, three are the secret. */
+export const WEBHOOK_REFUSED_AFTER = 3;
+export const webhookRefusedKey = (hook: Webhook): string => `webhook_refused:${hook}`;
+/** A Razorpay event that keeps failing to apply, from its second try. */
+export const razorpayEventFailingKey = (eventId: string): string => `razorpay_event_failing:${eventId}`;
 /** No try-on can run: YouCam refuses the key, or is out of units. */
 export const TRYON_PAUSED_KEYS = { key: "tryon_paused:key", credits: "tryon_paused:credits" } as const;
 
@@ -42,6 +49,8 @@ const URGENT_KINDS = [
   "whatsapp_bridge",
   "cron_run_cut_short",
   "tryon_paused",
+  "webhook_refused",
+  "razorpay_event_failing",
 ];
 
 /** Readings of the WhatsApp bridge closed in a row before it counts as down: one can be it reconnecting by itself. */
@@ -95,6 +104,7 @@ const FINANCE_KINDS = [
   "refund_failed",
   "second_capture",
   "paid_off_its_order",
+  "razorpay_event_failing",
 ];
 
 const OPERATIONS_KINDS = [

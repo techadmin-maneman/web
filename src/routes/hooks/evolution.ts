@@ -11,6 +11,7 @@
 // event is ignored. The body names the chat and carries the instance's API key,
 // so our logger never writes it, nor the token.
 
+import { webhookRefused, webhookTaken } from "../../domain/platform/hook-alerts.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -77,8 +78,10 @@ async function takeHook(c: Context<AppEnv>): Promise<Response> {
   if (expected === null) return refuse(c, "not_found");
   if (!(await secretsMatch(bearerToken(c), expected))) {
     log.warn("evolution_hook_unauthorized");
+    await webhookRefused(c.var.deps.alertOnce, "evolution");
     return refuse(c, "unauthorized");
   }
+  await webhookTaken(c.var.deps.resolveAlert, "evolution");
 
   const body = await c.req.json<unknown>().catch(() => null);
   const named = EventSchema.safeParse(body);

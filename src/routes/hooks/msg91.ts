@@ -10,6 +10,7 @@
 // "Authorization: Bearer <token>" (the webhook's headers in MSG91), out of every URL a proxy logs; the body names the
 // chat, so the logger never writes it.
 
+import { webhookRefused, webhookTaken } from "../../domain/platform/hook-alerts.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -103,8 +104,10 @@ export function registerMsg91Hook(app: App): void {
     if (expected === null) return refuse(c, "not_found");
     if (!(await secretsMatch(bearerToken(c), expected))) {
       log.warn("msg91_hook_unauthorized");
+      await webhookRefused(c.var.deps.alertOnce, "msg91");
       return refuse(c, "unauthorized");
     }
+    await webhookTaken(c.var.deps.resolveAlert, "msg91");
     const parsed = BodySchema.safeParse(await c.req.json<unknown>().catch(() => null));
     if (!parsed.success) {
       log.warn("msg91_hook_unreadable");
