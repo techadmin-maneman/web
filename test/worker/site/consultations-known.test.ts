@@ -254,6 +254,16 @@ describe("a number the site already knows", () => {
     expect(await known.json()).toMatchObject({ state, date, starts_at: startsAt });
   });
 
+  // A known number's answer named the window asked for, a new number's the window its start fell in.
+  it("is refused a start outside its window on any day, as a new number is", async () => {
+    await fittedClient();
+    const mismatched = { date: "2026-09-24", window: "evening", starts_at: "2026-09-24T03:30:00.000Z" };
+    for (const answer of [await book(mismatched), await book({ ...mismatched, mobile: "9810000003" })]) {
+      expect(answer.status).toBe(400);
+      expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["starts_at"] } });
+    }
+  });
+
   it("is never renamed by the form", async () => {
     await book({ date: "2026-09-23", window: "morning" });
     await request(

@@ -9,8 +9,9 @@ import { type Plan, planStartsIn } from "../../policy/one-visit.ts";
 import { bookingNeedsProof } from "../../policy/number-proof.ts";
 import type { ConsentSource } from "../../policy/consents.ts";
 import { addDays, indiaDate, indiaTime } from "../../lib/india-time.ts";
-import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
-import { requestStartsToday, siteDays } from "./open-windows.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
+import { siteDays } from "./open-windows.ts";
+import { bookedByRequest, tooSoon } from "./site-today.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { type NotBookedFromSite, notBookedFromSite, typedAddress } from "../../policy/site-booking.ts";
@@ -167,42 +168,44 @@ export interface Booked {
 export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 
 /**
- * A request for today the form would not offer: at a start not on its grid in the window from the lead time on, or,
- * with no start chosen, in a window with none left (requestStartsToday).
- */
-async function tooSoon(
-  db: D1Database,
-  request: ConsultationRequest,
-  today: { readonly inputs: OpsInputs; readonly earliest: string | null },
-): Promise<boolean> {
-  if (today.earliest === null) return false;
-  const hours = windowTimesOf((await loadSlotSchedule(db)).on(request.date));
-  const starts = requestStartsToday(request.window, hours, today.inputs, today.earliest);
-  return request.startsAt === null ? starts.length === 0 : !starts.includes(indiaTime(request.startsAt));
-}
-
-/**
  * The request's own checks, before its number's: the pincode served and the day open for booking, a window the plan
  * starts in, a product for a one visit, and the address in the pincode booked at.
  */
 async function checkRequest(
   db: D1Database,
   request: ConsultationRequest,
-  now: Date,
+  context: { readonly now: Date; readonly selfServeBooking: boolean },
 ): Promise<{ ok: true; pincode: Pincode } | Refusal> {
+  const { now } = context;
   const oneVisit = request.plan === "one_visit";
-  const [pincode, products, inputs] = await Promise.all([
+  const [pincode, products, inputs, schedule] = await Promise.all([
     pincodeOf(db, request.pincode),
     oneVisit ? offeredProducts(db, request.date) : [],
     readOpsInputs(db, now),
+    loadSlotSchedule(db),
   ]);
+  const hours = windowTimesOf(schedule.on(request.date));
+  // A start is in the window asked for, on any day: the answer, whoever's the number, names the window booked.
+  if (request.startsAt !== null) {
+    const time = indiaTime(request.startsAt);
+    if (time < hours[request.window].start || time >= hours[request.window].end) {
+      return { ok: false, code: "invalid_request", fields: ["starts_at"] };
+    }
+  }
   const today = indiaDate(now);
   // The days the form offers: today too where ops let the visit be booked for today, from the lead time on.
   const { first, days, earliestToday } = siteDays(request.plan, inputs, now);
   const outside =
     request.date < first ||
     request.date > addDays(first, days - 1) ||
-    (request.date === today && (await tooSoon(db, request, { inputs, earliest: earliestToday })));
+    (request.date === today &&
+      tooSoon({
+        request,
+        hours,
+        inputs,
+        earliest: earliestToday,
+        byRequest: await bookedByRequest(db, request, context.selfServeBooking),
+      }));
   if (pincode === null || !takesNewClientsOn(pincode, today) || outside) {
     return { ok: false, code: "not_bookable" };
   }
@@ -364,7 +367,7 @@ function consultationLead(
 export async function bookConsultation(form: FormRequest, request: ConsultationRequest): Promise<Booked | Refusal> {
   const { db, log, now } = form;
   const oneVisit = request.plan === "one_visit";
-  const asked = await checkRequest(db, request, now);
+  const asked = await checkRequest(db, request, { now, selfServeBooking: form.selfServeBooking });
   if (!asked.ok) return asked;
   const { pincode } = asked;
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);

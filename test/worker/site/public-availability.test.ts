@@ -133,11 +133,20 @@ describe("GET /api/availability/public", () => {
     expect(await (await ask({ starts_at: "2026-09-21T14:00:00.000Z" })).json()).toMatchObject({
       error: { code: "not_bookable" },
     });
-    // A morning start sent with the evening window is not one either.
+    // A morning start sent with the evening window is refused for its window, on any day.
     expect(await (await ask({ starts_at: "2026-09-21T04:30:00.000Z" })).json()).toMatchObject({
-      error: { code: "not_bookable" },
+      error: { code: "invalid_request", fields: ["starts_at"] },
     });
     expect((await ask({ starts_at: "2026-09-21T13:00:00.000Z" })).status).toBe(201);
+  });
+
+  // The request grid is an hour long; a slot is its own length, and the hold keeps it to its own starts.
+  it("books a shorter consultation today at a late start the form offers", async () => {
+    await env.DB.prepare("UPDATE services SET minutes = 45 WHERE kind = 'consultation'").run();
+    const days = await daysOf("pincode=122018&plan=consultation");
+    expect(days[0]?.starts.find((start) => start.time === "19:00")).toMatchObject({ open: true });
+    const late = await book({ date: "2026-09-21", window: "evening", starts_at: "2026-09-21T13:30:00.000Z" });
+    expect(late.status).toBe(201);
   });
 
   it("offers nothing today while ops keep consultations to another day", async () => {
