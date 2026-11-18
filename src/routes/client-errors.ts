@@ -86,7 +86,9 @@ export function registerClientErrors(app: App): void {
       refused_request_id: refusedRequestId,
       browser: c.req.header("User-Agent")?.slice(0, 200),
     });
-    if (report.kind === "checkout_unavailable") await checkoutUnavailable(c.var.deps.alertOnce);
+    if (report.kind === "checkout_unavailable" && (await takeOne(db, "checkout_unavailable:ip", ipHash, at))) {
+      await checkoutUnavailable(c.var.deps.alertOnce);
+    }
     return c.body(null, 204);
   });
 }

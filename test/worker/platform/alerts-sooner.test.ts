@@ -166,6 +166,13 @@ describe("Razorpay Checkout failing to load in the client app", () => {
       }),
     });
 
+  it("counts one address once an hour, so one address cannot raise it alone", async () => {
+    const deps = fakeDependencies();
+    for (let report = 0; report < 3; report += 1) expect((await failed(deps, "203.0.113.9")).status).toBe(204);
+    expect(deps.alerts).toEqual([]);
+    expect(await open("checkout_failing")).toEqual({ count: 1 });
+  });
+
   it("tells ops at the third failure with no payment between, and the next payment captured closes it", async () => {
     const deps = fakeDependencies();
     expect((await failed(deps, "203.0.113.1")).status).toBe(204);

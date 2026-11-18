@@ -74,6 +74,9 @@ export const RATE_LIMITS = {
   // The apps' error reports: per address, and from every address together.
   "client_error:ip": { per: "hour", limit: 20 },
   "client_error:all": { per: "hour", limit: 300 },
+  // Checkout failing to load, counted once an hour from each address, so one address cannot raise the alert alone
+  // (docs/decisions/0277-alerts-that-come-sooner.md).
+  "checkout_unavailable:ip": { per: "hour", limit: 1 },
   // What the site's pages' policies refused, as their browsers report it.
   "csp_report:ip": { per: "hour", limit: 20 },
   "csp_report:all": { per: "hour", limit: 300 },
