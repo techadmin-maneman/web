@@ -1,6 +1,6 @@
 # 0066. Erasure is all or nothing
 
-- Status: accepted. Amends the order in ADR 0019 and the record of a deletion decision in ADR 0049. Amended by ADR 0094: an erasure also blanks a check-in's coordinates. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): FSM's queue is gone; the CRM's is the one told at once. Amended 18 November 2026: erasing anyway cancels each visit still to come free to the client, refunded in full, and refunds each booking let go (below).
+- Status: accepted. Amends the order in ADR 0019 and the record of a deletion decision in ADR 0049. Amended by ADR 0094: an erasure also blanks a check-in's coordinates. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): FSM's queue is gone; the CRM's is the one told at once. Amended 18 November 2026: erasing anyway cancels each visit still to come free to the client, refunded in full, and refunds each booking let go; each erasure opens a Care task to finish the CRM record's history and recycle bin by hand, and ops tick that the WhatsApp phone's chat is deleted before erasing (below).
 - Date: 2026-09-25
 - Topic: Privacy and accounts
 
@@ -33,6 +33,7 @@ The answer names each visit, booking, payment and link. An erasure lets go of ev
 
 - In the ops console, the deletion decision refuses, the request keeps waiting, and the console says which of the two it is.
 - Erasing from a person's page in the console refuses the same way, unless ops say to erase anyway (`override_open_bookings: true`). The same-day promise can then still be kept. Each visit still to come is cancelled free to the client, as a cancel on Visits is, and its payment refunded in full, so no technician is sent to an erased client and nothing paid is kept; one begun already is left on their page. A booking not yet a visit is let go and what was paid for it refunded, as a lapsed hold's is; one Razorpay will not refund waits under Tasks' payments to refund, which lists erased clients too, and ops refund it from the record kept of their money. Erasing anyway is Customer Care · Manage's, as erasing is, and with it go these cancels and refunds, which on Visits need Operations · Act: an erased client has nobody left to settle them with, and Manage is the level that gives money back. The audit entry records it with the counts, and the Worker logs `erasure_override`. A refund needs none of the person's details. (Until 4 October 2026 this was the operators' `POST /api/erasure` and its script.)
+- What the API cannot reach is followed up. Erasure blanks the number, so ops tell the client it is being done and delete their chat on the WhatsApp phone first: the console asks for that tick on the client's page and in Deletion requests, and there is nothing to tell them after. Every erasure, the automatic ones too, writes a row to `erasure_follow_ups` in its batch, which Tasks lists for Customer Care: the CRM record found by its lead, or by `D1_Person_ID`, deleted, then deleted from the recycle bin. Care close it with **Done** and no words, since the person is erased; the row goes with the closing.
 
 The rule lives in `src/policy/account-deletion.ts`. It is ours, not the prompt's.
 

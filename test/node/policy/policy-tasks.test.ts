@@ -75,6 +75,8 @@ describe("tasks", () => {
       city_matter: 24,
       // A remedy awaiting a manager: within the day (ADR 0143).
       remedy_approval: 24,
+      // An erasure finished in the CRM the day it was made (ADR 0066).
+      erasure_follow_up: 8,
       // "The 30 days run from the client's request to ops' decision" (ADR 0049).
       erasure_request: 30 * 24,
       // The client's app: "within 30 days at the latest" (docs/open-points.md, item 51).
@@ -120,8 +122,9 @@ describe("tasks", () => {
   });
 
   // Every other task leaves the board only when its thing is done.
-  it("lets ops close a partial visit's task, a City matter, an at-risk client, consumables short, a fit closed without sign-off, a fit guarantee claim, a technician's asks, a client's ask for a size made to order and a message not delivered, and no other", () => {
+  it("lets ops close a partial visit's task, a City matter, an at-risk client, consumables short, a fit closed without sign-off, a fit guarantee claim, a technician's asks, a client's ask for a size made to order, a message not delivered and an erasure's CRM leftovers, and no other", () => {
     expect(CLOSABLE_TASK_GROUPS).toEqual([
+      "erasure_follow_up",
       "partial_visit",
       "consumables_short",
       "fit_unsigned",
@@ -138,6 +141,7 @@ describe("tasks", () => {
       "at_risk_client",
       "city_matter",
       "consumables_short",
+      "erasure_follow_up",
       "fit_guarantee_claim",
       "fit_unsigned",
       "kit_request",

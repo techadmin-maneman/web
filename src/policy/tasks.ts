@@ -100,6 +100,7 @@ export const TASK_GROUPS = [
   "fit_unsigned",
   "fit_guarantee_claim",
   "low_rating",
+  "erasure_follow_up",
   "kit_request",
   "referral_review",
   "no_show_decision",
@@ -183,6 +184,9 @@ export const TASK_SLA_HOURS: Slas = {
   fit_guarantee_claim: 48,
   // A visit the client rated low: Care call them within the two days (docs/decisions/0260-ratings.md).
   low_rating: 48,
+  // What an erasure leaves in the CRM, finished the same day it was erased
+  // (docs/decisions/0066-erasure-all-or-nothing.md).
+  erasure_follow_up: 8,
   // A kit short of what its week's visits need: in its next transfer, within the day.
   kit_request: 24,
   referral_review: 48,
@@ -214,10 +218,11 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
  * client, a fit closed without the client's sign-off, a fit guarantee claim and a low rating, each closed with what
  * came of the call; a City matter, closed with what was done; consumables short of what a job expects, closed once
  * checked against the kit; a technician's asks, for their kit and to move a visit, a client's ask for a hair system
- * made to order, and a message WhatsApp refused, closed with what was done. Every other group leaves the board only
- * when its thing is done.
+ * made to order, and a message WhatsApp refused, closed with what was done; and an erasure finished in the CRM, closed
+ * with no words kept, since its person is erased. Every other group leaves the board only when its thing is done.
  */
 export const CLOSABLE_TASK_GROUPS = [
+  "erasure_follow_up",
   "partial_visit",
   "consumables_short",
   "fit_unsigned",

@@ -53,6 +53,7 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('c1', 'p1', 'contact', 'contact-v1', 1, '${AT}')`,
   `INSERT INTO terms_acceptances (id, person_id, terms_version, privacy_version, source, created_at)
      VALUES ('ta1', 'p1', '1.00', '1.00', 'site_booking', '${AT}')`,
+  `INSERT INTO erasure_follow_ups (person_id, erased_at) VALUES ('p2', '${AT}')`,
   `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
      VALUES ('t1', 't1', 'A Technician', 'AT', 1, '${AT}')`,
   `INSERT INTO fsm_items (fsm_id, name, type, updated_at) VALUES ('i1', 'Bond strip', 'Part', '${AT}')`,

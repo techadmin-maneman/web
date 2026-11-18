@@ -77,7 +77,10 @@ const TaskSchema = z
           .strict(),
         z.null(),
       ])
-      .openapi({ description: "Null for an erased client, whose record is gone." }),
+      .openapi({
+        description:
+          "Null for an erased client, whose record is gone, but on a payment to refund or an erasure to finish in the CRM, which name them as Erased.",
+      }),
     visit: z
       .object({ id: z.uuid(), starts_at: z.iso.datetime() })
       .strict()
@@ -238,7 +241,7 @@ const closeRoute = opsRoute({
           .object({
             reason: z.string().trim().min(1).max(REASON_MAX_CHARS).openapi({
               description:
-                "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased.",
+                "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased, and not kept at all for an erasure finished in the CRM.",
             }),
             failure_reason: z
               .string()

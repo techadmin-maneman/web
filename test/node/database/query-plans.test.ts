@@ -108,6 +108,8 @@ const SMALL_TABLES = new Set([
   "hair_systems",
   // A row a planning period, let go after the learning days: a few dozen at most.
   "forecast_runs",
+  // An erasure Care have still to finish in the CRM, gone once they close its task: a handful a day at most.
+  "erasure_follow_ups",
   // A row a place stock is kept: the warehouse, each hub and stockroom, and a kit a technician.
   "stock_places",
   // What Growth sets on the Words page, a row an edit: it grows with ops' work, not with clients.

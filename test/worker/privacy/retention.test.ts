@@ -107,6 +107,9 @@ describe("the hourly retention job", () => {
       "SELECT actor_kind, actor, action FROM audit_log WHERE subject_id = '50001'",
     ).first();
     expect(audit).toEqual({ actor_kind: "system", actor: "retention", action: "person.erase" });
+    // What the API cannot reach in the CRM is left for Care to finish, as for any erasure.
+    const followUp = await env.DB.prepare("SELECT erased_at FROM erasure_follow_ups WHERE person_id = '50001'").first();
+    expect(followUp).toEqual({ erased_at: NOW.toISOString() });
   });
 });
 
