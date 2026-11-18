@@ -9,6 +9,7 @@ import { createLogger } from "../../../src/log.ts";
 import { handleRazorpayBatch } from "../../../src/queues/razorpay.ts";
 import { fakeBatch } from "../batches.ts";
 import { JOB, working } from "../job-fixtures.ts";
+import { aPerson } from "../fixtures/index.ts";
 import { alertRefusalRates } from "../../../src/domain/messages/refusal-rates.ts";
 import { alertVisitsNotBegun } from "../../../src/domain/dispatch/not-begun.ts";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
@@ -221,11 +222,7 @@ describe("a kind of WhatsApp refused too often", () => {
   const AT = new Date("2026-09-21T06:30:00.000Z");
 
   async function sentToday(kind: string, refused: number, delivered: number) {
-    await env.DB.prepare(
-      "INSERT OR IGNORE INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, '+919810000001', 'Arjun Mehta')",
-    )
-      .bind(AT.toISOString())
-      .run();
+    if ((await env.DB.prepare("SELECT 1 FROM people WHERE id = 'p1'").first()) === null) await aPerson({ id: "p1" });
     for (let each = 0; each < refused + delivered; each += 1) {
       await env.DB.prepare(
         `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_id, state, provider_message_id, sent_at,

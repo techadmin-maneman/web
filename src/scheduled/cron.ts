@@ -507,7 +507,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "analytics_nightly", needs: "nothing", every: 60, at: 31, slot: { hour: 3 }, run: analyticsJob },
   // When each task opened and closed, for the reporting copy (docs/decisions/0147-task-spans.md).
   { name: "task_spans", needs: "nothing", every: 60, at: 26, slot: { hour: 23 }, run: taskSpansJob },
-  // A kind of WhatsApp refused too often in the last day (docs/decisions/0277-alerts-that-come-sooner.md).
+  // A kind of WhatsApp refused too often in the last day (src/domain/messages/refusal-rates.ts).
   { name: "refusal_rates", needs: "nothing", every: 60, at: 47, run: refusalRatesJob },
   // The operating figure behind the weekend-share assumption (src/policy/dispatch.ts): once a day, the day's board.
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
