@@ -30,7 +30,7 @@ const grantsOf = (role: Role, grant: StaffGrant): StaffGrant[] =>
     ? [grant]
     : ROLE_PRESETS[role].map((each) => ({ ...each, geography: grant.geography, place: grant.place }));
 
-function RoleChoice({ role, onChange }: { role: Role; onChange: (role: Role) => void }) {
+function RoleChoice({ role, roles, onChange }: { role: Role; roles: readonly Role[]; onChange: (role: Role) => void }) {
   return (
     <Field label={copy.form.role} className={form.field}>
       {(control) => (
@@ -39,10 +39,10 @@ function RoleChoice({ role, onChange }: { role: Role; onChange: (role: Role) => 
           width="choice"
           value={role}
           onChange={(event) => {
-            onChange(ROLES.find((each) => each === event.target.value) ?? role);
+            onChange(roles.find((each) => each === event.target.value) ?? role);
           }}
         >
-          {ROLES.map((each) => (
+          {roles.map((each) => (
             <option key={each} value={each}>
               {copy.form.roles[each]}
             </option>
@@ -62,6 +62,14 @@ export function AddPerson(props: {
   const [role, setRole] = useState<Role>("one");
   const [grant, setGrant] = useState<StaffGrant>(FIRST_GRANT);
   const listed = alreadyListed(props.staff.people, email);
+  // A zonal head is a zone's, so offered only where there is one, and given the first until another is chosen.
+  const firstZone = props.staff.zones[0]?.name ?? null;
+  const roles = ROLES.filter((each) => each !== "zonal_head" || firstZone !== null);
+  const chooseRole = (chosen: Role) => {
+    setRole(chosen);
+    if (chosen === "zonal_head" && grant.geography !== "zone")
+      setGrant({ ...grant, geography: "zone", place: firstZone });
+  };
   return (
     <AddForm
       title={copy.form.addTitle}
@@ -98,7 +106,7 @@ export function AddPerson(props: {
             />
           )}
         </Field>
-        <RoleChoice role={role} onChange={setRole} />
+        <RoleChoice role={role} roles={roles} onChange={chooseRole} />
         {role === "one" ? (
           <GrantBoxes staff={props.staff} grant={grant} onChange={setGrant} />
         ) : (
@@ -112,6 +120,7 @@ export function AddPerson(props: {
             </ul>
             <WhereChoice
               staff={props.staff}
+              zonesOnly={role === "zonal_head"}
               value={whereValue(grant)}
               onChange={(value) => {
                 setGrant({ ...grant, ...whereOf(value) });

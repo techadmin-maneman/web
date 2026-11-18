@@ -77,6 +77,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0252](0252-client-app-redesign.md) The client app redrawn: four tabs, the profile, and the client's look
 - [0253](0253-replacement-when-due-and-change-of-hair-system.md) Changing hair system at the replacement booking, and when a replacement is booked
 - [0256](0256-fit-guarantee-setting.md) The fit guarantee's days as a setting, and a claim as a Tasks row
+- [0278](0278-a-technician-in-training-takes-no-visits.md) A technician in training takes no visits
 
 ### Field work
 

@@ -37,7 +37,10 @@ export function WhereChoice(props: {
   readonly staff: StaffList;
   readonly value: string;
   readonly onChange: (value: string) => void;
+  /** A zonal head's: a zone alone. */
+  readonly zonesOnly?: boolean;
 }) {
+  const zonesOnly = props.zonesOnly ?? false;
   return (
     <Field label={copy.form.place} className={form.field} box="place">
       {(control) => (
@@ -49,7 +52,7 @@ export function WhereChoice(props: {
             props.onChange(event.target.value);
           }}
         >
-          <option value="national">{copy.national}</option>
+          {!zonesOnly && <option value="national">{copy.national}</option>}
           <optgroup label={copy.zones}>
             {props.staff.zones.map((zone) => (
               <option key={zone.name} value={whereValue({ geography: "zone", place: zone.name })}>
@@ -57,13 +60,15 @@ export function WhereChoice(props: {
               </option>
             ))}
           </optgroup>
-          <optgroup label={copy.cities}>
-            {props.staff.cities.map((city) => (
-              <option key={city} value={whereValue({ geography: "city", place: city })}>
-                {city}
-              </option>
-            ))}
-          </optgroup>
+          {!zonesOnly && (
+            <optgroup label={copy.cities}>
+              {props.staff.cities.map((city) => (
+                <option key={city} value={whereValue({ geography: "city", place: city })}>
+                  {city}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </Select>
       )}
     </Field>

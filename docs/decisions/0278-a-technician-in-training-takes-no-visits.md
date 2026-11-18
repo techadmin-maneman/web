@@ -2,7 +2,7 @@
 
 - Status: accepted, on the owner's ruling of 18 November 2026
 - Date: 2026-11-18
-- Topic: Dispatch
+- Topic: Booking and visits
 - Amends [0119](0119-blackouts-by-city-and-trained-fitters.md)
 
 ## Context

@@ -3791,7 +3791,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `home_lat` | REAL | yes |  |  |  |
 | `home_lng` | REAL | yes |  |  |  |
 | `reach_min` | INTEGER | yes |  |  | How far a technician goes from home, in minutes of driving by the estimate booking plans with (docs/decisions/0223-reach-from-home.md). Null takes the ops setting's. |
-| `training_ends_on` | TEXT | yes |  |  | The day ops expect the training to end, India's date, which the console shows. Null once ops mark it done, or for a technician never in training: training ends when ops say so, not on the day. |
+| `training_ends_on` | TEXT | yes |  |  | The day the training is expected to end, which the console shows; null once ops mark it done, or never in training. |
 
 Indexes:
 

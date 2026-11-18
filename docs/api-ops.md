@@ -24758,6 +24758,147 @@ A state's registration taken off: its visits are supplied from the registration 
 }
 ```
 
+### POST /api/zones
+
+A zone added, last in the order: a region of cities a grant of staff access may name
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewZone"
+}
+```
+
+**201**: The zones as they now stand, in order
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "zones"
+  ],
+  "additionalProperties": false
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: taken: a zone goes by that name already, however it is cased
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/slot-times
 
 The day's half-slot times in force, every change set, and the earliest a change may apply from
@@ -47710,6 +47851,7 @@ Request body:
         "launch.cancel",
         "city.add",
         "city.change",
+        "zone.add",
         "city.rename",
         "gst_registration.set",
         "gst_registration.remove",
@@ -54712,6 +54854,24 @@ Request body:
     "state_code",
     "gstin",
     "books_branch_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NewZone
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^\\p{L}[\\p{L}\\d .'-]{0,39}$/u"
+    }
+  },
+  "required": [
+    "name"
   ],
   "additionalProperties": false
 }

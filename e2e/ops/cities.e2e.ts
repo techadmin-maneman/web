@@ -167,6 +167,32 @@ test("withdraws a city’s price still to come, asked first", async ({ page }) =
   await expect(page.getByRole("status").filter({ hasText: copy.prices.withdrawn })).toBeVisible();
 });
 
+// Only NCR came with the migrations, and a city could be put in no other zone.
+test("lists each zone with its cities, and adds one as typed", async ({ page }) => {
+  await open(page, { "POST /api/zones": json({ zones: ["NCR", "Deccan"] }, 201) });
+  await expect(page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "NCR" }) })).toContainText(
+    "Gurgaon",
+  );
+  await page.getByRole("button", { name: copy.zones.add }).click();
+  const form = page.getByRole("group", { name: copy.zones.add });
+  await form.getByLabel(copy.zones.name).fill(" Deccan ");
+  const sent = page.waitForRequest((request) => request.url().endsWith("/api/zones") && request.method() === "POST");
+  await form.getByRole("button", { name: copy.form.add, exact: true }).click();
+  expect((await sent).postDataJSON()).toEqual({ name: "Deccan" });
+  await expect(page.getByRole("status").filter({ hasText: copy.zones.added })).toBeVisible();
+});
+
+test("refuses a zone another goes by, in the form’s own words", async ({ page }) => {
+  await open(page, {
+    "POST /api/zones": json({ error: { code: "taken", request_id: "test", fields: ["name"] } }, 409),
+  });
+  await page.getByRole("button", { name: copy.zones.add }).click();
+  const form = page.getByRole("group", { name: copy.zones.add });
+  await form.getByLabel(copy.zones.name).fill("ncr");
+  await form.getByRole("button", { name: copy.form.add, exact: true }).click();
+  await expect(form).toContainText(copy.zones.errors.taken);
+});
+
 test("refuses a GSTIN another state has, in the form’s own words", async ({ page }) => {
   await open(page, {
     "POST /api/gst-registrations": json({ error: { code: "taken", request_id: "test" } }, 409),

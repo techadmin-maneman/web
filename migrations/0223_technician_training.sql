@@ -3,8 +3,7 @@
 -- visit of any kind until ops mark the training done. A new column: the Worker already deployed reads and writes none
 -- of it.
 
--- The day ops expect the training to end, India's date, which the console shows. Null once ops mark it done, or for a
--- technician never in training: training ends when ops say so, not on the day.
+-- The day the training is expected to end, which the console shows; null once ops mark it done, or never in training.
 ALTER TABLE technicians ADD COLUMN training_ends_on TEXT;
 
 -- backfill: none. Every technician before this migration was taking visits, so none is in training.

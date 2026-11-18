@@ -787,6 +787,7 @@ export const settings = {
         one: "One department",
         dispatcher: "Dispatcher",
         care_agent: "Care agent",
+        zonal_head: "Zonal head",
         city_head: "City head",
         finance: "Finance",
       },
