@@ -289,7 +289,8 @@ export const settings = {
       payment_links: {
         holds_hours: "Holds the time for",
         closes_before_hours: "Closes before the visit",
-        pay_within_days: "Link after a visit open for",
+        pay_within_days: "Custom order’s link open for",
+        one_visit_days: "Days to pay after a one visit",
       },
       credit_reminder_days: { first: "First reminder", last: "Last reminder" },
       ratings: {

@@ -29,7 +29,7 @@ import { JOB, PERSON } from "../job-fixtures.ts";
 import {
   NATURAL,
   linkReference,
-  TWO_WEEKS_ON,
+  END_OF_DAY,
   A_PIECE,
   oneVisit,
   toThePiece,
@@ -209,7 +209,7 @@ describe("Razorpay's word that a one visit's link is paid", () => {
   it("leaves the visit's own link alone once it has closed by its time", async () => {
     await fittedAndClosed(createStubPayments());
     const payments = createStubPayments();
-    const deps = fakeDependencies({ payments, now: () => TWO_WEEKS_ON });
+    const deps = fakeDependencies({ payments, now: () => END_OF_DAY });
     await deliver(linkPaid({ id: "plink_by_hand", reference_id: JOB }), "evt-11", deps);
     expect(payments.made.cancelledLinks).toEqual([]);
   });

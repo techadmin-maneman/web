@@ -4,7 +4,7 @@
 import { indiaDate, monthsAfter } from "../../lib/india-time.ts";
 import { replaceAfterMonthsFor } from "../booking/packages.ts";
 import type { JobEventKind } from "../../policy/in-job-steps.ts";
-import { storedOutcomeOf } from "./job-event-bodies.ts";
+import { pieceBodyOf, storedOutcomeOf } from "./job-event-bodies.ts";
 import { failureWordsOf, jobSheet } from "./job-sheet-settings.ts";
 import {
   failedPieceStatement,
@@ -107,6 +107,9 @@ async function pieceStatements(db: D1Database, step: LandingStep): Promise<D1Pre
   if (pieces.fitted === null) return failed;
 
   const fittedOn = indiaDate(step.occurredAt);
+  // A one visit's step names the product the client chose there, which the visit was not booked as.
+  const chosen = pieceBodyOf(step.body);
+  const chosenProduct = chosen !== null && !("declined" in chosen) ? (chosen.product ?? null) : null;
   const fitted = fittedPieceStatement(db, {
     personId,
     appointmentId: step.visit.id,
@@ -114,7 +117,7 @@ async function pieceStatements(db: D1Database, step: LandingStep): Promise<D1Pre
     base: pieces.fitted.base,
     supplierLot: pieces.fitted.supplierLot,
     fittedOn,
-    replacementDue: monthsAfter(fittedOn, await replaceAfterMonthsFor(db, step.visit)),
+    replacementDue: monthsAfter(fittedOn, await replaceAfterMonthsFor(db, step.visit, chosenProduct)),
     now: step.now,
   });
   const replaced = replacedPiecesStatement(db, {

@@ -22,8 +22,7 @@ import { onAllowlist, type MessagingSettings } from "../../config/settings.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { failureReason, type Logger } from "../../log.ts";
-import { paymentLinkClosesAt } from "../../policy/one-visit.ts";
-import { readOpsInputs } from "../platform/ops-settings.ts";
+import { oneVisitLinkClosesAt } from "../../policy/one-visit.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "../platform/alerts.ts";
@@ -36,6 +35,7 @@ import { visitMessage } from "../messages/visit-messages.ts";
 import { cityOfVisit } from "../cities/cities.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { oneVisitOwedAtVisit } from "../booking/hold-slot.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 
 /** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
 export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free" | "at_visit";
@@ -341,7 +341,8 @@ async function askRazorpay({
     .first<{ name: string; mobile_e164: string }>();
   const contact = client?.mobile_e164 ?? "";
   const notify = onAllowlist(deps.messagingSettings, contact);
-  const closesAt = paymentLinkClosesAt(now, (await readOpsInputs(db, now)).paymentLinks.pay_within_days);
+  // The one visit is paid the same day, or within the days ops allow after it.
+  const closesAt = oneVisitLinkClosesAt(now, (await readOpsInputs(db, now)).paymentLinks.one_visit_days);
   try {
     const made = await deps.payments.createPaymentLink({
       amount: link.amount,

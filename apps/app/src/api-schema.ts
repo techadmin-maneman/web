@@ -7107,7 +7107,7 @@ export interface components {
              * @description Until then, moving or cancelling is free.
              */
             free_until: string;
-            /** @description The notice it is sold under: how many hours before its window moving or cancelling stops being free, as ops set it when the hold was made (24 to begin with). */
+            /** @description The notice it is sold under: how many hours before its start moving or cancelling stops being free, as ops set it when the hold was made (24 to begin with). */
             change_notice_hours: number;
             /**
              * @description What moving or cancelling it inside the notice costs, as it is sold: nothing, its late fee (late_fee), or the visit itself, whose payment is kept or whose credit is spent (visit).
@@ -7182,7 +7182,7 @@ export interface components {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
             /**
-             * @description free: before the notice the visit was booked under starts, counted back from its window; late: inside it.
+             * @description free: before the notice the visit was booked under starts, counted back from its start; late: inside it.
              * @enum {string}
              */
             notice: "free" | "late";
@@ -7207,7 +7207,7 @@ export interface components {
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
             /**
-             * @description free: before the notice the visit was booked under starts, counted back from its window; late: inside it.
+             * @description free: before the notice the visit was booked under starts, counted back from its start; late: inside it.
              * @enum {string}
              */
             notice: "free" | "late";

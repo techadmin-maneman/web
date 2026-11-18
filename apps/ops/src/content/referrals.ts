@@ -20,6 +20,8 @@ export const referrals = {
       same_mobile: "Same mobile number",
       // An invite ops attached after the friend's first fit.
       attached_after_fit: "Attached after the first fit",
+      // The friend did not sign off their fit.
+      fit_not_signed: "Fit not signed off",
     },
     approve: "Approve",
     reject: "Reject",

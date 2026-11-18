@@ -7,7 +7,6 @@ import { withGst } from "../../config/gst.ts";
 import type { BookingWindow } from "../../config/scheduling.ts";
 import { windowTimesOf, type WindowTimes } from "../../policy/slot-times.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
-import { indiaInstant } from "../../lib/india-time.ts";
 import {
   FREE_CHANGE_NOTICE_HOURS,
   freeUntil,
@@ -111,7 +110,6 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
       ? visitTimes(row.date, row.start_unit, minutes, schedule)
       : { start: new Date(row.starts_at), end: new Date(Date.parse(row.starts_at) + minutes * MINUTE_MS) };
   const hours = windowTimesOf(schedule.on(row.date))[row.window_label];
-  const windowStarts = indiaInstant(row.date, hours.start);
   const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
   return {
     id: row.id,
@@ -127,7 +125,7 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
     technician: { name: row.technician_name, initials: row.technician_initials },
     price,
     late_fee: lateFee,
-    free_until: freeUntil(windowStarts, noticeHours).toISOString(),
+    free_until: freeUntil(start, noticeHours).toISOString(),
     change_notice_hours: noticeHours,
     late_change_charge: lateCharge,
     expires_at: row.expires_at,

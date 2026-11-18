@@ -28,6 +28,21 @@ import {
 
 const DAY = 86_400_000;
 
+/** The friend's sign-off of a fit, as the client app and the technician's phone leave it (ADR 0254). */
+const signOff = (fitId: string, signState: "asked" | "flagged" | "signed" | "declined") =>
+  env.DB.prepare(
+    `INSERT INTO fit_sign_offs (appointment_id, state, declined_reason, asked_at, signed_at, guarantee_days, updated_at)
+     VALUES (?1, ?2, ?3, ?4, ?5, 14, ?4)`,
+  )
+    .bind(
+      fitId,
+      signState,
+      signState === "declined" ? "Client did not want to sign" : null,
+      NOW.toISOString(),
+      signState === "signed" ? NOW.toISOString() : null,
+    )
+    .run();
+
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
@@ -114,6 +129,31 @@ describe("the grant", () => {
     expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 1, held: 0 });
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
     expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(3);
+  });
+
+  // Credits follow the friend's own sign-off of the fit (ADR 0254): a fit closed with the sign-off declined waits for
+  // ops to decide, and one still being signed off waits for the client.
+  it("holds for ops a first fit closed with the friend's sign-off declined, and grants nothing", async () => {
+    await firstFit(FIT, FRIEND);
+    await signOff(FIT, "declined");
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, held: 1 });
+    expect(await state()).toEqual({ grant_state: "held", fraud_signals: JSON.stringify(["fit_not_signed"]) });
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
+    expect((await creditBalance(env.DB, REFERRER, NOW)).visits).toBe(0);
+    expect(await messagesWritten()).toEqual([]);
+  });
+
+  it("waits while the friend's sign-off is asked or flagged, and grants once it is signed", async () => {
+    await firstFit(FIT, FRIEND);
+    await signOff(FIT, "flagged");
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 0, held: 0 });
+    expect((await state())?.grant_state).toBe("pending");
+
+    await env.DB.prepare("UPDATE fit_sign_offs SET state = 'signed', signed_at = ?2 WHERE appointment_id = ?1")
+      .bind(FIT, NOW.toISOString())
+      .run();
+    expect(await settleReferrals(env.DB, NOW, REFERRAL_REWARD)).toMatchObject({ granted: 1, held: 0 });
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(3);
   });
 
   it("waits while the first fit is only partly done", async () => {

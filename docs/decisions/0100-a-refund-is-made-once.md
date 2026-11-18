@@ -1,6 +1,6 @@
 # 0100. A refund is made once, however often it is asked for
 
-- Status: accepted
+- Status: accepted. Amended 18 November 2026: receipts for a payment refunded by ops, a part of one, and a custom order.
 - Date: 2026-10-01
 - Topic: Money and Books
 - Amends [0045](0045-self-serve-booking.md), [0095](0095-a-booking-fsm-refuses-is-held.md) and [0096](0096-a-no-shows-charge-and-its-dispute.md), whose refunds took any failure as Razorpay's refusal (`docs/open-points.md`, item 161)
@@ -18,7 +18,7 @@ Razorpay's refunds take a `receipt`, which "serves as an idempotency key": a sec
 
 ## Decision
 
-**Every refund carries a receipt of its own** (`refundReceipt`, `src/domain/money/refunds.ts`). There is one per hold (`h-<hold>`), one per cancellation (`c-<visit>`), and one per no-show ruling on a visit (`nw-`, `nc-` or `nd-<visit>`, for waived, charged and refunded on dispute). Each is within Razorpay's 40 characters. So a refund can be asked for again without being made twice.
+**Every refund carries a receipt of its own** (`refundReceipt`, `src/domain/money/refunds.ts`). There is one per hold (`h-<hold>`), one per cancellation (`c-<visit>`), and one per no-show ruling on a visit (`nw-`, `nc-` or `nd-<visit>`, for waived, charged and refunded on dispute). **Amended 18 November 2026:** there is also one for what is left of a payment refunded by ops (`p-<payment>`); one per part of a payment, under the key the console's drawer made when it opened (`pp-<key>`), so a part pressed again after a lost answer is made once and the next part has its own; and one per custom order refunded (`co-<order>`). Each is within Razorpay's 40 characters. So a refund can be asked for again without being made twice.
 
 **Razorpay's silence is not its refusal.** The client (`src/providers/payments/razorpay.ts`) throws `PaymentUnanswered` where it cannot say whether a refund was made:
 

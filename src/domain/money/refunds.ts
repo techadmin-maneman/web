@@ -21,6 +21,8 @@ type RefundFor =
     }
   /** What is left of a payment, refunded by ops (./payment-refunds.ts). */
   | { readonly kind: "payment"; readonly paymentId: string }
+  /** Part of a payment refunded by ops, under the key the console's drawer made once, when it opened. */
+  | { readonly kind: "payment_part"; readonly key: string }
   /** A custom order refunded in full (./custom-order-refunds.ts). */
   | { readonly kind: "custom_order"; readonly orderId: string };
 
@@ -37,6 +39,8 @@ export function refundReceipt(refund: RefundFor): string {
       return `${NO_SHOW_RECEIPTS[refund.why]}-${refund.appointmentId}`;
     case "payment":
       return `p-${refund.paymentId}`;
+    case "payment_part":
+      return `pp-${refund.key}`;
     case "custom_order":
       return `co-${refund.orderId}`;
   }
@@ -49,20 +53,60 @@ export type RefundOutcome =
   /** Razorpay did not say, so the refund may have been made; asking again under its receipt stays safe. */
   | { readonly kind: "unanswered"; readonly error: unknown };
 
+/** Where a refund Razorpay takes is written down, and when. */
+export interface RefundRecord {
+  readonly db: D1Database;
+  readonly now: Date;
+}
+
+/**
+ * A refund Razorpay took, kept as on its way from that moment, so what is left of the payment counts it before its
+ * webhook lands; the webhook then finds the row by its refund ID and moves it on (recordRefund, ./payments.ts).
+ */
+async function recordAsked(record: RefundRecord, razorpayPaymentId: string, refundId: string, amount: number) {
+  const at = record.now.toISOString();
+  await record.db
+    .prepare(
+      `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, created_at, updated_at)
+       SELECT ?1, p.id, ?2, ?3, 'created', ?4, ?4 FROM payments p WHERE p.razorpay_payment_id = ?5
+       ON CONFLICT (razorpay_refund_id) DO NOTHING`,
+    )
+    .bind(crypto.randomUUID(), refundId, amount, at, razorpayPaymentId)
+    .run();
+}
+
 /**
  * Asks for a refund, and asks once more at once if Razorpay gave no answer. A refusal after no answer is not taken
  * as one, since Razorpay may refuse a payment already refunded before it reads the receipt. Nor is one when the
  * refund was `askedBefore`, by a request whose outcome is not known.
+ *
+ * A refund Razorpay made is written down after its answer, outside the asking: should that write fail, the error
+ * goes up as it is, never read as Razorpay refusing a refund it made, and the refund stays owed to be asked for again
+ * under the same receipt, which Razorpay answers with the refund already made.
  */
 export async function askRefund(
   payments: PaymentsProvider,
   paymentId: string,
   refund: RefundAsked,
-  options: { readonly askedBefore: boolean } = { askedBefore: false },
+  options: { readonly askedBefore?: boolean; readonly record: RefundRecord },
 ): Promise<RefundOutcome> {
   // Never through Razorpay: it holds no such payment. Ops refund it by UPI from the bank, as the refusal's alert says.
   if (paidOutsideRazorpay(paymentId)) return { kind: "refused", error: new Error("paid by UPI: refund it by UPI") };
-  let unanswered = options.askedBefore;
+  const made = await askRazorpay(payments, paymentId, refund, options.askedBefore ?? false);
+  if (made.kind === "refunded" && made.refundId !== null) {
+    await recordAsked(options.record, paymentId, made.refundId, refund.amount);
+  }
+  return made;
+}
+
+/** Razorpay's answer to the refund, asked once more at once when the first gave none. */
+async function askRazorpay(
+  payments: PaymentsProvider,
+  paymentId: string,
+  refund: RefundAsked,
+  askedBefore: boolean,
+): Promise<RefundOutcome> {
+  let unanswered = askedBefore;
   let lastError: unknown = null;
   for (let asked = 0; asked < ASKS; asked += 1) {
     try {

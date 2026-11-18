@@ -77,6 +77,20 @@ describe("GET /api/appointments/:id/reschedule: the terms", () => {
     const service = await (await get(client(), `/api/appointments/${VISIT}/reschedule`)).json();
     expect(service).toMatchObject({ notice: "late", cost: "charged", price: { amount: 200000 } });
   });
+
+  // The notice counts back from the visit's own start, not from the start of the window it falls in: a 12:30 start
+  // in the afternoon window (from 12:00) stays free until 12:30 the day before.
+  it("is free until 24 hours before the visit's own start, to the minute", async () => {
+    const start = "2026-09-22T07:00:00.000Z";
+    await booked("service", start, 200000);
+    const at = (iso: string) => client({ now: () => new Date(iso) });
+
+    const justFree = await (await get(at("2026-09-21T06:59:00.000Z"), `/api/appointments/${VISIT}/reschedule`)).json();
+    expect(justFree).toMatchObject({ notice: "free", cost: "free", free_until: "2026-09-21T07:00:00.000Z" });
+
+    const justLate = await (await get(at("2026-09-21T07:01:00.000Z"), `/api/appointments/${VISIT}/reschedule`)).json();
+    expect(justLate).toMatchObject({ notice: "late", cost: "charged", free_until: "2026-09-21T07:00:00.000Z" });
+  });
 });
 
 /**

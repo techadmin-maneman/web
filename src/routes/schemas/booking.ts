@@ -73,7 +73,7 @@ export const HoldSchema = z
       .int()
       .openapi({
         description:
-          "The notice it is sold under: how many hours before its window moving or cancelling stops being free, as " +
+          "The notice it is sold under: how many hours before its start moving or cancelling stops being free, as " +
           "ops set it when the hold was made (24 to begin with).",
       }),
     late_change_charge: z.enum(CHARGES).openapi({

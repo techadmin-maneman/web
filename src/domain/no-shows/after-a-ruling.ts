@@ -102,7 +102,7 @@ export async function settleNoShowRefund(
       deps.payments,
       payment.razorpayPaymentId,
       { amount, notes, receipt },
-      { askedBefore: owed.askedAt !== null },
+      { askedBefore: owed.askedAt !== null, record: { db, now } },
     );
     if (asked.kind === "refunded") refundId = asked.refundId;
     else await refundLeft(deps.alertOnce, owed, { outcome: asked.kind, paymentId: payment.razorpayPaymentId, amount });
