@@ -140,6 +140,40 @@ describe("the friend, fitted", () => {
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(2);
   });
 
+  // The friend's sign-off of the fit, as the client app and the technician's phone leave it (ADR 0254).
+  it("waits for the friend to sign off the fit, and for ops where it closed declined", async () => {
+    const partner = await addPartner();
+    await attributeToPartner(env.DB, {
+      invite: partner,
+      personId: FRIEND,
+      via: "consultation",
+      pincode: null,
+      now: NOW,
+    });
+    await firstFit(FIT, FRIEND);
+    const signOff = (state: "asked" | "declined") =>
+      env.DB.prepare(
+        `INSERT INTO fit_sign_offs (appointment_id, state, declined_reason, asked_at, guarantee_days, updated_at)
+         VALUES (?1, ?2, ?3, ?4, 14, ?4)
+         ON CONFLICT (appointment_id) DO UPDATE SET state = excluded.state, declined_reason = excluded.declined_reason`,
+      )
+        .bind(FIT, state, state === "declined" ? "Client did not want to sign" : null, NOW.toISOString())
+        .run();
+
+    await signOff("asked");
+    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
+    await signOff("declined");
+    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
+    expect(await channels()).toMatchObject([{ fitted: 0, earned: 0 }]);
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
+
+    const closed = await send("POST", `/api/tasks/fit_unsigned/${FIT}/close`, { reason: "Called, happy with it" });
+    expect(closed.status).toBe(204);
+    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 1 });
+    expect(await channels()).toMatchObject([{ fitted: 1, earned: 150000 }]);
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(2);
+  });
+
   it("earns the commission alone where the partner gives the friend no visits", async () => {
     const partner = await addPartner({ ...TERMS, friend_visits: 0 });
     await attributeToPartner(env.DB, {

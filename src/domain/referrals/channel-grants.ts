@@ -3,6 +3,9 @@
 // and the partner earns its commission, each at the terms in force then, kept with the attribution. No fraud rule
 // runs: a partner has no address or payment of ours to compare a friend's with. A first fit refunded under the
 // guarantee takes the visits back, and the commission with them.
+//
+// Both wait for the friend's own sign-off of the fit (docs/decisions/0254-client-signs-off-the-fit.md): while it is
+// asked or flagged, for the friend; a fit closed with it declined, for ops to close that fit's task.
 
 import { inviteLapsed } from "../../policy/invites.ts";
 import { creditExpiry } from "../../policy/referral-reward.ts";
@@ -11,6 +14,14 @@ import { FIRST_FIT_COUNTS } from "./referral-grants.ts";
 
 /** How many partners' friends one pass settles. */
 const PER_PASS = 10;
+
+/**
+ * The first fit signed off, closed before sign-off was switched on, or closed declined and its task since closed by
+ * ops. Kept in the query, so a friend still waiting never takes one of the pass's places.
+ */
+const SIGNED_OFF = `NOT EXISTS (SELECT 1 FROM fit_sign_offs s WHERE s.appointment_id = a.id
+    AND (s.state IN ('asked', 'flagged') OR (s.state = 'declined' AND NOT EXISTS (
+      SELECT 1 FROM task_closures tc WHERE tc.task_group = 'fit_unsigned' AND tc.subject_id = a.id))))`;
 
 const PENDING = `SELECT r.id, r.referred_person_id, r.via, pin.launched_at, a.id AS first_fit_id,
     c.friend_visits, c.valid_days, c.commission
@@ -21,7 +32,7 @@ const PENDING = `SELECT r.id, r.referred_person_id, r.via, pin.launched_at, a.id
     AND a.deleted_at IS NULL
   JOIN visit_outcomes v ON v.appointment_id = a.id AND v.outcome = 'done'
   LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode
-  WHERE r.grant_state = 'pending' AND fp.erased_at IS NULL AND ${FIRST_FIT_COUNTS}
+  WHERE r.grant_state = 'pending' AND fp.erased_at IS NULL AND ${FIRST_FIT_COUNTS} AND ${SIGNED_OFF}
   ORDER BY a.window_start LIMIT ?1`;
 
 interface Pending {
