@@ -422,8 +422,8 @@
         "BOOKS_BANK_ACCOUNT_ID": "4242595000001689024",
         "BOOKS_GATEWAY_FEES_ACCOUNT_ID": "4242595000000000507",
         // Razorpay's GSTIN and its state, as its tax invoice to us names them, so its fee's GST is input credit.
-        "BOOKS_GATEWAY_GSTIN": "",
-        "BOOKS_GATEWAY_GST_STATE": "",
+        "BOOKS_GATEWAY_GSTIN": "29AANCR6717K1ZN",
+        "BOOKS_GATEWAY_GST_STATE": "KA",
         // GST in Books (docs/decisions/0274-gst-on.md): the GSTIN and the state it is registered in; the SAC code once
         // the CA gives it.
         "BOOKS_GSTIN": "07AAVCM6347C1Z5",
