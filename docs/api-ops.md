@@ -9331,7 +9331,7 @@ Request body:
 }
 ```
 
-**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+**403**: access_required: a service token, which names no member of staff
 
 ```json
 {
@@ -9348,8 +9348,7 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
-                "access_required",
-                "not_permitted"
+                "access_required"
               ]
             }
           },

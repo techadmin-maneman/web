@@ -344,6 +344,23 @@ describe("ops deciding a deletion request", () => {
     expect(await answer.json()).toEqual({ state: "rejected" });
     expect(crm.sent).toEqual([]);
   });
+
+  // Erasing a client is a member of staff's to do, as on the client's own page.
+  it("refuses a service token, which names no member of staff, and erases nothing", async () => {
+    const id = await requested();
+    const service = fakeDependencies({
+      access: { verify: () => Promise.resolve({ ok: true, identity: { kind: "service", clientId: "ci.access" } }) },
+    });
+    const answer = await request(appFor("local", service, {}, "ops"), `/api/deletion-requests/${id}/decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ decision: "delete", reason: null }),
+    });
+    expect(answer.status).toBe(403);
+    expect(await answer.json()).toMatchObject({ error: { code: "access_required" } });
+    const person = await env.DB.prepare("SELECT erased_at FROM people WHERE id = ?1").bind(PERSON).first();
+    expect(person).toEqual({ erased_at: null });
+  });
 });
 
 describe("the deletion window", () => {

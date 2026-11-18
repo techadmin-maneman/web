@@ -6918,7 +6918,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                /** @description access_required: a service token, which names no member of staff */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6927,7 +6927,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "access_required" | "not_permitted";
+                                code: "access_required";
                             } & {
                                 [key: string]: unknown;
                             };
