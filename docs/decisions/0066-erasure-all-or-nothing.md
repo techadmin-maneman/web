@@ -1,6 +1,6 @@
 # 0066. Erasure is all or nothing
 
-- Status: accepted. Amends the order in ADR 0019 and the record of a deletion decision in ADR 0049. Amended by ADR 0094: an erasure also blanks a check-in's coordinates. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): FSM's queue is gone; the CRM's is the one told at once.
+- Status: accepted. Amends the order in ADR 0019 and the record of a deletion decision in ADR 0049. Amended by ADR 0094: an erasure also blanks a check-in's coordinates. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): FSM's queue is gone; the CRM's is the one told at once. Amended 18 November 2026: erasing anyway cancels each visit still to come free to the client, refunded in full, and a booking's payment stays on Tasks to refund once the client is erased (below).
 - Date: 2026-09-25
 - Topic: Privacy and accounts
 
@@ -32,7 +32,7 @@ The audit of 24 September 2026 (findings LIFE-01, ARCH-02, OPS-02) found three w
 The answer names each visit, booking, payment and link. An erasure lets go of every booking of the person's not yet a visit, in its batch, and then cancels their open payment links at Razorpay; one Razorpay will not cancel is alerted (`erased_link:<link>`). A booking of an erased person is never booked: a payment for it that comes in afterwards is refunded. A payment on a visit follows its visit: a live one is refused above, a done one was earned, and a cancelled one was refunded or kept under the cancellation rules (ADR 0046).
 
 - In the ops console, the deletion decision refuses, the request keeps waiting, and the console says which of the two it is.
-- Erasing from a person's page in the console refuses the same way, unless ops say they will settle it by hand today (`override_open_bookings: true`). The same-day promise can then still be kept. The audit entry records it with the counts, the Worker logs `erasure_override`, and the runbook's "Erasure within the day" has ops cancel and refund by hand that day. A refund needs none of the person's details. (Until 4 October 2026 this was the operators' `POST /api/erasure` and its script.)
+- Erasing from a person's page in the console refuses the same way, unless ops say to erase anyway (`override_open_bookings: true`). The same-day promise can then still be kept. Each visit still to come is cancelled free to the client, as a cancel on Visits is, and its payment refunded in full, so no technician is sent to an erased client and nothing paid is kept; one begun already is left on their page. A booking not yet a visit is let go, and its payment stays under Tasks' payments to refund, which lists erased clients too. The audit entry records it with the counts, and the Worker logs `erasure_override`. A refund needs none of the person's details. (Until 4 October 2026 this was the operators' `POST /api/erasure` and its script.)
 
 The rule lives in `src/policy/account-deletion.ts`. It is ours, not the prompt's.
 

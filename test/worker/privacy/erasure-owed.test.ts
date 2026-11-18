@@ -6,6 +6,8 @@ import { recordRefund } from "../../../src/domain/money/payments.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
+import { REFUND_OWED_LET_GO } from "../../../src/domain/money/payment-refunds.ts";
+import { aPayment } from "../fixtures/index.ts";
 import { captureLogs, fakeDependencies, LOCAL_CONFIG, markDatabase, NOW } from "../helpers.ts";
 import { book, bookedVisit, erase, fittedVisitUnpaid, statusOf } from "./erasure-fixtures.ts";
 
@@ -137,13 +139,24 @@ describe("erasure while something is still owed", () => {
     expect(await statusOf(personId)).toBe(200);
   });
 
-  it("erases anyway when ops say they will settle both by hand today, and the log says so", async () => {
+  // No technician is sent to an erased client, and nothing they paid for a visit is kept.
+  it("erases anyway when ops say so: a visit still to come is cancelled and refunded in full, and the log says so", async () => {
     const personId = await book();
     await bookedVisit(personId);
+    await aPayment({
+      person_id: personId,
+      appointment_id: "visit-live",
+      razorpay_payment_id: "pay_live",
+      amount: 270000,
+    });
     await paymentHeld(personId);
+    const deps = fakeDependencies();
 
-    expect(await statusOf(personId, { body: { override_open_bookings: true } })).toBe(200);
+    expect(await statusOf(personId, { deps, body: { override_open_bookings: true } })).toBe(200);
 
+    const visit = await env.DB.prepare("SELECT status FROM appointments WHERE id = 'visit-live'").first("status");
+    expect(visit).toBe("cancelled");
+    expect((deps.payments as StubPayments).made.refunds).toEqual([{ paymentId: "pay_live", amount: 270000 }]);
     const entry = await env.DB.prepare("SELECT detail FROM audit_log WHERE action = 'person.erase'").first("detail");
     expect(entry).toBe(JSON.stringify({ settled_by_hand: true, visits: 1, bookings: 0, payments: 1, links: 0 }));
   });
@@ -278,6 +291,29 @@ describe("erasure while a booking is not yet a visit, or a payment link is unpai
     expect(await statusOf(personId, { deps })).toBe(200);
 
     expect((deps.payments as StubPayments).made.cancelledLinks).toEqual([]);
+  });
+
+  // Its payment is left for ops to refund on Tasks, which must still show it once the client is erased.
+  it("keeps a booking's payment on Tasks to refund after erasing anyway", async () => {
+    const personId = await book();
+    await holding(personId, {
+      id: "hold-paid",
+      amount: 200000,
+      confirmedAt: NOW.toISOString(),
+      expiresAt: NOW.toISOString(),
+      orderId: "order_paid",
+    });
+    await aPayment({
+      person_id: personId,
+      razorpay_order_id: "order_paid",
+      razorpay_payment_id: "pay_held",
+      amount: 200000,
+    });
+
+    expect(await statusOf(personId, { body: { override_open_bookings: true } })).toBe(200);
+
+    const owed = await env.DB.prepare(REFUND_OWED_LET_GO).all<{ person_name: string; detail: string }>();
+    expect(owed.results).toMatchObject([{ person_name: "Erased", detail: "let_go 200000 pay_held" }]);
   });
 
   it("erases anyway when ops say so: lets go of the bookings and their time, and cancels the open links", async () => {

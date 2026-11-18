@@ -123,8 +123,7 @@ export const REFUND_OWED_LET_GO = `SELECT 'payment_to_refund' AS "group", p.id A
          NULL AS due_by, '' AS episode
     FROM payments p JOIN slot_holds h ON h.razorpay_order_id = p.razorpay_order_id
     JOIN people pe ON pe.id = h.person_id
-   WHERE p.status = 'captured' AND p.appointment_id IS NULL AND h.state = 'released' AND h.refunded_at IS NULL
-     AND pe.erased_at IS NULL`;
+   WHERE p.status = 'captured' AND p.appointment_id IS NULL AND h.state = 'released' AND h.refunded_at IS NULL`;
 
 /** And a refund Razorpay failed, with nothing made since. */
 export const REFUND_OWED_FAILED = `SELECT 'payment_to_refund' AS "group", p.id AS id, pe.id AS person_id, pe.name AS person_name,
@@ -134,7 +133,7 @@ export const REFUND_OWED_FAILED = `SELECT 'payment_to_refund' AS "group", p.id A
          NULL AS due_by, '' AS episode
     FROM refunds r JOIN payments p ON p.id = r.payment_id
     JOIN people pe ON pe.id = p.person_id
-   WHERE r.status = 'failed' AND p.status <> 'refunded' AND pe.erased_at IS NULL
+   WHERE r.status = 'failed' AND p.status <> 'refunded'
      AND NOT EXISTS (
        SELECT 1 FROM refunds later
         WHERE later.payment_id = r.payment_id AND ${statusIn("later.status", REFUND_NOT_FAILED)}
