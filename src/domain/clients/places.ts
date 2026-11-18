@@ -108,6 +108,11 @@ const RECORD_PLACES = {
   consultation_request: { table: "consultation_requests", city: (row) => pincodeCity(`${row}.pincode`) },
   waitlist_entry: { table: "waitlist_entries", city: (row) => pincodeCity(`${row}.pincode`) },
   technician: { table: "technicians", city: (row) => `${row}.city` },
+  sos: {
+    table: "sos_alerts",
+    city: (row) =>
+      `(SELECT place_sos_tech.city FROM technicians place_sos_tech WHERE place_sos_tech.id = ${row}.technician_id)`,
+  },
   leave_request: {
     table: "leave_requests",
     city: (row) =>

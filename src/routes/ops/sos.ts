@@ -1,11 +1,12 @@
-// A technician's SOS on the console (docs/decisions/0248-safety.md): every SOS not yet handled, which every console
-// screen shows national Operations as a banner, with whose it is, the visit they were on and where they were last; and
-// marking one handled, behind Operations · Act, which keeps who and when and blanks where the technician was.
+// A technician's SOS on the console (docs/decisions/0248-safety.md): every SOS not yet handled in the caller's cities,
+// which every console screen shows Operations as a banner, with whose it is, the visit they were on and where they were
+// last; and marking one handled, behind Operations · Act, which keeps who and when and blanks where the technician was.
 
 import { z } from "@hono/zod-openapi";
 import { handleSos, openSosList } from "../../domain/field/safety.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
+import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsRoute } from "../../http/session-routes.ts";
@@ -30,7 +31,7 @@ const OpenSosSchema = z
 const openRoute = opsRoute({
   method: "get",
   path: "/api/sos",
-  summary: "Every technician's SOS not yet handled, oldest first, for the banner on national Operations' every screen",
+  summary: "Every SOS not yet handled of a technician in the caller's cities, oldest first, for Operations' banner",
   responses: {
     200: { description: "Open, oldest first", ...json(z.object({ open: z.array(OpenSosSchema) }).strict()) },
   },
@@ -48,10 +49,11 @@ const handledRoute = opsRoute({
 });
 
 export function registerOpsSos(app: App): void {
-  app.openapi(openRoute, async (c) => c.json({ open: await openSosList(c.env.DB) }, 200));
+  app.openapi(openRoute, async (c) => c.json({ open: await openSosList(c.env.DB, await routeReach(c)) }, 200));
 
   app.openapi(handledRoute, async (c) => {
     const id = c.req.valid("param").id;
+    if (!(await withinRouteReach(c, "sos", id))) return refuse(c, "not_found");
     const handled = await handleSos(c.env.DB, { id, by: actorOf(c).id, now: c.var.deps.now() });
     if (handled === "not_found") return refuse(c, "not_found");
     await c.var.deps.resolveAlert(`sos:${id}`);

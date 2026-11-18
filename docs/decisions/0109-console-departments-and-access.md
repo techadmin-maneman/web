@@ -57,7 +57,8 @@ Every route's department and lowest level is one table, `ROUTE_NEEDS` in `src/po
 - a payment: its visit's, else the hold it paid for, else its client's; a refund: its payment's;
 - a grievance, a number change, a deletion request, a referral: the client's;
 - a waitlist entry, a consultation asked for, and a launch: its own pincode;
-- a technician and a kit: the city ops set on the technician on the Technicians screen (`technicians.city`); none, national only;
+- a technician, a kit and a technician's SOS: the city ops set on the technician on the Technicians screen (`technicians.city`); none, national only;
+- a custom order: its client's. A purchase order names no place, since its stock comes into the central store, so it stays national;
 - a task: its group's department, and its record's city;
 - a setting, a price, a code, a service, a consumable, the job sheet, a blackout day, the day times: national. View may read them from any place; changing them needs a national grant.
 

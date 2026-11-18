@@ -10064,7 +10064,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every technician's SOS not yet handled, oldest first, for the banner on national Operations' every screen */
+        /** Every SOS not yet handled of a technician in the caller's cities, oldest first, for Operations' banner */
         get: {
             parameters: {
                 query?: never;

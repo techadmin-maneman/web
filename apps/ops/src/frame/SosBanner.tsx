@@ -68,7 +68,7 @@ export function SosBanner() {
     if (answer.ok) setOpen(answer.body.open);
   }, []);
   useEffect(() => {
-    // Only for those it is shown to: national Operations.
+    // Only for those it is shown to: Operations, each for their own cities' technicians.
     if (!mayRead) return undefined;
     const ask = () => {
       read().catch(() => undefined);

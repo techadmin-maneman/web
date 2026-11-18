@@ -13607,7 +13607,7 @@ Request body:
 
 ### GET /api/sos
 
-Every technician's SOS not yet handled, oldest first, for the banner on national Operations' every screen
+Every SOS not yet handled of a technician in the caller's cities, oldest first, for Operations' banner
 
 **200**: Open, oldest first
 
