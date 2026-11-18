@@ -14,10 +14,11 @@ import { LOOK_PER_NUMBER_DAYS } from "./tryon-delivery.ts";
 
 export const CLIENT_SETTINGS = [
   {
-    // A paid visit booked from the console, and a one visit's link once the client is fitted (ADR 0105).
+    // A paid visit booked from the console, and a custom order's link. A one visit's link closes at the end of the day
+    // it is sent, since it is paid the same day (ADR 0105), whatever is set here.
     name: "payment_links",
     title: "Payment links",
-    note: "How long a console booking's link holds its time, how close to the visit it closes, and how long a one visit's link takes payment.",
+    note: "How long a console booking's link holds its time, how close to the visit it closes, and how long a custom order's link takes payment.",
     unit: "hours",
     min: 0,
     max: 72,

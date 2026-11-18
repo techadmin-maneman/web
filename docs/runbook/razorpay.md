@@ -41,7 +41,7 @@ A payment older than the cron looks (a hold three days past, a one visit's link 
 
 A consultation and fit in one visit is paid by the link its close makes (ADR 0105), and a paid visit ops book in the console by the link the booking makes. Razorpay texts the link to the client, with reminders. On staging it texts only a number on `MESSAGING_ALLOWLIST`: for any other number the link is made but not texted, the Worker logs `payment_link_not_texted`, and the link is on the client's Payments tab to send by hand.
 
-A one visit's link takes payment for 14 days from when Razorpay made it; a console booking's closes with its hold. A one visit's link that closed unpaid stays on Tasks as "link closed unpaid", and reads "Closed unpaid" on the client's Payments tab.
+A one visit's link takes payment until midnight in India after the day it was sent (half an hour at least), since the one visit is paid the same day; a console booking's closes with its hold. A one visit's link that closed unpaid stays on Tasks as "link closed unpaid", and reads "Closed unpaid" on the client's Payments tab.
 
 The Worker cancels a link at Razorpay when the client is erased, and when the visit is paid by another link, such as one you made by hand. One Razorpay will not cancel raises an alert with the link's ID (`erased_link:<link>` or `paid_elsewhere_link:<link>`).
 

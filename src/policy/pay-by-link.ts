@@ -7,7 +7,7 @@ import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 export const PAYMENT_LINK_KEYS = ["holds_hours", "closes_before_hours", "pay_within_days"] as const;
 /**
  * The longest a console link keeps its slot; how long before the visit it closes at the latest, so the technician
- * knows of the visit in time; and how long a one visit's link takes payment once it is made. Ops set them in Settings.
+ * knows of the visit in time; and how long a custom order's link takes payment once it is made (a one visit's closes at the end of the day it is sent, src/policy/one-visit.ts). Ops set them in Settings.
  */
 export type PaymentLinks = Readonly<Record<(typeof PAYMENT_LINK_KEYS)[number], number>>;
 

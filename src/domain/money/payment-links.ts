@@ -22,8 +22,7 @@ import { onAllowlist, type MessagingSettings } from "../../config/settings.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { failureReason, type Logger } from "../../log.ts";
-import { paymentLinkClosesAt } from "../../policy/one-visit.ts";
-import { readOpsInputs } from "../platform/ops-settings.ts";
+import { oneVisitLinkClosesAt } from "../../policy/one-visit.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "../platform/alerts.ts";
@@ -341,7 +340,8 @@ async function askRazorpay({
     .first<{ name: string; mobile_e164: string }>();
   const contact = client?.mobile_e164 ?? "";
   const notify = onAllowlist(deps.messagingSettings, contact);
-  const closesAt = paymentLinkClosesAt(now, (await readOpsInputs(db, now)).paymentLinks.pay_within_days);
+  // The one visit is paid the same day: its link closes at the end of the day it is sent.
+  const closesAt = oneVisitLinkClosesAt(now);
   try {
     const made = await deps.payments.createPaymentLink({
       amount: link.amount,

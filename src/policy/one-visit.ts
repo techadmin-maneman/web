@@ -7,12 +7,25 @@
 // consultation, with nothing charged.
 
 import { FIRST_FIT_WINDOWS, type BookingWindow } from "../config/scheduling.ts";
-import { DAY_MS } from "../lib/durations.ts";
+import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
+import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { FREE_CHANGE_NOTICE_HOURS, type SoldTerms } from "./moving-a-visit.ts";
 import { PAYMENT_LINKS } from "./pay-by-link.ts";
 
 /** When a payment link Razorpay makes at this moment stops taking payment, open for ops' days (`payment_links`). */
 export const paymentLinkClosesAt = (madeAt: Date, days: number): Date => new Date(madeAt.getTime() + days * DAY_MS);
+
+/** The least a one visit's link stays open: Razorpay refuses a link that closes within 15 minutes of being made. */
+const ONE_VISIT_LINK_OPEN_AT_LEAST_MS = 30 * MINUTE_MS;
+
+/**
+ * When a one visit's payment link stops taking payment: the visit is paid the same day, so at midnight in India after
+ * the day the link is sent, and never sooner than half an hour after it is sent.
+ */
+export const oneVisitLinkClosesAt = (sentAt: Date): Date => {
+  const endOfDay = indiaInstant(addDays(indiaDate(sentAt), 1), "00:00");
+  return new Date(Math.max(endOfDay.getTime(), sentAt.getTime() + ONE_VISIT_LINK_OPEN_AT_LEAST_MS));
+};
 
 /**
  * The latest a link with no closing time of its own can have been sent and be closed by `now`: one made before links

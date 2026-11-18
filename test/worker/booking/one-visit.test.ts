@@ -20,6 +20,7 @@ import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 import {
   NATURAL,
   TWO_WEEKS_ON,
+  END_OF_DAY,
   path,
   A_PIECE,
   oneVisit,
@@ -161,7 +162,7 @@ describe("closing a one visit the client was fitted at", () => {
         description: "Mane Man · visit of Mon 21 Sep",
         customer: { name: "Rohit Malhotra", contact: "+919810000001" },
         notes: { appointment_id: JOB, person_id: PERSON },
-        closesAt: TWO_WEEKS_ON,
+        closesAt: END_OF_DAY,
         notify: true,
       },
     ]);
@@ -193,7 +194,7 @@ describe("closing a one visit the client was fitted at", () => {
   });
 
   // A link took payment, and Razorpay kept reminding the client, however long it went unpaid.
-  it("closes the payment link after 14 days, and the task for the money owed says so", async () => {
+  it("closes the payment link at the end of the day it was sent, and the task for the money owed says so", async () => {
     const job = await oneVisit();
     await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
     await closeAsDone(job);
@@ -203,8 +204,8 @@ describe("closing a one visit the client was fitted at", () => {
     // The task reads "<state> <paise> <link address> <product>".
     const reads = (state: string) =>
       new RegExp(`^${state} ${String(NATURAL.amount)} https://rzp\\.io/i/\\S+ Mane Man Natural$`);
-    expect(await owed(new Date(TWO_WEEKS_ON.getTime() - 60_000))).toMatch(reads("sent"));
-    expect(await owed(TWO_WEEKS_ON)).toMatch(reads("closed"));
+    expect(await owed(new Date(END_OF_DAY.getTime() - 60_000))).toMatch(reads("sent"));
+    expect(await owed(END_OF_DAY)).toMatch(reads("closed"));
   });
 
   // On staging a test record's made-up number, very likely a stranger's, was texted "pay Rs. 30,000".
