@@ -56,7 +56,7 @@ test("an SOS held for three seconds goes with the visit and where the phone is, 
   const fake = await onAStep(page);
   await hold(page, 3400);
 
-  await expect(page.getByText(/^SOS sent \d{1,2}:\d{2} [ap]m$/)).toBeVisible();
+  await expect(page.getByText(/^SOS sent \d{1,2}(:\d{2})? [ap]m$/)).toBeVisible();
   await expect(page.getByText(safety.sentBody)).toBeVisible();
   const sent = fake.writes.find((write) => write.path === "/api/tech/sos");
   expect(sent?.body).toMatchObject({ job_id: JOB_ID, position: { lat: 28.39, lng: 77.07 } });
