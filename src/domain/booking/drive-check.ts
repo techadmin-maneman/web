@@ -10,6 +10,7 @@ import type { Alert } from "../../providers/alerts.ts";
 import type { RoutesProvider } from "../../providers/routes/index.ts";
 import type { Settings } from "../../config/settings.ts";
 import { driveThrough } from "../platform/road-drives.ts";
+import { driveMinutes } from "../../policy/drive-estimate.ts";
 
 /** What Google is asked through, from the route's caller. */
 export interface DriveCheck {
@@ -20,11 +21,28 @@ export interface DriveCheck {
   readonly refused: (detail: string) => Promise<void>;
   /** Google answered: an alert about its refusing closes. */
   readonly answered: () => Promise<void>;
-  /** A start Google's drive leaves no room for, and by how many minutes: what tunes the estimate the starts are offered on. */
-  readonly tooTight?: (short: { readonly leg: "before" | "after"; readonly minutes: number }) => void;
+  /**
+   * A start Google's drive leaves no room for: the leg, Google's minutes and the estimate's for it, both with parking,
+   * which tunes the estimate the starts are offered on; and how far past the gap the start left it runs.
+   */
+  readonly tooTight?: (short: TooTight) => void;
+}
+
+/** A leg Google's drive leaves no room for, in minutes. */
+export interface TooTight {
+  readonly leg: "before" | "after";
+  /** Google's drive, with the time to park. */
+  readonly google_minutes: number;
+  /** The estimate's for the same leg at the hour it sets off, with the time to park (src/policy/drive-estimate.ts). */
+  readonly estimate_minutes: number;
+  /** How far past the gap the start left the drive runs. */
+  readonly past_gap_minutes: number;
 }
 
 const minutesOf = (seconds: number): number => Math.ceil(seconds / 60);
+
+/** The hour of the day `minute` falls in. */
+const hourOf = (minute: number): number => Math.floor(minute / 60) % 24;
 
 /** Whether Google's drives leave room for a visit of `minutes` at `time` on the day; true where nothing can be checked. */
 export async function drivesFit(
@@ -54,17 +72,27 @@ export async function drivesFit(
   const [first, second] = answer.legs;
   if (from !== null && first !== undefined) {
     const readyFrom = before === undefined ? day.opens : before.end + wrap;
-    const over = readyFrom + minutesOf(first.seconds) + parking - start;
-    if (over > 0) {
-      check.tooTight?.({ leg: "before", minutes: over });
+    const google = minutesOf(first.seconds) + parking;
+    if (readyFrom + google > start) {
+      check.tooTight?.({
+        leg: "before",
+        google_minutes: google,
+        estimate_minutes: driveMinutes(from, visit.pin, hourOf(readyFrom), rules.drive),
+        past_gap_minutes: readyFrom + google - start,
+      });
       return false;
     }
   }
   const leaving = from === null ? first : second;
   if (after !== undefined && to !== null && leaving !== undefined) {
-    const over = end + wrap + minutesOf(leaving.seconds) + parking - after.start;
-    if (over > 0) {
-      check.tooTight?.({ leg: "after", minutes: over });
+    const google = minutesOf(leaving.seconds) + parking;
+    if (end + wrap + google > after.start) {
+      check.tooTight?.({
+        leg: "after",
+        google_minutes: google,
+        estimate_minutes: driveMinutes(visit.pin, to, hourOf(end + wrap), rules.drive),
+        past_gap_minutes: end + wrap + google - after.start,
+      });
       return false;
     }
   }

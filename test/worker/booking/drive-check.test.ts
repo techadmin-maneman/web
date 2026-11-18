@@ -3,9 +3,9 @@
 // cannot answer, the estimate stands. Every pin here is made up.
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { drivesFit, type DriveCheck } from "../../../src/domain/booking/drive-check.ts";
+import { drivesFit, type DriveCheck, type TooTight } from "../../../src/domain/booking/drive-check.ts";
 import { minuteOf, type PlanDay, type PlanRules } from "../../../src/policy/day-plan.ts";
-import { DRIVE_ESTIMATE } from "../../../src/policy/drive-estimate.ts";
+import { DRIVE_ESTIMATE, driveMinutes } from "../../../src/policy/drive-estimate.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 import type { RoutesProvider } from "../../../src/providers/routes/index.ts";
 import { env } from "cloudflare:workers";
@@ -26,9 +26,10 @@ const dayAt = (lat: number): PlanDay => ({
 function google(
   minutes: number | null,
   refusal: string | null = null,
-): { check: DriveCheck; asked: number[]; told: string[] } {
+): { check: DriveCheck; asked: number[]; told: string[]; tight: TooTight[] } {
   const asked: number[] = [];
   const told: string[] = [];
+  const tight: TooTight[] = [];
   const routes: RoutesProvider = {
     route: (stops) => {
       asked.push(stops.length);
@@ -53,8 +54,11 @@ function google(
       told.push("answered");
       return Promise.resolve();
     },
+    tooTight: (short) => {
+      tight.push(short);
+    },
   };
-  return { check, asked, told };
+  return { check, asked, told, tight };
 }
 
 beforeEach(async () => {
@@ -63,14 +67,39 @@ beforeEach(async () => {
 
 describe("Google's drives", () => {
   it("hold a start only where the drive from the visit before, and parking, reach it", async () => {
-    const { check, asked } = google(30);
+    const { check, asked, tight } = google(30);
     const plan = { day: dayAt(28.41), rules: RULES, now: NOW };
     const visit = { minutes: 60, pin: { lat: 28.43, lng: 77.05 } };
     // Wrapped up by 11:40, then 30 minutes' drive and 10 to park: not by noon, by 12:30.
     expect(await drivesFit(env.DB, check, plan, { ...visit, time: "12:00" })).toBe(false);
+    // Google's 40 with parking, beside the estimate's for the same road at 11, and 20 past the gap noon left.
+    expect(tight).toEqual([
+      {
+        leg: "before",
+        google_minutes: 40,
+        estimate_minutes: driveMinutes({ lat: 28.41, lng: 77.05 }, visit.pin, 11, DRIVE_ESTIMATE),
+        past_gap_minutes: 20,
+      },
+    ]);
     expect(await drivesFit(env.DB, check, plan, { ...visit, time: "12:30" })).toBe(true);
     // The same road twice is Google's once: the answer is kept.
     expect(asked).toEqual([2]);
+  });
+
+  it("hold a start only where the drive on to the visit after it, and parking, reach that one", async () => {
+    const { check, tight } = google(30);
+    const plan = { day: dayAt(28.42), rules: RULES, now: NOW };
+    const visit = { minutes: 60, pin: { lat: 28.44, lng: 77.05 } };
+    // Done by 10, wrapped up by 10:10, then 40 with parking: 50 past the visit at 10.
+    expect(await drivesFit(env.DB, check, plan, { ...visit, time: "09:00" })).toBe(false);
+    expect(tight).toEqual([
+      {
+        leg: "after",
+        google_minutes: 40,
+        estimate_minutes: driveMinutes(visit.pin, { lat: 28.42, lng: 77.05 }, 10, DRIVE_ESTIMATE),
+        past_gap_minutes: 50,
+      },
+    ]);
   });
 
   it("leave the estimate standing where Google cannot answer, or the visit has no pin", async () => {

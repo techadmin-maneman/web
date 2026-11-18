@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { DriveCheck } from "../../../src/domain/booking/drive-check.ts";
+import type { DriveCheck, TooTight } from "../../../src/domain/booking/drive-check.ts";
 import { holdSlot } from "../../../src/domain/booking/hold-slot.ts";
 import { newNumbersState } from "../../../src/domain/booking/new-number-state.ts";
 import { siteVisit } from "../../../src/domain/booking/site-visit.ts";
@@ -13,8 +13,8 @@ import { LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
 import { anAddress, aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
 
 /** Google, answering every drive in an hour; and what it said was too tight. */
-function slowRoads(): { drives: DriveCheck; tight: { leg: string; minutes: number }[] } {
-  const tight: { leg: string; minutes: number }[] = [];
+function slowRoads(): { drives: DriveCheck; tight: TooTight[] } {
+  const tight: TooTight[] = [];
   const routes: RoutesProvider = {
     route: (stops) =>
       Promise.resolve({
@@ -92,8 +92,8 @@ describe("a number the site knows", () => {
 
     expect(held).toBeNull();
     expect(known).toEqual({ state: "taken", startsAt: null });
-    // How far Google's hour runs over the room left after his visit, which tunes the estimate.
-    expect(tight[0]).toMatchObject({ leg: "before" });
+    // Google's hour and the time to park, beside the estimate's for the same road, which it tunes.
+    expect(tight[0]).toMatchObject({ leg: "before", google_minutes: 70 });
   });
 
   it("is answered booked at the same start where Google is not asked", async () => {
