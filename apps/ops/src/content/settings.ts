@@ -5,6 +5,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 import { grantPhrasing } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
+import { purchasing } from "./purchasing.ts";
 import { tasks } from "./tasks.ts";
 
 /** A unit's noun for one of it: "1 visit", not "1 visits". */
@@ -211,6 +212,8 @@ export const settings = {
       no_show_wait_min: dispatch.typeNames,
       late_change_charge: dispatch.typeNames,
       same_day_booking: dispatch.typeNames,
+      po_own_approval: { drafter: "On its drafter’s approval" },
+      receipt_checks: purchasing.checks,
       booking_rules: {
         step: "Starts every",
         arrival: "Arrives within",
@@ -346,6 +349,8 @@ export const settings = {
       no_show_charge: { nothing: "Nothing", late_fee: "Late fee", visit: "The full visit" },
       no_show_waiver: { refunded: "Refunded", kept: "Kept", returned: "Returned", spent: "Spent" },
       same_day_booking: { yes: "Yes", no: "No" },
+      po_own_approval: { alone: "Approved", second: "Waits for a second manager" },
+      receipt_checks: { checked: "Checked", skipped: "Not checked" },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /** The check before a rule is sent: each figure that moves, the old beside the new. */
     confirm: {

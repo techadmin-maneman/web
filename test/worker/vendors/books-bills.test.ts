@@ -93,6 +93,7 @@ async function received(): Promise<void> {
     received,
     damaged: 0,
     qc_failed: qcFailed,
+    ...(qcFailed > 0 && lineId === hairLine?.id ? { qc_failed_points: ["density"] } : {}),
     lot_code: null,
     expires_on: null,
   });

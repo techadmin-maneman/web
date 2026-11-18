@@ -16,6 +16,8 @@ export interface ReceiptLine {
   readonly received: number;
   readonly damaged: number;
   readonly qcFailed: number;
+  /** What a hair system's failed pieces failed, of the checks ops make (src/policy/receipt-checks.ts). */
+  readonly qcFailedPoints: readonly string[];
   readonly lotCode: string | null;
   readonly expiresOn: string | null;
 }
@@ -26,7 +28,7 @@ export interface Receipt {
   readonly receivedBy: string;
   readonly receivedAt: string;
   readonly supplierInvoice: string | null;
-  readonly lines: readonly (ReceiptLine & { readonly landedUnitPaise: number })[];
+  readonly lines: readonly (Omit<ReceiptLine, "qcFailedPoints"> & { readonly landedUnitPaise: number })[];
 }
 
 type Refused = Refusal<"invalid_request"> | Refusal<"order_state"> | Refusal<"not_found">;
@@ -40,6 +42,8 @@ type OrderLineRow = {
   number: number;
   currency: string;
   state: string;
+  /** 1 for a hair system, whose pieces are checked against ops' points as they arrive. */
+  hair_system: number;
 };
 
 /** Whether the order's supplier has had this invoice received already, on any of its orders. */
@@ -61,6 +65,15 @@ function refusedField(error: unknown): string | null {
   return message.includes("over_received") ? "lines" : null;
 }
 
+/**
+ * Whether a line names the points its failed pieces failed where it must, and none where it must not: a hair system's
+ * line with failed pieces names one or more while ops check any; with every check off, none.
+ */
+const pointsFit = (line: ReceiptLine, hairSystem: boolean, checks: readonly string[]): boolean =>
+  hairSystem && line.qcFailed > 0 && checks.length > 0
+    ? line.qcFailedPoints.length > 0 && line.qcFailedPoints.every((point) => checks.includes(point))
+    : line.qcFailedPoints.length === 0;
+
 /** What a receipt is checked against: its order's lines, each with the order's number, currency and state. */
 async function checkedReceipt(
   db: D1Database,
@@ -69,6 +82,8 @@ async function checkedReceipt(
     readonly lines: readonly ReceiptLine[];
     readonly rateMicro: number | null;
     readonly supplierInvoice: string | null;
+    /** The points ops check a hair system against. */
+    readonly checks: readonly string[];
   },
 ): Promise<
   | {
@@ -82,7 +97,8 @@ async function checkedReceipt(
   const { results: orderLines } = await db
     .prepare(
       `SELECT l.id, l.consumable_code, l.unit_price, l.quantity - l.received_quantity AS outstanding, o.number,
-         o.currency, o.state FROM po_lines l
+         o.currency, o.state, EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = l.consumable_code) AS hair_system
+       FROM po_lines l
        JOIN purchase_orders o ON o.id = l.po_id WHERE l.po_id = ?1`,
     )
     .bind(receipt.poId)
@@ -103,6 +119,9 @@ async function checkedReceipt(
     ({ line, of }) => line.received + line.damaged + line.qcFailed > (of?.outstanding ?? 0),
   );
   if (over >= 0) return refusal("invalid_request", [`lines.${String(over)}`]);
+  // A hair system's failed pieces name what they failed, of the checks ops make; nothing else names any.
+  const unnamed = matched.findIndex(({ line, of }) => !pointsFit(line, of?.hair_system === 1, receipt.checks));
+  if (unnamed >= 0) return refusal("invalid_request", [`lines.${String(unnamed)}.qc_failed_points`]);
   if (receipt.supplierInvoice !== null && (await invoiceReceived(db, receipt.poId, receipt.supplierInvoice))) {
     return refusal("invalid_request", ["supplier_invoice"]);
   }
@@ -147,6 +166,8 @@ export async function receiveOrder(
     readonly poId: string;
     readonly lines: readonly ReceiptLine[];
     readonly supplierInvoice: string | null;
+    /** The points ops check a hair system against (src/policy/receipt-checks.ts). */
+    readonly checks: readonly string[];
     /** Micro-rupees to one whole unit of the order's currency; null for an order in rupees. */
     readonly rateMicro: number | null;
     readonly extras: { readonly freight: number; readonly duty: number; readonly clearing: number };
@@ -286,7 +307,13 @@ function lineStatements(
         ]),
     ...receiptClaimStatements(
       db,
-      { id: lineId, poLineId: line.poLineId, damaged: line.damaged, qcFailed: line.qcFailed },
+      {
+        id: lineId,
+        poLineId: line.poLineId,
+        damaged: line.damaged,
+        qcFailed: line.qcFailed,
+        qcFailedPoints: line.qcFailedPoints,
+      },
       written,
     ),
   ];

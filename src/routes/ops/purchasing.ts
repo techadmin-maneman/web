@@ -22,7 +22,8 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
-import { needsSecondApproval, PO_STATES } from "../../policy/purchasing.ts";
+import { needsSecondApproval, ownApprovalNeedsSecond, PO_STATES } from "../../policy/purchasing.ts";
+import { checkedPoints, QC_POINTS } from "../../policy/receipt-checks.ts";
 import { CIN, GSTIN } from "../../policy/suppliers.ts";
 
 const Text = z.string();
@@ -49,6 +50,7 @@ const OrdersSchema = z
                 quantity: z.number().int(),
                 unit_price: z.number().int(),
                 received: z.number().int(),
+                hair_system: z.boolean().openapi({ description: "Its pieces are checked against receipt_checks." }),
               })
               .strict(),
           ),
@@ -126,6 +128,9 @@ const OrdersSchema = z
         .strict(),
     ),
     second_approval_above_rupees: z.number().int(),
+    receipt_checks: z.array(z.enum(QC_POINTS)).openapi({
+      description: "The points ops check a hair system against as it arrives, in order.",
+    }),
     letterhead: z
       .object({ legal_name: Text, registered_office: MaybeText, cin: MaybeText, gstin: MaybeText, deliver_to: Text })
       .strict()
@@ -301,6 +306,7 @@ export async function ordersAnswer(c: Context<AppEnv>) {
         quantity: line.quantity,
         unit_price: line.unitPrice,
         received: line.received,
+        hair_system: line.hairSystem,
       })),
       drafted_by: order.draftedBy,
       drafted_at: order.draftedAt,
@@ -309,7 +315,9 @@ export async function ordersAnswer(c: Context<AppEnv>) {
       second_approved_by: order.secondApprovedBy,
       sent_at: order.sentAt,
       cancel_reason: order.cancelReason,
-      needs_second_approval: needsSecondApproval(order, above, inputs.poRupeesToOne),
+      needs_second_approval:
+        needsSecondApproval(order, above, inputs.poRupeesToOne) ||
+        (order.state === "drafted" && ownApprovalNeedsSecond(order, order.approvedBy, inputs.poOwnApproval)),
       receipts: receipts
         .filter((receipt) => receipt.poId === order.id)
         .map((receipt) => ({
@@ -331,6 +339,7 @@ export async function ordersAnswer(c: Context<AppEnv>) {
     suppliers: suppliers.map(supplierJson),
     consumables: consumables.results,
     second_approval_above_rupees: above,
+    receipt_checks: checkedPoints(inputs.receiptChecks),
     letterhead:
       letterhead === null
         ? null
@@ -381,8 +390,8 @@ export function registerOpsPurchasing(app: App): void {
   });
 
   app.openapi(stepRoute("approve", "An approval: the first, or a second by another manager"), async (c) => {
-    const { poSecondApprovalAboveRupees, poRupeesToOne } = await opsInputs(c);
-    const rule = { aboveRupees: poSecondApprovalAboveRupees, rupeesToOne: poRupeesToOne };
+    const { poSecondApprovalAboveRupees, poRupeesToOne, poOwnApproval } = await opsInputs(c);
+    const rule = { aboveRupees: poSecondApprovalAboveRupees, rupeesToOne: poRupeesToOne, ownApproval: poOwnApproval };
     return after(c, await approveOrder(c.env.DB, c.req.valid("param").id, rule, written(c)));
   });
 

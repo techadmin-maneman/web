@@ -88,6 +88,10 @@ export interface OpsInputs {
   readonly poSecondApprovalAboveRupees: number;
   /** Rupees to one unit of each other currency, for approvals (src/policy/purchasing.ts). */
   readonly poRupeesToOne: Readonly<Record<string, number>>;
+  /** "second" where an order its drafter approves needs another manager too (src/policy/purchasing.ts). */
+  readonly poOwnApproval: string;
+  /** Which points a hair system is checked against as it arrives (src/policy/receipt-checks.ts). */
+  readonly receiptChecks: Readonly<Record<string, string>>;
   /** Days past its promised date before a custom order is late (src/policy/purchasing.ts). */
   readonly customOrderGraceDays: number;
   /** The forecast's period and horizon (src/policy/forecast.ts). */
@@ -192,6 +196,8 @@ function shape(values: OpsValues): OpsInputs {
     taskLapseDays: values.task_lapse_days,
     poSecondApprovalAboveRupees: values.po_second_approval_above_rupees,
     poRupeesToOne: values.po_rupees_to_one,
+    poOwnApproval: values.po_own_approval.drafter,
+    receiptChecks: values.receipt_checks,
     customOrderGraceDays: values.custom_order_grace_days,
     planningPeriodDays: values.planning_period_days,
     planningHorizonPeriods: values.planning_horizon_periods,

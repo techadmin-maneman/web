@@ -26,6 +26,7 @@ interface Claims {
     state: string;
     outcome: string | null;
     credit_amount: number | null;
+    failed_points: string[] | null;
   }[];
   returns: { id: string; piece_code: string; in_warranty: boolean; warranty_ends_on: string | null }[];
 }
@@ -161,10 +162,85 @@ beforeEach(async () => {
   await received();
 });
 
+// A receipt's quality check was one number: the supplier was told how many failed, never what was wrong.
+describe("a hair system's failed check", () => {
+  /** A second order, of three hair systems and five of solvent, sent: its ID and its two lines'. */
+  async function sentAgain(): Promise<{ order: string; hairLine: string; solventLine: string }> {
+    const listed = await (await request(job.ops, "/api/purchase-orders")).json<{ orders: { supplier_id: string }[] }>();
+    const drafted = await job.opsPost("/api/purchase-orders", {
+      supplier_id: listed.orders[0]?.supplier_id ?? "",
+      lines: [
+        { consumable_code: hair, quantity: 3 },
+        { consumable_code: "solvent", quantity: 5 },
+      ],
+      expected_on: null,
+      note: null,
+    });
+    const order = (await drafted.json<{ orders: { id: string; lines: { id: string }[] }[] }>()).orders[0];
+    await env.DB.prepare("UPDATE purchase_orders SET state = 'sent', sent_at = ?2 WHERE id = ?1")
+      .bind(order?.id ?? "", NOW.toISOString())
+      .run();
+    return { order: order?.id ?? "", hairLine: order?.lines[0]?.id ?? "", solventLine: order?.lines[1]?.id ?? "" };
+  }
+
+  const receive = (order: string, lines: readonly object[]) =>
+    job.opsPost(`/api/purchase-orders/${order}/receipts`, {
+      lines: lines.map((line) => ({ damaged: 0, qc_failed: 0, lot_code: null, expires_on: null, ...line })),
+      supplier_invoice: null,
+      rupee_rate: 8325,
+      freight_paise: 0,
+      duty_paise: 0,
+      clearing_paise: 0,
+      note: null,
+    });
+
+  it("names what its pieces failed, of the checks ops make, and its claim carries them", async () => {
+    const { order, hairLine } = await sentAgain();
+    const failed = { po_line_id: hairLine, received: 1, qc_failed: 2 };
+    expect(await codeOf(await receive(order, [failed]))).toMatchObject({ fields: ["lines.0.qc_failed_points"] });
+
+    const checks = { base_size: "checked", colour: "checked", density: "checked", lace_knots: "checked" };
+    await job.opsPost("/api/settings/receipt_checks", { value: { ...checks, label: "skipped" } });
+    const unchecked = await receive(order, [{ ...failed, qc_failed_points: ["label"] }]);
+    expect(await codeOf(unchecked)).toMatchObject({ fields: ["lines.0.qc_failed_points"] });
+
+    const named = await receive(order, [{ ...failed, qc_failed_points: ["colour", "density"] }]);
+    expect(named.status).toBe(200);
+    const claim = (await claims()).claims.find((each) => each.failed_points !== null);
+    expect(claim).toMatchObject({ reason: "qc_failed", quantity: 2, failed_points: ["colour", "density"] });
+  });
+
+  it("is not asked for while ops check none of the points", async () => {
+    const { order, hairLine } = await sentAgain();
+    const none = { base_size: "skipped", colour: "skipped", density: "skipped", lace_knots: "skipped" };
+    await job.opsPost("/api/settings/receipt_checks", { value: { ...none, label: "skipped" } });
+    const failed = await receive(order, [{ po_line_id: hairLine, received: 2, qc_failed: 1 }]);
+    expect(failed.status).toBe(200);
+  });
+
+  it("is named on a hair system's line alone, and only for pieces that failed", async () => {
+    const { order, hairLine, solventLine } = await sentAgain();
+    const onSolvent = await receive(order, [
+      { po_line_id: hairLine, received: 3 },
+      { po_line_id: solventLine, received: 4, qc_failed: 1, qc_failed_points: ["colour"] },
+    ]);
+    expect(await codeOf(onSolvent)).toMatchObject({ fields: ["lines.1.qc_failed_points"] });
+    const noneFailed = await receive(order, [{ po_line_id: hairLine, received: 3, qc_failed_points: ["colour"] }]);
+    expect(await codeOf(noneFailed)).toMatchObject({ fields: ["lines.0.qc_failed_points"] });
+  });
+});
+
 describe("a claim on a supplier", () => {
   it("is drafted with its receipt for what arrived damaged and what failed its check, at the order's price", async () => {
     expect((await claims()).claims).toEqual([
-      expect.objectContaining({ number: A_NUMBER, reason: "qc_failed", quantity: 1, unit_price: 250, currency: "USD" }),
+      expect.objectContaining({
+        number: A_NUMBER,
+        reason: "qc_failed",
+        quantity: 1,
+        unit_price: 250,
+        currency: "USD",
+        failed_points: null,
+      }),
       expect.objectContaining({
         number: A_NUMBER,
         reason: "damaged",

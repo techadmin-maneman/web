@@ -2,6 +2,7 @@
 // every word here is ours. Only the Purchasing page reads it, loaded when it opens.
 
 import { amountOf } from "@maneman/web-kit/figures";
+import type { QcPoint } from "@rules/policy/receipt-checks.ts";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const purchasing = {
@@ -106,12 +107,24 @@ export const purchasing = {
       unknown: FAILED,
     },
   },
+  /** What a hair system is checked against as it arrives, as Settings, the receipt and a claim name each point. */
+  checks: {
+    base_size: "Base size",
+    colour: "Colour against the ring",
+    density: "Density",
+    lace_knots: "Lace and knots",
+    label: "Label",
+  } satisfies Readonly<Record<QcPoint, string>>,
   receive: {
     open: "Receive",
     title: "What arrived",
     received: "Accepted",
     damaged: "Damaged",
     failed: "Failed check",
+    /** Over the checks a hair system's failed pieces failed. */
+    failedPoints: "What they failed",
+    /** Under the checks while none is ticked. */
+    tickOne: "Tick at least one.",
     lot: "Lot (optional)",
     expires: "Expires (optional)",
     invoice: "Supplier invoice (optional)",
@@ -148,6 +161,8 @@ export const purchasing = {
     number: (number: number) => `CL-${String(number).padStart(4, "0")}`,
     open: (number: string) => `Open ${number}`,
     reasons: { damaged: "Damaged", qc_failed: "Failed check", warranty: "Under warranty" },
+    /** "Failed check: Colour against the ring, Density" */
+    failedOn: (points: string) => `Failed check: ${points}`,
     states: {
       drafted: "Drafted",
       sent: "Sent",
@@ -228,6 +243,7 @@ export const purchasing = {
     supplier_id: changed("That supplier is retired or gone."),
     lines: "Each item once, at least its minimum.",
     rate_micro_rupees: "Give the rupee rate for this currency.",
+    qc_failed_points: "Tick what they failed.",
     order_state: changed("That order has moved on."),
     same_approver: "You gave its first approval. Another Operations manager gives the second.",
     custom_order: "A client’s custom order is on this order. Cancel the custom order, which refunds them.",
