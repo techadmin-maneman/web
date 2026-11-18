@@ -270,8 +270,8 @@ const OpenWindowsSchema = z
       )
       .openapi({
         description:
-          "The days the form offers: 14 from tomorrow in India, and today too where ops let the plan's visit be " +
-          "booked for today (same_day_booking), its starts from the lead time on.",
+          "The days the form offers: 14, from today in India where ops let the plan's visit be booked for today " +
+          "(same_day_booking), its starts from the lead time on, else from tomorrow.",
       }),
   })
   .strict()

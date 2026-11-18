@@ -67,7 +67,7 @@ describe("GET /api/availability/public", () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
   });
 
-  it("answers today and the fortnight from tomorrow, open where someone is free, for a minute's cache, naming nobody", async () => {
+  it("answers the fortnight from today, open where someone is free, for a minute's cache, naming nobody", async () => {
     const answer = await open("pincode=122018&plan=consultation");
 
     expect(answer.status).toBe(200);
@@ -76,7 +76,7 @@ describe("GET /api/availability/public", () => {
     expect(text).not.toContain("Imran");
     const { plan, days } = JSON.parse(text) as Open;
     expect(plan).toBe("consultation");
-    expect(days).toHaveLength(15);
+    expect(days).toHaveLength(14);
     const tomorrow = days.find((day) => day.date === "2026-09-22");
     expect(tomorrow).toMatchObject({ windows: ALL_OPEN, hours: HOURS });
     // Its starts every half hour from 9, the last an hour's consultation and its wrap-up end by 8.
@@ -87,7 +87,7 @@ describe("GET /api/availability/public", () => {
       }),
     );
     expect(tomorrow?.starts.every((start) => start.open)).toBe(true);
-    expect(days.at(-1)?.date).toBe("2026-10-05");
+    expect(days.at(-1)?.date).toBe("2026-10-04");
   });
 
   // At 10:55 on 18 Nov the site offered nothing before the next morning, where the app would have booked 14:00 that day.

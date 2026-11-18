@@ -135,7 +135,7 @@ describe("POST /api/consultation", () => {
     });
 
     expect(answer.status).toBe(201);
-    expect(await answer.json()).toMatchObject({ state: "booked", date: "2026-10-05", window: "evening" });
+    expect(await answer.json()).toMatchObject({ state: "booked", date: "2026-10-04", window: "evening" });
   });
 
   // As the landing answers them, and as the form words them: "That day is no longer open" (open point 105).

@@ -30,9 +30,8 @@ interface OpenDay {
 const typeOfPlan = (plan: Plan): "first_fit" | "consultation" => (plan === "one_visit" ? "first_fit" : "consultation");
 
 /**
- * The days the form offers: from today where ops let the plan's visit be booked for today, the app's rule
- * (src/domain/booking/start-offers.ts), else from tomorrow, in India; to the same last day either way. Today's earliest
- * start is the lead time from now.
+ * The fortnight the form offers, in India: from today where ops let the plan's visit be booked for today, the app's
+ * rule (src/domain/booking/start-offers.ts), else from tomorrow. Today's earliest start is the lead time from now.
  */
 export function siteDays(
   plan: Plan,
@@ -44,7 +43,7 @@ export function siteDays(
     return { first: addDays(today, 1), days: BOOKING_DAYS, earliestToday: null };
   }
   const earliest = minuteOf(indiaTime(now)) + inputs.bookingRules.lead * 60;
-  return { first: today, days: BOOKING_DAYS + 1, earliestToday: timeOf(Math.min(earliest, 24 * 60 - 1)) };
+  return { first: today, days: BOOKING_DAYS, earliestToday: timeOf(Math.min(earliest, 24 * 60 - 1)) };
 }
 
 /** How a booking on a day is taken: not at all, as a request ops fix the hour of, or as a slot of this length. */

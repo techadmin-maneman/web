@@ -22,9 +22,12 @@ export function testMobile(): string {
   return `9${String(Math.floor(Math.random() * 1e9)).padStart(9, "0")}`;
 }
 
-/** The last day the form offers, tomorrow and 13 days on in India: the furthest from any real visit. */
+/**
+ * The furthest day the form offers in India, 13 days on: the last of its fortnight whether it starts today, where ops
+ * let a consultation be booked for today, or tomorrow. The furthest from any real visit.
+ */
 export function lastBookableDay(now: Date = new Date()): string {
-  return addDays(indiaDate(now), BOOKING_DAYS);
+  return addDays(indiaDate(now), BOOKING_DAYS - 1);
 }
 
 /** What the site's form sends for this booking. */
