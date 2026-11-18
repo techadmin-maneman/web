@@ -29,7 +29,8 @@ let page: HTMLDivElement;
 let root: Root;
 let posted: unknown[];
 
-const button = (text: string) => [...document.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+const button = (text: string) =>
+  [...document.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
 function boxOf(label: string): HTMLInputElement | null {
   const field = [...document.querySelectorAll("label")].find((each) => each.textContent.trim() === label);
@@ -111,8 +112,10 @@ describe("refunding a payment from the console", () => {
     type(copy.refundReason, "Goodwill");
     type(copy.refundAmount, "30000.01");
     expect(button(copy.refundConfirm(rupees(3_000_000)))?.disabled).toBe(true);
+    expect(document.body.textContent).toContain(copy.refundAmountOver(rupees(3_000_000)));
     type(copy.refundAmount, "0");
     expect(button(copy.refundConfirm(rupees(3_000_000)))?.disabled).toBe(true);
+    expect(document.body.textContent).toContain(copy.refundAmountNone);
     expect(posted).toEqual([]);
   });
 });

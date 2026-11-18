@@ -548,6 +548,9 @@ export const clients = {
     refundLabel: (amount: string) => `Refund ${amount} of this payment`,
     refundReason: "Why",
     refundAmount: "Amount, Rs.",
+    /** What is wrong with the amount typed: more than is left, or nothing. */
+    refundAmountOver: (left: string) => `No more than ${left}.`,
+    refundAmountNone: "Enter an amount.",
     refundConfirm: (amount: string) => `Refund ${amount}`,
     refundAsked: (amount: string) => `Refund of ${amount} on its way.`,
     refundErrors: {

@@ -85,6 +85,10 @@ const paiseOf = (text: string): number | null => {
   return text.trim() === "" || !Number.isFinite(rupeesTyped) ? null : Math.round(rupeesTyped * 100);
 };
 
+/** What is wrong with an amount that cannot go back: more than is left, or nothing at all. */
+const amountProblem = (amount: number | null, left: number): string =>
+  amount !== null && amount > left ? copy.refundAmountOver(rupees(left)) : copy.refundAmountNone;
+
 /** Why the payment goes back, and how much of it, in a drawer beside the list, and the refund asked of Razorpay. */
 function RefundForm(props: {
   entry: Refundable;
@@ -99,6 +103,8 @@ function RefundForm(props: {
   const [busy, once] = useOneAtATime();
   const amount = paiseOf(amountText);
   const amountFits = amount !== null && amount > 0 && amount <= left;
+  // An empty box asks for itself; a value that cannot go back says why.
+  const amountWrong = amountText.trim() === "" || amountFits ? null : amountProblem(amount, left);
   const refund = () =>
     once(async () => {
       setFailed(null);
@@ -129,7 +135,7 @@ function RefundForm(props: {
           />
         )}
       </Field>
-      <Field label={copy.refundAmount} className={form.field}>
+      <Field label={copy.refundAmount} className={form.field} error={amountWrong}>
         {(control) => (
           <NumberInput
             {...control}
