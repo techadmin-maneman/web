@@ -10,7 +10,7 @@ The console has two doors, and both run the same erasure, written to `audit_log`
 - A request made any other way, on WhatsApp, on the phone or in person, is erased from the person's own page (`person.erase`). Anyone who gave us a number has one, client or not.
 
 1. **Check the request comes from the number's owner.** Reply to that number on WhatsApp, or call it.
-2. **Erase.** Find them in **Clients** by name or number, open their **Consents** tab, and press **Erase**. The console says what is deleted and what is kept, and asks you to confirm you have checked the request with them on their own number. Someone with a request open from their app has no Erase button: decide it in Deletion requests, which tells them when it is done.
+2. **Erase.** First tell them it is being done, in the chat they asked in, then delete that chat on the Mane Man WhatsApp phone (step 4): once they are erased, nothing names the number, so there is no telling them after. Then find them in **Clients** by name or number, open their **Consents** tab, and press **Erase**. The console asks you to tick that you have told them and deleted the chat. The console says what is deleted and what is kept, and asks you to confirm you have checked the request with them on their own number. Someone with a request open from their app has no Erase button: decide it in Deletion requests, which tells them when it is done.
 
    **A visit booked, a payment held, or a link unpaid.** Nothing is erased while the person has a visit or a booking still to happen (a booking paid for or free that is not yet a visit counts), a payment we captured with no visit behind it, or a payment link unpaid, and the console says which (`docs/decisions/0066-erasure-all-or-nothing.md`). Cancel each visit on their page (Visits, **Cancel**): it refunds what was paid, gives a visit credit back and tells the client. Refund a payment with no visit behind it in Razorpay. A link waits to be paid, or for its booking's link to close. Then erase. If they cannot be settled first, tick the line the console shows and press **Erase anyway**: each visit still to come is cancelled free to the client and refunded in full, the person is erased, their bookings not yet visits are let go and refunded, their open payment links are cancelled at Razorpay, the audit entry records it (`settled_by_hand`, with the number of visits, bookings, payments and links), and the Worker logs `erasure_override`. A visit already begun stays on their page to close. A booking's refund Razorpay refused waits under Tasks' payments to refund, and a payment with no visit behind it is on their page: refund each from the erased client's Payments tab the same day. A refund needs none of the person's details. A link Razorpay would not cancel raises `erased_link:<link>`: cancel it in Razorpay's dashboard.
 
@@ -25,7 +25,7 @@ The console has two doors, and both run the same erasure, written to `audit_log`
 
    If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts, and the alert waits under Tasks' Needs a hand. Once Zoho is back, **Send again** there. To finish it by hand instead, find the record in Zoho by `D1_Person_ID`, blank those fields, then **Mark done** (Customer Care Manage): that records the person as erased in the CRM. If Books will not erase the customer, or the CRM the Contact, after 10 tries, ops are alerted once with what to do by hand.
 
-4. **Delete the chat** with the number in the Mane Man WhatsApp account, if there is one, and from the bridge's own store, which keeps every message it carried. In Supabase's SQL editor, with the number's digits and country code and no `+` (`919810000001`):
+4. **Delete the chat**, before step 2, with the number in the Mane Man WhatsApp account, if there is one, and, until the bridge is retired, from its own store, which keeps every message it carried. In Supabase's SQL editor, with the number's digits and country code and no `+` (`919810000001`):
 
    ```sql
    DELETE FROM evolution."MessageUpdate" WHERE "remoteJid" = '<digits>@s.whatsapp.net';
@@ -35,15 +35,15 @@ The console has two doors, and both run the same erasure, written to `audit_log`
    DELETE FROM evolution."IsOnWhatsapp" WHERE "remoteJid" = '<digits>@s.whatsapp.net';
    ```
 
-5. **Tell the person** it is done, in the chat they asked in.
+5. **Nothing more to tell them:** you told them before erasing (step 2). Care finish Zoho from the task the erasure opens.
 
 Someone who used the try-on but never passed the gate never gave a number, and their photo is deleted within the hour anyway.
 
-**Zoho's history.** Blanking the fields leaves the old values in the record's timeline, so every erasure ends in Zoho too: find the record by `D1_Person_ID`, delete it, then delete it from the recycle bin as well. D1's lead history is unaffected.
+**Zoho's history.** Blanking the fields leaves the old values in the record's timeline, so every erasure, the automatic ones too, opens a Care task on Tasks, "Erased: finish in Zoho", naming the lead and the person's ID: delete the record in Zoho, found by the lead or, where none is named or it has changed, by `D1_Person_ID`, then delete it from the recycle bin as well, and close the task with **Done**. No words are kept: the person is erased. D1's lead history is unaffected.
 
 **What stays a while.** D1's Time Travel keeps the erased rows for 30 days, and the weekly backups, encrypted, for 13 weeks (src/domain/platform/backups.ts). Both lapse by themselves; neither is read but to restore.
 
-**A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
+**A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete any chat with them on the phone (step 4) before deciding it; the app tells them on WhatsApp once it is done.
 
 Rejecting a request sends the client your reason on WhatsApp (`deletion_rejected_v1`), and their app shows it for 30 days, so write it for them to read.
 

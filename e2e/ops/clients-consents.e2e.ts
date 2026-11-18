@@ -99,6 +99,9 @@ test("erases a client from their page, once ops confirm the request came from th
   const now = confirm.getByRole("button", { name: opsCopy.clients.erasure.confirm(CLIENT.name) });
   await expect(now).toBeDisabled();
   await confirm.getByRole("checkbox", { name: opsCopy.clients.erasure.checked }).check();
+  // The number is blanked by erasing, so the chat on the phone is deleted first.
+  await expect(now).toBeDisabled();
+  await confirm.getByRole("checkbox", { name: opsCopy.clients.erasure.chatDeleted }).check();
 
   const sent = page.waitForRequest((request) => request.url().endsWith("/erasure") && request.method() === "POST");
   await now.click();
@@ -113,6 +116,7 @@ test("erases anyway when a visit is booked, once ops say to cancel it and refund
   const erasing = page.getByRole("region", { name: opsCopy.clients.erasure.title });
   await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
   await erasing.getByRole("checkbox", { name: opsCopy.clients.erasure.checked }).check();
+  await erasing.getByRole("checkbox", { name: opsCopy.clients.erasure.chatDeleted }).check();
   await erasing.getByRole("button", { name: opsCopy.clients.erasure.confirm(CLIENT.name) }).click();
 
   await expect(erasing).toContainText("They have a visit booked. Cancel it on Visits");

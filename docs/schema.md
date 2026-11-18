@@ -17,6 +17,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | --- | --- | --- | --- |
 | Consents given and withdrawn | `consents` | Someone who said stop is messaged again | Adding the rows since `<T>`: they are only ever added |
 | Terms agreed to | `terms_acceptances` | A booking made since `<T>` has no record of the terms its client agreed to | Adding the rows since `<T>`: they are only ever added |
+| Erasures still to finish in the CRM | `erasure_follow_ups` | An erasure made since `<T>` is not on Tasks for Care to finish in Zoho, and one finished since is again | Adding a row for each erasure since `<T>` from `people.erased_at`; close again any finished since |
 | Revoked sessions and phones | `sessions`, `technician_devices` | A lost phone, or a session that was ended, works again | Revoking again: a phone in the console, a client's session with `sessions.revoked_at` |
 | Erasures | `people`, `addresses`, `waitlist_entries`, `number_change_requests`, `photos`, `photo_sets`, `hair_profiles`, `grievances`, `no_show_disputes`, `task_closures`, `staff_notes`, `client_alerts`, `handoff_notes`, `step_send_backs` | Erased people come back in D1, with their own words. Their files stay gone, since R2 is not restored | Erasing again (runbook, "Erasure within the day"). List them before restoring: `SELECT id FROM people WHERE erased_at >= '<T>';` |
 | A technician's position and their SOS | `visit_positions`, `sos_alerts` | A position the close or the sweep had deleted comes back; an SOS raised since is lost, and one handled since is open again with where the technician was | The hourly housekeeping deletes old positions again; mark handled once more what was handled since `<T>`, and ask ops of any SOS raised since |
@@ -101,6 +102,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
 - [discount_codes](#discount_codes): The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
+- [erasure_follow_ups](#erasure_follow_ups): Each erasure Care still finish by hand in the CRM, which the Tasks board lists until they close it (ADR 0066).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [failure_reasons](#failure_reasons): Why a hair system failed, as ops set them, one they took off kept as retired; none means the committed list (ADR 0273).
 - [first_fit_requests](#first_fit_requests): A first fit asked for on the site's form with the consultation; a person's latest stands (ADR 0086). The form no longer asks for one (ADR 0105), and only the data export, erasure and an old consultation request's line still read it.
@@ -1271,6 +1273,17 @@ Indexes:
 - `dispatch_moves_untold`: on (`now_start`), where `fsm_write_state = 'written' AND told_at IS NULL`
 
 Triggers: `dispatch_moves_board_added`, `dispatch_moves_board_changed`.
+
+## erasure_follow_ups
+
+Each erasure Care still finish by hand in the CRM, which the Tasks board lists until they close it (ADR 0066).
+
+Made by `0222_erasure_follow_ups.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `person_id` | TEXT | no |  | primary key; → `people.id` | The person erased, whose own row keeps only their ID and the day. |
+| `erased_at` | TEXT | no |  |  | When they were erased, which the task waits from. |
 
 ## events
 

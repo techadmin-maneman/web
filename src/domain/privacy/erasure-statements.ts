@@ -37,6 +37,8 @@ export async function personalDataStatements(
   );
 
   return [
+    // What Care finish by hand, in the CRM, which a task on the board names until they close it.
+    db.prepare("INSERT OR IGNORE INTO erasure_follow_ups (person_id, erased_at) VALUES (?1, ?2)").bind(personId, at),
     // Expired jobs stop any render storing its result; the files go after the batch.
     db
       .prepare(

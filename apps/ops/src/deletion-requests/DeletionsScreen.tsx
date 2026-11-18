@@ -58,6 +58,7 @@ function ConfirmDelete({
 }) {
   const panel = useFocusOnMount<HTMLDivElement>();
   const [checked, setChecked] = useState(false);
+  const [chatDeleted, setChatDeleted] = useState(false);
 
   return (
     <div className={shared.confirm} ref={panel} tabIndex={-1} role="group" aria-label={copy.confirmLabel(request.name)}>
@@ -72,8 +73,17 @@ function ConfirmDelete({
           setChecked(event.target.checked);
         }}
       />
+      <Checkbox
+        className={shared.checkLine}
+        label={copy.chatDeleted}
+        checked={chatDeleted}
+        disabled={sending}
+        onChange={(event) => {
+          setChatDeleted(event.target.checked);
+        }}
+      />
       <div className={shared.actions}>
-        <Button variant="destructive" size="small" disabled={sending || !checked} onClick={onDelete}>
+        <Button variant="destructive" size="small" disabled={sending || !checked || !chatDeleted} onClick={onDelete}>
           {sending ? copy.deleting : copy.confirm(request.name)}
         </Button>
         <CancelButton disabled={sending} onClick={onCancel} />

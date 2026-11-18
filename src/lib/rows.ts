@@ -531,6 +531,10 @@ export interface Rows {
     readonly blackout_reason: string | null;
     readonly write_state: string | null;
   };
+  readonly erasure_follow_ups: {
+    readonly person_id: string;
+    readonly erased_at: string;
+  };
   readonly events: {
     readonly id: string;
     readonly created_at: string;

@@ -70,6 +70,8 @@ export const deletions = {
     },
     /** The runbook's first step, "Check the request comes from the number's owner". */
     checked: "I’ve confirmed this with the client, on their own number.",
+    /** Erasure blanks the number, after which nobody can find the chat on the phone. */
+    chatDeleted: "I’ve deleted their chat on the WhatsApp phone.",
     confirm: (name: string) => `Erase ${name}`,
     deleting: "Erasing…",
     reason: {

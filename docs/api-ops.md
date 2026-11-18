@@ -50662,6 +50662,7 @@ Request body:
               "fit_unsigned",
               "fit_guarantee_claim",
               "low_rating",
+              "erasure_follow_up",
               "kit_request",
               "referral_review",
               "no_show_decision",
@@ -50752,7 +50753,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Null for an erased client, whose record is gone."
+      "description": "Null for an erased client, whose record is gone, but on a payment to refund or an erasure to finish in the CRM, which name them as Erased."
     },
     "visit": {
       "type": "object",
@@ -51625,6 +51626,34 @@ Request body:
         "group": {
           "type": "string",
           "enum": [
+            "erasure_follow_up"
+          ]
+        },
+        "lead": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The CRM lead the client was, as kept; null where none was."
+        },
+        "person": {
+          "type": "string",
+          "description": "The person's ID, which the CRM record carries as D1 Person ID."
+        }
+      },
+      "required": [
+        "group",
+        "lead",
+        "person"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
             "fit_unsigned"
           ]
         },
@@ -52062,7 +52091,7 @@ Request body:
       "type": "string",
       "minLength": 1,
       "maxLength": 300,
-      "description": "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased."
+      "description": "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased, and not kept at all for an erasure finished in the CRM."
     },
     "failure_reason": {
       "type": "string",

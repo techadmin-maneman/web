@@ -174,11 +174,13 @@ describe("a deletion decided in the queue", () => {
     act(() => {
       buttonNamed("Erase client")?.click();
     });
-    const check = [...page.querySelectorAll("label")].find((label) =>
-      label.textContent.includes("confirmed this with the client"),
+    const ticks = [...page.querySelectorAll("label")].filter(
+      (label) =>
+        label.textContent.includes("confirmed this with the client") ||
+        label.textContent.includes("deleted their chat"),
     );
     act(() => {
-      check?.click();
+      for (const tick of ticks) tick.click();
     });
     await act(async () => {
       buttonNamed(`Erase ${REQUEST.name}`)?.click();

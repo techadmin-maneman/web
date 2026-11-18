@@ -319,6 +319,40 @@ describe("what an erasure leaves open for ops", () => {
   });
 });
 
+// What the API cannot reach in the CRM, the record's history and its copy in the recycle bin, Care finish by hand.
+describe("an erasure's CRM leftovers", () => {
+  const ops = () => appFor("local", fakeDependencies(), {}, "ops");
+  const followUps = async () => {
+    const board = await (
+      await request(ops(), "/api/tasks")
+    ).json<{
+      groups: { group: string; tasks: { id: string; facts: unknown }[] }[];
+    }>();
+    return board.groups.find((each) => each.group === "erasure_follow_up")?.tasks ?? [];
+  };
+
+  it("are a task for Care, naming the lead, until Care close it", async () => {
+    const personId = await book();
+    await env.DB.prepare("UPDATE people SET zoho_lead_id = '610500000001' WHERE id = ?1").bind(personId).run();
+    expect(await statusOf(personId)).toBe(200);
+
+    expect(await followUps()).toMatchObject([{ id: personId, facts: { lead: "610500000001", person: personId } }]);
+    const closed = await request(ops(), `/api/tasks/erasure_follow_up/${personId}/close`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ reason: "Lead deleted, recycle bin emptied" }),
+    });
+    expect(closed.status).toBe(204);
+    expect(await followUps()).toEqual([]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM erasure_follow_ups").first("n")).toBe(0);
+    // Nothing ops wrote is kept about a person already erased.
+    const kept = await env.DB.prepare(
+      "SELECT reason FROM task_closures WHERE task_group = 'erasure_follow_up'",
+    ).first();
+    expect(kept).toEqual({ reason: null });
+  });
+});
+
 describe("erasePerson", () => {
   it("deletes a result a running render stored after the jobs were read", async () => {
     const personId = await book();

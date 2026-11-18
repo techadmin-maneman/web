@@ -92,6 +92,13 @@ export type TaskFacts =
       readonly short: { name: string; expected: number; used: number }[];
     }
   | {
+      readonly group: "erasure_follow_up";
+      /** The CRM lead the client was, as kept; null where none was kept. */
+      readonly lead: string | null;
+      /** The person's ID, which the CRM record carries as D1 Person ID whatever its lead. */
+      readonly person: string;
+    }
+  | {
       readonly group: "fit_unsigned";
       readonly kind: VisitType;
       /** Why the client did not sign, as the technician recorded it. */

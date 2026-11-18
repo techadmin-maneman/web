@@ -38,6 +38,7 @@ const VISIT_BOOKED = {
   links: [],
 } satisfies OpsReply<"/api/deletion-requests/{id}/decision", "post", 409>;
 const CHECKED = opsCopy.deletions.queue.checked;
+const CHAT_DELETED = opsCopy.deletions.queue.chatDeleted;
 
 async function open(page: Page, decision = json({ state: "done" })): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
@@ -112,6 +113,9 @@ test("keeps the delete unusable until ops say they have checked the request", as
   const send = page.getByRole("button", { name: ERASE });
   await expect(send).toBeDisabled();
   await page.getByRole("checkbox", { name: CHECKED }).check();
+  // The number is blanked by the deletion, so the chat on the phone goes first.
+  await expect(send).toBeDisabled();
+  await page.getByRole("checkbox", { name: CHAT_DELETED }).check();
   await expect(send).toBeEnabled();
 });
 
@@ -119,6 +123,7 @@ test("deletes the account once it is confirmed, and the request leaves the queue
   await open(page);
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
+  await page.getByRole("checkbox", { name: CHAT_DELETED }).check();
 
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
   await page.getByRole("button", { name: ERASE }).click();
@@ -140,6 +145,7 @@ test("moves the keyboard to the queue’s heading once a request is decided", as
   await open(page);
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
+  await page.getByRole("checkbox", { name: CHAT_DELETED }).check();
   await page.getByRole("button", { name: ERASE }).click();
   await expect(page.getByRole("heading", { name: opsCopy.deletions.queue.title })).toBeFocused();
 });
@@ -177,6 +183,7 @@ test("says so when someone has decided it already, reads the queue again, and th
   await open(page, fails(404, "not_found"));
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
+  await page.getByRole("checkbox", { name: CHAT_DELETED }).check();
   const reread = page.waitForRequest(
     (request) => request.url().endsWith("/api/deletion-requests") && request.method() === "GET",
   );
@@ -190,6 +197,7 @@ test("says what to settle first when the client still has a visit booked, and er
   await open(page, json(VISIT_BOOKED, 409));
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
+  await page.getByRole("checkbox", { name: CHAT_DELETED }).check();
   await page.getByRole("button", { name: ERASE }).click();
   await expect(page.getByRole("alert")).toContainText("They have a visit booked.");
   await expect(

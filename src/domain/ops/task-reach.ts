@@ -15,6 +15,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   unassigned_visit: "visit",
   unanswered_chat: "conversation",
   message_undelivered: "message",
+  erasure_follow_up: "client",
   city_matter: "city_matter",
   remedy_approval: "remedy",
   leave_conflict: "visit",
