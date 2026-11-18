@@ -77,7 +77,13 @@ export async function drivesFit(
       check.tooTight?.({
         leg: "before",
         google_minutes: google,
-        estimate_minutes: driveMinutes(from, visit.pin, hourOf(readyFrom), rules.drive),
+        // At the hour the start was offered on: the stop's end, or the day's opening from home (src/policy/day-plan.ts).
+        estimate_minutes: driveMinutes(
+          from,
+          visit.pin,
+          hourOf(before === undefined ? day.opens : before.end),
+          rules.drive,
+        ),
         past_gap_minutes: readyFrom + google - start,
       });
       return false;

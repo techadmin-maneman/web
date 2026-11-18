@@ -86,6 +86,18 @@ describe("Google's drives", () => {
     expect(asked).toEqual([2]);
   });
 
+  // The estimate a start is offered on is the hour the stop before it ends, not the hour its wrap-up does.
+  it("tell the estimate of the hour the stop before ends, where its wrap-up runs into the next", async () => {
+    const { check, tight } = google(30);
+    const day: PlanDay = {
+      ...dayAt(28.43),
+      stops: [{ start: minuteOf("09:55"), end: minuteOf("10:55"), pin: { lat: 28.43, lng: 77.05 }, fit: false }],
+    };
+    const visit = { minutes: 60, pin: { lat: 28.47, lng: 77.05 }, time: "11:30" };
+    expect(await drivesFit(env.DB, check, { day, rules: RULES, now: NOW }, visit)).toBe(false);
+    expect(tight[0]?.estimate_minutes).toBe(driveMinutes({ lat: 28.43, lng: 77.05 }, visit.pin, 10, DRIVE_ESTIMATE));
+  });
+
   it("hold a start only where the drive on to the visit after it, and parking, reach that one", async () => {
     const { check, tight } = google(30);
     const plan = { day: dayAt(28.42), rules: RULES, now: NOW };
