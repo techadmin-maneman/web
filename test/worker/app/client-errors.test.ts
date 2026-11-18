@@ -35,6 +35,52 @@ function report(surface: "public" | "client" | "ops" | "tech", body: unknown, ad
 const reported = () => logs.lines().filter((line) => line.event === "client_error");
 
 describe("POST /api/client-errors", () => {
+  // Code a browser extension or the browser itself put into the page throws there too; its stack names no script of
+  // ours, and Sentry's client errors are kept for our own (docs/decisions/0277-alerts-that-come-sooner.md).
+  it("logs an error thrown only in code the browser put into the page as foreign, not as ours", async () => {
+    const injected = {
+      ...CRASH,
+      message: "TypeError: This document requires 'TrustedScript' assignment.",
+      stack: [
+        "TypeError: This document requires 'TrustedScript' assignment.",
+        "    at <anonymous>:12:30",
+        "    at <anonymous>:4:7",
+      ].join("\n"),
+      source: undefined,
+    };
+    const extension = {
+      ...CRASH,
+      stack: ["Error: x", "    at run (chrome-extension://abcdef/content.js:3:9)"].join("\n"),
+      source: undefined,
+    };
+    expect((await report("client", injected)).status).toBe(204);
+    expect((await report("client", extension)).status).toBe(204);
+    expect(reported()).toEqual([]);
+    const foreign = logs.lines().filter((line) => line.event === "client_error_foreign");
+    expect(foreign.map((line) => line.level)).toEqual(["info", "info"]);
+
+    // The site's own Worker names its frames by its bundle alone; Checkout not loading names Razorpay's script: ours.
+    const worker = {
+      ...CRASH,
+      stack: ["Error: D1 down", "    at handle (worker.js:12:5)"].join("\n"),
+      source: "mm-site Worker",
+    };
+    expect((await report("public", worker)).status).toBe(204);
+    expect((await report("client", { ...CRASH, kind: "checkout_unavailable", stack: undefined })).status).toBe(204);
+    expect(reported().map((line) => [line.kind, line.level])).toEqual([
+      ["error", "error"],
+      ["checkout_unavailable", "error"],
+    ]);
+
+    // One frame of ours among the others makes it ours.
+    const mixed = {
+      ...CRASH,
+      stack: [injected.stack, "    at Card (https://app.maneman.in/assets/index.js:1:2048)"].join("\n"),
+    };
+    expect((await report("client", mixed)).status).toBe(204);
+    expect(reported()).toHaveLength(3);
+  });
+
   it.each(["client", "ops", "tech"] as const)(
     "logs a crash in the %s app as one client_error line",
     async (surface) => {

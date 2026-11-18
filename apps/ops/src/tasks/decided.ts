@@ -22,6 +22,7 @@ export const DECIDED_IN: Partial<Record<Group, { readonly page: SectionPath; rea
   reschedule_request: { page: "/dispatch", row: null },
   // Operations' own: a visit with no technician is given one, and one left open is closed by hand, in its drawer.
   unassigned_visit: { page: "/dispatch", row: null },
+  visit_not_begun: { page: "/dispatch", row: null },
   visit_left_open: { page: "/dispatch", row: null },
   referral_review: { page: "/referrals", row: "held" },
   no_show_decision: { page: "/payments", row: "case" },

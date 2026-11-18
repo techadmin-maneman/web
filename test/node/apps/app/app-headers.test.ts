@@ -2,7 +2,7 @@
 // run whole, its risk-detection script included; no app allows an inline script.
 
 import { describe, expect, it } from "vitest";
-import { contentSecurityPolicy } from "@maneman/web-kit/headers";
+import { contentSecurityPolicy, headersFile } from "@maneman/web-kit/headers";
 import { CLIENT_APP_POLICY } from "../../../../apps/app/headers.ts";
 import { OPS_CONSOLE_POLICY } from "../../../../apps/ops/headers.ts";
 import { TECHNICIAN_APP_POLICY } from "../../../../apps/tech/headers.ts";
@@ -21,6 +21,15 @@ const POLICIES = [
 
 describe("the client app’s policy", () => {
   const policy = contentSecurityPolicy(CLIENT_APP_POLICY);
+
+  // What it refuses, a Checkout frame or script from a new host among them, is reported
+  // (docs/decisions/0277-alerts-that-come-sooner.md).
+  it("reports what it refuses to the app's own CSP report route, by both ways browsers have", () => {
+    expect(sourcesOf(policy, "report-uri")).toEqual(["/api/csp-reports"]);
+    expect(sourcesOf(policy, "report-to")).toEqual(["csp"]);
+    expect(headersFile(CLIENT_APP_POLICY)).toContain('Reporting-Endpoints: csp="/api/csp-reports"');
+    expect(contentSecurityPolicy(OPS_CONSOLE_POLICY)).not.toContain("report-uri");
+  });
 
   it("loads Checkout and the risk-detection script it pulls in, and Turnstile for the login", () => {
     expect(sourcesOf(policy, "script-src")).toEqual([

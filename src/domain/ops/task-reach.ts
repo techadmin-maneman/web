@@ -10,6 +10,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   untold_move: "move",
   move_unanswered: "visit",
   reschedule_request: "reschedule_request",
+  visit_not_begun: "visit",
   visit_left_open: "visit",
   unassigned_visit: "visit",
   unanswered_chat: "conversation",

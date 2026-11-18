@@ -52,7 +52,7 @@ export const RULE_GROUPS = [
   { id: "reminders", rules: ["reminder_hour", "credit_reminder_days", "check_in_days"] },
   { id: "referrals", rules: ["referral_reward", "referral_monthly_cap"] },
   { id: "tryon", rules: ["tryon_look_days"] },
-  { id: "care", rules: ["care_hours", "remedy_limit"] },
+  { id: "care", rules: ["care_hours", "remedy_limit", "refused_messages"] },
   { id: "reports", rules: ["lost_after_days"] },
   { id: "stock", rules: ["stock_watch", "stock_usage", "stock_quality", "cycle_counts", "kit_check"] },
   {

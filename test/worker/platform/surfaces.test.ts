@@ -123,8 +123,11 @@ describe("byHost, on staging", () => {
 });
 
 /** The public app's routes other than the health check, with a placeholder for each path parameter. */
-/** The routes every surface answers: its health, and the report of its own page's errors. */
-const ON_EVERY_SURFACE = new Set(["/api/health", "/api/client-errors"]);
+/**
+ * The routes the client host answers as the public one does: its health, the report of its own page's errors, and what
+ * its content security policy refused (docs/decisions/0277-alerts-that-come-sooner.md).
+ */
+const ON_EVERY_SURFACE = new Set(["/api/health", "/api/client-errors", "/api/csp-reports"]);
 
 function publicRoutes(): { method: string; path: string }[] {
   const seen = new Set<string>();

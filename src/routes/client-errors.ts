@@ -1,17 +1,23 @@
 // What goes wrong in the site and the client, ops and technician apps, as their pages report it
 // (packages/web-kit/client-errors.ts), and in the site's own Worker, which reports as a page does (site/src/worker.ts).
 //
-// Each report is one `client_error` log line, redacted like every other; nothing is stored. No session is asked
-// for, since a page can fail before anyone signs in: the same-origin rule of every app surface keeps other sites
-// out, and the hourly limits keep a page stuck in a loop from flooding the logs.
+// Each report is one `client_error` log line, redacted like every other, or `client_error_foreign` at info for one
+// thrown only by code the browser put into the page (src/policy/client-errors.ts); nothing is stored. No session is
+// asked for, since a page can fail before anyone signs in: the same-origin rule of every app surface keeps other sites
+// out, and the hourly limits keep a page stuck in a loop from flooding the logs. A client app's report that Checkout
+// did not load counts toward an alert only from a signed-in client (src/domain/money/checkout-alerts.ts).
 
+import { checkoutUnavailable } from "../domain/money/checkout-alerts.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import { INVITE_CODE } from "../config/invite-codes.ts";
-import { takeOne } from "../domain/sign-in/rate-limit.ts";
-import type { App } from "../http/context.ts";
+import { takeOne, type CountedAt } from "../domain/sign-in/rate-limit.ts";
+import type { Context } from "hono";
+import { clientSessionOf } from "../http/client-session.ts";
+import type { App, AppEnv } from "../http/context.ts";
 import { errorResponse, refuse } from "../http/errors.ts";
 import { json } from "../http/openapi.ts";
 import { visitorOf } from "../http/visitor.ts";
+import { isForeignError } from "../policy/client-errors.ts";
 
 /**
  * An invite's landing, "/r/MM4417": its code is a person's own, so it is taken out of every part of a report that can
@@ -28,7 +34,9 @@ const withoutCode = (text: string | undefined): string | undefined => text?.repl
 
 const ReportSchema = z
   .object({
-    kind: z.enum(["error", "unhandled_rejection", "render", "outbox_gave_up"]),
+    kind: z.enum(["error", "unhandled_rejection", "render", "outbox_gave_up", "checkout_unavailable"]).openapi({
+      description: "checkout_unavailable: Razorpay Checkout's script did not load, so no payment could be made.",
+    }),
     message: z.string().max(500),
     path: z.string().max(300).openapi({ description: "The page's path, with no query or fragment." }),
     version: z.string().max(40).optional().openapi({ description: "The build the page runs, as its mm-version." }),
@@ -60,6 +68,14 @@ const reportRoute = createRoute({
   },
 });
 
+/** A client app's Checkout that did not load, counted once an hour for each signed-in client toward the alert. */
+async function countCheckoutFailure(c: Context<AppEnv>, at: CountedAt): Promise<void> {
+  if (c.var.surface !== "client") return;
+  const session = await clientSessionOf(c);
+  if (session === null || !(await takeOne(c.env.DB, "checkout_unavailable:person", session.subjectId, at))) return;
+  await checkoutUnavailable(c.env.DB, c.var.deps.alertOnce, at.now);
+}
+
 export function registerClientErrors(app: App): void {
   app.openapi(reportRoute, async (c) => {
     const db = c.env.DB;
@@ -70,7 +86,10 @@ export function registerClientErrors(app: App): void {
     if (!within) return refuse(c, "rate_limited");
 
     const { request_id: refusedRequestId, ...report } = c.req.valid("json");
-    c.var.log.error("client_error", {
+    // Thrown by code the browser put into the page, not ours: kept, but out of Sentry's errors. Checkout not loading is
+    // ours to know of, whatever script it names.
+    const foreign = report.kind !== "checkout_unavailable" && isForeignError(report, new URL(c.req.url).origin);
+    c.var.log[foreign ? "info" : "error"](foreign ? "client_error_foreign" : "client_error", {
       app: c.var.surface,
       ...report,
       path: report.path.replace(INVITE_LANDING, "/r/"),
@@ -80,6 +99,7 @@ export function registerClientErrors(app: App): void {
       refused_request_id: refusedRequestId,
       browser: c.req.header("User-Agent")?.slice(0, 200),
     });
+    if (report.kind === "checkout_unavailable") await countCheckoutFailure(c, at);
     return c.body(null, 204);
   });
 }

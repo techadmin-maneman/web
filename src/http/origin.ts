@@ -14,6 +14,9 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
  */
 export const requireSameOrigin = createMiddleware<AppEnv>(async (c, next) => {
   if (SAFE_METHODS.has(c.req.method)) return next();
+  // What a page's content security policy refused, which the browser posts itself, perhaps with no Origin. The route
+  // only logs, under its own hourly limits (src/routes/public/csp-reports.ts).
+  if (new URL(c.req.url).pathname === "/api/csp-reports") return next();
   const origin = c.req.header("Origin");
   if (origin === new URL(c.req.url).origin) return next();
   c.var.log.warn("cross_origin_write_refused", { has_origin: origin !== undefined });

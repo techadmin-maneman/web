@@ -78,6 +78,7 @@ export const TASK_GROUPS = [
   "untold_move",
   "move_unanswered",
   "reschedule_request",
+  "visit_not_begun",
   "visit_left_open",
   "unassigned_visit",
   "recall_call",
@@ -139,6 +140,9 @@ export const TASK_SLA_HOURS: Slas = {
   move_unanswered: 4,
   // A technician asks ops to move a visit: the client is called the same day (docs/decisions/0249-schedule-kit-and-me.md).
   reschedule_request: 4,
+  // A visit its technician has not begun past its arrival window: the client is waiting, so a call within the hour
+  // (docs/decisions/0277-alerts-that-come-sooner.md).
+  visit_not_begun: 1,
   // A visit nobody attended, or never closed, whose day has passed: the client is owed a new time the next day.
   visit_left_open: 24,
   // A visit with no technician: never later than the day before it (src/domain/ops/tasks.ts).

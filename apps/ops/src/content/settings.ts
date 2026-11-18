@@ -300,6 +300,7 @@ export const settings = {
         rate_within_days: "Rated within",
       },
       check_in_days: { first: "First follow-up", second: "Second follow-up" },
+      refused_messages: { share: "Tell Care from", least: "Counted from" },
       stock_watch: {
         expiry_warning_days: "Expiry flagged within",
         demand_days: "Look ahead for demand",

@@ -123,6 +123,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/csp-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report what a page's content security policy refused
+         * @description A browser's own report, application/reports+json from report-to or application/csp-report from report-uri. Anything else, or more than 16 KB, is let go unread.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Logged, or let go */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description rate_limited: this address has sent its reports for the hour, or every address has */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/otp": {
         parameters: {
             query?: never;
@@ -5804,8 +5859,11 @@ export interface components {
             cron_completed_at: string | null;
         };
         ClientErrorReport: {
-            /** @enum {string} */
-            kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up";
+            /**
+             * @description checkout_unavailable: Razorpay Checkout's script did not load, so no payment could be made.
+             * @enum {string}
+             */
+            kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up" | "checkout_unavailable";
             message: string;
             /** @description The page's path, with no query or fragment. */
             path: string;

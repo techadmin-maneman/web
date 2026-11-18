@@ -190,7 +190,11 @@ describe("scheduled handler", () => {
       MESSAGE_QUEUE: fakeQueue(),
     });
     const summary = logs.lines().find((line) => line.event === "cron_run");
-    expect(Object.keys(summary?.d1_rows_read_by_job as object)).toEqual(["unbooked_holds", "books_sync"]);
+    expect(Object.keys(summary?.d1_rows_read_by_job as object)).toEqual([
+      "unbooked_holds",
+      "visits_not_begun",
+      "books_sync",
+    ]);
   });
 
   it("ends the run with a line saying what it cost D1, and what each job read of it", async () => {

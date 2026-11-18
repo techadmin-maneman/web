@@ -128,9 +128,10 @@ export function createAlertOnce(deps: {
       if (!isTellingDue(sighting, after, retellAfterMs(key), at)) return;
       if (!(await markTold(db, sighting, at))) return;
     } catch (error) {
-      // With nothing kept there is no knowing whether ops were told already, so they are told, once in a while.
+      // With nothing kept there is no knowing whether ops were told already, so they are told, once in a while; but a
+      // count that cannot be kept cannot reach `after`, so an alert that waits for several sightings is not told.
       log.error("alert_not_stored", { key, error });
-      if (!toldUnstoredLately(key, at)) await alert(text);
+      if (after <= 1 && !toldUnstoredLately(key, at)) await alert(text);
       return;
     }
 
@@ -140,42 +141,74 @@ export function createAlertOnce(deps: {
   };
 }
 
-/** How many first tellings the chat missed one pass tells again. */
-const RETOLD_PER_PASS = 10;
+/** How many first tellings the chat missed one pass tells again, in one post. */
+const RETOLD_PER_PASS = 25;
+
+/** A phone push's text, kept within ntfy's 4,096 bytes, past which it arrives as a file. */
+const PUSH_BYTES = 3_500;
+
+/** The text as a push carries it: cut at a line, with how much was left, where it is too long. */
+function withinPush(text: string): string {
+  if (new TextEncoder().encode(text).length <= PUSH_BYTES) return text;
+  const lines = text.split("\n");
+  const kept: string[] = [];
+  for (const line of lines) {
+    if (new TextEncoder().encode([...kept, line].join("\n")).length > PUSH_BYTES - 40) break;
+    kept.push(line);
+  }
+  return `${kept.join("\n")}\n… and ${String(lines.length - kept.length)} more on Tasks.`;
+}
+
+/** How long an alert may wait untold before the urgent space hears of it instead (docs/decisions/0277). */
+const UNTOLD_TO_URGENT_MS = 10 * MINUTE_MS;
 
 /**
- * Tells the chat of each open alert whose first telling it did not take, oldest first; a pass stops at the first the
- * chat misses again. Run every five minutes by the cron. Answers how many it told.
+ * Tells the chat of the open alerts whose first telling it did not take, oldest first, in one post, so a burst that hit
+ * the chat's limit is not told one post at a time. Where the chat refuses that too and the oldest has waited ten
+ * minutes, the urgent space is told instead, so a person hears of them. Run every five minutes by the cron. Answers
+ * how many it told.
  */
 export async function retellUndelivered(deps: {
   db: D1Database;
   alert: Alert;
+  /** The urgent space, told what the chat keeps refusing; null where there is none. */
+  urgent?: Alert | null;
   now: () => Date;
   environment: EnvironmentName;
   log: Logger;
 }): Promise<number> {
-  const { db, now, environment, log } = deps;
+  const { db, now, environment, log, urgent = null } = deps;
   const { results } = await db
     .prepare(
-      `SELECT id, message, link, count, first_seen_at FROM alerts
+      `SELECT id, message, link, count, first_seen_at, told_at FROM alerts
        WHERE resolved_at IS NULL AND told_at IS NOT NULL AND last_told_at IS NULL
        ORDER BY told_at LIMIT ?1`,
     )
     .bind(RETOLD_PER_PASS)
-    .all<{ id: string; message: string; link: string | null; count: number; first_seen_at: string }>();
-  let told = 0;
+    .all<{ id: string; message: string; link: string | null; count: number; first_seen_at: string; told_at: string }>();
+  const at = now();
+  const marked: { sighting: Sighting; text: string; toldAt: string }[] = [];
   for (const row of results) {
-    const at = now();
     const sighting: Sighting = { id: row.id, count: row.count, firstSeenAt: row.first_seen_at, lastToldAt: null };
     if (!(await markTold(db, sighting, at))) continue;
     const text = row.link === null ? row.message : `${row.message} ${OPS_ORIGIN[environment]}${row.link}`;
-    if ((await deps.alert(text)) === false) {
-      await unmarkTold(db, sighting, at, log);
-      break;
-    }
-    told += 1;
+    marked.push({ sighting, text, toldAt: row.told_at });
   }
-  return told;
+  if (marked.length === 0) return 0;
+  const [only] = marked;
+  const post =
+    marked.length === 1 && only !== undefined
+      ? only.text
+      : [`${String(marked.length)} alerts the chat missed:`, ...marked.map((each) => `• ${each.text}`)].join("\n");
+  if ((await deps.alert(post)) !== false) return marked.length;
+  const oldest = Math.min(...marked.map((each) => Date.parse(each.toldAt)));
+  const waitedTooLong = at.getTime() - oldest >= UNTOLD_TO_URGENT_MS;
+  const told = `The alert space is refusing posts. ${post}`;
+  if (urgent !== null && waitedTooLong && (await urgent(withinPush(told))) !== false) {
+    return marked.length;
+  }
+  for (const each of marked) await unmarkTold(db, each.sighting, at, log);
+  return 0;
 }
 
 export function createResolveAlert(deps: { db: D1Database; now: () => Date }): ResolveAlert {

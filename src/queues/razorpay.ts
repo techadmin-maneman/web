@@ -8,7 +8,12 @@ import type { Dependencies } from "../dependencies.ts";
 import { applyRazorpayEvent, RazorpayEventSchema } from "../domain/money/razorpay-events.ts";
 import { notifyMessage } from "../domain/platform/enqueue.ts";
 import type { Logger } from "../log.ts";
-import { backoffSeconds, DONE, runConsumer } from "./consumer.ts";
+import { afterError, backoffSeconds, DONE, runConsumer } from "./consumer.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
+import { CHECKOUT_FAILING_KEY, razorpayEventFailingKey } from "../policy/alerts.ts";
+
+/** Failures of an event before ops are told: one can be a passing D1 hiccup, two are not. */
+const FAILING_AFTER_ATTEMPTS = 2;
 
 /** The first wait for a payment a refund's event came before: its own event is seconds behind, as a rule. */
 const REFUND_EARLY_RETRY_SECONDS = 60;
@@ -53,7 +58,51 @@ export function handleRazorpayBatch({
         return { retryAfterSeconds: backoffSeconds(attempts, REFUND_EARLY_RETRY_SECONDS) };
       }
       eventLog.info("razorpay_hook_taken", { event: event.data.event });
+      // A payment made through Checkout, on a hold's own order: it loads again. A link's payment says nothing of it.
+      if (event.data.event === "payment.captured" && (await paidThroughCheckout(env.DB, event.data))) {
+        await deps.resolveAlert(CHECKOUT_FAILING_KEY);
+      }
+      // An event counted as failing is put right once it applies; one on its first try never failed.
+      if (attempts > 1) await deps.resolveAlert(razorpayEventFailingKey(data.event_id));
       return DONE;
     },
+    // Each try that throws is tried again, later each time; at its second failure, ops are told at once, so a payment or
+    // a refund that cannot be applied is not left for the dead letters hours later.
+    onError: async (data, attempts) => {
+      await deps.alertOnce({
+        key: razorpayEventFailingKey(data.event_id),
+        message: ALERT_WORDS.razorpay_event_failing({ event: data.event_id, name: eventName(data.body), attempts }),
+        after: FAILING_AFTER_ATTEMPTS,
+      });
+      return afterError(attempts);
+    },
   });
+}
+
+/** The event's name, as "payment.captured"; "unknown" for a body that is not one. */
+function eventName(body: string): string {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    const name = typeof parsed === "object" && parsed !== null ? (parsed as { event?: unknown }).event : undefined;
+    return typeof name === "string" ? name : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+/**
+ * Whether the captured payment was made through Checkout: it pays the order a hold booked through Checkout made for
+ * it. A payment link's pays the link's own order, which a hold paid by a link is given once paid, so neither says
+ * anything of Checkout.
+ */
+export async function paidThroughCheckout(db: D1Database, event: { readonly payload?: unknown }): Promise<boolean> {
+  const payment = (event.payload as { payment?: { entity?: { order_id?: unknown } } } | undefined)?.payment?.entity;
+  const order = payment?.order_id;
+  if (typeof order !== "string" || order === "") return false;
+  // A hold paid by a link is given the link's order once paid, so only one booked through Checkout counts.
+  const hold = await db
+    .prepare("SELECT 1 FROM slot_holds WHERE razorpay_order_id = ?1 AND pay_by_link = 0")
+    .bind(order)
+    .first();
+  return hold !== null;
 }

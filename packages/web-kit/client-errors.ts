@@ -14,7 +14,7 @@ const MOST_PER_PAGE = 10;
 const LONGEST = { message: 500, stack: 4000, source: 500, path: 300 } as const;
 
 export interface ClientError {
-  readonly kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up";
+  readonly kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up" | "checkout_unavailable";
   readonly message: string;
   readonly stack?: string;
   /** The script it was thrown in, and where. */
