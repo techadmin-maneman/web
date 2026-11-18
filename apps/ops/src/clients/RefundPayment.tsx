@@ -100,6 +100,8 @@ function RefundForm(props: {
   const [reason, setReason] = useState("");
   const [amountText, setAmountText] = useState(rupeeText(left));
   const [failed, setFailed] = useState<string | null>(null);
+  // Made once, when the drawer opens: a part pressed again after a lost answer shares it, so it goes back once.
+  const [key] = useState(() => crypto.randomUUID());
   const [busy, once] = useOneAtATime();
   const amount = paiseOf(amountText);
   const amountFits = amount !== null && amount > 0 && amount <= left;
@@ -108,8 +110,8 @@ function RefundForm(props: {
   const refund = () =>
     once(async () => {
       setFailed(null);
-      // All that is left goes back with no amount named, as it always has; a part names its own.
-      const part = amount !== null && amount < left ? { amount } : {};
+      // All that is left goes back with no amount named, as it always has; a part names its own, and the drawer's key.
+      const part = amount !== null && amount < left ? { amount, key } : {};
       const answer = await clientsApi.refundPayment(entry.id, { reason: reason.trim(), ...part });
       if (answer.ok) props.onAsked(answer.body.amount);
       else setFailed(errorText(copy.refundErrors, answer));

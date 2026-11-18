@@ -49,6 +49,19 @@ function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[])
 }
 
 describe("askRefund", () => {
+  // The refund is made by the time the write fails: calling it refused would send ops to refund it again by hand.
+  it("lets a failed write of a refund Razorpay made go up, never answering it as refused", async () => {
+    const { payments, asked } = razorpay("made");
+    const failing = {
+      db: {
+        prepare: () => ({ bind: () => ({ run: () => Promise.reject(new Error("D1_ERROR: overloaded")) }) }),
+      } as unknown as D1Database,
+      now: RECORD.now,
+    };
+    await expect(askRefund(payments, "pay_1", ASKED, { record: failing })).rejects.toThrow("D1_ERROR");
+    expect(asked).toEqual(["c-visit-1"]);
+  });
+
   it("answers the refund Razorpay made", async () => {
     const { payments, asked } = razorpay("made");
     expect(await askRefund(payments, "pay_1", ASKED, { record: RECORD })).toEqual({
@@ -115,9 +128,22 @@ describe("refundReceipt", () => {
       refundReceipt({ kind: "no_show", why: "waived", appointmentId: ID }),
       refundReceipt({ kind: "no_show", why: "charged", appointmentId: ID }),
       refundReceipt({ kind: "no_show", why: "refunded on dispute", appointmentId: ID }),
+      refundReceipt({ kind: "payment", paymentId: ID }),
+      refundReceipt({ kind: "payment_part", key: ID }),
+      refundReceipt({ kind: "custom_order", orderId: ID }),
     ];
     expect(new Set(receipts).size).toBe(receipts.length);
     for (const receipt of receipts) expect(receipt.length).toBeLessThanOrEqual(40);
     expect(receipts[0]).toBe(`h-${ID}`);
+  });
+
+  // Each part has the key of the drawer it was asked from, so a part pressed again shares its receipt, and the next
+  // part, from a drawer opened again, has its own.
+  it("gives a part the key of its drawer, and all that is left the payment's own", () => {
+    const again = "33333333-3333-4333-8333-333333333333";
+    expect(refundReceipt({ kind: "payment", paymentId: ID })).toBe(`p-${ID}`);
+    expect(refundReceipt({ kind: "payment_part", key: ID })).toBe(`pp-${ID}`);
+    expect(refundReceipt({ kind: "payment_part", key: ID })).toBe(refundReceipt({ kind: "payment_part", key: ID }));
+    expect(refundReceipt({ kind: "payment_part", key: again })).not.toBe(refundReceipt({ kind: "payment_part", key: ID }));
   });
 });

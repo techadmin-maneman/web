@@ -1,6 +1,6 @@
 # 0192. Free remakes
 
-- Status: accepted
+- Status: accepted. Amended 18 November 2026: Finance may refund part of a payment.
 - Date: 2026-10-13
 - Topic: Money and Books
 
@@ -15,7 +15,7 @@ A first fit or replacement left partly done (the wrong piece in the kit, a skin 
 3. **Ops judge fault.** A visit left partly done through the client's own doing is closed from its Tasks row, and is owed nothing. A failed piece is offered, never booked, free: ops choose.
 4. **One remake each.** Booking it closes the visit's Tasks row in the same batch; a booked or paid replacement ends a piece's.
 5. **Home says so.** While a first fit or replacement left partly done is owed, or a recalled piece is, the client's Home says we will call to set a day and offers nothing to book or pay. A recall says it is at no cost.
-6. **A refund for a payment made twice.** Finance MANAGE may refund what is left of a captured payment, with why, once under the payment's own receipt (ADR 0100), audited.
+6. **A refund for a payment made twice.** Finance MANAGE may refund what is left of a captured payment, with why, once under the payment's own receipt (ADR 0100), audited. **Amended 18 November 2026:** or a part of it, as goodwill, up to what is left, under the key of the console drawer it was asked from (ADR 0100); the rest stays refundable.
 
 ## Consequences
 

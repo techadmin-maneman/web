@@ -20090,7 +20090,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: no reason given, or an amount of nothing or above what is left (fields)
+**400**: invalid_request: no reason given, an amount of nothing or above what is left, or a part with no key (fields)
 
 ```json
 {
@@ -52559,6 +52559,11 @@ Request body:
       "type": "integer",
       "exclusiveMinimum": 0,
       "description": "In paise: part of what is left, given back. Left out, all that is left goes back."
+    },
+    "key": {
+      "type": "string",
+      "format": "uuid",
+      "description": "With an amount: the key the console's drawer made once, when it opened. A part refund pressed again from the same drawer shares it, so Razorpay makes it once."
     }
   },
   "required": [

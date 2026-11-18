@@ -14898,7 +14898,7 @@ export interface paths {
                         "application/json": components["schemas"]["PaymentRefunded"];
                     };
                 };
-                /** @description invalid_request: no reason given, or an amount of nothing or above what is left (fields) */
+                /** @description invalid_request: no reason given, an amount of nothing or above what is left, or a part with no key (fields) */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -30034,6 +30034,11 @@ export interface components {
             reason: string;
             /** @description In paise: part of what is left, given back. Left out, all that is left goes back. */
             amount?: number;
+            /**
+             * Format: uuid
+             * @description With an amount: the key the console's drawer made once, when it opened. A part refund pressed again from the same drawer shares it, so Razorpay makes it once.
+             */
+            key?: string;
         };
         PaymentLinkResent: {
             /**
