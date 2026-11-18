@@ -114,7 +114,8 @@ jobs:
           else
             echo "migrations=false" >> "$GITHUB_OUTPUT"
           fi
-          if grep -qE '(^|/)package(-lock)?\.json$' changed.txt; then
+          # A change to the audit itself runs it too.
+          if grep -qE '((^|/)package(-lock)?\.json|^scripts/(ci|lib)/audit\.ts)$' changed.txt; then
             echo "dependencies=true" >> "$GITHUB_OUTPUT"
           else
             echo "dependencies=false" >> "$GITHUB_OUTPUT"
@@ -203,15 +204,16 @@ jobs:
             npm run check:migrations -- --base "$BASE"
           fi
 
-      # Only where a pull request changes what is installed: a new advisory against a package already here is the
-      # daily audit's (.github/workflows/audit.yml), and fails no unrelated pull request.
+      # Only where a pull request changes what is installed, or changes the audit: a new advisory against a package
+      # already here is the daily audit's (.github/workflows/audit.yml), and fails no unrelated pull request.
       - name: Dependency audit
         if: needs.changes.outputs.dependencies == 'true'
         run: npm run audit
       # npm now and then fails this with EMISSINGSIGNATUREKEY, a registry blip a later try clears, and at times for
       # days. So it tries four times, half a minute apart, failing only if every try fails, and runs only when a pull
-      # request changes what is installed: a signature is verified as the lockfile brings a package in, and the
-      # lockfile's integrity hash holds every later install to those bytes (test/node/tooling/ci-workflow.test.ts).
+      # request changes what is installed, or changes the audit: a signature is verified as the lockfile brings a
+      # package in, and the lockfile's integrity hash holds every later install to those bytes
+      # (test/node/tooling/ci-workflow.test.ts).
       - name: Registry signatures
         if: needs.changes.outputs.dependencies == 'true'
         run: |
