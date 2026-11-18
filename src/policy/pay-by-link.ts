@@ -4,14 +4,21 @@
 
 import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
-export const PAYMENT_LINK_KEYS = ["holds_hours", "closes_before_hours", "pay_within_days"] as const;
+export const PAYMENT_LINK_KEYS = ["holds_hours", "closes_before_hours", "pay_within_days", "one_visit_days"] as const;
 /**
  * The longest a console link keeps its slot; how long before the visit it closes at the latest, so the technician
- * knows of the visit in time; and how long a custom order's link takes payment once it is made (a one visit's closes at the end of the day it is sent, src/policy/one-visit.ts). Ops set them in Settings.
+ * knows of the visit in time; how long a custom order's link takes payment once it is made; and how many days after
+ * the day it is sent a one visit's link stays open, none to begin with, as the one visit is paid the same day
+ * (src/policy/one-visit.ts). Ops set them in Settings.
  */
 export type PaymentLinks = Readonly<Record<(typeof PAYMENT_LINK_KEYS)[number], number>>;
 
-export const PAYMENT_LINKS: PaymentLinks = { holds_hours: 24, closes_before_hours: 2, pay_within_days: 14 };
+export const PAYMENT_LINKS: PaymentLinks = {
+  holds_hours: 24,
+  closes_before_hours: 2,
+  pay_within_days: 14,
+  one_visit_days: 0,
+};
 
 /** Razorpay takes no link that closes sooner than this after it is made. */
 const SHORTEST_LINK_MINUTES = 15;

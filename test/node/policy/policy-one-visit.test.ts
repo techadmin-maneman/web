@@ -66,10 +66,15 @@ describe("a consultation and fit in one visit", () => {
   // The one visit is paid the same day: its link closes at midnight in India, after the day it is sent.
   it("closes a one visit's payment link at the end of the day in India it is sent, half an hour at least", () => {
     // Sent at noon on Monday 21 September: open until Tuesday 00:00 in India.
-    expect(oneVisitLinkClosesAt(new Date("2026-09-21T06:30:00.000Z"))).toEqual(new Date("2026-09-21T18:30:00.000Z"));
+    expect(oneVisitLinkClosesAt(new Date("2026-09-21T06:30:00.000Z"), 0)).toEqual(new Date("2026-09-21T18:30:00.000Z"));
     // Sent at 11:50 pm, ten minutes before midnight: open for half an hour, since Razorpay refuses a link closing sooner.
-    expect(oneVisitLinkClosesAt(new Date("2026-09-21T18:20:00.000Z"))).toEqual(new Date("2026-09-21T18:50:00.000Z"));
+    expect(oneVisitLinkClosesAt(new Date("2026-09-21T18:20:00.000Z"), 0)).toEqual(new Date("2026-09-21T18:50:00.000Z"));
     // Sent just after midnight in India: open until the end of that new day.
-    expect(oneVisitLinkClosesAt(new Date("2026-09-21T18:31:00.000Z"))).toEqual(new Date("2026-09-22T18:30:00.000Z"));
+    expect(oneVisitLinkClosesAt(new Date("2026-09-21T18:31:00.000Z"), 0)).toEqual(new Date("2026-09-22T18:30:00.000Z"));
+  });
+
+  // Ops may allow days after the visit (`payment_links`): the link then closes at the end of the last of them.
+  it("keeps a one visit's link open the days ops allow after the day it is sent", () => {
+    expect(oneVisitLinkClosesAt(new Date("2026-09-21T06:30:00.000Z"), 2)).toEqual(new Date("2026-09-23T18:30:00.000Z"));
   });
 });

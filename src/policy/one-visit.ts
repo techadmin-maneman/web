@@ -19,11 +19,12 @@ export const paymentLinkClosesAt = (madeAt: Date, days: number): Date => new Dat
 const ONE_VISIT_LINK_OPEN_AT_LEAST_MS = 30 * MINUTE_MS;
 
 /**
- * When a one visit's payment link stops taking payment: the visit is paid the same day, so at midnight in India after
- * the day the link is sent, and never sooner than half an hour after it is sent.
+ * When a one visit's payment link stops taking payment: at midnight in India at the end of the day it is sent, or of
+ * ops' `days` after it (`payment_links`, none to begin with, as the visit is paid the same day), and never sooner than
+ * half an hour after it is sent.
  */
-export const oneVisitLinkClosesAt = (sentAt: Date): Date => {
-  const endOfDay = indiaInstant(addDays(indiaDate(sentAt), 1), "00:00");
+export const oneVisitLinkClosesAt = (sentAt: Date, days: number): Date => {
+  const endOfDay = indiaInstant(addDays(indiaDate(sentAt), days + 1), "00:00");
   return new Date(Math.max(endOfDay.getTime(), sentAt.getTime() + ONE_VISIT_LINK_OPEN_AT_LEAST_MS));
 };
 
