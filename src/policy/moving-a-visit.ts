@@ -11,12 +11,15 @@ export const FREE_CHANGE_NOTICE_HOURS = 24;
 
 export type Notice = "free" | "late";
 
-/** Until when changing a visit is free: the notice before its window, 24 hours unless ops set another. */
-export const freeUntil = (windowStarts: Date, noticeHours: number = FREE_CHANGE_NOTICE_HOURS): Date =>
-  new Date(windowStarts.getTime() - noticeHours * HOUR_MS);
+/**
+ * Until when changing a visit is free: the notice before the visit starts, 24 hours unless ops set another. It counts
+ * from the start itself, the time the client booked, not from the start of the window that time falls in.
+ */
+export const freeUntil = (starts: Date, noticeHours: number = FREE_CHANGE_NOTICE_HOURS): Date =>
+  new Date(starts.getTime() - noticeHours * HOUR_MS);
 
-export const noticeAt = (windowStarts: Date, now: Date, noticeHours: number = FREE_CHANGE_NOTICE_HOURS): Notice =>
-  now.getTime() < freeUntil(windowStarts, noticeHours).getTime() ? "free" : "late";
+export const noticeAt = (starts: Date, now: Date, noticeHours: number = FREE_CHANGE_NOTICE_HOURS): Notice =>
+  now.getTime() < freeUntil(starts, noticeHours).getTime() ? "free" : "late";
 
 /**
  * The time a client's own move or cancel counts its notice from: the visit's time before ops moved it,
@@ -79,10 +82,10 @@ export interface SoldTerms {
  * starts inside its notice, and its kind is charged there. The date picker marks such a window.
  */
 export const changeChargedOnBooking = (
-  windowStarts: Date,
+  starts: Date,
   now: Date,
   terms: Pick<SoldTerms, "noticeHours" | "lateCharge">,
-): boolean => terms.lateCharge !== "nothing" && noticeAt(windowStarts, now, terms.noticeHours) === "late";
+): boolean => terms.lateCharge !== "nothing" && noticeAt(starts, now, terms.noticeHours) === "late";
 
 /**
  * What a move costs the client:

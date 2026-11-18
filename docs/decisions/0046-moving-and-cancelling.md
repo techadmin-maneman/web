@@ -1,6 +1,6 @@
 # 0046. Moving and cancelling a visit
 
-- Status: accepted; the late fee kept, and a credit given back only to a grant that can take it, in ADR 0068; after ops move a visit, the notice counts from its time before the move, in [0096](0096-a-no-shows-charge-and-its-dispute.md). Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a move or a cancel is one batch in our own database; nothing is written to FSM.
+- Status: accepted; the late fee kept, and a credit given back only to a grant that can take it, in ADR 0068; after ops move a visit, the notice counts from its time before the move, in [0096](0096-a-no-shows-charge-and-its-dispute.md). Amended 18 November 2026: the notice counts from the visit's own start, not its window's, since clients book a start time ([0210](0210-booking-by-start-time.md)). Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): a move or a cancel is one batch in our own database; nothing is written to FSM.
 - Date: 2026-09-22
 - Topic: Booking and visits
 
@@ -22,7 +22,7 @@ FSM, tried on the real org on 22 September 2026 (`docs/archive/fsm-trial.md`):
 
 ## Decision
 
-**The notice** is counted from the start of the visit's window, not from its half-slot. More than 24 hours before, a change is free; after that it is late. **Amended 29 September 2026** ([0096](0096-a-no-shows-charge-and-its-dispute.md)): after ops move a visit, it is counted from the window the visit had before they moved it, where that is later, as the owner ruled (`docs/open-points.md`, item 71). The terms are worked out when the client asks for them, and again when a hold for a move is made.
+**The notice** is counted from the visit's own start, the time the client booked. **Amended 18 November 2026:** it was counted from the start of the visit's window, which, once clients booked a start time (ADR 0210), took up to four hours off the free change of a visit booked late in a window, against the terms' "more than 24 hours before the booking slot". More than 24 hours before, a change is free; after that it is late. **Amended 29 September 2026** ([0096](0096-a-no-shows-charge-and-its-dispute.md)): after ops move a visit, it is counted from the time the visit had before they moved it, where that is later, as the owner ruled (`docs/open-points.md`, item 71). The terms are worked out when the client asks for them, and again when a hold for a move is made.
 
 **What each change costs** (`moveCost`, `cancelRefund`):
 

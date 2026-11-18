@@ -18,7 +18,7 @@
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 
 import { STANDARD_TIER, tierOf, type VisitType } from "../../config/visit-types.ts";
-import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
+import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { withGst } from "../../config/gst.ts";
 import {
   cancelRefund,
@@ -40,12 +40,10 @@ import {
 } from "../../policy/moving-a-visit.ts";
 import { NO_SHOW_CHARGES } from "../../policy/no-show.ts";
 import { ONE_VISIT_TERMS } from "../../policy/one-visit.ts";
-import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
 import { lateFeeOn, type Price } from "../money/price-book.ts";
 import { visitPriceOf } from "../booking/client-prices.ts";
 import { bookedMinutes } from "../booking/occupancy.ts";
-import { windowTimesOf } from "../../policy/slot-times.ts";
 import { visitBegun } from "./visit-begun.ts";
 import { PAYMENT_HELD, statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import { cityOfVisit } from "../cities/cities.ts";
@@ -119,12 +117,6 @@ export async function changeableVisitFor(db: D1Database, visitId: string, now: D
     .first<{ person_id: string }>();
   if (owner === null) return null;
   return changeableVisit(db, owner.person_id, { id: visitId, evenPast: true }, now);
-}
-
-/** When the visit's window starts, by the times in force on its day, which the 24 hours count back from. */
-function windowStartOf(start: Date, schedule: SlotSchedule): Date {
-  const { date, window } = schedule.at(start);
-  return indiaInstant(date, windowTimesOf(schedule.on(date))[window].start);
 }
 
 export interface VisitPayment {
@@ -334,8 +326,7 @@ export async function changeTerms({
 }): Promise<ChangeTerms> {
   const { terms, lateFee } = await termsOfVisit(db, visit, inForce);
   const noticeFrom = noticeCountsFrom(visit.start, visit.startBeforeMove);
-  const windowStarts = windowStartOf(noticeFrom, await loadSlotSchedule(db));
-  const notice = noticeAt(windowStarts, now, terms.noticeHours);
+  const notice = noticeAt(noticeFrom, now, terms.noticeHours);
   const payment = await visitPayment(db, visit.id);
   const paid = payment?.paid ?? 0;
   // A charged move books a new visit of the same service, at its price on the day.
@@ -354,7 +345,7 @@ export async function changeTerms({
     noticeFromBeforeMove: noticeFrom !== visit.start,
     sold: terms,
     lateFee,
-    freeUntil: freeUntil(windowStarts, terms.noticeHours),
+    freeUntil: freeUntil(noticeFrom, terms.noticeHours),
     payment,
     move: { cost, price: movePrice },
     cancel: { refund, kept: paid - refund },
