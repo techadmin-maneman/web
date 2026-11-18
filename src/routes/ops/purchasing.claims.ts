@@ -47,6 +47,9 @@ const ClaimSchema = z.object({
   sent_at: z.string().nullable(),
   decided_at: z.string().nullable(),
   photo_id: z.string().nullable().openapi({ description: "The photograph sent with it: GET /api/stock-photos/{id}." }),
+  failed_points: z.array(z.string()).nullable().openapi({
+    description: "What its pieces failed of the checks on arrival, for a hair system's failed check; null otherwise.",
+  }),
 });
 
 const ReturnedPieceSchema = z.object({
@@ -198,6 +201,7 @@ async function claimsAnswer(c: Context<AppEnv>) {
       sent_at: claim.sentAt,
       decided_at: claim.decidedAt,
       photo_id: claim.photoId,
+      failed_points: claim.failedPoints,
     })),
     returns: returns.map((piece) => ({
       id: piece.id,

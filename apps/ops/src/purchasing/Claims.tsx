@@ -23,6 +23,12 @@ import { Refusal } from "@maneman/ui/Refusal";
 import { RowHead } from "@maneman/ui/RowHead";
 import { purchasingApi } from "./purchasing-api.ts";
 
+/** Why it is claimed, with what a hair system's pieces failed where the claim names it. */
+const reasonWords = (claim: { reason: keyof typeof copy.claims.reasons; failed_points: readonly string[] | null }) =>
+  claim.failed_points === null || claim.failed_points.length === 0
+    ? copy.claims.reasons[claim.reason]
+    : copy.claims.failedOn(claim.failed_points.map((point) => copy.checks[point] ?? point).join(", "));
+
 const loadClaims = () => purchasingApi.claims();
 
 /** What a claim is worth: the credit given, else what was claimed at the order's price. */
@@ -87,7 +93,7 @@ function ClaimsTable({
               </RowHead>
               <td>{supplierOf(claim.supplier_id)}</td>
               <td>{copy.claims.item(claim.name, claim.quantity, claim.piece_code)}</td>
-              <td>{copy.claims.reasons[claim.reason]}</td>
+              <td>{reasonWords(claim)}</td>
               <td>{standingOf(claim)}</td>
               <td className={FIGURE}>{valueOf(claim)}</td>
             </tr>

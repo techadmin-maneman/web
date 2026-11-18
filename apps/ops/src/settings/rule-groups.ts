@@ -61,6 +61,7 @@ export const RULE_GROUPS = [
       "po_second_approval_above_rupees",
       "po_own_approval",
       "po_rupees_to_one",
+      "receipt_checks",
       "custom_order_grace_days",
       "scorecard_days",
     ],

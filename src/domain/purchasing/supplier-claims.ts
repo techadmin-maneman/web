@@ -32,6 +32,8 @@ export interface SupplierClaim {
   readonly decidedAt: string | null;
   /** The photograph sent with it, if any (./stock-photos.ts). */
   readonly photoId: string | null;
+  /** What its pieces failed of the checks on arrival, for a hair system's failed check; null otherwise. */
+  readonly failedPoints: readonly string[] | null;
 }
 
 /** How many settled claims the list shows after every open one. */
@@ -43,20 +45,27 @@ const SETTLED_SHOWN = 50;
  */
 export function receiptClaimStatements(
   db: D1Database,
-  line: { readonly id: string; readonly poLineId: string; readonly damaged: number; readonly qcFailed: number },
+  line: {
+    readonly id: string;
+    readonly poLineId: string;
+    readonly damaged: number;
+    readonly qcFailed: number;
+    readonly qcFailedPoints: readonly string[];
+  },
   written: Written,
 ): D1PreparedStatement[] {
+  const named = [...new Set(line.qcFailedPoints)];
   const claims = [
-    { reason: "damaged", quantity: line.damaged },
-    { reason: "qc_failed", quantity: line.qcFailed },
+    { reason: "damaged", quantity: line.damaged, points: null },
+    { reason: "qc_failed", quantity: line.qcFailed, points: named.length === 0 ? null : JSON.stringify(named) },
   ].filter((claim) => claim.quantity > 0);
   return claims.map((claim) =>
     db
       .prepare(
         `INSERT INTO supplier_claims (id, number, supplier_id, consumable_code, quantity, reason, receipt_line_id,
-           unit_price, currency, state, drafted_by, drafted_at)
+           unit_price, currency, state, drafted_by, drafted_at, failed_points)
          SELECT ?1, ${freshNumber("supplier_claims", "?8")}, o.supplier_id, p.consumable_code, ?2, ?3, ?4, p.unit_price,
-           o.currency, 'drafted', ?5, ?6
+           o.currency, 'drafted', ?5, ?6, ?9
          FROM po_lines p JOIN purchase_orders o ON o.id = p.po_id WHERE p.id = ?7`,
       )
       .bind(
@@ -68,6 +77,7 @@ export function receiptClaimStatements(
         written.now.toISOString(),
         line.poLineId,
         drawnNumbers(),
+        claim.points,
       ),
   );
 }
@@ -92,13 +102,14 @@ type ClaimRow = {
   sent_at: string | null;
   decided_at: string | null;
   photo_id: string | null;
+  failed_points: string | null;
 };
 
 /** Every open claim, newest first, then the latest settled. */
 export async function supplierClaims(db: D1Database): Promise<SupplierClaim[]> {
   const columns = `k.id, k.number, k.supplier_id, k.consumable_code, c.name, k.quantity, k.reason, o.number AS order_number,
     u.code AS piece_code, k.unit_price, k.currency, k.state, k.outcome, k.credit_amount, k.note, k.drafted_at, k.sent_at,
-    k.decided_at, k.photo_id`;
+    k.decided_at, k.photo_id, k.failed_points`;
   const joins = `JOIN consumables c ON c.code = k.consumable_code JOIN receipt_lines l ON l.id = k.receipt_line_id
     JOIN receipts r ON r.id = l.receipt_id JOIN purchase_orders o ON o.id = r.po_id
     LEFT JOIN stock_units u ON u.id = k.unit_id`;
@@ -134,6 +145,7 @@ export async function supplierClaims(db: D1Database): Promise<SupplierClaim[]> {
     sentAt: row.sent_at,
     decidedAt: row.decided_at,
     photoId: row.photo_id,
+    failedPoints: row.failed_points === null ? null : (JSON.parse(row.failed_points) as string[]),
   }));
 }
 

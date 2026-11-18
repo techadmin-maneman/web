@@ -53575,6 +53575,8 @@ Request body:
         "kit_check",
         "scorecard_days",
         "po_second_approval_above_rupees",
+        "po_own_approval",
+        "receipt_checks",
         "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
@@ -53775,6 +53777,8 @@ Request body:
         "kit_check",
         "scorecard_days",
         "po_second_approval_above_rupees",
+        "po_own_approval",
+        "receipt_checks",
         "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
@@ -58644,6 +58648,10 @@ Request body:
                 },
                 "received": {
                   "type": "integer"
+                },
+                "hair_system": {
+                  "type": "boolean",
+                  "description": "Its pieces are checked against receipt_checks."
                 }
               },
               "required": [
@@ -58651,7 +58659,8 @@ Request body:
                 "consumable_code",
                 "quantity",
                 "unit_price",
-                "received"
+                "received",
+                "hair_system"
               ],
               "additionalProperties": false
             }
@@ -58935,6 +58944,20 @@ Request body:
     "second_approval_above_rupees": {
       "type": "integer"
     },
+    "receipt_checks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "base_size",
+          "colour",
+          "density",
+          "lace_knots",
+          "label"
+        ]
+      },
+      "description": "The points ops check a hair system against as it arrives, in order."
+    },
     "letterhead": {
       "type": [
         "object",
@@ -58994,6 +59017,7 @@ Request body:
     "suppliers",
     "consumables",
     "second_approval_above_rupees",
+    "receipt_checks",
     "letterhead"
   ],
   "additionalProperties": false
@@ -59164,6 +59188,21 @@ Request body:
             "type": "integer",
             "minimum": 0,
             "maximum": 1000000
+          },
+          "qc_failed_points": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "base_size",
+                "colour",
+                "density",
+                "lace_knots",
+                "label"
+              ]
+            },
+            "maxItems": 5,
+            "description": "What a hair system's failed pieces failed, of the checks ops make (receipt_checks); needed where a hair system's line has qc_failed, and named on no other line."
           },
           "lot_code": {
             "type": [
@@ -59364,6 +59403,16 @@ Request body:
               "null"
             ],
             "description": "The photograph sent with it: GET /api/stock-photos/{id}."
+          },
+          "failed_points": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "What its pieces failed of the checks on arrival, for a hair system's failed check; null otherwise."
           }
         },
         "required": [
@@ -59385,7 +59434,8 @@ Request body:
           "drafted_at",
           "sent_at",
           "decided_at",
-          "photo_id"
+          "photo_id",
+          "failed_points"
         ]
       }
     },

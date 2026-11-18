@@ -3493,7 +3493,7 @@ Made by `0055_storage_meter.sql`.
 
 Each claim on a supplier: what arrived damaged or failed its check, or a returned piece in warranty, and whether it was sent, credited, replaced, rejected or withdrawn (ADR 0169).
 
-Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`, `0146_vendor_credits.sql`.
+Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`, `0146_vendor_credits.sql`, `0224_claim_failed_points.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3521,6 +3521,7 @@ Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`, `0146_ve
 | `photo_id` | TEXT | yes |  |  |  |
 | `books_credit_id` | TEXT | yes |  |  | Vendor credits in Zoho Books (docs/decisions/0171-vendor-credits.md): each claim settled as a credit made a vendor credit on its supplier's vendor, once, tried again an hour after a failure. |
 | `books_checked_at` | TEXT | yes |  |  |  |
+| `failed_points` | TEXT | yes |  |  | A JSON array of the points failed (src/policy/receipt-checks.ts); null for any other claim, or one made before. |
 
 Indexes:
 

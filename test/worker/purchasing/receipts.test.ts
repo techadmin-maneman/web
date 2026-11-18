@@ -225,7 +225,7 @@ describe("a receipt against an order in another currency", () => {
     expect((await fieldsOf(noRate)).fields).toEqual(["rate_micro_rupees"]);
     const received = await job.opsPost(
       `/api/purchase-orders/${order.id}/receipts`,
-      receipt([line(lineId, 2, { qc_failed: 1, lot_code: "HS-9" })], {
+      receipt([line(lineId, 2, { qc_failed: 1, qc_failed_points: ["lace_knots"], lot_code: "HS-9" })], {
         rate_micro_rupees: 83_250_000,
         duty_paise: 300_000,
       }),

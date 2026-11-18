@@ -16,6 +16,8 @@ interface PoLine {
   readonly quantity: number;
   readonly unitPrice: number;
   readonly received: number;
+  /** A hair system, whose pieces are checked against ops' points as they arrive. */
+  readonly hairSystem: boolean;
 }
 
 export interface PurchaseOrder {
@@ -62,6 +64,7 @@ type LineRow = {
   quantity: number;
   unit_price: number;
   received_quantity: number;
+  hair_system: number;
 };
 
 /** How many closed and cancelled orders the page keeps beneath the open ones. */
@@ -76,8 +79,9 @@ const ORDER_COLUMNS = `id, number, supplier_id, currency, state, expected_on, no
 async function withLines(db: D1Database, rows: readonly OrderRow[]): Promise<PurchaseOrder[]> {
   const lines = await db
     .prepare(
-      `SELECT id, po_id, consumable_code, quantity, unit_price, received_quantity FROM po_lines
-       WHERE po_id IN (SELECT value FROM json_each(?1)) ORDER BY rowid`,
+      `SELECT id, po_id, consumable_code, quantity, unit_price, received_quantity,
+         EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = po_lines.consumable_code) AS hair_system
+       FROM po_lines WHERE po_id IN (SELECT value FROM json_each(?1)) ORDER BY rowid`,
     )
     .bind(JSON.stringify(rows.map((row) => row.id)))
     .all<LineRow>();
@@ -90,6 +94,7 @@ async function withLines(db: D1Database, rows: readonly OrderRow[]): Promise<Pur
         quantity: line.quantity,
         unitPrice: line.unit_price,
         received: line.received_quantity,
+        hairSystem: line.hair_system === 1,
       }));
     return {
       id: row.id,

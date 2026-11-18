@@ -368,7 +368,17 @@ describe("a paid custom order's refund", () => {
       .run();
     expect((await refund(id, "failed_check")).status).toBe(409);
     await job.opsPost(`/api/purchase-orders/${po?.id ?? ""}/receipts`, {
-      lines: [{ po_line_id: po?.line ?? "", received: 0, damaged: 0, qc_failed: 1, lot_code: null, expires_on: null }],
+      lines: [
+        {
+          po_line_id: po?.line ?? "",
+          received: 0,
+          damaged: 0,
+          qc_failed: 1,
+          qc_failed_points: ["base_size"],
+          lot_code: null,
+          expires_on: null,
+        },
+      ],
       supplier_invoice: null,
       rupee_rate: 8325,
       freight_paise: 0,

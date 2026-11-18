@@ -4,7 +4,8 @@
 
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
-import { Field, Fieldset, TextInput } from "@maneman/ui/Field";
+import { Checkbox, Field, Fieldset, TextInput } from "@maneman/ui/Field";
+import { Refusal } from "@maneman/ui/Refusal";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { microRupeesFromRupees, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -20,9 +21,16 @@ interface LineDraft {
   readonly received: string;
   readonly damaged: string;
   readonly failed: string;
+  /** What a hair system's failed pieces failed, of the checks ops make. */
+  readonly points: readonly string[];
   readonly lot: string;
   readonly expires: string;
 }
+
+const EMPTY_LINE: LineDraft = { received: "0", damaged: "0", failed: "0", points: [], lot: "", expires: "" };
+
+/** Whether a hair system's line has failed pieces, which name what they failed. */
+const namesPoints = (draft: LineDraft, hairSystem: boolean) => hairSystem && Number(draft.failed) > 0;
 
 const WHOLE = /^\d{1,7}$/;
 const RUPEES = /^\d{1,9}(?:\.\d{1,2})?$/;
@@ -56,6 +64,7 @@ const LINE_BOXES = {
   received: "received",
   damaged: "damaged",
   failed: "qc_failed",
+  points: "qc_failed_points",
   lot: "lot_code",
   expires: "expires_on",
 };
@@ -75,8 +84,38 @@ const boxesOf = (order: Order): string[] => [
 /** Words for the box the API refused, if it is this one. */
 type Refused = (box: string) => string | null;
 
-function LineFields(props: { name: string; draft: LineDraft; onDraft: (draft: LineDraft) => void; refused: Refused }) {
+/** The checks a hair system's failed pieces failed, each ticked: those ops make, in their order. */
+function FailedPoints(props: { checks: readonly string[]; draft: LineDraft; onDraft: (draft: LineDraft) => void }) {
+  const { draft, onDraft } = props;
+  return (
+    <Fieldset legend={copy.receive.failedPoints}>
+      {props.checks.map((point) => (
+        <Checkbox
+          key={point}
+          label={copy.checks[point] ?? point}
+          checked={draft.points.includes(point)}
+          onChange={(event) => {
+            const points = event.target.checked
+              ? [...draft.points, point]
+              : draft.points.filter((each) => each !== point);
+            onDraft({ ...draft, points });
+          }}
+        />
+      ))}
+    </Fieldset>
+  );
+}
+
+function LineFields(props: {
+  name: string;
+  draft: LineDraft;
+  /** The checks ops make, for a hair system's line; null for any other. */
+  checks: readonly string[] | null;
+  onDraft: (draft: LineDraft) => void;
+  refused: Refused;
+}) {
   const { draft, onDraft, refused } = props;
+  const pointsRefused = refused(LINE_BOXES.points);
   const set = (field: keyof LineDraft) => (text: string) => {
     onDraft({ ...draft, [field]: text });
   };
@@ -100,6 +139,10 @@ function LineFields(props: { name: string; draft: LineDraft; onDraft: (draft: Li
         onChange={set("failed")}
         error={refused(LINE_BOXES.failed)}
       />
+      {props.checks !== null && namesPoints(draft, true) && (
+        <FailedPoints checks={props.checks} draft={draft} onDraft={onDraft} />
+      )}
+      {pointsRefused !== null && <Refusal className={form.error} said={pointsRefused} />}
       <ReceiptEntry label={copy.receive.lot} value={draft.lot} onChange={set("lot")} error={refused(LINE_BOXES.lot)} />
       <ReceiptEntry
         label={copy.receive.expires}
@@ -183,6 +226,7 @@ function receiptBody(order: Order, lines: readonly LineDraft[], extras: Extras) 
         received: Number(draft?.received ?? 0),
         damaged: Number(draft?.damaged ?? 0),
         qc_failed: Number(draft?.failed ?? 0),
+        ...(draft !== undefined && namesPoints(draft, line.hair_system) ? { qc_failed_points: [...draft.points] } : {}),
         lot_code: draft === undefined || draft.lot.trim() === "" ? null : draft.lot.trim(),
         expires_on: draft === undefined || draft.expires === "" ? null : draft.expires,
       };
@@ -208,6 +252,7 @@ export function ReceiveForm(props: {
       received: String(Math.max(0, line.quantity - line.received)),
       damaged: "0",
       failed: "0",
+      points: [],
       lot: "",
       expires: "",
     })),
@@ -218,6 +263,9 @@ export function ReceiveForm(props: {
   const named = (code: string) => orders.consumables.find((each) => each.code === code)?.name ?? code;
   const ready =
     lines.every((line) => [line.received, line.damaged, line.failed].every((figure) => WHOLE.test(figure.trim()))) &&
+    lines.every(
+      (line, index) => !namesPoints(line, order.lines[index]?.hair_system ?? false) || line.points.length > 0,
+    ) &&
     [extras.freight, extras.duty, extras.clearing].every((amount) => RUPEES.test(amount.trim())) &&
     (!foreign || RUPEES.test(extras.rate.trim()));
   const send = async () => {
@@ -232,7 +280,8 @@ export function ReceiveForm(props: {
         <LineFields
           key={line.id}
           name={named(line.consumable_code)}
-          draft={lines[index] ?? { received: "0", damaged: "0", failed: "0", lot: "", expires: "" }}
+          draft={lines[index] ?? EMPTY_LINE}
+          checks={line.hair_system ? orders.receipt_checks : null}
           onDraft={(draft) => {
             setLines(lines.map((each, at) => (at === index ? draft : each)));
           }}

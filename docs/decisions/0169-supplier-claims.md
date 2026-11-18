@@ -1,6 +1,6 @@
 # 0169. Supplier claims
 
-- Status: accepted
+- Status: accepted. Amended 18 November 2026, on the owner's ruling: a hair system's failed check names the points it failed (item 2).
 - Date: 2026-10-12
 - Topic: Field work
 
@@ -11,7 +11,7 @@ Receipts record what arrived damaged or failed its check, which never enters sto
 ## Decision
 
 1. **A claim is a row of `supplier_claims`,** numbered CL-0001 on, for one stock code from one receipt line: how many, why (damaged, failed its check, or under warranty), and one unit's price on the order, in its currency.
-2. **A receipt drafts its own claims,** in its batch: one for a line's damaged units and one for those that failed their check.
+2. **A receipt drafts its own claims,** in its batch: one for a line's damaged units and one for those that failed their check. A hair system is checked on arrival against base size, colour against the ring, density, lace and knots, and its label: ops choose which in Settings › Purchasing (`receipt_checks`). A hair system's line with failed pieces names the points they failed, of those checked, and its claim carries them (`supplier_claims.failed_points`), so the supplier is told what was wrong.
 3. **A returned piece handed in is traced to its supplier** by its unit's first move, the delivery a receipt line made. Its warranty runs from the receipt's day, in India, for the supplier's warranty days. Inside it, Operations ACT may claim it; a warranty claim is for that one piece. Any returned piece may instead be written off with why. Either way it is settled once, and its unit is written off.
 4. **A claim moves on once each step:** drafted, then sent with a note (Operations ACT), then settled by Operations MANAGE as a credit of an amount, a replacement, or rejected. A drafted claim not worth sending is withdrawn with why. Each step is audited only when it lands.
 5. **Operations › Purchasing** lists open claims and the latest settled, and the returned pieces to settle with each one's warranty.
