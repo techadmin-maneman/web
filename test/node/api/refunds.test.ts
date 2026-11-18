@@ -7,6 +7,22 @@ import { PaymentUnanswered } from "../../../src/providers/provider-error.ts";
 
 const ASKED = { amount: 50_000, notes: { appointment_id: "visit-1" }, receipt: "c-visit-1" };
 
+/** Where a refund Razorpay took is written down: here a database that takes the write and keeps it. */
+const written: unknown[][] = [];
+const RECORD = {
+  db: {
+    prepare: () => ({
+      bind: (...values: unknown[]) => ({
+        run: () => {
+          written.push(values);
+          return Promise.resolve({});
+        },
+      }),
+    }),
+  } as unknown as D1Database,
+  now: new Date("2026-09-21T06:30:00.000Z"),
+};
+
 /** Razorpay answering each ask in turn: a refund's ID, a refusal, or no answer. */
 function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[]) {
   const asked: string[] = [];
@@ -35,43 +51,54 @@ function razorpay(...answers: ("made" | "made before" | "refused" | "silent")[])
 describe("askRefund", () => {
   it("answers the refund Razorpay made", async () => {
     const { payments, asked } = razorpay("made");
-    expect(await askRefund(payments, "pay_1", ASKED)).toEqual({ kind: "refunded", refundId: "rfnd_1" });
+    expect(await askRefund(payments, "pay_1", ASKED, { record: RECORD })).toEqual({
+      kind: "refunded",
+      refundId: "rfnd_1",
+    });
     expect(asked).toEqual(["c-visit-1"]);
   });
 
   it("takes a refusal as one, and asks nothing more", async () => {
     const { payments, asked } = razorpay("refused", "made");
-    expect(await askRefund(payments, "pay_1", ASKED)).toMatchObject({ kind: "refused" });
+    expect(await askRefund(payments, "pay_1", ASKED, { record: RECORD })).toMatchObject({ kind: "refused" });
     expect(asked).toHaveLength(1);
   });
 
   it("asks once more, under the same receipt, when Razorpay gave no answer", async () => {
     const made = razorpay("silent", "made");
-    expect(await askRefund(made.payments, "pay_1", ASKED)).toEqual({ kind: "refunded", refundId: "rfnd_1" });
+    expect(await askRefund(made.payments, "pay_1", ASKED, { record: RECORD })).toEqual({
+      kind: "refunded",
+      refundId: "rfnd_1",
+    });
     expect(made.asked).toEqual(["c-visit-1", "c-visit-1"]);
 
     const madeBefore = razorpay("silent", "made before");
-    expect(await askRefund(madeBefore.payments, "pay_1", ASKED)).toEqual({ kind: "refunded", refundId: null });
+    expect(await askRefund(madeBefore.payments, "pay_1", ASKED, { record: RECORD })).toEqual({
+      kind: "refunded",
+      refundId: null,
+    });
   });
 
   it("leaves it unanswered after two silences, or a refusal after one, since the first may have refunded", async () => {
-    expect(await askRefund(razorpay("silent", "silent").payments, "pay_1", ASKED)).toMatchObject({
+    expect(await askRefund(razorpay("silent", "silent").payments, "pay_1", ASKED, { record: RECORD })).toMatchObject({
       kind: "unanswered",
     });
     const refusedAfter = razorpay("silent", "refused", "made");
-    expect(await askRefund(refusedAfter.payments, "pay_1", ASKED)).toMatchObject({ kind: "unanswered" });
+    expect(await askRefund(refusedAfter.payments, "pay_1", ASKED, { record: RECORD })).toMatchObject({
+      kind: "unanswered",
+    });
     expect(refusedAfter.asked).toHaveLength(2);
   });
 
   it("takes no refusal as one for a refund asked before, which may have been made then", async () => {
     const refused = razorpay("refused", "refused", "made");
-    expect(await askRefund(refused.payments, "pay_1", ASKED, { askedBefore: true })).toMatchObject({
+    expect(await askRefund(refused.payments, "pay_1", ASKED, { askedBefore: true, record: RECORD })).toMatchObject({
       kind: "unanswered",
     });
     expect(refused.asked).toHaveLength(2);
 
     const madeBefore = razorpay("made before");
-    expect(await askRefund(madeBefore.payments, "pay_1", ASKED, { askedBefore: true })).toEqual({
+    expect(await askRefund(madeBefore.payments, "pay_1", ASKED, { askedBefore: true, record: RECORD })).toEqual({
       kind: "refunded",
       refundId: null,
     });

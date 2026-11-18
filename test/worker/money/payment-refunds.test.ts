@@ -85,6 +85,33 @@ describe("POST /api/payments/{id}/refund", () => {
     expect(payments.made.refunds).toEqual([]);
   });
 
+  // A refund asked is on its way from the moment Razorpay takes it, not only once its webhook lands.
+  it("records the refund it asked as on its way at once", async () => {
+    expect((await refund()).status).toBe(200);
+    const asked = await env.DB.prepare("SELECT payment_id, amount, status FROM refunds").all();
+    expect(asked.results).toEqual([{ payment_id: PAYMENT, amount: 3_000_000, status: "created" }]);
+  });
+
+  // A late cancel keeps its late fee and owes the client the rest: until that refund is asked of Razorpay, only the fee
+  // is left to give back here.
+  it("leaves only what a cancel kept while the cancel's own refund is still owed", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+         VALUES ('visit-1', 'visit-1', ?1, 'first_fit', 'cancelled', ?2, ?2, ?2)`,
+      ).bind(PERSON, NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, refund_amount, kept_amount,
+           payment_id, created_at)
+         VALUES ('change-1', 'visit-1', ?1, 'cancelled', 'late', ?2, 2_600_000, 400_000, ?3, ?2)`,
+      ).bind(PERSON, NOW.toISOString(), PAYMENT),
+    ]);
+    const answer = await refund();
+    expect(answer.status).toBe(200);
+    expect(await answer.json()).toEqual({ amount: 400_000 });
+    expect(payments.made.refunds).toEqual([{ paymentId: "pay_twice", amount: 400_000 }]);
+  });
+
   it("takes a reason", async () => {
     expect((await refund("")).status).toBe(400);
   });

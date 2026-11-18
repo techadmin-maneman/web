@@ -79,7 +79,10 @@ async function settleRefund({
     notes: { appointment_id: owed.appointmentId, reason: `cancelled by ${owed.cancelledBy}` },
     receipt: refundReceipt({ kind: "cancel", appointmentId: owed.appointmentId }),
   };
-  const asked = await askRefund(deps.payments, owed.razorpayPaymentId, refund, { askedBefore: asking.askedBefore });
+  const asked = await askRefund(deps.payments, owed.razorpayPaymentId, refund, {
+    askedBefore: asking.askedBefore,
+    record: { db, now },
+  });
   if (asked.kind !== "refunded") {
     asking.log.error("cancel_refund_failed", {
       appointment_id: owed.appointmentId,

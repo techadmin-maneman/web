@@ -22,7 +22,7 @@ type PaidRow = {
   person_id: string;
   razorpay_payment_id: string;
   amount: number;
-  /** Refunded, or asked for and not yet processed. */
+  /** Refunded, asked for and not yet processed, or owed by a cancel and not yet asked for. */
   refunded: number;
 };
 
@@ -32,7 +32,10 @@ export function capturedPayment(db: D1Database, paymentId: string): Promise<Paid
     .prepare(
       `SELECT p.person_id, p.razorpay_payment_id, p.amount,
          p.refunded_amount + COALESCE((SELECT SUM(r.amount) FROM refunds r
-                                        WHERE r.payment_id = p.id AND r.status = 'created'), 0) AS refunded
+                                        WHERE r.payment_id = p.id AND r.status = 'created'), 0)
+           + COALESCE((SELECT SUM(c.refund_amount) FROM visit_changes c
+                        WHERE c.payment_id = p.id AND c.refund_amount > 0
+                          AND c.razorpay_refund_id IS NULL AND c.refund_settled_at IS NULL), 0) AS refunded
        FROM payments p WHERE p.id = ?1 AND p.captured_at IS NOT NULL AND p.person_id IS NOT NULL`,
     )
     .bind(paymentId)
@@ -52,11 +55,16 @@ export async function refundPayment(
   if (amount <= 0) return { kind: "nothing_left" };
   // Paid by UPI to the bank, not through Razorpay: ops refund it the same way (docs/decisions/0209).
   if (paidOutsideRazorpay(paid.razorpay_payment_id)) return { kind: "by_upi" };
-  const outcome = await askRefund(deps.payments, paid.razorpay_payment_id, {
-    amount,
-    receipt: refundReceipt({ kind: "payment", paymentId: asked.paymentId }),
-    notes: { payment_id: asked.paymentId, reason: asked.reason },
-  });
+  const outcome = await askRefund(
+    deps.payments,
+    paid.razorpay_payment_id,
+    {
+      amount,
+      receipt: refundReceipt({ kind: "payment", paymentId: asked.paymentId }),
+      notes: { payment_id: asked.paymentId, reason: asked.reason },
+    },
+    { record: { db, now: written.now } },
+  );
   if (outcome.kind !== "refunded") {
     await deps.alertOnce({
       key: `payment_refund:${asked.paymentId}`,
