@@ -36,7 +36,10 @@ tax and adds the tax to: Rs. 2,547 less a discount of Rs. 382 came to Rs. 2,096.
 2. **A discount code takes its figure off with its GST.** A code's figure stays one before GST, in whole rupees; off a
    price that carries what the client pays, it takes that figure with its GST added, as Books does, so the hold, the
    payment and Books' invoice agree to the paisa, and the code taken off again gives back the price as set. With a tax
-   on the line, the invoice names the code's figure before GST as its discount; without one, what came off the price.
+   on the line, the invoice names the code's figure before GST as its discount where that comes to what was paid: a
+   code in whole rupees at the price's own GST. Otherwise, as for a code worth the whole price or a visit charged a GST
+   its day's price had not (decision 4), the line is what was paid with no discount, which Books keeps to the paisa.
+   Without a tax on the line, the discount is what came off the price.
 3. **Every invoice line carries its tax**, at the GST rate of the price it is sold at: the visit's price on its day; a
    kept charge's payment. Books' own tax is found by that rate, its list read once a run
    (`GET /settings/taxes`, `ZohoBooks.settings.READ`): the GST group of the rate, which Books splits as CGST and SGST,
@@ -44,8 +47,9 @@ tax and adds the tax to: Rs. 2,547 less a discount of Rs. 382 came to Rs. 2,096.
    invoiced under its state's own registration only where that one names a Books branch; else under the one in
    `BOOKS_GSTIN`. A rate Books has no tax for is a refusal, told to ops at once.
 4. **With GST on, nothing is invoiced at no GST.** A visit whose price on its day had none is charged the GST of its
-   service's price as it stands now, at what it was sold for; while that has none either, it is held and ops are told
-   (`invoice_untaxed`) to set the service's price with its GST, from tomorrow, after which it is invoiced. A kept charge
+   price as it stands now (a first fit's hair system's, a replacement's replacement's), at what it was sold for; while
+   that has none either, it is held and ops are told (`invoice_untaxed`) to set that price with its GST, from tomorrow,
+   after which it is invoiced. A kept charge
    whose payment was taken with no GST in its price is told to ops to settle by hand.
 5. **Razorpay's fee carries its GST once Razorpay's GSTIN is set.** `BOOKS_GATEWAY_GSTIN` and `BOOKS_GATEWAY_GST_STATE`,
    as Razorpay's tax invoice to us names them, replace `BOOKS_GATEWAY_FEES_TAX_ID`. The fee's rate is what Razorpay's
@@ -62,7 +66,8 @@ tax and adds the tax to: Rs. 2,547 less a discount of Rs. 382 came to Rs. 2,096.
 - Staging writes into the one Books, now registered: its invoices, labelled "Staging test", are GST documents of the
   real GSTIN. The owner ruled on 18 November 2026 to keep the one organisation and clear it at go-live.
 - A code's figure with its GST is often not a round number, so a price with a code on it can end in paise. A code worth
-  the whole price, taken off again, may bring the price back a paisa off. A late fee's hold keeps its figure before
+  the whole price, taken off a hold again, may bring the price back a paisa off, and that visit's invoice is then held
+  as a draft for ops. A late fee's hold keeps its figure before
   GST, so at 18% one in seven may come a paisa off the price set.
 - Visits held for want of GST take the invoice pass's places each hour until their service is priced with it.
 - A supplier's bill from a registered supplier in India is refused by Books with GST on, as a receipt holds no GST of

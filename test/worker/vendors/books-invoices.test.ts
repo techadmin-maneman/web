@@ -112,6 +112,21 @@ async function paid(amount: number, appointmentId = VISIT) {
     .run();
 }
 
+/** A discount code ops entered on the visit: a percentage, or an amount in paise, off before GST. */
+async function codeOnVisit(kind: "percent" | "amount", value: number) {
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO discount_codes (id, code, kind, value, covers_first_fit, covers_service, covers_replacement,
+         once_per_client, created_by, created_at)
+       VALUES ('code-9', 'GSTCODE', ?1, ?2, 0, 1, 0, 1, 'ops@localhost', ?3)`,
+    ).bind(kind, value, NOW.toISOString()),
+    env.DB.prepare(
+      `INSERT INTO discount_code_uses (id, code_id, person_id, appointment_id, given_by, given_by_id, created_at)
+       VALUES ('use-9', 'code-9', ?1, ?2, 'ops', 'ops@localhost', ?3)`,
+    ).bind(PERSON, VISIT, NOW.toISOString()),
+  ]);
+}
+
 /** The standard service visit at Rs. 2,200 with its 18% GST in it, from the day of the visits here unless told. */
 async function pricedWithGst(validFrom = "2026-09-23") {
   await env.DB.prepare(
@@ -279,6 +294,33 @@ describe("the invoice a finished visit gets", () => {
       discount: 18_600,
       tax: { percent: 18, intraState: true },
     });
+  });
+
+  it("bills a coded visit charged a GST its day's price had not at what was paid, with no discount line", async () => {
+    // Rs. 2,000 at 0% on its day, 10% off, Rs. 1,800 paid; the service at 18% from the next day.
+    await visit();
+    await codeOnVisit("percent", 10);
+    await paid(180_000);
+    await pricedWithGst("2026-09-24");
+    const books = createStubBooks();
+
+    expect(await invoicePass(books, later(DAY_MS), { gst: REGISTERED })).toEqual({ raised: 1, issued: 1 });
+    expect(books.made.invoices[0]?.line).toMatchObject({
+      rate: 180_000,
+      discount: 0,
+      tax: { percent: 18, intraState: true },
+    });
+  });
+
+  it("bills a code worth the whole price at nothing once GST is on, not a paisa either side", async () => {
+    // Rs. 2,200 with its 18% in it is Rs. 1,864.41 before GST, all of which the code takes.
+    await pricedWithGst();
+    await visit();
+    await codeOnVisit("amount", 5_000_000);
+    const books = createStubBooks();
+
+    expect(await invoicePass(books, AFTER, { gst: REGISTERED })).toEqual({ raised: 1, issued: 1 });
+    expect(books.made.invoices[0]?.line).toMatchObject({ rate: 0, discount: 0 });
   });
 
   it("finds by its reference an invoice whose answer never came, and raises no second one", async () => {
