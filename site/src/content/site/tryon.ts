@@ -84,6 +84,7 @@ export const tryOn = {
     title: "Where should we send it?",
     name: "Name",
     nameError: CLIENT_WORDS.nameError,
+    nameLetters: CLIENT_WORDS.nameLetters,
     mobile: "Mobile",
     mobileError: "Enter a valid 10-digit mobile number.",
     submit: "Send my look",

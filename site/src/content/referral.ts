@@ -199,7 +199,7 @@ export const referral = {
       {
         n: "2",
         title: "The first fit",
-        lead: `${capitalised(visitLength.firstFit)}. Real-time transformation. Be the Main Man again.`,
+        lead: `${capitalised(visitLength.firstFit)}. Real-time transformation. Be the Main Man, again!`,
         body: "Crafted, cut, blended and styled right in your living room. Look in the mirror and walk out with seamless, natural-looking hair.",
       },
       {
@@ -346,6 +346,7 @@ export const referral = {
   form: {
     name: "Name",
     nameError: CLIENT_WORDS.nameError,
+    nameLetters: CLIENT_WORDS.nameLetters,
     mobile: "Mobile",
     mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",

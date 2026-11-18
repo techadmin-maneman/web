@@ -158,7 +158,7 @@ describe("content", () => {
     expect(referral.consultation.body).toBe("60 minutes, and free. Or have your fit in the same visit.");
     expect(referral.howItWorks.steps.map((step) => step.lead)).toEqual([
       "60 minutes. Completely confidential.",
-      "3 hours. Real-time transformation. Be the Main Man again.",
+      "3 hours. Real-time transformation. Be the Main Man, again!",
       "No trips to the salon. We come to you.",
     ]);
     expect(site.norwood.restored).toBe("From these to this in 3 hours.");
@@ -246,6 +246,12 @@ describe("the second copy round", () => {
     expect(pages).not.toMatch(/undetectable/i);
     expect(site.pageDescriptions.home).toMatch(/^Hair systems in 100% real human hair/);
     expect(referral.arrival.title).toBe("A hair system, fitted at home. The consultation is free.");
+  });
+
+  // The brand's tagline, written as the brand writes it, ends the hero's turning line (ADR 0279).
+  it("ends the hero's line on the tagline as the brand writes it, and writes it no other way", () => {
+    expect(site.hero.sequence.at(-1)).toBe("Be the Main Man, again!");
+    expect(pages).not.toMatch(/Main Man again/);
   });
 
   // /book and its search snippet opened "He measures your scalp", with nobody for "He" to be.

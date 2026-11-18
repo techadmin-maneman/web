@@ -25,9 +25,9 @@ function dayOf(date: string): string | null {
   return sayNow(shortDate(date));
 }
 
-/** "9:30–10 am · service visit · prepaid", the line beneath the name, with the day first when it is not today. */
+/** "Arrive 9:30 to 10 am · service visit · prepaid", the line beneath the name, the day first when not today. */
 export function whenOf(job: Job): string {
-  const parts = [dayOf(job.date), arrival(job), kindNameLower(job), badgesLower[job.badge]];
+  const parts = [dayOf(job.date), copy.arrive(arrival(job)), kindNameLower(job), badgesLower[job.badge]];
   return copy.when(parts.filter((part): part is string => part !== null));
 }
 

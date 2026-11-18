@@ -164,7 +164,7 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
   await page.goto("/profile/payments");
   const entries = page.getByRole("main").getByRole("link");
   await expect(entries).toHaveCount(3);
-  // Booking in the app is on locally, so every payment goes through Razorpay, as the note beneath says.
+  // Whoever is paid, and however, never the technician, as the note beneath says.
   await expect(page.getByText(appCopy.payments.note)).toBeVisible();
   // By month, each under its name.
   await expect(

@@ -3,12 +3,14 @@
 // then each template; "Next: …" and "Compare with …" around a translated rest; a line of parts joined by " · ", part by
 // part; and weekdays and months where the line holds a figure. Names, sectors, codes, product names, amounts and am/pm
 // are never in the catalog, so they stay as they are. The app's own lines, which the prototype does not draw, are in
-// ./app-hi.json, read after the catalog in the same way. A line neither words stays English.
+// ./app-hi.json, read after the catalog in the same way; where both word a line or a template, the app's wins, as its
+// corrections to the catalog's draft (docs/decisions/0280-the-technician-apps-hindi-corrected.md). A line neither
+// words stays English.
 
 import catalog from "../../../../design/tech-redesign/strings-hi.json" with { type: "json" };
 import app from "./app-hi.json" with { type: "json" };
 
-const STRINGS: Readonly<Record<string, string>> = { ...app.strings, ...catalog.strings };
+const STRINGS: Readonly<Record<string, string>> = { ...catalog.strings, ...app.strings };
 const TOKENS: Readonly<Record<string, string>> = { ...catalog.dateTokens, ...app.dateTokens };
 const NAMES = Object.keys(TOKENS).join("|");
 /**
@@ -35,7 +37,7 @@ function templateRule([english, hindi]: readonly [string, string]): readonly [Re
 
 const RULES: readonly (readonly [RegExp, string])[] = [
   ...catalog.patterns.map((pattern) => [new RegExp(pattern.match), pattern.hi] as const),
-  ...Object.entries(catalog.templates).map(templateRule),
+  ...Object.entries({ ...catalog.templates, ...app.templates }).map(templateRule),
   ...app.patterns.map((pattern) => [new RegExp(pattern.match), pattern.hi] as const),
 ];
 
@@ -90,7 +92,7 @@ function wordedCore(core: string): string {
   for (const [rule, hindi] of RULES) {
     if (rule.test(core)) return ruled(core, rule, hindi);
   }
-  if (core.startsWith("Next: ")) return `आगे: ${toHindi(core.slice(6))}`;
+  if (core.startsWith("Next: ")) return `अगला: ${toHindi(core.slice(6))}`;
   if (core.startsWith("Compare with ")) return `${toHindi(core.slice(13))} से मिलाएँ`;
   if (core.includes(" · ")) {
     const parts = core.split(" · ");

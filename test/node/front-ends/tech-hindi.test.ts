@@ -21,7 +21,7 @@ afterEach(() => {
 describe("a line in Hindi", () => {
   it("is the catalog's own, where it holds the line", () => {
     expect(toHindi("Today")).toBe("आज");
-    expect(toHindi("Navigate")).toBe("रास्ता");
+    expect(toHindi("Navigate")).toBe("रास्ता देखें");
   });
 
   it("follows the catalog's patterns and templates, keeping a name as it is", () => {
@@ -30,7 +30,7 @@ describe("a line in Hindi", () => {
   });
 
   it("is worded part by part across a ·, and its weekdays and months put in Hindi where it holds a figure", () => {
-    expect(toHindi("Today · Navigate")).toBe("आज · रास्ता");
+    expect(toHindi("Today · Navigate")).toBe("आज · रास्ता देखें");
     expect(toHindi("Wed 11 Nov")).toBe("बुध 11 नवं");
   });
 
@@ -48,7 +48,15 @@ describe("a line in Hindi", () => {
   it("words the app's own lines after the catalog's, the singular and a lower-case part among them", () => {
     expect(toHindi("1 job today")).toBe("आज 1 जॉब");
     expect(toHindi("This visit isn’t yours any more.")).toBe("यह विज़िट अब आपकी नहीं है।");
-    expect(toHindi("Next: clean the scalp")).toBe("आगे: स्कैल्प साफ़ करें");
+    expect(toHindi("Next: clean the scalp")).toBe("अगला: स्कैल्प साफ़ करें");
+  });
+
+  // ADR 0280: the app's corrections to the catalog's draft, which stays as received.
+  it("words a line or a template the catalog words too as the app's own file does", () => {
+    expect(catalog.strings.Next).toBe("आगे");
+    expect(toHindi("Next")).toBe("अगला");
+    expect(toHindi("Me")).toBe("प्रोफ़ाइल");
+    expect(toHindi("Before photos are blurred. Fix it and tap Next.")).toMatch(/ ठीक करें और अगला दबाएँ।$/);
   });
 
   it("words what a rule holds, so a count, a date or a part in it is in Hindi too", () => {
@@ -64,6 +72,11 @@ describe("a line in Hindi", () => {
     expect(toHindi("18 min drive to Sun City, Sector 54")).toBe("Sun City, Sector 54 तक 18 मिनट ड्राइव");
     // The week's span on Schedule.
     expect(toHindi("12 Nov to 25 Nov · 14 jobs")).toBe("12 नवं से 25 नवं · 14 जॉब");
+    // A job card's arrival window.
+    expect(toHindi("Arrive 11:11 to 11:41 am · service visit")).toBe(
+      "11:11 से 11:41 am के बीच पहुँचें · सर्विस विज़िट",
+    );
+    expect(toHindi("Arrive 11:30 am to 12 pm")).toBe("11:30 am से 12 pm के बीच पहुँचें");
   });
 
   it("tries no rule on a line longer than any the catalogs word", () => {
@@ -109,7 +122,7 @@ describe("the catalog as the screens read it", () => {
     const words = localised({ title: "Today", count: (jobs: number) => `${String(jobs)} jobs today`, rows: ["Me"] });
     expect([words.title, words.count(3), words.rows[0]]).toEqual(["Today", "3 jobs today", "Me"]);
     speak("hi");
-    expect([words.title, words.count(3), words.rows[0]]).toEqual(["आज", "आज 3 जॉब", "मैं"]);
+    expect([words.title, words.count(3), words.rows[0]]).toEqual(["आज", "आज 3 जॉब", "प्रोफ़ाइल"]);
   });
 });
 

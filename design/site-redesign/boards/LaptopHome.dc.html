@@ -288,7 +288,7 @@ class Component extends DCLogic {
       resPos: s.resPos, tryPos: s.tryPos,
       onRes: (e) => set({ resPos: +e.target.value }), onTry: (e) => set({ tryPos: +e.target.value }),
       caption: ['Life-changing.', 'Ten years younger.', 'Head held high again.', 'Love it.'][s.res], pager: (s.res + 1) + ' of 4',
-      phrases: ['Natural up close.', '100% real human hair.', 'Fitted at home.', 'Confidence restored.', 'Be the Main Man again.'].map((t, i) => ({ t, op: i === s.phrase ? 1 : 0 })), pauseLabel: s.paused ? 'Play' : 'Pause', founderOpen: !!s.founder, founderShut: !s.founder, openFounder: () => set({ founder: true }), togglePause: () => { this.film(s.paused); set({ paused: !s.paused }); },
+      phrases: ['Natural up close.', '100% real human hair.', 'Fitted at home.', 'Confidence restored.', 'Be the Main Man, again!'].map((t, i) => ({ t, op: i === s.phrase ? 1 : 0 })), pauseLabel: s.paused ? 'Play' : 'Pause', founderOpen: !!s.founder, founderShut: !s.founder, openFounder: () => set({ founder: true }), togglePause: () => { this.film(s.paused); set({ paused: !s.paused }); },
       prevRes: () => set({ res: (s.res + 3) % 4, resPos: 50 }), nextRes: () => set({ res: (s.res + 1) % 4, resPos: 50 }),
       stages: [
         { n: 'III', t: 'A clear M', s: 'We fit', img: '/_blob/a5492dcc8a58cdd102717ad0b2414525', alt: 'Stage III hair loss' },
