@@ -10,7 +10,7 @@ import { StatTile } from "@maneman/ui/StatTile";
 import { useLoad } from "@maneman/ui/useLoad";
 import { GLYPHS } from "@maneman/brand/icons";
 import { apiNow } from "@maneman/web-kit/clock";
-import { todayInIndia } from "@maneman/web-kit/dates";
+import { shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { useCallback, useMemo, type ReactNode } from "react";
 import { api, type Technician, type TechnicianSummary } from "../api.ts";
@@ -36,7 +36,13 @@ function standingOf(active: Technician | null): RecordHead["badges"][number] {
 
 function headOf(summary: TechnicianSummary, active: Technician | null): RecordHead {
   return {
-    badges: [standingOf(active)],
+    badges: [
+      standingOf(active),
+      // In training, no visits of any kind till ops mark it done (ADR 0278).
+      ...(summary.training_ends_on === null
+        ? []
+        : [{ words: copy.inTraining(shortDate(summary.training_ends_on)), tone: "attention" as const }]),
+    ],
     facts: [
       ...(summary.mobile === null ? [] : [phoneWords(summary.mobile)]),
       ...(summary.city === null ? [] : [summary.city]),

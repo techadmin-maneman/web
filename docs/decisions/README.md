@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0278. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0279. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -431,7 +431,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0116](0116-book-asks-for-the-name-and-number-first.md) | /book asks for the name and number first | 2026-10-11 | accepted | [0214](0214-from-the-site-into-the-app.md) |
 | [0117](0117-a-technician-takes-visits-in-their-own-city.md) | A technician takes visits in their own city | 2026-10-11 | accepted | [0118](0118-booking-never-dead-ends.md), [0223](0223-reach-from-home.md) |
 | [0118](0118-booking-never-dead-ends.md) | Booking never dead-ends | 2026-10-11 | accepted |  |
-| [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted |  |
+| [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted | [0278](0278-a-technician-in-training-takes-no-visits.md) |
 | [0120](0120-the-board-sees-the-road.md) | The board sees the road | 2026-10-11 | accepted |  |
 | [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) | The site and the app book with the same parts | 2026-10-11 | accepted |  |
 | [0122](0122-technician-pay-per-visit.md) | Technician pay per visit | 2026-10-11 | accepted |  |
@@ -590,3 +590,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0275](0275-the-apps-phase-2-pairs-retired.md) | The apps' Phase 2 fidelity pairs retired | 2026-11-18 | accepted |  |
 | [0276](0276-a-message-whatsapp-refuses.md) | A message WhatsApp refuses | 2026-11-18 | accepted, on the owner's rulings of 18 November 2026 |  |
 | [0277](0277-alerts-that-come-sooner.md) | Alerts that come sooner | 2026-11-18 | accepted, on the owner's approval of the QA run's fix plan, 18 November 2026 |  |
+| [0278](0278-a-technician-in-training-takes-no-visits.md) | A technician in training takes no visits | 2026-11-18 | accepted, on the owner's ruling of 18 November 2026 |  |

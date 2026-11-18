@@ -26,7 +26,8 @@ import {
   type Call,
   type OpsReply,
 } from "./fixtures.ts";
-import { IMRAN, READ_ROSTER, READ_WORK, detailsOf, backToRoster } from "./technicians-fixtures.ts";
+import { IMRAN, READ_ROSTER, READ_WORK, detailsOf, backToRoster, pageOf } from "./technicians-fixtures.ts";
+import { shortDate } from "../../packages/web-kit/dates.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings } from "../../apps/ops/src/content/settings.ts";
 
@@ -152,6 +153,47 @@ test("moves a technician to another city, or to none", async ({ page }) => {
   expect((await sent).postDataJSON()).toEqual({ city: null });
 });
 
+// A technician added on a Monday could be given consultations at once, with no training at all.
+test("adds a technician in training till a day", async ({ page }) => {
+  await openWith(page, { [ADD]: json(TECHNICIAN_ADDED, 201) });
+  await page.getByRole("button", { name: opsCopy.technicians.add.open }).click();
+  const form = page.getByRole("dialog", { name: opsCopy.technicians.add.open });
+  await form.getByRole("textbox", { name: opsCopy.technicians.fields.name }).fill("Naveen Rao");
+  await form.getByRole("textbox", { name: opsCopy.technicians.fields.mobile }).fill("9810000007");
+  await form.getByLabel(opsCopy.technicians.training.until).fill("2026-10-20");
+  const sent = page.waitForRequest((request) => request.method() === "POST" && request.url().endsWith("/technicians"));
+  await form.getByRole("button", { name: opsCopy.technicians.add.save }).click();
+
+  expect((await sent).postDataJSON()).toMatchObject({ name: "Naveen Rao", training_ends_on: "2026-10-20" });
+});
+
+test("shows the day a technician's training ends, and marks it done on their details", async ({ page }) => {
+  const inTraining = {
+    ...TECHNICIANS,
+    technicians: TECHNICIANS.technicians.map((each) =>
+      each.id === IMRAN ? { ...each, training_ends_on: "2026-10-20" } : each,
+    ),
+  };
+  const { roster, reply } = rosterOf(inTraining);
+  await openWith(page, { [CHANGE]: json({ id: IMRAN }) }, reply);
+  await pageOf(page, "Imran Qureshi");
+  await expect(page.getByText(opsCopy.technicians.head.inTraining(shortDate("2026-10-20")))).toBeVisible();
+
+  await page.getByRole("button", { name: opsCopy.technicians.head.edit }).click();
+  const main = page.getByRole("dialog", { name: "Imran Qureshi" });
+  const training = opsCopy.technicians.training;
+  await main.getByRole("button", { name: `${EDITING.change} ${training.until}` }).click();
+  const day = main.getByLabel(training.until);
+  await expect(day).toHaveValue("2026-10-20");
+  await day.fill("");
+  const sent = page.waitForRequest((request) => request.method() === "PATCH");
+  roster.current = TECHNICIANS;
+  await main.getByRole("button", { name: EDITING.save }).click();
+
+  expect((await sent).postDataJSON()).toEqual({ training_ends_on: null });
+  await expect(main.getByRole("button", { name: `${EDITING.change} ${training.until}` })).toContainText(training.none);
+});
+
 test("switches a technician off only once asked, and lists the visits they no longer hold", async ({ page }) => {
   const { roster, reply } = rosterOf(TECHNICIANS);
   await openWith(page, { [SWITCH_OFF]: json(SWITCHED_OFF) }, reply);
@@ -174,6 +216,7 @@ test("switches a technician off only once asked, and lists the visits they no lo
         city: "Gurgaon",
         mobile: "+919810000001",
         fits_trained: true,
+        training_ends_on: null,
         visits_to_come: 0,
       },
     ],

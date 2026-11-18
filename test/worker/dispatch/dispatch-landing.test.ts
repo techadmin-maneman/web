@@ -420,6 +420,18 @@ describe("a technician in another city, or in none", () => {
     expect(rooms.filter((room) => room.technician_id === SAMEER)).toEqual([]);
   });
 
+  it("is refused any visit while in training, and offered no room for it", async () => {
+    await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon', training_ends_on = '2026-10-20' WHERE id = ?1")
+      .bind(SAMEER)
+      .run();
+
+    const answer = await move({ appointment_id: A, technician_id: SAMEER, reason: "zone_rebalance" });
+    expect(await answer.json()).toMatchObject({ error: { code: "in_training" } });
+    expect(await shown(A)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["09:00"] });
+    const { rooms } = await (await roomFor(A, "2026-09-22")).json<RoomBody>();
+    expect(rooms.filter((room) => room.technician_id === SAMEER)).toEqual([]);
+  });
+
   it("is refused one with no city, while the visit's own technician still moves it within its day", async () => {
     const answer = await move({ appointment_id: A, technician_id: SAMEER, reason: "zone_rebalance" });
     expect(await answer.json()).toMatchObject({ error: { code: "other_city" } });

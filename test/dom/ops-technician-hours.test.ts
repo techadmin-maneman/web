@@ -22,6 +22,7 @@ const IMRAN: Technician = {
   city: "Gurgaon",
   mobile: "+919810000009",
   fits_trained: true,
+  training_ends_on: null,
   visits_to_come: 0,
   sign_in_stopped_at: null,
   out_of_codes: false,

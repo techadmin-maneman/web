@@ -158,6 +158,16 @@ describe("a city's own closed days, and first fits", () => {
     expect(await holdAt(GURGAON)).toBe("Imran Qureshi");
   });
 
+  // A technician added on a Monday could be given consultations at once, with no training at all.
+  it("offers and holds no visit of any kind with a technician in training, until ops mark it done", async () => {
+    await env.DB.prepare("UPDATE technicians SET training_ends_on = '2026-10-20' WHERE id = 't1'").run();
+    expect(await morningOpenAt(GURGAON)).toBe(false);
+    expect(await holdAt(GURGAON)).toBeNull();
+
+    await env.DB.prepare("UPDATE technicians SET training_ends_on = NULL WHERE id = 't1'").run();
+    expect(await holdAt(GURGAON)).toBe("Imran Qureshi");
+  });
+
   // A replacement fits a hair system too, so it needs a trained fitter as a first fit does.
   it("holds a replacement only with a technician trained to fit, and a service visit with anyone", async () => {
     await env.DB.prepare("UPDATE technicians SET fits_trained = 0 WHERE id = 't1'").run();

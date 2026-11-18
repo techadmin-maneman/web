@@ -158,6 +158,12 @@ describe("the service area", () => {
     expect((await auditFor("pincode.set")).results).toHaveLength(0);
   });
 
+  it("counts no one in training as ready to fit", async () => {
+    await env.DB.prepare("UPDATE technicians SET training_ends_on = '2026-10-20' WHERE city = 'Gurgaon'").run();
+    const answer = await post("/api/service-area", { changes: [{ pincode: "122018", served: true, launch_on: null }] });
+    expect(await answer.json()).toMatchObject({ error: { code: "not_ready", fields: ["122018"] } });
+  });
+
   it("serves it all the same where an Admin gives a reason, and keeps the reason", async () => {
     await env.DB.prepare("UPDATE technicians SET fits_trained = 0 WHERE city = 'Gurgaon'").run();
     const answer = await post("/api/service-area", {

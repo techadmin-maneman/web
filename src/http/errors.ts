@@ -109,6 +109,8 @@ export const ERROR_CODES = [
   "other_city",
   // A first fit handed to a technician not trained to fit (ADR 0119).
   "not_trained",
+  // A visit handed to a technician still in training (ADR 0278).
+  "in_training",
   // The technician has begun the visit, so a move would leave their work on another day or with another technician.
   "in_progress",
   // The no-show wait has not run out yet (src/policy/no-show.ts), or a visit ops would close by hand is still to come.
@@ -320,6 +322,7 @@ export const ERROR_STATUS = {
   blackout: 409,
   other_city: 409,
   not_trained: 409,
+  in_training: 409,
   in_progress: 409,
   too_early_to_close: 409,
   no_check_in: 409,

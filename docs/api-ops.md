@@ -16617,7 +16617,7 @@ Request body:
 }
 ```
 
-**409**: the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; not_trained; superseded, with what changed in fields; in_progress
+**409**: the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; not_trained; in_training; superseded, with what changed in fields; in_progress
 
 ```json
 {
@@ -16644,6 +16644,7 @@ Request body:
                 "blackout",
                 "other_city",
                 "not_trained",
+                "in_training",
                 "in_progress"
               ]
             }
@@ -16907,7 +16908,7 @@ Request body:
 }
 ```
 
-**409**: past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
+**409**: past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; in_training: to a technician still in training; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
 
 ```json
 {
@@ -16934,6 +16935,7 @@ Request body:
                 "blackout",
                 "other_city",
                 "not_trained",
+                "in_training",
                 "in_progress"
               ]
             }
@@ -17082,7 +17084,7 @@ Request body:
 }
 ```
 
-**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One they have only checked in at moves with clear_check_in; one they have started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them
+**409**: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; in_training: to a technician still in training; superseded, with what changed in fields; in_progress: the technician has begun the visit. One they have only checked in at moves with clear_check_in; one they have started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them
 
 ```json
 {
@@ -17109,6 +17111,7 @@ Request body:
                 "blackout",
                 "other_city",
                 "not_trained",
+                "in_training",
                 "in_progress",
                 "ask_the_client"
               ]
@@ -35773,6 +35776,7 @@ Request body:
             "blackout",
             "other_city",
             "not_trained",
+            "in_training",
             "in_progress",
             "too_early_to_close",
             "no_check_in",
@@ -40105,6 +40109,7 @@ Request body:
             "blackout",
             "other_city",
             "not_trained",
+            "in_training",
             "in_progress",
             "too_early_to_close",
             "no_check_in",
@@ -49736,6 +49741,18 @@ Request body:
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
           },
+          "training_ends_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The day their training is expected to end; null when not in training. In training, no visits (ADR 0278)."
+          },
           "visits_to_come": {
             "type": "integer",
             "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
@@ -49849,6 +49866,7 @@ Request body:
           "city",
           "mobile",
           "fits_trained",
+          "training_ends_on",
           "visits_to_come",
           "sign_in_stopped_at",
           "out_of_codes",
@@ -49909,6 +49927,18 @@ Request body:
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
           },
+          "training_ends_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The day their training is expected to end; null when not in training. In training, no visits (ADR 0278)."
+          },
           "visits_to_come": {
             "type": "integer",
             "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
@@ -49921,6 +49951,7 @@ Request body:
           "city",
           "mobile",
           "fits_trained",
+          "training_ends_on",
           "visits_to_come"
         ],
         "additionalProperties": false
@@ -52749,6 +52780,14 @@ Request body:
     "fits_trained": {
       "type": "boolean",
       "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
+    },
+    "training_ends_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training."
     }
   },
   "required": [
@@ -52805,6 +52844,14 @@ Request body:
     "fits_trained": {
       "type": "boolean",
       "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
+    },
+    "training_ends_on": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training."
     }
   },
   "additionalProperties": false,

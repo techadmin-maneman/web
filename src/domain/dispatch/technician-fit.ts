@@ -1,37 +1,44 @@
-// Which technicians may take a job on the board: those in its city, and for a first fit those trained to fit
-// (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md,
-// docs/decisions/0119-blackouts-by-city-and-trained-fitters.md).
+// Which technicians may take a job on the board: those in its city and out of training, and for a first fit those
+// trained to fit (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md,
+// docs/decisions/0119-blackouts-by-city-and-trained-fitters.md,
+// docs/decisions/0278-a-technician-in-training-takes-no-visits.md).
 
 import { isAFitting } from "../../config/visit-types.ts";
 import { bookingCity, type Technician } from "../booking/occupancy.ts";
 import type { LiveJob } from "./dispatch-landing.ts";
 
 /**
- * Why a technician may not take the visit; null where they may. Its own technician always may. Another must work in
- * the visit's city, where that is known, and be
- * trained to fit for a first fit.
+ * Why a technician may not take the visit; null where they may. Its own technician always may. Another must be out
+ * of training, work in the visit's city, where that is known, and be trained to fit for a first fit.
  */
 export async function whyNotThem(
   db: D1Database,
   job: LiveJob,
   technicianId: string,
-): Promise<"other_city" | "not_trained" | null> {
+): Promise<"in_training" | "other_city" | "not_trained" | null> {
   if (technicianId === job.technician_id) return null;
   const row = await db
     .prepare(
-      `SELECT ${bookingCity("?2", "?3")} AS visit_city, t.city AS technician_city, t.fits_trained
+      `SELECT ${bookingCity("?2", "?3")} AS visit_city, t.city AS technician_city, t.fits_trained,
+         t.training_ends_on
        FROM technicians t WHERE t.id = ?1`,
     )
     .bind(technicianId, job.service_pincode, job.person_id)
-    .first<{ visit_city: string | null; technician_city: string | null; fits_trained: number }>();
+    .first<{
+      visit_city: string | null;
+      technician_city: string | null;
+      fits_trained: number;
+      training_ends_on: string | null;
+    }>();
+  if (row !== null && row.training_ends_on !== null) return "in_training";
   const where = row?.visit_city ?? null;
   if (where !== null && row?.technician_city !== where) return "other_city";
   return isAFitting(job.type) && row?.fits_trained !== 1 ? "not_trained" : null;
 }
 
 /**
- * Who the board offers a job to: its own technician, and the others who work in its city, or all where it is unknown;
- * for a first fit, only those trained to fit. A test client's visit goes only to a test technician, and a client's to
+ * Who the board offers a job to: its own technician, and the others out of training who work in its city, or all
+ * where it is unknown; for a first fit, only those trained to fit. A test client's visit goes only to a test technician, and a client's to
  * none, as booking keeps them (src/domain/booking/occupancy.ts).
  */
 export function roomTechnicians(db: D1Database, job: LiveJob): Promise<Technician[]> {
@@ -39,7 +46,7 @@ export function roomTechnicians(db: D1Database, job: LiveJob): Promise<Technicia
     .prepare(
       `SELECT t.id, t.name, t.initials FROM technicians t
        WHERE t.active = 1 AND (t.id = ?1 OR ((${bookingCity("?2", "?3")} IS NULL OR t.city = ${bookingCity("?2", "?3")})
-         AND (?4 = 0 OR t.fits_trained = 1)
+         AND (?4 = 0 OR t.fits_trained = 1) AND t.training_ends_on IS NULL
          AND t.test_record = (SELECT COALESCE(MAX(p.test_record), 0) FROM people p WHERE p.id = ?3)))
        ORDER BY t.name`,
     )

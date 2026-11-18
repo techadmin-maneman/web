@@ -54,6 +54,8 @@ export const technicians = {
     off: "Switched off",
     trained: "Trained to fit",
     notTrained: "Not trained to fit",
+    /** "In training till 18 Dec": no visits till ops mark it done (ADR 0278). */
+    inTraining: (day: string) => `In training till ${day}`,
     call: "Call",
     edit: "Edit details",
   },
@@ -221,6 +223,11 @@ export const technicians = {
     noCity: "No city yet",
     /** A first fit or a replacement goes only to a technician trained to fit (ADR 0119). */
     fitsTrained: "Trained to fit",
+  },
+  /** A technician in training takes no visit of any kind till ops clear the day (ADR 0278). */
+  training: {
+    until: "In training until",
+    none: "Not in training",
   },
   /**
    * A technician with no city takes no client bookings until ops set one: a visit goes only to a technician in its

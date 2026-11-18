@@ -86,7 +86,9 @@ export type MoveRefusal =
   /** Handed to a technician who works in another city than the visit's, or in none yet (ADR 0117). */
   | "other_city"
   /** A first fit handed to a technician not trained to fit (ADR 0119). */
-  | "not_trained";
+  | "not_trained"
+  /** A visit handed to a technician still in training (ADR 0278). */
+  | "in_training";
 
 /**
  * How the client hears of a move ops made. The rule above ends "messages the

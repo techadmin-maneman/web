@@ -124,6 +124,16 @@ const FitsTrainedSchema = z
   .optional()
   .openapi({ description: "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)." });
 
+const TrainingSchema = z.iso
+  .date()
+  .nullable()
+  .optional()
+  .openapi({
+    description:
+      "The day their training is expected to end, which the console shows: in training, they are offered and given " +
+      "no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training.",
+  });
+
 const NewTechnicianSchema = z
   .object({
     name: NameSchema,
@@ -131,6 +141,7 @@ const NewTechnicianSchema = z
     zone: ZoneSchema.optional(),
     city: CitySchema.optional(),
     fits_trained: FitsTrainedSchema,
+    training_ends_on: TrainingSchema,
   })
   .strict()
   .openapi("NewTechnician");
@@ -142,6 +153,7 @@ const TechnicianChangeSchema = z
     zone: ZoneSchema.optional(),
     city: CitySchema.optional(),
     fits_trained: FitsTrainedSchema,
+    training_ends_on: TrainingSchema,
   })
   .strict()
   .refine((change) => Object.keys(change).length > 0, { message: "nothing to change" })
@@ -269,7 +281,7 @@ async function technicianToChange(c: Context<AppEnv>, id: string): Promise<Roste
 }
 
 /** The fields a change names, in a fixed order, for its audit entry: never their values. */
-const CHANGEABLE = ["name", "mobile", "zone", "city", "fits_trained"] as const;
+const CHANGEABLE = ["name", "mobile", "zone", "city", "fits_trained", "training_ends_on"] as const;
 
 /**
  * Whether the caller may give a technician this city: one of ours that their grants reach, or none (GIVING_NO_CITY).
@@ -311,7 +323,14 @@ export function registerOpsTechnicians(app: App): void {
     const changed = await changeTechnician({
       db: c.env.DB,
       current: technician,
-      change: { name: change.name, mobileE164, zone: change.zone, city: change.city, fitsTrained: change.fits_trained },
+      change: {
+        name: change.name,
+        mobileE164,
+        zone: change.zone,
+        city: change.city,
+        fitsTrained: change.fits_trained,
+        trainingEndsOn: change.training_ends_on,
+      },
       audit: auditOf(c, "technician.change", id, { fields }),
       now: c.var.deps.now(),
     });
@@ -371,7 +390,14 @@ export function registerOpsTechnicians(app: App): void {
 /** Adding a technician, apart from the changes above. */
 function registerTechnicianAdd(app: App): void {
   app.openapi(addRoute, async (c) => {
-    const { name, mobile, zone, city, fits_trained: fitsTrained } = c.req.valid("json");
+    const {
+      name,
+      mobile,
+      zone,
+      city,
+      fits_trained: fitsTrained,
+      training_ends_on: trainingEndsOn,
+    } = c.req.valid("json");
     const mobileE164 = toE164(mobile);
     if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
     if (!(await mayGiveCity(c, city ?? null))) {
@@ -383,6 +409,7 @@ function registerTechnicianAdd(app: App): void {
     const id = crypto.randomUUID();
     const marks = {
       fitsTrained: fitsTrained ?? false,
+      trainingEndsOn: trainingEndsOn ?? null,
       testRecord: testRecordAtCreation(c.var.config.environment, name),
     };
     const technician = { id, name, mobileE164, zone: zone ?? null, city: city ?? null, ...marks };
