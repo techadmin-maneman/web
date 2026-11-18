@@ -894,8 +894,8 @@ export const clients = {
     warning: "This erases them now. It can’t be undone.",
     /** The runbook's first step, "Check the request comes from the number's owner". */
     checked: "I’ve confirmed this with them, on their own number.",
-    /** Erasure blanks the number, after which nobody can find the chat on the phone. */
-    chatDeleted: "I’ve deleted their chat on the WhatsApp phone.",
+    /** Erasure blanks the number, after which nobody can find the chat on the phone: ops tell them, then delete it. */
+    chatDeleted: "I’ve told them, and deleted their chat on the WhatsApp phone.",
     confirm: (name: string) => `Erase ${name}`,
     erasing: "Erasing…",
     /** Why nothing was erased, and what ops may do about it. */
@@ -913,7 +913,7 @@ export const clients = {
     anyway: "Erase anyway",
     done: {
       title: "Client erased",
-      body: "Tell them in the chat they asked in, then delete that chat.",
+      body: "Done. Zoho is finished from Tasks.",
       back: "Find a client",
     },
     /** The page of a client erased since, which keeps only their visits and money. */
