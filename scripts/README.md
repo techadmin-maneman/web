@@ -125,9 +125,9 @@ Each writes **test records**, named "Staging test", on staging or in the owner's
 
 ## fidelity/
 
-`fidelity.ts` is the harness for the public site; `fidelity-app.ts`, `fidelity-ops.ts`, `fidelity-tech.ts` and
-`fidelity-refer.ts` shoot each app's screens beside their boards into `docs/fidelity/` (`npm run fidelity:<app>`), and
-`fidelity-kit.ts` shoots the console's kit, every shared part in its states, after the console's pairs. They write
-only those images. `fidelity-app-fixtures.ts` holds the answers `fidelity-app.ts` gives that no screen's fixture holds.
+`fidelity.ts` is the harness for the public site, and `fidelity-refer.ts` shoots the referral landing beside its
+boards into `docs/fidelity/` (`npm run fidelity:refer`); `fidelity-kit.ts` shoots the console's kit, every shared part
+in its states (`npm run fidelity:ops`). They write only those images. The client and technician apps' pairs against
+Phase 2's boards were retired once each app was rebuilt to its redesign's prototype (`docs/fidelity-method.md`).
 `site-boards.ts` opens the site redesign's boards for `fidelity.ts` and `fidelity-refer.ts`, and walks `/book`'s and
 the try-on's boards to each of their states as a visitor would.
