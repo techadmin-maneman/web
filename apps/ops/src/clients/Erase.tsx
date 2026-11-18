@@ -46,7 +46,7 @@ function Confirm({
   name,
   message,
   lists,
-  check,
+  checks,
   action,
   sending,
   onErase,
@@ -55,30 +55,36 @@ function Confirm({
   name: string;
   message: string;
   lists: boolean;
-  check: string;
+  /** Each tick erasing waits for. */
+  checks: readonly string[];
   action: string;
   sending: boolean;
   onErase: () => void;
   onCancel: () => void;
 }) {
   const panel = useFocusOnMount<HTMLDivElement>();
-  const [checked, setChecked] = useState(false);
+  const [ticked, setTicked] = useState<readonly string[]>([]);
+  const allTicked = checks.every((check) => ticked.includes(check));
 
   return (
     <div className={deletionStyles.confirm} ref={panel} tabIndex={-1} role="group" aria-label={copy.confirmLabel(name)}>
       <p className={deletionStyles.warning}>{message}</p>
       {lists && <ErasureLists />}
-      <Checkbox
-        className={deletionStyles.checkLine}
-        label={check}
-        checked={checked}
-        disabled={sending}
-        onChange={(event) => {
-          setChecked(event.target.checked);
-        }}
-      />
+      {checks.map((check) => (
+        <Checkbox
+          key={check}
+          className={deletionStyles.checkLine}
+          label={check}
+          checked={ticked.includes(check)}
+          disabled={sending}
+          onChange={(event) => {
+            const on = event.target.checked;
+            setTicked((was) => (on ? [...was, check] : was.filter((each) => each !== check)));
+          }}
+        />
+      ))}
       <div className={deletionStyles.actions}>
-        <Button variant="destructive" size="small" disabled={sending || !checked} onClick={onErase}>
+        <Button variant="destructive" size="small" disabled={sending || !allTicked} onClick={onErase}>
           {sending ? copy.erasing : action}
         </Button>
         <CancelButton disabled={sending} onClick={onCancel} />
@@ -127,7 +133,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
           name={name}
           message={copy.warning}
           lists
-          check={copy.checked}
+          checks={[copy.checked, copy.chatDeleted]}
           action={copy.confirm(name)}
           sending={sending}
           onErase={() => void erase(false)}
@@ -140,7 +146,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
           name={name}
           message={copy.owed[erasing.code]}
           lists={false}
-          check={copy.settle[erasing.code]}
+          checks={[copy.settle[erasing.code]]}
           action={copy.anyway}
           sending={sending}
           onErase={() => void erase(true)}

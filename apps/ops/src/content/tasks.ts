@@ -90,6 +90,7 @@ export const tasks = {
     unanswered_chat: "Unanswered chat",
     // Not drawn: a message WhatsApp refused (docs/decisions/0276-a-message-whatsapp-refuses.md).
     message_undelivered: "Message not delivered",
+    erasure_follow_up: "Erased: finish in Zoho",
     // Not drawn: a matter Care sent to the city (docs/decisions/0135-city-matters.md).
     city_matter: "City matter",
     // Not drawn: a remedy above the limit, for a manager (docs/decisions/0143-remedies.md).
@@ -311,6 +312,11 @@ export const tasks = {
     disputedCredit: "a free service visit",
     /** "Waiting since 21 Sep, 9:12 pm": the client's last message, unanswered past its reply-by time. */
     unanswered_chat: (since: string) => `Waiting since ${since}`,
+    /** "Delete lead 6105… in Zoho, then empty it from the recycle bin." */
+    erasure_follow_up: (lead: string | null) =>
+      lead === null
+        ? "Never reached Zoho. Nothing to delete."
+        : `Delete lead ${lead} in Zoho, then empty it from the recycle bin.`,
     /** "Visit cancelled · WhatsApp refused it (131049)". */
     message_undelivered: (kind: string, code: string | null) =>
       `${kind} · WhatsApp refused it${code === null ? "" : ` (${code})`}`,
@@ -392,6 +398,8 @@ export const tasks = {
     consumablesShort: { open: "Checked", label: "What the kit showed" },
     /** A fit closed without sign-off closes once Care have called the client. */
     fitUnsigned: { open: "Called", label: "What the client said" },
+    /** An erasure's Zoho leftovers close once the lead is deleted and gone from the recycle bin. */
+    erasureFollowUp: { open: "Done", label: "What was deleted" },
     /** A message not delivered closes once Care have told the client another way, with how. */
     messageUndelivered: { open: "Told", label: "How the client was told" },
     /** A fit guarantee claim closes with what was done: a refit, or a refund. */

@@ -96,6 +96,7 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   // Anything the client flagged first, why they did not sign, and whose job.
   fit_unsigned: (facts) => copy.fit_unsigned(facts.reason, facts.technician, facts.flag),
   // Which message, and WhatsApp's code for why it refused.
+  erasure_follow_up: (facts) => copy.erasure_follow_up(facts.lead),
   message_undelivered: (facts) => copy.message_undelivered(messageKindName(facts.kind), facts.code),
   // The stars, the visit and its day, and whose job.
   low_rating: (facts) =>

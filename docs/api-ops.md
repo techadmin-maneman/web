@@ -50662,6 +50662,7 @@ Request body:
               "fit_unsigned",
               "fit_guarantee_claim",
               "low_rating",
+              "erasure_follow_up",
               "kit_request",
               "referral_review",
               "no_show_decision",
@@ -51616,6 +51617,29 @@ Request body:
         "reason",
         "technician",
         "short"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "erasure_follow_up"
+          ]
+        },
+        "lead": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The CRM lead the client was, to find and delete; null where they never reached the CRM."
+        }
+      },
+      "required": [
+        "group",
+        "lead"
       ],
       "additionalProperties": false
     },

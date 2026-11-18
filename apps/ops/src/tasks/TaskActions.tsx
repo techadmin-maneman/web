@@ -25,6 +25,7 @@ type Group = TaskGroup["group"];
 
 /** The group as the close route names it, for the groups whose tasks ops may close; null for any other. */
 const closableAs = (group: Group): ClosableGroup | null =>
+  group === "erasure_follow_up" ||
   group === "partial_visit" ||
   group === "consumables_short" ||
   group === "fit_unsigned" ||
@@ -44,6 +45,7 @@ const CLOSE_WORDS: Readonly<Record<ClosableGroup, { readonly open: string; reado
   partial_visit: tasks.close,
   consumables_short: tasks.close.consumablesShort,
   fit_unsigned: tasks.close.fitUnsigned,
+  erasure_follow_up: tasks.close.erasureFollowUp,
   fit_guarantee_claim: tasks.close.guaranteeClaim,
   low_rating: tasks.close.lowRating,
   at_risk_client: tasks.close.atRisk,

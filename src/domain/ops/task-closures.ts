@@ -51,6 +51,10 @@ export async function closeTask(
             .bind(task.id, options.now.toISOString()),
         ]
       : []),
+    // An erasure finished in the CRM leaves the table its task is read from, which holds only those still open.
+    ...(task.group === "erasure_follow_up"
+      ? [db.prepare("DELETE FROM erasure_follow_ups WHERE person_id = ?1").bind(task.id)]
+      : []),
     ...(task.group === "reschedule_request"
       ? [
           db

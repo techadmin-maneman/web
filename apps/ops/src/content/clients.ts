@@ -894,6 +894,8 @@ export const clients = {
     warning: "This erases them now. It can’t be undone.",
     /** The runbook's first step, "Check the request comes from the number's owner". */
     checked: "I’ve confirmed this with them, on their own number.",
+    /** Erasure blanks the number, after which nobody can find the chat on the phone. */
+    chatDeleted: "I’ve deleted their chat on the WhatsApp phone.",
     confirm: (name: string) => `Erase ${name}`,
     erasing: "Erasing…",
     /** Why nothing was erased, and what ops may do about it. */

@@ -100,6 +100,7 @@ export const TASK_GROUPS = [
   "fit_unsigned",
   "fit_guarantee_claim",
   "low_rating",
+  "erasure_follow_up",
   "kit_request",
   "referral_review",
   "no_show_decision",
@@ -183,6 +184,9 @@ export const TASK_SLA_HOURS: Slas = {
   fit_guarantee_claim: 48,
   // A visit the client rated low: Care call them within the two days (docs/decisions/0260-ratings.md).
   low_rating: 48,
+  // What an erasure leaves in the CRM, finished the same day it was erased
+  // (docs/decisions/0066-erasure-all-or-nothing.md).
+  erasure_follow_up: 8,
   // A kit short of what its week's visits need: in its next transfer, within the day.
   kit_request: 24,
   referral_review: 48,
@@ -218,6 +222,7 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
  * when its thing is done.
  */
 export const CLOSABLE_TASK_GROUPS = [
+  "erasure_follow_up",
   "partial_visit",
   "consumables_short",
   "fit_unsigned",

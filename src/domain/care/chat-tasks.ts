@@ -17,15 +17,26 @@ const CHATS_WAITING = `SELECT 'unanswered_chat' AS "group", c.id AS id, c.person
      AND m.author <> 'auto' AND m.sent_at >= c.last_inbound_at)`;
 
 /**
+ * An erasure Care finish by hand in the CRM: the record found by its lead ID, deleted, then deleted again from the
+ * recycle bin, which keeps the old name and number. From the erasure until Care close it.
+ */
+const ERASURES_TO_FOLLOW_UP = `SELECT 'erasure_follow_up' AS "group", f.person_id AS id, f.person_id AS person_id,
+         pe.name AS person_name, pe.zoho_lead_id AS detail, json_object('lead', pe.zoho_lead_id) AS facts,
+         f.erased_at AS since, NULL AS due_by, '' AS episode
+    FROM erasure_follow_ups f JOIN people pe ON pe.id = f.person_id
+   WHERE NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'erasure_follow_up' AND c.subject_id = f.person_id)`;
+
+/**
  * The board's queues from Customer Care's work: a chat waiting on us, kept once its reply-by time passes; a message
  * WhatsApp refused, until Care have told the client another way (./undelivered-messages.ts); a matter sent to a
- * city (./city-matters.ts); and a remedy awaiting a manager (./remedies.ts).
+ * city (./city-matters.ts); and a remedy awaiting a manager (./remedies.ts); and an erasure Care finish in the CRM.
  */
 export const CARE_QUEUES: readonly { readonly group: TaskGroup; readonly sql: string }[] = [
   { group: "unanswered_chat", sql: CHATS_WAITING },
   { group: "message_undelivered", sql: MESSAGES_UNDELIVERED },
   { group: "city_matter", sql: CITY_MATTERS_OPEN },
   { group: "remedy_approval", sql: REMEDIES_AWAITING },
+  { group: "erasure_follow_up", sql: ERASURES_TO_FOLLOW_UP },
 ];
 
 interface BoardRow {
