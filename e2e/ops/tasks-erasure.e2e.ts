@@ -61,8 +61,9 @@ test("lists an erasure's leftovers in Zoho, naming the lead, and closes one once
   expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("button", { name: lead }).click();
-  // The board names the erased person as their record does: Erased.
-  const drawer = page.getByRole("dialog", { name: "Erased" });
+  // The board names the erased person as their record does, which the drawer takes as its title.
+  const erased = ERASURE_BOARD.groups[0]?.tasks[0]?.person?.name ?? "";
+  const drawer = page.getByRole("dialog", { name: erased });
   await drawer.getByRole("button", { name: opsCopy.tasks.close.erasureFollowUp.open }).click();
   // Nothing is asked of ops: the person is erased, and no words are kept about them.
   await expect(drawer.getByRole("textbox")).toHaveCount(0);
