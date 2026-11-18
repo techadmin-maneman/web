@@ -114,7 +114,8 @@ jobs:
           else
             echo "migrations=false" >> "$GITHUB_OUTPUT"
           fi
-          if grep -qE '(^|/)package(-lock)?\.json$' changed.txt; then
+          # A change to the audit itself runs it too.
+          if grep -qE '((^|/)package(-lock)?\.json|^scripts/(ci|lib)/audit\.ts)$' changed.txt; then
             echo "dependencies=true" >> "$GITHUB_OUTPUT"
           else
             echo "dependencies=false" >> "$GITHUB_OUTPUT"

@@ -26,8 +26,16 @@ export const ALLOWED: readonly Allowance[] = [
   },
 ];
 
+/** `npm audit --json`'s answer: its report, or, as npm writes its own failures to stdout as JSON too, an error. */
 export interface AuditReport {
-  vulnerabilities?: Record<string, { via: readonly (string | { url: string; severity: string; title: string })[] }>;
+  auditReportVersion?: number;
+  metadata?: { dependencies?: { prod?: number } };
+  error?: unknown;
+  message?: string;
+  vulnerabilities?: Record<
+    string,
+    { via: readonly (string | { url: string; severity: string; title: string })[] }
+  > | null;
 }
 
 /** The advisories that fail the check, each as "package: title (url)". */
@@ -47,4 +55,21 @@ export function failingAdvisories(
     }
   }
   return [...failing].sort();
+}
+
+/**
+ * Why an answer is no audit, so the check fails rather than passing on nothing: npm's own error, as when the registry
+ * cannot be reached, or anything but the report it writes; and, for the production dependencies alone, a report that
+ * checked none of them. Null for a report.
+ */
+export function noAudit(report: AuditReport, { production }: { readonly production: boolean }): string | null {
+  const isReport =
+    report.error === undefined &&
+    report.auditReportVersion === 2 &&
+    typeof report.vulnerabilities === "object" &&
+    report.vulnerabilities !== null;
+  if (!isReport) return report.message ?? "npm audit gave no report";
+  if (production && (report.metadata?.dependencies?.prod ?? 0) === 0)
+    return "npm audit checked no production dependency";
+  return null;
 }

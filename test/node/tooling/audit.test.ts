@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { failingAdvisories, type Allowance } from "../../../scripts/lib/audit.ts";
+import { failingAdvisories, noAudit, type Allowance } from "../../../scripts/lib/audit.ts";
 
 const ADVISORY = "https://github.com/advisories/GHSA-aaaa-bbbb-cccc";
 const report = (severity: string, url = ADVISORY) => ({
@@ -30,5 +30,24 @@ describe("the dependency audit", () => {
     expect(failingAdvisories(report("high", other), "2026-10-04", allowed)).toEqual([
       `left: Left is unsafe (${other})`,
     ]);
+  });
+
+  // npm writes its own failures to stdout as JSON as well, and exits 0: the check once passed on nothing when the
+  // registry could not be reached.
+  it("is no audit where npm answers its own error, or anything but its report", () => {
+    const unreachable = {
+      message: "request to http://127.0.0.1:9/-/npm/v1/security/advisories/bulk failed, reason: connect ECONNREFUSED",
+      error: { summary: "", detail: "" },
+    };
+    expect(noAudit(unreachable, { production: false })).toContain("ECONNREFUSED");
+    expect(noAudit({}, { production: false })).toBe("npm audit gave no report");
+    const report = { auditReportVersion: 2, vulnerabilities: {}, metadata: { dependencies: { prod: 36 } } };
+    expect(noAudit(report, { production: true })).toBeNull();
+  });
+
+  it("is no audit of the production dependencies where it checked none of them", () => {
+    const none = { auditReportVersion: 2, vulnerabilities: {}, metadata: { dependencies: { prod: 0 } } };
+    expect(noAudit(none, { production: true })).toBe("npm audit checked no production dependency");
+    expect(noAudit(none, { production: false })).toBeNull();
   });
 });
