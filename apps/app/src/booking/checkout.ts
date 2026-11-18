@@ -66,7 +66,15 @@ export type Paid = "paid" | "failed" | "dismissed";
  */
 export function pay(checkout: NonNullable<Booking["checkout"]>, payBy: string): Promise<Paid> {
   const Razorpay = window.Razorpay;
-  if (Razorpay === undefined) return Promise.resolve("failed");
+  if (Razorpay === undefined) {
+    // The script came, and what came was not Checkout: a captive portal's page, or a file cut short.
+    reportClientError({
+      kind: "checkout_unavailable",
+      message: "Checkout did not load: Razorpay missing",
+      source: SCRIPT,
+    });
+    return Promise.resolve("failed");
+  }
   const secondsToPay = Math.max(1, secondsUntil(Date.parse(payBy)));
   const closedByMs = secondsToPay * 1000 + CLOSING_MS;
   return new Promise<Paid>((resolve) => {

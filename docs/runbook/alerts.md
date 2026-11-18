@@ -90,15 +90,16 @@ payments missed meanwhile.
 
 ## Checkout failing to load
 
-`checkout_failing`: Razorpay Checkout's script did not load in the client app three times with no payment made
-between, so nobody can pay. Open the app, start a booking and see whether Checkout opens; if not, check
+`checkout_failing`: Razorpay Checkout did not load in the client app for three signed-in clients within a quarter of
+an hour, so nobody can pay. Open the app, start a booking and see whether Checkout opens; if not, check
 https://checkout.razorpay.com/v1/checkout.js answers and that the app's Content-Security-Policy still allows it
-(apps/app/headers.ts). The next payment captured closes it.
+(apps/app/headers.ts): the logs' `csp_refused` lines name what it refused. The next payment made through Checkout
+closes it.
 
 ## WhatsApp refused
 
 `messages_refused:<kind>`: of a kind's messages sent in the last day, WhatsApp refused more than the share ops set
-(Settings, WhatsApp refused). Read why in MSG91's logs: 131049 is Meta's cap on marketing messages, so the kind's
+(Settings, WhatsApp refused); the marketing texts Care do not chase are not counted. Read why in MSG91's logs: 131049 is Meta's cap on marketing messages, so the kind's
 template may be filed as marketing (rewrite it as utility and submit it under a new name); others are the number's
 quality rating. Each refused message is already a task for Care.
 
@@ -115,7 +116,7 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | _n_ login codes failed to send in the last hour                                                                                                                      | `login_codes_failing`                                                                                                                          | when a code goes                                              | [WhatsApp (Evolution) is down](tryon-and-whatsapp.md#whatsapp-evolution-is-down)                                                                                             |
 | The webhook's last _n_ deliveries were refused as unsigned                                                                                                           | `webhook_refused:<hook>`                                                                                                                       | at the next delivery taken                                    | [A webhook refused](#a-webhook-refused)                                                                                                                                      |
 | Razorpay event _id_ failed to apply _n_ times and is being tried again                                                                                               | `razorpay_event_failing:<event>`                                                                                                               | when it applies                                               | [A queue gave up](#a-queue-gave-up)                                                                                                                                          |
-| Razorpay Checkout failed to load for clients _n_ times                                                                                                               | `checkout_failing`                                                                                                                             | at the next payment captured                                  | [Checkout failing to load](#checkout-failing-to-load)                                                                                                                        |
+| Razorpay Checkout failed to load for _n_ clients within a quarter of an hour                                                                                         | `checkout_failing`                                                                                                                             | at the next payment made through Checkout                     | [Checkout failing to load](#checkout-failing-to-load)                                                                                                                        |
 | Visit _id_ started at _time_ and nobody has checked in                                                                                                               | `visit_not_begun:<visit>`                                                                                                                      | at a check-in, close or cancel                                | Dispatch: call the technician and the client                                                                                                                                 |
 | WhatsApp refused _n_ of the _n_ _kind_ messages sent in the last day                                                                                                 | `messages_refused:<kind>`                                                                                                                      | when the kind is back under the share                         | [WhatsApp refused](#whatsapp-refused)                                                                                                                                        |
 | Message _id_ (_kind_) failed after _n_ attempts                                                                                                                      | `message_failed:<message>`                                                                                                                     | on Send again, or by hand                                     | [Replaying a failed message](tryon-and-whatsapp.md#replaying-a-failed-message)                                                                                               |

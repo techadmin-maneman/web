@@ -91,7 +91,7 @@ const BOARD_VISIT = `
   LEFT JOIN dispatch_moves m ON t."group" = 'untold_move' AND m.id = t.id
   LEFT JOIN reschedule_requests rr ON t."group" = 'reschedule_request' AND rr.id = t.id
   LEFT JOIN appointments v ON v.id = COALESCE(m.appointment_id, rr.appointment_id,
-    CASE WHEN t."group" IN ('leave_conflict', 'move_unanswered', 'unassigned_visit', 'visit_left_open') THEN t.id END)
+    CASE WHEN t."group" IN ('leave_conflict', 'move_unanswered', 'unassigned_visit', 'visit_left_open', 'visit_not_begun') THEN t.id END)
   LEFT JOIN people caller ON (m.id IS NOT NULL OR t."group" = 'move_unanswered') AND caller.id = v.person_id`;
 
 /**

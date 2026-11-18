@@ -109,7 +109,8 @@ export function registerMsg91Hook(app: App): void {
     if (expected === null) return refuse(c, "not_found");
     if (!(await secretsMatch(bearerToken(c), expected))) {
       log.warn("msg91_hook_unauthorized");
-      await webhookRefused(c.var.deps.alertOnce, "msg91");
+      const at = { now: c.var.deps.now(), settings: c.var.config.settings };
+      await webhookRefused({ db: c.env.DB, alertOnce: c.var.deps.alertOnce, at }, "msg91");
       return refuse(c, "unauthorized");
     }
     await webhookTaken(c.var.deps.resolveAlert, "msg91");

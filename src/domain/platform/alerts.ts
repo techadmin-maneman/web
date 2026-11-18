@@ -143,6 +143,21 @@ export function createAlertOnce(deps: {
 /** How many first tellings the chat missed one pass tells again, in one post. */
 const RETOLD_PER_PASS = 25;
 
+/** A phone push's text, kept within ntfy's 4,096 bytes, past which it arrives as a file. */
+const PUSH_BYTES = 3_500;
+
+/** The text as a push carries it: cut at a line, with how much was left, where it is too long. */
+function withinPush(text: string): string {
+  if (new TextEncoder().encode(text).length <= PUSH_BYTES) return text;
+  const lines = text.split("\n");
+  const kept: string[] = [];
+  for (const line of lines) {
+    if (new TextEncoder().encode([...kept, line].join("\n")).length > PUSH_BYTES - 40) break;
+    kept.push(line);
+  }
+  return `${kept.join("\n")}\n… and ${String(lines.length - kept.length)} more on Tasks.`;
+}
+
 /** How long an alert may wait untold before the urgent space hears of it instead (docs/decisions/0277). */
 const UNTOLD_TO_URGENT_MS = 10 * MINUTE_MS;
 
@@ -187,7 +202,8 @@ export async function retellUndelivered(deps: {
   if ((await deps.alert(post)) !== false) return marked.length;
   const oldest = Math.min(...marked.map((each) => Date.parse(each.toldAt)));
   const waitedTooLong = at.getTime() - oldest >= UNTOLD_TO_URGENT_MS;
-  if (urgent !== null && waitedTooLong && (await urgent(`The alert space is refusing posts. ${post}`)) !== false) {
+  const told = `The alert space is refusing posts. ${post}`;
+  if (urgent !== null && waitedTooLong && (await urgent(withinPush(told))) !== false) {
     return marked.length;
   }
   for (const each of marked) await unmarkTold(db, each.sighting, at, log);

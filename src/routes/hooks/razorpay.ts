@@ -46,7 +46,8 @@ export function registerRazorpayHook(app: App): void {
     const signature = c.req.header("X-Razorpay-Signature") ?? "";
     if (body === null || !(await signedByRazorpay(secret, body, signature))) {
       log.warn("razorpay_hook_unauthorized");
-      await webhookRefused(deps.alertOnce, "razorpay");
+      const at = { now: deps.now(), settings: config.settings };
+      await webhookRefused({ db: c.env.DB, alertOnce: deps.alertOnce, at }, "razorpay");
       return refuse(c, "unauthorized");
     }
     await webhookTaken(deps.resolveAlert, "razorpay");

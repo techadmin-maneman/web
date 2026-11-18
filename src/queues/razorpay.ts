@@ -12,7 +12,7 @@ import { afterError, backoffSeconds, DONE, runConsumer } from "./consumer.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { CHECKOUT_FAILING_KEY, razorpayEventFailingKey } from "../policy/alerts.ts";
 
-/** Tries an event has failed before ops are told: one can be a passing D1 hiccup, two are not. */
+/** Failures of an event before ops are told: one can be a passing D1 hiccup, two are not. */
 const FAILING_AFTER_ATTEMPTS = 2;
 
 /** The first wait for a payment a refund's event came before: its own event is seconds behind, as a rule. */
@@ -58,21 +58,22 @@ export function handleRazorpayBatch({
         return { retryAfterSeconds: backoffSeconds(attempts, REFUND_EARLY_RETRY_SECONDS) };
       }
       eventLog.info("razorpay_hook_taken", { event: event.data.event });
-      // A payment made through Checkout: it loads again.
-      if (event.data.event === "payment.captured") await deps.resolveAlert(CHECKOUT_FAILING_KEY);
-      // An event told as failing is put right once it applies; one that never failed has nothing to close.
-      if (attempts >= FAILING_AFTER_ATTEMPTS) await deps.resolveAlert(razorpayEventFailingKey(data.event_id));
+      // A payment made through Checkout, whose order names its hold: it loads again. A link's payment says nothing of it.
+      if (event.data.event === "payment.captured" && paidThroughCheckout(event.data)) {
+        await deps.resolveAlert(CHECKOUT_FAILING_KEY);
+      }
+      // An event counted as failing is put right once it applies; one on its first try never failed.
+      if (attempts > 1) await deps.resolveAlert(razorpayEventFailingKey(data.event_id));
       return DONE;
     },
-    // Each try that throws is tried again, later each time; from the second, ops are told at once, so a payment or a
-    // refund that cannot be applied is not left for the dead letters hours later.
+    // Each try that throws is tried again, later each time; at its second failure, ops are told at once, so a payment or
+    // a refund that cannot be applied is not left for the dead letters hours later.
     onError: async (data, attempts) => {
-      if (attempts >= FAILING_AFTER_ATTEMPTS) {
-        await deps.alertOnce({
-          key: razorpayEventFailingKey(data.event_id),
-          message: ALERT_WORDS.razorpay_event_failing({ event: data.event_id, name: eventName(data.body), attempts }),
-        });
-      }
+      await deps.alertOnce({
+        key: razorpayEventFailingKey(data.event_id),
+        message: ALERT_WORDS.razorpay_event_failing({ event: data.event_id, name: eventName(data.body), attempts }),
+        after: FAILING_AFTER_ATTEMPTS,
+      });
       return afterError(attempts);
     },
   });
@@ -87,4 +88,11 @@ function eventName(body: string): string {
   } catch {
     return "unknown";
   }
+}
+
+/** Whether the captured payment was made through Checkout: its order's notes name the hold it pays for. */
+export function paidThroughCheckout(event: { readonly payload?: unknown }): boolean {
+  const payment = (event.payload as { payment?: { entity?: { notes?: unknown } } } | undefined)?.payment?.entity;
+  const notes = payment?.notes;
+  return typeof notes === "object" && notes !== null && !Array.isArray(notes) && "hold_id" in notes;
 }

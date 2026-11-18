@@ -1,11 +1,11 @@
 // A kind of WhatsApp WhatsApp refuses too often (docs/decisions/0277-alerts-that-come-sooner.md): of the messages of
 // a kind sent in the last day, the share it refused (docs/decisions/0276-a-message-whatsapp-refuses.md). Past ops'
 // setting, Care are told once, as a template filed as marketing or a sender rated low does to every client at once;
-// the kind back under it closes the alert.
+// the kind back under it closes the alert. What Care do not chase, the marketing texts above all, is not counted.
 
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { DAY_MS } from "../../lib/durations.ts";
-import type { RefusedMessages } from "../../policy/message-refusals.ts";
+import { REFUSALS_NOT_CHASED, type RefusedMessages } from "../../policy/message-refusals.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 
 /** An alert's key for a kind refused too often; its kind is "messages_refused". */
@@ -26,9 +26,10 @@ export async function alertRefusalRates(
       `SELECT kind, COUNT(*) AS sent, SUM(state = 'failed') AS refused
          FROM outbound_messages INDEXED BY outbound_messages_by_created
         WHERE created_at >= ?1 AND provider_message_id IS NOT NULL AND state IN ('sent', 'failed')
+          AND kind NOT IN (SELECT value FROM json_each(?2))
         GROUP BY kind`,
     )
-    .bind(since)
+    .bind(since, JSON.stringify(REFUSALS_NOT_CHASED))
     .all<{ kind: string; sent: number; refused: number }>();
   const past = results.filter((row) => row.sent >= limit.least && row.refused * 100 >= limit.share * row.sent);
   for (const row of past) {

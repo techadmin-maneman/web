@@ -340,6 +340,36 @@ describe("a telling the chat did not take", () => {
     expect(urgent).toHaveLength(1);
   });
 
+  it("keeps what it tells the urgent space within a phone push", async () => {
+    const missed = createAlertOnce({
+      db: env.DB,
+      alert: () => Promise.resolve(false),
+      now: () => NOW,
+      environment: "staging",
+      log: createLogger(),
+    });
+    for (let each = 0; each < 25; each += 1) {
+      await missed({
+        key: `long${String(each)}`,
+        message: `Refund rfnd_${String(each)} was refused. ${"x".repeat(200)}`,
+      });
+    }
+    const urgent: string[] = [];
+    await retellUndelivered({
+      db: env.DB,
+      alert: () => Promise.resolve(false),
+      urgent: (message) => {
+        urgent.push(message);
+        return Promise.resolve(true);
+      },
+      now: () => new Date(NOW.getTime() + 11 * 60_000),
+      environment: "staging",
+      log: createLogger(),
+    });
+    expect(new TextEncoder().encode(urgent[0] ?? "").length).toBeLessThanOrEqual(3_500);
+    expect(urgent[0]).toMatch(/… and \d+ more on Tasks\.$/);
+  });
+
   it("tells the chat of a key once in ten minutes while nothing can be kept", async () => {
     const broken = {
       prepare: () => {

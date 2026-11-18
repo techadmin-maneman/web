@@ -6,7 +6,8 @@
 // check. It also writes a style element and a style attribute into the page,
 // which change with Razorpay's releases, so no hash can allow them. Turnstile,
 // which asking for a login code needs, loads its script and frames its check
-// from challenges.cloudflare.com.
+// from challenges.cloudflare.com. What the policy refuses, Checkout's frame or a script it pulls in from a new host
+// among them, is reported to mm-api (src/routes/public/csp-reports.ts; docs/decisions/0277-alerts-that-come-sooner.md).
 
 import type { AppPolicy } from "@maneman/web-kit/headers";
 
@@ -24,4 +25,5 @@ export const CLIENT_APP_POLICY: AppPolicy = {
   ],
   popups: true,
   inlineStyles: true,
+  reports: "/api/csp-reports",
 };

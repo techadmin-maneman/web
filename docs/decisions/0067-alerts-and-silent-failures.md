@@ -1,6 +1,6 @@
 # 0067. A failure that needs a person reaches one, once, with the IDs to act on
 
-- Status: accepted. Amends ADR 0011 on what a refused Turnstile secret answers, and ADR 0044 on a Books refusal. Amended 4 October 2026: "Alerts on Tasks", on the owner's ruling that alerts get a home. Amended by [0277](0277-alerts-that-come-sooner.md): a paced alert space, and alerts that come sooner in the console; and "Told again on a clock".
+- Status: accepted. Amends ADR 0011 on what a refused Turnstile secret answers, and ADR 0044 on a Books refusal. Amended 4 October 2026: "Alerts on Tasks", on the owner's ruling that alerts get a home in the console; and "Told again on a clock". Amended by [0277](0277-alerts-that-come-sooner.md): a paced alert space, and alerts that come sooner.
 - Date: 2026-09-25
 - Topic: Platform
 

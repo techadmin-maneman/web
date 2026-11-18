@@ -41,11 +41,12 @@ interface ChatOptions {
 }
 
 export function createAlert(options: ChatOptions): Alert {
-  return createChatPost(options, "warn", "alert");
+  return createChatPost(options, "warn", "alert", true);
 }
 
+/** A lead notice is never told again, so it is always tried, the chat resting or not. */
 export function createLeadNotice(options: ChatOptions): LeadNotice {
-  return createChatPost(options, "info", "lead_notice");
+  return createChatPost(options, "info", "lead_notice", false);
 }
 
 /**
@@ -66,7 +67,12 @@ function postOf(webhookUrl: string, text: string, environment: string): RequestI
   return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
 }
 
-function createChatPost(options: ChatOptions, level: LogLevel, event: string): (message: string) => Promise<boolean> {
+function createChatPost(
+  options: ChatOptions,
+  level: LogLevel,
+  event: string,
+  waitsOnRest: boolean,
+): (message: string) => Promise<boolean> {
   const { webhookUrl, environment, fetch, log } = options;
 
   return async (message) => {
@@ -74,7 +80,7 @@ function createChatPost(options: ChatOptions, level: LogLevel, event: string): (
     log[level](event, { text });
     // With no chat to post to, the log line is all there is to tell.
     if (webhookUrl === null) return true;
-    if ((busyUntil.get(webhookUrl) ?? 0) > Date.now()) {
+    if (waitsOnRest && (busyUntil.get(webhookUrl) ?? 0) > Date.now()) {
       log.warn(`${event}_deferred`);
       return false;
     }

@@ -37,7 +37,7 @@ const ONE = {
   },
 };
 
-function send(body: string, type: string, surface: "public" | "client" = "public", address = "203.0.113.30") {
+function send(body: string, type: string, surface: "public" | "client" | "ops" = "public", address = "203.0.113.30") {
   return request(appFor("local", fakeDependencies(), {}, surface), "/api/csp-reports", {
     method: "POST",
     // The app hosts' own origin, which their same-origin rule lets through to the routes.
@@ -79,8 +79,11 @@ describe("POST /api/csp-reports", () => {
     expect(refused()).toEqual([]);
   });
 
-  it("answers on the public host alone", async () => {
-    expect((await send(JSON.stringify(ONE), "application/csp-report", "client")).status).toBe(404);
+  // The client app's policy reports too, so a Checkout frame or script it refuses is heard of
+  // (docs/decisions/0277-alerts-that-come-sooner.md); the console and the technician app do not.
+  it("answers on the public and client hosts alone", async () => {
+    expect((await send(JSON.stringify(ONE), "application/csp-report", "client")).status).toBe(204);
+    expect((await send(JSON.stringify(ONE), "application/csp-report", "ops")).status).toBe(404);
   });
 
   it("takes only so many reports an hour from one address", async () => {

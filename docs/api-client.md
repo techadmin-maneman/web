@@ -123,6 +123,48 @@ Request body:
 }
 ```
 
+### POST /api/csp-reports
+
+Report what a page's content security policy refused
+
+**204**: Logged, or let go
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "rate_limited"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/auth/otp
 
 Send a login code on WhatsApp. The answer is the same whether or not the number has a booking

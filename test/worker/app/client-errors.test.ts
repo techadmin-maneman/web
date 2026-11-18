@@ -59,13 +59,26 @@ describe("POST /api/client-errors", () => {
     const foreign = logs.lines().filter((line) => line.event === "client_error_foreign");
     expect(foreign.map((line) => line.level)).toEqual(["info", "info"]);
 
+    // The site's own Worker names its frames by its bundle alone; Checkout not loading names Razorpay's script: ours.
+    const worker = {
+      ...CRASH,
+      stack: ["Error: D1 down", "    at handle (worker.js:12:5)"].join("\n"),
+      source: "mm-site Worker",
+    };
+    expect((await report("public", worker)).status).toBe(204);
+    expect((await report("client", { ...CRASH, kind: "checkout_unavailable", stack: undefined })).status).toBe(204);
+    expect(reported().map((line) => [line.kind, line.level])).toEqual([
+      ["error", "error"],
+      ["checkout_unavailable", "error"],
+    ]);
+
     // One frame of ours among the others makes it ours.
     const mixed = {
       ...CRASH,
       stack: [injected.stack, "    at Card (https://app.maneman.in/assets/index.js:1:2048)"].join("\n"),
     };
     expect((await report("client", mixed)).status).toBe(204);
-    expect(reported()).toHaveLength(1);
+    expect(reported()).toHaveLength(3);
   });
 
   it.each(["client", "ops", "tech"] as const)(

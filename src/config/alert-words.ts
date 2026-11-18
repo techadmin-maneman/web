@@ -317,7 +317,7 @@ export const ALERT_WORDS = {
     "one side only does this, as does someone posting to it.",
   checkout_failing: (a: { readonly times: number }) =>
     `Check that Razorpay Checkout loads in the client app now (runbook, "Checkout failing to load"): it failed to load ` +
-    `for clients ${String(a.times)} times with no payment made between, so nobody can pay for a booking.`,
+    `for ${String(a.times)} clients within a quarter of an hour, so nobody can pay for a booking.`,
   razorpay_event_failing: (a: { readonly event: string; readonly name: string; readonly attempts: number }) =>
     `Look into Razorpay event ${a.event} (${a.name}) now (runbook, "A queue gave up"): it failed to apply ` +
     `${String(a.attempts)} times and is being tried again, later each time; until it applies, the payment or refund it ` +

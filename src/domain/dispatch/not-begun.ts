@@ -66,7 +66,14 @@ export async function alertVisitsNotBegun(
   { now, todayStarts, arrival }: { readonly now: Date; readonly todayStarts: string; readonly arrival: number },
 ): Promise<number> {
   const { results } = await db
-    .prepare(`SELECT id, detail AS starts_at FROM (${VISITS_NOT_BEGUN})`)
+    // A script's test record, its client or its technician, pages nobody.
+    .prepare(
+      `SELECT q.id, q.detail AS starts_at FROM (${VISITS_NOT_BEGUN}) q
+         JOIN appointments a ON a.id = q.id
+         LEFT JOIN people pe ON pe.id = a.person_id
+         LEFT JOIN technicians t ON t.id = a.technician_id
+        WHERE COALESCE(pe.test_record, 0) = 0 AND COALESCE(t.test_record, 0) = 0`,
+    )
     .bind(now.toISOString(), arrival, todayStarts)
     .all<{ id: string; starts_at: string }>();
   for (const visit of results) {

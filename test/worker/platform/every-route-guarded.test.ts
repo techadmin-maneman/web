@@ -10,11 +10,15 @@ import { appFor, fakeDependencies, markDatabase, request, type TestDependencies 
 
 const AN_ID = "0190f000-0000-7000-8000-000000000001";
 
-/** The routes a caller with no session may reach, by surface: signing in, health, and the apps' error reports. */
+/**
+ * The routes a caller with no session may reach, by surface: signing in, health, the apps' error reports, and on the
+ * client host what its content security policy refused, which the browser posts with no session.
+ */
 const OPEN: Readonly<Record<"client" | "tech", readonly string[]>> = {
   client: [
     "GET /api/health",
     "POST /api/client-errors",
+    "POST /api/csp-reports",
     "POST /api/auth/otp",
     "POST /api/auth/otp/resend",
     "POST /api/auth/otp/sms",
