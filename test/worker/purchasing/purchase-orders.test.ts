@@ -109,6 +109,20 @@ describe("approving an order", () => {
     expect(await firstOrder(second)).toMatchObject({ state: "approved", second_approved_by: "ops@localhost" });
   });
 
+  // PO 717780 was drafted and approved by the same identity, and sent, with no one else looking.
+  it("needs a second approver for an order its drafter approves, where ops set it so", async () => {
+    const small = () => draft([{ consumable_code: "solvent", quantity: 24 }]);
+    const alone = (await firstOrder(await small()))?.id ?? "";
+    const once = await job.opsPost(`/api/purchase-orders/${alone}/approve`);
+    expect(await firstOrder(once)).toMatchObject({ state: "approved", needs_second_approval: false });
+
+    await job.opsPost("/api/settings/po_own_approval", { value: { drafter: "second" } });
+    const id = (await firstOrder(await small()))?.id ?? "";
+    const first = await job.opsPost(`/api/purchase-orders/${id}/approve`);
+    expect(await firstOrder(first)).toMatchObject({ state: "drafted", needs_second_approval: true });
+    expect((await fieldsOf(await job.opsPost(`/api/purchase-orders/${id}/approve`))).code).toBe("same_approver");
+  });
+
   it("needs one approver for an order in rupees worth no more than the amount ops set", async () => {
     await job.opsPost("/api/settings/po_second_approval_above_rupees", { value: 5000 });
     const small = (await firstOrder(await draft([{ consumable_code: "solvent", quantity: 24 }])))?.id ?? "";

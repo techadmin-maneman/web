@@ -6,7 +6,7 @@
 // Each change is a conditional write with its audit entry, so two managers approving at once approve once.
 
 import { drawnNumbers, freshNumber } from "../../lib/references.ts";
-import { needsSecondApproval, CANCELLABLE, type PoState } from "../../policy/purchasing.ts";
+import { needsSecondApproval, ownApprovalNeedsSecond, CANCELLABLE, type PoState } from "../../policy/purchasing.ts";
 import { auditStatement, auditStatementWhen, type AuditAction, type Written, opsEntry } from "../platform/audit.ts";
 import { type Refusal, refusal } from "../../lib/refusal.ts";
 
@@ -241,7 +241,11 @@ async function changed(
 export async function approveOrder(
   db: D1Database,
   id: string,
-  rule: { readonly aboveRupees: number; readonly rupeesToOne: Readonly<Record<string, number>> },
+  rule: {
+    readonly aboveRupees: number;
+    readonly rupeesToOne: Readonly<Record<string, number>>;
+    readonly ownApproval: string;
+  },
   written: Written,
 ): Promise<Changed> {
   const order = await purchaseOrder(db, id);
@@ -249,7 +253,9 @@ export async function approveOrder(
   if (order.state !== "drafted") return refusal("order_state");
   if (order.approvedBy === written.actor.id) return refusal("same_approver");
   const at = written.now.toISOString();
-  const twice = needsSecondApproval(order, rule.aboveRupees, rule.rupeesToOne);
+  const twice =
+    needsSecondApproval(order, rule.aboveRupees, rule.rupeesToOne) ||
+    ownApprovalNeedsSecond(order, written.actor.id, rule.ownApproval);
   const update: OrderUpdate =
     order.approvedBy === null
       ? {
