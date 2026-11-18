@@ -62,34 +62,42 @@ export interface LatestArrival {
 export async function visitAddress(
   db: D1Database,
   personId: string,
-): Promise<{ id: string; point: Point | null } | null> {
+): Promise<{ id: string; point: Point | null; approximate: boolean } | null> {
   const row = await db
     .prepare(
-      `SELECT id, lat, lng FROM addresses WHERE person_id = ?1 AND replaced_at IS NULL
+      `SELECT id, lat, lng, pin_approximate FROM addresses WHERE person_id = ?1 AND replaced_at IS NULL
        ORDER BY created_at DESC LIMIT 1`,
     )
     .bind(personId)
-    .first<{ id: string; lat: number | null; lng: number | null }>();
+    .first<{ id: string; lat: number | null; lng: number | null; pin_approximate: number }>();
   if (row === null) return null;
-  return { id: row.id, point: row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng } };
+  return {
+    id: row.id,
+    point: row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng },
+    approximate: row.pin_approximate === 1,
+  };
 }
 
-/** Measures the phone's position against the visit's address, and ops' waiver of the geofence. Nothing is written. */
+/**
+ * Measures the phone's position against the visit's address, and ops' waiver of the geofence. A pin Google placed only
+ * roughly is measured with the wider radius ops set for one. Nothing is written.
+ */
 export async function measureArrival(
   db: D1Database,
-  input: { appointmentId: string; personId: string; device: Point; radiusM: number },
+  input: { appointmentId: string; personId: string; device: Point; radiusM: number; approximateRadiusM: number },
 ): Promise<Measured> {
   const address = await visitAddress(db, input.personId);
   const point = address?.point ?? null;
   if (address === null || point === null) {
     return { addressId: null, distanceM: null, radiusM: input.radiusM, passed: true, waivedBy: null };
   }
-  const measured = checkIn(input.device, point, input.radiusM);
+  const radiusM = address.approximate ? Math.max(input.radiusM, input.approximateRadiusM) : input.radiusM;
+  const measured = checkIn(input.device, point, radiusM);
   const waivedBy = measured.passed ? null : await waiverOf(db, input.appointmentId);
   return {
     addressId: address.id,
     distanceM: measured.distanceM,
-    radiusM: input.radiusM,
+    radiusM,
     passed: measured.passed || waivedBy !== null,
     waivedBy,
   };

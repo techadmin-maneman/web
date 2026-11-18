@@ -52,6 +52,15 @@ describe("checking in", () => {
     expect((await post(`/api/tech/jobs/${TODAY_JOB}/start`, undefined, "event-start-01")).status).toBe(409);
   });
 
+  // A typed address on /book kept no pin, so a check-in there passed from anywhere.
+  it("measures a rough pin with the wider radius ops set for one", async () => {
+    await env.DB.prepare("UPDATE addresses SET pin_approximate = 1 WHERE person_id = ?1").bind(PERSON).run();
+    // About a kilometre north of the pin: outside 200 m, inside the rough pin's 2 km.
+    const nearby = { lat: AT_THE_DOOR.lat + 0.009, lng: AT_THE_DOOR.lng };
+    const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, nearby, "event-rough-01");
+    expect(await answer.json()).toMatchObject({ passed: true, radius_m: 2000 });
+  });
+
   // A building pin far from its door blocked the whole job, and ops had no lever but the radius for everyone.
   it("passes outside the radius once ops let them in, keeping the distance and naming who let them", async () => {
     const refused = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, DOWN_THE_ROAD, "event-far-01");

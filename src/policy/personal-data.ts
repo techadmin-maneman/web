@@ -69,9 +69,9 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     },
   },
   addresses: {
-    leftOut: ["id", "person_id", "geocoded_at", "place_id", "geocode_source", "given_to_staff"],
+    leftOut: ["id", "person_id", "geocoded_at", "place_id", "geocode_source", "given_to_staff", "pin_approximate"],
     whyLeftOut:
-      "Our keys, how and when we found the pin on the map, and which member of staff took it down on the phone. The export says whether it was given on the phone.",
+      "Our keys, how and when we found the pin on the map and whether only roughly, and which member of staff took it down on the phone. The export says whether it was given on the phone.",
     erasure: {
       deletes: true,
       blanks: [

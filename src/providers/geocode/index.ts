@@ -29,6 +29,8 @@ interface ResolvedPlace {
   readonly lat: number;
   readonly lng: number;
   readonly formattedAddress: string;
+  /** Placed no closer than the street or the area: a typed address Google matched only roughly. */
+  readonly approximate?: boolean;
 }
 
 /**
@@ -66,9 +68,9 @@ export interface GeocodeProvider {
    */
   resolve(placeId: string, sessionToken: string): Promise<ResolveResult>;
   /**
-   * A typed address's coordinate, from the Geocoding API, within its pincode. Only a precise one, to the building or
-   * between two numbered ones on the street: a locality's centre is not_found, since a check-in measured against it
-   * would be wrong by a kilometre.
+   * A typed address's coordinate, from the Geocoding API, within its pincode: to the building or between two numbered
+   * ones on the street, or, where Google places it only roughly, that rough place marked approximate, which a
+   * check-in is measured against with a wider radius (src/policy/check-in.ts).
    */
   locate(address: string, pincode: string): Promise<ResolveResult>;
   /**

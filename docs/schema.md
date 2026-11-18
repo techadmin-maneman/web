@@ -231,7 +231,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 
 Each address a client has given, in the app or to ops on the phone, who then saved it for them (`given_to_staff`). The current one has `replaced_at` empty; earlier ones stay for the visits booked to them (ADR 0042, ADR 0054, ADR 0092).
 
-Made by `0008_profile.sql`; changed by `0028_address_pin.sql`, `0056_task_owners.sql`.
+Made by `0008_profile.sql`; changed by `0028_address_pin.sql`, `0056_task_owners.sql`, `0225_address_pin_approximate.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -256,6 +256,7 @@ Made by `0008_profile.sql`; changed by `0028_address_pin.sql`, `0056_task_owners
 | `place_id` | TEXT | yes |  |  | Google's Place ID for the building. Exempt from their caching restriction and storable for good, so it is what we keep rather than their suggestion text; it is also what re-resolves the coordinate if the address is ever rechecked (docs/decisions/0054-address-capture.md, "What may be kept"). |
 | `geocode_source` | TEXT | yes |  |  | Where lat/lng came from, because the licence differs by source and a coordinate we observed is worth more than one a provider computed: google_geocoding  the Geocoding API, resolved from the Place ID above device            the client's own phone, through navigator.geolocation checkin           a technician who has stood at the door The last two are not written yet (ADR 0054 ranks them first and cheapest); they are listed now so adding them needs no second migration. |
 | `given_to_staff` | TEXT | yes |  |  | The Access e-mail of the member of staff a client gave the address to on the phone, who saved it for them; NULL for an address the client saved. |
+| `pin_approximate` | INTEGER | no | `0` |  | 1 for a pin Google placed no closer than the street or the area; 0 for one to the building, or none. |
 
 Indexes:
 

@@ -63,6 +63,8 @@ export interface OpsInputs {
   /** Minutes of driving from home a technician takes visits within, unless their own is set (src/policy/reach.ts). */
   readonly technicianReachMin: number;
   readonly checkinRadiusM: number;
+  /** The check-in radius at a pin Google placed only roughly (src/policy/check-in.ts). */
+  readonly checkinRadiusApproximateM: number;
   readonly noShowWaitMin: Waits;
   readonly phoneClock: PhoneClock;
   readonly changeNoticeHours: number;
@@ -157,6 +159,7 @@ function shape(values: OpsValues): OpsInputs {
     driveEstimate: values.drive_estimate,
     technicianReachMin: values.technician_reach_min,
     checkinRadiusM: values.checkin_radius_m,
+    checkinRadiusApproximateM: values.checkin_radius_approximate_m,
     noShowWaitMin: values.no_show_wait_min,
     phoneClock: values.phone_clock,
     changeNoticeHours: values.change_notice_hours,

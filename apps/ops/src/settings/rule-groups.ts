@@ -40,6 +40,7 @@ export const RULE_GROUPS = [
     id: "field",
     rules: [
       "checkin_radius_m",
+      "checkin_radius_approximate_m",
       "no_show_wait_min",
       "phone_clock",
       "address_unlock_hour",

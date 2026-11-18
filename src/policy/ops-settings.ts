@@ -15,7 +15,7 @@ import { BOOKING_SETTINGS } from "./ops-settings-booking.ts";
 import { CARE_HOURS, CARE_HOURS_KEYS, careHoursConflicts } from "./care-hours.ts";
 import { ALERT_RULES } from "./ops-settings-alerts.ts";
 import { CEILING_SETTINGS } from "./ops-settings-ceilings.ts";
-import { CHECKIN_RADIUS_M } from "./check-in.ts";
+import { CHECKIN_RADIUS_APPROXIMATE_M, CHECKIN_RADIUS_M } from "./check-in.ts";
 import { LOST_AFTER_DAYS } from "./client-standing.ts";
 import { CLIENT_SETTINGS } from "./ops-settings-clients.ts";
 import { STOCK_SETTINGS } from "./ops-settings-stock.ts";
@@ -111,6 +111,16 @@ export const OPS_SETTINGS = [
     max: 1000,
     keys: null,
     fallback: CHECKIN_RADIUS_M,
+  },
+  {
+    name: "checkin_radius_approximate_m",
+    title: "Check-in radius at a rough pin",
+    note: "How close a technician must be to check in where the address's pin is only approximate, typed and placed by Google to the street or the area.",
+    unit: "metres",
+    min: 200,
+    max: 10_000,
+    keys: null,
+    fallback: CHECKIN_RADIUS_APPROXIMATE_M,
   },
   {
     name: "no_show_wait_min",

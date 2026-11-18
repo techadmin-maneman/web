@@ -13,6 +13,8 @@ export interface AddressPin {
   readonly lat: number;
   readonly lng: number;
   readonly source: GeocodeSource;
+  /** Placed only roughly: kept, and a check-in there measured with a wider radius. */
+  readonly approximate?: boolean;
 }
 
 export interface Address {
@@ -36,7 +38,10 @@ export interface Address {
 export interface SavedAddress extends Address {
   /** The member of staff's Access e-mail, and when; null for an address the client saved themselves. */
   readonly givenToOps: { readonly staff: string; readonly at: string } | null;
-  /** Whether it has a place on the map, a building picked or Google placing the words, so check-ins are measured. */
+  /**
+   * Whether it has a place on the map to the building, picked or placed from the words, so the app need not ask for
+   * the building; a rough pin is not one.
+   */
   readonly pinned: boolean;
 }
 
@@ -50,7 +55,8 @@ export interface GivenToOps {
 }
 
 const ADDRESS_COLUMNS = `line1, line2, locality, city, pincode, access_notes,
-       building, flat, floor, tower, landmark, place_id, given_to_staff, created_at, lat IS NOT NULL AS pinned`;
+       building, flat, floor, tower, landmark, place_id, given_to_staff, created_at,
+       lat IS NOT NULL AND pin_approximate = 0 AS pinned`;
 
 interface AddressRow {
   line1: string;
@@ -156,10 +162,10 @@ export async function currentAddress(db: D1Database, personId: string): Promise<
 
 const INSERT_ADDRESS = `INSERT INTO addresses (id, person_id, created_at, line1, line2, locality, city, pincode,
                                 access_notes, building, flat, floor, tower, landmark, place_id, lat, lng, geocoded_at,
-                                geocode_source, given_to_staff)`;
+                                geocode_source, given_to_staff, pin_approximate)`;
 
-/** The values INSERT_ADDRESS takes, as ?1 to ?20. */
-const ADDRESS_VALUES = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20";
+/** The values INSERT_ADDRESS takes, as ?1 to ?21. */
+const ADDRESS_VALUES = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21";
 
 function addressValues({
   personId,
@@ -195,6 +201,7 @@ function addressValues({
     pin === null ? null : at,
     pin?.source ?? null,
     givenTo,
+    pin?.approximate === true ? 1 : 0,
   ];
 }
 
