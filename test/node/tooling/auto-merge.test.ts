@@ -172,4 +172,22 @@ describe("a dependency update", () => {
     });
     expect(mergeVerdict({ ...bump, labels: [DEPENDENCIES_LABEL, REVIEWED_LABEL] }, FULL)).toEqual({ merge: true });
   });
+
+  // A labels list in renovate.json replaces the one above it, so each must name the label that holds an update back:
+  // a security fix labelled "security" alone would merge and deploy itself, at any hour and with no release age.
+  it("carries the label that holds it back, wherever renovate.json gives its pull requests labels", () => {
+    const lists: unknown[] = [];
+    const walk = (value: unknown): void => {
+      if (Array.isArray(value)) value.forEach(walk);
+      else if (typeof value === "object" && value !== null) {
+        for (const [key, inner] of Object.entries(value)) {
+          if (key === "labels") lists.push(inner);
+          walk(inner);
+        }
+      }
+    };
+    walk(JSON.parse(readFileSync("renovate.json", "utf8")));
+    expect(lists.length).toBeGreaterThan(1);
+    expect(lists.filter((list) => !Array.isArray(list) || !list.includes(DEPENDENCIES_LABEL))).toEqual([]);
+  });
 });
