@@ -136,6 +136,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | Rule | Title | Unit | Committed figure |
 | --- | --- | --- | --- |
 | `checkin_radius_m` | Check-in radius | metres | `200` |
+| `checkin_radius_approximate_m` | Check-in radius at a rough pin | metres | `2000` |
 | `no_show_wait_min` | No-show wait | minutes | `{"consultation":15,"service":15,"replacement":15,"first_fit":15}` |
 | `change_notice_hours` | Free to move or cancel until | hours before the visit | `24` |
 | `late_change_charge` | Late move or cancel charge | a choice | `{"consultation":"nothing","first_fit":"late_fee","replacement":"late_fee","service":"visit"}` |

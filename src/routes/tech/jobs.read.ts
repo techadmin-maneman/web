@@ -1,5 +1,6 @@
 // The technician's reads (./jobs.ts): the day's jobs, one job's card, and the client's last visit.
 
+import { radiusAt, roughPinAt } from "../../domain/visits/check-ins.ts";
 import type { App } from "../../http/context.ts";
 import { reservedForOthers } from "../../domain/purchasing/custom-orders.ts";
 import { recalledIn } from "../../domain/inventory/recalls.ts";
@@ -101,7 +102,7 @@ export function registerTechJobReads(app: App): void {
     // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day, and the rules
     // its city sets for itself.
     const jobId = c.req.valid("param").id;
-    const [job, sheet, rules] = await Promise.all([
+    const [job, sheet, rules, rough] = await Promise.all([
       jobDetail(c.env.DB, {
         technicianId,
         jobId,
@@ -114,13 +115,18 @@ export function registerTechJobReads(app: App): void {
       }),
       jobSheet(c.env.DB),
       rulesOfVisit(c.env.DB, jobId),
+      // The technician is told the radius their check-in is measured with: the wider one at a rough pin.
+      roughPinAt(c.env.DB, jobId),
     ]);
     if (job === null) return refuse(c, "not_found");
     const type: VisitType = job.type ?? "service";
     return c.json(
       {
         ...job,
-        checkin_radius_m: inputsIn(inputs, rules).checkinRadiusM,
+        checkin_radius_m: radiusAt(rough, {
+          radiusM: inputsIn(inputs, rules).checkinRadiusM,
+          approximateRadiusM: inputs.checkinRadiusApproximateM,
+        }),
         checklist: forThePhone(checklistOf(sheet, { type, oneVisit: job.one_visit }).items),
         checklist_if_declined: job.one_visit ? forThePhone(declinedChecklistOf(sheet).items) : [],
         partial_reasons: [...sheet.partialReasons.items],

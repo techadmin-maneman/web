@@ -290,7 +290,7 @@ describe("the address pin", () => {
 
   const pinOf = () =>
     env.DB.prepare(
-      "SELECT lat, lng, geocode_source, place_id, flat, floor, tower, landmark, building FROM addresses WHERE replaced_at IS NULL",
+      "SELECT lat, lng, geocode_source, place_id, flat, floor, tower, landmark, building, pin_approximate FROM addresses WHERE replaced_at IS NULL",
     ).first<{ lat: number | null; lng: number | null; geocode_source: string | null; place_id: string | null }>();
 
   it("geocodes the chosen building and keeps the coordinate with its source", async () => {
@@ -313,11 +313,11 @@ describe("the address pin", () => {
     });
   });
 
-  it("saves a typed address Google places no closer than its area with no pin at all, rather than a wrong one", async () => {
+  it("keeps the rough pin of a typed address Google places no closer than its area, marked approximate", async () => {
     const typed = { ...chosen, building: null, place_id: null, line1: "House 4417, Tower C" };
     expect((await send(client, "PATCH", "/api/profile/address", typed)).status).toBe(200);
-    expect(await pinOf()).toMatchObject({ lat: null, lng: null, geocode_source: null, place_id: null });
-    // The profile says so, so the app can ask for the building.
+    expect(await pinOf()).toMatchObject({ geocode_source: "google_geocoding", place_id: null, pin_approximate: 1 });
+    // A rough pin is not the building's, so the app still asks for it.
     const profile = await (await send(client, "GET", "/api/profile")).json<{ address_pinned: boolean }>();
     expect(profile.address_pinned).toBe(false);
   });
@@ -383,13 +383,13 @@ describe("the address pin", () => {
       expect(away.distanceM).toBeGreaterThan(2000);
     });
 
-    it("leaves a typed address unmeasurable rather than measuring it at zero", async () => {
+    it("measures a typed address Google places only roughly from that rough pin, marked approximate", async () => {
       const typed = { ...chosen, building: null, place_id: null, line1: "House 4417, Tower C" };
       await send(client, "PATCH", "/api/profile/address", typed);
 
       const found = await visitAddress(env.DB, "p1");
-      // ADR 0036's honest degradation: no point, so no distance — never a pass at 0 m.
-      expect(found?.point).toBeNull();
+      // Measured with the wider radius a rough pin takes (src/domain/visits/check-ins.ts), never at zero.
+      expect(found).toMatchObject({ point: { lat: 28.39, lng: 77.06 }, approximate: true });
     });
   });
 

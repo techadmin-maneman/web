@@ -25,7 +25,12 @@ export async function newNumbersState(
 ): Promise<{ readonly state: "booked" | "requested" | "taken"; readonly startsAt: Date | null }> {
   const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date, request.pincode) : null;
   if (visit === null) return { state: "requested", startsAt: null };
-  const length = { minutes: visit.service.minutes, fitting: request.plan === "one_visit" ? ONE_VISIT_FIT : null };
+  // Its kind too, so today is answered as a new number's hold answers it (src/domain/booking/hold-slot.ts).
+  const length = {
+    type: visit.service.type,
+    minutes: visit.service.minutes,
+    fitting: request.plan === "one_visit" ? ONE_VISIT_FIT : null,
+  };
   const [[day], schedule] = await Promise.all([
     availability({
       db: form.db,

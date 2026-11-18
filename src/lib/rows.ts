@@ -26,6 +26,7 @@ export interface Rows {
     readonly place_id: string | null;
     readonly geocode_source: string | null;
     readonly given_to_staff: string | null;
+    readonly pin_approximate: number;
   };
   readonly alerts: {
     readonly id: string;

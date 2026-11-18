@@ -53724,6 +53724,7 @@ Request body:
       "type": "string",
       "enum": [
         "checkin_radius_m",
+        "checkin_radius_approximate_m",
         "no_show_wait_min",
         "change_notice_hours",
         "late_change_charge",
@@ -53926,6 +53927,7 @@ Request body:
       "type": "string",
       "enum": [
         "checkin_radius_m",
+        "checkin_radius_approximate_m",
         "no_show_wait_min",
         "change_notice_hours",
         "late_change_charge",

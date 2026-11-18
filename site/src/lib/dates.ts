@@ -31,7 +31,7 @@ export function longDay(date: string): string {
   return `${WEEKDAYS[weekday] ?? ""} ${String(day)} ${MONTH_NAMES[month - 1] ?? ""}`;
 }
 
-/** The first day a consultation can be booked: tomorrow in India, wherever the visitor's own clock is set. */
+/** The day the form picks first: tomorrow in India, wherever the visitor's own clock is set; today may be open too. */
 export function indiaTomorrow(now: Date = new Date()): string {
   return addDays(todayInIndia(now.getTime()), 1);
 }

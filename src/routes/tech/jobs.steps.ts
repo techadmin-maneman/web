@@ -113,6 +113,7 @@ function registerArrival(app: App): void {
         personId: job.personId,
         device,
         radiusM: inputs.checkinRadiusM,
+        approximateRadiusM: inputs.checkinRadiusApproximateM,
       }),
       kindsLanded(c.env.DB, job.id),
     ]);

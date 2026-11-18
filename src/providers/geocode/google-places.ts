@@ -201,11 +201,13 @@ export function createGooglePlaces(apiKey: string, deps: VendorFetchDependencies
       const read = readGeocode(answer, scrub);
       if (!read.ok) return read;
       const { first } = read;
-      if (first.partial_match || !PRECISE.has(first.geometry.location_type)) {
-        return { ok: false, reason: "not_found", detail: "geocoding placed the address no closer than its area" };
-      }
       const { lat, lng } = first.geometry.location;
-      return { ok: true, place: { placeId: first.place_id, lat, lng, formattedAddress: first.formatted_address } };
+      // Placed only roughly, the pin is kept and marked so, and its check-in widened.
+      const approximate = first.partial_match || !PRECISE.has(first.geometry.location_type);
+      return {
+        ok: true,
+        place: { placeId: first.place_id, lat, lng, formattedAddress: first.formatted_address, approximate },
+      };
     },
 
     async centreOf(pincode) {

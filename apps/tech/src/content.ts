@@ -592,7 +592,7 @@ export const notHome = localised({
     action: "Check in",
     opensAt: (time: string) => `Check-in opens at ${time}.`,
     noPosition: "This phone won’t give its position. Check its permissions, then tap again.",
-    // An address saved without a building picked from the map has no pin: the check-in records the time alone.
+    // An address Google could not place at all has no pin: the check-in records the time alone.
     noPin: "No map pin: the check-in records the time only.",
   },
   failed: {

@@ -4,11 +4,16 @@ import { type ToldNotice, CONSULTATION_NOTICES } from "../../config/notices.ts";
 import { newNumbersState } from "./new-number-state.ts";
 import { oneVisitCode } from "./public-booking-code.ts";
 import type { LossExtent } from "../../config/booking.ts";
-import { HOLD_SECONDS, BOOKING_DAYS, type BookingWindow } from "../../config/scheduling.ts";
+import { HOLD_SECONDS, type BookingWindow } from "../../config/scheduling.ts";
 import { type Plan, planStartsIn } from "../../policy/one-visit.ts";
 import { bookingNeedsProof } from "../../policy/number-proof.ts";
 import type { ConsentSource } from "../../policy/consents.ts";
-import { addDays, indiaDate } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaTime } from "../../lib/india-time.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
+import { siteDays } from "./open-windows.ts";
+import { bookedByRequest, tooSoon } from "./site-today.ts";
+import { loadSlotSchedule } from "./slot-times.ts";
+import { windowTimesOf } from "../../policy/slot-times.ts";
 import { type NotBookedFromSite, notBookedFromSite, typedAddress } from "../../policy/site-booking.ts";
 import { type Address, currentAddress, firstAddressStatement } from "../clients/profile.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
@@ -169,16 +174,38 @@ export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 async function checkRequest(
   db: D1Database,
   request: ConsultationRequest,
-  now: Date,
+  context: { readonly now: Date; readonly selfServeBooking: boolean },
 ): Promise<{ ok: true; pincode: Pincode } | Refusal> {
-  const first = addDays(indiaDate(now), 1);
+  const { now } = context;
   const oneVisit = request.plan === "one_visit";
-  const [pincode, products] = await Promise.all([
+  const [pincode, products, inputs, schedule] = await Promise.all([
     pincodeOf(db, request.pincode),
     oneVisit ? offeredProducts(db, request.date) : [],
+    readOpsInputs(db, now),
+    loadSlotSchedule(db),
   ]);
+  const hours = windowTimesOf(schedule.on(request.date));
+  // A start is in the window asked for, on any day: the answer, whoever's the number, names the window booked.
+  if (request.startsAt !== null) {
+    const time = indiaTime(request.startsAt);
+    if (time < hours[request.window].start || time >= hours[request.window].end) {
+      return { ok: false, code: "invalid_request", fields: ["starts_at"] };
+    }
+  }
   const today = indiaDate(now);
-  const outside = request.date < first || request.date > addDays(first, BOOKING_DAYS - 1);
+  // The days the form offers: today too where ops let the visit be booked for today, from the lead time on.
+  const { first, days, earliestToday } = siteDays(request.plan, inputs, now);
+  const outside =
+    request.date < first ||
+    request.date > addDays(first, days - 1) ||
+    (request.date === today &&
+      tooSoon({
+        request,
+        hours,
+        inputs,
+        earliest: earliestToday,
+        byRequest: await bookedByRequest(db, request, context.selfServeBooking),
+      }));
   if (pincode === null || !takesNewClientsOn(pincode, today) || outside) {
     return { ok: false, code: "not_bookable" };
   }
@@ -340,7 +367,7 @@ function consultationLead(
 export async function bookConsultation(form: FormRequest, request: ConsultationRequest): Promise<Booked | Refusal> {
   const { db, log, now } = form;
   const oneVisit = request.plan === "one_visit";
-  const asked = await checkRequest(db, request, now);
+  const asked = await checkRequest(db, request, { now, selfServeBooking: form.selfServeBooking });
   if (!asked.ok) return asked;
   const { pincode } = asked;
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);

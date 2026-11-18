@@ -6344,7 +6344,7 @@ export interface components {
             address: components["schemas"]["Address"] | null;
             /** @description When the client gave this address to ops on the phone, who saved it for them; null for one they saved themselves. */
             address_given_to_ops: string | null;
-            /** @description Whether the address has a place on the map, so a technician's check-in is measured against it; false with none. */
+            /** @description Whether the address has a place on the map to the building, so the app need not ask for it; false with none, or with only a rough pin Google placed from the words typed, which a check-in is measured against all the same. */
             address_pinned: boolean;
             /** @description The five purposes, in order. Off until the client first switches one on. */
             consents: {

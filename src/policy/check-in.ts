@@ -13,6 +13,12 @@
 export const CHECKIN_RADIUS_M = 200;
 
 /**
+ * How close a check-in must be to a pin Google placed only roughly, a typed address it matched to the street or the
+ * area: as far as such a pin can be from the door, until ops set their own.
+ */
+export const CHECKIN_RADIUS_APPROXIMATE_M = 2000;
+
+/**
  * How long after the technician arrived the client may still be told of it. A check-in that reaches us later, from a
  * phone that had no signal, is past the point: they have been at the door, or gone. Ops set it in Settings.
  */

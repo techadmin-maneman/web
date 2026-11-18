@@ -145,11 +145,13 @@ describe("locating a typed address", () => {
     if (answer.ok) expect(answer.place.lat).toBeCloseTo(28.3968, 4);
   });
 
-  // A locality's centre is a kilometre from the door: a check-in measured against it would be wrong.
-  it("gives none where Google places the words no closer than their area", async () => {
+  // A typed address on /book kept no pin at all, so every check-in there passed unmeasured.
+  it("gives the rough place, marked approximate, where Google places the words no closer than their area", async () => {
     const { provider } = watched();
     const answer = await provider.locate("House 12, somewhere in Sector 65", "122018");
-    expect(answer).toMatchObject({ ok: false, reason: "not_found" });
+    expect(answer).toMatchObject({ ok: true, place: { approximate: true } });
+    const precise = await provider.locate("Mayfield Towers, Sector 65, Gurugram", "122018");
+    expect(precise).toMatchObject({ ok: true, place: { approximate: false } });
   });
 
   it("asks within the address's pincode, in India", async () => {

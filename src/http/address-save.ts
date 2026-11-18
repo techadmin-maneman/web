@@ -121,7 +121,8 @@ const sessionOrNew = (token: string | null | undefined): string =>
 
 /**
  * The address's coordinate, geocoded once within the day's ceiling: a building's from its Place ID, a typed one's from
- * its words within its pincode where Google places it to the building. One Google could not place saves without a pin.
+ * its words within its pincode, to the building or, where Google places it only roughly, marked approximate. One
+ * Google could not place at all saves without a pin.
  */
 export async function pinFor(
   c: Context<AppEnv>,
@@ -140,14 +141,19 @@ export async function pinFor(
     return null;
   }
   await c.var.deps.resolveAlert(GOOGLE_REFUSED);
-  return { lat: resolved.place.lat, lng: resolved.place.lng, source: "google_geocoding" };
+  return {
+    lat: resolved.place.lat,
+    lng: resolved.place.lng,
+    source: "google_geocoding",
+    approximate: resolved.place.approximate === true,
+  };
 }
 
 /**
  * Saves the address as the client's current one, and sends it on to their Books
- * customer and the CRM. A chosen building is geocoded here, once, and its coordinate kept.
- * A typed address has no Place ID and saves no pin: the geofence then measures
- * nothing rather than measuring zero (ADR 0036's honest degradation).
+ * customer and the CRM. A chosen building is geocoded here, once, and its coordinate kept; a typed one by its words,
+ * its pin marked approximate where Google places it only roughly. One Google cannot place at all saves no pin: the
+ * geofence then measures nothing rather than measuring zero (ADR 0036's honest degradation).
  */
 export async function saveClientAddress(
   c: Context<AppEnv>,

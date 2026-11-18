@@ -135,7 +135,7 @@ describe("POST /api/consultation", () => {
     });
 
     expect(answer.status).toBe(201);
-    expect(await answer.json()).toMatchObject({ state: "booked", date: "2026-10-05", window: "evening" });
+    expect(await answer.json()).toMatchObject({ state: "booked", date: "2026-10-04", window: "evening" });
   });
 
   // As the landing answers them, and as the form words them: "That day is no longer open" (open point 105).
@@ -146,8 +146,10 @@ describe("POST /api/consultation", () => {
 
     for (const refused of [
       { ...body, pincode: "400050" },
-      { ...body, pincode: "122018", date: "2026-09-21" },
+      { ...body, pincode: "122018", date: "2026-09-20" },
       { ...body, pincode: "122018", date: "2026-10-31" },
+      // Today's morning, over by noon and the lead time after it.
+      { ...body, pincode: "122018", date: "2026-09-21" },
     ]) {
       const answer = await request(site(), "/api/consultation", post(refused));
       expect(answer.status).toBe(422);

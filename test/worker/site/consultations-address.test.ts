@@ -103,6 +103,14 @@ describe("the address the consultation is at", () => {
     });
   });
 
+  // "Flat 12, Staging test Tower QA, Sector 18" saved no pin, and every check-in there passed from anywhere.
+  it("keeps a typed address's rough pin, marked approximate, where no building was chosen", async () => {
+    const typed = { ...ADDRESS, building: null, place_id: null, line1: "Staging test Tower QA" };
+    expect((await book({ address: typed })).status).toBe(201);
+    const pinned = await env.DB.prepare("SELECT lat, geocode_source, pin_approximate FROM addresses").first();
+    expect(pinned).toEqual({ lat: 28.39, geocode_source: "google_geocoding", pin_approximate: 1 });
+  });
+
   // "Galleria Road" put a road in Meerut first for a client in Gurgaon: Google searches all of India.
   it("searches near the pincode's city, where the form sends one we know", async () => {
     const asked: string[] = [];

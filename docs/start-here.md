@@ -37,7 +37,7 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/booking/`): `book-paid-hold`, `availability`, `open-windows`, `asked-windows`, `occupancy`, `slot-times`,
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
-  `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`, `site-notices`,
+  `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`, `site-today`, `site-notices`,
   `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
   `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each), `drive-check` (Google's drives either side of a start), `public-booking-code` (a site booking's discount code), `made-to-order-asks` (a client's ask for a hair system made to their size, a Tasks row), `new-number-state` (what a new number booking is answered),
   `day-plans` (each technician's days as booking plans them), `packages` (each package and its figures, and when its

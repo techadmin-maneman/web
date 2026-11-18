@@ -1,6 +1,6 @@
 # 0054. Capturing an address: the fields, the pin, and the way to the door
 
-- Status: accepted. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): the address is kept on our own record and not sent to FSM.
+- Status: accepted. Amended 4 October 2026 by [0110](0110-field-work-without-fsm.md): the address is kept on our own record and not sent to FSM. Amended 18 November 2026: a rough pin is kept, marked approximate.
 - Date: 2026-09-23
 - Topic: Field work
 - Amends [0036](0036-geocoding.md), which stands except on where a coordinate comes from
@@ -172,3 +172,12 @@ A typed address saved no pin, so every check-in at one passed unmeasured. It is 
 its words within its pincode, under the same daily ceiling. Only a result placed to the building or between two
 numbered ones on the street is kept (`ROOFTOP` or `RANGE_INTERPOLATED`, not a partial match): a locality's centre is
 a kilometre from the door, and a check-in measured against it would be wrong. Anything less saves no pin, as before.
+
+## Amendment, 18 November 2026: a rough pin is kept, marked approximate
+
+On the owner's ruling (the QA run's A-009): a typed address Google places only roughly, a partial match or no closer
+than the street or the area, keeps that pin, marked approximate (`addresses.pin_approximate`, migration 0225). A
+check-in there is measured against the wider radius ops set for a rough pin (`checkin_radius_approximate_m`, 2 km
+until they set their own) rather than passing unmeasured, and ops can still let a technician in. A rough pin is not a
+building's: the app still asks for the building (`address_pinned` stays false). An address Google cannot place at all
+saves no pin, as before.
