@@ -1,6 +1,6 @@
 # 0123. Partner referral channels
 
-- Status: accepted
+- Status: accepted. Amended 18 November 2026, on the owner's ruling: the grant waits for the friend's own sign-off of the fit ([0254](0254-client-signs-off-the-fit.md)), as a client's referral does (item 4).
 - Date: 2026-10-11
 - Topic: Referrals
 
