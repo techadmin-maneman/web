@@ -41,7 +41,7 @@ describe("a client's hair profile", () => {
       "base_length_in",
     ]);
     expect(COLOURS.slice(0, 3)).toEqual(["1", "1B", "2"]);
-    expect(DENSITIES).toEqual([80, 100, 120, 140]);
+    expect(DENSITIES).toEqual([80, 100, 120, 130, 140]);
     expect(WAVES).toEqual(["straight", "slight_wave", "wavy", "curly"]);
     expect(HAIRLINES.length).toBeGreaterThan(0);
     expect(ATTACHMENTS).toEqual(["tape", "glue", "both"]);

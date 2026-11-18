@@ -75,6 +75,11 @@ describe("a hair system's stock code", () => {
     expect((await errorOf(noSuchProduct)).fields).toEqual(["product"]);
   });
 
+  // The custom range sells 80% and 130% beside the standard 100% and 120%.
+  it("is added at a density of 130%", async () => {
+    expect(await added({ ...SPEC, density_percent: 130 })).not.toBe("");
+  });
+
   it("takes its package's new name when that is renamed, the rest of its name kept", async () => {
     const { hairSystem } = await aPackage({ code: "gold", name: "Mane Man Gold", firstFit: 1_000_000 });
     const renamed = await request(job.ops, "/api/packages/gold", {

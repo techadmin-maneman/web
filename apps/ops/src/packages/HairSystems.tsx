@@ -10,6 +10,7 @@ import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { DENSITIES } from "@maneman/web-kit/hair-profile";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -27,9 +28,8 @@ import styles from "./packages.module.css";
 const copy = packagesCopy.hairSystems;
 const errors = packagesCopy.errors;
 
-/** The suppliers' colour codes and densities, as the hair profile takes them. */
+/** The suppliers' colour codes, as the hair profile takes them. */
 const COLOURS = ["1", "1B", "2", "3", "4", "5", "6", "7", "8"] as const;
-const DENSITIES = [80, 100, 120, 140] as const;
 
 const specOf = (piece: PackageHairSystem) => copy.spec(piece);
 

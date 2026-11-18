@@ -48,7 +48,13 @@ export const FitSpecSchema = z
     colour: listed(COLOURS).openapi({ description: "The suppliers' colour code, #1B written 1B." }),
     grey_percent: z.number().int().min(GREY_PERCENT.min).max(GREY_PERCENT.max).nullable(),
     density_percent: z
-      .union([z.literal(DENSITIES[0]), z.literal(DENSITIES[1]), z.literal(DENSITIES[2]), z.literal(DENSITIES[3])])
+      .union([
+        z.literal(DENSITIES[0]),
+        z.literal(DENSITIES[1]),
+        z.literal(DENSITIES[2]),
+        z.literal(DENSITIES[3]),
+        z.literal(DENSITIES[4]),
+      ])
       .nullable()
       .openapi({ description: "In per cent." }),
     wave: listed(WAVES),

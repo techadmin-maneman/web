@@ -5540,7 +5540,7 @@ export interface components {
             colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
             grey_percent: number | null;
             /** @description In per cent. */
-            density_percent: 80 | 100 | 120 | 140 | null;
+            density_percent: 80 | 100 | 120 | 130 | 140 | null;
             /** @enum {string|null} */
             wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
             /** @enum {string|null} */
@@ -5598,7 +5598,7 @@ export interface components {
             colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
             grey_percent: number | null;
             /** @description In per cent. */
-            density_percent: 80 | 100 | 120 | 140 | null;
+            density_percent: 80 | 100 | 120 | 130 | 140 | null;
             /** @enum {string|null} */
             wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
             /** @enum {string|null} */
@@ -5911,7 +5911,7 @@ export interface components {
             colour: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "1B" | null;
             grey_percent: number | null;
             /** @description In per cent. */
-            density_percent: 80 | 100 | 120 | 140 | null;
+            density_percent: 80 | 100 | 120 | 130 | 140 | null;
             /** @enum {string|null} */
             wave: "straight" | "slight_wave" | "wavy" | "curly" | null;
             /** @enum {string|null} */
