@@ -275,7 +275,7 @@ interface AttributionRow {
   credit_valid_days: number | null;
   /** 1 once the first fit counts (FIRST_FIT_COUNTS). */
   paid: number;
-  /** The friend's sign-off of the fit (ADR 0254); null where none was asked, as before sign-off was switched on. */
+  /** The friend's sign-off of the fit; null where none was asked, as before sign-off was switched on. */
   sign_off: "asked" | "flagged" | "signed" | "declined" | null;
 }
 

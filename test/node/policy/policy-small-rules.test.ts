@@ -151,7 +151,7 @@ describe("the stock settings", () => {
 
 describe("the small figures", () => {
   it("are what the routes and the console hold to", () => {
-    expect(HOLD_REASONS).toEqual([...FRAUD_SIGNALS, "attached_after_fit"]);
+    expect(HOLD_REASONS).toEqual([...FRAUD_SIGNALS, "attached_after_fit", "fit_not_signed"]);
     expect(REFERRAL_MONTHLY_CAP).toBeGreaterThan(0);
     expect(GRIEVANCES_SHOWN).toBeLessThanOrEqual(GRIEVANCES_PER_DAY);
     expect(GRIEVANCE_MAX_CHARS).toBeGreaterThan(CLIENT_NOTE_MAX_CHARS);
