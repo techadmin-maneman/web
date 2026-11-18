@@ -147,8 +147,9 @@ type AreaRefusal =
   | { readonly kind: "empty_area" };
 
 /**
- * The pincodes among these in a city no active technician works in. Served there, a pincode would tell its waitlist
- * and the site that we come, and offer nothing to book (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
+ * The pincodes among these in a city no active technician out of training works in. Served there, a pincode would
+ * tell its waitlist and the site that we come, and offer nothing to book
+ * (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
  */
 export async function pincodesWithNoTechnician(db: D1Database, pincodes: readonly string[]): Promise<string[]> {
   if (pincodes.length === 0) return [];
@@ -156,7 +157,8 @@ export async function pincodesWithNoTechnician(db: D1Database, pincodes: readonl
     .prepare(
       `SELECT p.pincode FROM serviceable_pincodes p
        WHERE p.pincode IN (SELECT value FROM json_each(?1))
-         AND NOT EXISTS (SELECT 1 FROM technicians t WHERE t.active = 1 AND t.city = p.city)`,
+         AND NOT EXISTS (SELECT 1 FROM technicians t
+                         WHERE t.active = 1 AND t.training_end_date IS NULL AND t.city = p.city)`,
     )
     .bind(JSON.stringify(pincodes))
     .all<{ pincode: string }>();
@@ -434,7 +436,8 @@ export async function tellOfUncoveredCities(
   const { results } = await db
     .prepare(
       `SELECT p.city, COUNT(*) AS pincodes FROM serviceable_pincodes p
-       WHERE p.served = 1 AND p.city NOT IN (SELECT city FROM technicians WHERE active = 1 AND city IS NOT NULL)
+       WHERE p.served = 1 AND p.city NOT IN (SELECT city FROM technicians
+                                             WHERE active = 1 AND training_end_date IS NULL AND city IS NOT NULL)
        GROUP BY p.city`,
     )
     .all<{ city: string; pincodes: number }>();

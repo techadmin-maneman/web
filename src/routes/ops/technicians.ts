@@ -141,7 +141,7 @@ const NewTechnicianSchema = z
     zone: ZoneSchema.optional(),
     city: CitySchema.optional(),
     fits_trained: FitsTrainedSchema,
-    training_ends_on: TrainingSchema,
+    training_end_date: TrainingSchema,
   })
   .strict()
   .openapi("NewTechnician");
@@ -153,7 +153,7 @@ const TechnicianChangeSchema = z
     zone: ZoneSchema.optional(),
     city: CitySchema.optional(),
     fits_trained: FitsTrainedSchema,
-    training_ends_on: TrainingSchema,
+    training_end_date: TrainingSchema,
   })
   .strict()
   .refine((change) => Object.keys(change).length > 0, { message: "nothing to change" })
@@ -281,7 +281,7 @@ async function technicianToChange(c: Context<AppEnv>, id: string): Promise<Roste
 }
 
 /** The fields a change names, in a fixed order, for its audit entry: never their values. */
-const CHANGEABLE = ["name", "mobile", "zone", "city", "fits_trained", "training_ends_on"] as const;
+const CHANGEABLE = ["name", "mobile", "zone", "city", "fits_trained", "training_end_date"] as const;
 
 /**
  * Whether the caller may give a technician this city: one of ours that their grants reach, or none (GIVING_NO_CITY).
@@ -329,7 +329,7 @@ export function registerOpsTechnicians(app: App): void {
         zone: change.zone,
         city: change.city,
         fitsTrained: change.fits_trained,
-        trainingEndsOn: change.training_ends_on,
+        trainingEndDate: change.training_end_date,
       },
       audit: auditOf(c, "technician.change", id, { fields }),
       now: c.var.deps.now(),
@@ -396,7 +396,7 @@ function registerTechnicianAdd(app: App): void {
       zone,
       city,
       fits_trained: fitsTrained,
-      training_ends_on: trainingEndsOn,
+      training_end_date: trainingEndDate,
     } = c.req.valid("json");
     const mobileE164 = toE164(mobile);
     if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
@@ -409,7 +409,7 @@ function registerTechnicianAdd(app: App): void {
     const id = crypto.randomUUID();
     const marks = {
       fitsTrained: fitsTrained ?? false,
-      trainingEndsOn: trainingEndsOn ?? null,
+      trainingEndDate: trainingEndDate ?? null,
       testRecord: testRecordAtCreation(c.var.config.environment, name),
     };
     const technician = { id, name, mobileE164, zone: zone ?? null, city: city ?? null, ...marks };

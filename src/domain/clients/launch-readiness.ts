@@ -25,9 +25,9 @@ export async function launchReadiness(db: D1Database, city: string, pincodes: re
     .prepare(
       `SELECT
          (SELECT COUNT(*) FROM technicians t
-            WHERE t.active = 1 AND t.city = ?1 AND t.training_ends_on IS NULL) AS technicians,
+            WHERE t.active = 1 AND t.city = ?1 AND t.training_end_date IS NULL) AS technicians,
          (SELECT COUNT(*) FROM technicians t
-            WHERE t.active = 1 AND t.city = ?1 AND t.training_ends_on IS NULL AND t.fits_trained = 1) AS fitters,
+            WHERE t.active = 1 AND t.city = ?1 AND t.training_end_date IS NULL AND t.fits_trained = 1) AS fitters,
          (SELECT COUNT(*) FROM technicians t WHERE t.active = 1 AND t.city = ?1
             AND NOT EXISTS (SELECT 1 FROM technician_hours h WHERE h.technician_id = t.id)) AS without_hours,
          (SELECT COUNT(*) FROM technicians t WHERE t.active = 1 AND t.city = ?1 AND t.home_lat IS NULL) AS without_home,

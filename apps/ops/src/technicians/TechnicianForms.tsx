@@ -142,7 +142,7 @@ export function AddTechnician({
   // Staff kept to their cities give them one of theirs; national staff may leave them with none.
   const firstCity = useAccess().reaches(GIVING_NO_CITY) ? "" : (cities[0] ?? "");
   const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: firstCity, fitsTrained: false });
-  const [trainingEndsOn, setTrainingEndsOn] = useState("");
+  const [trainingEndDate, setTrainingEndsOn] = useState("");
   const [sending, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -161,7 +161,7 @@ export function AddTechnician({
         zone: zoneOf(typed.zone),
         city: cityOf(typed.city),
         fits_trained: typed.fitsTrained,
-        ...(trainingEndsOn === "" ? {} : { training_ends_on: trainingEndsOn }),
+        ...(trainingEndDate === "" ? {} : { training_end_date: trainingEndDate }),
       });
       if (!answer.ok) {
         setFailed(refusal(answer.code));
@@ -182,7 +182,7 @@ export function AddTechnician({
       }}
     >
       <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
-      <TrainingField value={trainingEndsOn} onChange={setTrainingEndsOn} />
+      <TrainingField value={trainingEndDate} onChange={setTrainingEndsOn} />
       <div className={styles.actions}>
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}
@@ -266,9 +266,9 @@ function DetailRows({
         save={(fitting) => save({ fits_trained: fitting === "trained" })}
       />
       <TrainingRow
-        endsOn={technician.training_ends_on}
+        endsOn={technician.training_end_date}
         mayChange={mayChange}
-        save={(endsOn) => save({ training_ends_on: endsOn })}
+        save={(endsOn) => save({ training_end_date: endsOn })}
       />
     </div>
   );

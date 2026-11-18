@@ -236,22 +236,22 @@ describe("changing a technician", () => {
     const added = await send(ops, "POST", "/api/technicians", {
       name: "Naveen Rao",
       mobile: "9810000007",
-      training_ends_on: "2026-10-20",
+      training_end_date: "2026-10-20",
     });
     const { id } = await added.json<{ id: string }>();
     const listed = async () =>
       (
         await (
           await send(ops, "GET", "/api/technicians")
-        ).json<{ technicians: { id: string; training_ends_on: string | null }[] }>()
+        ).json<{ technicians: { id: string; training_end_date: string | null }[] }>()
       ).technicians.find((each) => each.id === id);
-    expect(await listed()).toMatchObject({ training_ends_on: "2026-10-20" });
+    expect(await listed()).toMatchObject({ training_end_date: "2026-10-20" });
 
-    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { training_ends_on: null })).status).toBe(200);
-    expect(await listed()).toMatchObject({ training_ends_on: null });
+    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { training_end_date: null })).status).toBe(200);
+    expect(await listed()).toMatchObject({ training_end_date: null });
     const audit = await auditOf("technician.change");
     expect(audit.results).toEqual([
-      { subject_kind: "technician", subject_id: id, detail: JSON.stringify({ fields: "training_ends_on" }) },
+      { subject_kind: "technician", subject_id: id, detail: JSON.stringify({ fields: "training_end_date" }) },
     ]);
   });
 
@@ -522,7 +522,7 @@ describe("the roster", () => {
         city: null,
         mobile: "+919810000008",
         fits_trained: false,
-        training_ends_on: null,
+        training_end_date: null,
         visits_to_come: 0,
       },
     ]);

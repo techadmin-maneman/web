@@ -164,14 +164,14 @@ test("adds a technician in training till a day", async ({ page }) => {
   const sent = page.waitForRequest((request) => request.method() === "POST" && request.url().endsWith("/technicians"));
   await form.getByRole("button", { name: opsCopy.technicians.add.save }).click();
 
-  expect((await sent).postDataJSON()).toMatchObject({ name: "Naveen Rao", training_ends_on: "2026-10-20" });
+  expect((await sent).postDataJSON()).toMatchObject({ name: "Naveen Rao", training_end_date: "2026-10-20" });
 });
 
 test("shows the day a technician's training ends, and marks it done on their details", async ({ page }) => {
   const inTraining = {
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.map((each) =>
-      each.id === IMRAN ? { ...each, training_ends_on: "2026-10-20" } : each,
+      each.id === IMRAN ? { ...each, training_end_date: "2026-10-20" } : each,
     ),
   };
   const { roster, reply } = rosterOf(inTraining);
@@ -190,7 +190,7 @@ test("shows the day a technician's training ends, and marks it done on their det
   roster.current = TECHNICIANS;
   await main.getByRole("button", { name: EDITING.save }).click();
 
-  expect((await sent).postDataJSON()).toEqual({ training_ends_on: null });
+  expect((await sent).postDataJSON()).toEqual({ training_end_date: null });
   await expect(main.getByRole("button", { name: `${EDITING.change} ${training.until}` })).toContainText(training.none);
 });
 
@@ -216,7 +216,7 @@ test("switches a technician off only once asked, and lists the visits they no lo
         city: "Gurgaon",
         mobile: "+919810000001",
         fits_trained: true,
-        training_ends_on: null,
+        training_end_date: null,
         visits_to_come: 0,
       },
     ],

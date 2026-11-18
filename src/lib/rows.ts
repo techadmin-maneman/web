@@ -1808,7 +1808,7 @@ export interface Rows {
     readonly home_lat: number | null;
     readonly home_lng: number | null;
     readonly reach_min: number | null;
-    readonly training_ends_on: string | null;
+    readonly training_end_date: string | null;
   };
   readonly terms_acceptances: {
     readonly id: string;

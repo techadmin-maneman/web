@@ -49884,7 +49884,7 @@ Request body:
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
           },
-          "training_ends_on": {
+          "training_end_date": {
             "anyOf": [
               {
                 "type": "string",
@@ -50009,7 +50009,7 @@ Request body:
           "city",
           "mobile",
           "fits_trained",
-          "training_ends_on",
+          "training_end_date",
           "visits_to_come",
           "sign_in_stopped_at",
           "out_of_codes",
@@ -50070,7 +50070,7 @@ Request body:
             "type": "boolean",
             "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
           },
-          "training_ends_on": {
+          "training_end_date": {
             "anyOf": [
               {
                 "type": "string",
@@ -50094,7 +50094,7 @@ Request body:
           "city",
           "mobile",
           "fits_trained",
-          "training_ends_on",
+          "training_end_date",
           "visits_to_come"
         ],
         "additionalProperties": false
@@ -52953,7 +52953,7 @@ Request body:
       "type": "boolean",
       "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
     },
-    "training_ends_on": {
+    "training_end_date": {
       "type": [
         "string",
         "null"
@@ -53017,7 +53017,7 @@ Request body:
       "type": "boolean",
       "description": "Trained to fit: only such a technician is offered or given a first fit (ADR 0119)."
     },
-    "training_ends_on": {
+    "training_end_date": {
       "type": [
         "string",
         "null"

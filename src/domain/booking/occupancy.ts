@@ -75,7 +75,7 @@ interface VisitPlace {
  */
 const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technicians t
   WHERE t.active = 1 AND (t.id = ?3 OR (t.city = ${bookingCity("?1", "?2")} AND (?4 = 0 OR t.fits_trained = 1)
-    AND t.training_ends_on IS NULL
+    AND t.training_end_date IS NULL
     AND (?2 IS NULL OR t.test_record = (SELECT COALESCE(MAX(p.test_record), 0) FROM people p WHERE p.id = ?2))
     AND (?5 IS NULL OR EXISTS (
       SELECT 1 FROM stock_balances b WHERE b.consumable_code = ?5 AND b.quantity > 0

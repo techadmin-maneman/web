@@ -39,9 +39,9 @@ function headOf(summary: TechnicianSummary, active: Technician | null): RecordHe
     badges: [
       standingOf(active),
       // In training, no visits of any kind till ops mark it done (ADR 0278).
-      ...(summary.training_ends_on === null
+      ...(summary.training_end_date === null
         ? []
-        : [{ words: copy.inTraining(shortDate(summary.training_ends_on)), tone: "attention" as const }]),
+        : [{ words: copy.inTraining(shortDate(summary.training_end_date)), tone: "attention" as const }]),
     ],
     facts: [
       ...(summary.mobile === null ? [] : [phoneWords(summary.mobile)]),

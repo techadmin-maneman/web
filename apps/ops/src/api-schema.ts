@@ -29433,7 +29433,7 @@ export interface components {
                 /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
                 fits_trained: boolean;
                 /** @description The day their training is expected to end; null when not in training. In training, no visits (ADR 0278). */
-                training_ends_on: string | null;
+                training_end_date: string | null;
                 /** @description Their visits still to come and not begun, which switching them off leaves with nobody. */
                 visits_to_come: number;
                 /** @description When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again. */
@@ -29471,7 +29471,7 @@ export interface components {
                 /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
                 fits_trained: boolean;
                 /** @description The day their training is expected to end; null when not in training. In training, no visits (ADR 0278). */
-                training_ends_on: string | null;
+                training_end_date: string | null;
                 /** @description Their visits still to come and not begun, which switching them off leaves with nobody. */
                 visits_to_come: number;
             }[];
@@ -30191,7 +30191,7 @@ export interface components {
              * Format: date
              * @description The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training.
              */
-            training_ends_on?: string | null;
+            training_end_date?: string | null;
         };
         /** @description Only what is sent changes. */
         TechnicianChange: {
@@ -30209,7 +30209,7 @@ export interface components {
              * Format: date
              * @description The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training.
              */
-            training_ends_on?: string | null;
+            training_end_date?: string | null;
         };
         TechnicianDeactivated: {
             /** @description Their visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays theirs. Empty when they were switched off already. */

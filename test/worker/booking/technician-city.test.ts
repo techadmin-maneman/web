@@ -160,11 +160,11 @@ describe("a city's own closed days, and first fits", () => {
 
   // A technician added on a Monday could be given consultations at once, with no training at all.
   it("offers and holds no visit of any kind with a technician in training, until ops mark it done", async () => {
-    await env.DB.prepare("UPDATE technicians SET training_ends_on = '2026-10-20' WHERE id = 't1'").run();
+    await env.DB.prepare("UPDATE technicians SET training_end_date = '2026-10-20' WHERE id = 't1'").run();
     expect(await morningOpenAt(GURGAON)).toBe(false);
     expect(await holdAt(GURGAON)).toBeNull();
 
-    await env.DB.prepare("UPDATE technicians SET training_ends_on = NULL WHERE id = 't1'").run();
+    await env.DB.prepare("UPDATE technicians SET training_end_date = NULL WHERE id = 't1'").run();
     expect(await holdAt(GURGAON)).toBe("Imran Qureshi");
   });
 

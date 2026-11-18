@@ -148,6 +148,20 @@ describe("the cron on the day", () => {
     expect(run.held).toHaveLength(1);
     expect(run.held[0]).toMatchObject({ state: "scheduled", held_because: "no_technician: 400050" });
   });
+
+  it("holds a launch in a city not ready, saying why, and serves it the morning after it is", async () => {
+    await post("/api/pincode-launches", { city: "Mumbai", pincodes: ["400050"], go_live_on: LATER });
+    await env.DB.prepare("UPDATE technicians SET fits_trained = 0 WHERE city = 'Mumbai'").run();
+    const held = await runDueLaunches(env.DB, new Date("2026-09-25T04:30:00.000Z"));
+    expect(held.held[0]).toMatchObject({ state: "scheduled", held_because: "not_ready: 400050" });
+    expect(held.alerts).toEqual([]);
+
+    await env.DB.prepare("UPDATE technicians SET fits_trained = 1 WHERE city = 'Mumbai'").run();
+    const next = await runDueLaunches(env.DB, new Date("2026-09-26T04:30:00.000Z"));
+    expect(next.held).toEqual([]);
+    const served = await env.DB.prepare("SELECT served FROM serviceable_pincodes WHERE pincode = '400050'").first();
+    expect(served).toEqual({ served: 1 });
+  });
 });
 
 describe("a city's readiness", () => {

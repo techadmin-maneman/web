@@ -167,7 +167,11 @@ async function launchesJob({ env, deps, log }: CronContext): Promise<void> {
     log.warn("launch_held", { launch_id: launch.id, why: launch.held_because });
     await deps.alertOnce({
       key: `launch_held:${launch.id}`,
-      message: ALERT_WORDS.launch_held({ city: launch.city, day: launch.go_live_on }),
+      message: ALERT_WORDS.launch_held({
+        city: launch.city,
+        day: launch.go_live_on,
+        notReady: launch.held_because?.startsWith("not_ready") ?? false,
+      }),
       link: "/settings/areas",
     });
   }

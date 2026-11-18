@@ -5,6 +5,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { ALERT_WORDS } from "../../../src/config/alert-words.ts";
 
 /** Each `message:` in the Worker's source, as written, with the values it fills in left out. */
 function messages(): { where: string; text: string }[] {
@@ -57,5 +58,14 @@ describe("what an alert says", () => {
     ["an ADR's number", /\bADR \d/],
   ])("names no %s", (_, pattern) => {
     expect(found.filter((each) => pattern.test(each.text)).map((each) => each.where)).toEqual([]);
+  });
+});
+
+// A launch held for a city not ready told ops to add a technician, where one worked there already.
+describe("a launch held", () => {
+  it("names what the city lacks", () => {
+    const held = (notReady: boolean) => ALERT_WORDS.launch_held({ city: "Pune", day: "2026-10-05", notReady });
+    expect(held(true)).toContain("Train a technician to fit or set up a stockroom in Pune");
+    expect(held(false)).toContain("Add a technician in Pune");
   });
 });

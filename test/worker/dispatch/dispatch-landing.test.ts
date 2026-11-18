@@ -421,7 +421,7 @@ describe("a technician in another city, or in none", () => {
   });
 
   it("is refused any visit while in training, and offered no room for it", async () => {
-    await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon', training_ends_on = '2026-10-20' WHERE id = ?1")
+    await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon', training_end_date = '2026-10-20' WHERE id = ?1")
       .bind(SAMEER)
       .run();
 

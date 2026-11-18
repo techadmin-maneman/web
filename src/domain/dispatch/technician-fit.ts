@@ -20,7 +20,7 @@ export async function whyNotThem(
   const row = await db
     .prepare(
       `SELECT ${bookingCity("?2", "?3")} AS visit_city, t.city AS technician_city, t.fits_trained,
-         t.training_ends_on
+         t.training_end_date
        FROM technicians t WHERE t.id = ?1`,
     )
     .bind(technicianId, job.service_pincode, job.person_id)
@@ -28,9 +28,9 @@ export async function whyNotThem(
       visit_city: string | null;
       technician_city: string | null;
       fits_trained: number;
-      training_ends_on: string | null;
+      training_end_date: string | null;
     }>();
-  if (row !== null && row.training_ends_on !== null) return "in_training";
+  if (row !== null && row.training_end_date !== null) return "in_training";
   const where = row?.visit_city ?? null;
   if (where !== null && row?.technician_city !== where) return "other_city";
   return isAFitting(job.type) && row?.fits_trained !== 1 ? "not_trained" : null;
@@ -46,7 +46,7 @@ export function roomTechnicians(db: D1Database, job: LiveJob): Promise<Technicia
     .prepare(
       `SELECT t.id, t.name, t.initials FROM technicians t
        WHERE t.active = 1 AND (t.id = ?1 OR ((${bookingCity("?2", "?3")} IS NULL OR t.city = ${bookingCity("?2", "?3")})
-         AND (?4 = 0 OR t.fits_trained = 1) AND t.training_ends_on IS NULL
+         AND (?4 = 0 OR t.fits_trained = 1) AND t.training_end_date IS NULL
          AND t.test_record = (SELECT COALESCE(MAX(p.test_record), 0) FROM people p WHERE p.id = ?3)))
        ORDER BY t.name`,
     )

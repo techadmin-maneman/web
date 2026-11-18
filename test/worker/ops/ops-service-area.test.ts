@@ -17,6 +17,7 @@ import { pincodeUpsert } from "../../../scripts/lib/pincodes.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { aTechnicianInEveryCity } from "../clients.ts";
 import { POST, auditFor } from "./ops-settings-fixtures.ts";
+import { enforce, listStaff, opsAs, person, post as postAs } from "./staff-fixtures.ts";
 
 let ops: App;
 
@@ -158,10 +159,31 @@ describe("the service area", () => {
     expect((await auditFor("pincode.set")).results).toHaveLength(0);
   });
 
-  it("counts no one in training as ready to fit", async () => {
-    await env.DB.prepare("UPDATE technicians SET training_ends_on = '2026-10-20' WHERE city = 'Gurgaon'").run();
-    const answer = await post("/api/service-area", { changes: [{ pincode: "122018", served: true, launch_on: null }] });
-    expect(await answer.json()).toMatchObject({ error: { code: "not_ready", fields: ["122018"] } });
+  it("counts no one in training: a city of trainees has nobody to book, whatever reason is given", async () => {
+    await env.DB.prepare("UPDATE technicians SET training_end_date = '2026-10-20' WHERE city = 'Gurgaon'").run();
+    const answer = await post("/api/service-area", {
+      changes: [{ pincode: "122018", served: true, launch_on: null }],
+      not_ready_reason: "Their training ends next week",
+    });
+    expect(answer.status).toBe(409);
+    expect(await answer.json()).toMatchObject({ error: { code: "no_technician", fields: ["122018"] } });
+  });
+
+  it("takes the reason from a national Admin alone, and serves nothing for anyone else", async () => {
+    await env.DB.prepare("UPDATE technicians SET fits_trained = 0 WHERE city = 'Gurgaon'").run();
+    await listStaff("growth@maneman.test", ["growth:manage:national"]);
+    await listStaff("gurgaon.admin@maneman.test", ["growth:manage:national", "admin:manage:city:Gurgaon"]);
+    await enforce();
+    const change = {
+      changes: [{ pincode: "122018", served: true, launch_on: null }],
+      not_ready_reason: "Fitter trained in Delhi, travelling in for the first fits",
+    };
+    for (const email of ["growth@maneman.test", "gurgaon.admin@maneman.test"]) {
+      const answer = await postAs(opsAs(person(email)), "/api/service-area", change);
+      expect(answer.status).toBe(403);
+      expect(await answer.json()).toMatchObject({ error: { code: "not_permitted" } });
+    }
+    expect((await auditFor("pincode.set")).results).toHaveLength(0);
   });
 
   it("serves it all the same where an Admin gives a reason, and keeps the reason", async () => {

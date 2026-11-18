@@ -4,6 +4,6 @@
 -- of it.
 
 -- The day the training is expected to end, which the console shows; null once ops mark it done, or never in training.
-ALTER TABLE technicians ADD COLUMN training_ends_on TEXT;
+ALTER TABLE technicians ADD COLUMN training_end_date TEXT;
 
 -- backfill: none. Every technician before this migration was taking visits, so none is in training.

@@ -12,7 +12,7 @@ Training was one flag, `fits_trained`, which kept first fits and replacements fr
 
 ## Decision
 
-1. **Training is a state.** `technicians.training_ends_on` holds the day ops expect a technician's training to end;
+1. **Training is a state.** `technicians.training_end_date` holds the day ops expect a technician's training to end;
    null once ops mark it done, or for one never in training. Ops set it when they add a technician, or later, and
    clear it on their record when the training is done. It does not end by itself on the day.
 2. **In training, no visit of any kind.** Booking offers no slot of theirs, the dispatch board offers them no job, and
