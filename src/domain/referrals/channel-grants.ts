@@ -3,9 +3,6 @@
 // and the partner earns its commission, each at the terms in force then, kept with the attribution. No fraud rule
 // runs: a partner has no address or payment of ours to compare a friend's with. A first fit refunded under the
 // guarantee takes the visits back, and the commission with them.
-//
-// Both wait for the friend's own sign-off of the fit (docs/decisions/0254-client-signs-off-the-fit.md): while it is
-// asked or flagged, for the friend; a fit closed with it declined, for ops to close that fit's task.
 
 import { inviteLapsed } from "../../policy/invites.ts";
 import { creditExpiry } from "../../policy/referral-reward.ts";
@@ -16,14 +13,15 @@ import { FIRST_FIT_COUNTS } from "./referral-grants.ts";
 const PER_PASS = 10;
 
 /**
- * The first fit signed off, closed before sign-off was switched on, or closed declined and its task since closed by
- * ops. Kept in the query, so a friend still waiting never takes one of the pass's places.
+ * The friend's own sign-off of the first fit: signed, or none asked, as before sign-off was switched on. One closed
+ * declined waits for ops to close its task. Kept in the query, so a friend still waiting never takes a pass's place.
  */
 const SIGNED_OFF = `NOT EXISTS (SELECT 1 FROM fit_sign_offs s WHERE s.appointment_id = a.id
     AND (s.state IN ('asked', 'flagged') OR (s.state = 'declined' AND NOT EXISTS (
       SELECT 1 FROM task_closures tc WHERE tc.task_group = 'fit_unsigned' AND tc.subject_id = a.id))))`;
 
 const PENDING = `SELECT r.id, r.referred_person_id, r.via, pin.launched_at, a.id AS first_fit_id,
+    a.window_start AS fitted_at,
     c.friend_visits, c.valid_days, c.commission
   FROM channel_attributions r
   JOIN referral_channels c ON c.id = r.channel_id
@@ -41,6 +39,7 @@ interface Pending {
   readonly via: "consultation" | "waitlist";
   readonly launched_at: string | null;
   readonly first_fit_id: string;
+  readonly fitted_at: string;
   readonly friend_visits: number;
   readonly valid_days: number;
   readonly commission: number;
@@ -102,7 +101,10 @@ export async function settlePartnerReferrals(
     // A friend with two first fits done comes once for each; the earliest settles it.
     if (settled.has(row.id)) continue;
     settled.add(row.id);
-    if (row.via === "waitlist" && row.launched_at !== null && inviteLapsed(new Date(row.launched_at), now)) {
+    // An invite from a waitlist holds for fits up to 12 months after its area launched: judged at the fit, so one
+    // waiting for ops to close its task does not lapse while it waits.
+    const fitted = new Date(row.fitted_at);
+    if (row.via === "waitlist" && row.launched_at !== null && inviteLapsed(new Date(row.launched_at), fitted)) {
       await db
         .prepare(
           "UPDATE channel_attributions SET grant_state = 'expired', updated_at = ?2 WHERE id = ?1 AND grant_state = 'pending'",

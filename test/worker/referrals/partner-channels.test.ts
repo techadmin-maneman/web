@@ -140,40 +140,6 @@ describe("the friend, fitted", () => {
     expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(2);
   });
 
-  // The friend's sign-off of the fit, as the client app and the technician's phone leave it (ADR 0254).
-  it("waits for the friend to sign off the fit, and for ops where it closed declined", async () => {
-    const partner = await addPartner();
-    await attributeToPartner(env.DB, {
-      invite: partner,
-      personId: FRIEND,
-      via: "consultation",
-      pincode: null,
-      now: NOW,
-    });
-    await firstFit(FIT, FRIEND);
-    const signOff = (state: "asked" | "declined") =>
-      env.DB.prepare(
-        `INSERT INTO fit_sign_offs (appointment_id, state, declined_reason, asked_at, guarantee_days, updated_at)
-         VALUES (?1, ?2, ?3, ?4, 14, ?4)
-         ON CONFLICT (appointment_id) DO UPDATE SET state = excluded.state, declined_reason = excluded.declined_reason`,
-      )
-        .bind(FIT, state, state === "declined" ? "Client did not want to sign" : null, NOW.toISOString())
-        .run();
-
-    await signOff("asked");
-    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
-    await signOff("declined");
-    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
-    expect(await channels()).toMatchObject([{ fitted: 0, earned: 0 }]);
-    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
-
-    const closed = await send("POST", `/api/tasks/fit_unsigned/${FIT}/close`, { reason: "Called, happy with it" });
-    expect(closed.status).toBe(204);
-    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 1 });
-    expect(await channels()).toMatchObject([{ fitted: 1, earned: 150000 }]);
-    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(2);
-  });
-
   it("earns the commission alone where the partner gives the friend no visits", async () => {
     const partner = await addPartner({ ...TERMS, friend_visits: 0 });
     await attributeToPartner(env.DB, {
@@ -214,5 +180,89 @@ describe("the friend, fitted", () => {
       .bind(FRIEND)
       .first();
     expect(taken).toEqual({ clawed_back_at: NOW.toISOString() });
+  });
+});
+
+// The friend's sign-off of the fit, as the client app and the technician's phone leave it (ADR 0254).
+describe("the friend's sign-off of the fit", () => {
+  const signOff = (fitId: string, state: "asked" | "flagged" | "signed" | "declined") =>
+    env.DB.prepare(
+      `INSERT INTO fit_sign_offs (appointment_id, state, declined_reason, asked_at, signed_at, guarantee_days, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, 14, ?4)
+       ON CONFLICT (appointment_id) DO UPDATE SET state = excluded.state, declined_reason = excluded.declined_reason,
+         signed_at = excluded.signed_at`,
+    )
+      .bind(
+        fitId,
+        state,
+        state === "declined" ? "Client did not want to sign" : null,
+        NOW.toISOString(),
+        state === "signed" ? NOW.toISOString() : null,
+      )
+      .run();
+  const fitted = async (partner: PartnerInvite, personId: string, fitId: string, start?: string) => {
+    await attributeToPartner(env.DB, { invite: partner, personId, via: "consultation", pincode: null, now: NOW });
+    await firstFit(fitId, personId, "done", start);
+  };
+
+  it("waits while it is asked or flagged, and grants once the friend signs", async () => {
+    await fitted(await addPartner(), FRIEND, FIT);
+    for (const state of ["asked", "flagged"] as const) {
+      await signOff(FIT, state);
+      expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
+    }
+    expect(await channels()).toMatchObject([{ fitted: 0, earned: 0 }]);
+    await signOff(FIT, "signed");
+    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 1 });
+    expect(await channels()).toMatchObject([{ fitted: 1, earned: 150000 }]);
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(2);
+  });
+
+  it("waits for ops to close the task of a fit closed declined", async () => {
+    await fitted(await addPartner(), FRIEND, FIT);
+    await signOff(FIT, "declined");
+    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 0 });
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(0);
+    const closed = await send("POST", `/api/tasks/fit_unsigned/${FIT}/close`, { reason: "Called, happy with it" });
+    expect(closed.status).toBe(204);
+    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 1 });
+    expect(await channels()).toMatchObject([{ fitted: 1, earned: 150000 }]);
+  });
+
+  // A pass settles ten; friends still waiting must not take all ten places from one who signed.
+  it("grants a friend who signed behind ten still waiting", async () => {
+    const partner = await addPartner();
+    for (let each = 0; each < 10; each += 1) {
+      const id = `00000000-0000-4000-8000-0000000000${String(10 + each)}`;
+      await person(id, `Waiting ${String(each)}`, `+9198100001${String(10 + each)}`);
+      await fitted(partner, id, `fit-waiting-${String(each)}`, "2026-09-19T03:30:00.000Z");
+      await signOff(`fit-waiting-${String(each)}`, "asked");
+    }
+    await fitted(partner, FRIEND, FIT);
+    await signOff(FIT, "signed");
+    expect(await settlePartnerReferrals(env.DB, NOW)).toMatchObject({ granted: 1 });
+    expect((await creditBalance(env.DB, FRIEND, NOW)).visits).toBe(2);
+  });
+
+  // The waitlist invite is judged at the fit: a fit inside its year is granted when ops close the task after it.
+  it("does not let a waitlist invite lapse while a declined fit waits for ops", async () => {
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at) VALUES ('122018', 'South City II', 'Gurgaon', 1, ?1)",
+    )
+      .bind("2025-09-22T03:30:00.000Z")
+      .run();
+    const partner = await addPartner();
+    await attributeToPartner(env.DB, {
+      invite: partner,
+      personId: FRIEND,
+      via: "waitlist",
+      pincode: "122018",
+      now: NOW,
+    });
+    await firstFit(FIT, FRIEND);
+    await signOff(FIT, "declined");
+    await send("POST", `/api/tasks/fit_unsigned/${FIT}/close`, { reason: "Called, happy with it" });
+    const later = new Date(NOW.getTime() + 3 * 86_400_000);
+    expect(await settlePartnerReferrals(env.DB, later)).toMatchObject({ granted: 1, expired: 0 });
   });
 });
