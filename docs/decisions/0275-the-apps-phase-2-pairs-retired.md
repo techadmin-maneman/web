@@ -21,7 +21,8 @@ fidelity job, at the client app's Home, waiting for a heading the redesign remov
 2. **Each change to either app is set beside its prototype as it is reviewed** (`.claude/rules/review-before-push.md`),
    at 360 and 390 px and, for the technician app, with its text at 130% (`docs/fidelity-method.md`).
 3. **The old pairs' method and their recorded departures from the boards stay readable** in `docs/fidelity-method.md` as
-   it stood at commit b610fa233, which ADRs 0056, 0059, 0079, 0080, 0086, 0087 and 0092 point to for their departures.
+   it stood at commit b610fa233: the departures of ADRs 0043, 0056, 0059, 0079, 0080, 0082, 0086, 0087 and 0092 were
+   recorded there.
 
 ## Consequences
 
