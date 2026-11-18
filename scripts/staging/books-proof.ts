@@ -108,12 +108,13 @@ try {
   await books.updateCustomer(customerId, { ...customer, mobile: newMobile });
   check("a new number is written over it", (await readCustomer(customerId))?.mobile === newMobile, "read back");
 
+  // GST is on in the org (docs/decisions/0274-gst-on.md): a client's customer takes a place of contact.
   try {
-    await books.upsertCustomer({ ...customer, stateCode: "HR" });
-    check("a place of contact while GST is off", false, "Books took it: GST is on in the org");
+    await books.upsertCustomer({ ...customer, stateCode: "DL" });
+    check("a place of contact is taken now GST is on", true, "DL");
   } catch (error) {
     const code = error instanceof ZohoError ? error.code : String(error);
-    check("a place of contact is refused while GST is off", code === "8", `code ${code}`);
+    check("a place of contact is taken now GST is on", false, `refused, code ${code}`);
   }
 
   const { id: itemId, rate: rateBefore } = await proofItem();
@@ -136,7 +137,9 @@ try {
   const date = indiaDate(new Date());
   const invoice = await books.createInvoice({ customerId, reference, date, placeOfSupply: "DL", branchId: null, line });
   invoiceId = invoice.id;
-  check("a draft for ₹2,000 less ₹150 totals ₹1,850", invoice.total === 185_000, `${invoice.number} ${invoice.status}`);
+  // Books takes a discount before tax and adds the line's 18% to it: ₹2,000 less ₹177.
+  const total = `${invoice.number} ${invoice.status}`;
+  check("a draft for ₹2,000 less ₹150 before GST totals ₹1,823", invoice.total === 182_300, total);
   const found = await books.findInvoice(reference);
   check("the invoice is found by its reference", found?.id === invoice.id, String(found?.number));
 
