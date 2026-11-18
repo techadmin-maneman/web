@@ -66,7 +66,7 @@ export const areas = {
       launch_in_future: "The launch date must be today or earlier.",
       no_technician: "No technician works in this city yet. Add one in Technicians first.",
       not_ready:
-        "Not ready: nobody here is trained to fit, or there’s no stockroom. Put that right first, or an Admin can launch with a reason.",
+        "Not ready: nobody here is trained to fit, or there’s no stockroom. Put that right first, or an Admin can launch it from Served with a reason.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,

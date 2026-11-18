@@ -15812,7 +15812,7 @@ Request body:
 }
 ```
 
-**409**: no_technician: no active technician works in the pincode's city yet
+**409**: no_technician: no active technician works in the pincode's city yet; not_ready: nobody there is trained to fit, or it has no stockroom
 
 ```json
 {
@@ -15829,6 +15829,7 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
+                "not_ready",
                 "no_technician"
               ]
             }

@@ -221,7 +221,10 @@ async function refusalOf(
  * a pincode would be consulted in with nobody to fit. A missing GST registration is the console's to warn of, not a
  * reason to wait.
  */
-async function pincodesNotReady(db: D1Database, launching: readonly (AreaPincode | undefined)[]): Promise<string[]> {
+export async function pincodesNotReady(
+  db: D1Database,
+  launching: readonly ({ readonly pincode: string; readonly city: string } | undefined)[],
+): Promise<string[]> {
   const cities = [...new Set(launching.flatMap((pincode) => (pincode?.city ? [pincode.city] : [])))];
   const unready = new Set<string>();
   for (const city of cities) {

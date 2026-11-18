@@ -11673,7 +11673,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description no_technician: no active technician works in the pincode's city yet */
+                /** @description no_technician: no active technician works in the pincode's city yet; not_ready: nobody there is trained to fit, or it has no stockroom */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -11682,7 +11682,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "no_technician";
+                                code: "not_ready" | "no_technician";
                             } & {
                                 [key: string]: unknown;
                             };
