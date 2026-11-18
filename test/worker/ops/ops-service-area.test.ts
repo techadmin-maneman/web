@@ -138,6 +138,39 @@ describe("the service area", () => {
     expect((await auditFor("pincode.set")).results).toHaveLength(0);
   });
 
+  // Mumbai went live weeks before anyone there could fit, so its first fits could not be booked.
+  it("refuses to begin serving a pincode in a city with no one trained to fit, or no stockroom, and changes nothing", async () => {
+    await env.DB.prepare("UPDATE technicians SET fits_trained = 0 WHERE city = 'Gurgaon'").run();
+    const unfitted = await post("/api/service-area", {
+      changes: [{ pincode: "122018", served: true, launch_on: null }],
+    });
+    expect(unfitted.status).toBe(409);
+    expect(await unfitted.json()).toMatchObject({ error: { code: "not_ready", fields: ["122018"] } });
+
+    await env.DB.batch([
+      env.DB.prepare("UPDATE technicians SET fits_trained = 1 WHERE city = 'Gurgaon'"),
+      env.DB.prepare("UPDATE stock_places SET active = 0 WHERE kind = 'stockroom' AND city = 'Gurgaon'"),
+    ]);
+    const unstocked = await post("/api/service-area", {
+      changes: [{ pincode: "122018", served: true, launch_on: null }],
+    });
+    expect(await unstocked.json()).toMatchObject({ error: { code: "not_ready", fields: ["122018"] } });
+    expect((await auditFor("pincode.set")).results).toHaveLength(0);
+  });
+
+  it("serves it all the same where an Admin gives a reason, and keeps the reason", async () => {
+    await env.DB.prepare("UPDATE technicians SET fits_trained = 0 WHERE city = 'Gurgaon'").run();
+    const answer = await post("/api/service-area", {
+      changes: [{ pincode: "122018", served: true, launch_on: null }],
+      not_ready_reason: "Fitter trained in Delhi, travelling in for the first fits",
+    });
+    expect(answer.status).toBe(200);
+    const audit = (await auditFor("pincode.set")).results[0] as { detail: string } | undefined;
+    expect(JSON.parse(audit?.detail ?? "{}")).toMatchObject({
+      not_ready_reason: "Fitter trained in Delhi, travelling in for the first fits",
+    });
+  });
+
   it("lets a pincode not served yet hold a day still to come, and renames one served whatever its date", async () => {
     const planned = await post("/api/service-area", {
       changes: [{ pincode: "122018", served: false, launch_on: "2026-10-01" }],

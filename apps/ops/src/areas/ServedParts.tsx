@@ -14,11 +14,12 @@ import { useState } from "react";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
-import type { ServedPincode } from "../api.ts";
+import type { AreaChange, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import form from "@maneman/ui/forms.module.css";
 import styles from "./served-parts.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
+import { NotReady } from "./NotReady.tsx";
 import { rowOf, type FileChange, type Row, type Upload } from "./served-draft.ts";
 import type { CsvRow } from "./csv.ts";
 import { AREA_NAME } from "./rules.ts";
@@ -383,10 +384,21 @@ export function CityTabs({
 }
 
 /** How the last save went. */
-export function SaveNotes({ saving }: { saving: Saving }) {
+export function SaveNotes({
+  saving,
+  onLaunch,
+}: {
+  saving: Saving;
+  onLaunch: (changes: readonly AreaChange[], reason: string) => void;
+}) {
   if (saving.step === "saved") return <Toast>{copy.saved(saving.changed, saving.alerted)}</Toast>;
   if (saving.step === "failed") {
-    return <Refusal className={form.error} said={errorText(copy.errors, { code: saving.code })} />;
+    return (
+      <>
+        <Refusal className={form.error} said={errorText(copy.errors, { code: saving.code })} />
+        <NotReady saving={saving} onLaunch={onLaunch} />
+      </>
+    );
   }
   return null;
 }

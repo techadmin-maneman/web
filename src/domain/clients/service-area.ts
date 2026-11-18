@@ -21,6 +21,7 @@
 import { indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { isLaunchInFuture } from "../../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
+import { launchReadiness } from "./launch-readiness.ts";
 import { auditStatement, type AuditActor, type AuditEntry } from "../platform/audit.ts";
 import { isActiveCity } from "../cities/cities.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
@@ -142,6 +143,7 @@ type AreaRefusal =
   | { readonly kind: "unknown"; readonly pincodes: readonly string[] }
   | { readonly kind: "launch_in_future"; readonly pincodes: readonly string[] }
   | { readonly kind: "no_technician"; readonly pincodes: readonly string[] }
+  | { readonly kind: "not_ready"; readonly pincodes: readonly string[] }
   | { readonly kind: "empty_area" };
 
 /**
@@ -183,7 +185,12 @@ function servesLater(was: AreaPincode, change: AreaChange, today: string): boole
 /** Why a change of the service area is refused before anything is written; null where it may go ahead. */
 async function refusalOf(
   db: D1Database,
-  input: { changes: readonly AreaChange[]; held: ReadonlyMap<string, AreaPincode>; today: string },
+  input: {
+    changes: readonly AreaChange[];
+    held: ReadonlyMap<string, AreaPincode>;
+    today: string;
+    notReadyReason: string | null;
+  },
 ): Promise<AreaRefusal | null> {
   const { changes, held, today } = input;
   const unknown = changes.filter((change) => !held.has(change.pincode)).map((change) => change.pincode);
@@ -200,7 +207,30 @@ async function refusalOf(
     db,
     launching.map((change) => change.pincode),
   );
-  return unstaffed.length > 0 ? { kind: "no_technician", pincodes: unstaffed } : null;
+  if (unstaffed.length > 0) return { kind: "no_technician", pincodes: unstaffed };
+  if (input.notReadyReason !== null) return null;
+  const notReady = await pincodesNotReady(
+    db,
+    launching.map((change) => held.get(change.pincode)),
+  );
+  return notReady.length > 0 ? { kind: "not_ready", pincodes: notReady } : null;
+}
+
+/**
+ * The pincodes among these in a city not ready to launch: nobody there trained to fit, or no stockroom. Served there,
+ * a pincode would be consulted in with nobody to fit (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
+ * A missing GST registration is the console's to warn of, not a reason to wait.
+ */
+async function pincodesNotReady(db: D1Database, launching: readonly (AreaPincode | undefined)[]): Promise<string[]> {
+  const cities = [...new Set(launching.flatMap((pincode) => (pincode?.city ? [pincode.city] : [])))];
+  const unready = new Set<string>();
+  for (const city of cities) {
+    const checks = await launchReadiness(db, city, []);
+    if (checks.some((check) => (check.check === "fitters" || check.check === "stockroom") && !check.ready)) {
+      unready.add(city);
+    }
+  }
+  return launching.flatMap((pincode) => (pincode?.city && unready.has(pincode.city) ? [pincode.pincode] : []));
 }
 
 /**
@@ -225,16 +255,22 @@ export async function setServiceArea(
     readonly actor: AuditActor;
     readonly requestId: string;
     readonly now: Date;
+    /** Why an Admin serves a city not ready to launch; null holds the launch until it is. */
+    readonly notReadyReason?: string | null;
   },
 ): Promise<AreaResult | AreaRefusal> {
   const { changes, actor, requestId, now } = input;
+  const notReadyReason = input.notReadyReason ?? null;
   const today = indiaDate(now);
   const held = new Map((await serviceArea(db)).map((pincode) => [pincode.pincode, pincode]));
 
-  const refused = await refusalOf(db, { changes, held, today });
+  const refused = await refusalOf(db, { changes, held, today, notReadyReason });
   if (refused !== null) return refused;
 
   const after = new Map(held);
+  const pincodeSet = (was: AreaPincode, change: AreaChange, launchOn: string | null) =>
+    setAudit({ db, entry: entry("pincode.set", change.pincode), was, change, launchOn, now, notReadyReason });
+
   for (const change of changes) {
     const was = held.get(change.pincode);
     if (was !== undefined) after.set(change.pincode, { ...was, served: change.served, launch_on: change.launch_on });
@@ -267,13 +303,11 @@ export async function setServiceArea(
         pacedAfter: alerts.length,
       });
       alerts.push(...launch.alerts);
-      statements.push(
-        setAudit({ db, entry: entry("pincode.set", change.pincode), was, change, launchOn: launch.launchOn, now }),
-      );
+      statements.push(pincodeSet(was, change, launch.launchOn));
       statements.push(...launch.statements, cityServedWith(db, change.pincode));
     } else if (servingChanged(was, change)) {
       statements.push(
-        setAudit({ db, entry: entry("pincode.set", change.pincode), was, change, launchOn: change.launch_on, now }),
+        pincodeSet(was, change, change.launch_on),
         db.prepare("UPDATE serviceable_pincodes SET served = ?2, launched_at = ?3 WHERE pincode = ?1").bind(
           change.pincode,
           change.served ? 1 : 0,
@@ -309,6 +343,7 @@ function setAudit({
   change,
   launchOn,
   now,
+  notReadyReason = null,
 }: {
   db: D1Database;
   entry: AuditEntry;
@@ -316,12 +351,15 @@ function setAudit({
   change: AreaChange;
   launchOn: string | null;
   now: Date;
+  /** An Admin's reason for serving a city not ready to launch, kept with the pincode it served. */
+  notReadyReason?: string | null;
 }): D1PreparedStatement {
   const detail = {
     served_from: was.served,
     served_to: change.served,
     launch_from: was.launch_on ?? "",
     launch_to: launchOn ?? "",
+    ...(notReadyReason !== null && change.served && !was.served ? { not_ready_reason: notReadyReason } : {}),
   };
   return auditStatement(db, { ...entry, detail }, now);
 }

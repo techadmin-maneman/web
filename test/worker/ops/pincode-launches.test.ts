@@ -152,6 +152,7 @@ describe("the cron on the day", () => {
 
 describe("a city's readiness", () => {
   it("counts what the city has, and what it lacks", async () => {
+    await env.DB.prepare("UPDATE stock_places SET active = 0 WHERE kind = 'stockroom' AND city = 'Mumbai'").run();
     const answer = await get("/api/pincode-launches/readiness?city=Mumbai&pincode=400050");
     const { checks } = await answer.json<{ checks: { check: string; ready: boolean }[] }>();
     expect(Object.fromEntries(checks.map(({ check, ready }) => [check, ready]))).toMatchObject({

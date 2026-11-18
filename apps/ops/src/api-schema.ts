@@ -17259,7 +17259,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description no_technician: fields names a pincode it would begin serving in a city no active technician works in */
+                /** @description no_technician: fields names a pincode it would begin serving in a city no active technician works in. not_ready: in a city with no one trained to fit or no stockroom, unless an Admin gives a reason */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -17268,7 +17268,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "no_technician";
+                                code: "not_ready" | "no_technician";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -30368,6 +30368,8 @@ export interface components {
                 /** @description A better name for the area than its post office's. Left out, the name stays. */
                 area?: string;
             }[];
+            /** @description Why a pincode is served in a city not ready to launch (no one trained to fit, or no stockroom). A national Admin's to give. */
+            not_ready_reason?: string;
         };
         NewPincode: {
             pincode: string;

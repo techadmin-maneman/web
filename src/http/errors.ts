@@ -128,6 +128,8 @@ export const ERROR_CODES = [
   "launch_in_future",
   // Serving a pincode in a city no active technician works in, where nothing could be booked.
   "no_technician",
+  // Serving a pincode in a city where nobody is trained to fit, or there is no stockroom.
+  "not_ready",
   "pincode_held",
   // A launch scheduled for pincodes we serve already, or that another scheduled launch holds
   // (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
@@ -326,6 +328,7 @@ export const ERROR_STATUS = {
   no_service_area: 400,
   launch_in_future: 400,
   no_technician: 409,
+  not_ready: 409,
   pincode_held: 409,
   already_served: 409,
   already_scheduled: 409,

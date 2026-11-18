@@ -65,10 +65,17 @@ export const areas = {
       not_found: "Unknown pincode. Add it first.",
       launch_in_future: "The launch date must be today or earlier.",
       no_technician: "No technician works in this city yet. Add one in Technicians first.",
+      not_ready:
+        "Not ready: nobody here is trained to fit, or there’s no stockroom. Put that right first, or an Admin can launch with a reason.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
+  },
+  /** A launch refused for a city not ready, which an Admin may make all the same, with why. */
+  notReady: {
+    label: "Why launch now",
+    launch: "Launch anyway",
   },
   /** Opening a city from India Post's pincodes: a state, its districts, then the pincodes to add, unserved. */
   directory: {
@@ -325,6 +332,8 @@ export const areas = {
       no_service_area: "At least one pincode must stay served.",
       launch_in_future: "Launch dates must be today or earlier.",
       no_technician: "No technician works in that city yet. Add one in Technicians first.",
+      not_ready:
+        "Not ready: nobody here is trained to fit, or there’s no stockroom. Put that right first, or an Admin can launch with a reason.",
       /** A pincode we do not hold: one is added below, never by the file. */
       invalid_request: "Unknown pincode. Add it first.",
       offline: OFFLINE,

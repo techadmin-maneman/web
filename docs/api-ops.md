@@ -23442,7 +23442,7 @@ Request body:
 }
 ```
 
-**409**: no_technician: fields names a pincode it would begin serving in a city no active technician works in
+**409**: no_technician: fields names a pincode it would begin serving in a city no active technician works in. not_ready: in a city with no one trained to fit or no stockroom, unless an Admin gives a reason
 
 ```json
 {
@@ -23459,6 +23459,7 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
+                "not_ready",
                 "no_technician"
               ]
             }
@@ -54111,6 +54112,12 @@ Request body:
       },
       "minItems": 1,
       "maxItems": 500
+    },
+    "not_ready_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "Why a pincode is served in a city not ready to launch (no one trained to fit, or no stockroom). A national Admin's to give."
     }
   },
   "required": [
