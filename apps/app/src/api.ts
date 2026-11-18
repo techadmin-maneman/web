@@ -213,6 +213,8 @@ export const api = {
   /** The alerts under the bell, the last 30 days', newest first; opening them marks them read. */
   alerts: () => client.get("/api/me/alerts"),
   readAlerts: () => client.post("/api/me/alerts/read"),
+  /** A look WhatsApp refused, shown once: the app opened Photos for it. */
+  lookShown: (id: string) => client.post("/api/photos/try-on/{id}/shown", { path: { id } }),
   /** This phone's push subscription, which the API pushes to when an alert is written. */
   pushSubscribe: (endpoint: string) => client.post("/api/me/push-subscriptions", { body: { endpoint } }),
   /** The client's issue log: their reports, grievances and missed-visit disputes, newest first. */

@@ -177,7 +177,7 @@ async function composeVisitText(
   if (kind === "consultation_confirmation") {
     return { template: visit.one_visit === null ? "consultation_booked_v1" : "one_visit_booked_v1", params };
   }
-  if (kind === "nothing_to_pay") return { template: "visit_fitted_code_v2", params };
+  if (kind === "nothing_to_pay") return { template: "visit_fitted_code_v3", params };
   if (kind === "visit_reminder") return { template: "visit_reminder_v1", params };
   const arrivedAt = { id: appointmentId, technicianId: visit.technician_id, start };
   if (kind === "arrival_notice") return arrivalMessage(db, arrivedAt, params);

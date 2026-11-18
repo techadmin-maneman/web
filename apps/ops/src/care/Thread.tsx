@@ -51,6 +51,8 @@ function Item({ item, them }: { item: ThreadItem; them: string }) {
   if (item.kind === "auto") {
     const seen = [
       item.state === "queued" ? thread.queued : null,
+      // Taken by the provider, then refused by WhatsApp (docs/decisions/0276-a-message-whatsapp-refuses.md).
+      item.state === "failed" ? thread.notDelivered : null,
       item.delivered_at === null ? null : thread.delivered,
       item.read_at === null ? null : thread.read,
     ].filter((each) => each !== null);

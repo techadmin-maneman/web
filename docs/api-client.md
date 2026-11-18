@@ -2238,6 +2238,120 @@ Accept the move to another day ops asked of the client: the visit moves there
 }
 ```
 
+### POST /api/photos/try-on/{id}/shown
+
+A try-on look WhatsApp refused, shown once: the app opened Photos for it after sign-in
+
+**204**: Shown
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: not this client's try-on, or shown already
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/photos
 
 The client's photographs, by visit, newest first, and their try-ons
@@ -8348,6 +8462,14 @@ Request body:
       "type": "integer",
       "description": "How many issues in the client's log are not yet resolved: Visits' count."
     },
+    "look_to_show": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid",
+      "description": "A try-on look WhatsApp refused, still held and not yet shown: the app opens Photos once and says so (POST /api/photos/try-on/{id}/shown); null for none (docs/decisions/0276-a-message-whatsapp-refuses.md)."
+    },
     "credits": {
       "anyOf": [
         {
@@ -8775,6 +8897,7 @@ Request body:
     "payment_owed",
     "alerts_unread",
     "issues_open",
+    "look_to_show",
     "credits",
     "prompt",
     "invoice",

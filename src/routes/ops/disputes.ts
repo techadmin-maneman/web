@@ -52,7 +52,7 @@ const DisputeSchema = z
     radius_m: z.number().int().openapi({ description: "The check-in radius in force when they checked in." }),
     message_state: z.enum(MESSAGE_STATES).openapi({
       description:
-        "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.",
+        "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed to send; not_delivered: sent, then refused by WhatsApp; sent: no receipt came back; delivered.",
     }),
     message_delivered_at: z.union([z.iso.datetime(), z.null()]),
     closed_at: z.union([z.iso.datetime(), z.null()]),

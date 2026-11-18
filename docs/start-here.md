@@ -211,7 +211,7 @@ this map, or when the map names something that no longer exists.
 
 ### The try-on
 
-- **Database work** (`src/domain/try-on/`): `tryon-uploads` (a photograph's one write, claimed), `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`,
+- **Database work** (`src/domain/try-on/`): `tryon-uploads` (a photograph's one write, claimed), `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`, `refused-looks` (a look WhatsApp refused, shown once in the app),
   `photo`
 - **Rules** (`src/policy/`): `tryon-delivery`, `kept-try-ons`
 - **Data** (`src/config/`): `tryon`

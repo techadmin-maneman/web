@@ -3825,7 +3825,7 @@ Triggers: `terms_acceptances_no_delete`, `terms_acceptances_no_update`.
 
 One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 
-Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0074_number_codes.sql`, `0171_tryon_on_youcam.sql`.
+Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0074_number_codes.sql`, `0171_tryon_on_youcam.sql`, `0221_refused_messages.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3870,6 +3870,7 @@ Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons
 | `failure_reason` | TEXT | yes |  |  |  |
 | `render_key` | TEXT | yes |  |  | A sha256 over the photograph's own bytes, the look and the references' version. |
 | `renders` | INTEGER | no | `0` |  | The renders YouCam took for the job: one more is made when its model fails or runs out of time. |
+| `look_shown_at` | TEXT | yes |  |  |  |
 
 Indexes:
 

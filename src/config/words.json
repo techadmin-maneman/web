@@ -5480,11 +5480,11 @@
     "reviewed": true
   },
   {
-    "key": "message:visit_fitted_code_v2",
+    "key": "message:visit_fitted_code_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "visit_fitted_code_v2",
-    "text": "Hi {{1}}, your visit today is done.\nYour discount code covers your hair system: nothing to pay.",
+    "where": "visit_fitted_code_v3",
+    "text": "Hi {{1}}, your visit is done.\nYour discount code covers your hair system: nothing to pay.",
     "reviewed": false
   },
   {
@@ -5896,11 +5896,11 @@
     "reviewed": false
   },
   {
-    "key": "message:fit_aftercare_v3",
+    "key": "message:fit_aftercare_v4",
     "surface": "message",
     "group": "Messages",
-    "where": "fit_aftercare_v3",
-    "text": "Hi {{1}}, your visit today is done.\nYour aftercare guide: {{2}}\nAny question, reply here.",
+    "where": "fit_aftercare_v4",
+    "text": "Hi {{1}}, your visit is done.\nYour aftercare guide: {{2}}\nAny question, reply here.",
     "reviewed": false
   },
   {
@@ -5912,11 +5912,11 @@
     "reviewed": true
   },
   {
-    "key": "message:second_check_in_v2",
+    "key": "message:second_check_in_v3",
     "surface": "message",
     "group": "Messages",
-    "where": "second_check_in_v2",
-    "text": "Hi {{1}}, a few weeks on: how is everything?\nIf anything needs a look, reply here.",
+    "where": "second_check_in_v3",
+    "text": "Hi {{1}}, how is everything a few weeks on?\nIf anything feels off, reply here and we'll put it right.",
     "reviewed": false
   },
   {

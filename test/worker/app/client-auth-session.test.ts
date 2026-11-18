@@ -85,6 +85,8 @@ describe("the session", () => {
       payment_owed: null,
       alerts_unread: 0,
       issues_open: 0,
+      // No try-on look of theirs was refused on WhatsApp (docs/decisions/0276-a-message-whatsapp-refuses.md).
+      look_to_show: null,
       remake: null,
       credits: null,
       // A consultation is booked and no address given: the design's prompt asks for one.

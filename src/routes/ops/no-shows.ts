@@ -74,7 +74,7 @@ const NoShowCaseSchema = z
     }),
     message_state: z.enum(MESSAGE_STATES).openapi({
       description:
-        "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.",
+        "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed to send; not_delivered: sent, then refused by WhatsApp; sent: no receipt came back; delivered.",
     }),
     message_delivered_at: z
       .union([z.iso.datetime(), z.null()])

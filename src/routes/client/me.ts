@@ -15,6 +15,7 @@
 // the next service once a visit is (docs/decisions/0086-the-next-visit-is-offered.md),
 // each as one of the services ops offer.
 
+import { lookToShow } from "../../domain/try-on/refused-looks.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { WindowLabel } from "../../config/booking.ts";
@@ -92,6 +93,16 @@ async function beingBookedBody(db: D1Database, underWay: BookingUnderWay | null)
   if (underWay === null) return null;
   const { holdId, one_visit: oneVisit, ...booking } = underWay;
   return { ...booking, one_visit: oneVisit ? await heldOneVisitPrice(db, holdId, booking.date) : null };
+}
+
+/** What Home calls the client's attention to: the bell's count, Visits' open issues, and a refused look to show. */
+async function homeAlerts(db: D1Database, personId: string, now: Date) {
+  const [unread, issuesOpen, look] = await Promise.all([
+    unreadClientAlerts(db, personId, now),
+    openIssueCount(db, personId),
+    lookToShow(db, personId, now),
+  ]);
+  return { alerts_unread: unread, issues_open: issuesOpen, look_to_show: look };
 }
 
 const meRoute = clientRoute({
@@ -200,8 +211,7 @@ export function registerClientMe(app: App): void {
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
     const missed = missedVisit(db, personId);
     const refers = canRefer(db, personId);
-    const unread = unreadClientAlerts(db, personId, now);
-    const issuesOpen = openIssueCount(db, personId);
+    const alerts = homeAlerts(db, personId, now);
     const inputsRead = opsInputs(c);
     const [person, upcoming, underWay, credits, fitted, form, types, sold, home, invite, owed, recap, onPackage, worn] =
       await Promise.all([
@@ -252,8 +262,7 @@ export function registerClientMe(app: App): void {
         being_booked: await beingBookedBody(db, underWay),
         missed_visit: await missed,
         payment_owed: owed[0] ?? null,
-        alerts_unread: await unread,
-        issues_open: await issuesOpen,
+        ...(await alerts),
         remake,
         credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,

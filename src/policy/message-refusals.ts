@@ -21,7 +21,9 @@ export const wasRefused = (lastError: string | null): boolean =>
 
 /**
  * The messages whose refusal Care do not chase: what offers rather than informs (the referral thanks, the launch,
- * the next visit's reminder, the waitlist's word), which stay marketing, and the answer to a STOP.
+ * the next visit's reminder, the waitlist's word), which stay marketing; the answer to a STOP; a move's word, which
+ * Operations already chase as a move the client has not heard of or not answered; and a word for the moment, the
+ * technician arriving or on the way, which is no use by the time Care could act.
  */
 export const REFUSALS_NOT_CHASED = [
   "launch_alert",
@@ -30,4 +32,8 @@ export const REFUSALS_NOT_CHASED = [
   "friend_credited",
   "waitlist_confirmation",
   "messages_stopped",
+  "visit_moved",
+  "move_proposed",
+  "arrival_notice",
+  "technician_update",
 ] as const satisfies readonly MessageKind[];

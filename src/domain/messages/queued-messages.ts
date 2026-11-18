@@ -36,6 +36,8 @@ export function expiredMessagesStatement(db: D1Database, before: string, limit: 
          SELECT m.id FROM outbound_messages m INDEXED BY outbound_messages_by_created WHERE m.created_at < ?1
            AND NOT EXISTS (SELECT 1 FROM no_show_cases n WHERE n.message_id = m.id)
            AND NOT EXISTS (SELECT 1 FROM dispatch_moves d WHERE d.message_id = m.id)
+           AND NOT EXISTS (SELECT 1 FROM task_closures c
+                            WHERE c.task_group = 'message_undelivered' AND c.subject_id = m.id)
          ORDER BY m.created_at LIMIT ?2)`,
     )
     .bind(before, limit);

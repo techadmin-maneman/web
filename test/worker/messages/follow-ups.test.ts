@@ -87,7 +87,7 @@ describe("what follows a visit", () => {
       params: ["Rohit"],
     });
     expect(await compose("fit_aftercare", fitted)).toEqual({
-      template: "fit_aftercare_v3",
+      template: "fit_aftercare_v4",
       params: ["Rohit", `${ORIGIN}/guides/looking-after-a-hair-system`],
     });
   });

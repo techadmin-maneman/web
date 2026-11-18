@@ -19,7 +19,12 @@ import {
   NOW,
   request,
 } from "../helpers.ts";
-import { insertPerson } from "../tryon-fixtures.ts";
+import { insertJob, insertPerson } from "../tryon-fixtures.ts";
+import { asClient } from "../clients.ts";
+import { erasePerson } from "../../../src/domain/privacy/erasure.ts";
+import { expiredMessagesStatement } from "../../../src/domain/messages/queued-messages.ts";
+import { createLogger } from "../../../src/log.ts";
+import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 
 const TOKEN = "an-msg91-webhook-token-of-thirty-two-chars";
 const MSG91: NonNullable<Settings["messaging"]["msg91"]> = {
@@ -31,6 +36,7 @@ const CAP = "131049: This message was not delivered to maintain healthy ecosyste
 const M1 = "66666666-6666-4666-8666-000000000001";
 const M2 = "66666666-6666-4666-8666-000000000002";
 const LOOK = "66666666-6666-4666-8666-000000000003";
+const JOB = "66666666-6666-4666-8666-000000000004";
 
 beforeEach(async () => {
   captureLogs();
@@ -165,5 +171,60 @@ describe("a message WhatsApp refused", () => {
     ]);
     const inbox = await clientInboxOf(env.DB, "p1", new Date("2026-09-22T05:00:00Z"));
     expect(inbox.map((alert) => alert.kind)).toEqual(["tryon_result"]);
+  });
+
+  // A look WhatsApp refused is shown once in the client app after sign-in.
+  it("opens a refused look once in the app: Home names it until the app says it was shown", async () => {
+    await insertJob({
+      id: JOB,
+      person_id: "p1",
+      state: "ready",
+      result_key: `results/${JOB}.jpg`,
+      expires_at: new Date(NOW.getTime() + 86_400_000).toISOString(),
+      number_proved_at: NOW.toISOString(),
+    });
+    await env.DB.prepare(
+      `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state,
+         provider_message_id, sent_at)
+       VALUES (?1, ?2, 'p1', 'tryon_result', 'tryon_job', ?3, 'sent', 'req-look', ?2)`,
+    )
+      .bind(LOOK, NOW.toISOString(), JOB)
+      .run();
+    const cookie = `mm_app=${await openSession(env.DB, { kind: "client", subjectId: "p1", deviceLabel: null, now: NOW })}`;
+    const home = async () =>
+      (await (await asClient(cookie, "/api/me")).json<{ look_to_show: string | null }>()).look_to_show;
+
+    // Sent and not refused: nothing to show beyond the alert.
+    expect(await home()).toBeNull();
+    await post(report("req-look", "failed", CAP));
+    expect(await home()).toBe(JOB);
+
+    expect((await asClient(cookie, `/api/photos/try-on/${JOB}/shown`, { method: "POST" })).status).toBe(204);
+    expect(await home()).toBeNull();
+    expect((await asClient(cookie, `/api/photos/try-on/${JOB}/shown`, { method: "POST" })).status).toBe(404);
+  });
+
+  // Care's words about the client go with the rest when they are erased: the message the closed task names is kept
+  // past the two years sent messages are, so erasure can still find them.
+  it("keeps a closed task's message past retention, and erasure blanks Care's words on it", async () => {
+    await sent(M2, "fit_aftercare", "req-2", "a2");
+    await post(report("req-2", "failed", CAP));
+    const closed = await request(
+      appFor("local", fakeDependencies(), {}, "ops"),
+      `/api/tasks/message_undelivered/${M2}/close`,
+      {
+        method: "POST",
+        headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Called Arjun; told them the guide is in the app" }),
+      },
+    );
+    expect(closed.status).toBe(204);
+
+    await expiredMessagesStatement(env.DB, "2099-01-01T00:00:00.000Z", 100).run();
+    expect(await row(M2)).not.toBeNull();
+
+    expect(await erasePerson({ env, personId: "p1", now: NOW, log: createLogger() })).not.toBeNull();
+    const closing = await env.DB.prepare("SELECT reason FROM task_closures WHERE subject_id = ?1").bind(M2).first();
+    expect(closing).toEqual({ reason: null });
   });
 });

@@ -49352,7 +49352,7 @@ Request body:
         "no_consent",
         "none"
       ],
-      "description": "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+      "description": "Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed to send; not_delivered: sent, then refused by WhatsApp; sent: no receipt came back; delivered."
     },
     "message_delivered_at": {
       "anyOf": [
@@ -50500,7 +50500,7 @@ Request body:
         "no_consent",
         "none"
       ],
-      "description": "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered."
+      "description": "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed to send; not_delivered: sent, then refused by WhatsApp; sent: no receipt came back; delivered."
     },
     "message_delivered_at": {
       "anyOf": [
