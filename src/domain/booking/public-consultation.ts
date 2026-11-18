@@ -9,8 +9,8 @@ import { type Plan, planStartsIn } from "../../policy/one-visit.ts";
 import { bookingNeedsProof } from "../../policy/number-proof.ts";
 import type { ConsentSource } from "../../policy/consents.ts";
 import { addDays, indiaDate, indiaTime } from "../../lib/india-time.ts";
-import { readOpsInputs } from "../platform/ops-settings.ts";
-import { siteDays } from "./open-windows.ts";
+import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
+import { requestStartsToday, siteDays } from "./open-windows.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { type NotBookedFromSite, notBookedFromSite, typedAddress } from "../../policy/site-booking.ts";
@@ -166,12 +166,19 @@ export interface Booked {
 /** A code that stands on a site booking: the code, and what it takes off the hair system's price when they pay. */
 export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 
-/** A request for today at a start before the lead time from now, or in a window that has ended by then. */
-async function tooSoon(db: D1Database, request: ConsultationRequest, earliestToday: string | null): Promise<boolean> {
-  if (earliestToday === null) return false;
-  if (request.startsAt !== null) return indiaTime(request.startsAt) < earliestToday;
+/**
+ * A request for today the form would not offer: at a start not on its grid in the window from the lead time on, or,
+ * with no start chosen, in a window with none left (requestStartsToday).
+ */
+async function tooSoon(
+  db: D1Database,
+  request: ConsultationRequest,
+  today: { readonly inputs: OpsInputs; readonly earliest: string | null },
+): Promise<boolean> {
+  if (today.earliest === null) return false;
   const hours = windowTimesOf((await loadSlotSchedule(db)).on(request.date));
-  return hours[request.window].end <= earliestToday;
+  const starts = requestStartsToday(request.window, hours, today.inputs, today.earliest);
+  return request.startsAt === null ? starts.length === 0 : !starts.includes(indiaTime(request.startsAt));
 }
 
 /**
@@ -195,7 +202,7 @@ async function checkRequest(
   const outside =
     request.date < first ||
     request.date > addDays(first, days - 1) ||
-    (request.date === today && (await tooSoon(db, request, earliestToday)));
+    (request.date === today && (await tooSoon(db, request, { inputs, earliest: earliestToday })));
   if (pincode === null || !takesNewClientsOn(pincode, today) || outside) {
     return { ok: false, code: "not_bookable" };
   }

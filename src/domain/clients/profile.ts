@@ -73,7 +73,7 @@ interface AddressRow {
   place_id: string | null;
   given_to_staff: string | null;
   created_at: string;
-  /** 1 where the address has a coordinate. */
+  /** 1 where the address has a coordinate to the building: not a rough one. */
   pinned: number;
 }
 

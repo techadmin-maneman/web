@@ -111,6 +111,35 @@ describe("GET /api/availability/public", () => {
     expect(await early.json()).toMatchObject({ error: { code: "not_bookable" } });
   });
 
+  it("asks ops for today only at a start the form offers, while self-serve booking is off", async () => {
+    const off = { selfServeBooking: false, selfServeConsultations: false };
+    const ask = (body: object) =>
+      request(
+        site(off),
+        "/api/consultation",
+        post({
+          ...VISITOR,
+          pincode: "122018",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+          date: "2026-09-21",
+          window: "evening",
+          ...body,
+        }),
+        { CRM_QUEUE: fakeQueue() },
+      );
+    // 19:30 is no start: an hour and its wrap-up end by 8 only from 18:30.
+    expect(await (await ask({ starts_at: "2026-09-21T14:00:00.000Z" })).json()).toMatchObject({
+      error: { code: "not_bookable" },
+    });
+    // A morning start sent with the evening window is not one either.
+    expect(await (await ask({ starts_at: "2026-09-21T04:30:00.000Z" })).json()).toMatchObject({
+      error: { code: "not_bookable" },
+    });
+    expect((await ask({ starts_at: "2026-09-21T13:00:00.000Z" })).status).toBe(201);
+  });
+
   it("offers nothing today while ops keep consultations to another day", async () => {
     await env.DB.prepare(
       "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('same_day_booking', ?1, 'ops', ?2)",

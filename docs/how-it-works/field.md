@@ -12,7 +12,7 @@ A technician signs in with a WhatsApp code on the one phone ops allowed (`src/do
 
 Each step the technician takes, arriving, starting, the checklist, the photographs, the piece, what was used, and the close, goes into the phone's outbox and lands on the server whenever there is signal (`src/domain/field/job-events.ts`). Each step writes our record of the visit in the same batch, and is safe to land twice, since a phone replays its outbox (`src/domain/field/job-record.ts`).
 
-- **Arriving** is checked against the client's pin, within `checkin_radius_m`; the client is told on WhatsApp, if the check-in reaches us within `arrival_notice_min` of it.
+- **Arriving** is checked against the client's pin, within `checkin_radius_m`, or `checkin_radius_approximate_m` where the pin is only a rough one Google placed from the words typed; the client is told on WhatsApp, if the check-in reaches us within `arrival_notice_min` of it.
 - **The checklist** is each kind of visit's own, as ops set it in Settings · Job sheet, in the technician's words and the client's (`checklist_items`, `src/domain/field/job-sheet-settings.ts`).
 - **Photographs**: a before set and an after set of the same five angles (`src/domain/field/visit-photos.ts`). No member of staff sees them unrecorded: opening them writes an audit entry first (`src/domain/field/photo-views.ts`).
 - **The piece** fitted comes out of the technician's kit as the step lands (`src/domain/inventory/piece-use.ts`); one taken off at a replacement is held in the kit as returned until handed in (`src/domain/inventory/piece-returns.ts`).

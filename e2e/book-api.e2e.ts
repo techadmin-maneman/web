@@ -11,7 +11,7 @@ import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
 
-/** Tomorrow in India, the first day the form offers. */
+/** Tomorrow in India, the day the form picks first. */
 function tomorrow(): string {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
   const [year = 0, month = 1, day = 1] = today.split("-").map(Number);
@@ -46,7 +46,7 @@ test("a served pincode books a real date and window, at the address given", asyn
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
-  // The day the strip opens on is tomorrow, and the API answers with the day it booked.
+  // The form picks tomorrow first, and the API answers with the day it booked.
   expect(await (await answered).json()).toMatchObject({ state: "booked", date: tomorrow() });
 });
 

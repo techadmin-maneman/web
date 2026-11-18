@@ -49,7 +49,8 @@ const ProfileSchema = z
     }),
     address_pinned: z.boolean().openapi({
       description:
-        "Whether the address has a place on the map, so a technician's check-in is measured against it; false with none.",
+        "Whether the address has a place on the map to the building, so the app need not ask for it; false with none, " +
+        "or with only a rough pin Google placed from the words typed, which a check-in is measured against all the same.",
     }),
     consents: z
       .array(

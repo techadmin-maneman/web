@@ -59,6 +59,9 @@ describe("checking in", () => {
     const nearby = { lat: AT_THE_DOOR.lat + 0.009, lng: AT_THE_DOOR.lng };
     const answer = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, nearby, "event-rough-01");
     expect(await answer.json()).toMatchObject({ passed: true, radius_m: 2000 });
+    // The card tells the technician the radius they are measured with.
+    const card = await (await get(`/api/tech/jobs/${TODAY_JOB}`)).json<{ checkin_radius_m: number }>();
+    expect(card.checkin_radius_m).toBe(2000);
   });
 
   // A building pin far from its door blocked the whole job, and ops had no lever but the radius for everyone.

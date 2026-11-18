@@ -151,9 +151,9 @@ export async function pinFor(
 
 /**
  * Saves the address as the client's current one, and sends it on to their Books
- * customer and the CRM. A chosen building is geocoded here, once, and its coordinate kept.
- * A typed address has no Place ID and saves no pin: the geofence then measures
- * nothing rather than measuring zero (ADR 0036's honest degradation).
+ * customer and the CRM. A chosen building is geocoded here, once, and its coordinate kept; a typed one by its words,
+ * its pin marked approximate where Google places it only roughly. One Google cannot place at all saves no pin: the
+ * geofence then measures nothing rather than measuring zero (ADR 0036's honest degradation).
  */
 export async function saveClientAddress(
   c: Context<AppEnv>,

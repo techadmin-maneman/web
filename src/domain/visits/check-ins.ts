@@ -5,10 +5,10 @@
 // real data" (docs/open-points.md, item 56). Only a check-in that passed starts
 // the job: the technician who is too far away moves closer and tries again.
 //
-// The address's coordinates come from the client's chosen building
-// (docs/decisions/0054-address-capture.md). An address without them cannot be
-// measured against, so the check-in is accepted with no distance: the row
-// names no address and holds no distance.
+// The address's coordinates come from the client's chosen building, or from Google placing the words typed, to the
+// building or only roughly, a rough pin measured with a wider radius (docs/decisions/0054-address-capture.md). An
+// address without them cannot be measured against, so the check-in is accepted with no distance: the row names no
+// address and holds no distance.
 //
 // Where the address's pin is wrong, a building's pin far from its door, ops may let the technician check in to that
 // one visit wherever they are (waiveCheckIn). The distance is still measured and kept, and a check-in that passed only
@@ -91,7 +91,7 @@ export async function measureArrival(
   if (address === null || point === null) {
     return { addressId: null, distanceM: null, radiusM: input.radiusM, passed: true, waivedBy: null };
   }
-  const radiusM = address.approximate ? Math.max(input.radiusM, input.approximateRadiusM) : input.radiusM;
+  const radiusM = radiusAt(address.approximate, input);
   const measured = checkIn(input.device, point, radiusM);
   const waivedBy = measured.passed ? null : await waiverOf(db, input.appointmentId);
   return {
@@ -102,6 +102,22 @@ export async function measureArrival(
     waivedBy,
   };
 }
+
+/** Whether the visit's address has a pin Google placed only roughly, which a check-in is measured with more room for. */
+export async function roughPinAt(db: D1Database, appointmentId: string): Promise<boolean> {
+  const rough = await db
+    .prepare(
+      `SELECT 1 FROM appointments v JOIN addresses a ON a.person_id = v.person_id AND a.replaced_at IS NULL
+       WHERE v.id = ?1 AND a.pin_approximate = 1 AND a.lat IS NOT NULL`,
+    )
+    .bind(appointmentId)
+    .first();
+  return rough !== null;
+}
+
+/** The radius a check-in is measured with: the wider one at a rough pin. */
+export const radiusAt = (rough: boolean, radii: { readonly radiusM: number; readonly approximateRadiusM: number }) =>
+  rough ? Math.max(radii.radiusM, radii.approximateRadiusM) : radii.radiusM;
 
 /** Who waived the geofence for the visit; null while nobody has. */
 async function waiverOf(db: D1Database, appointmentId: string): Promise<string | null> {

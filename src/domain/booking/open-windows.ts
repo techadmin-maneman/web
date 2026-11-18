@@ -96,7 +96,33 @@ async function freeWindows(
   return { windows: free, starts };
 }
 
-const minutesOf = (booking: DayBooking): number => (booking.by === "slot" ? booking.minutes : 60);
+/** The length a request's grid is laid out for, which ops fix the hour of. */
+const REQUEST_MINUTES = 60;
+
+const minutesOf = (booking: DayBooking): number => (booking.by === "slot" ? booking.minutes : REQUEST_MINUTES);
+
+/**
+ * Today's starts in a window the form may ask ops for: on the day's grid, as startsOfDay lays a request's out, from
+ * the lead time on. A request for today is taken only at one of them, or, with no start chosen, where one is.
+ */
+export function requestStartsToday(
+  window: BookingWindow,
+  hours: Readonly<Record<BookingWindow, WindowTimes>>,
+  inputs: OpsInputs,
+  earliest: string,
+): string[] {
+  const grid = startGrid(
+    {
+      hours: inputs.workingHours,
+      step: inputs.bookingRules.step,
+      minutes: REQUEST_MINUTES + inputs.bookingRules.wrap_up,
+    },
+    [],
+  );
+  return grid
+    .map((start) => start.time)
+    .filter((time) => time >= earliest && time >= hours[window].start && time < hours[window].end);
+}
 
 /**
  * A day's grid of starts on the form: open where a slot is free at it, or, for a day the form asks ops to fix the hour
