@@ -56,6 +56,7 @@ const URGENT_KINDS = [
   "webhook_refused",
   "razorpay_event_failing",
   "checkout_failing",
+  "visit_not_begun",
 ];
 
 /** Readings of the WhatsApp bridge closed in a row before it counts as down: one can be it reconnecting by itself. */
@@ -113,6 +114,7 @@ const FINANCE_KINDS = [
 ];
 
 const OPERATIONS_KINDS = [
+  "visit_not_begun",
   "booked_unassigned",
   "city_uncovered",
   "fully_booked",

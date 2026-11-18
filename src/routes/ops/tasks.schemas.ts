@@ -49,6 +49,7 @@ export const TaskFactsSchema = z
     facts("no_show_decision", { technician: z.string().nullable() }),
     facts("draft_invoice", { invoice_id: z.string() }),
     facts("unassigned_visit", { kind, starts_at: instant }),
+    facts("visit_not_begun", { kind, starts_at: instant, technician: z.string() }),
     facts("visit_left_open", { status: z.string(), starts_at: instant }),
     facts("leave_conflict", { starts_at: instant, technician: z.string() }),
     facts("leave_request", {

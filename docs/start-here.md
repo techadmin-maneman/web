@@ -68,7 +68,7 @@ this map, or when the map names something that no longer exists.
 
 ### Dispatch
 
-- **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `reschedule-requests` (a technician's ask that ops move a visit), `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
+- **Database work** (`src/domain/dispatch/`): `dispatch`, `not-begun` (a visit not begun past its arrival window, on Tasks and in alerts), `move-proposals`, `reschedule-requests` (a technician's ask that ops move a visit), `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
   `technician-work`, `technician-days` (a technician's own week and home), `leave`, `leave-requests` (a technician's
   ask for leave, decided on Tasks), `blackouts`, `day-route`, `nearest`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`, `start-times`, `drive-estimate`, `reach` (how far a technician goes from home)
@@ -150,7 +150,7 @@ this map, or when the map names something that no longer exists.
 ### Money
 
 - **Database work** (`src/domain/money/`): `payments`, `payment-links`, `payment-links-paid`, `client-payments`,
-  `client-billing`, `refunds`, `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
+  `client-billing`, `refunds`, `checkout-alerts` (Checkout failing to load), `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
   `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `discount-code-figures`, `requested-codes`,
   `day-money`, `payment-ledger` (Finance's ledger of payments and unpaid links), `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `hair-system-prices` (what each hair system sells for), `city-prices`,
   `razorpay-catch-up`, `razorpay-events` (Razorpay's events, applied from their queue), `razorpay-settlements`
@@ -286,7 +286,7 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/ops/`): `needs-a-hand`, `alert-names`, `tasks`, `task-queues` (the board's queues), `task-facts` (what each task turns on),
   `task-reach` (whose cities each is in), `task-closures`, `task-owners`, `grievances`, `activity`, `staff`,
   `task-spans` (when each task opened and closed), `targets` (each month's plan, city by city)
-- **Rules** (`src/policy/`): `tasks`, `alerts`, `grievances`, `ops-settings`, `console-routes`, `access`,
+- **Rules** (`src/policy/`): `tasks`, `alerts`, `client-errors`, `grievances`, `ops-settings`, `console-routes`, `access`,
   `decision-reasons`
 - **Routes** (`src/routes/`): `ops/alerts`, `ops/tasks`, `ops/grievances`, `ops/settings`, `ops/staff`,
   `ops/whoami`, `ops/storage`, `ops/activity`, `ops/targets`
@@ -308,7 +308,7 @@ this map, or when the map names something that no longer exists.
 
 ### The platform
 
-- **Database work** (`src/domain/platform/`): `audit` (the audit log every write adds to), `alerts`, `road-drives` (Google's drives between pins, kept a day), `vendor-breakers` (a vendor held off while it keeps failing), `ops-settings`
+- **Database work** (`src/domain/platform/`): `audit` (the audit log every write adds to), `alerts`, `hook-alerts` (a webhook refused at our door), `road-drives` (Google's drives between pins, kept a day), `vendor-breakers` (a vendor held off while it keeps failing), `ops-settings`
   (the Rules every module reads), `cron-runs`, `backups`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
   `enqueue`
 - **Rules** (`src/policy/`): `database-size`, `storage-share`, `launch`, `staging-test-records`

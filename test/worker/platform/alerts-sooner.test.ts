@@ -8,6 +8,10 @@ import type { Settings } from "../../../src/config/settings.ts";
 import { createLogger } from "../../../src/log.ts";
 import { handleRazorpayBatch } from "../../../src/queues/razorpay.ts";
 import { fakeBatch } from "../batches.ts";
+import { JOB, working } from "../job-fixtures.ts";
+import { alertVisitsNotBegun } from "../../../src/domain/dispatch/not-begun.ts";
+import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
+import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import {
   appFor,
   captureLogs,
@@ -21,6 +25,8 @@ import {
 } from "../helpers.ts";
 
 const WRONG = "not-the-webhook-secret-razorpay-gave-us";
+/** Where the job fixture's client lives: a check-in there passes. */
+const AT_THE_DOOR = { lat: 28.3988, lng: 77.07 };
 
 /** A delivery the webhook takes and queues: a payment's captured event, signed. */
 const captured = {
@@ -170,5 +176,41 @@ describe("Razorpay Checkout failing to load in the client app", () => {
 
     await deliverRazorpay(captured, { deps });
     expect(await open("checkout_failing")).toBeNull();
+  });
+});
+
+describe("a visit its technician has not begun past its arrival window", () => {
+  // The job fixture's visit starts at 1 pm in India (07:30 UTC); its arrival window is the half hour after.
+  const LATE = new Date("2026-09-21T08:15:00.000Z");
+  const TODAY_STARTS = "2026-09-20T18:30:00.000Z";
+  const notBegun = async (at: Date) =>
+    (await outstandingTasks(env.DB, at, TASK_SLA_HOURS)).tasks.filter((task) => task.group === "visit_not_begun");
+
+  it("is a task and an alert once the window is over with no check-in, and goes at the check-in", async () => {
+    const job = await working("service");
+    expect(await notBegun(new Date("2026-09-21T07:55:00.000Z"))).toEqual([]);
+    expect(await notBegun(LATE)).toEqual([
+      expect.objectContaining({
+        id: JOB,
+        since: "2026-09-21T08:00:00.000Z",
+        facts: {
+          group: "visit_not_begun",
+          kind: "service",
+          starts_at: "2026-09-21T07:30:00.000Z",
+          technician: "Imran Qureshi",
+        },
+      }),
+    ]);
+    expect(
+      await alertVisitsNotBegun(env.DB, job.deps.alertOnce, { now: LATE, todayStarts: TODAY_STARTS, arrival: 30 }),
+    ).toBe(1);
+    expect(job.deps.alerts).toEqual([expect.stringContaining(`Call the technician of visit ${JOB} now`) as string]);
+
+    await job.post(`/api/tech/jobs/${JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
+    expect(await notBegun(LATE)).toEqual([]);
+    expect(
+      await alertVisitsNotBegun(env.DB, job.deps.alertOnce, { now: LATE, todayStarts: TODAY_STARTS, arrival: 30 }),
+    ).toBe(0);
+    expect(await open(`visit_not_begun:${JOB}`)).toBeNull();
   });
 });

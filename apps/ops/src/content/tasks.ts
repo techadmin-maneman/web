@@ -30,6 +30,7 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   remedy_approval: "Decide in Messages",
   leave_conflict: "Move in Dispatch",
   unassigned_visit: "Assign in Dispatch",
+  visit_not_begun: "Open in Dispatch",
   visit_left_open: "Close in Dispatch",
   referral_review: "Decide in Referrals",
   no_show_decision: "Decide in Charges",
@@ -80,6 +81,7 @@ export const tasks = {
     move_unanswered: "Move not answered",
     // A group the board does not draw (docs/decisions/0249-schedule-kit-and-me.md).
     reschedule_request: "Technician asks to move",
+    visit_not_begun: "Technician not arrived",
     visit_left_open: "Visit left open",
     unassigned_visit: "No technician",
     // Not drawn: a client wearing a recalled piece (docs/decisions/0187-recalls.md).
@@ -229,6 +231,9 @@ export const tasks = {
     unassigned_visit: (visit: string, when: string) => `${visit} · ${when} · no technician`,
     /** "MM-ESS-0000041-R · recalled, replacement free": call them to book it. */
     recall_call: (pieces: string) => `${pieces} · recalled, replacement free`,
+    /** "Service visit 11:00 am · Imran", or the start alone where no technician is named. */
+    visit_not_begun: (visit: string, technician: string) =>
+      [visit, technician].filter((part) => part !== "").join(" · "),
     /** "Tue 22 Sep · nobody came", or "· not closed" for one begun: give the client a new time, or close it. */
     visit_left_open: (when: string, begun: boolean) => `${when} · ${begun ? "not closed" : "nobody came"}`,
     /** "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density · none in their city", or the profile that matches none yet. */

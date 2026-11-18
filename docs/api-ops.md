@@ -50620,6 +50620,7 @@ Request body:
               "untold_move",
               "move_unanswered",
               "reschedule_request",
+              "visit_not_begun",
               "visit_left_open",
               "unassigned_visit",
               "recall_call",
@@ -51239,6 +51240,40 @@ Request body:
         "group",
         "kind",
         "starts_at"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "visit_not_begun"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "technician": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "starts_at",
+        "technician"
       ],
       "additionalProperties": false
     },

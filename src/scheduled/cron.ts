@@ -10,6 +10,7 @@
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
 // invocation may send (docs/decisions/0112-workers-paid.md).
 
+import { alertVisitsNotBegun } from "../domain/dispatch/not-begun.ts";
 import { YOUCAM_UNIT_FLOOR } from "../config/tryon.ts";
 import { tellOfBooksCalls } from "../domain/books/books-calls.ts";
 import { OPS_ORIGIN } from "../config/environments.ts";
@@ -68,7 +69,7 @@ import {
   requeueTryons,
 } from "./sweeper.ts";
 import { missedAfterMs, type Slot, type Timing } from "./schedule.ts";
-import { indiaDate } from "../lib/india-time.ts";
+import { indiaDate, indiaInstant } from "../lib/india-time.ts";
 import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
 import { startOrFollow } from "../workflows/steps.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
@@ -412,6 +413,14 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
 }
 
 const youcamUnitsJob = (context: CronContext) => checkYoucamUnits(context, YOUCAM_UNIT_FLOOR);
+
+async function visitsNotBegunJob({ env, deps, inputs, log }: CronContext): Promise<void> {
+  const now = deps.now();
+  const { bookingRules } = await inputs();
+  const todayStarts = indiaInstant(indiaDate(now), "00:00").toISOString();
+  const open = await alertVisitsNotBegun(env.DB, deps.alertOnce, { now, todayStarts, arrival: bookingRules.arrival });
+  if (open > 0) log.info("visits_not_begun", { open });
+}
 const booksCallsJob = ({ env, deps }: CronContext) => tellOfBooksCalls(env.DB, deps, deps.now());
 
 /**
@@ -426,6 +435,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "payment_links", needs: "nothing", every: 5, at: 2, run: paymentLinksJob },
   // A hold paid for and neither booked nor refunded half an hour on (docs/decisions/0068-a-paid-hold-is-kept.md).
   { name: "unbooked_holds", needs: "nothing", every: 5, at: 3, run: unbookedHoldsJob },
+  // A visit its technician has not begun past its arrival window (docs/decisions/0277-alerts-that-come-sooner.md).
+  { name: "visits_not_begun", needs: "nothing", every: 5, at: 3, run: visitsNotBegunJob },
   { name: "requeue_messages", needs: "nothing", every: 5, at: 4, run: requeueMessages },
   { name: "alerts_retold", needs: "nothing", every: 5, at: 4, run: alertsRetoldJob },
   // A technician's time to leave and running over, the day ahead in the hour ops set, and a push for each (ADR 0250).

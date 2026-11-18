@@ -66,6 +66,9 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   no_show_decision: (facts) => (facts.technician === null ? copy.unknown : copy.no_show_decision(facts.technician)),
   draft_invoice: (_, task) => copy.draft_invoice(shortDate(indiaDate(task.since))),
   unassigned_visit: (facts) => copy.unassigned_visit(dispatch.typeNames[facts.kind], dayAndTime(facts.starts_at)),
+  // The visit and its start, and whose job.
+  visit_not_begun: (facts) =>
+    copy.visit_not_begun(`${dispatch.typeNames[facts.kind]} ${indiaClock(facts.starts_at)}`, facts.technician),
   visit_left_open: (facts) =>
     copy.visit_left_open(shortDate(indiaDate(facts.starts_at)), facts.status === "in_progress"),
   leave_conflict: (facts) => copy.leave_conflict(dayAndTime(facts.starts_at), facts.technician),

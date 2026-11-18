@@ -26,6 +26,9 @@ export const ALERT_WORDS = {
   // Bookings and visits.
   booked_unassigned: (a: { readonly day: string; readonly visit: string }) =>
     `Give the visit on ${fullDate(a.day)} a technician on the board: its own was switched off. Visit ${a.visit}.`,
+  visit_not_begun: (a: { readonly visit: string; readonly start: string; readonly arrival: number }) =>
+    `Call the technician of visit ${a.visit} now, and the client: it started at ${a.start} and nobody has checked in ` +
+    `${String(a.arrival)} minutes on, so the client is waiting.`,
   unassigned_visit: (a: { readonly visit: string }) =>
     `Send a technician to visit ${a.visit} from the Dispatch board: it is today, and has none.`,
   city_uncovered: (a: { readonly city: string; readonly pincodes: number }) =>

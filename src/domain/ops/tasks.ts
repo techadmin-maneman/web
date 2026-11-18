@@ -10,6 +10,7 @@
 // is, where ops made it someone's, is kept apart and read beside it
 // (src/domain/ops/task-owners.ts).
 
+import { BOOKING_RULES } from "../../policy/start-times.ts";
 import { z } from "zod";
 import { storedJson } from "../../lib/stored-json.ts";
 import { cadenceRange } from "../booking/packages.ts";
@@ -199,6 +200,8 @@ interface BoardScope {
   readonly hours?: CareHours;
   /** The days lapsed before a client counts as lost, and leaves At-risk client (src/policy/client-standing.ts). */
   readonly lostAfter?: number;
+  /** The arrival window's minutes after a visit's start, past which a visit not begun is a task. */
+  readonly arrival?: number;
   /** Where the caller's grants reach for each group; everywhere when left out, as the nightly look reads. */
   readonly reach?: (group: TaskGroup) => PlacesReached;
   /** One client's tasks alone. */
@@ -247,7 +250,11 @@ async function countsOf(
 function readAt(
   now: Date,
   days: NextVisitDays,
-  { lostAfter, every }: { lostAfter: number; every: { readonly least: number; readonly most: number } },
+  {
+    lostAfter,
+    every,
+    arrival,
+  }: { lostAfter: number; every: { readonly least: number; readonly most: number }; arrival: number },
 ): ReadAt {
   const today = indiaDate(now);
   // The first moment after each last day, as the instants the visits' starts are compared with.
@@ -264,6 +271,7 @@ function readAt(
     notLostFrom: after(lostIfDoneBy(today, standing)),
     toBookBefore: after(firstFitToBookIfConsultedBy(today, days)),
     linksClosedIfSentBy: closedIfSentBy(now).toISOString(),
+    arrival,
   };
 }
 
@@ -275,7 +283,8 @@ export async function outstandingTasks(
   scope: BoardScope = {},
 ): Promise<Outstanding> {
   const { days = NEXT_VISIT_DAYS, hours = CARE_HOURS, lostAfter = LOST_AFTER_DAYS } = scope;
-  const at = readAt(now, days, { lostAfter, every: await cadenceRange(db) });
+  const arrival = scope.arrival ?? BOOKING_RULES.arrival;
+  const at = readAt(now, days, { lostAfter, every: await cadenceRange(db), arrival });
   const [answers, schedule] = await Promise.all([
     db.batch<Row>(QUEUES.map((queue) => statementOf(db, queue, { at, scope, read: withOwners }))),
     loadSlotSchedule(db),
