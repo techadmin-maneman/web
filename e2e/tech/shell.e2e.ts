@@ -142,6 +142,18 @@ test("asks for a code with the token Turnstile gives", async ({ page }) => {
   expect((await asked).postDataJSON()).toMatchObject({ turnstile_token: DUMMY_TOKEN });
 });
 
+// Offline, Turnstile cannot load: the phone says it is offline at once, rather than that it could not check them.
+test("says it is offline when asked for a code offline, and asks nothing", async ({ page, context }) => {
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  await page.goto("/");
+  await page.getByRole("textbox", { name: techCopy.signIn.mobileLabel }).fill("9811000000");
+  await context.setOffline(true);
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  await expect(page.getByText(techCopy.signIn.errors.offline)).toBeVisible();
+  expect(fake.codesSent).toEqual([]);
+});
+
 test("once a code is sent, the number can be changed, and a new code asked for after half a minute", async ({
   page,
 }) => {
