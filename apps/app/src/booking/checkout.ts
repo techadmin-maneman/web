@@ -6,6 +6,7 @@
 import { cssToken } from "@maneman/ui/cssToken";
 import type { Booking } from "../api.ts";
 import { secondsUntil } from "@maneman/web-kit/clock";
+import { reportClientError } from "@maneman/web-kit/client-errors";
 
 const SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
 /**
@@ -36,19 +37,21 @@ export function loadCheckout(): Promise<void> {
   if (window.Razorpay !== undefined) return Promise.resolve();
   loading ??= new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
-    const fail = () => {
+    // No payment can be made while it fails, so mm-api hears of each, and tells ops once several come.
+    const fail = (why: "timed out" | "script error") => () => {
       window.clearTimeout(giveUp);
       script.remove();
       loading = null;
+      reportClientError({ kind: "checkout_unavailable", message: `Checkout did not load: ${why}`, source: SCRIPT });
       reject(new Error("Checkout did not load"));
     };
-    const giveUp = window.setTimeout(fail, PATIENCE_MS);
+    const giveUp = window.setTimeout(fail("timed out"), PATIENCE_MS);
     script.src = SCRIPT;
     script.onload = () => {
       window.clearTimeout(giveUp);
       resolve();
     };
-    script.onerror = fail;
+    script.onerror = fail("script error");
     document.head.append(script);
   });
   return loading;

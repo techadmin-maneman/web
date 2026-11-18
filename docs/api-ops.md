@@ -35968,8 +35968,10 @@ Request body:
         "error",
         "unhandled_rejection",
         "render",
-        "outbox_gave_up"
-      ]
+        "outbox_gave_up",
+        "checkout_unavailable"
+      ],
+      "description": "checkout_unavailable: Razorpay Checkout's script did not load, so no payment could be made."
     },
     "message": {
       "type": "string",

@@ -10,7 +10,7 @@ import { notifyMessage } from "../domain/platform/enqueue.ts";
 import type { Logger } from "../log.ts";
 import { afterError, backoffSeconds, DONE, runConsumer } from "./consumer.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
-import { razorpayEventFailingKey } from "../policy/alerts.ts";
+import { CHECKOUT_FAILING_KEY, razorpayEventFailingKey } from "../policy/alerts.ts";
 
 /** Tries an event has failed before ops are told: one can be a passing D1 hiccup, two are not. */
 const FAILING_AFTER_ATTEMPTS = 2;
@@ -58,6 +58,8 @@ export function handleRazorpayBatch({
         return { retryAfterSeconds: backoffSeconds(attempts, REFUND_EARLY_RETRY_SECONDS) };
       }
       eventLog.info("razorpay_hook_taken", { event: event.data.event });
+      // A payment made through Checkout: it loads again.
+      if (event.data.event === "payment.captured") await deps.resolveAlert(CHECKOUT_FAILING_KEY);
       // An event told as failing is put right once it applies; one that never failed has nothing to close.
       if (attempts >= FAILING_AFTER_ATTEMPTS) await deps.resolveAlert(razorpayEventFailingKey(data.event_id));
       return DONE;

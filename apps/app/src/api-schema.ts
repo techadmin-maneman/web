@@ -5714,8 +5714,11 @@ export interface components {
             cron_completed_at: string | null;
         };
         ClientErrorReport: {
-            /** @enum {string} */
-            kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up";
+            /**
+             * @description checkout_unavailable: Razorpay Checkout's script did not load, so no payment could be made.
+             * @enum {string}
+             */
+            kind: "error" | "unhandled_rejection" | "render" | "outbox_gave_up" | "checkout_unavailable";
             message: string;
             /** @description The page's path, with no query or fragment. */
             path: string;

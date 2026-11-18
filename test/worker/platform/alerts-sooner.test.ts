@@ -144,3 +144,31 @@ describe("a Razorpay event that keeps failing to apply", () => {
     expect(await open("razorpay_event_failing:evt_failing")).toBeNull();
   });
 });
+
+describe("Razorpay Checkout failing to load in the client app", () => {
+  const failed = (deps: ReturnType<typeof fakeDependencies>, address: string) =>
+    request(appFor("local", deps, {}, "client"), "/api/client-errors", {
+      method: "POST",
+      headers: { Origin: "https://maneman.test", "Content-Type": "application/json", "CF-Connecting-IP": address },
+      body: JSON.stringify({
+        kind: "checkout_unavailable",
+        message: "Checkout did not load: timed out",
+        path: "/visits",
+        source: "https://checkout.razorpay.com/v1/checkout.js",
+      }),
+    });
+
+  it("tells ops at the third failure with no payment between, and the next payment captured closes it", async () => {
+    const deps = fakeDependencies();
+    expect((await failed(deps, "203.0.113.1")).status).toBe(204);
+    expect((await failed(deps, "203.0.113.2")).status).toBe(204);
+    expect(deps.alerts).toEqual([]);
+    expect((await failed(deps, "203.0.113.3")).status).toBe(204);
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("Check that Razorpay Checkout loads in the client app now") as string,
+    ]);
+
+    await deliverRazorpay(captured, { deps });
+    expect(await open("checkout_failing")).toBeNull();
+  });
+});

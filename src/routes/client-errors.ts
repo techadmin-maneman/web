@@ -5,6 +5,7 @@
 // for, since a page can fail before anyone signs in: the same-origin rule of every app surface keeps other sites
 // out, and the hourly limits keep a page stuck in a loop from flooding the logs.
 
+import { checkoutUnavailable } from "../domain/money/checkout-alerts.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import { INVITE_CODE } from "../config/invite-codes.ts";
 import { takeOne } from "../domain/sign-in/rate-limit.ts";
@@ -29,7 +30,9 @@ const withoutCode = (text: string | undefined): string | undefined => text?.repl
 
 const ReportSchema = z
   .object({
-    kind: z.enum(["error", "unhandled_rejection", "render", "outbox_gave_up"]),
+    kind: z.enum(["error", "unhandled_rejection", "render", "outbox_gave_up", "checkout_unavailable"]).openapi({
+      description: "checkout_unavailable: Razorpay Checkout's script did not load, so no payment could be made.",
+    }),
     message: z.string().max(500),
     path: z.string().max(300).openapi({ description: "The page's path, with no query or fragment." }),
     version: z.string().max(40).optional().openapi({ description: "The build the page runs, as its mm-version." }),
@@ -83,6 +86,7 @@ export function registerClientErrors(app: App): void {
       refused_request_id: refusedRequestId,
       browser: c.req.header("User-Agent")?.slice(0, 200),
     });
+    if (report.kind === "checkout_unavailable") await checkoutUnavailable(c.var.deps.alertOnce);
     return c.body(null, 204);
   });
 }

@@ -23,6 +23,10 @@ export type Webhook = "razorpay" | "msg91" | "evolution";
 /** Deliveries refused in a row before ops are told: one can be a stray post, three are the secret. */
 export const WEBHOOK_REFUSED_AFTER = 3;
 export const webhookRefusedKey = (hook: Webhook): string => `webhook_refused:${hook}`;
+/** Razorpay Checkout failing to load in the client app, so no client can pay. */
+export const CHECKOUT_FAILING_KEY = "checkout_failing";
+/** Checkout loads that failed, with no payment captured between, before ops are told: one is a client's own signal. */
+export const CHECKOUT_FAILING_AFTER = 3;
 /** A Razorpay event that keeps failing to apply, from its second try. */
 export const razorpayEventFailingKey = (eventId: string): string => `razorpay_event_failing:${eventId}`;
 /** No try-on can run: YouCam refuses the key, or is out of units. */
@@ -51,6 +55,7 @@ const URGENT_KINDS = [
   "tryon_paused",
   "webhook_refused",
   "razorpay_event_failing",
+  "checkout_failing",
 ];
 
 /** Readings of the WhatsApp bridge closed in a row before it counts as down: one can be it reconnecting by itself. */
