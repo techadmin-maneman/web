@@ -22250,7 +22250,14 @@
                     "null"
                   ],
                   "items": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "base_size",
+                      "colour",
+                      "density",
+                      "lace_knots",
+                      "label"
+                    ]
                   },
                   "description": "What its pieces failed of the checks on arrival, for a hair system's failed check; null otherwise."
                 }

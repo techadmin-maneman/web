@@ -6,6 +6,7 @@ import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { auditStatementWhen, type AuditAction } from "../platform/audit.ts";
 import type { Written } from "../platform/audit.ts";
 import { type Refusal, refusal } from "../../lib/refusal.ts";
+import type { QcPoint } from "../../policy/receipt-checks.ts";
 
 export const CLAIM_REASONS = ["damaged", "qc_failed", "warranty"] as const;
 export const CLAIM_STATES = ["drafted", "sent", "accepted", "rejected", "withdrawn"] as const;
@@ -33,7 +34,7 @@ export interface SupplierClaim {
   /** The photograph sent with it, if any (./stock-photos.ts). */
   readonly photoId: string | null;
   /** What its pieces failed of the checks on arrival, for a hair system's failed check; null otherwise. */
-  readonly failedPoints: readonly string[] | null;
+  readonly failedPoints: readonly QcPoint[] | null;
 }
 
 /** How many settled claims the list shows after every open one. */
@@ -145,7 +146,7 @@ export async function supplierClaims(db: D1Database): Promise<SupplierClaim[]> {
     sentAt: row.sent_at,
     decidedAt: row.decided_at,
     photoId: row.photo_id,
-    failedPoints: row.failed_points === null ? null : (JSON.parse(row.failed_points) as string[]),
+    failedPoints: row.failed_points === null ? null : (JSON.parse(row.failed_points) as QcPoint[]),
   }));
 }
 

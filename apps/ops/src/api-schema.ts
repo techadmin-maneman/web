@@ -31566,7 +31566,7 @@ export interface components {
                 /** @description The photograph sent with it: GET /api/stock-photos/{id}. */
                 photo_id: string | null;
                 /** @description What its pieces failed of the checks on arrival, for a hair system's failed check; null otherwise. */
-                failed_points: string[] | null;
+                failed_points: ("base_size" | "colour" | "density" | "lace_knots" | "label")[] | null;
             }[];
             returns: {
                 id: string;

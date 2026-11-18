@@ -2,6 +2,7 @@
 // every word here is ours. Only the Purchasing page reads it, loaded when it opens.
 
 import { amountOf } from "@maneman/web-kit/figures";
+import type { QcPoint } from "@rules/policy/receipt-checks.ts";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const purchasing = {
@@ -113,7 +114,7 @@ export const purchasing = {
     density: "Density",
     lace_knots: "Lace and knots",
     label: "Label",
-  } as Readonly<Record<string, string>>,
+  } satisfies Readonly<Record<QcPoint, string>>,
   receive: {
     open: "Receive",
     title: "What arrived",

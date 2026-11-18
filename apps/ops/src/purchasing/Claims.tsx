@@ -24,10 +24,10 @@ import { RowHead } from "@maneman/ui/RowHead";
 import { purchasingApi } from "./purchasing-api.ts";
 
 /** Why it is claimed, with what a hair system's pieces failed where the claim names it. */
-const reasonWords = (claim: { reason: keyof typeof copy.claims.reasons; failed_points: readonly string[] | null }) =>
+const reasonWords = (claim: Claim) =>
   claim.failed_points === null || claim.failed_points.length === 0
     ? copy.claims.reasons[claim.reason]
-    : copy.claims.failedOn(claim.failed_points.map((point) => copy.checks[point] ?? point).join(", "));
+    : copy.claims.failedOn(claim.failed_points.map((point) => copy.checks[point]).join(", "));
 
 const loadClaims = () => purchasingApi.claims();
 
