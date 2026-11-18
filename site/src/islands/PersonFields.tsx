@@ -12,6 +12,7 @@ import styles from "./PersonFields.module.css";
 interface PersonWords {
   readonly name: string;
   readonly nameError: string;
+  readonly nameLetters: string;
   readonly mobile: string;
   readonly mobileError: string;
 }
@@ -62,10 +63,14 @@ export function NameField({ id, value, bad, words, onInk = false, onInput }: Fie
           onInput(event.currentTarget.value);
         }}
       />
-      <FieldError id={`${id}-error`} text={bad ? words.nameError : null} onInk={onInk} />
+      <FieldError id={`${id}-error`} text={bad ? nameProblem(value, words) : null} onInk={onInk} />
     </div>
   );
 }
+
+/** What is wrong with a name the form refuses: left empty, or typed with something not a letter. */
+const nameProblem = (value: string, words: PersonWords): string =>
+  value.trim() === "" ? words.nameError : words.nameLetters;
 
 /** The ten digits behind +91, spaced as typed: "98100 00000". */
 export function MobileField({ id, value, bad, words, onInk = false, onInput }: FieldProps) {

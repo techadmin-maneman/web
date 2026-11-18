@@ -97,8 +97,14 @@ test("a name that is not letters is marked at its field, focused, and not sent",
 
   const name = page.getByLabel(siteCopy.tryOn.gate.name);
   await expect(name).toHaveAttribute("aria-invalid", "true");
-  await expect(name).toHaveAccessibleDescription(siteCopy.tryOn.gate.nameError);
+  await expect(name).toHaveAccessibleDescription(siteCopy.tryOn.gate.nameLetters);
   await expect(name).toBeFocused();
+  expect(leads).toHaveLength(0);
+
+  // A digit is what is wrong, not a missing name.
+  await name.fill("Ravi 2");
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
+  await expect(name).toHaveAccessibleDescription(siteCopy.tryOn.gate.nameLetters);
   expect(leads).toHaveLength(0);
 });
 

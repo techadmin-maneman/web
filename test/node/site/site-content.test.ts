@@ -158,7 +158,7 @@ describe("content", () => {
     expect(referral.consultation.body).toBe("60 minutes, and free. Or have your fit in the same visit.");
     expect(referral.howItWorks.steps.map((step) => step.lead)).toEqual([
       "60 minutes. Completely confidential.",
-      "3 hours. Real-time transformation. Be the Main Man again.",
+      "3 hours. Real-time transformation. Be the Main Man, again!",
       "No trips to the salon. We come to you.",
     ]);
     expect(site.norwood.restored).toBe("From these to this in 3 hours.");

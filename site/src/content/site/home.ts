@@ -84,7 +84,7 @@ export const hero = {
     "100% real human hair.",
     "Fitted at home.",
     "Confidence restored.",
-    "Be the Main Man again.",
+    "Be the Main Man, again!",
   ],
   title: "A full head of hair, matched to your own.",
   body: "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",

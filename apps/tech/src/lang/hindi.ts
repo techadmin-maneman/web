@@ -90,7 +90,7 @@ function wordedCore(core: string): string {
   for (const [rule, hindi] of RULES) {
     if (rule.test(core)) return ruled(core, rule, hindi);
   }
-  if (core.startsWith("Next: ")) return `आगे: ${toHindi(core.slice(6))}`;
+  if (core.startsWith("Next: ")) return `अगला: ${toHindi(core.slice(6))}`;
   if (core.startsWith("Compare with ")) return `${toHindi(core.slice(13))} से मिलाएँ`;
   if (core.includes(" · ")) {
     const parts = core.split(" · ");

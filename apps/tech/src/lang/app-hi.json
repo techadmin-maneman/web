@@ -149,7 +149,7 @@
     "Needs signal": "नेटवर्क चाहिए",
     "New hair system checked against its label": "नया हेयर सिस्टम उसके लेबल से मिलाया",
     "New, or your number changed? Ask ops to add it.": "नए हैं, या नंबर बदला है? ऑप्स से जुड़वाएँ।",
-    "Next · leave now": "आगे · अभी निकलें",
+    "Next · leave now": "अगला · अभी निकलें",
     "No alerts in the last 7 days.": "पिछले 7 दिनों में कोई अलर्ट नहीं।",
     "No camera. Type the code instead.": "कैमरा नहीं है। कोड टाइप करें।",
     "No consumables to record. Tell ops if you used any.": "लिखने को कोई सामान नहीं। कुछ इस्तेमाल किया हो तो ऑप्स को बताएँ।",
@@ -163,7 +163,7 @@
     "No signal. The wait counts from your tap; closing needs signal.": "नेटवर्क नहीं। इंतज़ार आपके टैप से गिना जाएगा; बंद करने के लिए नेटवर्क चाहिए।",
     "No signal. Try again.": "नेटवर्क नहीं। फिर से कोशिश करें।",
     "No signal. You’re still signed in. Try again with signal.": "नेटवर्क नहीं। आप अभी साइन इन हैं। नेटवर्क मिलने पर फिर से कोशिश करें।",
-    "No visits closed yet this month.": "इस महीने अभी कोई विज़िट बंद नहीं हुई।",
+    "No visits closed yet this month.": "इस महीने अभी तक कोई विज़िट पूरी नहीं हुई।",
     "None in your kit": "आपकी किट में नहीं",
     "None sent": "कुछ नहीं भेजा",
     "None used": "कुछ इस्तेमाल नहीं हुआ",
@@ -178,7 +178,7 @@
     "Not the hair system this fit is for. Check with ops before you fit.": "यह इस फ़िट वाला हेयर सिस्टम नहीं है। फ़िट करने से पहले ऑप्स से पूछें।",
     "Note for ops (optional)": "ऑप्स के लिए नोट (ज़रूरी नहीं)",
     "Nothing asked for.": "कुछ नहीं माँगा।",
-    "Nothing booked needs consumables.": "बुक किसी जॉब में सामान नहीं चाहिए।",
+    "Nothing booked needs consumables.": "बुक हुए किसी जॉब के लिए सामान नहीं चाहिए।",
     "Nothing is fitted today. Nothing to pay now.": "आज कुछ फ़िट नहीं होगा। अभी कोई पेमेंट नहीं।",
     "Nothing is fitted. The visit ends as a free consultation.": "कुछ फ़िट नहीं हुआ। विज़िट फ़्री कंसल्टेशन के तौर पर बंद होगी।",
     "Nothing more can be sent for it.": "इसके लिए अब और कुछ नहीं भेजा जा सकता।",
@@ -373,9 +373,9 @@
     "Waiting for the label check": "लेबल जाँच का इंतज़ार",
     "Wave": "लहर",
     "We couldn’t measure how far you are from the address.": "पते से आपकी दूरी नहीं नापी जा सकी।",
-    "We couldn’t record the label you gave. Correct it and tap Next.": "आपका दिया लेबल दर्ज नहीं हो सका। ठीक करें और आगे दबाएँ।",
+    "We couldn’t record the label you gave. Correct it and tap Next.": "आपका दिया लेबल दर्ज नहीं हो सका। ठीक करें और अगला दबाएँ।",
     "We couldn’t record this set. Tap Done to send it again.": "यह सेट दर्ज नहीं हो सका। फिर से भेजने के लिए हो गया दबाएँ।",
-    "We couldn’t record this step as it was. Correct it and tap Next.": "यह स्टेप जैसा था वैसा दर्ज नहीं हो सका। ठीक करें और आगे दबाएँ।",
+    "We couldn’t record this step as it was. Correct it and tap Next.": "यह स्टेप जैसा था वैसा दर्ज नहीं हो सका। ठीक करें और अगला दबाएँ।",
     "We couldn’t record this. Tap Retry, or call ops.": "यह दर्ज नहीं हो सका। फिर से भेजें दबाएँ, या ऑप्स को कॉल करें।",
     "Wednesday": "बुधवार",
     "What you recorded is kept on this phone, in Pending uploads.": "आपने जो दर्ज किया वह इस फ़ोन में, बाकी अपलोड में रखा है।",
@@ -426,6 +426,10 @@
     "the rest to come": "बाकी आने वाले हैं"
   },
   "patterns": [
+    {
+      "match": "^Arrive ([^·]+)$",
+      "hi": "$1 के बीच पहुँचें"
+    },
     {
       "match": "^([^·]+) left after this$",
       "hi": "इसके बाद $1 बचेगा"
@@ -540,7 +544,7 @@
     },
     {
       "match": "^([^·,]+), nothing booked$",
-      "hi": "$1, कुछ बुक नहीं"
+      "hi": "$1, कोई बुकिंग नहीं"
     },
     {
       "match": "^([^·,]+), didn’t load$",

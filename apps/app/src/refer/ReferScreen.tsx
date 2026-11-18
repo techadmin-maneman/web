@@ -16,7 +16,7 @@ import { TextButton, TextLink, textLinkLook } from "@maneman/ui/TextLink";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad } from "@maneman/ui/useLoad";
 import { apiNow } from "@maneman/web-kit/clock";
-import { dayMonth, indiaDate, listMonth, yearInIndia } from "@maneman/web-kit/dates";
+import { indiaDate, listDate, listMonth, yearInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { api, type Refer } from "../api.ts";
 import { empty, LEGAL_URLS, refer } from "../content.ts";
@@ -45,7 +45,9 @@ function RewardCard({ state }: { state: Refer }) {
       <dl className={styles.figures}>
         <div className={styles.figure}>
           <dt>
-            {expiry === null || state.credits.visits === 0 ? refer.left : refer.leftUseBy(dayMonth(indiaDate(expiry)))}
+            {expiry === null || state.credits.visits === 0
+              ? refer.left
+              : refer.leftUseBy(listDate(indiaDate(expiry), yearInIndia(apiNow())))}
           </dt>
           <dd>{state.credits.visits}</dd>
         </div>
