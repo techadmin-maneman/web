@@ -19,7 +19,7 @@ const ORDER = {
   expected_on: "2026-10-15",
   note: null,
   total: 216_000,
-  lines: [{ id: "pl-1", consumable_code: "solvent", quantity: 48, unit_price: 4500, received: 0 }],
+  lines: [{ id: "pl-1", consumable_code: "solvent", quantity: 48, unit_price: 4500, received: 0, hair_system: false }],
   drafted_by: "ops@maneman.in",
   drafted_at: "2026-09-21T06:30:00.000Z",
   approved_by: null,
@@ -53,6 +53,7 @@ const BOOK = {
   ],
   consumables: [{ code: "solvent", name: "Solvent", unit: "ml", unit_cost: 4000 }],
   second_approval_above_rupees: 0,
+  receipt_checks: ["base_size", "colour", "density", "lace_knots", "label"],
   letterhead: null,
 } satisfies OpsReply<"/api/purchase-orders">;
 
@@ -249,6 +250,45 @@ test("receives what arrived of a sent order, and lists the receipt with its land
     copy.receipts.item({ name: "Solvent", received: 24, damaged: 2, failed: 0, landed: "Rs. 55" }),
   );
   expect(await axeViolations(page)).toEqual([]);
+});
+
+// A receipt's quality check was one number: the supplier was told how many failed, never what was wrong.
+test("asks what a hair system's failed pieces failed, of the checks ops make, and sends it", async ({ page }) => {
+  const hairLine = {
+    id: "pl-2",
+    consumable_code: "hs_essential",
+    quantity: 3,
+    unit_price: 2_000_000,
+    received: 0,
+    hair_system: true,
+  };
+  const sent = {
+    ...BOOK,
+    consumables: [...BOOK.consumables, { code: "hs_essential", name: "Essential 8x10", unit: "piece", unit_cost: 0 }],
+    receipt_checks: ["colour" as const, "density" as const],
+    orders: [{ ...ORDER, state: "sent" as const, approved_by: "a@maneman.in", lines: [hairLine] }],
+  };
+  await open(page, {
+    "GET /api/purchase-orders": json(sent),
+    "POST /api/purchase-orders/{id}/receipts": json(sent),
+  });
+  await page.getByRole("button", { name: copy.open("PO-0007") }).click();
+  const panel = page.getByRole("region", { name: "PO-0007 · Kesh Supplies" });
+  await panel.getByRole("button", { name: copy.receive.open }).click();
+  const form = panel.getByRole("group", { name: copy.receive.title });
+  await form.getByLabel(copy.receive.received).fill("2");
+  await form.getByLabel(copy.receive.failed).fill("1");
+  const failed = form.getByRole("group", { name: copy.receive.failedPoints });
+  await expect(failed.getByRole("checkbox")).toHaveCount(2);
+  const send = form.getByRole("button", { name: copy.receive.send });
+  await expect(send).toBeDisabled();
+
+  await failed.getByRole("checkbox", { name: copy.checks.density }).check();
+  const posted_ = posted(page, "/api/purchase-orders/po-1/receipts");
+  await send.click();
+  expect((await posted_).postDataJSON()).toMatchObject({
+    lines: [{ po_line_id: "pl-2", received: 2, qc_failed: 1, qc_failed_points: ["density"] }],
+  });
 });
 
 // The printed order gave no company, no GSTIN, no delivery address, none of the supplier's own codes, and no unit.

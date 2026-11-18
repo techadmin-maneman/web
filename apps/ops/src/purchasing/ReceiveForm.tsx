@@ -4,7 +4,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
-import { Checkbox, Field, Fieldset, TextInput } from "@maneman/ui/Field";
+import { Checkbox, ChoiceGroup, Field, Fieldset, TextInput } from "@maneman/ui/Field";
 import { Refusal } from "@maneman/ui/Refusal";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { microRupeesFromRupees, paiseFromRupees } from "@maneman/web-kit/money";
@@ -88,7 +88,7 @@ type Refused = (box: string) => string | null;
 function FailedPoints(props: { checks: readonly string[]; draft: LineDraft; onDraft: (draft: LineDraft) => void }) {
   const { draft, onDraft } = props;
   return (
-    <Fieldset legend={copy.receive.failedPoints}>
+    <ChoiceGroup legend={copy.receive.failedPoints} ruled>
       {props.checks.map((point) => (
         <Checkbox
           key={point}
@@ -102,7 +102,7 @@ function FailedPoints(props: { checks: readonly string[]; draft: LineDraft; onDr
           }}
         />
       ))}
-    </Fieldset>
+    </ChoiceGroup>
   );
 }
 

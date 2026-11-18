@@ -13,6 +13,7 @@ const ORDERS = {
   suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD", payment_terms_days: 0, items: [] }],
   consumables: [],
   second_approval_above_rupees: 0,
+  receipt_checks: [],
   letterhead: null,
 } satisfies OpsReply<"/api/purchase-orders">;
 
@@ -36,6 +37,7 @@ const CLAIM = {
   sent_at: null,
   decided_at: null,
   photo_id: null,
+  failed_points: null,
 };
 
 const PHOTO_ID = "5b0c7a8e-3f1d-4c2b-9a6e-1d2f3a4b5c6d";
@@ -105,6 +107,13 @@ test("lists each claim with its reason and value, and marks a drafted one sent",
   expect((await request).postDataJSON()).toEqual({ note: "Photos emailed.", photo_id: null });
   await expect(row).toContainText(copy.claims.states.sent);
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("names what a hair system's pieces failed on a claim for its failed check", async ({ page }) => {
+  const failed = { ...CLAIM, reason: "qc_failed" as const, failed_points: ["colour", "density"] };
+  await open(page, { "GET /api/supplier-claims": json({ ...CLAIMS, claims: [failed] }) });
+  const row = page.getByRole("region", { name: copy.claims.title }).getByRole("row").filter({ hasText: "CL-0001" });
+  await expect(row).toContainText(copy.claims.failedOn(`${copy.checks.colour}, ${copy.checks.density}`));
 });
 
 test("settles a sent claim as the credit the supplier gave", async ({ page }) => {
