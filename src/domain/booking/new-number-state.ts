@@ -4,11 +4,9 @@
 
 import type { BookingWindow } from "../../config/scheduling.ts";
 import type { Plan } from "../../policy/one-visit.ts";
-import { windowTimesOf } from "../../policy/slot-times.ts";
-import { availability } from "./availability.ts";
-import { ONE_VISIT_FIT } from "./occupancy.ts";
+import type { DriveCheck } from "./drive-check.ts";
+import { wouldHold } from "./hold-slot.ts";
 import { siteVisit } from "./site-visit.ts";
-import { loadSlotSchedule } from "./slot-times.ts";
 
 /** What the form asked for. */
 interface Asked {
@@ -20,33 +18,35 @@ interface Asked {
 }
 
 export async function newNumbersState(
-  form: { readonly db: D1Database; readonly now: Date; readonly selfServeBooking: boolean },
+  form: {
+    readonly db: D1Database;
+    readonly now: Date;
+    readonly selfServeBooking: boolean;
+    /** Google, as the new number's hold asks it; null where the routes provider is off. */
+    readonly drives: DriveCheck | null;
+  },
   request: Asked,
 ): Promise<{ readonly state: "booked" | "requested" | "taken"; readonly startsAt: Date | null }> {
   const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date, request.pincode) : null;
   if (visit === null) return { state: "requested", startsAt: null };
-  // Its kind too, so today is answered as a new number's hold answers it (src/domain/booking/hold-slot.ts).
-  const length = {
-    type: visit.service.type,
-    minutes: visit.service.minutes,
-    fitting: request.plan === "one_visit" ? ONE_VISIT_FIT : null,
-  };
-  const [[day], schedule] = await Promise.all([
-    availability({
-      db: form.db,
-      placing: { personId: null, pincode: request.pincode },
-      visit: length,
-      from: request.date,
-      days: 1,
-      now: form.now,
-    }),
-    loadSlotSchedule(form.db),
-  ]);
-  const hours = windowTimesOf(schedule.on(request.date))[request.window];
-  const asked = request.startsAt;
-  const start =
-    asked === null
-      ? day?.starts.find((each) => each.time >= hours.start && each.time < hours.end)
-      : day?.starts.find((each) => each.startsAt.getTime() === asked.getTime());
-  return start === undefined ? { state: "taken", startsAt: null } : { state: "booked", startsAt: start.startsAt };
+  // The hold a new number would make, run without writing: someone with no visits of their own, whose address is not
+  // written yet, so placed by the pincode as a new number's hold places it, and its drives checked as that hold's are.
+  const held = await wouldHold({
+    db: form.db,
+    input: {
+      personId: crypto.randomUUID(),
+      service: visit.service,
+      date: request.date,
+      window: request.window,
+      ...(request.startsAt === null ? {} : { startsAt: request.startsAt }),
+      price: visit.price,
+      terms: visit.terms,
+      oneVisit: request.plan === "one_visit",
+      pincode: request.pincode,
+      from: "site",
+    },
+    now: form.now,
+    drives: form.drives,
+  });
+  return held === null ? { state: "taken", startsAt: null } : { state: "booked", startsAt: held.startsAt };
 }
