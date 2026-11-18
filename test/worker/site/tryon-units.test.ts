@@ -102,10 +102,10 @@ describe("signed tokens", () => {
 
 describe("message templates", () => {
   it("fills params in order, and refuses a missing param or an unknown template", () => {
-    expect(renderMessage("waitlist_listed_v1", ["Arjun", "Sector 65"])).toBe(
-      "Hi Arjun, you're on our list for Sector 65. We don't cover it yet.",
+    expect(renderMessage("tryon_result_v1", ["Arjun", "https://maneman.in/book"])).toMatch(
+      /^Hi Arjun, here's your new look\..*: https:\/\/maneman\.in\/book$/s,
     );
-    expect(renderMessage("waitlist_listed_v1", ["Arjun"])).toBeNull();
+    expect(renderMessage("tryon_result_v1", ["Arjun"])).toBeNull();
   });
 
   it("sends the try-on result with a template that exists", () => {

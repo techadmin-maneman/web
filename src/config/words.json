@@ -5408,11 +5408,11 @@
     "reviewed": true
   },
   {
-    "key": "message:tryon_result_v2",
+    "key": "message:tryon_result_v1",
     "surface": "message",
     "group": "Messages",
-    "where": "tryon_result_v2",
-    "text": "Hi {{1}}, here's the look you asked for.\nIt's an illustration, made from your photo.",
+    "where": "tryon_result_v1",
+    "text": "Hi {{1}}, here's your new look.\nIt's an illustration. See the real thing at a free consultation: {{2}}",
     "reviewed": false
   },
   {
@@ -5676,7 +5676,7 @@
     "surface": "message",
     "group": "Messages",
     "where": "visit_cancelled_v2",
-    "text": "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}.",
+    "text": "Hi {{1}}, your booking is cancelled.\nYour {{2}} on {{3}} is no longer booked.",
     "reviewed": false
   },
   {

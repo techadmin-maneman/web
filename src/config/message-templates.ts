@@ -6,9 +6,9 @@ import type { MessagePurpose } from "../policy/consents.ts";
 import { isOneOf } from "../lib/one-of.ts";
 
 export const TEMPLATES = {
-  // The try-on's look, to the number that claimed it: {{1}} the first name. It answers the person's own request and
-  // says nothing more, so WhatsApp files it as utility; {{2}}, where to book a consultation, is not written.
-  tryon_result_v2: "Hi {{1}}, here's the look you asked for.\nIt's an illustration, made from your photo.",
+  // The try-on's look, to the number that claimed it: {{1}} the first name, {{2}} where to book a consultation.
+  tryon_result_v1:
+    "Hi {{1}}, here's your new look.\nIt's an illustration. See the real thing at a free consultation: {{2}}",
   // The login code, {{1}}.
   login_code_v1: "{{1}} is your Mane Man code. It expires in 10 minutes. Don't share it with anyone.",
   // A visit's params: {{1}} first name, {{2}} visit, {{3}} day ("Thu 24 Sep"), {{4}} arrival ("11:30 am–12 pm"),
@@ -88,7 +88,7 @@ export const TEMPLATES = {
     "Hi {{1}}, time to book your next visit.\nYour {{2}} was due on {{3}}. Book it in the Mane Man app.",
   next_visit_due_v1:
     "Hi {{1}}, time to book your next visit.\nYour {{2}} is due on {{3}}. Book it in the Mane Man app.",
-  visit_cancelled_v2: "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}.",
+  visit_cancelled_v2: "Hi {{1}}, your booking is cancelled.\nYour {{2}} on {{3}} is no longer booked.",
   // A visit ops cancelled after its time had passed with nobody arriving: ours to put right, with nothing to pay.
   visit_missed_by_us_v1:
     "Hi {{1}}, we're sorry we missed you.\nWe couldn't make your {{2}} on {{3}}, so it's cancelled with nothing to pay. We'll message you to book a new time.",
@@ -264,7 +264,7 @@ export function isKnownTemplate(name: string): name is TemplateName {
 }
 
 /** The template the try-on result is sent with, in every environment. */
-export const RESULT_TEMPLATE: TemplateName = "tryon_result_v2";
+export const RESULT_TEMPLATE: TemplateName = "tryon_result_v1";
 
 /**
  * Whether a kind of queued message answers the person whose own action produced it, or is automatic: a scheduled

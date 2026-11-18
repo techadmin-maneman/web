@@ -82,7 +82,7 @@ describe("what a visit message says", () => {
     );
     await env.DB.prepare("UPDATE visit_changes SET refund_amount = 0").run();
     expect(await text("cancel_confirmation")).toBe(
-      "Hi Rohit, your booking is cancelled.\nThat's your service visit on Thu 24 Sep.",
+      "Hi Rohit, your booking is cancelled.\nYour service visit on Thu 24 Sep is no longer booked.",
     );
   });
 

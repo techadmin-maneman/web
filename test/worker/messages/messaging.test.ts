@@ -63,7 +63,7 @@ describe("messaging: sending a result", () => {
     // Greeted by first name, with where to book the consultation that shows the look for real.
     expect(sent[0]).toMatchObject({
       to: "+919810000001",
-      template: "tryon_result_v2",
+      template: "tryon_result_v1",
       params: ["Arjun", "http://localhost:4321/book"],
     });
     expect(sent[0]?.media?.type).toBe("image/png");

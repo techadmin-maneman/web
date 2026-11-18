@@ -40,6 +40,10 @@ const APP: ApprovedButton = { kind: "app", label: "Open the Mane Man app" };
  */
 const DIFFERS: Partial<Record<TemplateName, { readonly text?: string; readonly buttons: readonly ApprovedButton[] }>> =
   {
+    tryon_result_v1: {
+      text: "Hi {{1}}, here's your new look.\nIt's an illustration. See the real thing at a free consultation.",
+      buttons: [{ kind: "link", label: "Book a consultation", param: 2 }],
+    },
     launch_alert_v1: {
       text: "Hi {{1}}, Mane Man now comes to {{2}}. Book your free consultation below.",
       buttons: [{ kind: "link", label: "Book a consultation", param: 3 }, STOP],

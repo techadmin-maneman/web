@@ -72,7 +72,7 @@ describe("MSG91", () => {
     const msg91 = createMsg91Messaging(settings, { fetch: http.fetch, log });
     await msg91.send({
       to: "+919810000001",
-      template: "tryon_result_v2",
+      template: "tryon_result_v1",
       params: ["Arjun", "https://maneman.in/book"],
       media: { url: "https://x.test/r.png", type: "image/png" },
     });
@@ -85,6 +85,7 @@ describe("MSG91", () => {
     expect(sent(http).components).toEqual({
       body_1: { type: "text", value: "Arjun" },
       header_1: { type: "image", value: "https://x.test/r.png" },
+      button_1: { subtype: "url", type: "text", value: "book" },
     });
     const reminder = JSON.parse(http.calls[1]?.body ?? "{}") as {
       payload: { template: { to_and_components: { components: Record<string, unknown> }[] } };
@@ -97,10 +98,10 @@ describe("MSG91", () => {
   it("refuses without calling out a send missing what its template takes", async () => {
     const http = fakeFetch({ [SEND_URL]: accepted });
     const msg91: MessagingProvider = createMsg91Messaging(settings, { fetch: http.fetch, log });
-    const missingParam = await msg91.send({ to: "+919810000001", template: "tryon_result_v2", params: ["Arjun"] });
+    const missingParam = await msg91.send({ to: "+919810000001", template: "tryon_result_v1", params: ["Arjun"] });
     const missingImage = await msg91.send({
       to: "+919810000001",
-      template: "tryon_result_v2",
+      template: "tryon_result_v1",
       params: ["Arjun", "https://maneman.in/book"],
     });
     const missingStopLink = await msg91.send({
