@@ -5,8 +5,8 @@
 // (src/queues/razorpay.ts), and a delivery of an event already claimed is answered at once.
 //
 // Subscribed events (provisioning, step 11c): order.paid, payment.authorized, payment.captured, payment.failed,
-// refund.created, refund.processed, refund.failed, refund.speed_changed, and payment_link.paid. Any other is
-// acknowledged and applied as nothing.
+// refund.created, refund.processed, refund.failed, refund.speed_changed, payment_link.paid, and settlement.processed.
+// Any other is acknowledged and applied as nothing.
 
 import { createRoute } from "@hono/zod-openapi";
 import { RazorpayEventMessageSchema, type RazorpayEventMessage } from "../../config/pipeline.ts";

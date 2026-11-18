@@ -1,14 +1,14 @@
 // The Alerts screen's two parts (docs/prompts/tech-redesign.md, "Alerts"): the inbox, newest first, each alert a row
 // that opens its job; and Send me, a switch for each kind of alert, all on until the technician turns one off.
 
-import { GLYPHS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
+import { classes } from "@maneman/ui/classes";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { Switch } from "@maneman/ui/Switch";
 import { alerts as copy } from "../content.ts";
 import type { AlertLine } from "./lines.ts";
 import styles from "./alerts.module.css";
+import { Chevron } from "../frame/Chevron.tsx";
 
 export type AlertKind = keyof typeof copy.kinds;
 const ALERT_KINDS = Object.keys(copy.kinds) as readonly AlertKind[];
@@ -20,11 +20,15 @@ export function AlertList({ lines }: { readonly lines: readonly AlertLine[] }) {
       {lines.map((line) => (
         <ListRow
           key={line.id}
-          lead={line.when}
-          title={line.title}
+          title={
+            <>
+              <span className={styles.when}>{line.when}</span>
+              {line.title}
+            </>
+          }
           meta={line.body}
           to={line.to ?? undefined}
-          end={line.to === null ? undefined : <Icon d={GLYPHS.chevron} size="sm" />}
+          end={line.to === null ? undefined : <Chevron />}
         />
       ))}
     </ListRows>
@@ -47,8 +51,8 @@ export function SendMe(props: {
 }) {
   return (
     <>
-      <SectionHead title={copy.sendMe} className={styles.section} />
-      <ListRows className={styles.rows} label={copy.sendMe}>
+      <SectionHead title={copy.sendMe} size="list" className={styles.section} />
+      <ListRows className={classes(styles.rows, styles.kinds)} label={copy.sendMe}>
         {ALERT_KINDS.map((kind) => (
           <ListRow
             key={kind}

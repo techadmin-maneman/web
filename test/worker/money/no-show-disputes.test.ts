@@ -158,10 +158,20 @@ describe("POST /api/visits/:id/dispute", () => {
 
   // A charge past its days once showed no Dispute button and no reason why.
   it("says when the days to dispute ended, once they have, for a charge never disputed", async () => {
-    expect(await noShowNote()).toMatchObject({ disputable: true, dispute_closed_at: null });
+    await env.DB.prepare("UPDATE no_show_cases SET dispute_until = ?1").bind("2026-09-30T06:29:59.000Z").run();
+    // Until then, the last moment it may be disputed, as the dispute window ops set made it.
+    expect(await noShowNote()).toMatchObject({
+      disputable: true,
+      dispute_closed_at: null,
+      dispute_until: "2026-09-30T06:29:59.000Z",
+    });
 
     await env.DB.prepare("UPDATE no_show_cases SET dispute_until = ?1").bind("2026-09-21T06:29:59.000Z").run();
-    expect(await noShowNote()).toMatchObject({ disputable: false, dispute_closed_at: "2026-09-21T06:29:59.000Z" });
+    expect(await noShowNote()).toMatchObject({
+      disputable: false,
+      dispute_closed_at: "2026-09-21T06:29:59.000Z",
+      dispute_until: null,
+    });
 
     // One disputed in time says where the dispute stands instead.
     await env.DB.prepare(

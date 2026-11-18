@@ -5,24 +5,278 @@
  * packages/brand/tokens.css.
  */
 
+/*
+ * The redesign's roles and scales (docs/prompts/site-redesign.md, "Tokens"; ADR 0262): IBM Plex Sans alone, white and
+ * cool grounds between navy bands, one filled button to a view, square corners. Type and space grow from 390 to 1440 px;
+ * each clamp's middle term is the straight line between its two ends.
+ */
+:root {
+  /* ---- Colour: what each colour is for on the site ---------------------------------------- */
+  --site-ground: var(--white-000);
+  --site-band: var(--cool-100);
+  --site-navy: var(--navy-900);
+  --site-navy-hover: var(--navy-800);
+  --site-navy-rule: var(--navy-700); /* rules and edges on navy: the footer's top */
+  --site-gold: var(--gilt); /* the one filled button on navy */
+  --site-focus: var(--brass); /* the focus ring, on every ground (ADR 0266) */
+  --site-line: var(--line-200);
+  --site-text: var(--ink-900);
+  --site-text-muted: var(--ink-500);
+  --site-on-navy: var(--white-000);
+  --site-on-navy-muted: var(--mist-300);
+  --site-on-navy-edge: var(--white-055);
+  --site-scrim: var(--ink-night); /* the film's ground, under its overlays */
+
+  /* ---- Type ------------------------------------------------------------------------------ */
+  --site-font: var(--font-plex);
+  --site-fs-turning: clamp(40px, calc(25.14px + 3.81vw), 80px); /* the hero's turning line */
+  --site-fs-hero-title: clamp(20px, calc(17.77px + 0.571vw), 26px);
+  --site-fs-section: clamp(26px, calc(19.31px + 1.714vw), 44px); /* a section's or a page's title */
+  --site-fs-statement: clamp(20px, calc(14.8px + 1.333vw), 34px); /* What it is's line, and the guarantee */
+  --site-fs-lead: clamp(16px, calc(15.26px + 0.19vw), 18px);
+  --site-fs-body: var(--fs-16);
+  --site-fs-label: var(--fs-14);
+  --site-fs-button: var(--fs-16);
+
+  /* ---- Space ----------------------------------------------------------------------------- */
+  --site-column: 1200px;
+  --site-gutter: clamp(20px, calc(12.57px + 1.905vw), 40px);
+  --site-section-y: clamp(56px, calc(41.14px + 3.81vw), 96px);
+  --site-button-h: var(--btn-client); /* 52 */
+  --site-header-button: var(--sp-40); /* the header's button on a phone, 14 px words */
+  --site-header-button-wide: var(--tap); /* the header's button on a laptop, 16 px words; also a phone's Sign in */
+  --site-header-h: 60px; /* the header, and what scrolling stops below: 72 px on a laptop */
+  --site-bar-pad-top: var(--sp-12); /* the phone's sticky bar, around its 52 px buttons */
+  --site-bar-pad-bottom: var(--sp-16);
+  --site-safe-bottom: env(safe-area-inset-bottom, 0px); /* a phone's home bar, under anything fixed to the foot */
+  --site-none: 0px; /* no room, where a role starts with none */
+  --consent-reserve: var(
+    --site-none
+  ); /* the cookie bar's room at the page's foot while it asks (components/ConsentBar.astro) */
+
+  /* ---- The home page's sections (ADR 0263), each from its phone board's value at 390 to its laptop's at 1440 ---- */
+  --site-lh-section: clamp(31.2px, calc(23.99px + 1.848vw), 50.6px); /* 1.2 of 26, then 1.15 of 44 */
+  --site-tracking-section: clamp(-0.5px, calc(-0.0886px - 0.02857vw), -0.2px);
+  --site-tracking-statement: clamp(-0.4px, calc(0.149px - 0.0381vw), 0px);
+  --site-fs-statement-how: clamp(22px, calc(17.54px + 1.143vw), 34px); /* "at your own table" */
+  --site-fs-closing: clamp(26px, calc(23.03px + 0.762vw), 34px);
+  --site-fs-caption: clamp(20px, calc(18.51px + 0.381vw), 24px); /* a result's caption, a step's title */
+  --site-fs-pager: clamp(14px, calc(13.26px + 0.19vw), 16px);
+  --site-gap-lede: clamp(8px, calc(6.51px + 0.381vw), 12px); /* a title to its lede */
+  --site-gap-block: clamp(16px, calc(14.51px + 0.381vw), 20px); /* a rule to its words */
+  --site-gap-list: clamp(18px, calc(9.83px + 2.095vw), 40px); /* a section's head to its toggle, table or tiles */
+  --site-columns-gap: 96px; /* a laptop's two columns */
+  --site-tag-pad-y: clamp(6px, calc(5.63px + 0.0952vw), 7px); /* Before, After, a stage's numeral */
+  --site-tag-pad-x: clamp(9px, calc(8.63px + 0.0952vw), 10px);
+  --site-icon-button: clamp(44px, calc(42.51px + 0.381vw), 48px); /* a result's previous and next */
+  --site-compare-handle: clamp(40px, calc(38.51px + 0.381vw), 44px);
+  --site-teaser-pad-top: clamp(44px, calc(24.69px + 4.952vw), 96px); /* the try-on teaser's band */
+  --site-teaser-pad-bottom: clamp(40px, calc(19.2px + 5.333vw), 96px);
+  --site-space-32-56: clamp(32px, calc(23.09px + 2.286vw), 56px);
+  --site-space-28-60: clamp(28px, calc(16.11px + 3.048vw), 60px); /* an answer kept clear of the sign beside it */
+  --site-question-h: clamp(60px, calc(58.51px + 0.381vw), 64px); /* a question's row */
+  --site-question-pad: clamp(14px, calc(13.26px + 0.19vw), 16px);
+  --site-closing-pad: clamp(48px, calc(33.14px + 3.81vw), 88px); /* the closing band */
+  --site-closing-max: var(--measure-hero-body); /* the closing line, as wide as the hero's words */
+  --site-step-body-min: 75px; /* a laptop's step, so the three pictures line up beneath their words */
+  --site-statement-max: 800px;
+  --site-numeral-w: clamp(44px, calc(46.74px - 0.19vw), 46px); /* a Norwood stage's numeral, on its picture */
+  --site-numeral-h: clamp(38px, calc(40.74px - 0.19vw), 40px);
+  --site-navy-veil: rgba(22, 35, 58, 0.9); /* the band across a picture's foot that says what it is */
+  --site-lh-statement: clamp(26px, calc(20.5px + 1.41vw), 40.8px); /* 1.3 of 20, then 1.2 of 34 */
+  --site-space-12-20: clamp(12px, calc(9.03px + 0.762vw), 20px);
+  --site-space-16-24: clamp(16px, calc(13.03px + 0.762vw), 24px);
+
+  /* ---- The lockup (components/Lockup.astro), as design/brand/lockup-navy.svg draws it at 40 px: a 14.84 px small
+     cut, 12.9 px from the mark ------------------------------------------------------------------------------ */
+  --site-lockup-word: 0.371;
+  --site-lockup-gap: 0.3225;
+  --site-lockup-header: 30px;
+  --site-lockup-footer: var(--sp-36);
+  --site-lockup-slim: 34px;
+
+  /* ---- The pages of text: the guides, the cities, the policies, the notices, /stop and the 404 ---- */
+  --site-fs-page-title: clamp(30px, calc(24.8px + 1.333vw), 44px);
+  --site-lh-page-title: 1.12;
+  --site-tracking-page-title: -0.5px;
+  --site-fs-page-lede: clamp(17px, calc(16.26px + 0.19vw), 19px);
+  --site-fs-article: clamp(16px, calc(15.63px + 0.0952vw), 17px); /* a guide's or a policy's words */
+  --site-fs-article-head: var(--site-fs-caption); /* its sections' headings, 20 to 24 */
+  --site-fs-guide-title: clamp(18px, calc(16.51px + 0.381vw), 22px); /* a guide's name in the list of them */
+  --site-measure-text: 720px; /* a guide's, a policy's or the notices' words */
+  --site-measure-short: 640px; /* the cities, /stop and the 404 */
+  --site-gap-page-lede: 10px; /* a page's title to its lede, one short paragraph to the next, an area's row */
+  --site-gap-near: 18px; /* a guide's way back to its title; a policy's title to its version */
+  --site-gap-paragraph: 14px; /* a paragraph to the next */
+  --site-space-6: 6px; /* a list's heading to the navy rule beneath it; a guide's contents, one line to the next */
+  --site-clause-number: var(--tap); /* a policy's clause numbers, in a column of their own: 44 px */
+  --site-version-label: 180px; /* a policy's version table: its names' column */
+  --site-foot-gap: clamp(56px, calc(35.2px + 5.333vw), 112px); /* a page's last words to its footer */
+  --site-chevron: var(--stone); /* a row that opens a page; the boards' paler grey, at the apps' chevron colour */
+
+  /* ---- What the shared parts draw light on the navy, and a choice card's edge: no paper on the site ---- */
+  --on-ink: var(--site-on-navy);
+  --on-ink-pressed: var(--site-band);
+  --choice-edge: var(--stone);
+  --choice-off: var(--disabled);
+  --focus-over-photo: var(--site-focus);
+}
+
+@media (min-width: 761px) {
+  :root {
+    --site-header-h: var(--sp-72);
+    --site-lockup-header: var(--sp-40);
+    --site-lockup-footer: var(--sp-40);
+    --site-lockup-slim: var(--sp-36);
+  }
+}
+
+/* The shared parts' roles (packages/brand/tokens.css) on the site's white, as the client app's look sets them
+   (apps/app/src/styles/look.css), so a part draws alike on both. */
+:root {
+  --ui-ground: var(--site-ground);
+  --ui-raised: var(--site-ground);
+  --ui-tint: var(--site-band);
+  --ui-shade: var(--disabled);
+  --ui-box: var(--site-ground);
+  --ui-box-off: var(--disabled);
+  --ui-text: var(--site-text);
+  --ui-text-soft: var(--site-text-muted);
+  --ui-text-muted: var(--site-text-muted);
+  --ui-text-quiet: var(--site-text-muted);
+  --ui-toggle-text: var(--site-text);
+  --ui-hint: var(--site-text-muted);
+  --ui-line: var(--site-line);
+  --ui-line-control: var(--stone);
+  --ui-strong: var(--site-navy);
+  --ui-on-strong: var(--site-on-navy);
+  --ui-strong-pressed: var(--site-navy-hover);
+  --ui-error: var(--red-700);
+  --pick-edge: var(--stone);
+  --pick-on: var(--site-navy);
+  --pick-on-text: var(--site-on-navy);
+  --surface: var(--site-ground);
+  --on-surface: var(--site-text);
+  --on-surface-muted: var(--site-text-muted);
+  --border-subtle: var(--site-line);
+  --border-control: var(--stone);
+  --status-error: var(--red-700);
+  --status-warning: var(--red-700);
+  --status-saved: var(--site-text);
+  --status-done: var(--site-text);
+  --status-note: var(--site-text-muted);
+  --ui-radius-button: 0;
+  --ui-radius-box: 0;
+  --title-font: var(--site-font);
+  --title-weight: var(--weight-semibold);
+  --action-weight: var(--weight-semibold);
+  --caps-font: var(--site-font);
+  --caps-weight: var(--weight-semibold);
+  --caps-variant: normal;
+  --caps-tracking: normal;
+  --focus-colour: var(--site-focus);
+  /* A choice of views (packages/ui Segmented), as the client app draws it: an edged track the column's width, the
+     chosen one filled in navy. */
+  --segmented-display: flex;
+  --segmented-grow: 1 1 0;
+  --segmented-edge: var(--site-line);
+  --segmented-track: transparent; /* the section's own ground shows through, as the boards draw it */
+  --segmented-weight: var(--weight-medium);
+  --segmented-on: var(--site-navy);
+  --segmented-on-edge: var(--site-navy);
+  --segmented-on-text: var(--site-on-navy);
+  --segmented-count: var(--site-band);
+  --segmented-count-text: var(--site-navy);
+  --segmented-on-count: var(--site-gold);
+  /* A before and after (packages/ui Compare): a white line and a square white handle with navy arrows, over the cool
+     ground while its pictures load. */
+  --compare-ground: var(--site-band);
+  --compare-line: var(--site-on-navy);
+  --compare-knob: var(--site-on-navy);
+  --compare-knob-edge: var(--site-line);
+  --compare-knob-text: var(--site-navy);
+  --compare-knob-radius: 0;
+}
+
+/*
+ * The booking pages take the client app's look for every shared part (ADR 0265; apps/app/src/styles/look.css): labels in
+ * the words' ink and medium weight, 52 px fields and buttons, 24 px boxes and 20 px radios, the day strip's figures and
+ * three start times to a row in Plex's semibold, a step bar's track in grid grey. Site.astro marks their body.
+ */
+.app-look {
+  --ui-tint: var(--grid-100);
+  --label-text: var(--site-text);
+  --label-weight: var(--weight-medium);
+  --action-height: var(--btn-client);
+  --control-height: var(--tap);
+  --control-text: var(--fs-15);
+  --control-weight: var(--weight-medium);
+  --radio-size: var(--sp-20);
+  --check-text: var(--fs-15);
+  --check-row-height: var(--tap);
+  --check-box-size: var(--sp-24);
+  --screen-gutter: var(--site-gutter);
+  --strip-number-size: var(--fs-20);
+  --strip-number-weight: var(--weight-semibold);
+  --strip-off-ground: var(--grid-100);
+  --strip-off-text: var(--stone);
+  --strip-day-height: 62px; /* a day's square on a phone, as the board draws it: 72 px on a laptop */
+  --time-columns: 3;
+  --time-height: calc(var(--sp-48) - var(--sp-2));
+  --time-weight: var(--weight-medium);
+  --time-name-size: var(--fs-14);
+  --time-name-weight: var(--weight-semibold);
+  --time-name-caps: normal;
+  --time-name-tracking: normal;
+  --time-name-colour: var(--site-text);
+  --time-taken-ground: var(--white-000);
+  --time-taken-edge: var(--grid-100);
+  --time-taken-text: var(--stone);
+
+  /* The flow's own frame: the phone's top bar, and a laptop's column beside How it works. */
+  --flow-top-h: var(--btn-lg);
+  --flow-aside-w: 380px;
+  --flow-title: clamp(26px, calc(22.29px + 0.952vw), 34px); /* a step's title, 26 on a phone and 34 on a laptop */
+  --flow-lead: clamp(15px, calc(14.26px + 0.19vw), 17px);
+  --flow-mark: var(--sp-64); /* the done screens' ringed tick */
+  --flow-done-title: clamp(30px, calc(26.29px + 0.952vw), 40px); /* the day booked */
+  --flow-done-max: 680px; /* a laptop's confirmation panel */
+  --flow-action-min: 240px; /* a laptop's step button, at its narrowest */
+}
+
+@media (min-width: 761px) {
+  .app-look {
+    --strip-day-height: var(--sp-72);
+    --time-columns: 5;
+  }
+}
+
+/* On navy, words are white and their quieter lines mist; nothing is paper. */
+[data-ground="ink"] {
+  --on-surface: var(--site-on-navy);
+  --on-surface-muted: var(--site-on-navy-muted);
+  --border-subtle: var(--site-navy-rule);
+  --border-control: var(--site-on-navy-edge);
+  --status-saved: var(--site-on-navy);
+  --status-done: var(--site-on-navy);
+  --status-note: var(--site-on-navy-muted);
+}
+
 :root {
   /* ---- Type: the site's scale, which grows with the screen ------------------------------------ */
   /* Display, the five headings, then the larger text beneath a heading and the body; beyond the scale, the two
      display sizes of the band's statement and how it works' numerals. The brand's fixed sizes (--fs-13 to --fs-30)
      are for what does not grow. */
-  --fs-hero: clamp(42px, 7.4vw, 96px);
-  /* The hero's turning line: on a narrow phone it shrinks so its longest phrase, about 8.7 times the type's size,
-     keeps to one line. */
-  --fs-hero-line: min(var(--fs-hero), calc((100vw - 2 * var(--gutter)) / 8.9));
-  --fs-band: clamp(34px, 6.4vw, 84px);
-  --fs-step-number: clamp(40px, 5vw, 72px);
-  --fs-h1: clamp(32px, 4.6vw, 62px);
-  --fs-h2: clamp(30px, 4vw, 54px);
+  --fs-hero: var(--site-fs-turning);
+  /* The hero's turning line, at the scale's size: on a phone its longer phrases take two lines, as the board draws
+     them (ADR 0264). */
+  --fs-hero-line: var(--fs-hero);
+  --fs-h1: var(--site-fs-section);
+  --fs-h2: var(--site-fs-section);
   --fs-h3: clamp(28px, 3.4vw, 44px);
-  --fs-h4: clamp(24px, 2.8vw, 38px);
   --fs-h5: clamp(20px, 2vw, 26px);
-  --fs-lead: clamp(17px, 1.4vw, 20px);
-  --fs-body: clamp(16px, 1.3vw, 18px);
+  --fs-lead: var(--site-fs-lead);
+  --fs-body: var(--site-fs-body);
 
   /* ---- Space: the site's scale, which grows with the screen ----------------------------------- */
   /* Between and inside a section's parts, smallest first; a section's own frame is beneath, named for it. */
@@ -36,79 +290,50 @@
   --space-3xl: clamp(48px, 7vw, 88px);
 
   /* ---- Page frame -------------------------------------------------------- */
-  /* The top of a page of text, the try-on's and the 404. */
-  --page-pad-top: clamp(40px, 6vw, 88px);
-  --page-max: 1440px;
-  --gutter: clamp(20px, 4vw, 48px);
-  --header-gap: clamp(16px, 2.5vw, 34px);
-  --bar-h: var(--sp-64);
-  --bar-reserve: 72px; /* the space the home page keeps for the sticky bar */
-  --foot-bar-h: 0px; /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
-  --section-gap: clamp(56px, 8vw, 112px);
-  --band-pad: clamp(48px, 7vw, 96px);
+  /* The top of a page of text, /stop's and the 404's, beneath the header. */
+  --page-pad-top: clamp(28px, calc(14.63px + 3.429vw), 64px);
+  --page-max: var(--site-column); /* the column, its gutters inside it: 1120 px of words at 1440, as the boards' wrap */
+  --gutter: var(--site-gutter);
+  --bar-h: calc(
+    var(--site-bar-pad-top) + var(--site-button-h) + var(--site-bar-pad-bottom)
+  ); /* the phone's sticky bar */
+  --bar-reserve: var(--sp-72); /* the space the home page keeps for the sticky bar */
+  --foot-bar-h: var(--site-none); /* the bar fixed at the foot, where a page shows one: the cookie bar sits above it */
   --split-min: 300px;
   --split-min-mid: 340px;
   --split-min-wide: 360px;
 
   /* ---- Line lengths ------------------------------------------------------ */
   --measure-hero: 900px;
-  --measure-lead: 620px;
   --measure-hero-body: 600px;
-  --measure-note: 560px;
   --measure-closing: 520px;
-  --measure-upload-title: var(--measure-closing);
-  --measure-error: var(--measure-closing);
   --measure-short: var(--app-column-max);
   --measure-button-column: var(--split-min-wide);
 
   /* ---- Home ---------------------------------------------------------------- */
-  --hero-min-h: clamp(520px, 82vh, 780px);
-  --hero-tag-top: clamp(16px, 2.4vw, 26px);
+  /* The screen beneath the header, less as much of the next section as the boards show: 92 px of it under a phone's
+     692 px hero, 90 px under a laptop's 738. */
+  --hero-peek: clamp(90px, calc(92.74px - 0.1905vw), 92px);
+  --hero-min-h: max(520px, calc(100svh - var(--site-header-h) - var(--hero-peek)));
+  --hero-tag-top: clamp(16px, 2.4vw, 26px); /* the area line and Pause, from the hero's top */
+  --hero-pause-room: calc(var(--tap) + var(--tap) + var(--sp-12)); /* Pause or Play, and a gap before it */
+  --hero-pad-bottom: clamp(32px, calc(20.11px + 3.048vw), 64px); /* the words, above the room kept for the bar */
+  --hero-title-gap: clamp(18px, calc(15.77px + 0.571vw), 24px); /* the turning line to the title */
+  --hero-actions-gap: clamp(24px, calc(19.54px + 1.143vw), 36px); /* the words to the buttons */
 
-  /* The results' before and after at its widest, and its arrows. */
-  --result-picture-max: 540px;
-  --result-arrow: var(--sp-48);
-  --norwood-flow-basis: 150px;
-  --norwood-flow-max: 210px;
-  /* Six cards at their widest, the five stages and the restored hairline: the row's width, from the left edge. */
-  --norwood-flow-row-max: calc(6 * var(--norwood-flow-max) + 5 * var(--space-2xs));
-  /* A phone's Norwood card: the picture's width beside its words. */
-  --norwood-thumb: 104px;
+  /* The results' before and after at its tallest. */
+  --result-picture-max: 540px; /* a result's pair at its widest, at its photographs' own 4:5 */
 
-  --comparison-label-w: 260px;
-  --compare-card-w: 82%; /* a phone card, the next one showing at the edge */
+  --comparison-label-w: 220px; /* a laptop table's first column, the rows' names */
 
   --teaser-frame-h: clamp(280px, 42vw, 420px);
-  /* The try-on's look beside its photograph, on the sent screen. */
-  --look-frame-max: 420px;
 
-  --band-max: 1100px;
-  --discretion-pad-y: clamp(64px, 10vw, 144px);
-  --discretion-pad-x: clamp(24px, 5vw, 64px);
-
-  --faq-intro-max: 380px;
-
-  --closing-pad-y: clamp(40px, 6vw, 72px);
-
-  --footer-pad-top: clamp(40px, 5vw, 64px);
-  --footer-pad-bottom: 96px;
   --column-min-narrow: 140px; /* a column of short links or names, two to a phone */
 
   /* ---- Try-on ------------------------------------------------------------ */
-  --flow-pad-bottom: clamp(48px, 6vw, 72px);
-  --flow-split-gap: clamp(32px, 5vw, 72px);
-  --flow-button-max: 320px;
-  --flow-medium-max: 720px;
-  --oval-max: var(--split-min);
-  --consent-key-w: 116px;
-  --stage-min: 220px;
-  --look-min: 200px;
-  --gate-frame-h: clamp(300px, 44vw, 420px);
-  --gate-blur: 7px;
-  --error-frame-h: clamp(200px, 28vw, 260px);
-
-  /* ---- The referral landing and /book: 390, then 1440 ---- */
-  --landing-pad-top: clamp(26px, 4.4vw, 64px);
-  --landing-column-gap: var(--bar-reserve);
-  --landing-check-w: clamp(104px, 8.3vw, 120px);
+  --try-picture-w: var(--measure-hero-body); /* a laptop's picture beside each step, 4:3: 600 px */
+  --try-column-w: var(--measure-form); /* a laptop's step beside its picture: 440 px */
+  --try-look-ratio: 648 / 467; /* the look beside the photograph, as the boards draw it */
+  --try-title: clamp(26px, calc(23.77px + 0.5714vw), 32px); /* a step's title: 26 on a phone, 32 on a laptop */
+  --try-lead: clamp(15px, calc(14.63px + 0.0952vw), 16px);
 }

@@ -5,8 +5,9 @@
 //       Prints the version serving 100% of traffic. Prints "" for an app whose
 //       surface is not switched on there, deployed or not; anything else
 //       Cloudflare cannot answer is an error.
-//   node scripts/release/release.ts upload --worker mm-api --env production --tag <git-sha>
-//       Uploads a new version without sending it any traffic. Prints its ID.
+//   node scripts/release/release.ts upload --worker mm-api --env production --tag <git-sha> [--outdir <dir>]
+//       Uploads a new version without sending it any traffic. Prints its ID. With --outdir, the bundle and its source
+//       map are kept there, for Sentry (scripts/release/sentry-maps.ts).
 //   node scripts/release/release.ts deploy --worker mm-api --env production --split <id>@10 --split <id>@90
 //       Sets how traffic is split between versions. Percentages must total 100.
 //   node scripts/release/release.ts ship --worker mm-app --env staging --tag <git-sha>
@@ -64,6 +65,7 @@ const { positionals, values } = parseArgs({
     env: { type: "string" },
     tag: { type: "string" },
     message: { type: "string" },
+    outdir: { type: "string" },
     split: { type: "string", multiple: true },
     to: { type: "string", multiple: true },
   },
@@ -88,7 +90,7 @@ switch (command) {
     break;
   case "upload": {
     const tag = values.tag ?? usage();
-    console.log(uploadVersion(target, tag, values.message ?? `release ${tag}`));
+    console.log(uploadVersion(target, tag, values.message ?? `release ${tag}`, values.outdir));
     break;
   }
   case "deploy": {

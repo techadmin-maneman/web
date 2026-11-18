@@ -119,14 +119,18 @@ function versionTagged(target: Target, tag: string): string | null {
   return tagged.at(-1)?.id ?? null;
 }
 
-/** Uploads a new version without sending it any traffic, and returns its ID. */
-export function uploadVersion(target: Target, tag: string, message: string): string {
+/**
+ * Uploads a new version without sending it any traffic, and returns its ID. With `outdir`, the bundle uploaded is kept
+ * there with its source map.
+ */
+export function uploadVersion(target: Target, tag: string, message: string, outdir?: string): string {
   const outputFile = join(mkdtempSync(join(tmpdir(), "wrangler-")), "output.ndjson");
   // The commit, baked into the bundle as BUILD_SHA: a secret change publishes an untagged version of the same code, and
   // /api/health still says which commit is live (src/routes/health.ts). A define adds no binding to mm-api's 64.
   const commit = COMMIT.test(tag) ? ["--define", `BUILD_SHA:"${tag}"`] : [];
   try {
-    target.wrangler(["versions", "upload", "--tag", tag, "--message", message, ...commit], {
+    const kept = outdir === undefined ? [] : ["--outdir", outdir];
+    target.wrangler(["versions", "upload", "--tag", tag, "--message", message, ...commit, ...kept], {
       WRANGLER_OUTPUT_FILE_PATH: outputFile,
     });
   } catch (error) {

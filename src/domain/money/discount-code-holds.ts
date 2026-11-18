@@ -3,6 +3,7 @@
 // consultation and fit in one visit, whose product, and so its price, is chosen only at the visit, so what the code
 // takes off waits for the payment link (src/domain/money/payment-links.ts). Uses are src/domain/money/discount-code-uses.ts.
 
+import { withGst } from "../../config/gst.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { amountOff, discounted, type DiscountTerms } from "../../policy/discount-codes.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
@@ -24,6 +25,8 @@ interface HoldRow {
   id: string;
   type: VisitType;
   amount_ex_gst: number;
+  /** What the client pays for it, GST included. */
+  amount: number;
   gst_percent: number;
   use_credit: number;
   moves_appointment_id: string | null;
@@ -36,7 +39,7 @@ interface HoldRow {
 async function clientHoldOf(db: D1Database, holdId: string, personId: string): Promise<HoldRow | null> {
   return db
     .prepare(
-      `SELECT id, type, amount_ex_gst, gst_percent, use_credit, moves_appointment_id, state, confirmed_at,
+      `SELECT id, type, amount_ex_gst, amount, gst_percent, use_credit, moves_appointment_id, state, confirmed_at,
               razorpay_order_id, expires_at
        FROM slot_holds WHERE id = ?1 AND person_id = ?2`,
     )
@@ -179,8 +182,7 @@ export async function removeFromHold(
   if (code === null) return "none";
 
   const at = now.toISOString();
-  const listed = { amount_ex_gst: hold.amount_ex_gst + (code.amountOff ?? 0), gst_percent: hold.gst_percent };
-  const restored = discounted(listed, 0);
+  const restored = listedPrice(hold, code.amountOff ?? 0);
   await db.batch([
     ...dropOrder(db, hold, now),
     db
@@ -214,11 +216,15 @@ export async function holdDiscount(
   const code = await codeOnHold(db, hold.id);
   if (code === null) return null;
   if (code.amountOff === null) return { code: code.code, amount_ex_gst: null, list_price: null };
-  const listExGst = hold.price.amount_ex_gst + code.amountOff;
+  return { code: code.code, amount_ex_gst: code.amountOff, list_price: listedPrice(hold.price, code.amountOff) };
+}
+
+/** A price with a code's figure put back: before GST, and what the client pays, as `discounted` took them off. */
+function listedPrice(price: Price, off: number): Price {
   return {
-    code: code.code,
-    amount_ex_gst: code.amountOff,
-    list_price: discounted({ amount_ex_gst: listExGst, gst_percent: hold.price.gst_percent }, 0),
+    amount_ex_gst: price.amount_ex_gst + off,
+    amount: price.amount + withGst(off, price.gst_percent),
+    gst_percent: price.gst_percent,
   };
 }
 

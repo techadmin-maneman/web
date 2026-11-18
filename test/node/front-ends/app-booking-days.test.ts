@@ -1,16 +1,16 @@
 // The booking sheet's days (apps/app/src/booking/days.ts): the day chosen when the day offered is full, the start
-// chosen in the window offered, later days added to those shown, and what the date and time steps say.
+// chosen in the window offered, the earliest open start, later days added to those shown, and what the step says.
 
 import { describe, expect, it } from "vitest";
 import type { Availability } from "../../../apps/app/src/api.ts";
 import {
-  dayInsideNotice,
+  earliestOpen,
   firstOpenFrom,
   hasLaterDays,
   firstOpenIn,
   offeredFullLine,
+  openStarts,
   stillOpen,
-  timeContinue,
   withDays,
   type Day,
 } from "../../../apps/app/src/booking/days.ts";
@@ -42,6 +42,7 @@ const availability = (days: Day[], last: string): Availability => ({
   service: { tier: "standard", name: "Service visit", minutes: 90 },
   price: PRICE,
   change_notice_hours: 24,
+  opens: days[0]?.date ?? last,
   last,
   days,
 });
@@ -86,7 +87,7 @@ describe("the booking sheet’s days", () => {
   });
 });
 
-describe("what the date step says of a full day offered", () => {
+describe("what the step says of a full day offered", () => {
   const days = [day("2026-10-06", false), day("2026-10-07", true)];
 
   it("that it is full, and the next open day is chosen", () => {
@@ -105,29 +106,15 @@ describe("what the date step says of a full day offered", () => {
   });
 });
 
-describe("the days the date step marks inside the notice", () => {
-  const withNine = (isOpen: boolean, charged: boolean): Day => ({
-    ...day("2026-10-03", true),
-    starts: [start("2026-10-03", "09:00", isOpen, charged)],
+describe("the earliest open start, and what each day has left", () => {
+  it("offers the first open start of the first day with one", () => {
+    const days = [day("2026-10-05", false), day("2026-10-06", true)];
+    expect(earliestOpen(days)).toEqual({ date: "2026-10-06", start: start("2026-10-06", "09:00", true) });
+    expect(earliestOpen(days.slice(0, 1))).toBeNull();
   });
 
-  it("marks a day with an open start that is already charged to change", () => {
-    expect(dayInsideNotice(withNine(true, true))).toBe(true);
-    expect(dayInsideNotice(withNine(true, false))).toBe(false);
-  });
-
-  it("leaves a taken start out of the mark, since it cannot be booked", () => {
-    expect(dayInsideNotice(withNine(false, true))).toBe(false);
-  });
-});
-
-describe("the time step’s button", () => {
-  it("goes on to payment for a day with a price", () => {
-    expect(timeContinue(day("2026-10-05", true))).toBe("Continue to payment");
-  });
-
-  it("only goes on for a day that costs nothing, as a consultation does", () => {
-    const free = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
-    expect(timeContinue({ ...day("2026-10-05", true), price: free })).toBe("Continue");
+  it("counts a day's open starts, a taken one left out", () => {
+    expect(openStarts(day("2026-10-05", true))).toBe(1);
+    expect(openStarts(day("2026-10-05", false))).toBe(0);
   });
 });

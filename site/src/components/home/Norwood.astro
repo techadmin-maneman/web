@@ -1,216 +1,208 @@
 ---
-// The Norwood scale: stages III–VII, the ones we fit, then a hairline restored. Where the photographs are not
-// shown, or content asks for them, the design's line drawings stand in.
-import { capsLook } from "@maneman/ui/Caps";
+// The Norwood scale, on white (ADR 0263): stages III–VII, the ones we fit, then a hairline restored. A laptop shows the
+// six in one row beneath the heading and the way to book; a phone chooses a stage above two pictures
+// (../../islands/home/NorwoodPicker.tsx). Where the photographs are not shown, the design's line drawings stand in.
+import { getImage } from "astro:assets";
 import { buttonLook } from "@maneman/ui/Button";
-import { illustrationTag, norwood, norwoodPhotos, norwoodRestored, placeholderTag } from "../../content/site.ts";
+import NorwoodPicker, { type PickerPicture } from "../../islands/home/NorwoodPicker.tsx";
+import {
+  illustrationTag,
+  norwood,
+  norwoodPhotos,
+  norwoodRestored,
+  placeholderTag,
+  results,
+} from "../../content/site.ts";
 import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
+import { designImage } from "../../lib/images.ts";
 import DesignPicture from "../DesignPicture.astro";
 
 const showPhotos = isShown(norwoodPhotos) && norwoodPhotos.use === "photos";
-const sizes = "(min-width: 761px) 210px, 104px";
+const showRestored = isShown(norwoodRestored);
+const sizes = "(min-width: 761px) 190px, 50vw";
 const widths = [240, 480];
+
+const picture = async (file: string, alt: string): Promise<PickerPicture> => {
+  const image = await getImage({ src: designImage(file), format: "webp", widths });
+  return { src: image.src, srcset: image.srcSet.attribute, sizes, alt };
+};
 
 const cards = norwood.stages.map((stage, index) => {
   const photo = norwoodPhotos.images[index];
   if (photo === undefined) throw new Error(`no Norwood photograph for stage ${stage.numeral}`);
   return { stage, photo };
 });
+const pickerStages = showPhotos
+  ? await Promise.all(
+      cards.map(async ({ stage, photo }) => ({ ...stage, picture: await picture(photo.file, photo.alt) })),
+    )
+  : [];
+const restoredPicture = showRestored ? await picture(norwoodRestored.image.file, norwoodRestored.image.alt) : null;
 ---
 
-<section class="norwood" data-section="norwood">
-  <div class="container inner">
-    <h2 class="section-title">{norwood.title}</h2>
-    <p class="lead intro">{norwood.intro}</p>
+<section class="band ground-white" data-section="norwood">
+  <div class="container">
+    <div class="head">
+      <div>
+        <h2 class="section-title">{norwood.title}</h2>
+        <p class="lead">{norwood.intro}</p>
+        <p class="stages">{norwood.label}</p>
+      </div>
+      <a class={buttonLook({ variant: "primary", size: "action", className: "book wide" })} href="/book" data-filled>
+        {norwood.book}
+      </a>
+    </div>
 
-    <div class={capsLook("group-label")}>{norwood.label}</div>
-    <ul class="cards">
+    <ul class:list={["row", showPhotos && "wide"]}>
       {cards.map(({ stage, photo }) => (
-        <li class="card">
-          <div class="frame picture">
-            {showPhotos ? (
-              <DesignPicture file={photo.file} alt={photo.alt} sizes={sizes} widths={widths} class="focus-norwood" />
-            ) : (
-              <svg class="drawing" viewBox="0 0 96 74" role="img" aria-label={`Norwood ${stage.numeral}`}>
-                <path d={stage.bald} />
-              </svg>
-            )}
-            <div class={capsLook("label numeral")}>{stage.numeral}</div>
-            {isTaggedPlaceholder(norwoodPhotos) && showPhotos && (
-              <div class={capsLook("label placeholder")}>{placeholderTag}</div>
-            )}
-          </div>
-          <div class="head">
-            <span class="name">{stage.name}</span>
-            <span class={capsLook("tag")}>{stage.tag}</span>
-          </div>
+        <li>
+          <figure class="tile">
+            <div class="frame picture">
+              {showPhotos ? (
+                <DesignPicture file={photo.file} alt={photo.alt} sizes={sizes} widths={widths} />
+              ) : (
+                <svg class="drawing" viewBox="0 0 96 74" role="img" aria-label={`Norwood ${stage.numeral}`}>
+                  <path d={stage.bald} />
+                </svg>
+              )}
+              <span class="label numeral">{stage.numeral}</span>
+              {isTaggedPlaceholder(norwoodPhotos) && showPhotos && (
+                <span class="label placeholder">{placeholderTag}</span>
+              )}
+            </div>
+            <figcaption class="caption">
+              <span class="name">{stage.name}</span>
+              <span class="sub">{stage.tag}</span>
+            </figcaption>
+          </figure>
         </li>
       ))}
-      {isShown(norwoodRestored) && (
-        <li class="card restored">
-          <div class="frame picture">
-            <DesignPicture
-              file={norwoodRestored.image.file}
-              alt={norwoodRestored.image.alt}
-              sizes={sizes}
-              widths={widths}
-              class="focus-norwood"
-            />
-            {norwoodRestored.illustration && <div class={capsLook("label placeholder")}>{illustrationTag}</div>}
-          </div>
-          <div class="head">
-            <span class="name">{norwood.restored}</span>
-          </div>
+      {showRestored && (
+        <li>
+          <figure class="tile">
+            <div class="frame picture restored">
+              <DesignPicture
+                file={norwoodRestored.image.file}
+                alt={norwoodRestored.image.alt}
+                sizes={sizes}
+                widths={widths}
+              />
+              <span class="label numeral">{results.after}</span>
+            </div>
+            <figcaption class="caption">
+              <span class="name">{norwood.restored}</span>
+              {norwoodRestored.illustration && <span class="sub">{illustrationTag}</span>}
+            </figcaption>
+          </figure>
         </li>
       )}
     </ul>
 
-    <div class="actions">
-      <a class={buttonLook({ variant: "primary", size: "control" })} href="/book">
-        {norwood.book}
-      </a>
-    </div>
+    {showPhotos && (
+      <div class="phone">
+        <NorwoodPicker
+          client:media="(max-width: 760px)"
+          stages={pickerStages}
+          restored={restoredPicture}
+          illustration={norwoodRestored.illustration}
+          placeholder={isTaggedPlaceholder(norwoodPhotos) ? placeholderTag : null}
+        />
+      </div>
+    )}
+
+    <a class={buttonLook({ variant: "primary", size: "action", className: "book narrow" })} href="/book" data-filled>
+      {norwood.book}
+    </a>
   </div>
 </section>
 
 <style>
-  .norwood {
-    margin-top: var(--section-gap);
-    background: var(--paper-light);
-    border-top: var(--hairline) solid var(--paper-line);
-    border-bottom: var(--hairline) solid var(--paper-line);
+  .head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-40);
   }
-  .inner {
-    padding-block: var(--band-pad);
+  .stages {
+    margin: var(--sp-12) 0 0;
+    font-size: var(--site-fs-label);
+    font-weight: var(--weight-semibold);
+    color: var(--site-text-muted);
   }
-  .section-title {
-    margin-bottom: var(--sp-12);
-  }
-  .intro {
-    margin: 0 0 var(--space-l);
-  }
-  .group-label {
-    margin-bottom: var(--sp-16);
-    font-size: var(--fs-16);
-    color: var(--ink);
-  }
-  /* One grid of equal columns, from the left edge: the five stages, then the hairline restored. */
-  .cards {
-    list-style: none;
-    margin: 0;
+  /* Two to a row on a phone, where the drawings stand in for the photographs; six on a laptop. */
+  .row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-16);
+    margin: var(--site-gap-list) 0 0;
     padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--norwood-flow-basis), 1fr));
-    gap: var(--space-2xs);
-    max-width: var(--norwood-flow-row-max);
+    list-style: none;
   }
-  @media (min-width: 1024px) {
-    .cards {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-  }
-  /*
-   * Each card is two rows of the grid (subgrid): picture, then name. Cards side by side share the name row's
-   * height, however their names wrap.
-   */
-  .card {
-    background: var(--paper);
-    border: var(--hairline) solid var(--paper-line);
-    display: grid;
-    grid-row: span 2;
-    grid-template-rows: subgrid;
-    row-gap: 0;
+  .tile {
+    margin: 0;
   }
   .picture {
-    grid-row: 1;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 204 / 255;
+    background: var(--site-band);
+  }
+  .restored {
+    background: var(--site-navy);
+  }
+  .picture :global(img) {
+    object-position: 50% 30%;
   }
   .drawing {
     display: block;
     width: 100%;
     height: 100%;
-  }
-  .drawing path {
-    fill: var(--paper);
+    fill: var(--site-text-muted);
   }
   .numeral {
     position: absolute;
     top: 0;
     left: 0;
-    font-size: var(--fs-14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--site-numeral-w);
+    height: var(--site-numeral-h);
   }
   .placeholder {
     position: absolute;
+    left: 0;
     bottom: 0;
-    right: 0;
-    padding: var(--sp-4) var(--sp-8);
-    letter-spacing: var(--tracking-12);
-    color: var(--ink-muted);
   }
-  .head {
-    grid-row: 2;
-    padding: var(--space-2xs);
-    border-top: var(--rule-strong) solid var(--ink);
+  .caption {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--sp-8);
+    flex-direction: column;
+    padding-top: var(--sp-12);
   }
   .name {
-    font-family: var(--font-serif);
-    font-size: var(--fs-lead);
-    line-height: var(--lh-115);
-    text-wrap: pretty;
+    font-size: var(--site-fs-body);
+    font-weight: var(--weight-semibold);
+    color: var(--site-navy);
   }
-  .tag {
-    letter-spacing: var(--tracking-12);
-    font-size: var(--fs-16);
-    white-space: nowrap;
-    color: var(--ink);
+  .sub {
+    font-size: var(--site-fs-label);
+    color: var(--site-text-muted);
   }
-  /* The hairline restored: the card the five lead to, on ink. */
-  .restored {
-    background: var(--ink);
-    border-color: var(--ink);
+  .narrow {
+    margin-top: var(--sp-24);
   }
-  .restored .head {
-    border-top-color: var(--paper);
-  }
-  .restored .name {
-    color: var(--paper);
-  }
-  /*
-   * A phone: one card a row, its picture beside its words, so names and tags keep to a line.
-   */
+
+  /* A phone chooses a stage; a laptop shows the row, with the way to book beside the heading. */
   @media (max-width: 760px) {
-    .cards {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .card {
-      grid-row: auto;
-      grid-template-columns: var(--norwood-thumb) minmax(0, 1fr);
-      grid-template-rows: auto;
-    }
-    .picture {
-      grid-row: 1;
-      border-right: var(--rule-strong) solid var(--ink);
-    }
-    .restored .picture {
-      border-right-color: var(--paper);
-    }
-    .head {
-      grid-row: 1;
-      border-top: 0;
-      flex-wrap: wrap;
-      align-self: center;
-      row-gap: var(--sp-4);
+    .wide {
+      display: none;
     }
   }
-  .actions {
-    margin-top: var(--space-m);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-16) var(--sp-32);
-    align-items: center;
+  @media (min-width: 761px) {
+    .row {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .phone,
+    .narrow {
+      display: none;
+    }
   }
 </style>

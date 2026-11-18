@@ -297,6 +297,9 @@ describe("Zoho Books", () => {
     apiHost: "www.zohoapis.in",
     orgId: "60088931635",
     refundAccountId: null,
+    bankAccountId: null,
+    gatewayFeesAccountId: null,
+    gateway: null,
     itemPush: false,
     billAccounts: null,
     gst: NO_GST,
@@ -310,6 +313,7 @@ describe("Zoho Books", () => {
     reference: "MM-2026-0841",
     description: "Razorpay payment pay_test41",
     supply: "Advance for First fit, Fri 2 Oct",
+    depositAccountId: null,
   };
 
   function zohoBooks(routes: Parameters<typeof fakeFetch>[0]) {

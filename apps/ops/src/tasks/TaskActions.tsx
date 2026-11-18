@@ -18,6 +18,7 @@ import { tasks } from "../content.ts";
 import shared from "./tasks.module.css";
 import styles from "./task-actions.module.css";
 import { useRereadOnChange } from "@maneman/ui/Refusal";
+import { AtFault } from "../clients/index.ts";
 import { tasksApi } from "./tasks-api.ts";
 
 type Group = TaskGroup["group"];
@@ -26,10 +27,14 @@ type Group = TaskGroup["group"];
 const closableAs = (group: Group): ClosableGroup | null =>
   group === "partial_visit" ||
   group === "consumables_short" ||
+  group === "fit_unsigned" ||
+  group === "fit_guarantee_claim" ||
+  group === "low_rating" ||
   group === "at_risk_client" ||
   group === "city_matter" ||
   group === "kit_request" ||
-  group === "reschedule_request"
+  group === "reschedule_request" ||
+  group === "made_to_order_ask"
     ? group
     : null;
 
@@ -37,10 +42,14 @@ const closableAs = (group: Group): ClosableGroup | null =>
 const CLOSE_WORDS: Readonly<Record<ClosableGroup, { readonly open: string; readonly label: string }>> = {
   partial_visit: tasks.close,
   consumables_short: tasks.close.consumablesShort,
+  fit_unsigned: tasks.close.fitUnsigned,
+  fit_guarantee_claim: tasks.close.guaranteeClaim,
+  low_rating: tasks.close.lowRating,
   at_risk_client: tasks.close.atRisk,
   city_matter: tasks.close.cityMatter,
   kit_request: tasks.close.kitRequest,
   reschedule_request: tasks.close.reschedule,
+  made_to_order_ask: tasks.close.madeToOrder,
 };
 
 const closeWords = (group: ClosableGroup) => CLOSE_WORDS[group];
@@ -119,17 +128,21 @@ function GiveForm({
 function CloseForm({
   group,
   subject,
+  personId,
   busy,
   onClose,
   onCancel,
 }: {
   group: ClosableGroup;
   subject: string;
+  /** The client the task is about, whose hair system a guarantee claim asks was at fault; null for none. */
+  personId: string | null;
   busy: boolean;
-  onClose: (reason: string) => void;
+  onClose: (reason: string, failure: string | null) => void;
   onCancel: () => void;
 }) {
   const [reason, setReason] = useState("");
+  const [fault, setFault] = useState("");
   const copy = tasks.close;
   return (
     <div className={styles.form}>
@@ -148,6 +161,9 @@ function CloseForm({
           />
         )}
       </Field>
+      {group === "fit_guarantee_claim" && personId !== null && (
+        <AtFault clientId={personId} value={fault} disabled={busy} onChange={setFault} />
+      )}
       <div className={styles.formActions}>
         <Button
           variant="outline"
@@ -155,7 +171,7 @@ function CloseForm({
           busy={busy}
           disabled={reason.trim() === ""}
           onClick={() => {
-            onClose(reason.trim());
+            onClose(reason.trim(), fault === "" ? null : fault);
           }}
         >
           {busy ? copy.closing : copy.confirm}
@@ -187,26 +203,17 @@ function Act({
   );
 }
 
+type RowFailure = { readonly code: string; readonly closing: boolean; readonly fields?: readonly string[] };
+
 /** The row's refusal in words, a change of owner's or a closing's; one because the task had changed reads the page again. */
-function useRowRefusal(failed: { readonly code: string; readonly closing: boolean } | null): string | null {
+function useRowRefusal(failed: RowFailure | null): string | null {
   const errors = failed?.closing === true ? tasks.close.errors : tasks.owner.errors;
-  const refused = failed === null ? null : errorText(errors, { code: failed.code });
+  const refused = failed === null ? null : errorText(errors, failed);
   useRereadOnChange(refused);
   return refused;
 }
 
-export function TaskActions({
-  group,
-  task,
-  subject,
-  owner,
-  me,
-  staff,
-  mayOwn,
-  closable,
-  onOwner,
-  onClosed,
-}: {
+interface TaskActionsProps {
   group: Group;
   task: Task;
   /** Who or what the task heads with, which each action names to a screen reader. */
@@ -219,9 +226,12 @@ export function TaskActions({
   closable: boolean;
   onOwner: (owner: string | null) => void;
   onClosed: () => void;
-}) {
+}
+
+export function TaskActions(props: TaskActionsProps) {
+  const { group, task, subject, owner, me, staff, mayOwn, closable, onOwner, onClosed } = props;
   const [open, setOpen] = useState<Open>("none");
-  const [failed, setFailed] = useState<{ readonly code: string; readonly closing: boolean } | null>(null);
+  const [failed, setFailed] = useState<RowFailure | null>(null);
   const [busy, once] = useOneAtATime();
   const mineButton = useRef<HTMLButtonElement>(null);
   const giveButton = useRef<HTMLButtonElement>(null);
@@ -250,12 +260,12 @@ export function TaskActions({
       backTo(back);
     });
 
-  const close = (as: ClosableGroup, reason: string) =>
+  const close = (as: ClosableGroup, reason: string, failure: string | null) =>
     once(async () => {
       setFailed(null);
-      const answer = await tasksApi.closeTask(as, task.id, reason);
+      const answer = await tasksApi.closeTask(as, task.id, reason, failure);
       if (answer.ok) onClosed();
-      else setFailed({ code: answer.code, closing: true });
+      else setFailed({ code: answer.code, closing: true, fields: answer.fields });
     });
 
   const refused = useRowRefusal(failed);
@@ -319,7 +329,8 @@ export function TaskActions({
           group={closing}
           subject={subject}
           busy={busy}
-          onClose={(reason) => void close(closing, reason)}
+          personId={task.person?.id ?? null}
+          onClose={(reason, failure) => void close(closing, reason, failure)}
           onCancel={() => {
             backTo(closeButton);
           }}
@@ -350,7 +361,7 @@ export function TakeButton({
   mayOwn: boolean;
   onOwner: (owner: string | null) => void;
 }) {
-  const [failed, setFailed] = useState<{ readonly code: string; readonly closing: boolean } | null>(null);
+  const [failed, setFailed] = useState<RowFailure | null>(null);
   const [busy, once] = useOneAtATime();
   const refused = useRowRefusal(failed);
   if (owner !== null || !mayOwn || me === null || !staff.includes(me)) return null;

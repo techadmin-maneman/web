@@ -3,6 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { clientInboxOf } from "../../../src/domain/clients/app-alerts.ts";
 import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { askRefund } from "../../../src/domain/money/refunds.ts";
 import { composeUpiReceived } from "../../../src/domain/money/upi-payments.ts";
@@ -92,6 +93,10 @@ describe("a paid visit booked while online payment is off", () => {
       .bind(paymentId)
       .first();
     expect(receipts).toEqual({ n: 1 });
+    // Its alert in the client's app names the visit paid for (docs/decisions/0255-client-alerts-and-push.md).
+    expect(await clientInboxOf(env.DB, ROHIT, NOW)).toContainEqual(
+      expect.objectContaining({ kind: "upi_received", visit_id: visit }),
+    );
 
     const again = await post(`/api/visits/${visit}/upi-payment`, { utr: "412345678902" });
     expect(again.status).toBe(409);

@@ -6,7 +6,7 @@
 
 @import "@maneman/brand/tokens.css";
 @import "./tokens-site.css";
-@import "@maneman/brand/fonts.css";
+@import "@maneman/brand/fonts-plex.css";
 @import "@maneman/ui/base.css";
 
 /*
@@ -23,7 +23,7 @@
   html {
     scroll-behavior: smooth;
     /* Whatever the page scrolls to, a section or a focused control, stops below the fixed header. */
-    scroll-padding-top: var(--header-h);
+    scroll-padding-top: var(--site-header-h);
   }
   /* Under prefers-reduced-motion nothing moves, as in the apps (packages/ui/base.css). */
   @media (prefers-reduced-motion: reduce) {
@@ -41,18 +41,18 @@
 
   body {
     margin: 0;
-    background: var(--paper);
-    color: var(--text);
-    font-family: var(--font-sans);
+    background: var(--site-ground);
+    color: var(--site-text);
+    font-family: var(--site-font);
     -webkit-font-smoothing: antialiased;
   }
 
   a {
-    color: var(--text);
+    color: var(--site-navy);
     text-decoration: none;
   }
   a:hover {
-    color: var(--ink);
+    color: var(--site-navy-hover);
   }
 
   input,
@@ -64,23 +64,20 @@
     color: inherit;
   }
   ::placeholder {
-    color: var(--paper-hint);
+    color: var(--site-text-muted);
     opacity: 1;
   }
   .on-ink ::placeholder {
-    color: var(--ink-muted);
+    color: var(--site-on-navy-muted);
   }
   select {
     appearance: none;
   }
 
-  /* Keyboard focus: the design has none, so it follows the surface's text colour. */
+  /* Keyboard focus: a brass ring on every ground (ADR 0266). */
   :focus-visible {
-    outline: var(--focus-width) solid var(--focus-colour, var(--ink));
+    outline: var(--focus-width) solid var(--focus-colour, var(--site-focus));
     outline-offset: var(--focus-offset);
-  }
-  .on-ink {
-    --focus-colour: var(--paper);
   }
 
   /*
@@ -93,18 +90,40 @@
   }
 }
 
-/* The site's buttons are wider than the apps', the words further from the edges, and its fields as tall as its
-   buttons (packages/ui/base.css); its lines of what went wrong are in its 14 px small size. */
+/* The site's buttons are 52 px tall, as the redesign's brief draws them, and wider than the apps', the words further
+   from the edges; its fields are as tall as its buttons (packages/ui/base.css); its lines of what went wrong are in
+   its 14 px small size. */
 :root {
+  --action-height: var(--site-button-h);
   --action-pad: var(--sp-32);
   --control-pad: var(--sp-24);
   --small-pad: var(--sp-20);
-  --field-height: var(--btn-lg);
+  --field-height: var(--site-button-h);
   --field-text: var(--fs-16);
   --message-size: var(--fs-14);
 }
 
 /* ---- Layout ------------------------------------------------------------- */
+
+/* A flow with no footer beneath it, a laptop's or a phone's /book, keeps the cookie bar's room beneath its form while
+   the bar asks. */
+.app-look main {
+  padding-bottom: var(--consent-reserve);
+}
+@media (min-width: 761px) {
+  .in-flow main {
+    padding-bottom: var(--consent-reserve);
+  }
+}
+
+/* A phone's booking pages have no fixed header, and pin the step's button at the foot: whatever the page scrolls to,
+   a focused control above all, stops clear of the button and its line, and of the cookie bar while it asks. */
+@media (max-width: 760px) {
+  html:has(> body.app-look) {
+    scroll-padding-top: 0;
+    scroll-padding-bottom: calc(var(--bar-h) + var(--sp-48) + var(--site-safe-bottom) + var(--consent-reserve));
+  }
+}
 
 .container {
   max-width: var(--page-max);
@@ -112,36 +131,121 @@
   padding-inline: var(--gutter);
 }
 
+/* A home section's ground and its frame, white, cool and navy in turn (ADR 0263). */
+.band {
+  padding-block: var(--site-section-y);
+}
+.ground-white {
+  background: var(--site-ground);
+}
+.ground-cool {
+  background: var(--site-band);
+}
+.ground-navy {
+  background: var(--site-navy);
+  color: var(--site-on-navy);
+}
+
 /* ---- Type ----------------------------------------------------------------- */
 
 .serif {
-  font-family: var(--font-serif);
+  font-family: var(--site-font);
 }
 
 .section-title {
   margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-h2);
-  line-height: var(--lh-100);
-  letter-spacing: var(--tracking-heading);
+  font-family: var(--site-font);
+  font-weight: var(--weight-semibold);
+  font-size: var(--site-fs-section);
+  line-height: var(--site-lh-section);
+  letter-spacing: var(--site-tracking-section);
+  color: var(--site-navy);
+}
+.ground-navy .section-title {
+  color: var(--site-on-navy);
 }
 
 .lead {
-  font-size: var(--fs-lead);
-  line-height: var(--lh-160);
-  color: var(--text-soft);
-  max-width: var(--measure-lead);
-  text-wrap: pretty;
+  margin: var(--site-gap-lede) 0 0;
+  font-size: var(--site-fs-lead);
+  line-height: var(--lh-150);
+  color: var(--site-text-muted);
+}
+.ground-navy .lead {
+  color: var(--site-on-navy-muted);
+}
+
+/* A page of text: the guides, the cities, the policies, the notices, /stop and the 404. Its words keep to one column,
+   as wide as the boards draw them, a short page's narrower. */
+.text-page {
+  max-width: calc(var(--site-measure-text) + var(--gutter) + var(--gutter));
+  margin: 0 auto;
+  padding: var(--page-pad-top) var(--gutter) 0;
+}
+.text-page.short {
+  max-width: calc(var(--site-measure-short) + var(--gutter) + var(--gutter));
+}
+.page-title {
+  margin: 0;
+  font-family: var(--site-font);
+  font-weight: var(--weight-semibold);
+  font-size: var(--site-fs-page-title);
+  line-height: var(--site-lh-page-title);
+  letter-spacing: var(--site-tracking-page-title);
+  color: var(--site-navy);
+}
+.page-lede {
+  margin: var(--site-gap-page-lede) 0 0;
+  font-size: var(--site-fs-page-lede);
+  line-height: var(--lh-150);
+  color: var(--site-text-muted);
+}
+/* A list's heading on a page of text, over a navy rule: "More guides", "City by city". */
+.list-head {
+  margin: var(--sp-40) 0 0;
+  padding-bottom: var(--site-space-6);
+  border-bottom: var(--rule-strong) solid var(--site-navy);
+  font-family: var(--site-font);
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-155);
+  color: var(--site-navy);
+}
+
+/* A section's small heading: "The guarantee", "Try-on". */
+.eyebrow {
+  margin: 0;
+  font-size: var(--site-fs-label);
+  font-weight: var(--weight-semibold);
+  color: var(--site-text-muted);
+}
+.ground-navy .eyebrow {
+  color: var(--site-on-navy-muted);
+}
+
+.body-text {
+  margin: 0;
+  font-size: var(--site-fs-body);
+  line-height: var(--lh-155);
+}
+
+/* A section's closing statement under a navy rule. */
+.statement {
+  margin: 0;
+  border-top: var(--rule-strong) solid var(--site-navy);
+  font-weight: var(--weight-semibold);
+  color: var(--site-navy);
 }
 
 /* ---- Labels on images: tags, numerals, Before and After ---------------- */
 
 .label {
-  background: var(--ink-night);
-  padding: var(--sp-8) var(--sp-12);
-  font-size: var(--fs-13);
-  color: var(--ink-tag);
+  background: var(--site-navy);
+  padding: var(--site-tag-pad-y) var(--site-tag-pad-x);
+  font-size: var(--site-fs-label);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-100);
+  color: var(--site-on-navy);
   white-space: nowrap;
 }
 

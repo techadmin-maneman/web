@@ -292,6 +292,12 @@ export const settings = {
         pay_within_days: "Link after a visit open for",
       },
       credit_reminder_days: { first: "First reminder", last: "Last reminder" },
+      ratings: {
+        low_below: "Care call under",
+        average_days: "Technician’s average over",
+        shown_from: "Shown from",
+        rate_within_days: "Rated within",
+      },
       check_in_days: { first: "First follow-up", second: "Second follow-up" },
       stock_watch: {
         expiry_warning_days: "Expiry flagged within",
@@ -708,6 +714,10 @@ export const settings = {
     reasons: "Partial reasons",
     /** Why a client is not going ahead after a consultation (docs/decisions/0149-lost-reasons.md). */
     lostReasons: "Reasons not going ahead",
+    /** Why a hair system could not be fitted today (docs/decisions/0270-the-design-checks-api-side.md). */
+    notFittedReasons: "Reasons not fitted",
+    /** Why a hair system failed (docs/decisions/0273-why-a-hair-system-failed.md). */
+    failureReasons: "Reasons a hair system failed",
     item: (position: number) => `Item ${String(position)}`,
     clientWords: (position: number) => `Item ${String(position)}, as the client reads it`,
     clientNote:

@@ -36,6 +36,11 @@ const STATUS_BAR = 44;
 
 // ---- The design's example, as the API would answer it -------------------------
 
+/** The alerts every screen reads as it opens: none, every kind on. */
+type Inbox = Schemas["TechnicianAlerts"];
+const ALL_ON = { time_to_leave: true, day_ahead: true, job_changes: true, running_over: true };
+const INBOX: Inbox = { alerts: [], settings: ALL_ON, leave_notice_min: 10, day_ahead_hour: 20, push_key: null };
+
 const ME: Schemas["TechnicianMe"] = {
   id: "t0000000-0000-4000-8000-000000000001",
   name: "Imran Qureshi",
@@ -64,7 +69,7 @@ const CLIENTS: Readonly<Record<string, string>> = {
 const jobId = (id: number) => `a0000000-0000-4000-8000-00000000000${String(id)}`;
 
 // The board draws no Navigate or drive beneath a row.
-const NO_WAY_THERE = { address: null, next: null, drive_minutes: null, leave_by: null } as const;
+const NO_WAY_THERE = { address: null, next: null, drive_minutes: null, drive_km: null, leave_by: null } as const;
 
 const job = ({
   id,
@@ -161,6 +166,9 @@ const NOTHING_DONE: Progress = {
   outcome: null,
 };
 
+/** The card's lists the boards draw none of. */
+const NONE_DRAWN = { checklist_if_declined: [], lost_reasons: [], not_fitted_reasons: [], failure_reasons: [] };
+
 /** Board A3's piece, as the card carries the client's pieces. */
 const PIECE = {
   piece_code: "MM-STD-4417-B",
@@ -172,12 +180,6 @@ const PIECE = {
   failure_reason: null,
   replaced_at: null,
 };
-
-/** A 1×1 grey PNG for board A3's last visit: no photograph of anyone is used. */
-const LAST_VISIT_PHOTO = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgAB4iG8MwAAAABJRU5ErkJggg==",
-  "base64",
-);
 
 const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["TechnicianJobDetail"] => {
   const summary = [...JOBS, ...TOMORROW].find((one) => one.id === id);
@@ -207,13 +209,12 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     checkin_radius_m: 200,
     pieces: [PIECE],
     // Board A3's "Last visit, after. 22 Aug, Imran.", and board B5's "delivered 9:33 am".
-    last_visit: { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${id}/last-visit-photo` },
+    last_visit: { date: "2030-08-22", technician: "Imran" },
     reminder: { state: "delivered", delivered_at: `${DAY}T04:03:00.000Z` },
     steps: cardStepsFor(summary.type ?? "service"),
     checklist: CHECKLIST,
-    checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
-    lost_reasons: [],
+    ...NONE_DRAWN,
     consumables: CONSUMABLES,
     kit_hair_systems: [],
     products: [],
@@ -225,6 +226,9 @@ const cardFor = (id: string, progress: Progress = NOTHING_DONE): Schemas["Techni
     handoff: null,
     sent_back: [],
     reschedule_asked: null,
+    sign_off: null,
+    client_visits: { count: 0, first: null },
+    booked_via: null,
   };
 };
 
@@ -267,7 +271,8 @@ async function openApp(browser: Browser, path: string, api: Api, height = FRAME_
   await page.clock.install({ time: AT_912 });
   await page.route("**/api/**", (route) => {
     const url = new URL(route.request().url());
-    const answer = api[url.pathname] ?? signedOut;
+    // The alerts are read by every screen; any other call a page was not given reads as signed out.
+    const answer = api[url.pathname] ?? (url.pathname === "/api/tech/alerts" ? json(INBOX) : signedOut);
     return answer(route);
   });
   await page.goto(`${APP}${path}`);
@@ -305,8 +310,6 @@ const dayApi = (jobs: unknown[], tomorrow: unknown[]): Api => ({
 const jobApi = (id: string, progress: Progress = NOTHING_DONE): Api => ({
   "/api/tech/me": json(ME),
   [`/api/tech/jobs/${id}`]: json(cardFor(id, progress)),
-  [`/api/tech/jobs/${id}/last-visit-photo`]: (route) =>
-    route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO }),
   "/api/tech/jobs": json({ date: DAY, jobs: JOBS }),
 });
 
@@ -423,10 +426,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
 
   const checklist = await openApp(browser, `/jobs/${first.id}/checklist`, jobApi(first.id, started));
   await checklist.getByText("Service checklist").waitFor();
-  // The board draws three of six ticked.
-  for (const label of ["Remove", "Clean the base", "Clean the scalp"]) {
-    await checklist.getByRole("button", { name: label }).click();
-  }
+  // A guided task has no ticks (ADR 0258): the checklist is paired as it opens, on its first task.
   await settle(checklist);
   await pair({
     dir: OUT,
@@ -491,7 +491,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     FRAME_HEIGHT,
   );
   await outcome.getByText("Outcome").first().waitFor();
-  await outcome.getByRole("button", { name: "Partly done", exact: true }).click();
+  await outcome.getByRole("radio", { name: "Partly done", exact: true }).click();
   await settle(outcome);
   await pair({ dir: OUT, width: WIDTH, name: "b4-outcome", design: outcomeBoard, built: await shot(outcome) });
   await outcome.close();
@@ -522,10 +522,10 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     FRAME_HEIGHT,
   );
   await done.getByText("Outcome").first().waitFor();
-  // Nothing is chosen for the technician: Done first, then Next, once the step has slid in and takes a tap.
-  await done.getByRole("button", { name: "Done", exact: true }).click();
+  // Nothing is chosen for the technician: Done first, then Close visit, once the step has slid in and takes a tap.
+  await done.getByRole("radio", { name: "Done", exact: true }).click();
   await done.clock.runFor(400);
-  await done.getByRole("button", { name: "Next" }).click();
+  await done.getByRole("button", { name: "Close visit" }).click();
   await done.getByText("Visit closed").waitFor();
   await settle(done);
   await pair({ dir: OUT, width: WIDTH, name: "b4-closed-out", design: outcomeBoard, built: await shot(done) });

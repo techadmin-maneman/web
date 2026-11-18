@@ -1,13 +1,14 @@
 ---
-// The closing band.
+// The closing band, on navy (ADR 0263): the consultation in a line, and the way to book, the screen's one filled button,
+// beneath it on a phone and beside it on a laptop. The footer below has no Book of its own.
 import { buttonLook } from "@maneman/ui/Button";
 import { closing } from "../../content/site.ts";
 ---
 
-<section class="container closing" data-section="closing">
-  <div class="box on-ink">
-    <h2>{closing.title}</h2>
-    <a class={buttonLook({ variant: "light", size: "action", className: "book" })} href="/book">
+<section class="ground-navy closing" data-section="closing">
+  <div class="container inner">
+    <h2 class="line">{closing.title}</h2>
+    <a class={buttonLook({ variant: "goldOnNavy", size: "action", className: "book" })} href="/book" data-filled>
       {closing.book}
     </a>
   </div>
@@ -15,33 +16,30 @@ import { closing } from "../../content/site.ts";
 
 <style>
   .closing {
-    margin-top: var(--section-gap);
+    padding-block: var(--site-closing-pad);
   }
-  .box {
-    background: var(--ink);
-    padding: var(--closing-pad-y) var(--space-xl);
+  .inner {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-32);
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: var(--sp-20);
   }
-  h2 {
+  .line {
     margin: 0;
-    font-family: var(--font-serif);
-    font-weight: var(--weight-regular);
-    font-size: var(--fs-h3);
-    line-height: var(--lh-115);
-    color: var(--paper);
-    max-width: var(--measure-closing);
-    text-wrap: balance;
+    font-size: var(--site-fs-closing);
+    line-height: var(--lh-125);
+    letter-spacing: var(--site-tracking-statement);
+    font-weight: var(--weight-semibold);
+    color: var(--site-on-navy);
   }
-  .book {
-    flex-shrink: 0;
-  }
-  @media (max-width: 760px) {
-    .book {
-      flex: 1 1 100%;
+  @media (min-width: 761px) {
+    .inner {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-40);
+    }
+    .line {
+      max-width: var(--site-closing-max);
     }
   }
 </style>

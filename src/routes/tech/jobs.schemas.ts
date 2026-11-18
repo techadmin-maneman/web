@@ -1,9 +1,10 @@
 // The technician API's schemas (./jobs.ts): what each call takes and answers.
 
+import { SignOffSchema } from "../schemas/sign-off.ts";
 import { RescheduleAskedSchema } from "../schemas/reschedule.ts";
 import { z } from "@hono/zod-openapi";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
-import { REMINDER_STATES } from "../../domain/field/job-card.ts";
+import { BOOKED_VIA, REMINDER_STATES } from "../../domain/field/job-card.ts";
 import { CARD_STEPS, SENT_BACK_KINDS } from "../../policy/in-job-steps.ts";
 import { BasedOnSchema, FitSpecWriteSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
 import { PieceSchema } from "./pieces.ts";
@@ -139,7 +140,6 @@ export const JobDetailSchema = JobSummarySchema.extend({
         .object({
           date: z.iso.date(),
           technician: z.union([z.string(), z.null()]).openapi({ description: "The first name of who did it." }),
-          photo_url: z.string().openapi({ description: "Its after photograph, never to be kept on the phone." }),
         })
         .strict(),
       z.null(),
@@ -173,6 +173,16 @@ export const JobDetailSchema = JobSummarySchema.extend({
     description:
       "On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their " +
       "order (ADR 0149). Empty for any other visit.",
+  }),
+  not_fitted_reasons: z.array(JobSheetItemSchema).openapi({
+    description:
+      "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0270). " +
+      "Empty for any other visit.",
+  }),
+  failure_reasons: z.array(JobSheetItemSchema).openapi({
+    description:
+      "On a replacement, why the piece that came off may have failed, as ops set them, in their order: what the " +
+      "technician picks from where it came off before it was due (ADR 0273). Empty for any other visit.",
   }),
   consumables: z.array(OfferedSchema).openapi({
     description:
@@ -242,8 +252,33 @@ export const JobDetailSchema = JobSummarySchema.extend({
   }),
   client_alerts: TechnicianAlertsSchema,
   handoff: HandoffSchema,
+  client_visits: z
+    .union([
+      z
+        .object({
+          count: z.number().int().nonnegative(),
+          first: z.union([z.iso.date(), z.null()]).openapi({ description: "The first's day in India; null for none." }),
+        })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({
+      description:
+        "How many of the client's visits closed before this one, as Client history lists them, and when the first " +
+        "was. Null until the day before the visit.",
+    }),
   reschedule_asked: z.union([RescheduleAskedSchema, z.null()]).openapi({
     description: "The technician's open ask that ops move the visit, until it is settled; null for none.",
+  }),
+  booked_via: z.union([z.enum(BOOKED_VIA), z.null()]).openapi({
+    description:
+      "Where the visit was booked: the client's app, the site, or ops in the console. Null until the day before the " +
+      "visit, and for one booked before this was kept.",
+  }),
+  sign_off: z.union([SignOffSchema, z.null()]).openapi({
+    description:
+      "A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed or declined. Null before it is " +
+      "asked, and for a visit that takes none. Outcome's done waits for signed or declined.",
   }),
   sent_back: z
     .array(

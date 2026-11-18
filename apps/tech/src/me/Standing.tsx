@@ -1,7 +1,8 @@
 // Me's two figures sections (docs/prompts/tech-redesign.md, "Me"): the technician's quality over the last 30 days, the
-// hairline redo rate and visits on time (src/routes/tech/quality.ts); and this month's incentives, a line a kind of
-// visit, its count and the rate a visit, with the total (src/routes/tech/month.ts). Incentives a visit, not pay. The
-// client rating follows once ratings exist. Each says when it is loading, and when it would not load, with Try again.
+// hairline redo rate and visits on time, and their clients' rating once enough have rated them
+// (src/routes/tech/quality.ts); and this month's incentives, a line a kind of
+// visit, its count and the rate a visit, with the total (src/routes/tech/month.ts). Incentives a visit, not pay. Each
+// says when it is loading, and when it would not load, with Try again.
 
 import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { SectionHead } from "@maneman/ui/SectionHead";
@@ -42,10 +43,15 @@ export function Quality() {
   const copy = me.quality;
   return (
     <section className={styles.section} aria-labelledby="me-quality">
-      <SectionHead id="me-quality" title={copy.title} end={copy.days} />
+      <SectionHead id="me-quality" size="list" title={copy.title} end={copy.days} />
       <Waiting loaded={loaded} failed={copy.failed} onRetry={retry} />
       {loaded.state === "loaded" && (
         <dl className={styles.lines}>
+          {/* The clients' rating first, as the prototype orders them. */}
+          <Line
+            term={copy.rating(loaded.value.rating_days)}
+            value={loaded.value.rating === null ? copy.none : copy.rated(loaded.value.rating)}
+          />
           <Line
             term={copy.redo}
             value={loaded.value.fits === 0 ? copy.none : copy.redone(loaded.value.redone, loaded.value.fits)}
@@ -69,7 +75,7 @@ export function Incentives() {
   const total = lines.reduce((sum, line) => sum + (line.amount ?? 0), 0);
   return (
     <section className={styles.section} aria-labelledby="me-incentives">
-      <SectionHead id="me-incentives" title={copy.title(month)} end={copy.upTo(dayMonth(today))} />
+      <SectionHead id="me-incentives" size="list" title={copy.title(month)} end={copy.upTo(dayMonth(today))} />
       <Waiting loaded={loaded} failed={copy.failed} onRetry={retry} />
       {loaded.state === "loaded" && lines.length === 0 && <p className={styles.quiet}>{copy.none}</p>}
       {lines.length > 0 && (

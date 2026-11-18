@@ -10,6 +10,7 @@
 
 import { useStillToRecord } from "../../policy/stock.ts";
 import { latestStep, takenFor, takenFromKit } from "../field/job-use.ts";
+import { failureWordsOf, jobSheet } from "../field/job-sheet-settings.ts";
 import { pieceStepOf } from "./pieces.ts";
 import { fitsNothing, pieceBodyOf } from "../field/job-event-bodies.ts";
 import { pieceReturnStatements } from "./piece-returns.ts";
@@ -61,6 +62,25 @@ function oldPieceOf(body: unknown): { readonly code: string; readonly reason: st
   return { code: piece.old_piece.piece_code, reason: piece.old_piece.failure_reason ?? null };
 }
 
+/**
+ * Why the piece that came off goes back: the step's reason, in its words; else the failure Care marked on it before the
+ * visit (docs/decisions/0273-why-a-hair-system-failed.md); none for one that was due.
+ */
+async function returnReason(
+  db: D1Database,
+  jobId: string,
+  oldPiece: { readonly code: string; readonly reason: string | null },
+): Promise<string | null> {
+  if (oldPiece.reason !== null) return failureWordsOf(await jobSheet(db), oldPiece.reason).words;
+  return db
+    .prepare(
+      `SELECT p.failure_reason FROM pieces p JOIN appointments a ON a.person_id = p.person_id
+       WHERE a.id = ?1 AND p.piece_code = ?2 AND p.deleted_at IS NULL AND p.failed_at IS NOT NULL`,
+    )
+    .bind(jobId, oldPiece.code)
+    .first<string>("failure_reason");
+}
+
 /** Records the piece the technician's latest piece step fitted, from their kit. Returns whether their kit went down. */
 export async function recordPieceUse(
   db: D1Database,
@@ -77,12 +97,11 @@ export async function recordPieceUse(
   const code = stockCodeOf(body);
   const fitted = new Map(code === null ? [] : [[code, 1]]);
   const at = input.now.toISOString();
-  // The piece that came off goes back into the kit to hand in, whether it failed or was due.
+  // The piece that came off goes back into the kit to hand in, whether it failed or was due, why in its reason's words.
   const oldPiece = oldPieceOf(body);
+  const reason = oldPiece === null ? null : await returnReason(db, jobId, oldPiece);
   const returned =
-    oldPiece === null
-      ? []
-      : pieceReturnStatements(db, { jobId, technicianId, label: oldPiece.code, reason: oldPiece.reason, at });
+    oldPiece === null ? [] : pieceReturnStatements(db, { jobId, technicianId, label: oldPiece.code, reason, at });
   const owed = useStillToRecord(fitted, await takenFor(db, { jobId, technicianId, hairSystems: true }));
   if (owed.size === 0) {
     if (returned.length > 0) await db.batch(returned);

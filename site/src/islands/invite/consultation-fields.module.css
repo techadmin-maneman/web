@@ -8,3 +8,11 @@
 .window {
   min-height: var(--btn-lg);
 }
+
+/* A laptop's two choices side by side, as the board draws them. */
+@media (min-width: 761px) {
+  .windows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-12);
+  }
+}

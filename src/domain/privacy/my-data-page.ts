@@ -93,6 +93,8 @@ function readable(field: Field, value: unknown): string | null {
       return value === 1 || value === true ? "Yes" : "No";
     case "words":
       return eachOf(value, wordsOf);
+    case "named":
+      return eachOf(value, (each) => field.names?.[each] ?? wordsOf(each));
     case "purpose":
       return purposeTitle(asText(value));
     case "purposes":

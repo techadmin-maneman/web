@@ -8603,7 +8603,7 @@ A recall closed once its stock and pieces are dealt with; the lot stays blocked
 
 ### GET /api/quality/failures
 
-The labelled pieces fitted in the last year and how many failed, four ways
+The labelled pieces fitted in the last year and how many failed, five ways
 
 **200**: Failure rates
 
@@ -10228,7 +10228,7 @@ Request body:
 }
 ```
 
-**409**: window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours)
+**409**: window_closed: the client has not written on WhatsApp within the time the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count
 
 ```json
 {
@@ -10449,7 +10449,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: failure_reason is not on the failure list, or the client on the chat's number wears no hair system
 
 ```json
 {
@@ -17720,7 +17720,7 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
 }
 ```
 
-**404**: not_found: no such client, or the client is outside the caller's cities
+**404**: not_found: no such client or piece of theirs, or the client is outside the caller's cities
 
 ```json
 {
@@ -17738,6 +17738,322 @@ A client's pieces: code, base, fitted date, supplier lot, replacement due and an
               "type": "string",
               "enum": [
                 "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/pieces/{code}/failure
+
+Mark a client's hair system failed, on a day, for a reason on the failure list
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PieceFailure"
+}
+```
+
+**200**: The pieces, newest fit first
+
+```json
+{
+  "$ref": "#/components/schemas/ClientPieces"
+}
+```
+
+**400**: invalid_request: failure_reason not on the failure list, or failed_on before the fit or after today
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client or piece of theirs, or the client is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: not_changeable: the piece is marked failed already
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_changeable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### DELETE /api/clients/{id}/pieces/{code}/failure
+
+Take back a client's hair system's failure; one fitted over since is replaced when it came off
+
+**204**: Taken back
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client or piece of theirs, or the client is outside the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: not_changeable: the piece is not marked failed
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_changeable"
               ]
             }
           },
@@ -19198,7 +19514,7 @@ Request body:
 
 **204**: Closed, under the member of staff who closed it
 
-**400**: invalid_request: no reason, or a group whose tasks close only when their thing is done
+**400**: invalid_request: no reason, a group whose tasks close only when their thing is done, or a failure_reason on a task not a guarantee claim, not on the failure list, or for a fit with no hair system on record
 
 ```json
 {
@@ -22500,7 +22816,7 @@ The price book: every price, past, present and scheduled
       "type": "string",
       "format": "date"
     },
-    "max_amount_ex_gst": {
+    "max_amount": {
       "type": "integer"
     },
     "max_gst_percent": {
@@ -22510,7 +22826,7 @@ The price book: every price, past, present and scheduled
   "required": [
     "prices",
     "today",
-    "max_amount_ex_gst",
+    "max_amount",
     "max_gst_percent"
   ],
   "additionalProperties": false
@@ -28821,6 +29137,192 @@ Request body:
 }
 ```
 
+### POST /api/job-sheet/not-fitted-reasons
+
+Why a hair system could not be fitted today, the whole list in its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheetListChange"
+}
+```
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/job-sheet/failure-reasons
+
+Why a hair system failed, the whole list in its order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheetListChange"
+}
+```
+
+**200**: The job sheet as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/JobSheet"
+}
+```
+
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/stock
 
 Every place, what each holds of each consumable, what is low, and the latest movements
@@ -33286,6 +33788,242 @@ A photograph of stock, never cached
 }
 ```
 
+### GET /api/conversations/{id}/report-photos
+
+The photographs of the reports a client's chat holds, oldest report first
+
+**200**: The photographs
+
+```json
+{
+  "$ref": "#/components/schemas/ReportPhotos"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/conversations/{id}/report-photos/{report_id}/{n}
+
+One photograph of a report the chat holds, never cached, its viewing logged as a client photograph's is
+
+**200**: The image
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such photograph in this chat
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: the view could not be audited, so no photograph is served
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/supplier-scorecard
 
 Each supplier's last year: on time in full, lead time, quality and claims
@@ -34982,6 +35720,7 @@ Request body:
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",
@@ -35048,12 +35787,20 @@ Request body:
             "service_retired",
             "no_product",
             "no_profile",
+            "made_to_order",
+            "not_made_to_order",
             "unknown_invite",
             "own_invite",
             "already_invited",
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "sign_off_not_asked",
+            "sign_off_closed",
+            "sign_off_checks_open",
+            "already_rated",
+            "visit_not_done",
+            "rating_closed",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -36119,6 +36866,113 @@ Request body:
       ],
       "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
     },
+    "latest_update": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "on_the_way",
+                "running_late",
+                "at_the_gate"
+              ]
+            },
+            "minutes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "On the way: minutes away; running late: minutes late; null at the gate."
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the technician sent it."
+            }
+          },
+          "required": [
+            "kind",
+            "minutes",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone."
+    },
+    "step": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "integer",
+              "description": "The step under way, counting from 1."
+            },
+            "of": {
+              "type": "integer",
+              "description": "How many steps the client is told of."
+            },
+            "name": {
+              "type": "string",
+              "enum": [
+                "before_photos",
+                "service",
+                "scalp",
+                "hair_profile",
+                "hair_system",
+                "fitting",
+                "after_photos",
+                "sign_off"
+              ],
+              "description": "The step, as the app names it."
+            }
+          },
+          "required": [
+            "index",
+            "of",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress."
+    },
+    "waits_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
+    },
     "lost_reason": {
       "anyOf": [
         {
@@ -36142,6 +36996,30 @@ Request body:
         }
       ],
       "description": "On a closed consultation, why the client is not going ahead, in ops' words; null where none is kept."
+    },
+    "not_fitted_reason": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a fit closed with \"Can't fit today\", why it was not fitted, in the job sheet's words; null where none is kept (ADR 0270)."
     },
     "going_ahead": {
       "anyOf": [
@@ -36286,7 +37164,12 @@ Request body:
     "pay_at_visit",
     "one_visit",
     "proposed_move",
+    "latest_update",
+    "step",
+    "waits_until",
+    "sign_off",
     "lost_reason",
+    "not_fitted_reason",
     "going_ahead",
     "outcome",
     "closed_without_follow_up",
@@ -36439,6 +37322,127 @@ Request body:
     "expires_at"
   ],
   "additionalProperties": false
+}
+```
+
+### SignOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "asked",
+        "signed",
+        "flagged",
+        "declined"
+      ],
+      "description": "asked: waiting for the client; signed: happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: closed without it, with why."
+    },
+    "checks": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOffChecks"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "As the client last answered; null till then."
+    },
+    "flag_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client last said isn't right, in their words; kept once they sign."
+    },
+    "declined_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Why the client did not sign."
+    },
+    "asked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "asks": {
+      "type": "integer",
+      "description": "How many times it was asked: again after each flag."
+    },
+    "signed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the client signed in their app."
+    },
+    "guarantee_days": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then."
+    }
+  },
+  "required": [
+    "state",
+    "checks",
+    "flag_text",
+    "declined_reason",
+    "asked_at",
+    "asks",
+    "signed_at",
+    "guarantee_days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SignOffChecks
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hairline": {
+      "type": "boolean"
+    },
+    "blend": {
+      "type": "boolean"
+    },
+    "secure": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "hairline",
+    "blend",
+    "secure"
+  ],
+  "additionalProperties": false,
+  "description": "The hairline, the colour and blend, and that it is secure and comfortable: each ticked or not."
 }
 ```
 
@@ -36607,6 +37611,113 @@ Request body:
         }
       ],
       "description": "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none."
+    },
+    "latest_update": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "on_the_way",
+                "running_late",
+                "at_the_gate"
+              ]
+            },
+            "minutes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "On the way: minutes away; running late: minutes late; null at the gate."
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the technician sent it."
+            }
+          },
+          "required": [
+            "kind",
+            "minutes",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone."
+    },
+    "step": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "integer",
+              "description": "The step under way, counting from 1."
+            },
+            "of": {
+              "type": "integer",
+              "description": "How many steps the client is told of."
+            },
+            "name": {
+              "type": "string",
+              "enum": [
+                "before_photos",
+                "service",
+                "scalp",
+                "hair_profile",
+                "hair_system",
+                "fitting",
+                "after_photos",
+                "sign_off"
+              ],
+              "description": "The step, as the app names it."
+            }
+          },
+          "required": [
+            "index",
+            "of",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress."
+    },
+    "waits_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none."
     }
   },
   "required": [
@@ -36629,7 +37740,11 @@ Request body:
     "client_note",
     "pay_at_visit",
     "one_visit",
-    "proposed_move"
+    "proposed_move",
+    "latest_update",
+    "step",
+    "waits_until",
+    "sign_off"
   ],
   "additionalProperties": false
 }
@@ -37000,6 +38115,18 @@ Request body:
         }
       ],
       "description": "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise."
+    },
+    "dispute_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last moment the charge may be disputed, by the dispute window ops set, while `disputable`; null otherwise."
     }
   },
   "required": [
@@ -37008,7 +38135,8 @@ Request body:
     "charge",
     "dispute",
     "disputable",
-    "dispute_closed_at"
+    "dispute_closed_at",
+    "dispute_until"
   ],
   "additionalProperties": false
 }
@@ -38922,6 +40050,7 @@ Request body:
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",
@@ -38988,12 +40117,20 @@ Request body:
             "service_retired",
             "no_product",
             "no_profile",
+            "made_to_order",
+            "not_made_to_order",
             "unknown_invite",
             "own_invite",
             "already_invited",
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "sign_off_not_asked",
+            "sign_off_closed",
+            "sign_off_checks_open",
+            "already_rated",
+            "visit_not_done",
+            "rating_closed",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -43153,6 +44290,36 @@ Request body:
           "rate_percent"
         ]
       }
+    },
+    "by_reason": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fitted": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "rate_percent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "fitted",
+          "failed",
+          "rate_percent"
+        ]
+      },
+      "description": "Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0273); fitted is all of them."
     }
   },
   "required": [
@@ -43160,7 +44327,8 @@ Request body:
     "by_code",
     "by_lot",
     "by_supplier",
-    "by_technician"
+    "by_technician",
+    "by_reason"
   ]
 }
 ```
@@ -43779,11 +44947,51 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/ThreadItem"
       }
+    },
+    "close_reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "booking",
+            "move_or_cancel",
+            "fit_problem",
+            "aftercare",
+            "billing",
+            "sign_in",
+            "try_on",
+            "data_request",
+            "other"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none."
+    },
+    "piece_report": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "edges_lifting",
+            "shedding",
+            "colour"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "That report's category where it is about the hair system the client wears, which the close asks whether it failed (ADR 0273); null for none."
     }
   },
   "required": [
     "conversation",
-    "items"
+    "items",
+    "close_reason",
+    "piece_report"
   ],
   "additionalProperties": false
 }
@@ -44120,6 +45328,12 @@ Request body:
         "data_request",
         "other"
       ]
+    },
+    "failure_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Where the hair system the client wears was at fault: why it failed, by a code of the job sheet's failure_reasons; it is marked failed today (ADR 0273). Left out where it was not."
     }
   },
   "required": [
@@ -45331,12 +46545,24 @@ Request body:
         ]
       },
       "description": "The landed steps ops may send back now: POST /api/visits/{id}/send-back."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed and when and where, or declined with why. Null before it is asked, and for a visit that takes none."
     }
   },
   "required": [
     "steps",
     "sent_back",
-    "may_send_back"
+    "may_send_back",
+    "sign_off"
   ],
   "additionalProperties": false
 }
@@ -46491,6 +47717,8 @@ Request body:
         "consumable.delete",
         "consumable.usage",
         "job_sheet.set",
+        "piece.failed",
+        "piece.failure_undone",
         "stock.receive",
         "stock.transfer",
         "stock.count",
@@ -48273,10 +49501,31 @@ Request body:
       "items": {
         "$ref": "#/components/schemas/Piece"
       }
+    },
+    "failure_reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Why a hair system may have failed, as ops set them, in their order (ADR 0273)."
     }
   },
   "required": [
-    "pieces"
+    "pieces",
+    "failure_reasons"
   ],
   "additionalProperties": false
 }
@@ -48376,6 +49625,32 @@ Request body:
     "failed_at",
     "failure_reason",
     "replaced_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PieceFailure
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "failure_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "By a code of the job sheet's failure_reasons."
+    },
+    "failed_on": {
+      "type": "string",
+      "format": "date",
+      "description": "The day in India it failed: not before its fit, nor after today."
+    }
+  },
+  "required": [
+    "failure_reason",
+    "failed_on"
   ],
   "additionalProperties": false
 }
@@ -49354,10 +50629,14 @@ Request body:
               "consultation_request",
               "first_fit_to_book",
               "replacement_order",
+              "made_to_order_ask",
               "stock_at_risk",
               "at_risk_client",
               "partial_visit",
               "consumables_short",
+              "fit_unsigned",
+              "fit_guarantee_claim",
+              "low_rating",
               "kit_request",
               "referral_review",
               "no_show_decision",
@@ -49738,6 +51017,35 @@ Request body:
         "group",
         "piece_code",
         "due_on"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "made_to_order_ask"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "first_fit",
+            "replacement"
+          ],
+          "description": "The visit it was asked at."
+        },
+        "name": {
+          "type": "string",
+          "description": "The hair system, by its package's name."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "name"
       ],
       "additionalProperties": false
     },
@@ -50157,6 +51465,13 @@ Request body:
           ],
           "description": "In the words ops gave it, or the job sheet's."
         },
+        "not_fitted": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "A fit closed with \"Can't fit today\", why, in the job sheet's words; null for any other close."
+        },
         "ask": {
           "type": [
             "string",
@@ -50176,6 +51491,7 @@ Request body:
         "kind",
         "reason_code",
         "reason",
+        "not_fitted",
         "ask"
       ],
       "additionalProperties": false
@@ -50241,6 +51557,147 @@ Request body:
         "reason",
         "technician",
         "short"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "fit_unsigned"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why the client did not sign, as the technician recorded it."
+        },
+        "technician": {
+          "type": "string"
+        },
+        "flag": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "What the client last said wasn't right before then; null where they never flagged."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "reason",
+        "technician",
+        "flag"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "low_rating"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "stars": {
+          "type": "integer",
+          "description": "The client's stars, low under ops' setting when given."
+        },
+        "technician": {
+          "type": "string"
+        },
+        "visited_on": {
+          "type": "string",
+          "format": "date",
+          "description": "India's day of the visit."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "stars",
+        "technician",
+        "visited_on"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "fit_guarantee_claim"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "description": "The report that opened the claim, as MM-ISS-0032."
+        },
+        "fitted_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "sign_off": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "asked",
+            "signed",
+            "flagged",
+            "declined",
+            null
+          ]
+        },
+        "conversation_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The Care chat the photographs are read beside."
+        },
+        "photos": {
+          "type": "integer"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The claim's reports, as MM-ISS-0032, whose photographs its drawer shows."
+        }
+      },
+      "required": [
+        "group",
+        "reference",
+        "fitted_on",
+        "sign_off",
+        "conversation_id",
+        "photos",
+        "references"
       ],
       "additionalProperties": false
     },
@@ -50519,6 +51976,12 @@ Request body:
       "minLength": 1,
       "maxLength": 300,
       "description": "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased."
+    },
+    "failure_reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0273)."
     }
   },
   "required": [
@@ -51970,6 +53433,8 @@ Request body:
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
+        "guarantee_days",
+        "ratings",
         "credit_reminder_days",
         "check_in_days",
         "referral_monthly_cap",
@@ -52167,6 +53632,8 @@ Request body:
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
+        "guarantee_days",
+        "ratings",
         "credit_reminder_days",
         "check_in_days",
         "referral_monthly_cap",
@@ -52328,6 +53795,10 @@ Request body:
       "type": "integer",
       "description": "In paise, before GST."
     },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included: what the client pays."
+    },
     "gst_percent": {
       "type": "integer"
     },
@@ -52344,6 +53815,7 @@ Request body:
     "item",
     "tier",
     "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from",
     "in_force"
@@ -52376,10 +53848,11 @@ Request body:
       "pattern": "^[a-z][a-z0-9_]{0,31}$",
       "description": "For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard."
     },
-    "amount_ex_gst": {
+    "amount": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 100000000
+      "maximum": 100000000,
+      "description": "In paise, GST included: what the client pays."
     },
     "gst_percent": {
       "type": "integer",
@@ -52394,7 +53867,7 @@ Request body:
   "required": [
     "item",
     "tier",
-    "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from"
   ],
@@ -52426,10 +53899,11 @@ Request body:
       "pattern": "^[a-z][a-z0-9_]{0,31}$",
       "description": "For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard."
     },
-    "amount_ex_gst": {
+    "amount": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 100000000
+      "maximum": 100000000,
+      "description": "In paise, GST included: what the client pays."
     },
     "gst_percent": {
       "type": "integer",
@@ -52449,7 +53923,7 @@ Request body:
   "required": [
     "item",
     "tier",
-    "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from",
     "was_valid_from"
@@ -52898,6 +54372,10 @@ Request body:
     "amount_ex_gst": {
       "type": "integer"
     },
+    "amount": {
+      "type": "integer",
+      "description": "In paise, GST included."
+    },
     "gst_percent": {
       "type": "integer"
     },
@@ -52914,6 +54392,7 @@ Request body:
     "item",
     "tier",
     "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from",
     "in_force"
@@ -53022,10 +54501,11 @@ Request body:
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]{0,31}$"
     },
-    "amount_ex_gst": {
+    "amount": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 100000000
+      "maximum": 100000000,
+      "description": "In paise, GST included: what the client pays."
     },
     "gst_percent": {
       "type": "integer",
@@ -53040,7 +54520,7 @@ Request body:
   "required": [
     "item",
     "tier",
-    "amount_ex_gst",
+    "amount",
     "gst_percent",
     "valid_from"
   ],
@@ -53582,7 +55062,7 @@ Request body:
       "type": "integer",
       "description": "The most characters a description may have."
     },
-    "max_amount_ex_gst": {
+    "max_amount": {
       "type": "integer"
     },
     "max_gst_percent": {
@@ -53597,7 +55077,7 @@ Request body:
     "min_minutes",
     "max_minutes",
     "max_description",
-    "max_amount_ex_gst",
+    "max_amount",
     "max_gst_percent"
   ],
   "additionalProperties": false
@@ -53862,7 +55342,7 @@ Request body:
     "max_description": {
       "type": "integer"
     },
-    "max_amount_ex_gst": {
+    "max_amount": {
       "type": "integer"
     },
     "max_gst_percent": {
@@ -53879,7 +55359,7 @@ Request body:
     "min_after_months",
     "max_after_months",
     "max_description",
-    "max_amount_ex_gst",
+    "max_amount",
     "max_gst_percent"
   ],
   "additionalProperties": false
@@ -54999,6 +56479,156 @@ Request body:
       "additionalProperties": false,
       "description": "Why a client is not going ahead with a fit after their consultation (ADR 0149)."
     },
+    "not_fitted_reasons": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "What the technician is offered, in order."
+        },
+        "retired": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Taken off by ops, and still understood: a phone may have queued one before it knew."
+        },
+        "set_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null while the committed list stands."
+        },
+        "set_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "retired",
+        "set_by",
+        "set_at"
+      ],
+      "additionalProperties": false,
+      "description": "Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0270)."
+    },
+    "failure_reasons": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "What the technician is offered, in order."
+        },
+        "retired": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Taken off by ops, and still understood: a phone may have queued one before it knew."
+        },
+        "set_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null while the committed list stands."
+        },
+        "set_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "retired",
+        "set_by",
+        "set_at"
+      ],
+      "additionalProperties": false,
+      "description": "Why a hair system failed, picked by the technician on a replacement it came off early for and by ops as they mark one failed (ADR 0273)."
+    },
     "max_checklist_items": {
       "type": "integer"
     },
@@ -55006,6 +56636,12 @@ Request body:
       "type": "integer"
     },
     "max_lost_reasons": {
+      "type": "integer"
+    },
+    "max_not_fitted_reasons": {
+      "type": "integer"
+    },
+    "max_failure_reasons": {
       "type": "integer"
     },
     "max_label": {
@@ -55016,9 +56652,13 @@ Request body:
     "checklists",
     "partial_reasons",
     "lost_reasons",
+    "not_fitted_reasons",
+    "failure_reasons",
     "max_checklist_items",
     "max_partial_reasons",
     "max_lost_reasons",
+    "max_not_fitted_reasons",
+    "max_failure_reasons",
     "max_label"
   ],
   "additionalProperties": false
@@ -57820,6 +59460,57 @@ Request body:
   "required": [
     "photo_id"
   ]
+}
+```
+
+### ReportPhotos
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "photos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ReportPhoto"
+      }
+    }
+  },
+  "required": [
+    "photos"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ReportPhoto
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "report_id": {
+      "type": "string"
+    },
+    "reference": {
+      "type": "string",
+      "description": "The report's reference, as MM-ISS-0032."
+    },
+    "n": {
+      "type": "integer"
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "report_id",
+    "reference",
+    "n",
+    "at"
+  ],
+  "additionalProperties": false
 }
 ```
 

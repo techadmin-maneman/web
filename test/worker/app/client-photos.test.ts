@@ -255,6 +255,7 @@ describe("GET /api/visits/:id and the photographs", () => {
       dispute: null,
       disputable: true,
       dispute_closed_at: null,
+      dispute_until: null,
     });
   });
 

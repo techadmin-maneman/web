@@ -28,7 +28,12 @@ const PriceFields = {
     description:
       "For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard.",
   }),
-  amount_ex_gst: z.number().int().min(PRICE_BOUNDS.minPaise).max(PRICE_BOUNDS.maxPaise),
+  amount: z
+    .number()
+    .int()
+    .min(PRICE_BOUNDS.minPaise)
+    .max(PRICE_BOUNDS.maxPaise)
+    .openapi({ description: "In paise, GST included: what the client pays." }),
   gst_percent: z.number().int().min(PRICE_BOUNDS.minGstPercent).max(PRICE_BOUNDS.maxGstPercent),
   valid_from: z.iso.date(),
 };
@@ -56,7 +61,7 @@ const pricesRoute = opsRoute({
           .object({
             prices: z.array(PriceRowSchema),
             today: z.iso.date(),
-            max_amount_ex_gst: z.number().int(),
+            max_amount: z.number().int(),
             max_gst_percent: z.number().int(),
           })
           .strict(),
@@ -138,7 +143,7 @@ export function registerOpsPrices(app: App): void {
       {
         prices: await priceBook(c.env.DB, today),
         today,
-        max_amount_ex_gst: PRICE_BOUNDS.maxPaise,
+        max_amount: PRICE_BOUNDS.maxPaise,
         max_gst_percent: PRICE_BOUNDS.maxGstPercent,
       },
       200,

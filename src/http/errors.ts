@@ -19,6 +19,8 @@ export const ERROR_CODES = [
   // Try-on (docs/decisions/0014-try-on-api.md).
   "busy",
   "photo_invalid_file",
+  // A report holds its three photographs already (docs/decisions/0259-the-issue-log.md).
+  "photos_full",
   "upload_already_received",
   "upload_missing",
   "session_required",
@@ -140,6 +142,10 @@ export const ERROR_CODES = [
   "no_product",
   // A first fit for a client with no hair profile: nothing says which hair system to fit.
   "no_profile",
+  // A fit whose hair system no stock code is made to the client's size: ops order it and book it on WhatsApp.
+  "made_to_order",
+  // An ask to order a hair system made to the client's size, where no such package is, or their size is in stock.
+  "not_made_to_order",
   // An invite ops attach to a client (docs/decisions/0089-an-invite-is-not-lost.md): no invite has the code; it is the
   // client's own; or the client came with one already.
   "unknown_invite",
@@ -150,6 +156,16 @@ export const ERROR_CODES = [
   "already_disputed",
   "not_disputable",
   "dispute_window_closed",
+  // The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md): not asked for yet, signed or
+  // declined already, or signed with a check left open.
+  "sign_off_not_asked",
+  "sign_off_closed",
+  "sign_off_checks_open",
+  // A client's rating (docs/decisions/0260-ratings.md): the visit has its rating already, is not one done, or is past
+  // the days to rate it.
+  "already_rated",
+  "visit_not_done",
+  "rating_closed",
   // A move to another day the client tried to accept, whose time was taken since or whose visit cannot move now
   // (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
   "move_gone",
@@ -252,6 +268,7 @@ export const ERROR_STATUS = {
   internal_error: 500,
   busy: 503,
   photo_invalid_file: 422,
+  photos_full: 409,
   upload_already_received: 409,
   upload_missing: 409,
   session_required: 401,
@@ -317,12 +334,20 @@ export const ERROR_STATUS = {
   service_retired: 400,
   no_product: 422,
   no_profile: 422,
+  made_to_order: 422,
+  not_made_to_order: 422,
   unknown_invite: 422,
   own_invite: 409,
   already_invited: 409,
   already_disputed: 409,
   not_disputable: 409,
   dispute_window_closed: 409,
+  sign_off_not_asked: 409,
+  already_rated: 409,
+  visit_not_done: 409,
+  rating_closed: 409,
+  sign_off_closed: 409,
+  sign_off_checks_open: 422,
   move_gone: 409,
   ask_the_client: 409,
   code_not_applicable: 422,

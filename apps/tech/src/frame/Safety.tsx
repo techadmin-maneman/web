@@ -6,8 +6,10 @@
 import { GLYPHS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { HoldButton } from "@maneman/ui/HoldButton";
+import { Icon } from "@maneman/ui/Icon";
 import { IconButton } from "@maneman/ui/IconButton";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { OPS_NUMBER } from "@maneman/web-kit/whatsapp";
@@ -51,15 +53,16 @@ function Sent({
 }) {
   return (
     <>
+      {/* As the prototype draws it: when, and what happens now, in a box ruled in the error's red. */}
       <div className={styles.sent} role="status">
         <p className={styles.sentAt}>{copy.sent(sent.at)}</p>
-        <p className={styles.note}>{sent.safe ? copy.safeSaid : copy.sentBody}</p>
-        {!sent.safe && (
-          <Button variant="outline" size="action" onClick={onSafe}>
-            {copy.safe}
-          </Button>
-        )}
+        <p className={styles.sentBody}>{sent.safe ? copy.safeSaid : copy.sentBody}</p>
       </div>
+      {!sent.safe && (
+        <Button variant="outline" size="action" onClick={onSafe}>
+          {copy.safe}
+        </Button>
+      )}
       {!sent.safe && safeFailed && (
         <p className={styles.failed} role="alert">
           {copy.safeFailed}
@@ -105,15 +108,14 @@ function SafetySheet({
             <HoldButton
               className={styles.sos}
               sub={copy.sosSub}
-              holdingSub={copy.keepHolding}
+              holdingLabel={copy.keepHolding}
               describedBy={holdId}
               onHeld={onSos}
             >
               {copy.sos}
             </HoldButton>
-            <p className={styles.note} id={holdId}>
-              {copy.hold}
-            </p>
+            {/* The prototype draws no line: how to hold it is told to a screen reader alone. */}
+            <VisuallyHidden id={holdId}>{copy.hold}</VisuallyHidden>
           </>
         )}
         {sending && (
@@ -128,10 +130,12 @@ function SafetySheet({
         )}
         <div className={styles.calls}>
           <ButtonLink variant="outline" size="action" href={`tel:+${OPS_NUMBER}`}>
-            {ops.call}
+            <Icon d={GLYPHS.phone} size="sm" />
+            <span>{ops.call}</span>
           </ButtonLink>
           <ButtonLink variant="outline" size="action" href="tel:112">
-            {copy.call112}
+            <Icon d={GLYPHS.phone} size="sm" />
+            <span>{copy.call112}</span>
           </ButtonLink>
         </div>
       </SheetPanel>

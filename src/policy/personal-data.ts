@@ -220,6 +220,36 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut: "Our keys, and which member of staff answered.",
     erasure: { blanks: ["text", "response"], why: "The words go; that a concern was raised and answered stays." },
   },
+  made_to_order_asks: {
+    leftOut: ["id", "person_id", "settled_at"],
+    whyLeftOut: "Our keys, and when ops closed the ask, which is theirs.",
+    erasure: { why: "That a size was asked for stays, for the stock's demand; it holds no words (ADR 0253)." },
+  },
+  visit_ratings: {
+    leftOut: ["appointment_id", "person_id", "technician_id", "low"],
+    whyLeftOut: "Our keys: the visit and its technician are in the export already; whether it reached Care is ours.",
+    erasure: { why: "The stars stay, for the technician's figure; they hold no words (ADR 0260)." },
+  },
+  client_reports: {
+    leftOut: ["id", "person_id", "visit_id", "claim_visit_id", "conversation_id"],
+    whyLeftOut: "Our keys: the visit, a claimed fit and the Care chat it is about are in the export already.",
+    erasure: { blanks: ["text"], why: "The words go, and the photographs with them; that a report was made stays." },
+  },
+  client_app_alerts: {
+    leftOut: [
+      "id",
+      "person_id",
+      "kind",
+      "subject_kind",
+      "subject_id",
+      "once_key",
+      "written_at",
+      "pushed_at",
+      "read_at",
+    ],
+    whyLeftOut: "Each mirrors a message or a sign-off the export gives already, and when it was pushed and read.",
+    erasure: { deletes: true, why: "Deleted: the inbox is the client's own, and nothing is kept from it." },
+  },
   client_alerts: {
     leftOut: [
       "id",
@@ -312,8 +342,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "technician_id",
       "mobile_hash",
     ],
-    whyLeftOut:
-      "The one-time codes we sent, kept only as one-way hashes for a day; the sign-ins say when they were used.",
+    whyLeftOut: "The one-time codes we sent, kept as one-way hashes for a day; the sign-ins say when they were used.",
     erasure: {
       deletes: true,
       blanks: ["code_hash"],
@@ -353,6 +382,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "books_payment_id",
       "books_checked_at",
       "books_applied_at",
+      "books_kept_invoice_id",
     ],
     whyLeftOut:
       "Our, Razorpay's and Books' keys, the currency (always rupees), and a one-way hash of the UPI ID, which reads as nothing.",
@@ -368,8 +398,9 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "synced_at",
       "deleted_at",
       "replacement_booked",
+      "failure_code",
     ],
-    whyLeftOut: "Our and FSM's keys, our supplier's batch, and whether a replacement is booked, which the visits show.",
+    whyLeftOut: "Our and FSM's keys, our supplier's batch, the failure list's code, and if a replacement is booked.",
     erasure: { why: "Kept, as the record of what was fitted." },
   },
   referral_attributions: {

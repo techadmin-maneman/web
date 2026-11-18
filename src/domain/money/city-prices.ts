@@ -2,7 +2,9 @@
 // from a day, which come before the national price there (priceInForce, ../money/price-book.ts). Each is checked as
 // a price in the book is, and an old one stays for what was sold under it.
 
+import { exGst } from "../../config/gst.ts";
 import { priceRefusal, type PriceItem, type PriceRefusal } from "./price-book.ts";
+import { amountOf } from "./price-lookup.ts";
 import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 
 /** One of a city's own prices, as Admin › Cities lists it. */
@@ -11,6 +13,8 @@ export interface CityPrice {
   readonly item: PriceItem;
   readonly tier: string;
   readonly amount_ex_gst: number;
+  /** What the client pays, GST included. */
+  readonly amount: number;
   readonly gst_percent: number;
   readonly valid_from: string;
   /** The one in force on the day asked about; the others are spent or still to come. */
@@ -21,25 +25,25 @@ export interface CityPrice {
 export async function cityPrices(db: D1Database, on: string): Promise<CityPrice[]> {
   const { results } = await db
     .prepare(
-      `SELECT city, item, tier, amount_ex_gst, gst_percent, valid_from FROM city_prices
+      `SELECT city, item, tier, amount_ex_gst, gst_percent, amount_paise AS amount, valid_from FROM city_prices
        ORDER BY city, item, tier, valid_from DESC`,
     )
-    .all<Omit<CityPrice, "in_force">>();
+    .all<Omit<CityPrice, "in_force" | "amount"> & { amount: number | null }>();
   const found = new Set<string>();
   return results.map((row) => {
     const key = `${row.city}/${row.item}/${row.tier}`;
     const inForce = row.valid_from <= on && !found.has(key);
     if (inForce) found.add(key);
-    return { ...row, in_force: inForce };
+    return { ...row, amount: amountOf(row), in_force: inForce };
   });
 }
 
-/** A city's own price as ops set one. */
+/** A city's own price as ops set one: what the client pays there, GST included. */
 export interface CityPriceChange {
   readonly city: string;
   readonly item: PriceItem;
   readonly tier: string;
-  readonly amount_ex_gst: number;
+  readonly amount: number;
   readonly gst_percent: number;
   readonly valid_from: string;
 }
@@ -59,12 +63,20 @@ export async function setCityPrice(
   await db.batch([
     db
       .prepare(
-        `INSERT INTO city_prices (item, tier, city, amount_ex_gst, gst_percent, valid_from)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        `INSERT INTO city_prices (item, tier, city, amount_ex_gst, gst_percent, amount_paise, valid_from)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
          ON CONFLICT (item, tier, city, valid_from) DO UPDATE SET
-           amount_ex_gst = excluded.amount_ex_gst, gst_percent = excluded.gst_percent`,
+           amount_ex_gst = excluded.amount_ex_gst, gst_percent = excluded.gst_percent, amount_paise = excluded.amount_paise`,
       )
-      .bind(price.item, price.tier, price.city, price.amount_ex_gst, price.gst_percent, price.valid_from),
+      .bind(
+        price.item,
+        price.tier,
+        price.city,
+        exGst(price.amount, price.gst_percent),
+        price.gst_percent,
+        price.amount,
+        price.valid_from,
+      ),
     auditStatement(
       db,
       {
@@ -75,7 +87,8 @@ export async function setCityPrice(
           item: price.item,
           tier: price.tier,
           valid_from: price.valid_from,
-          amount_ex_gst: price.amount_ex_gst,
+          amount: price.amount,
+          gst_percent: price.gst_percent,
         },
       },
       now,

@@ -1,13 +1,12 @@
 /*
  * The booking and change sheets, on paper over the ink-night
- * ground (packages/ui/Sheet.tsx). The frame fills the screen and is clear; the
- * sheet sits at its foot, as the boards draw it, and Close stands on the
- * ground above it, where anyone can see it and reach it (the boards draw
- * none). A tap on the ground closes the sheet too.
+ * ground (packages/ui/Sheet.tsx). The change sheets sit at the frame's foot, with Close on the ground above them, and
+ * a tap on the ground closes them too. Booking fills the screen, as the design's booking does: its head, its step bar,
+ * a body that scrolls, and a footer for the step's button (steps/shared.tsx).
  */
 
 .dialog {
-  --focus-colour: var(--paper);
+  --focus-colour: var(--white-000);
 }
 
 .sheet p,
@@ -17,86 +16,268 @@
 
 .loading {
   height: var(--skeleton-card);
-  background: var(--paper-shade);
+  background: var(--grid-100);
 }
 
-.heading {
+/* Booking's full screen: the panel fills the frame, and only its body scrolls. */
+.screen {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--sp-24);
+  flex: 1;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
 }
 
-.title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-24);
-  font-weight: var(--weight-regular);
-}
-
-.step {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.held {
+/* The head: the way back where there is one, the step's title, and the way out. */
+.top {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--sp-8);
+  min-height: var(--btn-lg);
+  padding: var(--sp-8) var(--sp-12) var(--sp-4) var(--screen-gutter);
+}
+
+.topBack {
+  padding-left: var(--sp-4);
+}
+
+.topButton {
+  color: var(--ink-900);
+}
+
+.topButton:focus-visible {
+  outline-offset: var(--focus-inset);
+}
+
+.sheet .topTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-17);
+  font-weight: var(--weight-semibold);
+}
+
+/* The steps, a segment each, those done and the one under way in navy. */
+.bar {
+  flex-shrink: 0;
+  margin: var(--sp-2) var(--screen-gutter) calc(var(--sp-12) + var(--sp-2));
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--screen-gutter) var(--sp-24);
+  overflow-y: auto;
+}
+
+.footer {
+  flex-shrink: 0;
+  padding: var(--sp-12) var(--screen-gutter) calc(var(--sp-12) + env(safe-area-inset-bottom));
+  border-top: var(--hairline) solid var(--line-200);
+  background: var(--white-000);
+}
+
+.footer .primary {
+  margin-top: 0;
+}
+
+/* A notice at the head of a step: what a move costs, or a payment that failed. */
+.notice {
+  display: flex;
+  gap: var(--sp-12);
+  margin-bottom: var(--sp-16);
+  padding: var(--sp-16);
+  background: var(--wash-100);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}
+
+.noticeError {
+  background: var(--red-050);
+  color: var(--red-900);
+}
+
+.noticeIcon {
+  flex-shrink: 0;
+  color: var(--ink-900);
+}
+
+.noticeError .noticeIcon {
+  color: var(--red-700);
+}
+
+.noticeTitle {
+  display: block;
+}
+
+/* The earliest open time, on the wash, taken at a tap. */
+.suggest {
+  --ui-raised: var(--wash-100);
+  --row-pad-x: var(--sp-16);
+
+  margin-top: var(--sp-4);
+}
+
+/* The month over the days, with later days to ask for at its side. */
+.monthRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  margin: var(--sp-20) 0 var(--sp-8);
+}
+
+.sheet .month {
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+}
+
+/* The days run to the screen's edges, starting at the gutter. */
+.strip {
+  margin: 0 calc(-1 * var(--screen-gutter));
+  padding: var(--sp-2) var(--screen-gutter) var(--sp-4);
+}
+
+.times {
+  margin-top: var(--sp-16);
+}
+
+/* The promise of any time picked, under the times. */
+.sheet .arrival {
+  margin-top: var(--sp-16);
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+  color: var(--ink-500);
+}
+
+/* The time picked, over Continue. */
+.sheet .summary {
+  margin-bottom: var(--sp-12);
   font-size: var(--fs-14);
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-8) var(--sp-20);
-  margin-top: var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.legend > span {
+/* The review: the time held, then the facts between hairlines. */
+.sheet .holding {
   display: flex;
   align-items: center;
   gap: var(--sp-8);
+  margin-bottom: var(--sp-16);
+  font-size: var(--fs-13);
+  color: var(--ink-500);
 }
 
-.swatch {
-  width: var(--sp-12);
-  height: var(--sp-12);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--white);
+.holding b {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-900);
 }
 
-.swatchFull {
-  border-color: var(--paper-shade);
-  background: var(--paper-shade);
+.facts {
+  margin: 0;
+  border-top: var(--hairline) solid var(--line-200);
 }
 
-.swatchLate {
-  width: var(--sp-12);
-  height: var(--rule-strong);
-  background: var(--error-on-paper);
+.fact {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--line-200);
+  font-size: var(--fs-15);
 }
 
-/* The window step. */
-.heading:has(+ .dayLine) {
-  margin-bottom: var(--sp-8);
+.fact dt {
+  color: var(--ink-500);
 }
 
-.sheet .dayLine {
-  margin-bottom: var(--sp-20);
-  font-size: var(--fs-16);
-  color: var(--text-muted);
+.fact dd {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin: 0;
+  text-align: right;
 }
 
-/* The time chosen's promise, clear of the last row of times. */
-.sheet .arrival {
-  margin: var(--sp-16) 0 var(--sp-20);
-  font-size: var(--fs-16);
-  color: var(--text);
+.factAction {
+  font-size: var(--fs-14);
+}
+
+/* Beneath a fact's value: a first fit's length, or a price's GST split. */
+.factNote {
+  font-size: var(--fs-13);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-500);
+}
+
+.amount {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A credit covers it, or a code took some off: the price before, struck through. */
+.was {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-500);
+}
+
+/* Razorpay's ways to pay, beside the lock. */
+.sheet .razorpay {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-8);
+  margin-top: var(--sp-16);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ink-500);
+}
+
+/* Changing your plans: its title, the line from now to the visit, and the words. */
+.changing {
+  margin-top: var(--sp-28);
+}
+
+.sheet .changingTitle {
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.changeLine {
+  --ui-tint: var(--brass-500);
+  --ui-strong: var(--ink-500);
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--sp-4) var(--sp-12);
+  margin: var(--sp-12) 0 var(--sp-8);
+  font-size: var(--fs-13);
+  color: var(--ink-500);
+  white-space: nowrap;
+}
+
+.changeTrack {
+  grid-column: 1 / -1;
+}
+
+/* When a change starts to cost, beside the visit, as near the line's brass as the width allows. */
+.changeFrom {
+  justify-self: end;
+}
+
+.sheet .changingLine {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ink-500);
+}
+
+/* What every visit's photographs are, one quiet line beneath the ticks. */
+.consents {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+  color: var(--ink-500);
 }
 
 .windows {
@@ -113,14 +294,6 @@
   font-size: var(--fs-17);
 }
 
-/*
- * The visits to choose between, which no board draws: each kind named in small capitals, over its services drawn as
- * the window step's rows. The first kind sits under the heading, as the windows do.
- */
-.heading + .kind .label {
-  margin-top: 0;
-}
-
 .kind .windows {
   margin-top: var(--sp-12);
 }
@@ -132,89 +305,16 @@
   font-size: var(--fs-14);
 }
 
-/* The pay step, and the credit step's first fit. */
-.summary {
-  border-top: var(--hairline) solid var(--text);
-}
-
-.item {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-.itemName {
-  font-size: var(--fs-16);
-}
-
-.sheet .itemWhen {
-  margin-top: var(--sp-4);
+.sheet .line {
+  margin-top: var(--sp-12);
   font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.money {
-  text-align: right;
-}
-
-.amount {
-  font-family: var(--font-serif);
-  font-size: var(--fs-26);
-  line-height: var(--lh-100);
-  font-variant-numeric: lining-nums tabular-nums;
-}
-
-/* A credit covers it, so the price is struck through. */
-.was {
-  font-family: var(--font-serif);
-  font-size: var(--fs-22);
-  line-height: var(--lh-100);
-  font-variant-numeric: lining-nums tabular-nums;
-  color: var(--text-muted);
-  text-decoration: line-through;
-}
-
-.was + .amount {
-  margin-top: var(--sp-8);
-}
-
-.creditLine {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sp-12);
-  padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-size: var(--fs-15);
-}
-
-.creditLine span:last-child {
-  color: var(--text-muted);
-}
-
-.sheet .incl {
-  margin-top: var(--sp-4);
-  font-size: var(--fs-13);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-}
-
-.line {
-  padding: var(--sp-16) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-}
-
-.soft {
-  color: var(--text-soft);
+  line-height: var(--lh-145);
+  color: var(--ink-500);
 }
 
 /* A late fee's figure with GST, muted beside the ex-GST one. */
 .inclusive {
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 /* "Remind me on WhatsApp the day before": the whole line is the target. */
@@ -222,26 +322,17 @@
   margin-top: var(--sp-16);
 }
 
-/* What every visit's photographs are, one quiet line beneath Pay. */
-.consents {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-145);
-  color: var(--text-muted);
-  text-align: center;
-}
-
 /* A line no board draws under a step's heading: why the address comes first, or that the day offered is full. */
 .sheet .why {
   font-size: var(--fs-15);
   line-height: var(--lh-160);
-  color: var(--text-soft);
+  color: var(--ink-900);
 }
 
 .label {
   margin: var(--sp-20) 0 0;
   font-size: var(--fs-15);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 /* The sheets' buttons (packages/ui/Button.tsx), the width of the sheet: the action 56 px, any other 48. */
@@ -276,20 +367,19 @@
 .offlineLine {
   font-size: var(--fs-15);
   line-height: var(--lh-160);
-  color: var(--text-soft);
+  color: var(--ink-900);
 }
 
 .changeTitle {
-  font-family: var(--font-serif);
   font-size: var(--fs-24);
-  font-weight: var(--weight-regular);
   line-height: var(--lh-115);
+  font-weight: var(--weight-semibold);
 }
 
 .sheet .terms {
   margin-top: var(--sp-16);
   padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--line-200);
   font-size: var(--fs-16);
   line-height: var(--lh-160);
   font-variant-numeric: tabular-nums;
@@ -313,10 +403,10 @@
 
 /* The credit line sits under the button on the left. */
 .sheet .creditNote {
-  margin-top: var(--sp-12);
+  margin-top: var(--sp-8);
   font-size: var(--fs-14);
   line-height: var(--lh-160);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .sheet .problem {
@@ -325,17 +415,21 @@
   color: var(--error-on-paper);
 }
 
+.footer .problem {
+  margin: 0 0 var(--sp-12);
+}
+
 /* The outcome step. Within the sheet, so its margin outweighs the sheet's own for a paragraph. */
 .sheet .caption {
   margin-bottom: var(--sp-16);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .outcome {
-  font-family: var(--font-serif);
   font-size: var(--fs-22);
   line-height: var(--lh-130);
+  font-weight: var(--weight-semibold);
 }
 
 .sheet .outcomeLine {
@@ -343,7 +437,7 @@
   font-size: var(--fs-15);
   line-height: var(--lh-160);
   font-variant-numeric: tabular-nums;
-  color: var(--text-soft);
+  color: var(--ink-900);
 }
 
 .pair {
@@ -361,31 +455,26 @@
   margin-top: 0;
 }
 
-.sheet .confirmedTitle {
-  margin-top: var(--sp-16);
-  font-family: var(--font-serif);
-  font-size: var(--fs-28);
-  line-height: var(--lh-115);
-}
-
-.sheet .confirmedLine {
-  margin-top: var(--sp-12);
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-}
-
-.sheet .paid {
-  display: flex;
-  justify-content: space-between;
-  margin-top: var(--sp-20);
-  padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--ink-rule);
-  font-size: var(--fs-15);
-  color: var(--ink-soft);
-}
-
 /* A time inside the notice: a change is charged, said in oxblood. */
 .late {
   color: var(--error-on-paper);
+}
+
+/* Ask for a time: the day, the part of the day, and the note, one beneath the other. */
+.request {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}
+
+.requestNote {
+  color: var(--ink-500);
+  font-size: var(--fs-13);
+}
+
+/* The ways to change a visit, as the design lists them: rows between hairlines. */
+.changeRows {
+  margin-top: var(--sp-8);
+  border-top: var(--hairline) solid var(--line-200);
+  border-bottom: var(--hairline) solid var(--line-200);
 }

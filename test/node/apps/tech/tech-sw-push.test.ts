@@ -60,7 +60,7 @@ describe("a push on the lock screen", () => {
     expect(noticesOf([cancelled], NONE, NOW).notices[0]?.title).toBe("A job was cancelled");
   });
 
-  it("shows nothing older than a push lives, whose push the phone missed, and notes it as seen", () => {
+  it("shows nothing older than a push could bring, whose push the phone missed, and notes it as seen", () => {
     const missed = alert({
       id: "al9",
       kind: "day_ahead",

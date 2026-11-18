@@ -40,4 +40,26 @@
     padding: var(--sp-12) 0;
     border-bottom: var(--hairline) solid var(--ui-line);
   }
+
+  /* Each name at the start of a ruled row and its value at the end, one size for both: the technician app's facts. */
+  .ends .item {
+    display: flex;
+    gap: var(--sp-16);
+    align-items: baseline;
+    justify-content: space-between;
+    padding: calc(var(--sp-12) - var(--hairline)) 0;
+    border-bottom: var(--hairline) solid var(--ui-line);
+    font-size: var(--fs-15);
+    line-height: var(--lh-145);
+  }
+
+  .ends .term {
+    font-size: inherit;
+    color: var(--ui-text-soft);
+  }
+
+  .ends .details {
+    font-size: inherit;
+    text-align: right;
+  }
 }

@@ -77,8 +77,8 @@ export function FinishTheWork({ job, closing }: { job: Job; closing: boolean }) 
     });
   return (
     <section className={styles.section} aria-labelledby="closed-finish">
-      <SectionHead id="closed-finish" title={copy.finish.title} />
-      <p className={styles.note}>{copy.finish.ask}</p>
+      <SectionHead id="closed-finish" size="list" title={copy.finish.title} />
+      <p className={styles.finishAsk}>{copy.finish.ask}</p>
       <div className={styles.asks}>
         {ASKS.map((each) => (
           <ToggleButton key={each} filled pressed={asked === each} onClick={() => void ask(each)}>
@@ -95,17 +95,41 @@ export function FinishTheWork({ job, closing }: { job: Job; closing: boolean }) 
   );
 }
 
-/** The next job: when to leave for it, when it starts and whose it is. */
+/** The next job: when to leave for it, in gold; when it starts and whose it is; its kind, where, and the drive there. */
 export function NextUp({ next, name }: { next: JobSummary; name: string }) {
+  const meta = [kindName(next), next.sector, next.drive_minutes === null ? null : copy.next.drive(next.drive_minutes)];
   return (
     <section className={styles.section} aria-labelledby="closed-next">
       <SectionHead
         id="closed-next"
+        size="list"
         title={copy.next.title}
-        end={next.leave_by === null ? undefined : copy.next.leaveBy(clock(next.leave_by))}
+        end={
+          next.leave_by === null ? undefined : (
+            <span className={styles.leaveBy}>{copy.next.leaveBy(clock(next.leave_by))}</span>
+          )
+        }
       />
       <p className={styles.nextWho}>{`${clock(next.starts_at)} · ${name}`}</p>
-      <p className={styles.note}>{kindName(next)}</p>
+      <p className={styles.note}>{meta.filter((part) => part !== null && part !== "").join(" · ")}</p>
+    </section>
+  );
+}
+
+/** After the day's last job, as the prototype draws it: done for today, in gold, over tomorrow's first job. */
+export function DoneForToday({ first }: { first: JobSummary }) {
+  return (
+    <section className={styles.section} aria-labelledby="closed-next">
+      <SectionHead
+        id="closed-next"
+        size="list"
+        title={copy.next.title}
+        end={<span className={styles.leaveBy}>{copy.next.doneForToday}</span>}
+      />
+      <p className={styles.nextWho}>{copy.next.tomorrow(clock(first.starts_at))}</p>
+      <p className={styles.note}>
+        {[kindName(first), first.sector].filter((part) => part !== null && part !== "").join(" · ")}
+      </p>
     </section>
   );
 }

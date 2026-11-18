@@ -7,6 +7,7 @@ import { axeViolations } from "../a11y.ts";
 import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
+import { shots } from "./steps-fixtures.ts";
 
 const plan = techCopy.visit.plan;
 
@@ -21,22 +22,30 @@ test("opens the visit's plan from the job once begun: each screen done, under wa
   await page.goto(`/jobs/${JOB_ID}`);
   await page.getByRole("link", { name: techCopy.visit.allSteps }).click();
 
-  await expect(page.getByRole("heading", { level: 1, name: plan.title })).toBeVisible();
+  // The client and the visit, and when it started, as the prototype heads the plan.
+  await expect(
+    page.getByRole("heading", { level: 1, name: techCopy.visit.whoAndWhat("Rohit M.", "service visit") }),
+  ).toBeVisible();
+  await expect(page.getByText(/^Started \d{1,2}(:\d{2})? [ap]m$/)).toBeVisible();
   await expect(page.getByText(plan.done(1, 5))).toBeVisible();
   await expect(page.getByText(/^Finish by /)).toBeVisible();
+  // Each step with what it is, numbered while it waits; one done says so, and a step of tasks counts them.
   const rows = page.getByRole("list", { name: plan.title }).getByRole("listitem");
+  const what = techCopy.guides.what;
   await expect(rows).toHaveText([
-    /^Before photos\s*Done$/,
-    /^Service\s*Now$/,
-    /^Consumables\s*To do$/,
-    /^After photos\s*To do$/,
-    /^Outcome\s*To do$/,
+    `Before photos${plan.stepDone}`,
+    `Service${plan.tasks(3)}`,
+    `3Consumables${what.consumables}`,
+    `4After photos${what.after_photos}`,
+    `5Outcome${what.outcome}`,
   ]);
   // A screen done or under way opens; one to do waits its turn.
+  await expect(rows.nth(1).getByRole("link")).toHaveCount(1);
   await expect(rows.nth(2).getByRole("link")).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 
-  await rows.nth(1).getByRole("link").click();
+  // Continue opens the step under way.
+  await page.getByRole("button", { name: plan.continue }).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
 });
 
@@ -52,6 +61,21 @@ test("compares the angle to take with the last visit's, over the top half of the
   await compare.click();
   await expect(compare).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("img", { name: techCopy.capture.compareImage.before("Front") })).toBeVisible();
+  // Each half named, as the prototype labels them: whose photograph it is and the angle, and the camera's now.
+  const { compared, comparedWith } = techCopy.capture;
+  await expect(page.getByText(compared(comparedWith.before, "front"), { exact: true })).toBeVisible();
+  await expect(page.getByText(techCopy.capture.now, { exact: true })).toBeVisible();
+});
+
+test("names the last visit's photograph by its day and who took it, over the angle", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.compare = true;
+  fake.lastVisit = true;
+  await page.goto(`/jobs/${JOB_ID}/before-photos`);
+  const { compareWithVisit, compared, visitOf } = techCopy.capture;
+  await page.getByRole("button", { name: compareWithVisit("22 Aug", "Imran") }).click();
+  await expect(page.getByText(compared(visitOf("22 Aug", "Imran"), "front"), { exact: true })).toBeVisible();
+  await expect(page.getByText(techCopy.capture.now, { exact: true })).toBeVisible();
 });
 
 test("offers no Compare where there is nothing to compare with", async ({ page }) => {
@@ -76,7 +100,7 @@ test("marks a step the API refused as needing a fix, in red on the plan", async 
   for (let angle = 1; angle <= 5; angle += 1) {
     await expect(shutter).toBeEnabled();
     await shutter.click();
-    await expect(page.getByText(`${String(angle)} of 5`, { exact: true })).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
   // The set goes up: the API takes four photographs and refuses the front one.
@@ -97,5 +121,5 @@ test("says on the camera that there is no signal, and keeps taking photographs",
   await context.setOffline(true);
   await expect(page.getByText(techCopy.today.offline.bar)).toBeVisible();
   await page.getByRole("button", { name: techCopy.capture.take }).click();
-  await expect(page.getByText("1 of 5", { exact: true })).toBeVisible();
+  await expect(page.getByText(shots(1), { exact: true })).toBeVisible();
 });

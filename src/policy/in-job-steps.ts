@@ -62,20 +62,32 @@ export function takesStep(step: JobStep, type: VisitType, oneVisit = false): boo
  */
 export const PROFILE_STEP = "profile";
 
-/** Every screen a card's steps can name: the job's events, and the profile. */
-export const CARD_STEPS = [...JOB_EVENT_KINDS, PROFILE_STEP] as const;
+/**
+ * The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md), a screen of the card before the
+ * outcome at a first fit, a replacement and a one visit. It lands in its own table, as the profile does, so the order
+ * the API holds a phone's events to leaves it out; the outcome holds a fit's close to it instead.
+ */
+export const SIGN_OFF_STEP = "sign_off";
+
+/** Every screen a card's steps can name: the job's events, the profile and the sign-off. */
+export const CARD_STEPS = [...JOB_EVENT_KINDS, PROFILE_STEP, SIGN_OFF_STEP] as const;
 export type CardStep = (typeof CARD_STEPS)[number];
 
 /**
  * The screens the card runs, in order: the visit type's steps, with the profile just before the after photographs,
  * or before the outcome where there are none.
  */
-export function cardStepsFor(type: VisitType, oneVisit = false): (JobStep | typeof PROFILE_STEP)[] {
-  const steps: (JobStep | typeof PROFILE_STEP)[] = stepsFor(type, oneVisit);
-  if (!takesProfile(type, oneVisit)) return steps;
-  const profileBefore = steps.includes("after_photos") ? "after_photos" : "outcome";
-  const position = steps.indexOf(profileBefore);
-  return [...steps.slice(0, position), PROFILE_STEP, ...steps.slice(position)];
+export function cardStepsFor(
+  type: VisitType,
+  oneVisit = false,
+): (JobStep | typeof PROFILE_STEP | typeof SIGN_OFF_STEP)[] {
+  const steps: (JobStep | typeof PROFILE_STEP | typeof SIGN_OFF_STEP)[] = stepsFor(type, oneVisit);
+  if (takesProfile(type, oneVisit)) {
+    const profileBefore = steps.includes("after_photos") ? "after_photos" : "outcome";
+    steps.splice(steps.indexOf(profileBefore), 0, PROFILE_STEP);
+  }
+  if (oneVisit || isOneOf(PIECE_STEP_TYPES, type)) steps.splice(steps.indexOf("outcome"), 0, SIGN_OFF_STEP);
+  return steps;
 }
 
 /** The steps a technician may still put right once the job has closed, and for how long after the close. */

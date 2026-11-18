@@ -14,6 +14,7 @@ import type { OpenWindows } from "../../lib/api.ts";
 import { stripMonths, type StripDay } from "../../lib/dates.ts";
 import { dayOpen, hoursOn, isOpen, startsIn, type OpenDays, type Slot } from "../../lib/open-windows.ts";
 import { TimeChoice } from "@maneman/ui/TimeChoice";
+import { hiddenOnPhoneLook } from "@maneman/ui/VisuallyHidden";
 import { dayClock } from "@maneman/web-kit/dates";
 import shared from "./Invite.module.css";
 import styles from "./consultation-fields.module.css";
@@ -23,17 +24,20 @@ const { consultation } = referral;
 type Plan = OpenWindows["plan"];
 type WindowOption = (typeof consultation.windows)[number];
 
-/** What to book: the consultation alone, or the consultation and fit in one visit, which the API refuses while ops offer
- * no hair system. */
+/**
+ * What to book: the consultation alone, or the consultation and fit in one visit, which the API refuses while ops offer
+ * no hair system. The one visit says how it is paid, and on a laptop when it starts.
+ */
 export function PlanChoice({ plan, onPlanChange }: { plan: Plan; onPlanChange: (plan: Plan) => void }) {
   const choices = consultation.plan;
   return (
-    <Fieldset legend={choices.legend} legendLook="caps">
+    <Fieldset legend={<span class={hiddenOnPhoneLook}>{choices.legend}</span>} legendLook="caps">
       <div class={styles.windows}>
         {choices.options.map((option) => (
           <ChoiceCard
             key={option.id}
             name="plan"
+            look="round"
             className={styles.window}
             checked={plan === option.id}
             onChange={() => {
@@ -44,7 +48,12 @@ export function PlanChoice({ plan, onPlanChange }: { plan: Plan; onPlanChange: (
           </ChoiceCard>
         ))}
       </div>
-      {plan === "one_visit" && <p class={shared.planNote}>{choices.note}</p>}
+      {plan === "one_visit" && (
+        <p class={shared.planNote}>
+          <span class={shared.planWhen}>{choices.note} </span>
+          {choices.oneVisitNote}
+        </p>
+      )}
     </Fieldset>
   );
 }
@@ -81,7 +90,7 @@ export function DiscountCode({
           {referral.errors.codeNotApplicable}
         </div>
       )}
-      <p id="invite-consultation-code-hint" class={shared.hint}>
+      <p id="invite-consultation-code-hint" class={`${shared.hint ?? ""} ${hiddenOnPhoneLook ?? ""}`}>
         {consultation.code.hint}
       </p>
     </div>

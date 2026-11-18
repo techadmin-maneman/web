@@ -7,6 +7,36 @@ import { timeOfDay, UNBROKEN } from "@rules/lib/time-range.ts";
 export const VISIT_PHOTOS =
   "Photos at every visit: five angles, for your record. Only you and your technician see them.";
 
+/** The profile's list, under the client's initials (design/client-redesign, the profile screen). */
+export const profileMenu = {
+  hairSystem: "Your hair system",
+  hairSystemMeta: (name: string) => `${name} · every one you’ve worn`,
+  payments: "Payments and invoices",
+  paymentsMeta: "Paid through Razorpay",
+  issues: "Issues",
+  issuesMeta: (open: number) => `${String(open)} open`,
+  issuesNone: "Anything off with a visit, your hair system or a payment",
+  address: "Address and access notes",
+  addressNone: "Add your address",
+  privacy: "Privacy and messages",
+  privacyMeta: "Photos, WhatsApp updates",
+  help: "Help on WhatsApp",
+  account: "Account",
+  accountMeta: "Mobile number, your data, delete account",
+  terms: "Terms",
+  privacyPolicy: "Privacy",
+} as const;
+
+/** The profile's own pages' titles. */
+export const profilePages = {
+  address: "Address",
+  addressLede: "Your technician sees this before every visit.",
+  privacy: "Privacy and messages",
+  account: "Account",
+  number: "Mobile number",
+  data: "Your data",
+} as const;
+
 export const profile = {
   back: "Back",
   where: "Your address",
@@ -52,15 +82,26 @@ export const profile = {
     visitBooked: "You have a visit booked in this city. To move to another, message us first.",
     message: "Message us",
   },
-  agreed: "What you have agreed to",
+  /** The page's two groups of switches, as drawn: the photographs, then WhatsApp. */
+  groups: { photos: "Your photos", whatsapp: "WhatsApp" },
   purposes: {
     photos_own_record: "Photographs taken for your visit record",
-    photos_referral_cards: "Photographs on referral cards",
-    photos_marketing: "Photographs in our marketing",
-    whatsapp_visits: "WhatsApp about your visits",
+    photos_referral_cards: "On invite cards I send",
+    photos_marketing: "In Mane Man marketing",
+    whatsapp_visits: "About my visits and issues",
     // The waitlist's launch alert, beside the four consents.
-    whatsapp_launches: "WhatsApp about launches",
+    whatsapp_launches: "About new services and cities",
   },
+  /** Beneath a switch: what it covers, and what being off means for the photographs. */
+  purposeNotes: {
+    whatsapp_visits: "Reminders, confirmations, receipts, replies",
+  } as Readonly<Partial<Record<string, string>>>,
+  purposeOff: {
+    photos_referral_cards: "Off. Friends see the Mane Man example card",
+    photos_marketing: "Off unless you switch it on",
+  } as Readonly<Partial<Record<string, string>>>,
+  /** Beneath the switches. */
+  switchingOff: "Switching off a photo choice stops new uses. Invites already sent stay in those chats.",
   given: (date: string) => `Given ${date}`,
   // What switching off visit messages means, since ops then call instead.
   visitsOff: "No visit updates on WhatsApp. We’ll call you about any change.",
@@ -78,13 +119,13 @@ export const profile = {
     cancel: "Keep it off",
   },
   change: {
-    label: "Change mobile number",
-    body: "We’ll send a code to both numbers, then confirm with you.",
+    label: "Mobile number",
+    body: "We send a code to both numbers, then confirm with you.",
     prefix: "+91",
     placeholder: "New number",
     /** The box's name to a screen reader, which shows none. */
     newNumber: "New mobile number",
-    start: "Start the change",
+    start: "Change number",
     invalid: "Enter a 10-digit mobile number, not the one you use now.",
     codes: "Enter the code sent to each number.",
     oldCode: "Code sent to your current number",
@@ -118,8 +159,6 @@ export const profile = {
     notLoaded: "Where you’re signed in didn’t load.",
   },
   support: {
-    label: "Support",
-    message: "Message us on WhatsApp",
     /** "We reply within an hour, 9 am–9 pm daily." */
     hint: (within: string, hours: string) => `We reply within ${within}, ${hours} daily.`,
     /** How soon Care answer, as the card says it: "an hour", "2 hours", "30 minutes". */
@@ -128,8 +167,8 @@ export const profile = {
       if (minutes % 60 === 0) return `${String(minutes / 60)} hours`;
       return `${String(minutes)} minutes`;
     },
-    /** Their named Care person: "Asha, your Care person". */
-    carePerson: (name: string) => `${name}, your Care person`,
+    /** Their named Care person, before when Care reply: "Asha, your Care person · We reply within …". */
+    named: (person: string, hint: string) => `${person}, your Care person · ${hint}`,
     /** "9 am–9 pm" */
     hours: (opens: string, closes: string) => `${opens}–${closes}`,
     /** An hour of the day as the card says it: "9 am", "12 noon", "9 pm". */
@@ -138,14 +177,17 @@ export const profile = {
   // The client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {
     label: "Your data",
-    body: "Download your data, or raise a concern about how we use it.",
     download: "Download my data",
-    raise: "Raise a concern",
+    raise: "Raise a concern about my data",
     field: "Your concern",
     send: "Send",
     cancel: "Not now",
     // Beside support's "Replies the same day": the 30 days is the most a concern can take, not the usual.
-    sent: "Received. We’ll reply here and on WhatsApp, usually the same day and always within 30 days.",
+    /** The law's most days for an answer, from the API; none in a Home kept from before it said. */
+    sent: (days: number | null) =>
+      days === null
+        ? "Received. We’ll reply here and on WhatsApp, usually the same day."
+        : `Received. We’ll reply here and on WhatsApp, usually the same day and always within ${String(days)} days.`,
     failed: "That didn’t go through. Try again.",
     limited: "You’ve reached today’s limit. Send it tomorrow, or message us on WhatsApp.",
     // The client's latest concerns, each with our answer once given.
@@ -156,8 +198,12 @@ export const profile = {
     answer: (response: string) => `Our answer: ${response}`,
   },
   deletion: {
-    label: "Delete your account",
-    body: "We act on your request within 30 days. Bookings and payments are settled first, and invoices are kept for 8 years, as the law requires.",
+    label: "Delete account",
+    /** The law's days to act and years invoices are kept, from the API; none in a Home kept from before it said. */
+    body: (law: { readonly days: number; readonly years: number } | null) =>
+      law === null
+        ? "Visits and payments are settled first, and invoices are kept as the law requires."
+        : `We act on your request within ${String(law.days)} days. Visits and payments are settled first, and invoices are kept for ${String(law.years)} years, as the law requires.`,
     request: "Request deletion",
     confirm: "Ask us to delete your account? We’ll confirm on WhatsApp before anything is deleted.",
     yes: "Yes, request deletion",

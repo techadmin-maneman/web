@@ -35,6 +35,8 @@ const PAIRINGS: readonly Pairing[] = [
   { text: "--ink-tag", ground: "--ink-disabled", where: "an action not usable yet" },
   { text: "--ink-soft", ground: "--ink-frame", where: "the capture guide, an angle not taken yet" },
   { text: "--paper", ground: "--ink-raised", where: "an angle taken, a chosen outcome" },
+  // The shared parts' words light on the ink (packages/brand/tokens.css), the paper in the apps.
+  { text: "--on-ink", ground: "--ink-deep", where: "an onInk field's and an outline's words" },
 ];
 
 /**
@@ -55,7 +57,9 @@ const LIGHT_PAIRINGS: readonly Pairing[] = [
   { text: "--error", ground: "--grid-100", where: "a problem card’s title under a pointer" },
   { text: "--error", ground: "--disabled", where: "an action that takes something away, pressed" },
   { text: "--ink-900", ground: "--disabled", where: "a person’s initials" },
+  { text: "--ink-900", ground: "--wash-100", where: "a note on the warm wash: a reschedule asked" },
   { text: "--white-000", ground: "--error", where: "a destructive action" },
+  { text: "--white-000", ground: "--ink-500", where: "the tick on a no-show's or a fit not made's mark" },
   { text: "--white-000", ground: "--camera-900", where: "the camera’s head and its prompt" },
   { text: "--ink-500", ground: "--placeholder", where: "the map’s line beneath its pin" },
   { text: "--ink-900", ground: "--placeholder", where: "the map’s pin" },
@@ -142,6 +146,12 @@ const REDRAWN = [
   "apps/tech/src/job/CheckIn.tsx",
   "apps/tech/src/job/client-record.module.css",
   "apps/tech/src/job/ClientRecord.tsx",
+  "apps/tech/src/job/photo-tiles.module.css",
+  "apps/tech/src/job/PhotoTiles.tsx",
+  "apps/tech/src/frame/chevron.module.css",
+  "apps/tech/src/frame/Chevron.tsx",
+  "apps/tech/src/frame/row-end.module.css",
+  "apps/tech/src/frame/RowEnd.tsx",
   "apps/tech/src/job/door.module.css",
   "apps/tech/src/job/DoorScreen.tsx",
   "apps/tech/src/job/job-card.module.css",
@@ -167,14 +177,17 @@ const REDRAWN = [
   "apps/tech/src/waiting/",
   "apps/tech/src/guides/",
   "apps/tech/src/alerts/",
+  "apps/tech/src/login/",
+  "apps/tech/src/lang/",
 ];
 const slashed = (file: string) => file.replace(/\\/g, "/");
 const isRedrawn = (file: string) => REDRAWN.some((place) => slashed(file).startsWith(place));
 
 /** The older screens' rules on the ink, with the shared buttons' rules for the looks they draw. */
 function inkRules(): [string, string][] {
+  // A look by its whole class name: the site's .goldOnNavy is not the technician's .gold.
   const shared = rulesOf(SHARED_BUTTONS.file).filter(([selector]) =>
-    SHARED_BUTTONS.looks.some((look) => selector.includes(look)),
+    SHARED_BUTTONS.looks.some((look) => new RegExp(`\\${look}(?![\\w-])`).test(selector)),
   );
   const own = stylesheets("apps/tech/src").filter((file) => !isRedrawn(file));
   return [...own.flatMap(rulesOf), ...shared];
@@ -183,14 +196,19 @@ function inkRules(): [string, string][] {
 /** The redrawn screens' rules. */
 const lightRules = (): [string, string][] => stylesheets("apps/tech/src").filter(isRedrawn).flatMap(rulesOf);
 
-/** Every token each rule sets as a text colour and as a ground, and the rules that set both. */
+/** A rule that colours a glyph and no words, a row's chevron: held to a control's 3:1 (WCAG 1.4.11), not words' 4.5:1. */
+const GLYPH = /\.chevron\b/;
+
+/** Every token each rule sets as a text colour and as a ground, the rules that set both, and each glyph's. */
 function coloursUsed(rules: [string, string][]): {
   texts: Set<string>;
   grounds: Set<string>;
   both: [string, string, string][];
+  glyphs: Set<string>;
 } {
   const texts = new Set<string>();
   const grounds = new Set<string>();
+  const glyphs = new Set<string>();
   const both: [string, string, string][] = [];
   for (const [selector, body] of rules) {
     let text: string | null = null;
@@ -202,11 +220,15 @@ function coloursUsed(rules: [string, string][]): {
       if (property === "color") text = token;
       if (property === "background" || property === "background-color") ground = token;
     }
+    if (text !== null && GLYPH.test(selector) && ground === null) {
+      glyphs.add(text);
+      continue;
+    }
     if (text !== null) texts.add(text);
     if (ground !== null) grounds.add(ground);
     if (text !== null && ground !== null) both.push([selector, text, ground]);
   }
-  return { texts, grounds, both };
+  return { texts, grounds, both, glyphs };
 }
 
 function ratioOf(pairing: Pairing): number {
@@ -295,8 +317,9 @@ describe("what the older screens’ stylesheets use", () => {
   const used = coloursUsed(inkRules());
 
   it("reads every stylesheet’s colours, so the checks below check something", () => {
-    // Fewer as the older screens are redrawn: Schedule, Kit and Leave took theirs to the new look.
-    expect(used.texts.size).toBeGreaterThanOrEqual(4);
+    // Fewer as the older screens are redrawn: Schedule, Kit and Leave took theirs to the new look, and the storage
+    // line its own.
+    expect(used.texts.size).toBeGreaterThanOrEqual(3);
     expect(used.both.length).toBeGreaterThanOrEqual(4);
     expect(used.both).toContainEqual([".gold", "--ink-deep", "--gilt"]);
     const firstSelector = used.both.map(([selector, text, ground]) => [selector.split(",")[0], text, ground]);
@@ -379,6 +402,12 @@ describe("what the redrawn screens use", () => {
     expect([...used.texts].filter((token) => !texts.has(inLook(token)))).toEqual([]);
     expect([...used.grounds].filter((token) => !grounds.has(inLook(token)))).toEqual([]);
     expect(used.both.filter(([, text, ground]) => !listed.has(`${inLook(text)} on ${inLook(ground)}`))).toEqual([]);
+  });
+
+  it("draws a chevron in a colour the control edges list, which clears 3:1 on the ground", () => {
+    expect(used.glyphs.size).toBeGreaterThan(0);
+    const edges = new Set(LIGHT_EDGES.map((pairing) => pairing.edge));
+    expect([...used.glyphs].filter((token) => !edges.has(inLook(token)))).toEqual([]);
   });
 });
 

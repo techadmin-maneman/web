@@ -1,96 +1,211 @@
-/* What ./Done.tsx alone draws; what it shares is in ./Invite.module.css. */
+/* What ./Done.tsx alone draws; the list's footer is ./Invite.module.css's. */
 
-.done {
-  max-width: calc(var(--measure-column) + 2 * var(--gutter));
-  padding: var(--landing-pad-top) var(--gutter) var(--sp-48);
+/* ---- Booked: navy, the whole screen on a phone, a panel on a laptop (ADR 0265) ---- */
+
+.booked {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
 }
 
-/* Booked: the ink block. */
-.doneBlock {
-  padding: var(--sp-24) var(--sp-20);
-  background: var(--ink);
-  color: var(--paper);
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--site-navy);
+  color: var(--site-on-navy);
 }
 
-.doneBlockLabel {
-  margin-bottom: var(--sp-16);
+.body {
+  flex: 1;
+  padding: var(--sp-72) var(--gutter) var(--sp-24);
+}
+
+/* The ringed tick: gold on navy, navy on white. */
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--flow-mark);
+  height: var(--flow-mark);
+  margin-bottom: var(--sp-20);
+  border: var(--rule-strong) solid var(--site-gold);
+  border-radius: 50%;
+  color: var(--site-gold);
+}
+
+.markNavy {
+  border-color: var(--site-navy);
+  color: var(--site-navy);
+}
+
+.label {
   font-size: var(--fs-14);
-  color: var(--ink-muted);
+  font-weight: var(--weight-semibold);
+  color: var(--on-surface-muted);
 }
 
-.doneBlock svg {
-  display: block;
-  color: var(--gilt);
-}
-
-.doneBlockTitle {
-  margin: var(--sp-16) 0 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-28);
+.title {
+  margin: calc(var(--sp-4) + var(--sp-2)) 0 calc(var(--sp-12) + var(--sp-2));
+  font-size: var(--flow-done-title);
+  font-weight: var(--weight-semibold);
   line-height: var(--lh-115);
   text-wrap: balance;
 }
 
-.doneBlockBody {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-}
-
-/* On the list, and the invite that has expired: the paper frames. */
-.doneFrame {
-  padding: var(--sp-24) var(--sp-20);
-  border: var(--hairline) solid var(--paper-line);
-}
-
-.doneLabel {
-  margin-bottom: var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.frameTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-26);
-  line-height: var(--lh-115);
-}
-
-.frameBody {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-}
-
-.doneAfter {
-  margin-top: var(--sp-20);
-  display: grid;
-  gap: var(--sp-20);
-}
-
-.doneNote {
-  margin: 0;
+.line {
+  margin: 0 0 var(--sp-8);
   font-size: var(--fs-15);
-  color: var(--text-muted);
+  line-height: var(--lh-150);
 }
 
-.doneActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-12);
+/* "See it in the app too": a laptop's, where Open the app stands beside the way back. */
+.appHint {
+  display: none;
+  margin-top: var(--sp-20);
 }
 
 /* Add to your calendar: its label over Google and the .ics file. */
 .calendar {
-  display: grid;
-  gap: var(--sp-12);
+  margin-top: var(--sp-20);
 }
 
 .calendarLabel {
+  margin: 0 0 var(--sp-8);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-semibold);
+  color: var(--on-surface-muted);
+}
+
+.calendarLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}
+
+/* A phone's foot under a navy rule: Open the app, and the way back beneath it in words. */
+.actions {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-12) var(--gutter) calc(var(--sp-16) + var(--site-safe-bottom));
+  border-top: var(--hairline) solid var(--site-navy-rule);
+}
+
+.backWide {
+  display: none;
+}
+
+.backPhone {
+  justify-self: center;
+  min-height: var(--tap);
+  align-content: center;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+/* Where the app is not open, the way back is an outline at every width. */
+.actions:not(:has(.backPhone)) .backWide {
+  display: inline-flex;
+}
+
+/* ---- On the list: under the flow's frame, on white ---- */
+
+.listed {
+  order: 3;
+}
+
+.listedTitle {
+  margin: calc(var(--sp-4) + var(--sp-2)) 0 calc(var(--sp-4) + var(--sp-2));
+  font-size: var(--flow-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-115);
+  letter-spacing: var(--tracking-heading);
+  color: var(--site-navy);
+}
+
+.listedBody {
   margin: 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
+  font-size: var(--flow-lead);
+  line-height: var(--lh-150);
+  color: var(--site-text-muted);
+}
+
+.listedActions {
+  display: grid;
+  gap: var(--sp-8);
+  margin-top: var(--sp-24);
+}
+
+/* An invite that has expired for this friend, said beside either confirmation. */
+.expired {
+  margin-top: var(--sp-20);
+  padding: var(--sp-20);
+  border: var(--hairline) solid var(--border-subtle);
+}
+
+.expiredTitle {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-20);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-130);
+}
+
+.expiredBody {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-150);
+}
+
+@media (min-width: 761px) {
+  .booked {
+    min-height: 0;
+    padding: var(--sp-56) var(--gutter);
+  }
+
+  .panel {
+    width: 100%;
+    max-width: var(--flow-done-max);
+    margin: 0 auto;
+    padding: var(--sp-56);
+  }
+
+  .body,
+  .actions {
+    padding: 0;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-12);
+    margin-top: calc(var(--sp-16) + var(--sp-2));
+    border-top: 0;
+  }
+
+  .appHint {
+    display: block;
+  }
+
+  .backWide {
+    display: inline-flex;
+  }
+
+  .backPhone {
+    display: none;
+  }
+
+  .listedActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-20);
+  }
+
+  .listedActions > * {
+    min-width: var(--flow-action-min);
+  }
+}
+
+/* The terms and the privacy notice, which a flow with no footer links from every screen. */
+.legal {
+  margin-top: var(--sp-20);
 }

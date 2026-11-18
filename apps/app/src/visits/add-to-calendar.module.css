@@ -9,11 +9,11 @@
 .labelOnInk {
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ink-500);
 }
 
 .labelOnInk {
-  color: var(--ink-muted);
+  color: var(--mist-300);
 }
 
 .links {

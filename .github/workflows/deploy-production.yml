@@ -15,6 +15,8 @@
 # Secrets, on the GitHub Environment "production":
 #   CLOUDFLARE_API_TOKEN                            production's deploy token (docs/runbook.md)
 #   CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET    Access service token, so the smoke suite gets past Access on the apps' hosts
+# Secret of the repository:
+#   SENTRY_AUTH_TOKEN                               Sentry's organisation token, for source maps (scripts/release/sentry-maps.ts)
 name: deploy-production
 
 on:
@@ -87,6 +89,8 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       SHA: ${{ inputs.sha }}
+      # Each app's build keeps hidden source maps for Sentry, deleted before it ships (scripts/release/sentry-maps.ts).
+      MM_SOURCE_MAPS: "1"
       CANARY: ${{ inputs.canary_percent }}
       SOAK: ${{ inputs.soak_seconds }}
       ACCEPT_UNJUDGED: ${{ inputs.accept_unjudged_soak }}
@@ -142,8 +146,18 @@ jobs:
       - name: Upload the new mm-api version (no traffic yet)
         id: api
         run: |
-          version=$(node scripts/release/release.ts upload --worker mm-api --env production --tag "$SHA")
+          # A release of a commit from before the source maps keeps no bundle: its release.ts takes no --outdir.
+          kept=()
+          if [ -f scripts/release/sentry-maps.ts ]; then kept=(--outdir "$RUNNER_TEMP/mm-api-bundle"); fi
+          version=$(node scripts/release/release.ts upload --worker mm-api --env production --tag "$SHA" "${kept[@]}")
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Under the commit, the release mm-api reports its errors with; a warning at most, never a failed release.
+      - name: mm-api's source map to Sentry
+        if: hashFiles('scripts/release/sentry-maps.ts') != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: node scripts/release/sentry-maps.ts --env production --release "$SHA" --worker "$RUNNER_TEMP/mm-api-bundle"
 
       - name: Migrate the production database
         run: |
@@ -207,23 +221,44 @@ jobs:
       # mm-app, mm-ops and mm-tech have no route in production until their surface is switched on there
       # (docs/decisions/0026), and their first deploy is a bootstrap (docs/provisioning.md, step 11). Until then
       # there is nothing to build or deploy; the production build refuses their placeholder copy anyway.
+      - name: Build mm-app
+        if: steps.before.outputs.app != ''
+        run: npm run build:app -- --env production
+      # Its maps to Sentry, then out of the build before it ships; a commit from before the maps built none.
+      - name: mm-app's source maps to Sentry
+        if: steps.before.outputs.app != '' && hashFiles('scripts/release/sentry-maps.ts') != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: node scripts/release/sentry-maps.ts --env production --release "$SHA" --app apps/app/dist/production
       - name: Deploy mm-app
         if: steps.before.outputs.app != ''
-        run: |
-          npm run build:app -- --env production
-          node scripts/release/release.ts ship --worker mm-app --env production --tag "$SHA" --message "release $SHA"
+        run: node scripts/release/release.ts ship --worker mm-app --env production --tag "$SHA" --message "release $SHA"
 
+      - name: Build mm-ops
+        if: steps.before.outputs.ops != ''
+        run: npm run build:ops -- --env production
+      # Its maps to Sentry, then out of the build before it ships; a commit from before the maps built none.
+      - name: mm-ops's source maps to Sentry
+        if: steps.before.outputs.ops != '' && hashFiles('scripts/release/sentry-maps.ts') != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: node scripts/release/sentry-maps.ts --env production --release "$SHA" --app apps/ops/dist/production
       - name: Deploy mm-ops
         if: steps.before.outputs.ops != ''
-        run: |
-          npm run build:ops -- --env production
-          node scripts/release/release.ts ship --worker mm-ops --env production --tag "$SHA" --message "release $SHA"
+        run: node scripts/release/release.ts ship --worker mm-ops --env production --tag "$SHA" --message "release $SHA"
 
+      - name: Build mm-tech
+        if: steps.before.outputs.tech != ''
+        run: npm run build:tech -- --env production
+      # Its maps to Sentry, then out of the build before it ships; a commit from before the maps built none.
+      - name: mm-tech's source maps to Sentry
+        if: steps.before.outputs.tech != '' && hashFiles('scripts/release/sentry-maps.ts') != ''
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: node scripts/release/sentry-maps.ts --env production --release "$SHA" --app apps/tech/dist/production
       - name: Deploy mm-tech
         if: steps.before.outputs.tech != ''
-        run: |
-          npm run build:tech -- --env production
-          node scripts/release/release.ts ship --worker mm-tech --env production --tag "$SHA" --message "release $SHA"
+        run: node scripts/release/release.ts ship --worker mm-tech --env production --tag "$SHA" --message "release $SHA"
 
       - name: Final smoke
         run: npm run smoke -- --base https://maneman.in --environment production --version-tag "$SHA"

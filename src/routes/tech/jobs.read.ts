@@ -10,7 +10,7 @@ import { kitUnits } from "../../domain/inventory/stock-units.ts";
 import type { JobSheetItem } from "../../config/job-sheet.ts";
 import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/field/job-sheet-settings.ts";
 import { jobsOn } from "../../domain/field/tech-jobs.ts";
-import { jobDetail, lastVisitPhoto } from "../../domain/field/job-card.ts";
+import { jobDetail } from "../../domain/field/job-card.ts";
 import { refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -18,14 +18,7 @@ import { listableDate } from "../../policy/job-visibility.ts";
 import { inputsIn, rulesOfVisit } from "../../domain/cities/city-rules.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 
-import {
-  clientHistoryRoute,
-  comparePhotoRoute,
-  historyPhotoRoute,
-  jobsRoute,
-  jobRoute,
-  lastVisitPhotoRoute,
-} from "./jobs.routes.ts";
+import { clientHistoryRoute, comparePhotoRoute, historyPhotoRoute, jobsRoute, jobRoute } from "./jobs.routes.ts";
 import { clientHistory, comparePhoto, historyPhoto } from "../../domain/field/client-history.ts";
 import { alertsForTechnician } from "../../domain/clients/client-alerts.ts";
 import { workableJob } from "../../domain/field/workable-job.ts";
@@ -66,12 +59,20 @@ async function kitOf(db: D1Database, technicianId: string, job: { readonly id: s
  * The client's record for a job open on the phone: this technician's own job, unlocked, as its card is; null for any
  * other. A job given to another technician gives its record to them.
  */
-async function recordedJob(c: Ctx, id: string): Promise<{ id: string; personId: string; startsAt: string } | null> {
+async function recordedJob(
+  c: Ctx,
+  id: string,
+): Promise<{ id: string; personId: string; startsAt: string; technicianId: string } | null> {
   const job = await workableJob(c.env.DB, id);
   if (job?.technicianId !== technicianOf(c).technicianId) return null;
   const { addressUnlockHour } = await opsInputs(c);
   if (!unlocked(job.windowStart, c.var.deps.now(), addressUnlockHour)) return null;
-  return { id: job.id, personId: job.personId, startsAt: job.windowStart.toISOString() };
+  return {
+    id: job.id,
+    personId: job.personId,
+    startsAt: job.windowStart.toISOString(),
+    technicianId: job.technicianId,
+  };
 }
 
 /** A checklist as the phone shows it: the technician's words, not the client's. */
@@ -109,6 +110,7 @@ export function registerTechJobReads(app: App): void {
         arrivalMinutes: inputs.bookingRules.arrival,
         waits: inputs.noShowWaitMin,
         phoneClock: inputs.phoneClock,
+        clientSignOff: c.var.config.settings.clientSignOff,
       }),
       jobSheet(c.env.DB),
       rulesOfVisit(c.env.DB, jobId),
@@ -123,6 +125,8 @@ export function registerTechJobReads(app: App): void {
         checklist_if_declined: job.one_visit ? forThePhone(declinedChecklistOf(sheet).items) : [],
         partial_reasons: [...sheet.partialReasons.items],
         lost_reasons: type === "consultation" || job.one_visit ? [...sheet.lostReasons.items] : [],
+        not_fitted_reasons: job.steps.includes("piece") ? [...sheet.notFittedReasons.items] : [],
+        failure_reasons: type === "replacement" ? [...sheet.failureReasons.items] : [],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), {
           today: job.date,
           kit: technicianId,
@@ -169,21 +173,6 @@ function registerPhotoReads(app: App): void {
     const photo = job === null ? null : await comparePhoto(c.env.DB, job, phase, angle);
     const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
     if (photo === null || object === null) return refuse(c, "not_found");
-    return new Response(object.body, {
-      headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },
-    });
-  });
-
-  app.openapi(lastVisitPhotoRoute, async (c) => {
-    const photo = await lastVisitPhoto(c.env.DB, {
-      technicianId: technicianOf(c).technicianId,
-      jobId: c.req.valid("param").id,
-      now: c.var.deps.now(),
-      unlockHour: (await opsInputs(c)).addressUnlockHour,
-    });
-    const object = photo === null ? null : await c.env.CLIENT_PHOTOS.get(photo.key);
-    if (photo === null || object === null) return refuse(c, "not_found");
-    // A client's photograph stays off a technician's phone: neither the browser nor the service worker keeps it.
     return new Response(object.body, {
       headers: { "Content-Type": photo.contentType, "Cache-Control": "private, no-store" },
     });

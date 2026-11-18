@@ -34,6 +34,7 @@ export const SETTINGS = {
   TURNSTILE_SECRET: "0x4AAAAAAAreal-looking-secret",
   TURNSTILE_ACCEPT_TEST_TOKEN: "false",
   SELF_SERVE_BOOKING: "false",
+  CLIENT_SIGN_OFF: "false",
   REFERRER_NAME_ON_INVITE: "true",
   IP_HASH_SALT: "a-salt-of-at-least-thirty-two-characters",
   RENDER_DAILY_CEILING: "20",

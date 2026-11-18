@@ -6,6 +6,7 @@
 // The technician's label lookup reads these rows, so scanning a label works with no signal.
 
 import { fitsNothing, pieceBodyOf } from "../field/job-event-bodies.ts";
+import type { FailureWords } from "../field/job-sheet-settings.ts";
 
 export interface Piece {
   readonly id: string;
@@ -164,18 +165,26 @@ export function fittedPieceStatement(db: D1Database, piece: FittedPiece): D1Prep
     );
 }
 
-/** Records the client's piece that failed, with its reason. The first failure recorded stands. */
+/**
+ * Records the client's piece that failed, with its reason's words and, where it is one of the failure list's, its code
+ * (docs/decisions/0273-why-a-hair-system-failed.md). The first failure recorded stands.
+ */
 export function failedPieceStatement(
   db: D1Database,
-  failure: { readonly personId: string; readonly pieceCode: string; readonly reason: string; readonly now: Date },
+  failure: {
+    readonly personId: string;
+    readonly pieceCode: string;
+    readonly reason: FailureWords;
+    readonly now: Date;
+  },
 ): D1PreparedStatement {
   return db
     .prepare(
       `UPDATE pieces SET failed_at = COALESCE(failed_at, ?3), failure_reason = COALESCE(failure_reason, ?4),
-         synced_at = ?3
+         failure_code = CASE WHEN failure_reason IS NULL THEN ?5 ELSE failure_code END, synced_at = ?3
        WHERE piece_code = ?1 AND person_id = ?2 AND deleted_at IS NULL`,
     )
-    .bind(failure.pieceCode, failure.personId, failure.now.toISOString(), failure.reason);
+    .bind(failure.pieceCode, failure.personId, failure.now.toISOString(), failure.reason.words, failure.reason.code);
 }
 
 /**

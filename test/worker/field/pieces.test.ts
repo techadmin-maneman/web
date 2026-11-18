@@ -1,6 +1,7 @@
 // The pieces tab and the technician's label lookup (src/domain/inventory/pieces.ts), and the utilisation the board writes to
 // events. NOW is Monday 21 September 2026, 12 noon in India. Every code is made up.
 
+import { FAILURE_REASONS } from "../../../src/config/job-sheet.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
@@ -31,7 +32,12 @@ const FITTED: FittedPiece = {
 };
 
 const fail = (personId: string, reason: string, now = NOW) =>
-  failedPieceStatement(env.DB, { personId, pieceCode: FITTED.pieceCode, reason, now }).run();
+  failedPieceStatement(env.DB, {
+    personId,
+    pieceCode: FITTED.pieceCode,
+    reason: { words: reason, code: null },
+    now,
+  }).run();
 
 let tech: App;
 let ops: App;
@@ -156,7 +162,7 @@ describe("the label the technician scans", () => {
 });
 
 describe("GET /api/clients/:id/pieces", () => {
-  it("reads the client's pieces from our records", async () => {
+  it("reads the client's pieces from our records, with the reasons one may have failed for", async () => {
     await fittedPieceStatement(env.DB, FITTED).run();
     const answer = await request(ops, `/api/clients/${PERSON}/pieces`);
 
@@ -174,6 +180,7 @@ describe("GET /api/clients/:id/pieces", () => {
           replaced_at: null,
         },
       ],
+      failure_reasons: FAILURE_REASONS.map((reason) => ({ code: reason.id, label: reason.label })),
     });
   });
 });

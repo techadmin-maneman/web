@@ -1,16 +1,28 @@
 /* What ./Outcome.tsx alone draws; what it shares is in ./steps.module.css. */
 
-.reason {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  text-align: left;
-}
-
 /* The note for the next technician and the alert, beneath the choice. */
 .notes {
   display: flex;
   flex-direction: column;
   gap: var(--sp-16);
   padding: var(--sp-24) var(--screen-gutter) 0;
+}
+
+.noteBox {
+  margin-top: var(--sp-8);
+}
+
+.noteWhere {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+/* The result as radio rows under its heading, and the summary under a rule, as the design has them. */
+.result {
+  margin: var(--sp-16) var(--screen-gutter) 0;
+}
+
+.summaryHead {
+  margin-inline: var(--screen-gutter);
 }

@@ -8,7 +8,7 @@ import { CEILINGS, type Ceiling } from "./daily-ceilings.ts";
 import { CODE_CHECKS } from "./discount-codes.ts";
 import { GRIEVANCES_PER_DAY } from "./grievances.ts";
 import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "./invites.ts";
-import { PROBLEMS_PER_DAY } from "./problems.ts";
+import { PROBLEM_ADDS_PER_DAY, PROBLEMS_PER_DAY } from "./problems.ts";
 import { PHOTO_UPLOADS_PER_TECHNICIAN_DAILY, STOCK_PHOTO_UPLOADS_DAILY } from "./storage-share.ts";
 
 /** The window a count runs in: India's day, or India's hour. */
@@ -47,6 +47,8 @@ export const RATE_LIMITS = {
   "number_change:person": { per: "day", limit: 3 },
   // Something wrong with their hair system or a visit, told to Care from the app.
   "problem:person": { per: "day", limit: PROBLEMS_PER_DAY },
+  // What they add to their reports: an update, a reopening, a photograph (docs/decisions/0259-the-issue-log.md).
+  "problem_add:person": { per: "day", limit: PROBLEM_ADDS_PER_DAY },
   // Their own try-on's photograph and look, counted apart from the site's result links so the site's traffic never
   // turns them away (ADR 0014's R2 budget is held by the number of clients).
   "tryon_image:person": { per: "day", limit: 200 },

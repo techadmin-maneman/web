@@ -1,51 +1,57 @@
-/* What ./OptionsList.tsx draws: each product with its prices, a choice where the client picks one, and the looks. */
+/* What ./OptionsList.tsx draws, as the prototype does: each product a ruled row, a radio where the client picks one,
+   its name over its line and its prices beneath, under the products' head; then the looks. */
 
-.head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-12);
-  margin: 0 0 var(--sp-8);
-  font-size: var(--fs-15);
-  font-weight: var(--weight-regular);
-  color: var(--ui-text-soft);
+.products {
+  padding: 0 var(--screen-gutter);
 }
 
 .quiet {
-  margin: 0 0 var(--sp-16);
-  font-size: var(--fs-15);
+  margin: var(--sp-4) 0 var(--sp-8);
+  font-size: var(--fs-14);
   color: var(--ui-text-soft);
 }
 
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-20);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product {
+  padding: var(--sp-12) 0 var(--sp-16);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .name {
-  margin: 0 0 var(--sp-4);
+  margin: 0;
   font-size: var(--fs-17);
-  font-weight: var(--weight-regular);
+  font-weight: var(--weight-semibold);
   color: var(--ui-text);
 }
 
-.name + .quiet {
-  margin-bottom: 0;
+.line {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-14);
+  color: var(--ui-text-soft);
+}
+
+/* The prices sit under the name, past the radio, as the prototype aligns them. */
+.pick + .prices {
+  padding-left: calc(var(--radio-size) + var(--sp-12));
 }
 
 .prices {
   display: flex;
   flex-direction: column;
   gap: var(--sp-8);
-  margin: var(--sp-12) 0 0;
+  margin: var(--sp-8) 0 0;
 }
 
 .price {
   display: flex;
   justify-content: space-between;
   gap: var(--sp-12);
-  font-size: var(--fs-15);
+  font-size: var(--fs-14);
   color: var(--ui-text-soft);
 }
 
@@ -70,6 +76,13 @@
 
 .failed .quiet {
   margin: 0;
+}
+
+.head {
+  margin: 0 0 var(--sp-8);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
 }
 
 /* Three to a row, whatever the phone's width. */

@@ -56,6 +56,8 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   replacement_order: (facts, task) =>
     copy.replacement_order(facts.piece_code, plainDate(indiaDate(task.due)), plainDate(facts.due_on)),
   recall_call: (facts) => copy.recall_call(facts.piece_codes.join(" ")),
+  // The hair system to order in the client's size, and the visit it is for.
+  made_to_order_ask: (facts) => copy.made_to_order_ask(facts.name, dispatch.typeNames[facts.kind]),
   stock_at_risk: (facts) => copy.stock_at_risk(facts.name ?? facts.consumable_code ?? ""),
   referral_review: (facts) => SIGNALS[facts.signal ?? ""] ?? copy.unknown,
   grievance: () => copy.grievance,
@@ -79,13 +81,27 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   address_to_confirm: (facts) => copy.address_to_confirm(dayAndTime(facts.starts_at)),
   // The technician's reason in the job sheet's words, and the day they closed the visit.
   partial_visit: (facts, task) => {
-    const reason = facts.reason_code === NO_PIECE ? copy.noPiece : (facts.reason ?? copy.noReason);
+    const notFitted = facts.not_fitted === null ? copy.noPiece : copy.notFitted(facts.not_fitted);
+    const reason = facts.reason_code === NO_PIECE ? notFitted : (facts.reason ?? copy.noReason);
     return copy.partial_visit(
       reason,
       shortDate(indiaDate(task.since)),
       facts.ask === null ? null : copy.finishAsks[facts.ask],
     );
   },
+  // Anything the client flagged first, why they did not sign, and whose job.
+  fit_unsigned: (facts) => copy.fit_unsigned(facts.reason, facts.technician, facts.flag),
+  // The stars, the visit and its day, and whose job.
+  low_rating: (facts) =>
+    copy.low_rating(facts.stars, `${dispatch.typeNames[facts.kind]} ${shortDate(facts.visited_on)}`, facts.technician),
+  // The report's reference, when the fit was done, where its sign-off stood, and the photographs sent.
+  fit_guarantee_claim: (facts) =>
+    copy.fit_guarantee_claim(
+      facts.reference,
+      shortDate(facts.fitted_on),
+      copy.signOffs[facts.sign_off ?? "none"],
+      facts.photos,
+    ),
   // Why, whose job, and each consumable short of what was expected.
   consumables_short: (facts) =>
     copy.consumables_short(

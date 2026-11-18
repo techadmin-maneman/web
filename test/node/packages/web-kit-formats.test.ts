@@ -10,6 +10,7 @@ import {
   listMonth,
   longDate,
   minutesBetween,
+  hourInIndia,
   monthInIndia,
   shortDate,
   shortMonth,
@@ -90,11 +91,13 @@ describe("web-kit dates", () => {
   });
 
   // Half past midnight on New Year's Day in India is still the old year on a phone set to London.
-  it("reads today, this month and this year in India, whatever zone the phone is set to", () => {
+  it("reads today, this month, this year and the hour in India, whatever zone the phone is set to", () => {
     const newYear = Date.parse("2026-12-31T19:00:00Z");
     expect(todayInIndia(newYear)).toBe("2027-01-01");
     expect(monthInIndia(newYear)).toBe("2027-01");
     expect(yearInIndia(newYear)).toBe(2027);
+    expect(hourInIndia(newYear)).toBe(0);
+    expect(hourInIndia(Date.parse("2026-12-31T06:29:00Z"))).toBe(11);
   });
 
   it("counts whole minutes from one instant to another", () => {
@@ -237,7 +240,7 @@ describe("a mobile field on the site and in the technician app", () => {
 describe("web-kit WhatsApp links", () => {
   it("opens a chat with a number, however it is written, with words ready to send if there are any", () => {
     expect(whatsappChat("+91 98100 04417")).toBe("https://wa.me/919810004417");
-    expect(whatsappChat(WHATSAPP_NUMBER, "Hello & bye")).toBe("https://wa.me/17116660760?text=Hello%20%26%20bye");
+    expect(whatsappChat(WHATSAPP_NUMBER, "Hello & bye")).toBe("https://wa.me/919034572990?text=Hello%20%26%20bye");
   });
 
   it("shares words with whoever the sender picks", () => {
@@ -248,7 +251,7 @@ describe("web-kit WhatsApp links", () => {
   it("is the one place the front ends write the number or build a link", () => {
     const own = ["apps", "site/src", "packages/ui"]
       .flatMap((root) => sourcesUnder(root))
-      .filter((path) => /https:\/\/wa\.me|7116660760|9034572990/.test(readFileSync(path, "utf8")));
+      .filter((path) => /https:\/\/wa\.me|9034572990/.test(readFileSync(path, "utf8")));
     expect(own).toEqual([]);
   });
 });

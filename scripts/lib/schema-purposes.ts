@@ -76,6 +76,14 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).",
   care_weekly_off: "Each Care team member's weekly days off, as a Customer Care manager sets them (ADR 0134).",
   care_leave: "Leave for a Care team member, from one date to another; their chats are covered meanwhile (ADR 0134).",
+  client_reports:
+    "Each issue a client reports from the app, numbered as MM-ISS-0032, with its category, their words, the Care chat it went into, and when Care closed it or the client marked it sorted or reopened it (ADR 0259).",
+  client_report_photos:
+    "Up to three photographs a client sends with a report, each an object in the client photos bucket (ADR 0259).",
+  client_app_alerts:
+    "A client's alerts in their app, over the last 30 days: one beside each message written to them but WhatsApp's own, and one each time a technician asks for their sign-off; when each was pushed and read (ADR 0255).",
+  client_push_subscriptions:
+    "The session that takes a client's pushes, one subscription a session, by the push service's address; a session signed out, revoked or ended takes none (ADR 0255).",
   care_names: "The first name each Care team member is known by to clients, as their Support card shows it (ADR 0136).",
   tech_alert_kinds_off: "The kinds of alert a technician turned off; every kind is on until then (ADR 0250).",
   tech_alerts:
@@ -124,6 +132,12 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).",
   last_visits:
     "Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.",
+  made_to_order_asks:
+    "A client's ask for a hair system made to order, kept as the app tells them their size is, one a client, visit and package while open, a Tasks row until ops close it, having ordered it (ADR 0253).",
+  visit_ratings:
+    "A client's stars for a visit done, one a visit, kept with its technician for their figure on Me, and whether it was low when given, which opens a Tasks row for Care (ADR 0260).",
+  fit_sign_offs:
+    "The client's sign-off of a fit, one row a visit: asked, flagged with their words, signed in their app, or declined with the technician's why, which opens a Tasks row (ADR 0254).",
   kit_requests:
     "A technician's ask of ops for what their kit is short of over the next seven days, by the job sheet's counts, open until ops settle it (ADR 0249).",
   leave_requests:
@@ -150,6 +164,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each WhatsApp code sent to prove a number typed into the site, with the number and the code only as hashes (ADR 0081, ADR 0104).",
   lost_reasons:
     "Why a client is not going ahead with a fit after their consultation, as ops set them, one they took off kept as retired; none means the committed list (ADR 0149).",
+  failure_reasons:
+    "Why a hair system failed, as ops set them, one they took off kept as retired; none means the committed list (ADR 0273).",
+  not_fitted_reasons:
+    "Why a hair system could not be fitted today, as ops set them, one they took off kept as retired; none means the committed list (ADR 0270).",
   otp_challenges: "Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0052).",
   partial_reasons:
     "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",
@@ -178,6 +196,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   referral_attributions:
     "A person who came through an invite, to the first invite they used, what became of its grant, and who attached it and why where ops did (ADR 0048, ADR 0089).",
   referral_codes: "A client's invite code, the version of their card, and how often the invite was opened (ADR 0048).",
+  razorpay_settlements: "Each payout Razorpay made to the bank, its fee, and its transfer and fee in Books (ADR 0261).",
   refunds: "The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).",
   serviceable_pincodes:
     "Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).",

@@ -21,15 +21,16 @@ import styles from "./tell-client.module.css";
 type Preset = "on_the_way" | "running_late";
 
 /** What was sent, by preset: its words and when. */
-type Sent = Readonly<Partial<Record<Preset, { readonly words: string; readonly at: string }>>>;
+export type Sent = Readonly<Partial<Record<Preset, { readonly words: string; readonly at: string }>>>;
 
 const MINUTES = [10, 20, 30, 45, 60] as const;
 
 /** Whether the client can be sent a word from the job: not once the technician is at the door, nor after the close. */
-const takesUpdates = (job: Job): boolean =>
+export const takesUpdates = (job: Job): boolean =>
   job.client?.whatsapp === true && job.progress.outcome === null && job.progress.checked_in_at === null;
 
-function MessageSheet({
+/** The sheet of words to send the client, from the job and from Today's next job alike. */
+export function MessageSheet({
   job,
   who,
   sent,
@@ -79,6 +80,7 @@ function MessageSheet({
             <ToggleButton
               key={each}
               className={styles.minute}
+              filled
               pressed={each === minutes}
               onClick={() => {
                 setMinutes(each);
@@ -90,7 +92,6 @@ function MessageSheet({
         </div>
         {word("on_the_way", copy.tell.onTheWay(minutes))}
         {word("running_late", copy.tell.late(minutes))}
-        <p className={styles.note}>{copy.tell.fromUs}</p>
       </SheetPanel>
     </Sheet>
   );

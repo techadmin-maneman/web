@@ -19,12 +19,40 @@
     margin-top: var(--sp-8);
   }
 
+  .view {
+    position: relative;
+  }
+
+  /* 4:3, or the height and ground a screen sets, as the technician's hair system step sets the prototype's band. */
   .video {
     display: block;
     width: 100%;
+    height: var(--scan-height);
     aspect-ratio: 4 / 3;
     object-fit: cover;
-    background: var(--ink);
+    background: var(--scan-ground);
+  }
+
+  /* Where the label is held: a white frame at the picture's middle, and the words beneath it. */
+  .frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--scan-frame-width);
+    height: var(--scan-frame-height);
+    border: var(--rule-strong) solid var(--white);
+    border-radius: var(--sp-2);
+    transform: translate(-50%, -50%);
+  }
+
+  .aim {
+    position: absolute;
+    right: 0;
+    bottom: var(--sp-12);
+    left: 0;
+    font-size: var(--fs-14);
+    color: var(--white);
+    text-align: center;
   }
 
   .note {

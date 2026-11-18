@@ -1,5 +1,5 @@
-// Home's notes beneath its card: a visit nobody was home for while ops decide it, a one visit's payment while the
-// client owes it, and the free service visits they hold.
+// Home's notes beneath its card: a visit nobody was home for while ops decide it, and a one visit's payment while the
+// client owes it; and when the free service visits they hold must be used by.
 
 import { TextLink } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
@@ -49,19 +49,8 @@ export function PaymentOwed({ owed }: { owed: NonNullable<Me["payment_owed"]> })
   );
 }
 
-/** Home's credit tile: how many free service visits, said once, and the day the soonest must be used by. */
-export function CreditTile({ credits }: { credits: NonNullable<Me["credits"]> }) {
-  const expiry = credits.earliest_expiry;
-  return (
-    <div className={styles.credits}>
-      <p className={styles.creditsLabel}>{home.credits.count(credits.visits)}</p>
-      {expiry !== null && <p className={styles.creditsExpiry}>{expiryLine(credits, expiry)}</p>}
-    </div>
-  );
-}
-
 /** "Use by 2 Oct", "Use by tonight" on the day, or "1 to use by 2 Oct" where only some of them end first. */
-function expiryLine(credits: NonNullable<Me["credits"]>, expiry: string): string {
+export function expiryLine(credits: NonNullable<Me["credits"]>, expiry: string): string {
   const today = indiaDate(new Date(apiNow()).toISOString());
   const lastDay = indiaDate(expiry);
   const when = lastDay === today ? home.credits.tonight : listDate(lastDay, Number(today.slice(0, 4)));

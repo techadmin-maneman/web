@@ -59,7 +59,7 @@ const ME = {
   consulted: null,
   being_booked: null,
   missed_visit: null,
-  payment_owed: null,
+  ...{ payment_owed: null, alerts_unread: 0, issues_open: 0 },
   remake: null,
   credits: null,
   prompt: null,
@@ -67,6 +67,10 @@ const ME = {
   booking: { ...BOOKS_NOTHING, types: ["consultation"], services: [], next: null },
   referral_reward: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
   pending_invite: null,
+  care_hours: { opens: 9, closes: 21, first_reply: 60 },
+  guarantee_days: 14,
+  answers_within: { grievance_days: 30, deletion_days: 30, invoices_kept_years: 8 },
+  hair_system: null,
 } satisfies Schemas["Me"];
 
 // ---- Fitted --------------------------------------------------------------
@@ -119,6 +123,10 @@ const visit = (n: number, date: string, type: NonNullable<VisitSummary["type"]>,
     one_visit: null,
     pay_at_visit: null,
     proposed_move: null,
+    latest_update: null,
+    step: null,
+    waits_until: null,
+    sign_off: null,
   }) satisfies VisitSummary;
 
 /** A Thursday, as B1's "Thu 19 Sep" is; paid ahead, as C1's "Prepaid" says. */
@@ -192,6 +200,9 @@ const VISIT_DETAIL = {
   invoice_held: null,
   no_show: null,
   paid: { amount: 220_000, receipt: null },
+  guarantee_until: null,
+  rating: null,
+  rateable: false,
 } satisfies Schemas["VisitDetail"];
 
 const timeline = (inks: readonly [string, string, string]) => ({
@@ -309,7 +320,7 @@ const AVAILABILITY = {
   service: { tier: "standard", name: "Service visit", minutes: 90 },
   price: SERVICE_PRICE,
   change_notice_hours: 24,
-  last: "2030-09-29",
+  ...{ opens: "2030-09-16", last: "2030-09-29" },
   days: Array.from({ length: 14 }, (_, index) => ({
     date: `2030-09-${String(16 + index)}`,
     price: SERVICE_PRICE,
@@ -561,7 +572,7 @@ async function login(browser: Browser, design: Page): Promise<void> {
     built: await shot(app),
   });
 
-  await app.getByRole("button", { name: "No booking on this number?" }).click();
+  await app.getByRole("button", { name: "No visit booked on this number?" }).click();
   await pair({
     dir: OUT,
     width: WIDTH,
@@ -883,8 +894,8 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
         design: await frame(design, "Booking · date"),
         built: await shot(app),
       });
-    await app.getByRole("button", { name: "Continue" }).click();
-    // The day's starts every half hour (docs/decisions/0210-booking-by-start-time.md): the first open one, at noon.
+    // The day's starts every half hour beneath its days (docs/decisions/0210-booking-by-start-time.md): the first open
+    // one, at noon.
     await app.getByRole("radio", { name: "12 pm", exact: true }).click();
     if (shots)
       await pair({
@@ -894,9 +905,8 @@ async function bookingPairs(browser: Browser, design: Page): Promise<void> {
         design: await frame(design, "Booking · window"),
         built: await shot(app),
       });
-    await app.getByRole("button", { name: "Continue to payment" }).click();
-    // A visit a credit covers is confirmed, not paid for.
-    await app.getByRole("heading", { name: /^(Pay and confirm|Confirm)$/ }).waitFor();
+    await app.getByRole("button", { name: "Continue", exact: true }).click();
+    await app.getByRole("heading", { name: "Review" }).waitFor();
   }
 
   /**
@@ -1078,7 +1088,7 @@ async function changePairs(browser: Browser, design: Page): Promise<void> {
     design: await version("Reschedule", "More than 24 hours out"),
     built: await shot(free),
   });
-  await free.getByRole("button", { name: "Cancel instead" }).click();
+  await free.getByRole("button", { name: "Cancel the visit" }).click();
   await free.getByText("Rs. 2,360 back to your UPI in 5 to 7 working days.").waitFor();
   await pair({
     dir: OUT,

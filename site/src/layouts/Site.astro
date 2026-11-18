@@ -17,10 +17,10 @@ import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
 import { FAVICON_SIZES, OG_IMAGE, token } from "../lib/brand-images.ts";
 import { SITE_ORIGIN } from "../lib/site-origin.ts";
 import { jsonLd } from "../lib/structured-data.ts";
-import { pagePath } from "../lib/page-path.ts";
-import serif400 from "../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2?url";
-import sans400 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-400-normal.woff2?url";
-import sans500 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff2?url";
+import { isFlowPage, pagePath } from "../lib/page-path.ts";
+import plex400 from "../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2?url";
+import plex500 from "../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2?url";
+import plex600 from "../../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2?url";
 
 interface Props {
   title: string;
@@ -89,15 +89,15 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     ))}
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preload" href={serif400} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={sans400} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={sans500} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={plex400} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={plex500} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={plex600} as="font" type="font/woff2" crossorigin />
     {structuredData.map((data) => (
       <script type="application/ld+json" set:html={jsonLd(data)}></script>
     ))}
     <slot name="head" />
   </head>
-  <body>
+  <body class:list={[isFlowPage(path) && "in-flow", isFlowPage(path) && "app-look"]}>
     <a class={skipLinkLook()} href="#content">
       {header.skip}
     </a>
@@ -106,7 +106,7 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     <main id="content" tabindex="-1">
       <slot />
     </main>
-    {home ? <Footer /> : <SlimFooter />}
+    {home ? <Footer /> : !isFlowPage(path) && <SlimFooter />}
     {CONSENT_BAR_SHOWN && <ConsentBar />}
     {home && <StickyBar />}
     <script>

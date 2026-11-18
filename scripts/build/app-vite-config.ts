@@ -73,7 +73,9 @@ export function appViteConfig(app: AppBuild): UserConfig {
       // One stylesheet, read before the first screen paints. Split by chunk, six of them queued with the scripts and
       // fonts on a phone's few connections, and the first screen often waited a round trip more for them.
       cssCodeSplit: false,
-      sourcemap: false,
+      // Maps only where a deploy asks, and hidden, so no page names one: Sentry reads them, and the deploy deletes them
+      // before the app ships, so none is served (scripts/release/sentry-maps.ts).
+      sourcemap: process.env.MM_SOURCE_MAPS === "1" ? "hidden" : false,
       rolldownOptions: entriesOf(app),
     },
     server: {

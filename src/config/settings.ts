@@ -102,10 +102,19 @@ export interface ZohoBooksSettings {
   /** The Books organisation invoices and receipts are in. */
   readonly orgId: string;
   /**
-   * The Books account refunds are paid from: the one Razorpay settles into. Without it, refunds are not recorded
-   * in Books and their vouchers wait (docs/open-points.md).
+   * The Books account Razorpay holds our money in, Razorpay Clearing: each Razorpay payment is deposited to it and each
+   * refund paid from it. Without it, refunds are not recorded in Books and their vouchers wait (docs/open-points.md).
    */
   readonly refundAccountId: string | null;
+  /**
+   * Where Razorpay's settlements post (docs/decisions/0261-razorpay-money-in-books.md): the company's bank account its
+   * payouts reach, and the expense account its fees are booked to, with the tax its fee's GST is claimed under once
+   * GST is on. Without the bank's and the fee's accounts, settlements wait unrecorded.
+   */
+  readonly bankAccountId: string | null;
+  readonly gatewayFeesAccountId: string | null;
+  /** Razorpay's GSTIN and its state, as its tax invoice to us names them, so its fee's GST is input credit. */
+  readonly gateway: { readonly gstin: string; readonly stateCode: string } | null;
   /** Empty while GST is off in Books; the CA's figures once it is on. */
   readonly gst: GstRegistration;
   /**
@@ -198,6 +207,12 @@ export interface Settings {
    * on wherever selfServeBooking is (SELF_SERVE_CONSULTATIONS). Paid visits then go through ops.
    */
   readonly selfServeConsultations: boolean;
+  /**
+   * Clients sign off a first fit or a replacement in their own app before it closes done
+   * (docs/decisions/0254-client-signs-off-the-fit.md). Off until the app that asks them ships: the technician's card
+   * has no sign-off, and a fit closes done as before.
+   */
+  readonly clientSignOff: boolean;
   /** The referrer's first name on their invite, for those who agreed to it (ADR 0025, item 24). */
   readonly referrerNameOnInvite: boolean;
   readonly ipHashSalt: string;
@@ -265,6 +280,12 @@ function readServiceTokenActsAs(read: Reader, environment: EnvironmentName | und
   return actsAs;
 }
 
+/** The switches that are a flag and nothing more: the referrer's name on their invite, and clients' sign-off in the app. */
+const readSwitches = (read: Reader) => ({
+  referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
+  clientSignOff: read.flag("CLIENT_SIGN_OFF"),
+});
+
 export function readSettings(
   env: Env,
   environment: EnvironmentName | undefined,
@@ -330,7 +351,7 @@ export function readSettings(
     acceptTurnstileTestToken,
     selfServeBooking,
     selfServeConsultations: selfServeBooking || read.optionalFlag("SELF_SERVE_CONSULTATIONS"),
-    referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
+    ...readSwitches(read),
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,
     leadWebhookUrl: leadWebhookUrl ?? (alertWebhookUrl === "" ? null : alertWebhookUrl),

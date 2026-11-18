@@ -6,15 +6,21 @@ import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { availability } from "../../domain/booking/availability.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
-import { currentAddress } from "../../domain/clients/profile.ts";
-import { isServed } from "../../domain/clients/service-area.ts";
 import type { Price } from "../../domain/money/price-book.ts";
 import { visitPriceOf } from "../../domain/booking/client-prices.ts";
 import { termsInForce } from "../../domain/visits/visit-changes.ts";
-import { bookable, movedService, moveTermsFor, rangeFor } from "../../http/client-booking.ts";
+import {
+  addressOutsideArea,
+  bookable,
+  movedService,
+  moveTermsFor,
+  notOffered,
+  rangeFor,
+  stockedRange,
+} from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
-import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import type { OpsInputs } from "../../domain/platform/ops-settings.ts";
 import { selfServeRoute } from "../../http/session-routes.ts";
@@ -36,6 +42,10 @@ const AvailabilitySchema = z
     price: PriceSchema.openapi({ description: "The first day's price." }),
     change_notice_hours: z.number().int().openapi({
       description: "The notice a visit booked here is sold under: a move keeps its visit's own, else as ops set it.",
+    }),
+    opens: z.iso.date().openapi({
+      description:
+        "The first day this visit may be booked on: a replacement's no sooner than its hair system can be fitted, where none is in stock.",
     }),
     last: z.iso
       .date()
@@ -76,13 +86,6 @@ const AvailabilitySchema = z
   })
   .strict()
   .openapi("Availability");
-/** Whether the client's address is in a pincode we do not come to; false while they have given none. */
-async function addressOutsideArea(db: D1Database, personId: string): Promise<boolean> {
-  const address = await currentAddress(db, personId);
-  if (address === null) return false;
-  return !(await isServed(db, address.pincode));
-}
-
 /** A day's grid of starts as the API gives it, each open or taken. */
 function startsOfDay(asked: {
   readonly day: { readonly date: string; readonly starts: readonly { readonly time: string }[] };
@@ -111,6 +114,43 @@ function startsOfDay(asked: {
       change_charged: changeChargedOnBooking(startsAt, asked.now, asked.terms),
     };
   });
+}
+
+/** The days open to the visit sold, and the strip's first day: later than asked where a replacement's opens later. */
+async function openDays(
+  c: Parameters<typeof stockedRange>[0],
+  personId: string,
+  sold: Parameters<typeof stockedRange>[2],
+  asked: {
+    readonly range: { readonly opens: string; readonly last: string };
+    readonly from: string | undefined;
+    readonly start: string;
+  },
+) {
+  const open = await stockedRange(c, personId, sold, asked.range);
+  return { open, first: open === asked.range ? asked.start : stripStart(asked.from, open, BOOKING_DAYS) };
+}
+
+/** One day of the strip: its windows with their hours and its starts, shut before the days open or past the last. */
+function stripDay(
+  day: Awaited<ReturnType<typeof availability>>[number],
+  at: {
+    readonly hours: ReturnType<typeof windowTimesOf>;
+    readonly open: { readonly opens: string; readonly last: string };
+    readonly minutes: number;
+    readonly inputs: OpsInputs;
+    readonly terms: Parameters<typeof changeChargedOnBooking>[2];
+    readonly now: Date;
+  },
+) {
+  const shut = day.date < at.open.opens || day.date > at.open.last;
+  const windows = day.windows.map((each) => {
+    const times = at.hours[each.window];
+    const changeCharged = changeChargedOnBooking(indiaInstant(day.date, times.start), at.now, at.terms);
+    return { ...each, ...times, open: !shut && each.open, change_charged: changeCharged };
+  });
+  const starts = startsOfDay({ day, minutes: at.minutes, shut, inputs: at.inputs, terms: at.terms, now: at.now });
+  return { date: day.date, windows, starts };
 }
 
 /** A service as the API names it. */
@@ -145,8 +185,9 @@ const availabilityRoute = selfServeRoute({
     409: errorResponse("ops_assisted: self-serve booking is off; or not_changeable: the visit can no longer be moved"),
     422: errorResponse(
       "not_bookable: the client may not book this kind of visit, or the service is not offered; no_product: a first " +
-        "fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not " +
-        "come to",
+        "fit, on a day the console offers no hair system; made_to_order: a fit whose hair system no stock code is " +
+        "made to the client's size, which ops order and book; not_served: the client's address is in a pincode we " +
+        "do not come to",
     ),
   },
 });
@@ -171,11 +212,14 @@ export function registerClientAvailability(app: App): void {
         : await moveTermsFor({ c, personId: session.subjectId, visitId: movingId, type, on: start });
     if (movingId !== undefined && move === null) return refuse(c, "not_changeable");
     const offered = move === null ? await bookable(c, session.subjectId, { type, tier }, start) : null;
-    if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
+    if (typeof offered === "string") return notOffered(c, offered, outside ? "not_served" : null);
     const service = move === null ? offered : await movedService(c, move.terms.visit);
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
     if (service === null || price === null) return refuse(c, "not_bookable");
     if (outside) return refuse(c, "not_served");
+    // A replacement opens no sooner than its hair system can be fitted, of the package it is sold as; the strip starts
+    // there where that is later than the day asked for.
+    const { open, first } = await openDays(c, session.subjectId, { type, tier: service.tier }, { range, from, start });
     // A move in place keeps the visit's technician; a charged move books a new visit with anyone.
     const moving = move === null || move.terms.move.cost === "charged" ? null : move.moving;
     // A move in place keeps its visit's terms, as its hold will (soldAs); anything else is sold under those in force.
@@ -198,13 +242,13 @@ export function registerClientAvailability(app: App): void {
         (await visitPriceOf(db, { type, tier: service.tier, on: date, city, personId: session.subjectId })) ?? price
       );
     };
-    const dates = Array.from({ length: BOOKING_DAYS }, (_, index) => addDays(start, index));
+    const dates = Array.from({ length: BOOKING_DAYS }, (_, index) => addDays(first, index));
     const [days, schedule, prices] = await Promise.all([
       availability({
         db,
         placing,
         visit: { minutes: service.minutes, until, fitting: fittingOf(type, service.tier) },
-        from: start,
+        from: first,
         days: BOOKING_DAYS,
         now,
       }),
@@ -215,23 +259,23 @@ export function registerClientAvailability(app: App): void {
     // A day before the bookable days open, or past the last, is offered to nobody. Each window says its hours that day,
     // and whether a visit booked in it now would already cost the client to change.
     const inputs = await opsInputs(c);
-    const strip = days.map((day) => {
-      const hours = windowTimesOf(schedule.on(day.date));
-      const shut = day.date < range.opens || day.date > range.last;
-      const windows = day.windows.map((each) => {
-        const times = hours[each.window];
-        const changeCharged = changeChargedOnBooking(indiaInstant(day.date, times.start), now, terms);
-        return { ...each, ...times, open: !shut && each.open, change_charged: changeCharged };
-      });
-      const starts = startsOfDay({ day, minutes: service.minutes, shut, inputs, terms, now });
-      return { date: day.date, windows, starts };
-    });
+    const strip = days.map((day) =>
+      stripDay(day, {
+        hours: windowTimesOf(schedule.on(day.date)),
+        open,
+        minutes: service.minutes,
+        inputs,
+        terms,
+        now,
+      }),
+    );
     return c.json(
       {
         type,
         service: serviceBody(service),
         price,
         change_notice_hours: terms.noticeHours,
+        opens: open.opens,
         last: range.last,
         days: strip.map((day) => ({ ...day, price: pricedOn.get(day.date) ?? price })),
       },

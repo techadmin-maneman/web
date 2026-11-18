@@ -1,85 +1,50 @@
 /* Pending uploads (./WaitingScreen.tsx), in the new look: the upload queue, and the account of everything else still
    on the phone, under the frame's head. */
 
-/* A caution, not a failure: the phone would not promise to keep what is below. */
-.atRisk {
-  padding: var(--sp-16) var(--screen-gutter);
-  border-bottom: var(--hairline) solid var(--ui-line);
-}
-
-.atRiskTitle {
-  margin: 0;
-  font-size: var(--fs-17);
-  font-weight: var(--weight-semibold);
-  color: var(--ui-text);
-}
-
-.atRiskBody {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ui-text-soft);
-}
-
-.sets {
-  display: flex;
-  gap: var(--sp-12);
-  align-items: center;
-  padding: var(--sp-16) var(--screen-gutter);
-  border-bottom: var(--hairline) solid var(--ui-line);
-}
-
-.setsIcon {
-  flex-shrink: 0;
-  color: var(--ui-text);
-}
-
-.setsLine {
-  font-size: var(--fs-17);
-  color: var(--ui-text);
-}
-
+/* The last thing waiting to send clear of the home indicator below it. */
 .list {
-  margin: 0;
-  padding: 0;
+  margin: 0 var(--screen-gutter);
+  padding: 0 0 env(safe-area-inset-bottom);
   list-style: none;
 }
 
+/* A job's rows, as the prototype draws each set: 12 px above and below, ruled beneath, inside the gutter. */
 .job {
-  padding: var(--sp-16) var(--screen-gutter);
+  padding-bottom: var(--sp-12);
   border-bottom: var(--hairline) solid var(--ui-line);
 }
 
-.jobTop {
+.row {
+  padding-top: var(--sp-12);
+}
+
+.rowTop {
   display: flex;
   gap: var(--sp-16);
   align-items: baseline;
   justify-content: space-between;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
 }
 
 .who {
-  font-size: var(--fs-17);
-  font-weight: var(--weight-semibold);
   color: var(--ui-text);
 }
 
 .state {
-  font-size: var(--fs-15);
   color: var(--ui-text-soft);
 }
 
 .stateStopped {
-  font-size: var(--fs-15);
-  font-weight: var(--weight-semibold);
   color: var(--ui-error);
 }
 
 .bar {
   --at: 0%;
 
-  height: var(--sp-4);
-  margin-top: var(--sp-12);
-  background: var(--ui-shade);
+  height: calc(var(--sp-2) + var(--hairline));
+  margin-top: calc(var(--sp-8) + var(--sp-2));
+  background: var(--ui-tint);
 }
 
 .barDone {
@@ -89,8 +54,9 @@
 }
 
 .count {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-15);
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
   color: var(--ui-text-soft);
 }
 
@@ -128,16 +94,20 @@
   margin-top: 0;
 }
 
-.nothing,
-.never {
+/* Nothing waiting, as the prototype says it: 16 px in the ink, 24 px under the head. */
+.nothing {
   margin: 0;
-  padding: var(--sp-16) var(--screen-gutter);
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--ui-text-soft);
+  padding: var(--sp-24) var(--screen-gutter) 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-145);
+  color: var(--ui-text);
 }
 
-/* The screen's last line, so the last thing waiting to send sits clear of the home indicator above it. */
-.never {
-  padding-bottom: calc(var(--sp-16) + env(safe-area-inset-bottom));
+/* When the phone's work last reached us, under "Everything is uploaded." */
+.lastSync {
+  margin: var(--sp-4) 0 0;
+  padding: 0 var(--screen-gutter);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
 }

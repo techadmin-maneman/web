@@ -3,11 +3,11 @@
 // does, and that a job's work stopped reaching us — ops moved the job under the
 // phone, or the API refused a step — which until now only the waiting screen said.
 
-import { APP_ICONS } from "@maneman/brand/icons";
+import { GLYPHS } from "@maneman/brand/icons";
 import { buttonLook } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { changed as copy, storage, today as todayCopy, whatStopped } from "../content.ts";
 import { jobLabel } from "../lib/kind.ts";
 import { useHeldJobs } from "../lib/useDay.ts";
@@ -19,24 +19,60 @@ import styles from "./banner.module.css";
 import light from "./light.module.css";
 import { apiDate } from "../lib/when.ts";
 
-/** While the phone has just refused a write for want of room (../store/db.ts), above whichever screen is showing. */
-export function StorageFull() {
+/** Whether the phone has just refused a write for want of room (../store/db.ts), as it changes. */
+function useStorageFull(): boolean {
   const [full, setFull] = useState(isStorageFull);
   useEffect(() => onStorageFull(setFull), []);
-  if (!full) return null;
+  return full;
+}
+
+/** How many of the camera's own lines for a full phone are drawn, and who wants to know when that changes. */
+let saidOnCamera = 0;
+const hearers = new Set<() => void>();
+const hearCamera = (hear: () => void) => {
+  hearers.add(hear);
+  return () => {
+    hearers.delete(hear);
+  };
+};
+
+/**
+ * The phone has no room for what the technician does: the prototype's red line, above whichever screen is showing,
+ * unless the camera is saying it in its own words under its head.
+ */
+export function StorageFull() {
+  const full = useStorageFull();
+  const camera = useSyncExternalStore(hearCamera, () => saidOnCamera > 0);
+  if (!full || camera) return null;
   return (
-    <div className={styles.full} role="alert">
-      <p className={styles.fullTitle}>{storage.title}</p>
-      <p className={styles.fullBody}>{storage.body}</p>
-    </div>
+    <p className={light.full} role="alert">
+      {storage.bar}
+    </p>
   );
 }
 
-/** On a screen in the new look, the bar under its head that says there is no signal and the work is kept. */
+/** The camera's line for a full phone, under its head and in its words; the frame's line stands aside while it shows. */
+export function CameraStorageFull({ className }: { readonly className: string | undefined }) {
+  useLayoutEffect(() => {
+    saidOnCamera += 1;
+    for (const hear of hearers) hear();
+    return () => {
+      saidOnCamera -= 1;
+      for (const hear of hearers) hear();
+    };
+  }, []);
+  return (
+    <p className={className} role="alert">
+      {storage.camera}
+    </p>
+  );
+}
+
+/** No signal, and the work is kept: the prototype's navy line at the top of every screen, the camera's too. */
 export function NoSignal() {
   return (
     <p className={light.noSignal} role="status">
-      <Icon d={APP_ICONS.offline} size="sm" weight="heavy" />
+      <Icon d={GLYPHS.cloud} size="sm" />
       <span>{todayCopy.offline.bar}</span>
     </p>
   );

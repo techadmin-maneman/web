@@ -16,11 +16,21 @@ import { enterOnHold } from "../../domain/money/discount-code-holds.ts";
 import { partnerCodeFor } from "../../domain/referrals/channels.ts";
 import { keepShownConsents, recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
 import { acceptTerms } from "../../domain/privacy/terms-acceptances.ts";
-import { bookable, movedService, moveTermsFor, rangeFor, soldAs, startCheckout } from "../../http/client-booking.ts";
+import {
+  type AddressRefusal,
+  bookable,
+  movedService,
+  moveTermsFor,
+  notOffered,
+  rangeFor,
+  soldAs,
+  startCheckout,
+  stockedRange,
+} from "../../http/client-booking.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
-import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { selfServeRoute } from "../../http/session-routes.ts";
 import { servesItself } from "../../http/self-serve.ts";
@@ -95,8 +105,9 @@ const holdRoute = selfServeRoute({
     ),
     422: errorResponse(
       "not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first " +
-        "fit, on a day the console offers no hair system; not_served: the client's address is in a pincode we do not " +
-        "come to",
+        "fit, on a day the console offers no hair system; made_to_order: a fit whose hair system no stock code is " +
+        "made to the client's size, which ops order and book; not_served: the client's address is in a pincode we " +
+        "do not come to",
     ),
   },
 });
@@ -199,6 +210,17 @@ async function servedFor(
   if (!isFullAddress(address)) return false;
   return type === "consultation" ? takesNewClients(db, address.pincode, now) : isServed(db, address.pincode);
 }
+/** The refusal the address gives a visit: none given yet, or one we do not come to; null for one we come to. */
+async function addressRefusal(
+  db: D1Database,
+  address: Awaited<ReturnType<typeof currentAddress>>,
+  type: VisitType,
+  now: Date,
+): Promise<AddressRefusal> {
+  if (!isFullAddress(address)) return "address_required";
+  return (await servedFor(db, address, type, now)) ? null : "not_served";
+}
+
 export function registerClientBooking(app: App): void {
   app.openapi(holdRoute, async (c) => {
     const personId = clientOf(c).subjectId;
@@ -217,7 +239,7 @@ export function registerClientBooking(app: App): void {
     if (time === null) return refuse(c, "invalid_request", ["starts_at"]);
     const { window, startsAt } = time;
     if (movingId !== undefined && move === null) return refuse(c, "not_changeable");
-    if (typeof offered === "string") return c.json(errorBody(offered, c.var.requestId), 422);
+    if (typeof offered === "string") return notOffered(c, offered, () => addressRefusal(c.env.DB, address, type, now));
     const moves = movesOf(move);
     const moveKind = moves?.kind ?? null;
     const [service, sold, useCredit, served, atCheckout] = await Promise.all([
@@ -228,11 +250,13 @@ export function registerClientBooking(app: App): void {
       // A client back from Checkout without paying who picks the same window again gets their hold back, whose order a
       // payment may still land on, with its countdown started again, rather than a second technician's time.
       move === null && offered !== null
-        ? holdAtCheckout(c.env.DB, { personId, type, tier: offered.tier, date, window, now })
+        ? holdAtCheckout(c.env.DB, { personId, type, tier: offered.tier, date, window, startsAt, address, now })
         : null,
     ]);
     const price = move === null ? (offered?.price ?? null) : move.terms.move.price;
-    if (service === null || price === null || date < range.opens || date > range.last) {
+    // A replacement opens no sooner than its hair system can be fitted, of the package it is sold as.
+    const open = service === null ? range : await stockedRange(c, personId, { type, tier: service.tier }, range);
+    if (service === null || price === null || date < open.opens || date > open.last) {
       return refuse(c, "not_bookable");
     }
     if (!isFullAddress(address)) return refuse(c, "address_required");

@@ -19,6 +19,7 @@ import {
   theFirstFit,
 } from "./client-booking-fixtures.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
+import { holdAtCheckout } from "../../../src/domain/booking/holds.ts";
 
 /**
  * The most round trips to D1 a hold may wait on in turn. It waited on 17 when each read waited for the one before; a
@@ -187,6 +188,33 @@ describe("POST /api/holds", () => {
       expect(await again.json()).toMatchObject({ id: first.id, expires_at: "2026-09-21T06:45:00.000Z" });
       const repaying = await (await startPaying(rohit, first.id)).json<{ checkout: { order_id: string } }>();
       expect(repaying.checkout.order_id).toBe(paying.checkout.order_id);
+    });
+
+    it("gets their hold back only for its own start, at the pincode it was held at", async () => {
+      const rohit = await client();
+      const first = await (await hold(rohit, TUESDAY_AFTERNOON)).json<{ id: string }>();
+      await startPaying(rohit, first.id);
+      const held = await env.DB.prepare("SELECT tier, starts_at, pincode, booked_from FROM slot_holds WHERE id = ?1")
+        .bind(first.id)
+        .first<{ tier: string; starts_at: string; pincode: string; booked_from: string }>();
+      expect(held?.booked_from).toBe("app");
+      const asked = (startsAt: string | undefined, pincode: string) =>
+        holdAtCheckout(env.DB, {
+          personId: rohit.id,
+          type: "service",
+          tier: held?.tier ?? "",
+          date: TUESDAY_AFTERNOON.date,
+          window: "afternoon",
+          startsAt: startsAt === undefined ? undefined : new Date(startsAt),
+          address: { pincode },
+          now: new Date(NOW.getTime() + 5 * 60_000),
+        });
+      const pincode = held?.pincode ?? "";
+      const start = held?.starts_at ?? "";
+      expect(await asked(start, pincode)).toBe(first.id);
+      expect(await asked(undefined, pincode)).toBe(first.id);
+      expect(await asked(new Date(new Date(start).getTime() + 30 * 60_000).toISOString(), pincode)).toBeNull();
+      expect(await asked(start, "400050")).toBeNull();
     });
 
     it("finds the window taken once the hold's countdown is over and only its grace is left", async () => {

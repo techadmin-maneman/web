@@ -7,7 +7,7 @@
 // list is described to assistive technology through aria-activedescendant. Nothing here is required: an address can
 // always be typed into the fields below it.
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Label, TextInput } from "./Field.tsx";
 import { VisuallyHidden } from "./VisuallyHidden.tsx";
 import { classes } from "./classes.ts";
@@ -33,7 +33,7 @@ export type SearchAnswer =
 export interface AddressSearchWords {
   readonly label: string;
   /** The line beneath the field; null to show a line only when the search is unavailable. */
-  readonly hint: string | null;
+  readonly hint: ReactNode;
   readonly unavailable: string;
   /** Google's name against suggestions shown without a Google map, which their terms require. */
   readonly attribution: string;

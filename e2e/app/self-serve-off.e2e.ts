@@ -2,11 +2,14 @@
 // owner switches it on (docs/decisions/0045-self-serve-booking.md). Locally it
 // is on, so the switch is turned off in the one answer the app reads it from,
 // /api/me, and everything else is the local mm-api's. Off, no booking sheet
-// opens anywhere: booking and changing a visit go to ops on WhatsApp, with a
-// message ready, and a first consultation is booked on the public site.
+// opens anywhere: booking is Ask for a time, whose pick goes to ops on WhatsApp
+// (gap G4), changing a visit goes to them with a message ready, and a first
+// consultation is booked on the public site.
 
 import type { Page } from "@playwright/test";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
+import { addDays, indiaDate, shortDate } from "../../packages/web-kit/dates.ts";
+import { axeViolations } from "../a11y.ts";
 import { expect, test } from "../support.ts";
 import { bookedNumber } from "./booked-numbers.ts";
 import { fittedClient } from "./fitted.ts";
@@ -34,10 +37,17 @@ async function selfServeOff(page: Page, also: Record<string, unknown> = {}): Pro
 
 const WHATSAPP = "^https://wa\\.me/\\d+\\?text=";
 
-test("a fitted client reschedules and books through WhatsApp, and no booking sheet opens", async ({ page }) => {
+test("a fitted client reschedules through WhatsApp, and asks ops for a time to book", async ({ page }) => {
   await selfServeOff(page);
+  // WhatsApp opens in a new window; the address it opens is kept to be read.
+  await page.addInitScript(() => {
+    window.open = (url?: string | URL) => {
+      (window as { opened?: string }).opened = String(url);
+      return null;
+    };
+  });
   await logIn(page, fittedClient().mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
 
   await expect(page.getByRole("link", { name: appCopy.home.reschedule })).toHaveAttribute(
     "href",
@@ -45,14 +55,37 @@ test("a fitted client reschedules and books through WhatsApp, and no booking she
   );
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
 
-  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.visits }).click();
-  await expect(page.getByRole("link", { name: appCopy.home.next.book })).toHaveAttribute(
-    "href",
-    // Who is asking, so ops need not ask back; the day and window follow where the app offers one.
-    new RegExp(`${WHATSAPP}${encodeURIComponent("I’d like to book my next visit. Rohit Malhotra.")}`),
-  );
-  await expect(page.getByRole("button", { name: appCopy.home.next.book })).toHaveCount(0);
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // With nothing booked, Visits offers the next visit at its foot: asked for on WhatsApp.
+  await page.unroute("**/api/me");
+  await selfServeOff(page, { next_visit: null });
+  await page.route("**/api/visits", async (route) => {
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}/api/visits`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
+    await route.fulfill({ response: answer, json: { ...((await answer.json()) as object), upcoming: [] } });
+  });
+  await page.goto("/visits");
+  await page.getByRole("button", { name: appCopy.home.next.book }).click();
+  const request = appCopy.booking.request;
+  const sheet = page.getByRole("dialog", { name: request.title });
+  await expect(sheet).toBeVisible();
+  const send = sheet.getByRole("button", { name: request.send });
+  await expect(send).toBeDisabled();
+  await expect(sheet.getByText(appCopy.missing.pickDate)).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+
+  const tomorrow = addDays(indiaDate(new Date().toISOString()), 1);
+  await sheet.getByRole("radiogroup", { name: request.day }).getByRole("radio").first().check();
+  await sheet.getByRole("radio", { name: appCopy.WINDOW_NAMES.afternoon }).click();
+  await send.click();
+  // Who is asking, so ops need not ask back, and the day and part of the day they picked.
+  const asked = `I’d like to book my next visit: ${shortDate(tomorrow)}, afternoon. Rohit Malhotra.`;
+  await expect
+    .poll(() => page.evaluate(() => (window as { opened?: string }).opened))
+    .toMatch(new RegExp(`${WHATSAPP}${encodeURIComponent(asked)}`));
+  await expect(page.getByRole("status").filter({ hasText: request.opening })).toBeVisible();
+  await expect(sheet).toHaveCount(0);
 });
 
 test("a client with nothing booked is sent to the public site to book a consultation", async ({ page }) => {
@@ -63,4 +96,14 @@ test("a client with nothing booked is sent to the public site to book a consulta
   const book = page.getByRole("link", { name: appCopy.home.nothing.book });
   await expect(book).toHaveAttribute("href", /\/book$/);
   await expect(page.getByRole("button", { name: appCopy.home.nothing.book })).toHaveCount(0);
+});
+
+// Paid by UPI at the visit while booking in the app is off, so Payments never says every payment goes through Razorpay.
+test("Payments says nothing of paying through Razorpay alone while booking in the app is off", async ({ page }) => {
+  await selfServeOff(page);
+  await logIn(page, fittedClient().mobile);
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
+  await page.goto("/profile/payments");
+  await expect(page.getByRole("main").getByRole("link").first()).toBeVisible();
+  await expect(page.getByText(appCopy.payments.note)).toHaveCount(0);
 });

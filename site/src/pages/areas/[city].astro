@@ -4,7 +4,7 @@
 // a city served nowhere to /areas, and leaves such cities out of the list of others. Built with the cities' page, so
 // only while that page is shown.
 import { buttonLook } from "@maneman/ui/Button";
-import { textLinkLook } from "@maneman/ui/TextLink";
+import LinkRows from "../../components/LinkRows.astro";
 import { areasPage, cityPage, guidesPage } from "../../content/guides.ts";
 import { business } from "../../content/site.ts";
 import TextPage from "../../layouts/TextPage.astro";
@@ -38,54 +38,71 @@ const trail = [
   title={words(cityPage.title)}
   lead={words(cityPage.lead)}
   publish={cityPage.publish}
+  short
+  back={{ href: "/areas", label: areasPage.title }}
   structuredData={[breadcrumbs(trail)]}
 >
   <section data-city-areas={city} hidden>
-    <h2>{words(cityPage.areas)}</h2>
+    <h2 class="areas-head">{words(cityPage.areas)}</h2>
     <ul class="areas" data-areas-of={city}></ul>
   </section>
-  <p>{cityPage.streets}</p>
+  <p class="streets">{cityPage.streets}</p>
   <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
     {cityPage.check}
   </a>
   {others.length > 0 && (
     <nav class="others" aria-labelledby="other-cities">
-      <h2 id="other-cities">{cityPage.others}</h2>
-      <ul>
-        {others.map((other) => (
-          <li data-city={other}>
-            <a class={textLinkLook({ inline: true })} href={`/areas/${citySlug(other)}`}>
-              {fill(cityPage.title, { city: other })}
-            </a>
-          </li>
-        ))}
-      </ul>
+      <h2 id="other-cities" class="list-head">
+        {cityPage.others}
+      </h2>
+      <LinkRows
+        rows={others.map((other) => ({
+          href: `/areas/${citySlug(other)}`,
+          title: fill(cityPage.title, { city: other }),
+          city: other,
+        }))}
+      />
     </nav>
   )}
 </TextPage>
 
 <style>
-  .areas,
-  .others ul {
-    margin: var(--sp-16) 0 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: var(--sp-8);
-    font-size: var(--fs-lead);
+  /* The areas the Worker lists, between hairlines: two to a row on a phone, three on a laptop. */
+  .areas-head {
+    margin: var(--sp-32) 0 0;
+    font-size: var(--fs-17);
   }
   .areas {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--column-min-narrow)), 1fr));
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--sp-24);
+    margin: var(--sp-8) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-16);
+  }
+  .areas :global(li) {
+    padding: var(--site-gap-page-lede) 0;
+    border-bottom: var(--hairline) solid var(--site-line);
+  }
+  .streets {
+    margin: var(--site-gap-near) 0 0;
   }
   .book {
-    margin-top: var(--sp-48);
+    margin-top: var(--sp-24);
   }
   .others {
-    margin-top: var(--sp-48);
-    padding-top: var(--sp-24);
-    border-top: var(--hairline) solid var(--paper-line);
+    margin-top: var(--sp-40);
   }
-  .others h2 {
+  .others .list-head {
     margin-top: 0;
+  }
+  @media (min-width: 761px) {
+    .areas {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .book {
+      width: fit-content;
+    }
   }
 </style>

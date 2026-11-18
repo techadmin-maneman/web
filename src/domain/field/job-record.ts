@@ -5,6 +5,7 @@ import { indiaDate, monthsAfter } from "../../lib/india-time.ts";
 import { replaceAfterMonthsFor } from "../booking/packages.ts";
 import type { JobEventKind } from "../../policy/in-job-steps.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
+import { failureWordsOf, jobSheet } from "./job-sheet-settings.ts";
 import {
   failedPieceStatement,
   fittedPieceStatement,
@@ -52,6 +53,7 @@ async function closingStatements(db: D1Database, step: LandingStep): Promise<D1P
   const at = step.now.toISOString();
   const startedAt = outcome === "no_show" ? null : await startedAtOf(db, step.visit.id);
   const reason = stored?.outcome === "partial" ? stored.reason : null;
+  const notFittedReason = stored?.outcome === "partial" ? (stored.not_fitted_reason ?? null) : null;
   const lostReason = stored?.outcome === "done" ? (stored.lost_reason ?? null) : null;
   const goingAhead = stored?.outcome === "done" ? (stored.going_ahead ?? null) : null;
   const pickedTier = stored?.outcome === "done" ? (stored.product ?? null) : null;
@@ -64,6 +66,7 @@ async function closingStatements(db: D1Database, step: LandingStep): Promise<D1P
       outcome,
       times,
       partialReason: reason,
+      notFittedReason,
       lostReason,
       goingAhead,
       pickedTier,
@@ -86,14 +89,20 @@ async function startedAtOf(db: D1Database, appointmentId: string): Promise<strin
 }
 
 /**
- * The piece fitted, due its package's months from the day in India the phone fitted it, each that failed, and the one
- * it took the place of.
+ * The piece fitted, due its package's months from the day in India the phone fitted it, each that failed, in its
+ * reason's words, and the one it took the place of.
  */
 async function pieceStatements(db: D1Database, step: LandingStep): Promise<D1PreparedStatement[]> {
   const personId = step.visit.personId;
   const pieces = pieceStepOf(step.body);
+  const sheet = pieces.failed.length === 0 ? null : await jobSheet(db);
   const failed = pieces.failed.map((failure) =>
-    failedPieceStatement(db, { personId, pieceCode: failure.code, reason: failure.reason, now: step.now }),
+    failedPieceStatement(db, {
+      personId,
+      pieceCode: failure.code,
+      reason: sheet === null ? { words: failure.reason, code: null } : failureWordsOf(sheet, failure.reason),
+      now: step.now,
+    }),
   );
   if (pieces.fitted === null) return failed;
 

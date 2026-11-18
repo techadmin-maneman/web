@@ -1,0 +1,47 @@
+/* The alerts under the bell (./AlertsScreen.tsx): Today and Earlier, each over its rows, and the line on WhatsApp. */
+
+.page {
+  padding: 0 var(--screen-gutter) var(--sp-28);
+}
+
+.group {
+  margin: var(--sp-16) 0 var(--sp-4);
+  color: var(--ink-500);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+}
+
+.note {
+  margin: var(--sp-20) 0 0;
+  color: var(--ink-500);
+  font-size: var(--fs-13);
+}
+
+/* What the alert is about, in a wash square. */
+.icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  width: var(--sp-36);
+  height: var(--sp-36);
+  background: var(--wash-100);
+  color: var(--navy-900);
+}
+
+/* A new alert: a small brass square after its title. */
+.unread {
+  display: inline-block;
+  width: var(--sp-8);
+  height: var(--sp-8);
+  margin-left: var(--sp-8);
+  background: var(--brass-500);
+  vertical-align: middle;
+}
+
+.when {
+  display: block;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-13);
+}

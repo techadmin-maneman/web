@@ -1,7 +1,9 @@
 // The job sheet ops set in the console (docs/decisions/0087-consumables-and-stock.md;
 // docs/open-points.md, item 28): each kind of visit's checklist, the reasons
-// a job may be left partly done, and why a client is not going ahead after a
-// consultation (docs/decisions/0149-lost-reasons.md). The technician app reads both with the job, and
+// a job may be left partly done, why a client is not going ahead after a
+// consultation (docs/decisions/0149-lost-reasons.md), why a hair system could not be fitted
+// (docs/decisions/0270-the-design-checks-api-side.md), and why one failed
+// (docs/decisions/0273-why-a-hair-system-failed.md). The technician app reads them with the job, and
 // keeps them on the phone with it, so a job opened in a basement shows the list
 // it was given (ADR 0053).
 //
@@ -12,8 +14,10 @@
 
 import {
   CHECKLIST,
+  FAILURE_REASONS,
   JOB_SHEET_BOUNDS,
   LOST_REASONS,
+  NOT_FITTED_REASONS,
   PARTIAL_REASONS,
   type JobSheetItem,
 } from "../../config/job-sheet.ts";
@@ -38,6 +42,8 @@ export interface JobSheet {
   readonly checklists: Readonly<Record<VisitType, JobSheetList>>;
   readonly partialReasons: JobSheetList;
   readonly lostReasons: JobSheetList;
+  readonly notFittedReasons: JobSheetList;
+  readonly failureReasons: JobSheetList;
 }
 
 interface Row {
@@ -74,9 +80,9 @@ function listOf(rows: readonly Row[], fallback: readonly JobSheetItem[]): JobShe
   };
 }
 
-/** Every list, as the technician app and the console read them. Three small reads. */
+/** Every list, as the technician app and the console read them. Five small reads, in one batch. */
 export async function jobSheet(db: D1Database): Promise<JobSheet> {
-  const [checklists, reasons, lost] = await db.batch<Row>([
+  const [checklists, reasons, lost, notFitted, failure] = await db.batch<Row>([
     db.prepare(
       `SELECT visit_type, code, label, client_label, retired_at, set_by, set_at FROM checklist_items
        ORDER BY visit_type, position, code`,
@@ -89,6 +95,14 @@ export async function jobSheet(db: D1Database): Promise<JobSheet> {
       `SELECT NULL AS visit_type, code, label, retired_at, set_by, set_at FROM lost_reasons
        ORDER BY position, code`,
     ),
+    db.prepare(
+      `SELECT NULL AS visit_type, code, label, retired_at, set_by, set_at FROM not_fitted_reasons
+       ORDER BY position, code`,
+    ),
+    db.prepare(
+      `SELECT NULL AS visit_type, code, label, retired_at, set_by, set_at FROM failure_reasons
+       ORDER BY position, code`,
+    ),
   ]);
   const byType = (type: VisitType) => (checklists?.results ?? []).filter((row) => row.visit_type === type);
   return {
@@ -98,6 +112,8 @@ export async function jobSheet(db: D1Database): Promise<JobSheet> {
     >,
     partialReasons: listOf(reasons?.results ?? [], PARTIAL_REASONS),
     lostReasons: listOf(lost?.results ?? [], LOST_REASONS),
+    notFittedReasons: listOf(notFitted?.results ?? [], NOT_FITTED_REASONS),
+    failureReasons: listOf(failure?.results ?? [], FAILURE_REASONS),
   };
 }
 
@@ -133,6 +149,21 @@ export const knownCodes = (list: JobSheetList): Set<string> =>
 const labelsOf = (list: JobSheetList): Map<string, string> =>
   new Map([...list.retired, ...list.items].map((item) => [item.id, item.label]));
 
+/** A failure as a piece keeps it: its words, and the list's code where it is one. */
+export interface FailureWords {
+  readonly words: string;
+  readonly code: string | null;
+}
+
+/**
+ * A failure's reason as sent: a code of the failure list, retired ones too, in the words it has now, with the code;
+ * anything else, as the piece itself failing has always been sent, in its own words with no code.
+ */
+export function failureWordsOf(sheet: JobSheet, reason: string): FailureWords {
+  const words = labelsOf(sheet.failureReasons).get(reason);
+  return words === undefined ? { words: reason, code: null } : { words, code: reason };
+}
+
 /**
  * One item ops send: one already on the list by its code, or a new one by its words alone. A checklist's item may say
  * what the client reads, null for none; sent without, the client reads the technician's words.
@@ -143,22 +174,32 @@ interface ItemSent {
   readonly client?: string | null | undefined;
 }
 
-/** Which list: a kind of visit's checklist, the partial reasons, or the lost reasons. */
+/** Which list: a kind of visit's checklist, or one of the reasons'. */
 export type ListName =
   | { readonly list: "checklist"; readonly visitType: VisitType }
   | { readonly list: "partial_reason" }
-  | { readonly list: "lost_reason" };
+  | { readonly list: "lost_reason" }
+  | { readonly list: "not_fitted_reason" }
+  | { readonly list: "failure_reason" };
 
 /** Each list of reasons: where its rows are, what its audit entry names it, and the most it may hold. */
 const REASON_LISTS = {
   partial_reason: { table: "partial_reasons", most: JOB_SHEET_BOUNDS.maxPartialReasons },
   lost_reason: { table: "lost_reasons", most: JOB_SHEET_BOUNDS.maxLostReasons },
+  not_fitted_reason: { table: "not_fitted_reasons", most: JOB_SHEET_BOUNDS.maxNotFittedReasons },
+  failure_reason: { table: "failure_reasons", most: JOB_SHEET_BOUNDS.maxFailureReasons },
 } as const;
 
 /** The list as it stands in a sheet. */
 const listIn = (sheet: JobSheet, which: ListName): JobSheetList => {
   if (which.list === "checklist") return sheet.checklists[which.visitType];
-  return which.list === "partial_reason" ? sheet.partialReasons : sheet.lostReasons;
+  const lists = {
+    partial_reason: sheet.partialReasons,
+    lost_reason: sheet.lostReasons,
+    not_fitted_reason: sheet.notFittedReasons,
+    failure_reason: sheet.failureReasons,
+  };
+  return lists[which.list];
 };
 
 type ListSaved = { readonly ok: true; readonly list: JobSheetList } | Refusal<"invalid_request">;
@@ -288,5 +329,5 @@ export async function saveList(
 }
 
 /** Back on the list is not retired; still off it keeps the moment it first went. */
-const RETIRED_AT = (table: "checklist_items" | "partial_reasons" | "lost_reasons") =>
+const RETIRED_AT = (table: "checklist_items" | (typeof REASON_LISTS)[keyof typeof REASON_LISTS]["table"]) =>
   `CASE WHEN excluded.retired_at IS NULL THEN NULL ELSE COALESCE(${table}.retired_at, excluded.retired_at) END`;

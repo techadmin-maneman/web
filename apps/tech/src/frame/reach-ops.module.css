@@ -1,7 +1,8 @@
-/* Call ops and WhatsApp ops, side by side (./ReachOps.tsx). */
+/* Call ops and WhatsApp ops, side by side (./ReachOps.tsx); one above the other where a label would break, as at 360 px
+   or with larger text. */
 
 .reach {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--tech-reach-ops)), 1fr));
   gap: var(--sp-12);
 }

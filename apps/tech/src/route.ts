@@ -41,6 +41,7 @@ export const STEP_PATHS = {
   piece: "piece",
   profile: "profile",
   after_photos: "after-photos",
+  sign_off: "sign-off",
   outcome: "outcome",
 } as const satisfies Partial<Record<Step, string>>;
 

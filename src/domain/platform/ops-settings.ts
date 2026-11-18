@@ -13,6 +13,7 @@
 // the committed default. The system runs on the numbers in the code until
 // somebody sets one, and it never runs on a nought.
 
+import type { Ratings } from "../../policy/ratings.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
 import type { BookingRules, WorkingHours } from "../../policy/start-times.ts";
 import type { VisitType } from "../../config/visit-types.ts";
@@ -101,6 +102,10 @@ export interface OpsInputs {
   readonly dayAheadHour: number;
   /** Hours a move to another day waits for the client (src/policy/dispatch.ts). */
   readonly moveProposalHours: number;
+  /** Days after a first fit a client may claim the fit guarantee (src/policy/fit-guarantee.ts). */
+  readonly guaranteeDays: number;
+  /** The low rating, the technician's average and the days to rate a visit (src/policy/ratings.ts). */
+  readonly ratings: Ratings;
   readonly creditReminderDays: CreditReminderDays;
   /** Days after a fit that the client's check-ins go (src/policy/follow-ups.ts). */
   readonly checkInDays: CheckInDays;
@@ -164,6 +169,8 @@ function shape(values: OpsValues): OpsInputs {
     leaveNoticeMin: values.leave_notice_min,
     dayAheadHour: values.day_ahead_hour,
     moveProposalHours: values.move_proposal_hours,
+    guaranteeDays: values.guarantee_days,
+    ratings: values.ratings,
     creditReminderDays: values.credit_reminder_days,
     checkInDays: values.check_in_days,
     referralMonthlyCap: values.referral_monthly_cap,

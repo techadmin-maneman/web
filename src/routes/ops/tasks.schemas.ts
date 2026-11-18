@@ -36,6 +36,10 @@ export const TaskFactsSchema = z
       }),
     }),
     facts("replacement_order", { piece_code: z.string(), due_on: day }),
+    facts("made_to_order_ask", {
+      kind: z.enum(["first_fit", "replacement"]).openapi({ description: "The visit it was asked at." }),
+      name: z.string().openapi({ description: "The hair system, by its package's name." }),
+    }),
     facts("recall_call", { piece_codes: z.array(z.string()) }),
     facts("stock_at_risk", { consumable_code: z.string().nullable(), name: z.string().nullable() }),
     facts("referral_review", { signal: z.string().nullable().openapi({ description: "The first fraud rule met." }) }),
@@ -70,6 +74,9 @@ export const TaskFactsSchema = z
       kind,
       reason_code: z.string().nullable(),
       reason: z.string().nullable().openapi({ description: "In the words ops gave it, or the job sheet's." }),
+      not_fitted: z.string().nullable().openapi({
+        description: "A fit closed with \"Can't fit today\", why, in the job sheet's words; null for any other close.",
+      }),
       ask: z
         .enum(FINISH_ASKS)
         .nullable()
@@ -82,6 +89,30 @@ export const TaskFactsSchema = z
       short: z
         .array(z.object({ name: z.string(), expected: z.number(), used: z.number() }).strict())
         .openapi({ description: "Each consumable recorded below what was expected; empty where nothing was used." }),
+    }),
+    facts("fit_unsigned", {
+      kind,
+      reason: z.string().openapi({ description: "Why the client did not sign, as the technician recorded it." }),
+      technician: z.string(),
+      flag: z.string().nullable().openapi({
+        description: "What the client last said wasn't right before then; null where they never flagged.",
+      }),
+    }),
+    facts("low_rating", {
+      kind,
+      stars: z.number().int().openapi({ description: "The client's stars, low under ops' setting when given." }),
+      technician: z.string(),
+      visited_on: z.iso.date().openapi({ description: "India's day of the visit." }),
+    }),
+    facts("fit_guarantee_claim", {
+      reference: z.string().openapi({ description: "The report that opened the claim, as MM-ISS-0032." }),
+      fitted_on: day,
+      sign_off: z.enum(["asked", "signed", "flagged", "declined"]).nullable(),
+      conversation_id: z.string().nullable().openapi({ description: "The Care chat the photographs are read beside." }),
+      photos: z.number().int(),
+      references: z
+        .array(z.string())
+        .openapi({ description: "The claim's reports, as MM-ISS-0032, whose photographs its drawer shows." }),
     }),
     facts("at_risk_client", { last_visit_at: instant, due_on: day }),
     facts("first_fit_to_book", {

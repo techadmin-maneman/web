@@ -3,6 +3,7 @@
 // from the screens, for the training lead to edit. Each is keyed by the job sheet's item it guides
 // (src/config/job-sheet.ts); an item with none here shows its label alone.
 
+import { localised, sayKnown } from "../lang/index.ts";
 export interface TaskWords {
   readonly title: string;
   /** What the reference photograph shows, until there is one. */
@@ -26,7 +27,7 @@ const SET: TaskWords = {
   watch: "Check the hairline in the mirror with the client.",
 };
 
-const TASKS: Readonly<Record<string, TaskWords>> = {
+const TASKS: Readonly<Record<string, TaskWords>> = localised({
   piece_removed: REMOVE,
   old_piece_removed: { ...REMOVE, title: "Remove the old hair system" },
   scalp_cleaned: {
@@ -109,9 +110,9 @@ const TASKS: Readonly<Record<string, TaskWords>> = {
     how: ["Look over the scalp under good light.", "Note irritation, cuts or skin conditions."],
     watch: "Broken skin: no fit. Record it and tell ops.",
   },
-};
+});
 
 /** A job sheet's item as a task: its words here, or its label alone. */
 export function taskFor(item: { readonly id: string; readonly label: string }): TaskWords {
-  return TASKS[item.id] ?? { title: item.label, reference: "", how: [], watch: null };
+  return TASKS[item.id] ?? { title: sayKnown(item.label), reference: "", how: [], watch: null };
 }

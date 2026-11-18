@@ -16,7 +16,7 @@ const serviceVisits = (count: number): string => (count === 1 ? "1 service visit
  * Refer's promise, from the referrer's side, in the reward's one name: the sides equal or not, 0, or a reward not
  * known, which gives no count.
  */
-function promiseOf(reward: Reward | null): string {
+export function promiseOf(reward: Reward | null): string {
   const fitted = "When a friend you refer is fitted,";
   if (reward === null) return `${fitted} we tell you.`;
   const { referrer_visits: mine, friend_visits: theirs } = reward;
@@ -25,6 +25,18 @@ function promiseOf(reward: Reward | null): string {
   if (theirs === mine) return `${fitted} you both get ${freeServiceVisits(mine)}.`;
   if (theirs === 0) return `${fitted} you get ${freeServiceVisits(mine)}.`;
   return `${fitted} you get ${freeServiceVisits(mine)}, and your friend gets ${String(theirs)}.`;
+}
+
+/** How it works' last step, in the promise's own terms: what each side gets once the friend is fitted. */
+function fittedStepOf(reward: Reward | null): string {
+  const once = "Once they’re fitted,";
+  if (reward === null) return `${once} we tell you.`;
+  const { referrer_visits: mine, friend_visits: theirs } = reward;
+  if (mine === 0 && theirs === 0) return `${once} we tell you.`;
+  if (mine === 0) return `${once} they get ${freeServiceVisits(theirs)}.`;
+  if (theirs === mine) return `${once} you both get ${freeServiceVisits(mine)}.`;
+  if (theirs === 0) return `${once} you get ${freeServiceVisits(mine)}.`;
+  return `${once} you get ${freeServiceVisits(mine)}, and your friend gets ${String(theirs)}.`;
 }
 
 /** The promise as it reads before Refer opens: "Then, when a friend you refer is fitted, …". */
@@ -53,8 +65,15 @@ export function notYetOpenLines(reward: Reward | null, invite: PendingInvite | n
 
 /** Refer: the invite, the card behind it, and who has been fitted. */
 export const refer = {
-  title: "Refer",
+  title: "Rewards",
   promise: promiseOf,
+  /** The card's two figures: the free service visits left, and how many invites have earned. */
+  left: "Free service visits left",
+  leftUseBy: (date: string) => `Free service visits left · use by ${date}`,
+  earned: "Earned so far",
+  fittedTitle: "Friends fitted",
+  /** "+3 visits". */
+  plusVisits: (visits: number) => (visits === 1 ? "+1 visit" : `+${String(visits)} visits`),
   /** Refer's credit tile, as Home's. */
   credit: freeVisitsTile,
   // The credits of the invite a client came with, while ops review them.
@@ -63,15 +82,26 @@ export const refer = {
     refused: "We couldn’t add your invite’s free service visits. Message us to find out why.",
   },
   share: "Share an invite",
+  /** Rewards' own ways to send it, as drawn: WhatsApp first, the link, any other app. */
+  inviteOnWhatsApp: "Invite on WhatsApp",
+  /** The invite as the friend sees it, beneath the ways to send it. */
+  sees: {
+    title: "What your friend sees",
+    note: "Your name and message travel with the picture, never on it.",
+    change: "Change the picture",
+  },
+  offerTerms: "Offer terms",
   tracker: "See who has been fitted",
   /** Beneath the promise: how one goes, from the invite to the visits. */
   how: {
     label: "How it works",
-    steps: [
-      "Share your invite on WhatsApp.",
-      "Your friend books a free consultation at home.",
-      "Once they’re fitted, you both get the free visits.",
-    ],
+    /** The last step is the reward's own, as ops set it (fittedStepOf). */
+    steps: (reward: Reward | null) =>
+      [
+        "Share your invite on WhatsApp.",
+        "Your friend books a free consultation at home.",
+        fittedStepOf(reward),
+      ] as const,
   },
   card: {
     title: "Which card?",

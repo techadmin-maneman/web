@@ -7,7 +7,7 @@ import { WINDOW_TIMES } from "../../src/config/scheduling.ts";
 import { expect } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { bookerClient } from "./booker.ts";
-import { continueToPayment } from "./picking.ts";
+import { continueToPayment, OPEN_DAYS } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 import { titles, home, booking } from "../../apps/app/src/content.ts";
 import { priceFigures } from "../../apps/app/src/lib/money.ts";
@@ -66,20 +66,19 @@ export async function openSheet(page: Page): Promise<void> {
 }
 
 /**
- * Logs in and picks a free day of this worker's own, as far as the window step. Each worker runs one test at a time,
- * so a day of its own is one no other test is booking at the same moment. None is the first free day, tomorrow at the
- * soonest, so every window on it is more than a day away, whatever the time the test runs.
+ * Logs in and picks a free day of this worker's own, its times beneath it. Each worker runs one test at a time, so a
+ * day of its own is one no other test is booking at the same moment. None is the first free day, tomorrow at the
+ * soonest, so every time on it is more than a day away, whatever the time the test runs.
  */
 export async function toWindows(page: Page): Promise<void> {
   await openSheet(page);
-  const sheet = page.getByRole("dialog", { name: booking.date.title });
+  const sheet = page.getByRole("dialog", { name: booking.when.title });
   // The sheet asks the API for the services and the free days first; a busy machine can leave it "Loading" past the
   // five seconds an expectation waits by default.
-  await expect(sheet.getByText("Step 1 of 3")).toBeVisible({ timeout: 30_000 });
-  const free = sheet.getByRole("radio").and(page.locator(":enabled"));
+  await expect(sheet.getByText(booking.step(1, 2))).toBeAttached({ timeout: 30_000 });
+  const free = sheet.locator(OPEN_DAYS);
   const days = await free.count();
   await free.nth(Math.min(days - 1, 1 + test.info().parallelIndex)).click();
-  await sheet.getByRole("button", { name: booking.service.continue }).click();
 }
 
 export async function toPayment(page: Page): Promise<void> {

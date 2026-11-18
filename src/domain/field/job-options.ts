@@ -49,8 +49,14 @@ export async function optionsJob(
   return { id: row.id, personId: row.person_id, on: indiaDate(startsAt), city: row.service_city };
 }
 
-/** Each package whose first fit is on sale on the visit's day, in the order ops gave them. */
-export async function packageOptions(db: D1Database, job: OptionsJob): Promise<PackageOption[]> {
+/**
+ * Each package whose first fit is on sale on the day, in the order ops gave them, priced for the client in their city:
+ * a consultation's, on its day, and the client app's, from tomorrow (src/routes/client/packages.ts).
+ */
+export async function packageOptions(
+  db: D1Database,
+  job: Pick<OptionsJob, "personId" | "on" | "city">,
+): Promise<PackageOption[]> {
   const [offered, packages] = await Promise.all([
     offeredServices(db, job.on, ["first_fit", "service", "replacement"], job.city),
     allPackages(db),

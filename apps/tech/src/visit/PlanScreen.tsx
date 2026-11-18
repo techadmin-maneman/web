@@ -1,35 +1,32 @@
-// The visit plan (docs/prompts/tech-redesign.md, "Visit engine"; docs/decisions/0244-the-visit-engine.md): every screen
-// of the visit, done, under way or to do, how many are done, the visit's time gone and when it should finish. A step
-// the API refused needs a fix, said in red. A screen done or under way opens from here; one to do waits its turn.
+// The visit plan (docs/prompts/tech-redesign.md, "Visit engine"; docs/decisions/0244-the-visit-engine.md), as the
+// prototype draws it: the client and the visit with when it started, a step ops could not accept first, how many are
+// done beside when to finish with the visit's time gone beneath, then each screen numbered with what it is, and
+// Continue to the one under way. A screen done or under way opens from here; one to do waits its turn.
 
+import { Button } from "@maneman/ui/Button";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
 import { ProgressLine } from "@maneman/ui/Progress";
 import { StepMark, type MarkState } from "@maneman/ui/StepMark";
 import type { Job } from "../api.ts";
-import { visit as copy } from "../content.ts";
+import { today, visit as copy } from "../content.ts";
+import { Chevron } from "../frame/Chevron.tsx";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { CardFrame, nameOf } from "../frame/CardFrame.tsx";
+import { stepLine } from "../guides/index.ts";
 import { kindNameLower } from "../lib/kind.ts";
 import { done, nextStep, sentBackFor } from "../lib/progress.ts";
 import { useMinute } from "../lib/useMinute.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { useJob } from "../lib/useDay.ts";
 import { clock } from "../lib/when.ts";
-import { stepPath } from "../route.ts";
+import { go, stepPath } from "../route.ts";
 import type { Queued } from "../store/outbox.ts";
-import { screensOf } from "./engine.ts";
+import { screensOf, type Screen } from "./engine.ts";
 import styles from "./plan.module.css";
 
 type State = MarkState;
-
-const STATE_WORDS: Record<State, string> = {
-  done: copy.plan.states.done,
-  now: copy.plan.states.now,
-  todo: copy.plan.states.todo,
-  fix: copy.plan.needsFix,
-};
 
 /** When the visit began: the card's start, or the tap on Start visit still on the phone. */
 function startedAt(job: Job, queued: readonly Queued[]): number | null {
@@ -37,23 +34,45 @@ function startedAt(job: Job, queued: readonly Queued[]): number | null {
   return queued.find((event) => event.job_id === job.id && event.kind === "start")?.queued_at ?? null;
 }
 
-/** How much of the visit's time has gone, from Start visit to its booked end, and when it should finish. */
-function TimeGone({ job, queued }: { job: Job; queued: readonly Queued[] }) {
+/** How much of the visit's time has gone, from Start visit to its booked end, in brass (ADR 0244, decision 3). */
+function TimeGone({ job, started }: { job: Job; started: number | null }) {
   const now = useMinute();
-  if (job.ends_at === null) return null;
-  const started = startedAt(job, queued);
+  if (job.ends_at === null || started === null) return null;
   const ends = Date.parse(job.ends_at);
   return (
-    <>
-      {started !== null && (
-        <ProgressLine
-          className={styles.bar}
-          value={(now.getTime() - started) / Math.max(1, ends - started)}
-          tone="accent"
-        />
-      )}
-      <p className={styles.finish}>{copy.plan.finishBy(clock(job.ends_at))}</p>
-    </>
+    <ProgressLine
+      className={styles.bar}
+      value={(now.getTime() - started) / Math.max(1, ends - started)}
+      tone="accent"
+    />
+  );
+}
+
+/** A step's line: done, needing a fix, or what it is; a step of tasks counts them. */
+function lineOf(job: Job, screen: Screen, state: State): string {
+  if (state === "done") return copy.plan.stepDone;
+  if (state === "fix") return copy.plan.needsFix;
+  if (screen.id === "tasks" && job.checklist.length > 0) return copy.plan.tasks(job.checklist.length);
+  return stepLine(screen.id, job.type === "consultation" && !job.one_visit);
+}
+
+/**
+ * A step to fix, first, opening it: one ops sent back says so, naming the step, with their reason as they wrote it,
+ * never put in Hindi; one the API refused needs a fix.
+ */
+function FixCard({ job, queued, screen }: { job: Job; queued: readonly Queued[]; screen: Screen }) {
+  const reason = sentBackFor(job, queued, screen.event);
+  const named = reason === null ? undefined : (today.toFixSteps as Partial<Record<string, string>>)[screen.event];
+  return (
+    <ProblemCard
+      className={styles.fixCard}
+      title={named === undefined ? copy.plan.needsFix : copy.plan.couldNotAccept(named)}
+      onOpen={() => {
+        go(stepPath(job.id, screen.event));
+      }}
+    >
+      {reason ?? screen.title}
+    </ProblemCard>
   );
 }
 
@@ -72,39 +91,54 @@ function Plan({ job, queued }: { job: Job; queued: readonly Queued[] }) {
   };
   const doneCount = screens.filter((screen) => stateOf(screen.event) === "done").length;
   const toFix = screens.filter((screen) => stateOf(screen.event) === "fix");
+  const started = startedAt(job, queued);
+  const underWay = screens.find((screen) => screen.event === now);
   return (
     <CardFrame
-      title={copy.plan.title}
-      sub={copy.whoAndWhat(nameOf(job), kindNameLower(job))}
+      title={copy.whoAndWhat(nameOf(job), kindNameLower(job))}
+      sub={started === null ? copy.plan.title : copy.plan.started(clock(new Date(started).toISOString()))}
       back={`/jobs/${job.id}`}
       safety={job.id}
-      foot={null}
+      foot={
+        underWay === undefined ? null : (
+          <Button
+            variant="primary"
+            size="action"
+            onClick={() => {
+              go(stepPath(job.id, underWay.event));
+            }}
+          >
+            {copy.plan.continue}
+          </Button>
+        )
+      }
     >
-      <section className={styles.head}>
-        <p className={styles.count}>{copy.plan.done(doneCount, screens.length)}</p>
-        <TimeGone job={job} queued={queued} />
-      </section>
       {toFix.length > 0 && (
-        <ProblemCard className={styles.fixCard} title={copy.plan.needsFix}>
-          {toFix
-            .map((screen) => {
-              const reason = sentBackFor(job, queued, screen.event);
-              return reason === null ? screen.title : copy.plan.sentBack(screen.title, reason);
-            })
-            .join(". ")}
-        </ProblemCard>
+        <div className={styles.fixes}>
+          {toFix.map((screen) => (
+            <FixCard key={screen.id} job={job} queued={queued} screen={screen} />
+          ))}
+        </div>
       )}
+      <section className={styles.head}>
+        <p className={styles.counts}>
+          <span className={styles.count}>{copy.plan.done(doneCount, screens.length)}</span>
+          {job.ends_at !== null && <span className={styles.finish}>{copy.plan.finishBy(clock(job.ends_at))}</span>}
+        </p>
+        <TimeGone job={job} started={started} />
+      </section>
       <ListRows className={styles.list} label={copy.plan.title}>
-        {screens.map((screen) => {
+        {screens.map((screen, index) => {
           const state = stateOf(screen.event);
+          const opens = state !== "todo";
           return (
             <ListRow
               key={screen.id}
-              mark={<StepMark state={state} />}
+              mark={<StepMark state={state} n={index + 1} />}
               title={screen.title}
-              end={STATE_WORDS[state]}
-              endTone={state === "fix" ? "error" : "muted"}
-              to={state === "todo" ? undefined : stepPath(job.id, screen.event)}
+              meta={<span className={state === "fix" ? styles.fix : undefined}>{lineOf(job, screen, state)}</span>}
+              end={opens ? <Chevron /> : undefined}
+              to={opens ? stepPath(job.id, screen.event) : undefined}
             />
           );
         })}

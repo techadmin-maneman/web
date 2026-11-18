@@ -6,6 +6,7 @@ import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { placesWithin } from "../../domain/inventory/stock-places.ts";
 import { expiryRisk, failureRates, type FailureGroup } from "../../domain/inventory/stock-quality.ts";
+import { jobSheet } from "../../domain/field/job-sheet-settings.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { json } from "../../http/openapi.ts";
@@ -22,7 +23,7 @@ const Group = z.object({
 const failuresRoute = opsRoute({
   method: "get",
   path: "/api/quality/failures",
-  summary: "The labelled pieces fitted in the last year and how many failed, four ways",
+  summary: "The labelled pieces fitted in the last year and how many failed, five ways",
   responses: {
     200: {
       description: "Failure rates",
@@ -34,6 +35,11 @@ const failuresRoute = opsRoute({
             by_lot: z.array(Group),
             by_supplier: z.array(Group),
             by_technician: z.array(Group),
+            by_reason: z.array(Group).openapi({
+              description:
+                "Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0273); " +
+                "fitted is all of them.",
+            }),
           })
           .openapi("FailureRates"),
       ),
@@ -83,7 +89,8 @@ const groupJson = (group: FailureGroup) => ({
 export function registerOpsStockQuality(app: App): void {
   app.openapi(failuresRoute, async (c) => {
     const since = addDays(indiaDate(c.var.deps.now()), -(await opsInputs(c)).stockQuality.failure_days);
-    const rates = await failureRates(c.env.DB, since);
+    const sheet = await jobSheet(c.env.DB);
+    const rates = await failureRates(c.env.DB, since, [...sheet.failureReasons.items, ...sheet.failureReasons.retired]);
     return c.json(
       {
         since,
@@ -91,6 +98,7 @@ export function registerOpsStockQuality(app: App): void {
         by_lot: rates.byLot.map(groupJson),
         by_supplier: rates.bySupplier.map(groupJson),
         by_technician: rates.byTechnician.map(groupJson),
+        by_reason: rates.byReason.map(groupJson),
       },
       200,
     );

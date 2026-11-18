@@ -1,6 +1,6 @@
-// The booking sheet's days and starts (docs/decisions/0210-booking-by-start-time.md): which days are full or inside the
-// notice, which start to choose for a visit offered on a day and in a window, later days added to those shown, and
-// what the date and time steps say of them.
+// The booking sheet's days and starts (docs/decisions/0210-booking-by-start-time.md): which days are full, the earliest
+// open start, which start to choose for a visit offered on a day and in a window, later days added to those shown, and
+// what the day and time step says of them.
 
 import { weekdayDate } from "@maneman/web-kit/dates";
 import type { Availability, BookingWindow } from "../api.ts";
@@ -9,12 +9,19 @@ import { booking } from "../content.ts";
 export type Day = Availability["days"][number];
 export const isFull = (day: Day): boolean => day.starts.every((start) => !start.open);
 
-/** Whether a visit booked now at any of the day's open starts would already cost the client to change. */
-export const dayInsideNotice = (day: Day): boolean => day.starts.some((start) => start.open && start.change_charged);
+/** How many of the day's starts are open. */
+export const openStarts = (day: Day): number => day.starts.filter((start) => start.open).length;
 
-/** The time step's button: on to payment, or, for a day that costs nothing, only on. */
-export const timeContinue = (day: Day): string =>
-  day.price.amount === 0 ? booking.window.continueFree : booking.window.continue;
+/** The first open start among the days shown, offered at a tap; null where every day shown is full. */
+export function earliestOpen(
+  days: readonly Day[],
+): { readonly date: string; readonly start: Day["starts"][number] } | null {
+  for (const day of days) {
+    const start = day.starts.find((each) => each.open);
+    if (start !== undefined) return { date: day.date, start };
+  }
+  return null;
+}
 
 /** The first day on or after `date` with a window open; null where the days shown have none. */
 export function firstOpenFrom(days: readonly Day[], date: string): string | null {
@@ -67,7 +74,7 @@ export function withDays(shown: readonly Day[], fresh: readonly Day[]): Day[] {
 export function offeredFullLine(days: readonly Day[], offered: string | null, chosen: string | null): string | null {
   const day = days.find((each) => each.date === offered);
   if (offered === null || day === undefined || !isFull(day)) return null;
-  if (chosen === null) return booking.date.offeredFullPickAnother(weekdayDate(offered));
-  if (chosen === firstOpenFrom(days, offered)) return booking.date.offeredFull(weekdayDate(offered));
+  if (chosen === null) return booking.when.offeredFullPickAnother(weekdayDate(offered));
+  if (chosen === firstOpenFrom(days, offered)) return booking.when.offeredFull(weekdayDate(offered));
   return null;
 }

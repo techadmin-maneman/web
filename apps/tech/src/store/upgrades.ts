@@ -353,4 +353,40 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       return { ...record, me: { ...record.me, grade: null, city: null, mobile: null } };
     });
   },
+  // Version 13: a card carries the client's earlier visits counted, and a day's row its drive's km
+  // (docs/decisions/0258-the-technician-design-pass.md). One kept before says neither until it is read again.
+  (_db, upgrade) => {
+    eachAgain(upgrade.objectStore("cards"), (value) => {
+      // What an earlier build wrote, which may lack the field this step adds.
+      const card = value as Partial<Pick<Job, "client_visits">>;
+      return card.client_visits === undefined ? { ...card, client_visits: null } : null;
+    });
+    eachAgain(upgrade.objectStore("days"), (value) => {
+      // What an earlier build wrote, which may lack the field this step adds.
+      const day = value as Omit<KeptDay, "jobs"> & { readonly jobs: readonly Partial<JobSummary>[] };
+      if (day.jobs.every((job) => job.drive_km !== undefined)) return null;
+      return { ...day, jobs: day.jobs.map((job) => ({ ...job, drive_km: job.drive_km ?? null })) };
+    });
+  },
+  // Version 14: a card carries where the visit was booked, and why a fit may not be fitted today
+  // (docs/decisions/0270-the-design-checks-api-side.md). One kept before says neither until it is read again, so its
+  // Can't fit today closes with no reason, as it did.
+  (_db, upgrade) => {
+    eachAgain(upgrade.objectStore("cards"), (value) => {
+      // What an earlier build wrote, which may lack the fields this step adds.
+      const card = value as Partial<Pick<Job, "booked_via" | "not_fitted_reasons">>;
+      if (card.booked_via !== undefined && card.not_fitted_reasons !== undefined) return null;
+      return { ...card, booked_via: card.booked_via ?? null, not_fitted_reasons: card.not_fitted_reasons ?? [] };
+    });
+  },
+  // Version 15: a replacement's card carries why its piece may have failed
+  // (docs/decisions/0273-why-a-hair-system-failed.md). One kept before offers none until it is read again, so the piece
+  // that came off early is replaced with no reason asked, as it was.
+  (_db, upgrade) => {
+    eachAgain(upgrade.objectStore("cards"), (value) => {
+      // What an earlier build wrote, which may lack the field this step adds.
+      const card = value as Partial<Pick<Job, "failure_reasons">>;
+      return card.failure_reasons === undefined ? { ...card, failure_reasons: [] } : null;
+    });
+  },
 ];

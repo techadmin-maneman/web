@@ -35,12 +35,17 @@ const visit = (changes: Partial<ClientVisit>): ClientVisit => ({
   outcome: "done",
   closed_without_follow_up: null,
   lost_reason: null,
+  not_fitted_reason: null,
   going_ahead: null,
   discount_code: null,
   price_open: false,
   requested_code: null,
   pay_at_visit: null,
   proposed_move: null,
+  latest_update: null,
+  step: null,
+  waits_until: null,
+  sign_off: null,
   ...changes,
 });
 

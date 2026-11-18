@@ -9,6 +9,7 @@
   --ui-ground: var(--ink-deep);
   --ui-raised: var(--ink);
   --ui-tint: var(--ink-deep);
+  --ui-wash: var(--ink-raised);
   --ui-shade: var(--ink-raised);
   --ui-box: var(--ink-night);
   --ui-box-off: var(--ink-frame);
@@ -21,6 +22,7 @@
   --ui-line: var(--ink-line);
   --ui-line-control: var(--ink-line-strong);
   --ui-strong: var(--paper);
+  --outline-edge: var(--ui-strong);
   --ui-on-strong: var(--ink);
   --ui-strong-pressed: var(--paper-shade);
   --ui-error: var(--error-on-ink);
@@ -48,6 +50,7 @@
     --ui-ground: var(--ink-deep);
     --ui-raised: var(--ink);
     --ui-tint: var(--ink-deep);
+    --ui-wash: var(--ink-raised);
     --ui-shade: var(--ink-raised);
     --ui-box: var(--ink-night);
     --ui-box-off: var(--ink-frame);
@@ -60,6 +63,7 @@
     --ui-line: var(--ink-line);
     --ui-line-control: var(--ink-line-strong);
     --ui-strong: var(--paper);
+    --outline-edge: var(--ui-strong);
     --ui-on-strong: var(--ink);
     --ui-strong-pressed: var(--paper-shade);
     --ui-error: var(--error-on-ink);

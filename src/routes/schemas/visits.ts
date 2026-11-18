@@ -1,6 +1,8 @@
 // A visit as the client's app reads it in a list, with its photographs and any no-show note
 // (src/routes/client/visits.ts), which their home, payments and the console's client record answer in too.
 
+import { CLIENT_STEPS } from "../../policy/visit-plan.ts";
+import { SignOffSchema } from "./sign-off.ts";
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { WindowHoursSchema } from "./booking.ts";
@@ -113,6 +115,49 @@ export const VisitSummarySchema = z
         "A move to another day ops asked the client to confirm, still open: the visit stays where it is until they " +
         "accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none.",
     }),
+    latest_update: z
+      .union([
+        z
+          .object({
+            kind: z.enum(["on_the_way", "running_late", "at_the_gate"]),
+            minutes: z.union([z.number().int(), z.null()]).openapi({
+              description: "On the way: minutes away; running late: minutes late; null at the gate.",
+            }),
+            at: z.iso.datetime().openapi({ description: "When the technician sent it." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone.",
+      }),
+    step: z
+      .union([
+        z
+          .object({
+            index: z.number().int().openapi({ description: "The step under way, counting from 1." }),
+            of: z.number().int().openapi({ description: "How many steps the client is told of." }),
+            name: z.enum(CLIENT_STEPS).openapi({ description: "The step, as the app names it." }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null " +
+          "unless in progress.",
+      }),
+    waits_until: z.union([z.iso.datetime(), z.null()]).openapi({
+      description:
+        "Checked in and not yet started: the last moment the technician waits at the door, the booked start or the " +
+        "check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise.",
+    }),
+    sign_off: z.union([SignOffSchema, z.null()]).openapi({
+      description:
+        "A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's " +
+        "own page once it is done. Null before the technician asks, and for a visit that takes none.",
+    }),
   })
   .strict()
   .openapi("VisitSummary");
@@ -167,6 +212,10 @@ export const NoShowNoteSchema = z
     dispute_closed_at: z.union([z.iso.datetime(), z.null()]).openapi({
       description:
         "When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise.",
+    }),
+    dispute_until: z.union([z.iso.datetime(), z.null()]).openapi({
+      description:
+        "The last moment the charge may be disputed, by the dispute window ops set, while `disputable`; null otherwise.",
     }),
   })
   .strict()

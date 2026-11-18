@@ -21,6 +21,7 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { staffMemberOf } from "../../http/audit.ts";
 import { closeTask } from "../../domain/ops/task-closures.ts";
+import { failClaimedPiece } from "../../domain/inventory/piece-failures.ts";
 import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../../domain/ops/task-owners.ts";
 import { outstandingTasks, overdueCount, READ_CAP, type Task } from "../../domain/ops/tasks.ts";
 import { lowStockPlaces } from "../../domain/inventory/low-stock.ts";
@@ -239,6 +240,16 @@ const closeRoute = opsRoute({
               description:
                 "Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased.",
             }),
+            failure_reason: z
+              .string()
+              .min(1)
+              .max(64)
+              .optional()
+              .openapi({
+                description:
+                  "A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job " +
+                  "sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0273).",
+              }),
           })
           .strict()
           .openapi("TaskClosing"),
@@ -247,7 +258,10 @@ const closeRoute = opsRoute({
   },
   responses: {
     204: { description: "Closed, under the member of staff who closed it" },
-    400: errorResponse("invalid_request: no reason, or a group whose tasks close only when their thing is done"),
+    400: errorResponse(
+      "invalid_request: no reason, a group whose tasks close only when their thing is done, or a failure_reason " +
+        "on a task not a guarantee claim, not on the failure list, or for a fit with no hair system on record",
+    ),
     403: errorResponse("access_required: no Access token, or a service token, which names no member of staff"),
     404: errorResponse(
       "not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already",
@@ -385,15 +399,42 @@ export function registerOpsTasks(app: App): void {
     return c.json({ owner }, 200);
   });
 
+  registerClose(app);
+}
+
+/** Why a hair system failed, said on a task other than a guarantee claim, which has none to fail. */
+const faultMisplaced = (key: TaskKey, failure: string | undefined): boolean =>
+  failure !== undefined && key.group !== "fit_guarantee_claim";
+
+/**
+ * Where a guarantee claim's closing says why its hair system failed, the piece its fit put on is marked failed today.
+ * The fields refused; null once it may close.
+ */
+async function faultRefused(
+  key: TaskKey,
+  failure: string | undefined,
+  db: D1Database,
+  written: Parameters<typeof failClaimedPiece>[2],
+): Promise<readonly string[] | null> {
+  if (failure === undefined) return null;
+  const failed = await failClaimedPiece(db, { reportId: key.id, reason: failure }, written);
+  return failed.ok ? null : (failed.fields ?? []);
+}
+
+/** A task closed without doing its thing, with why. */
+function registerClose(app: App): void {
   app.openapi(closeRoute, async (c) => {
     const key = c.req.valid("param");
-    const { reason } = c.req.valid("json");
+    const { reason, failure_reason: failure } = c.req.valid("json");
     const { requestId } = c.var;
     const staff = staffMemberOf(c);
     if (staff === null) return noMemberOfStaff(c);
+    if (faultMisplaced(key, failure)) return refuse(c, "invalid_request", ["failure_reason"]);
     if ((await taskOnTheBoard(c, key)) === null) return refuse(c, "not_found");
 
     const now = c.var.deps.now();
+    const refused = await faultRefused(key, failure, c.env.DB, { actor: staff, requestId, now });
+    if (refused !== null) return refuse(c, "invalid_request", refused);
     await closeTask(c.env.DB, key, {
       reason,
       by: staff.id,

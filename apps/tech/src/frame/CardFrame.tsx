@@ -9,6 +9,7 @@ import { shortDate } from "@maneman/web-kit/dates";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { badgesLower, job as copy } from "../content.ts";
+import { sayNow } from "../lang/index.ts";
 import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { arrival, dayAfter, todayInIndia } from "../lib/when.ts";
@@ -21,7 +22,7 @@ function dayOf(date: string): string | null {
   const today = todayInIndia();
   if (date === today) return null;
   if (date === dayAfter(today)) return copy.tomorrow;
-  return shortDate(date);
+  return sayNow(shortDate(date));
 }
 
 /** "9:30–10 am · service visit · prepaid", the line beneath the name, with the day first when it is not today. */
@@ -43,7 +44,8 @@ export function CardFrame({
   children,
 }: {
   readonly title: string;
-  readonly sub: string;
+  /** The line under the title; none where the title says enough. */
+  readonly sub?: string;
   /** Where the way back goes: Today, unless the screen opened from the job's. */
   readonly back?: string;
   /** The bar's actions, given the helper line's id for each it describes; null for a screen with none. */
@@ -71,7 +73,7 @@ export function CardFrame({
           <h1 className={styles.name} ref={heading} tabIndex={-1}>
             {title}
           </h1>
-          <p className={styles.when}>{sub}</p>
+          {sub !== undefined && <p className={styles.when}>{sub}</p>}
         </div>
         {safety !== undefined && <Safety jobId={safety} className={styles.safety} />}
       </header>

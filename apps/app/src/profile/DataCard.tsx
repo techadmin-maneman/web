@@ -4,12 +4,15 @@
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { capsLook } from "@maneman/ui/Caps";
 import { GRIEVANCE_MAX_CHARS } from "@rules/policy/grievances.ts";
-import { Button, ButtonLink } from "@maneman/ui/Button";
+import { CLIENT_ICONS, ICONS } from "@maneman/brand/icons";
+import { Button } from "@maneman/ui/Button";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState, type ReactNode } from "react";
 import { api, EXPORT_URL, type Profile } from "../api.ts";
-import { profile } from "../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { missing, profile } from "../content.ts";
 import styles from "./profile.module.css";
 import { WordsField } from "@maneman/ui/WordsField";
 
@@ -51,8 +54,39 @@ function GrievanceField({ text, onText }: { text: string; onText: (text: string)
   );
 }
 
+/** Send the concern, or put it away; what is missing beneath. */
+function ConcernButtons({ busy, empty, onCancel }: { busy: boolean; empty: boolean; onCancel: () => void }) {
+  return (
+    <>
+      <div className={styles.row}>
+        <Button
+          variant="primary"
+          size="control"
+          className={styles.primary}
+          type="submit"
+          disabled={busy || empty}
+          aria-describedby={describedBy("concern-words", empty)}
+        >
+          {profile.data.send}
+        </Button>
+        <Button variant="quiet" size="control" className={styles.secondary} onClick={onCancel}>
+          {profile.data.cancel}
+        </Button>
+      </div>
+      <Missing id="concern-words" what={empty ? missing.concernWords : null} />
+    </>
+  );
+}
+
 /** The client's rights over their data: a copy of it, and a way to raise a concern. */
-export function DataCard({ grievances, onRaised }: { grievances: Profile["grievances"]; onRaised: () => void }) {
+interface DataCardProps {
+  readonly grievances: Profile["grievances"];
+  /** The law's most days for an answer, as /api/me gives them; null where it did not. */
+  readonly answerDays: number | null;
+  readonly onRaised: () => void;
+}
+
+export function DataCard({ grievances, answerDays, onRaised }: DataCardProps) {
   const copy = profile.data;
   const [writing, setWriting] = useState(false);
   const [text, setText] = useState("");
@@ -78,24 +112,11 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
     if (state === "sent") {
       return (
         <p className={styles.cardHint} role="status">
-          {copy.sent}
+          {copy.sent(answerDays)}
         </p>
       );
     }
-    if (!writing) {
-      return (
-        <Button
-          variant="quiet"
-          size="control"
-          className={styles.secondary}
-          onClick={() => {
-            setWriting(true);
-          }}
-        >
-          {copy.raise}
-        </Button>
-      );
-    }
+    if (!writing) return null;
     return (
       <form
         className={styles.confirm}
@@ -111,27 +132,13 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
             {state === "limited" ? copy.limited : copy.failed}
           </InlineMessage>
         )}
-        <div className={styles.row}>
-          <Button
-            variant="primary"
-            size="control"
-            className={styles.primary}
-            type="submit"
-            disabled={busy || text.trim() === ""}
-          >
-            {copy.send}
-          </Button>
-          <Button
-            variant="quiet"
-            size="control"
-            className={styles.secondary}
-            onClick={() => {
-              setWriting(false);
-            }}
-          >
-            {copy.cancel}
-          </Button>
-        </div>
+        <ConcernButtons
+          busy={busy}
+          empty={text.trim() === ""}
+          onCancel={() => {
+            setWriting(false);
+          }}
+        />
       </form>
     );
   }
@@ -141,10 +148,19 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
       <h2 className={capsLook(styles.cardLabel)} id="data">
         {copy.label}
       </h2>
-      <p className={styles.cardBody}>{copy.body}</p>
-      <ButtonLink variant="quiet" size="control" className={styles.secondary} href={EXPORT_URL} download>
-        {copy.download}
-      </ButtonLink>
+      <ListRows className={styles.rows}>
+        <ListRow icon={ICONS.download} title={copy.download} href={EXPORT_URL} download chevron />
+        {state !== "sent" && !writing && (
+          <ListRow
+            icon={CLIENT_ICONS.alert}
+            title={copy.raise}
+            onClick={() => {
+              setWriting(true);
+            }}
+            chevron
+          />
+        )}
+      </ListRows>
       {concern()}
       {grievances.length > 0 && (
         <ul className={styles.concerns} aria-label={copy.concerns}>

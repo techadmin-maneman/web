@@ -71,6 +71,7 @@
 
 import { DAY_MS, HOUR_MS } from "../lib/durations.ts";
 import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
+import { GRIEVANCE_ANSWERED_WITHIN_DAYS } from "./grievances.ts";
 
 /** The queues a task is read from, in the order the console lists them. */
 export const TASK_GROUPS = [
@@ -89,10 +90,14 @@ export const TASK_GROUPS = [
   "consultation_request",
   "first_fit_to_book",
   "replacement_order",
+  "made_to_order_ask",
   "stock_at_risk",
   "at_risk_client",
   "partial_visit",
   "consumables_short",
+  "fit_unsigned",
+  "fit_guarantee_claim",
+  "low_rating",
   "kit_request",
   "referral_review",
   "no_show_decision",
@@ -153,6 +158,8 @@ export const TASK_SLA_HOURS: Slas = {
   consultation_request: 48,
   first_fit_to_book: 48,
   replacement_order: 48,
+  // A client told their size is made to order: ordered, and they are messaged, within the day.
+  made_to_order_ask: 24,
   // A fit with no hair system in reach: within the two days, and never later than the fit (ADR 0178).
   stock_at_risk: 48,
   at_risk_client: 48,
@@ -160,6 +167,14 @@ export const TASK_SLA_HOURS: Slas = {
   // A job that used less than its service expects, with the technician's reason: checked against the kit within the
   // two days (docs/decisions/0222-consumables-short-of-expected.md).
   consumables_short: 48,
+  // A fit closed without the client's sign-off, with the technician's why: Care call the client within the two days
+  // (docs/decisions/0254-client-signs-off-the-fit.md).
+  fit_unsigned: 48,
+  // A client's claim under the fit guarantee, as the terms promise a refit or a refund: Care call them within the two
+  // days (docs/decisions/0256-fit-guarantee-setting.md).
+  fit_guarantee_claim: 48,
+  // A visit the client rated low: Care call them within the two days (docs/decisions/0260-ratings.md).
+  low_rating: 48,
   // A kit short of what its week's visits need: in its next transfer, within the day.
   kit_request: 24,
   referral_review: 48,
@@ -169,7 +184,7 @@ export const TASK_SLA_HOURS: Slas = {
   // What the client was promised: the 30 days run from the request to ops' decision (ADR 0049).
   erasure_request: DELETION_DECIDED_WITHIN_DAYS * 24,
   // The app promises an answer within 30 days at the latest (docs/open-points.md, item 51).
-  grievance: 30 * 24,
+  grievance: GRIEVANCE_ANSWERED_WITHIN_DAYS * 24,
   draft_invoice: 48,
   payment_owed: 48,
   // A UPI payment taken at the visit, recorded the same day it reaches the account.
@@ -188,17 +203,22 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
 
 /**
  * The groups ops close with a reason: a visit left partly done, whose follow-up the client may never want; an at-risk
- * client, closed with what came of the call; a City matter, closed with what was done; consumables short of what a job
- * expects, closed once checked against the kit; and a technician's asks, for their kit and to move a visit, closed with
- * what was done. Every other group leaves the board only when its thing is done.
+ * client, a fit closed without the client's sign-off, a fit guarantee claim and a low rating, each closed with what
+ * came of the call; a City matter, closed with what was done; consumables short of what a job expects, closed once
+ * checked against the kit; a technician's asks, for their kit and to move a visit, and a client's ask for a hair system
+ * made to order, closed with what was done. Every other group leaves the board only when its thing is done.
  */
 export const CLOSABLE_TASK_GROUPS = [
   "partial_visit",
   "consumables_short",
+  "fit_unsigned",
+  "fit_guarantee_claim",
+  "low_rating",
   "at_risk_client",
   "city_matter",
   "kit_request",
   "reschedule_request",
+  "made_to_order_ask",
 ] as const satisfies readonly TaskGroup[];
 
 export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS as readonly TaskGroup[]).includes(group);

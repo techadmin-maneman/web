@@ -45,6 +45,8 @@ import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import shared from "./steps.module.css";
 import styles from "./profile.module.css";
+import { SectionHead } from "@maneman/ui/SectionHead";
+import { dayMonth } from "@maneman/web-kit/dates";
 
 type Page = "measure" | "match" | "history";
 
@@ -81,8 +83,9 @@ function optionsOf<K extends string>(labels: Readonly<Record<K, string>>): Optio
   return (Object.keys(labels) as K[]).map((id) => ({ id, label: labels[id] }));
 }
 
-const COLOUR_OPTIONS = COLOURS.map((id) => ({ id, label: copy.colours[id] }));
-const DENSITY_OPTIONS = DENSITIES.map((id) => ({ id, label: copy.densities[id] }));
+// Read as the step is drawn, so each label is in the language now.
+const colourOptions = () => COLOURS.map((id) => ({ id, label: copy.colours[id] }));
+const densityOptions = () => DENSITIES.map((id) => ({ id, label: copy.densities[id] }));
 
 /** The products the card offers, and the one the profile names if it is no longer offered, so it can be seen. */
 function productOptions(job: Job, latest: HairProfile | null): Option<string>[] {
@@ -121,8 +124,26 @@ function choosing(form: FitForm, onChange: (form: FitForm) => void) {
   };
 }
 
+/** A page's head, as the prototype draws it: "Measure", "Match", with what the page starts from at its end. */
+function PageHead({ title, end }: { title: string; end?: string }) {
+  return <SectionHead className={styles.pageHead} ruled={false} title={title} end={end} />;
+}
+
+/** Where the measure starts: a new client's empty, or the profile the consultation took, by its day. */
+const startedFrom = (job: Job): string =>
+  job.profile === null ? copy.newClient : copy.fromConsultation(dayMonth(job.profile.recorded_at.slice(0, 10)));
+
 /** The first page: the Norwood stage, then the head's and the base's figures, typed off the tape. */
-function MeasureFields({ form, onChange }: { form: FitForm; onChange: (form: FitForm) => void }) {
+function MeasureFields({
+  form,
+  from,
+  onChange,
+}: {
+  form: FitForm;
+  /** Where the measure starts, at its head's end. */
+  from: string;
+  onChange: (form: FitForm) => void;
+}) {
   const typed = typedFigures(form.figures);
   const headId = useId();
   const baseId = useId();
@@ -142,6 +163,7 @@ function MeasureFields({ form, onChange }: { form: FitForm; onChange: (form: Fit
 
   return (
     <>
+      <PageHead title={copy.measureHead} end={from} />
       <Chips
         title={copy.sections.stage}
         options={optionsOf(copy.stages)}
@@ -178,9 +200,10 @@ function MatchFields({
   const { choose, chosen } = choosing(form, onChange);
   return (
     <>
+      <PageHead title={copy.matchHead} />
       <Chips
         title={copy.sections.colour}
-        options={COLOUR_OPTIONS}
+        options={colourOptions()}
         isChosen={chosen("colour")}
         onChoose={choose("colour")}
       />
@@ -197,7 +220,7 @@ function MatchFields({
       </div>
       <Chips
         title={copy.sections.density}
-        options={DENSITY_OPTIONS}
+        options={densityOptions()}
         isChosen={chosen("density_percent")}
         onChoose={choose("density_percent")}
       />
@@ -329,7 +352,7 @@ function ProfileForm({
           setPage("match");
         }}
       >
-        <MeasureFields form={fit} onChange={setFit} />
+        <MeasureFields form={fit} from={startedFrom(job)} onChange={setFit} />
       </StepFrame>
     );
   }

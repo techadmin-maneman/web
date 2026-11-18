@@ -10,9 +10,11 @@
 // later step is sent with. Each has a store of its own (./db.ts).
 
 import type { CheckIn, Job, JobState, JobSummary, OutcomeRequest, VisitToFix } from "../api.ts";
+import { choiceIn } from "../lib/progress.ts";
 import { dayAfter } from "../lib/when.ts";
 import { all, clear, get, put, remove } from "./db.ts";
 import { apiNow } from "@maneman/web-kit/clock";
+import { synced } from "./last-sync.ts";
 
 export async function keepDay(date: string, jobs: readonly JobSummary[]): Promise<void> {
   await put("days", { date, jobs });
@@ -27,6 +29,8 @@ export async function keptDay(date: string): Promise<readonly JobSummary[] | nul
  * signal, and before it is next read.
  */
 export async function keepLanded(jobId: string, state: JobState): Promise<void> {
+  // The phone's work reached us: Pending uploads says when (./last-sync.ts).
+  synced(apiNow());
   for (const day of await all("days")) {
     if (!day.jobs.some((job) => job.id === jobId)) continue;
     await put("days", { ...day, jobs: day.jobs.map((job) => (job.id === jobId ? { ...job, progress: state } : job)) });
@@ -57,13 +61,24 @@ export async function keptJob(id: string): Promise<Job | null> {
   return get("cards", id);
 }
 
+/**
+ * What a landed write leaves on the day and card the phone keeps: where the job stands, and a one visit's choice from
+ * its piece step, kept on its card before the step leaves the outbox, so nothing before the card is read again reads
+ * the choice as unmade.
+ */
+export async function keepWhatLanded(
+  event: { readonly job_id: string; readonly kind: string; readonly body: unknown },
+  state: JobState | null,
+): Promise<void> {
+  if (state !== null) await keepLanded(event.job_id, state);
+  const choice = event.kind === "piece" ? choiceIn(event.body) : null;
+  const card = choice === null ? null : await keptJob(event.job_id);
+  if (card?.one_visit === true) await keepJob({ ...card, client_choice: choice });
+}
+
 /** What the check-in measured: the distance, the radius, and when the no-show wait ends. */
 export async function keepArrival(jobId: string, arrival: CheckIn): Promise<void> {
-  const calledAt = (await get("arrivals", jobId))?.called_at;
-  await put(
-    "arrivals",
-    calledAt === undefined ? { job_id: jobId, arrival } : { job_id: jobId, arrival, called_at: calledAt },
-  );
+  await put("arrivals", { ...((await get("arrivals", jobId)) ?? { job_id: jobId }), arrival });
 }
 
 export async function keptArrival(jobId: string): Promise<CheckIn | null> {
@@ -77,6 +92,15 @@ export async function keepCalled(jobId: string, at: number = apiNow()): Promise<
 
 export async function keptCalled(jobId: string): Promise<number | null> {
   return (await get("arrivals", jobId))?.called_at ?? null;
+}
+
+/** When the door's photograph was taken, kept with the call's, for the no-show's close to say. */
+export async function keepPhotographed(jobId: string, at: number = apiNow()): Promise<void> {
+  await put("arrivals", { ...((await get("arrivals", jobId)) ?? { job_id: jobId }), photographed_at: at });
+}
+
+export async function keptPhotographed(jobId: string): Promise<number | null> {
+  return (await get("arrivals", jobId))?.photographed_at ?? null;
 }
 
 /** When the technician took the outcome, which the close-out's duration runs to, and what was chosen, which it repeats. */

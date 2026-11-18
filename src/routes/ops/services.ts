@@ -86,7 +86,7 @@ const ServicesSchema = z
     min_minutes: z.number().int(),
     max_minutes: z.number().int(),
     max_description: z.number().int().openapi({ description: "The most characters a description may have." }),
-    max_amount_ex_gst: z.number().int(),
+    max_amount: z.number().int(),
     max_gst_percent: z.number().int(),
   })
   .strict()
@@ -255,7 +255,7 @@ async function servicesBody(c: Context<AppEnv>) {
     min_minutes: SERVICE_MINUTES.min,
     max_minutes: SERVICE_MINUTES.max,
     max_description: DESCRIPTION_LENGTH,
-    max_amount_ex_gst: PRICE_BOUNDS.maxPaise,
+    max_amount: PRICE_BOUNDS.maxPaise,
     max_gst_percent: PRICE_BOUNDS.maxGstPercent,
   };
 }

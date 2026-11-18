@@ -8,9 +8,11 @@ import { shortDate } from "@maneman/web-kit/dates";
 import { amountOf } from "@maneman/web-kit/figures";
 import type { Angle, FitSpec, History } from "./api.ts";
 import { apiDate, clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
+import { localised, sayNow } from "./lang/words.ts";
+import { languageNow } from "./lang/language.ts";
 
-export const signIn = {
-  title: "Technician sign in",
+export const signIn = localised({
+  title: "Sign in",
   prefix: "+91",
   mobileLabel: "Mobile number",
   mobilePlaceholder: "98110 00000",
@@ -20,7 +22,7 @@ export const signIn = {
   // The Prototype draws one screen and no errors.
   errors: {
     mismatch: "That code didn’t match.",
-    code_expired: "That code no longer works. Send the code again.",
+    code_expired: "That code no longer works. Get a new one.",
     invalid_request: "Check the number and the code.",
     rate_limited: "Too many codes for this number today. Ask ops.",
     sign_in_stopped: "Ops have stopped sign-in on your number. Ask them to let you back in.",
@@ -29,24 +31,33 @@ export const signIn = {
     unknown: "That didn’t go through. Try again.",
   },
   attemptsLeft: (left: number) => `That code didn’t match. ${String(left)} ${left === 1 ? "try" : "tries"} left.`,
-  sendCode: "Send the code",
-  // The Prototype shows the code field from the start.
-  codeSent: "A 6-digit code is on its way.",
+  sendCode: "Get code",
+  // The brief: a disabled button always shows one helper line.
+  numberHelper: "Type your number to continue",
+  codeHelper: "Type the code to continue",
+  /** "Code sent to +91 98110 00000", beneath the title once the code is out. */
+  codeSent: (number: string) => `Code sent to ${number}`,
   // The Prototype draws no way back from a code sent to the wrong number, or one that never came.
   changeNumber: "Change number",
   resend: "Send a new code",
-  resendIn: (seconds: number) => `New code in ${String(seconds)} s`,
+  /** "Resend in 0:24" */
+  resendIn: (seconds: number) =>
+    `Resend in ${String(Math.floor(seconds / 60))}:${String(seconds % 60).padStart(2, "0")}`,
   // Neither file draws the app opened from the home screen. An
   // installed iPhone app has its own cookie jar, so the first sign-in inside it
   // is a second one and looks like the account has gone (ADR 0053's update).
   installed: "Sign in here once, then use the home-screen app. Anything waiting in the browser still sends.",
-  notRegistered: "New, or your number changed? Ask ops to add it.",
-} as const;
+  notRegistered: "Number not registered?",
+  callOps: "Call ops.",
+} as const);
 
-export const today = {
-  /** The jobs still to do today: the count falls as each closes. */
+export const today = localised({
+  /** The jobs today, before any has closed; then those still to do, as each closes. */
   jobs: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} today`,
+  left: (count: number) => `${String(count)} ${count === 1 ? "job" : "jobs"} left`,
   allDone: "All done today",
+  /** The day's own name: its title before its jobs load, and its list's head once none is left to do. */
+  title: "Today",
   sync: {
     synced: "Synced",
     offline: (saved: number) => (saved > 0 ? `Offline · ${String(saved)} saved` : "Offline"),
@@ -69,8 +80,9 @@ export const today = {
   call: (first: string) => `Call ${first}`,
   later: "Later today",
   dayView: "Day view",
-  /** A job done with, by how it closed. */
+  /** A job done with, by how it closed: under its time, and after its kind of visit. */
   closed: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
+  closedAfter: { done: "done", partial: "partly done", no_show: "no-show", other: "closed" },
   /** A job under way that runs into the next: when to be done to reach it on time. */
   runsOver: (finishBy: string, next: string) => `Running over · finish by ${finishBy} for the ${next} job`,
   noMore: "No more jobs today.",
@@ -82,37 +94,40 @@ export const today = {
   leftOpen: (time: string, who: string) => `Still open from yesterday · ${time} · ${who}`,
   leftOpenBody: "Finish it and send it.",
   /** A visit with steps ops sent back, from whatever day, until they are done again (docs/decisions/0246-closed-and-sent-back.md). */
-  toFix: (time: string, who: string) => `Needs a fix · ${time} · ${who}`,
-  toFixBody: (steps: readonly string[]) => `Ops sent back ${steps.join(" and ")}.`,
+  toFix: (count: number) => (count === 1 ? "Ops couldn’t accept a step" : `Ops couldn’t accept ${String(count)} steps`),
+  toFixBody: (who: string, steps: readonly string[]) => `${who} · ${listed(steps)}. Tap to fix.`,
+  /** A photo set the API stopped: "Rohit M. · before photos. Tap to retry.", which opens Pending uploads. */
+  setFailed: "A photo set didn’t upload",
+  setFailedBody: (who: string, set: string) => `${who} · ${set}. Tap to retry.`,
   toFixSteps: {
-    before_photos: "the before photos",
-    checklist: "the tasks",
-    consumables: "the consumables",
-    after_photos: "the after photos",
+    before_photos: "before photos",
+    checklist: "checklist",
+    consumables: "consumables",
+    after_photos: "after photos",
   },
   offline: {
     title: "No signal",
     body: "Today’s jobs and cards are on the phone.",
     /** On a job's step: what the technician does is kept, and goes once the signal is back. */
     step: "Saved on the phone. Sends when you’re back online.",
-    /** Under Today's head: the bar the new look draws. */
+    /** At the top of every screen while there is no signal (../frame/Banners.tsx). */
     bar: "No signal · your work is saved on this phone",
   },
   failed: "The day’s jobs didn’t load.",
   retry: "Try again",
-} as const;
+} as const);
 
 /** The tab bar at the foot of the top-level screens. */
-export const tabs = {
+export const tabs = localised({
   label: "Sections",
   today: "Today",
   schedule: "Schedule",
   kit: "Kit",
   me: "Me",
-} as const;
+} as const);
 
 /** Me: the technician's own pages, what waits to send, ops, and signing out. */
-export const me = {
+export const me = localised({
   title: "Me",
   /** "Senior · Gurugram · +91 98100 00009"; "Technician" for one with no grade. */
   who: (grade: string | null, city: string | null, phone: string | null) =>
@@ -127,6 +142,10 @@ export const me = {
     onTime: "On time",
     /** "94% of visits" */
     onTimeShare: (onTime: number, visits: number) => `${String(Math.round((onTime / visits) * 100))}% of visits`,
+    /** Clients' stars over the days ops set: "Client rating, 90 days". */
+    rating: (days: number) => `Client rating, ${String(days)} days`,
+    /** "4.6 of 5" */
+    rated: (average: number) => `${average.toFixed(1)} of 5`,
     none: "None yet",
     failed: "Your quality didn’t load.",
   },
@@ -146,33 +165,45 @@ export const me = {
   loading: "Loading…",
   retry: "Try again",
   leave: "Leave",
+  language: "Language",
+  closeLanguage: "Close",
   pending: "Pending uploads",
   nothingPending: "None",
   contact: "Contact ops",
+  /** The Contact sheet's title: ops in the technician's city. */
+  contactTitle: (city: string) => `Ops, ${city}`,
+  /** Leave's line on Me: the asks ops have still to answer. */
+  withOps: (count: number) => `${String(count)} with ops`,
   signOut: "Sign out",
   /** The sheet before signing out, which wipes the phone. */
   sheet: {
     title: "Sign out?",
     uploaded: "Everything is uploaded.",
+    /** Work on the phone not yet sent, which signing out would lose: "5 uploads will be lost." */
+    lost: (count: number) => `${String(count)} ${count === 1 ? "upload" : "uploads"} will be lost.`,
     cancel: "Cancel",
   },
-} as const;
+  closeContact: "Close",
+} as const);
 
 /** The way to ops from anywhere the app says to ask them (./components/ReachOps.tsx). */
-export const ops = {
+export const ops = localised({
   call: "Call ops",
   whatsApp: "WhatsApp ops",
-} as const;
+  /** Under a title that names ops already, as the Contact sheet's: "Call", "WhatsApp". */
+  callShort: "Call",
+  whatsAppShort: "WhatsApp",
+} as const);
 
 /** The Safety sheet, from the shield in a visit's header (docs/prompts/tech-redesign.md, "Safety"). */
-export const safety = {
+export const safety = localised({
   open: "Safety",
   title: "Safety",
   sharing: "Ops can see your location until you close this visit.",
-  sos: "SOS",
+  sos: "Hold for SOS",
   sosSub: "Alerts ops and shares your location",
   /** Beneath SOS while it is held: under reduced motion, the only sign it is going. */
-  keepHolding: "Keep holding…",
+  keepHolding: "Keep holding",
   sending: "Sending your SOS…",
   hold: "Press and hold for 3 seconds. Let go to cancel.",
   /** "SOS sent 9:41 am" */
@@ -184,75 +215,62 @@ export const safety = {
   call112: "Call 112",
   close: "Close",
   failed: "SOS didn’t go through. Call ops or 112 now.",
-} as const;
+} as const);
 
 /** "1 photo set", "3 actions": a count and the word for it. */
 const counted = (count: number, one: string, many: string) => `${String(count)} ${count === 1 ? one : many}`;
 const capital = (words: string) => words.charAt(0).toUpperCase() + words.slice(1);
 
-/** "top", "top and left", "top, left and hair". */
-const listed = (words: readonly string[]) => new Intl.ListFormat("en-IN", { type: "conjunction" }).format(words);
+/** "top", "top and left", "top, left and hair"; in Hindi, joined by "और". */
+const listed = (words: readonly string[]) =>
+  new Intl.ListFormat(languageNow() === "hi" ? "hi" : "en-IN", { type: "conjunction" }).format(words);
 
 /**
  * Signing out wipes the phone, so it asks first when there is work on it that
  * has not reached us, and says so when there is no signal to sign out with.
  */
-export const leaving = {
-  // Neither file draws a sign-out with work still on the phone, or with no signal.
-  unsent: (sets: number, actions: number) => {
-    const held: string[] = [];
-    if (sets > 0) held.push(counted(sets, "photo set", "photo sets"));
-    if (actions > 0) held.push(counted(actions, "action", "actions"));
-    return `${held.join(" and ")} not sent yet`;
-  },
-  body: "Sign out now and they’re lost.",
-  // Nothing is waiting to be sent: signing out still takes the jobs off the phone.
-  confirm: "Sign out of this phone?",
-  confirmBody: "Your jobs leave this phone until you sign in again.",
-  stay: "Stay signed in",
-  send: "Send first",
-  anyway: "Sign out anyway",
+export const leaving = localised({
+  // The prototype draws no sign-out with no signal.
   stayed: "No signal. You’re still signed in. Try again with signal.",
-} as const;
+} as const);
 
 /** When the phone has no room left for what the app must keep: a photograph, a step. */
-export const storage = {
-  // Neither file draws a phone that is full.
-  title: "This phone’s storage is full",
-  body: "Free up space by deleting photos or apps you don’t need, then try again.",
-} as const;
+export const storage = localised({
+  /** Above every screen but the camera, which says it in its own words (the prototype's red line). */
+  bar: "Phone storage full. Free up space to keep saving your work.",
+  // The prototype says "Free 200 MB": the phone cannot know how much it needs.
+  camera: "Phone storage full. Free up space to keep taking photos.",
+} as const);
 
 /** A new version of the app, waiting to be taken (packages/web-kit/sw-update.ts). */
-export const update = {
+export const update = localised({
   // Neither file draws a new version.
   line: "A new version is ready.",
   action: "Update",
-} as const;
+} as const);
 
 /** A screen that failed to draw, which React would otherwise leave blank. */
-export const broken = {
+export const broken = localised({
   // Neither file draws a screen that failed.
   message: "Couldn’t open this screen.",
   reload: "Reload",
-} as const;
+} as const);
 
 /** A failed call's reference, to quote to ops. */
-export const reference = { label: "Ref", copy: "Copy", copied: "Copied" } as const;
+export const reference = localised({ label: "Ref", copy: "Copy", copied: "Copied" } as const);
 
 /**
  * When the phone would not promise to keep what the outbox holds: a warning,
  * not an error. Nothing is lost yet, and getting to signal is what saves it
  * (apps/tech/src/store/persist.ts).
  */
-export const atRisk = {
+export const atRisk = localised({
   // Neither file draws a phone that will not promise to keep its store.
   title: "Unsent work could be lost",
   body: "Get to signal today so everything sends.",
-} as const;
+} as const);
 
-export const queue = {
-  waiting: (count: number) => `${String(count)} photo ${count === 1 ? "set" : "sets"} waiting`,
-  never: "Kept out of the gallery.",
+export const queue = localised({
   retry: "Retry",
   states: {
     uploading: "Uploading…",
@@ -262,13 +280,19 @@ export const queue = {
   /** Beneath the title: how many jobs still have work on the phone. */
   jobsWaiting: (count: number) => `${String(count)} waiting`,
   noneWaiting: "None waiting",
-  // The board writes "7 of 10"; each set is counted on its own, by the photographs the API confirmed.
-  phases: { before: "Before photos", after: "After photos" },
-  sent: (phase: string, done: number, total: number) => `${phase} · ${String(done)} of ${String(total)} sent`,
-  taking: (phase: string, taken: number, total: number) => `${phase} · ${String(taken)} of ${String(total)} taken`,
+  /** A set's row, as the prototype heads it: whose, and which, "Rohit M. · before photos". */
+  setOf: (who: string, phase: string) => `${who} · ${phase}`,
+  phasesAfter: { before: "before photos", after: "after photos" },
+  /** Beneath it: how many, or, still being taken, how many so far. */
+  photos: (count: number) => counted(count, "photo", "photos"),
+  taken: (taken: number, total: number) => `${String(taken)} of ${String(total)} taken`,
+  /** How far a set has gone: said beside a stopped one, which has no line, and to a screen reader beside the line. */
+  sentOf: (sent: number, total: number) => `${String(sent)} of ${String(total)} sent`,
   // The board draws the photo sets; these name the writes beside them.
   title: "Pending uploads",
   nothing: "Everything is uploaded.",
+  /** "Last sync 9:01 am", or "12 Nov, 9:01 am" on an earlier day. */
+  lastSync: (when: string) => `Last sync ${when}`,
   events: (count: number) => `${String(count)} ${count === 1 ? "action" : "actions"} waiting`,
   // The board draws no step the API refused, and no way to put one right.
   correct: "Correct it",
@@ -290,7 +314,7 @@ export const queue = {
     keep: "Keep them",
     delete: "Delete them",
   },
-} as const;
+} as const);
 
 /**
  * What a job's queue stopped for. The API answers a stable code and, on a 409
@@ -301,10 +325,10 @@ export const queue = {
 const stopped: Readonly<Record<string, string>> = {
   // The 409 names the fields that moved and never their values. The new time, once the card read again
   // carries it, and whom a job went to are named by whatStopped below.
-  superseded: "This job changed while the phone was offline.",
+  superseded: "Ops changed this job.",
   technician: "This job is someone else’s now.",
   time: "Ops moved this job to another time.",
-  status: "This job was cancelled while the phone was offline.",
+  status: "Ops cancelled this job.",
   out_of_order: "Steps arrived out of order. Open the job again.",
   not_today: "This job is on another day. Arrive and start it on the day.",
   too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
@@ -331,8 +355,10 @@ const stopped: Readonly<Record<string, string>> = {
  * recorded has none.
  */
 function movedTo(moved: Moved, now: Date): string {
-  // The prompt's example has a time on the day; the line without one, and the one with a day, are ours.
-  if (moved.at === null) return `Ops moved this job to ${moved.technician}.`;
+  // The prompt's example has a time on the day; the line without one, and the one with a day, are ours. A name that
+  // ends in a full stop, "Imran K.", ends the sentence itself.
+  if (moved.at === null)
+    return `Ops moved this job to ${moved.technician}${/[.!?]$/.test(moved.technician) ? "" : "."}`;
   const day = todayInIndia(new Date(moved.at));
   const time = clock(moved.at);
   if (day === todayInIndia(now)) return `Ops moved this job to ${moved.technician} at ${time}.`;
@@ -369,7 +395,7 @@ function startMoved(why: Why, startsNow: string | null): startsNow is string {
  * them; a job moved to another time names the new one once `startsNow`, the
  * start on the card the phone holds, differs; a cancellation is named first.
  */
-export function whatStopped(why: Why, now: Date = apiDate(), startsNow: string | null = null): string {
+function whatStoppedEn(why: Why, now: Date = apiDate(), startsNow: string | null = null): string {
   const field = why.fields.find((each) => stopped[each] !== undefined);
   const moved = why.moved ?? null;
   if (field === "technician" && moved !== null) return movedTo(moved, now);
@@ -382,37 +408,42 @@ export function whatStopped(why: Why, now: Date = apiDate(), startsNow: string |
  * A job ops cancelled, gave to another technician, or closed, while the phone held it: said once over the screen
  * showing. What was recorded stays in Pending uploads.
  */
-export const interrupted = {
+export const interrupted = localised({
+  /** Whose visit, as the prototype says it, where the phone knows the client; else the job by its time and kind. */
+  cancelledOf: (name: string) => `${name}’s visit was cancelled`,
   cancelled: (job: string) => `${job}: cancelled`,
+  closedOf: (name: string) => `${name}’s visit was closed`,
   closed: (job: string) => `${job}: closed`,
-  closedBody: "This visit was closed. What you recorded is kept on this phone, in Pending uploads.",
+  movedOf: (name: string, to: string) => `${name}’s visit moved to ${to}`,
   moved: (job: string, to: string) => `${job}: moved to ${to}`,
   /** From a push, which names no one: given to another technician, or called off. */
+  reassignedOf: (name: string) => `${name}’s visit was given to another technician`,
   reassigned: (job: string) => `${job}: given to another technician`,
-  reassignedBody: "Ops gave this visit to another technician.",
-  cancelledAlert: "Ops cancelled this visit.",
-  cancelledBody: "Ops cancelled this visit. What you recorded is kept on this phone, in Pending uploads.",
-  movedBody: (to: string) =>
-    `Ops gave this visit to ${to}. What you recorded is kept on this phone, in Pending uploads.`,
+  /** When ops did it, where the API says; and, where the phone recorded any of it, that it is kept. */
+  cancelledAt: (time: string | null) => (time === null ? "Ops cancelled this visit." : `Ops cancelled it at ${time}.`),
+  reassignedAt: (time: string | null) =>
+    time === null ? "Ops gave this visit to another technician." : `Ops reassigned it at ${time}.`,
+  closedBody: "This visit was closed.",
+  kept: "What you recorded is kept on this phone, in Pending uploads.",
   today: "Back to Today",
-} as const;
+} as const);
 
 /** The banner above every screen while a job's queue is stopped. */
-export const changed = {
+export const changed = localised({
   // The board draws what changed on the queue alone.
   line: (job: string, what: string) => `${job}: ${what}`,
   // A job the phone holds nothing of, not even its time.
   someJob: "A job",
   open: "See what is waiting",
-} as const;
+} as const);
 
 /** Each screen's name in the browser's title, after which the app's own. */
-export const titles = {
+export const titles = localised({
   app: "Mane Man technician",
   today: "Today",
   closeOut: "Closed out",
   of: (screen: string) => `${screen} · Mane Man technician`,
-} as const;
+} as const);
 
 /** When a locked card opens. One that opened while the screen was up says to open the job again. */
 function opensAt(unlocksAt: string, now: Date = apiDate()): string {
@@ -429,29 +460,36 @@ function lengthOf(minutes: number): string {
 }
 
 /** A client's record, which belongs to them and not the job (docs/decisions/0242-client-record.md). */
-export const clientRecord = {
+export const clientRecord = localised({
   alerts: "Before you start",
+  /** A task's run-in label for the client's alerts. */
+  alertLabel: "Client alert:",
   handoff: "Handoff",
   /** "Imran · 1 Sep" */
   handoffBy: (who: string | null, date: string) => (who === null ? date : `${who} · ${date}`),
   history: "Client history",
+  /** "5 visits since Jul", beneath the history's row. */
+  since: (count: number, month: string) => `${counted(count, "visit", "visits")} since ${month}`,
+  /** Beneath the handoff's photographs: which they are, and when. */
+  afterPhotos: (date: string) => `After photos, ${date}`,
   /** The history screen. */
   title: "Client history",
-  back: "Back to the job",
   none: "No earlier visits.",
   failed: "The client’s history didn’t load.",
   retry: "Try again",
-  /** "Service visit · 1 Sep" */
-  visit: (kind: string, date: string) => `${kind} · ${date}`,
+  /** The history's two heads, as the prototype has them. */
+  clientAlerts: "Client alerts",
+  visits: "Visits",
   results: { done: "Done", partial: "Partly done", no_show: "No-show", other: "Closed" },
+  /** Who did a visit the technician reading did. */
+  you: "You",
   /** "Imran · Done" */
   byAndResult: (who: string | null, result: string) => (who === null ? result : `${who} · ${result}`),
   photo: (angle: string) => `After, ${angle}`,
-  used: "Used",
-  piece: (label: string) => `Piece fitted: ${label}`,
-} as const;
+  piece: (label: string) => `Fitted ${label}`,
+} as const);
 
-export const job = {
+export const job = localised({
   back: "Back",
   /** "9:30 am · service · 1 h 30 min", and "Tomorrow · …" for a job on another day. */
   when: (parts: readonly string[]) => parts.join(" · "),
@@ -462,7 +500,11 @@ export const job = {
   map: {
     label: "Map with a pin at the client’s address",
     noPin: "No map pin for this address",
-    line: (drive: number | null) => (drive === null ? "Map" : `Map · ${String(drive)} min drive`),
+    /** "Map · 6.2 km, 18 min"; the minutes alone where the km are not known. */
+    line: (drive: number | null, km: number | null) => {
+      if (drive === null) return "Map";
+      return km === null ? `Map · ${String(drive)} min drive` : `Map · ${km.toFixed(1)} km, ${String(drive)} min`;
+    },
   },
   navigate: "Navigate",
   /** The way in, from the access notes: copied whole, for a gate's keypad. */
@@ -482,7 +524,6 @@ export const job = {
     minute: (minutes: number) => `${String(minutes)} min`,
     onTheWay: (minutes: number) => `On my way, ${String(minutes)} min`,
     late: (minutes: number) => `Running ${String(minutes)} min late`,
-    fromUs: "Sent on WhatsApp from Mane Man’s number.",
     sentAt: (time: string) => `Sent at ${time}`,
     /** "Sent: on my way, 20 min", under the actions. */
     sent: (what: string) => `Sent: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
@@ -497,7 +538,6 @@ export const job = {
   putRight: "Put it right",
   // The board draws no job's state on its card or its row.
   states: { inProgress: "In progress", closed: "Closed out", atTheDoor: "At the door" },
-  closedAs: (outcome: string) => `Closed out · ${outcome}`,
   notToday: {
     tomorrow: "This job is tomorrow. Arrive and start it on the day.",
     other: "This job isn’t today’s. Arrive and start it on its day.",
@@ -515,37 +555,35 @@ export const job = {
     pastTitle: "Details closed",
     past: "A visit’s client details close the day after it.",
   },
-  // The board draws the profile's rows inside the piece card; they are a section of their own.
+  // The client block, headed as the prototype heads it for each kind of visit.
   profileTitle: "Hair profile",
+  /** "Last visit 12 Oct", at the hair profile's head. */
+  lastVisitOn: (date: string) => `Last visit ${date}`,
+  fromConsultation: "From the consultation",
+  booking: {
+    title: "Booking",
+    bookedVia: "Booked via",
+    via: { app: "App", site: "Website", ops: "Ops" },
+    payment: "Payment",
+  },
+  // What the hair system step says of the piece paid for.
   piece: {
-    title: "The hair system",
-    // The board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
-    // The board draws no "Paid for" row, nor a warning when the hair profile names another product.
     mismatch: (inProfile: string) => `The hair profile says ${inProfile}. Check with ops before you fit.`,
     rows: {
       paidFor: "Paid for",
       // A fit paid by UPI at the visit: nothing is paid yet, and the technician never handles the money.
       bookedAs: "Booked as",
-      piece: "Hair system",
-      base: "Base",
-      lot: "Supplier lot",
-      fitted: "Fitted",
-      due: "Replacement due",
     },
-    none: "No hair system recorded for this client yet.",
-    lastVisit: (date: string, who: string | null) =>
-      who === null ? `Last visit’s after photo · ${date}` : `Last visit’s after photo · ${date} · ${who}`,
-    lastVisitImage: "Last visit’s after photo",
   },
   // The board draws no failure for a job's card.
   failed: "This job’s card didn’t load.",
   retry: "Try again",
   gone: "This job isn’t on your list.",
   backToToday: "Back to today",
-} as const;
+} as const);
 
 /** Checking in at the door, and the no-show's evidence while the client does not answer. */
-export const notHome = {
+export const notHome = localised({
   arrived: {
     // The radius is ops' to set, and a card kept by an earlier build has none.
     body: (radiusM: number | null) =>
@@ -568,10 +606,11 @@ export const notHome = {
   door: {
     title: "At the door",
     checkedIn: (who: string, time: string) => `${who} · checked in ${time}`,
+    /** Over the door just after a check-in that passed: "Checked in · 40 m away", or alone where none was measured. */
+    arrived: (distance: string | null) => (distance === null ? "Checked in" : `Checked in · ${distance} away`),
     waitingFor: (who: string) => `Waiting for ${who}`,
     of: (minutes: number) => `of ${String(minutes)} min`,
     booked: (time: string) => `Booked for ${time}`,
-    fromStart: (time: string) => `The wait starts at ${time}, the booked start.`,
     over: "The wait is over.",
     // The API counts the wait from when the check-in reaches it as well as from the tap (ADR 0065), so a no-show
     // cannot close before it has.
@@ -585,21 +624,25 @@ export const notHome = {
     noneSent: "Not sent",
     call: (who: string) => `Call ${who}`,
     callAction: "Call",
-    called: (time: string) => `Called ${time}`,
+    // The phone knows only that the call was made from here: one made at the door is one the client did not answer.
+    called: "Called · no answer",
     notCalled: "Not called",
     photo: "Photo of the door",
-    taken: "Taken",
+    /** "Taken 9:32 am" */
+    taken: (time: string) => `Taken ${time}`,
     notTaken: "Not taken",
     take: "Take",
-    retake: "Retake",
     note: "Note for ops (optional)",
     waitFirst: "Available when the wait ends",
     evidenceFirst: "Call and take the door photo first",
+    /** Beside Close as no-show once it can. */
+    ready: "The wait is over",
     close: "Close as no-show",
     theClient: "the client",
   },
   /** The single-shot camera for the door. */
   camera: {
+    title: "Door photo",
     prompt: "Door and flat number in the frame",
     shutter: "Take photo",
     cancel: "Cancel",
@@ -617,15 +660,10 @@ export const notHome = {
     yes: "Close as no-show",
     no: "Not yet",
   },
-  appears: {
-    title: "Client’s here",
-    atTheDoor: (who: string) => `${who} is at the door`,
-    body: "The timer stops. Nothing is charged.",
-  },
-} as const;
+} as const);
 
 /** The visit engine's screens and plan (docs/decisions/0244-the-visit-engine.md). */
-export const visit = {
+export const visit = localised({
   screens: {
     before_photos: "Before photos",
     service: "Service",
@@ -635,6 +673,7 @@ export const visit = {
     hair_system: "Hair system",
     consumables: "Consumables",
     after_photos: "After photos",
+    sign_off: "Client sign-off",
     outcome: "Outcome",
   },
   /** "Rohit M. · service visit", beneath a step's name. */
@@ -648,24 +687,34 @@ export const visit = {
   /** A guided task (./visit/tasks.ts): one a screen. */
   task: (at: number, total: number) => `Task ${String(at)} of ${String(total)}`,
   nextTask: "Next task",
-  reference: (what: string) => `Reference photo: ${what}`,
+  /** "Photo: solvent along the front edge": what the reference photograph shows, until there is one. */
+  reference: (what: string) => `Photo: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
   watchFor: "Watch for",
   taskDone: (title: string) => `Done: ${title}`,
   plan: {
+    /** The plan's list, as a screen reader hears it; the head names the client and the visit. */
     title: "Visit plan",
+    /** "Started 9:38 am", under the client and the visit. */
+    started: (time: string) => `Started ${time}`,
     done: (done: number, total: number) => `${String(done)} of ${String(total)} done`,
     finishBy: (time: string) => `Finish by ${time}`,
-    states: { done: "Done", now: "Now", todo: "To do" },
+    /** A step's line once done; before, what it is (../guides), or its tasks counted. */
+    stepDone: "Done",
+    tasks: (count: number) => counted(count, "task", "tasks"),
     needsFix: "Needs a fix",
-    open: (title: string) => `Open ${title}`,
-    /** A step ops sent back, and what they said to fix. */
-    sentBack: (title: string, reason: string) => `${title}: ${reason}`,
+    /** Over a step ops sent back, as the prototype words it: "Ops couldn’t accept consumables", then their reason. */
+    couldNotAccept: (step: string) => `Ops couldn’t accept ${step}`,
+    /** Opens the step under way. */
+    continue: "Continue",
   },
   /** Above a step ops sent back: what they said to fix, as they wrote it. */
   sentBack: (reason: string) => `Ops sent this back: ${reason}`,
-} as const;
+  /** The same at the head of the step, as the prototype words it: that ops refused it, their reason, and the way on. */
+  refused: "Ops couldn’t accept this step",
+  fixIt: (reason: string) => `${reason} Fix it and tap Next.`,
+} as const);
 
-export const capture = {
+export const capture = localised({
   back: "Back",
   before: "Before photos",
   after: "After photos",
@@ -673,12 +722,26 @@ export const capture = {
   /** Not drawn: what a screen reader calls a tile, a tap on which takes that angle again. */
   retakeAngle: (angle: string) => `Take ${angle} again`,
   take: "Take photo",
-  /** "3 of 5", beneath the step's name. */
+  /** "5 of 5", beneath the step's name once every angle is taken. */
   of: (taken: number) => `${String(taken)} of 5`,
+  /** "1 of 5 · front": the shot being taken, its angle in lower case as the prototype writes it. */
+  taking: (shot: number, angle: string) => `${String(shot)} of 5 · ${angle}`,
+  close: "Close",
   saved: "Saved on phone",
   /** Compare: the last visit's after photograph before the visit, this visit's before one after it. */
-  compareWith: { before: "Compare with last visit", after: "Compare with before" },
+  compareWith: { before: "Compare with last visit", after: "Compare with today’s before" },
+  /** "Compare with 12 Oct, Imran": the visit before photographs are set beside. */
+  compareWithVisit: (date: string, who: string | null) =>
+    who === null ? `Compare with ${date}` : `Compare with ${date}, ${who}`,
   compareImage: { before: (angle: string) => `Last visit, ${angle}`, after: (angle: string) => `Before, ${angle}` },
+  /** Over the photograph compared with, as the prototype labels it: "12 Oct, Imran K. · top", "today’s before · top". */
+  compared: (whose: string, angle: string) => `${whose} · ${angle}`,
+  /** Whose that photograph is, where the last visit's day is not known, and after the visit. */
+  comparedWith: { before: "last visit", after: "today’s before" },
+  /** The last visit, by its day and who did it: "12 Oct, Imran K." */
+  visitOf: (date: string, who: string | null) => (who === null ? date : `${date}, ${who}`),
+  /** Under the line, what the camera sees now. */
+  now: "Now",
   torch: "Torch",
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   // The board writes Top's guide alone; the other four are ours.
@@ -707,29 +770,30 @@ export const capture = {
       ? `The ${listed(angles)} photo wouldn’t upload. Take it again.`
       : `The ${listed(angles)} photos wouldn’t upload. Take them again.`,
   refusedSet: "We couldn’t record this set. Tap Done to send it again.",
-} as const;
+} as const);
 
 /** The six in-job steps (board B), and the hair profile no board draws, in the order the API runs them. */
-export const steps = {
+export const steps = localised({
   back: "Back",
   of: (done: number, total: number) => `${String(done)} of ${String(total)}`,
   place: (at: number, total: number) => `Step ${String(at)} of ${String(total)}`,
+  // Each step named as the plan names it (../visit/engine.ts), as the prototype heads them.
   titles: {
     before_photos: "Before photos",
-    checklist: "Service checklist",
-    consumables: "Consumables used",
-    piece: "The hair system",
+    checklist: "Service",
+    consumables: "Consumables",
+    piece: "Hair system",
     // No board draws the hair profile (ADR 0106).
     profile: "Hair profile",
     after_photos: "After photos",
     outcome: "Outcome",
   },
-  // The board titles a service visit's list; the other types' are named the same way.
+  // The guided tasks, as the plan names them: a service's, a fitting's, and a consultation's look at the scalp.
   checklistTitles: {
-    service: "Service checklist",
-    replacement: "Replacement checklist",
-    first_fit: "First fit checklist",
-    consultation: "Consultation checklist",
+    service: "Service",
+    replacement: "Fitting",
+    first_fit: "Fitting",
+    consultation: "Scalp and hairline",
   },
   // The board names no step but the one it draws.
   next: "Next",
@@ -737,11 +801,6 @@ export const steps = {
   corrected: {
     piece: "We couldn’t record the label you gave. Correct it and tap Next.",
     other: "We couldn’t record this step as it was. Correct it and tap Next.",
-  },
-  checklist: {
-    // The board's dim bar while the list is unfinished.
-    unfinished: "Finish the tasks to continue",
-    all: "Tick all: everything was done",
   },
   consumables: {
     less: (name: string, step: number, unit: string) =>
@@ -758,7 +817,7 @@ export const steps = {
       return over ? `${kit}. Ops will send more.` : kit;
     },
     // The board draws four steppers and no way to record a fifth consumable.
-    add: "Add a consumable",
+    add: "Add item",
     addOne: (name: string) => `Add ${name}`,
     none: "None used",
     // The console holds no consumables yet (docs/decisions/0087-consumables-and-stock.md).
@@ -775,54 +834,67 @@ export const steps = {
     },
   },
   piece: {
-    // A label is scanned by its QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
-    label: "The new hair system’s label",
-    // The board draws no way out of the fit; it closes as partly done, and ops book the refit.
+    // Scan-first, as the prototype draws it (docs/decisions/0270-the-design-checks-api-side.md): a label is read by its
+    // QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
+    scanTitle: "Scan the hair system",
+    expected: { chosen: "Chosen", newPiece: "New piece", spec: "Spec", replacing: "Replacing" },
+    /** "120% density", the last of the spec. */
+    density: (percent: number) => `${String(percent)}% density`,
+    pointAt: "Point at the label",
+    typeCode: "Type the code",
+    typedLabel: "Code on the label",
     cannotFit: {
       action: "Can’t fit today",
-      title: "Close without fitting?",
-      body: "The job closes as partly done, and ops book the refit with the right hair system.",
-      yes: "Close without fitting",
-      no: "Keep fitting",
+      title: "Can’t fit today",
+      why: "Why?",
+      body: "The visit closes as not fitted. Ops rebook it.",
+      close: "Close and tell ops",
+      /** Above the close while it waits for a reason, as a step's foot says what is missing. */
+      pickFirst: "Pick a reason",
+      dismiss: "Close",
     },
-    scan: "Scan the label",
-    stopScan: "Stop scanning",
-    camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
+    /**
+     * On a replacement whose piece came off before it was due: why, from the reasons ops keep, one tap and never asked
+     * for (docs/decisions/0273-why-a-hair-system-failed.md). Our words: the prototype draws no such line.
+     */
+    cameOffEarly: {
+      action: "Came off early? Say why",
+      title: "Why did it come off early?",
+      done: "Done",
+      dismiss: "Close",
+      /** The reason picked: "Came off early · Edges lifting". */
+      said: (reason: string) => `Came off early · ${reason}`,
+      change: "Change",
+    },
+    confirmed: {
+      profile: "Profile",
+      match: "Match",
+      kit: "Kit",
+      left: (count: number) => `${String(count)} left after this`,
+      rescan: "Rescan",
+    },
+    camera: { opening: "Opening the camera…", refused: "No camera. Type the code instead." },
     expired: "This hair system has expired. Hand it in and use another.",
     otherThanFitted: "Not the hair system this fit is for. Check with ops before you fit.",
     expiredAction: "That hair system has expired",
-    placeholder: "MM-ESS-0000123-K",
+    placeholder: "MM-ESS-0000000-X",
     // The board draws no label typed wrong.
     malformed: "Type it as on the label, like MM-ESS-0000123-K.",
-    checkFirst: "Check the label to continue",
+    checkFirst: "Scan or type the code to continue",
     /** A label is checked as soon as it reads; again only once there is signal (docs/prompts/tech-redesign.md). */
     checking: "Checking the label…",
     checkAgain: "Check again",
     unknown: "Not in your kit. Check the label, or close with Can’t fit today.",
     notInKitAction: "That label isn’t in your kit",
     uncheckedAction: "Waiting for the label check",
-    inKit: (name: string, lot: string | null) =>
-      lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`,
     // The board draws no lookup with no signal.
     offline: "No signal, so it isn’t checked. It’s saved as you typed it.",
     notThisClient: "That hair system isn’t this client’s.",
     notThisClientAction: "That hair system isn’t this client’s",
-    rows: { piece: "Hair system", base: "Base", lot: "Supplier lot" },
-    // The board draws the base as read, not typed; the pieces tab needs it and the lot (open point 28).
-    base: "Base",
-    lot: "Supplier lot",
-    pick: "Pick from the list",
-    // "Mono · fitted 2 Jul" beside a piece in the client's list.
+    // "MM-ESS-0000451-D · fitted 10 May": the piece a replacement takes off.
     listed: (code: string, fitted: string | null) => (fitted === null ? code : `${code} · fitted ${fitted}`),
-    // The board draws no piece coming off. The pieces tab keeps why it failed.
-    old: {
-      title: "The hair system that came off",
-      label: "The label of the hair system that came off",
-      reason: "Why it failed, if it did",
-    },
-    // The board draws no empty base; the piece may not be in the mirror yet.
-    unnamed: "Not recorded",
-    // The board draws no kit: the hair system fitted comes out of it (docs/decisions/0156-hair-systems-in-stock.md).
+    // The board draws no kit stock without labels: a hair system the kit took in before its pieces carried labels is
+    // picked from the kit, and the label on the piece typed (docs/decisions/0156-hair-systems-in-stock.md).
     kit: {
       title: "From your kit",
       held: (count: number) => `${String(count)} in kit`,
@@ -832,13 +904,25 @@ export const steps = {
   outcome: {
     /** What the close leaves on the client's record, for whoever takes their next visit. */
     nextNote: "Note for the next technician",
+    /** Under the note: where it shows. */
+    nextNoteWhere: "Shown on this client’s next job, whoever takes it.",
     alert: "Alert for every visit",
-    alertHint: "Read before every visit, until ops take it off.",
+    notePlaceholder: "What should the next technician know?",
+    result: "Result",
+    summary: "Summary",
+    client: "Client",
+    payment: "Payment",
+    photos: "Photos",
+    /** "10 · uploading": the visit's photographs, some still on the phone. */
+    uploading: (count: number) => `${String(count)} · uploading`,
+    /** "10 sent" */
+    photosSent: (count: number) => `${String(count)} sent`,
     /** A one visit closed as done texts the client the payment link. */
     sendLinkAndClose: "Send link and close",
-    // The board draws Done chosen already; nothing is chosen for the technician here.
-    choose: "Choose Done or Partly done",
-    pickReason: "Pick a reason to continue",
+    // The board draws Done chosen already; nothing is chosen for the technician here. What the dim Next waits on, as
+    // the prototype words it.
+    choose: "Pick a result",
+    pickReason: "Pick a reason",
     done: "Done",
     partial: "Partly done",
     // After a consultation: whether the client is going ahead with a fit, and why not (docs/decisions/0149-lost-reasons.md).
@@ -847,28 +931,37 @@ export const steps = {
     notNow: "Not now",
     /** The product the client picked on Options, which goes with a yes. */
     picked: (name: string) => `Their pick: ${name}.`,
-    why: "Why not?",
-    pickWhy: "Pick why to continue",
-    answerFirst: "Say if they’re going ahead",
+    /** The head over a choice's reasons, a partly done's or a not now's. */
+    reason: "Reason",
+    pickWhy: "Pick a reason",
+    answerFirst: "Pick yes or not now",
   },
-} as const;
+} as const);
 
 /** The close-out, once the outcome is taken. */
-export const closeOut = {
+export const closeOut = localised({
   /** The heading, by how the visit closed. */
   titles: { closed: "Visit closed", no_show: "Closed as no-show", not_fitted: "Closed, not fitted" },
   /** "Rohit M. · service visit · done", beneath the heading. */
   sub: (who: string, kind: string, result: string) => `${who} · ${kind} · ${result}`,
   outcomes: { done: "done", partial: "partly done", no_show: "no-show" },
   notFitted: "not fitted",
+  /** A fit closed with "Can't fit today": "Not fitted · Piece damaged", and what follows. */
+  result: "Result",
+  notFittedWhy: (why: string | null) => (why === null ? "Not fitted" : `Not fitted · ${why}`),
+  nextStep: "Next step",
+  opsRebook: "Ops rebook the fit",
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
   /** A one visit whose fit the client booked for another day. */
   fitToBook: "fit to book",
   duration: "Duration",
+  paymentRow: "Payment",
   why: "Why",
   fit: "Fit",
-  goingAhead: "Going ahead",
+  /** A consultation's yes, as the prototype writes it: "Mane Man Natural · ops to book"; ops book the fit. */
+  goingAhead: (product: string | null) => `${product ?? "Going ahead"} · ops to book`,
+  /** "Not now · the price": ops' reason, as it reads mid-line. */
   notNow: (why: string | null) => (why === null ? "Not now" : `Not now · ${why}`),
   // The board writes "1 h 22 m"; the phone times it from Start job (open point 60).
   length: (hours: number, minutes: number) => lengthOf(hours * 60 + minutes),
@@ -911,43 +1004,68 @@ export const closeOut = {
   next: {
     title: "Next",
     leaveBy: (time: string) => `Leave by ${time}`,
+    /** "25 min drive", after the next job's kind and place. */
+    drive: (minutes: number) => `${String(minutes)} min drive`,
     today: "Today",
+    /** After the day's last job: nothing more today, then tomorrow's first, "Tomorrow · 9:30 am". */
+    doneForToday: "Done for today",
+    tomorrow: (time: string) => `Tomorrow · ${time}`,
   },
+  /** The piece fitted at the visit, by its label. */
+  hairSystem: "Hair system",
   // The board draws the next job; the day ends without one.
   lastJob: "Back to today",
   // The evidence chain's close: the evidence summary, and what happens to it.
   noShow: {
     ops: "This goes to ops.",
     checkedIn: "Checked in",
-    distance: "Distance",
+    /** "9:27 am · 40 m away", or the time alone where nothing was measured. */
+    checkedInAt: (time: string, distance: string | null) => (distance === null ? time : `${time} · ${distance} away`),
+    waited: "Waited",
     whatsApp: "WhatsApp",
     delivered: (time: string) => `Delivered ${time}`,
     // The board draws the receipt delivered.
     notDelivered: "Sent, not delivered",
     noneSent: "None sent",
-    unmeasured: "Not measured",
+    call: "Call",
+    // A call from the door is one the client did not answer: had they, they would have come to it.
+    noAnswer: "No answer",
+    notCalled: "Not called",
+    doorPhoto: "Door photo",
+    /** "Taken 9:32 am"; "Taken" alone where the phone that took it is not this one. */
+    taken: (time: string | null) => (time === null ? "Taken" : `Taken ${time}`),
   },
   // The board draws no close-out opened before the job closed.
   notClosed: "This job isn’t closed yet.",
   backToJob: "Back to the job",
-} as const;
+} as const);
 
 /** The badge, and nothing else about money, anywhere in this app. */
-export const badges = {
+export const badges = localised({
   prepaid: "Prepaid",
   credit: "Free visit",
   free: "No charge",
   // No board draws a consultation and fit in one visit, paid for once the client is fitted.
   at_visit: "Pays at the visit",
-} as const;
+} as const);
 
 /** The badges in a line, after the visit's kind: "Service visit · prepaid". */
-export const badgesLower = {
+export const badgesLower = localised({
   prepaid: "prepaid",
   credit: "free visit",
   free: "no charge",
   at_visit: "pays at the visit",
-} as const satisfies Record<keyof typeof badges, string>;
+} as const satisfies Record<keyof typeof badges, string>);
+
+/** The discount code's refusals, by the code the API answers; any it sends, looked up. */
+const CODE_ERRORS: Readonly<Record<string, string>> = {
+  code_not_applicable: "That code doesn’t apply to this visit.",
+  already_discounted: "This visit already has a code.",
+  price_settled: "The payment link has gone, so the code can no longer change.",
+  rate_limited: "Too many codes tried. Try again tomorrow.",
+  offline: "You’re offline. Codes need signal.",
+  unknown: "That didn’t go through. Try again.",
+};
 
 /**
  * No board draws a consultation and fit in one visit
@@ -955,7 +1073,7 @@ export const badgesLower = {
  * at the piece step, before the checklist, or decides against it; closing the visit as done then texts them a payment
  * link, or ends it as a free consultation. Never an amount.
  */
-export const oneVisit = {
+export const oneVisit = localised({
   name: "Consultation and fit",
   nameLower: "consultation and fit",
   checklist: "Consultation and fit checklist",
@@ -1001,16 +1119,9 @@ export const oneVisit = {
     applied: (code: string) => `Code ${code} applied. The payment link will take it off.`,
     /** A code the client gave as they booked, or ops on the booking: there is no box to type another in. */
     appliedAtBooking: (code: string) => `Code ${code} applied at booking. The payment link will take it off.`,
-    errors: {
-      code_not_applicable: "That code doesn’t apply to this visit.",
-      already_discounted: "This visit already has a code.",
-      price_settled: "The payment link has gone, so the code can no longer change.",
-      rate_limited: "Too many codes tried. Try again tomorrow.",
-      offline: "You’re offline. Codes need signal.",
-      unknown: "That didn’t go through. Try again.",
-    } as Readonly<Record<string, string>>,
+    errors: CODE_ERRORS,
   },
-} as const;
+} as const);
 
 /** Words for every code of one of the fit spec's lists, as the API names them. */
 type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, string>;
@@ -1019,11 +1130,11 @@ type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, st
  * No board draws the client's hair profile. The codes are the
  * API's.
  */
-export const profile = {
+export const profile = localised({
   sections: {
     stage: "Norwood stage",
-    head: "Head (in)",
-    base: "Base (in)",
+    head: "Head, inches",
+    base: "Base, inches",
     colour: "Colour",
     grey: "Grey (%)",
     density: "Density",
@@ -1079,40 +1190,47 @@ export const profile = {
   checkFigure: (figure: string) => `${figure.replace(/ \(.*\)$/, "")} is out of range`,
   // The fit spec's second page: what the hair system is matched to.
   match: { title: "Colour and style" },
+  /** Each page's head, as the prototype draws them, the measure's with where the profile came from at its end. */
+  measureHead: "Measure",
+  matchHead: "Match",
+  newClient: "New client",
+  fromConsultation: (date: string) => `From consultation, ${date}`,
   history: {
     title: "History",
     remedies: "Remedies tried",
     year: "The transplant’s year",
     skin: "Skin conditions and allergies",
   },
-  // The card's rows from the profile: the board's Tier, as the hair system, Colour, Adhesive and Scalp, and the base's size.
+  // The card's rows from the profile, as the prototype names them.
   card: {
     tier: "Hair system",
-    baseSize: "Base size",
+    chose: "Chose",
+    norwood: "Norwood stage",
+    base: "Base",
     colour: "Colour",
-    adhesive: "Adhesive",
+    fixing: "Fixing",
     scalp: "Scalp",
     size: (width: number, length: number) => `${String(width)} × ${String(length)} in`,
-    shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} / ${String(grey)}% grey`),
+    shade: (colour: string, grey: number | null) => (grey === null ? colour : `${colour} · ${String(grey)}% grey`),
   },
-} as const;
+} as const);
 
-export const types = {
+export const types = localised({
   consultation: "Consultation",
   service: "Service visit",
   replacement: "Replacement",
   first_fit: "First fit",
-} as const;
+} as const);
 
 /** The job card writes the type in lower case, in its line: "9:30 am · service". */
-export const typesLower = {
+export const typesLower = localised({
   consultation: "consultation",
   service: "service visit",
   replacement: "replacement",
   first_fit: "first fit",
-} as const;
+} as const);
 
-export const session = {
+export const session = localised({
   // Neither file draws a revoked device.
   revoked: "This phone is no longer signed in. Ask ops, then sign in again.",
   // No board draws a technician ops switched off.
@@ -1120,13 +1238,13 @@ export const session = {
   workKept:
     "Your account is switched off. Unsent work stays on this phone for 7 days and sends once you’re switched back on and sign in.",
   checking: "Loading…",
-} as const;
+} as const);
 
 // The kit (docs/decisions/0164-the-kit-screen.md). No board draws it; every line is ours.
 /** Schedule: today and the six days after it, a day at a time down the hours; and a later job's preview. */
-export const schedule = {
+export const schedule = localised({
   title: "Schedule",
-  /** "12 Nov to 18 Nov · 12 jobs" */
+  /** "12 to 18 Nov · 12 jobs" */
   range: (from: string, to: string, jobs: number) => `${from} to ${to} · ${counted(jobs, "job", "jobs")}`,
   /** What a screen reader hears for a day in the strip: "Thursday 12 Nov, 4 jobs"; null for a day that did not load. */
   dayLabel: (weekday: string, date: string, jobs: number | null) => {
@@ -1138,6 +1256,8 @@ export const schedule = {
   noJobs: "–",
   /** "Thu, 12 Nov" */
   day: (weekday: string, date: string) => `${weekday}, ${date}`,
+  /** "Today, Thu 12 Nov": only today is named, as the prototype writes it; every other day as `day`. */
+  today: (weekday: string, date: string) => `Today, ${weekday} ${date}`,
   jobs: (count: number) => counted(count, "job", "jobs"),
   nothing: "Nothing booked",
   dayView: "The day, by the hour",
@@ -1159,15 +1279,14 @@ export const schedule = {
     locked: (unlocksAt: string) => `Name and address from ${timeAndDay(unlocksAt, apiDate())}.`,
     gone: "This job is no longer on your schedule.",
   },
-};
+});
 
 /**
  * Alerts, from Today's bell and from Me (./alerts/AlertsScreen.tsx): the inbox, newest first, and which kinds are sent.
  * Each alert's words in the inbox; on the lock screen, the worker's own (../sw/notice.ts).
  */
-export const alerts = {
+export const alerts = localised({
   title: "Alerts",
-  sub: "The last 7 days",
   /** The bell's name, with how many are new. */
   bell: (unread: number) => (unread === 0 ? "Alerts" : `Alerts, ${String(unread)} new`),
   none: "No alerts in the last 7 days.",
@@ -1222,12 +1341,11 @@ export const alerts = {
   earlier: (day: string, time: string) => `${day}, ${time}`,
   /** "tomorrow 4 pm": a job's time on the next day. */
   tomorrowAt: (time: string) => `tomorrow ${time}`,
-} as const;
+} as const);
 
 /** Guides, from Me: each kind of visit's steps, and each task read alone (./guides/GuidesScreen.tsx). */
-export const guides = {
+export const guides = localised({
   title: "Guides",
-  sub: "How each visit is done",
   kinds: "4 visit types",
   /** "6 steps" */
   steps: (count: number) => counted(count, "step", "steps"),
@@ -1238,33 +1356,60 @@ export const guides = {
     hair_profile: "Norwood stage, head and base",
     hair_system: "Scan the new piece",
     consumables: "Record what you used",
-    after_photos: "The same five shots",
+    after_photos: "Same 5 shots",
+    sign_off: "The client checks the fit and signs",
     outcome: "Result and close",
   },
+  /** A consultation's outcome, which asks whether the client goes ahead with a fit, and sends no link of its own. */
+  consultationOutcome: "Going ahead or not",
   /** "Service visit · Service", beneath a task's name. */
   where: (kind: string, step: string) => `${kind} · ${step}`,
   gone: "This task isn’t in the guide any more.",
   /** The way to a kind of visit's guide, from a later job's preview. */
   howDone: "How this visit is done",
-} as const;
+} as const);
+
+/** The client's sign-off of a fit (docs/decisions/0254-client-signs-off-the-fit.md), its step and the decline's sheet. */
+export const signOff = localised({
+  intro: "The client checks the hairline, the colour and blend, and that it feels secure, then signs in their app.",
+  ask: "Ask for sign-off",
+  askAgain: "Fixed. Ask again",
+  waiting: "Waiting for the client’s sign-off",
+  waitingLine: "They answer in the Mane Man app.",
+  flagged: "The client says something isn’t right",
+  /** "Signed off · 1:42 pm". */
+  signed: "Signed off",
+  /** "Closed without sign-off: Client in a hurry". */
+  declined: (reason: string) => `Closed without sign-off: ${reason}`,
+  declineOpen: "Client declined to sign",
+  unfinished: "Waiting for sign-off",
+  decline: {
+    title: "Client declined to sign",
+    why: "Why didn’t they sign?",
+    record: "Record and go on",
+    close: "Close",
+  },
+} as const);
 
 /** Ask ops to reschedule, from the job (./job/Reschedule.tsx). */
-export const reschedule = {
+export const reschedule = localised({
   open: "Ask ops to reschedule",
   why: "Why",
   reasons: { client_asked: "Client asked", running_late: "I’m running late", kit_problem: "Kit problem" },
+  /** The reason inside the note once asked, mid-sentence: "· client asked ·". */
+  reasonsAfter: { client_asked: "client asked", running_late: "running late", kit_problem: "kit problem" },
   send: "Send to ops",
   close: "Close",
   needsSignal: "Needs signal",
   failed: "That didn’t reach ops. Try again.",
   closed: "This visit is closed or called off.",
   gone: "This visit isn’t yours any more.",
-  /** "Reschedule asked 9:05 am · Client asked · ops will confirm with the client" */
+  /** "Reschedule asked 9:05 am · client asked · ops will confirm with the client" */
   asked: (time: string, reason: string) => `Reschedule asked ${time} · ${reason} · ops will confirm with the client`,
-} as const;
+} as const);
 
 /** Each kind of visit as Me's incentives name it (./me/Standing.tsx). */
-export const month = {
+export const month = localised({
   kinds: {
     consultation: "Consultations",
     one_visit: "Consultation and fit",
@@ -1273,10 +1418,10 @@ export const month = {
     replacement: "Replacements",
     no_show: "Not home",
   },
-};
+});
 
 /** A consultation's Options: each package and what it costs the client, and the looks they made with the try-on. */
-export const options = {
+export const options = localised({
   title: "Options",
   link: "Options and prices",
   back: "Back to the job",
@@ -1297,12 +1442,11 @@ export const options = {
   looksTitle: "Their looks",
   /** A look's description for a screen reader: "Look made 20 Sep". */
   look: (date: string) => `Look made ${date}`,
-};
+});
 
 /** The technician's asks for leave: a new one, and where each stands once ops decide it. */
-export const leave = {
+export const leave = localised({
   title: "Leave",
-  sub: "Days off, asked of ops",
   failed: "Your leave didn’t load.",
   retry: "Try again",
   askTitle: "Ask for leave",
@@ -1316,19 +1460,27 @@ export const leave = {
   askedTitle: "Your requests",
   none: "Nothing asked for.",
   states: { asked: "With ops", approved: "Approved", declined: "Declined" },
-  /** "26 Sep – 28 Sep", or "5 Oct" for one day. */
-  days: (from: string, to: string) => (from === to ? from : `${from} – ${to}`),
-};
+  /** "20 to 22 Nov", or "28 Nov to 4 Dec" across a month. */
+  days: (from: string, to: string) => `${from} to ${to}`,
+});
 
-export const kit = {
+export const kit = localised({
   title: "Kit",
+  /** "Updated 8:40 am": when the kit was last read. */
+  updated: (time: string) => `Updated ${time}`,
   failed: "Your kit didn’t load.",
   retry: "Try again",
   needsSignal: "Needs signal",
   notDone: "That didn’t go through. Try again.",
   forecast: {
     title: "Next 7 days",
+    /** "11 bookings": the visits the forecast is taken from. */
+    bookings: (count: number) => counted(count, "booking", "bookings"),
+    /** A product's pieces, as the forecast lists them: "Mane Man Essential pieces". */
+    pieces: (product: string) => `${product} pieces`,
     request: "Request what’s short",
+    /** "Request 6 shampoo sachets": the one thing short, named. */
+    requestOne: (what: string) => `Request ${what}`,
     /** "Requested 9:05 am · ops will add it to your next transfer" */
     requested: (time: string) => `Requested ${time} · ops will add it to your next transfer`,
     requestFailed: "That didn’t reach ops. Try again.",
@@ -1345,34 +1497,48 @@ export const kit = {
     title: "Arriving",
     /** "Mane Man Essential · 2 pieces" */
     line: (name: string, amount: string) => `${name} · ${amount}`,
-    /** "From Gurgaon stockroom · sent Mon 21 Sep" */
-    from: (place: string, sent: string) => `From ${place} · sent ${sent}`,
-    receive: "Receive all",
-    receiveScanned: (count: number) => `Receive ${String(count)} scanned`,
+    receive: "Receive",
+    /** "Sent 9 Nov" */
+    sent: (date: string) => `Sent ${date}`,
+    reportMissing: "Report missing",
+    /** Part of a hair system's pieces in hand, the rest still on the way. */
+    restToCome: (count: number) => `Receive ${String(count)} scanned · the rest to come`,
     scanned: (count: number, of: number) => `${String(count)} of ${String(of)} scanned`,
-    /** Asked before part of a top-up is received. */
-    rest: (count: number) => (count === 1 ? "The one not scanned is" : `The ${String(count)} not scanned are`),
-    stillToCome: "Still to come",
-    missing: "Missing",
     notOnIt: "That label isn’t on this transfer.",
     settled: "Already received or sent back.",
   },
-  scan: { label: "Scan or type each label", add: "Add", camera: "Scan", stop: "Stop scanning" },
+  scan: {
+    label: "Scan or type each label",
+    add: "Add",
+    camera: "Scan",
+    stop: "Stop scanning",
+    type: "Type it instead",
+  },
   held: {
     title: "In kit",
     none: "Your kit is empty.",
-    /** A count the kit's ledger has at nought or below: more was used than it held. */
-    out: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
-    expires: (date: string) => `Expires ${date}`,
+    /**
+     * A count the kit's ledger has at nought or below, more used than it held where it is below; and who knows, as low
+     * says it.
+     */
+    out: (short: string | null, coming: boolean) =>
+      `${short === null ? "Out" : `Out, ${short} short`} · ${coming ? "more on its way" : "ops notified"}`,
+    outUntilBack: (short: string | null) =>
+      `${short === null ? "Out" : `Out, ${short} short`} · hand back the expired stock and ops are told`,
+    /** Out, with ops' count not told of it: no stock to hand back, or a hair system, which that count does not watch. */
+    outAlone: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
+    /** A lot and when it expires, as the prototype writes it: "TS-2611 · expires 31 May 2027". */
+    expires: (lot: string, date: string) => `${lot} · expires ${date}`,
     /** A lot inside the days ops are warned before it expires. */
-    useFirst: (date: string) => `Use first · expires ${date}`,
+    useFirst: (lot: string, date: string) => `Use ${lot} first, expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
     recalled: "In a recall: not to be used",
     pieces: (count: number) => `${String(count)} labelled`,
     /** At or below the level ops keep a kit at: ops are alerted on their own, and send more. */
-    low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops told"),
+    low: (coming: boolean) => (coming ? "Low · more on its way" : "Low · ops notified"),
     /** Low only for stock that goes back: ops' count sees it until it does. */
     lowUntilBack: "Low · hand back the expired stock and ops are told",
+    lowAlone: "Low",
   },
   returned: {
     title: "Return to ops",
@@ -1382,4 +1548,11 @@ export const kit = {
   },
   expired: { handBack: "Hand back expired stock", word: "Expired", recalledWord: "Recalled" },
   handedBack: "Handed back. Ops receive it from you.",
-} as const;
+} as const);
+
+/** What stopped the visit, in the language now. */
+export const whatStopped = (why: Why, now: Date = apiDate(), startsNow: string | null = null): string =>
+  sayNow(whatStoppedEn(why, now, startsNow));
+
+/** Each language by its own name, never said in the other (./lang/Language.tsx). */
+export const languageNames = { en: "English", hi: "हिन्दी" } as const;

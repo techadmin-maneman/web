@@ -9,6 +9,7 @@ import * as techCopy from "../../apps/tech/src/content.ts";
 
 const copy = techCopy.clientRecord;
 const EARLIER = "22222222-2222-4222-8222-222222222299";
+const OLDER = "22222222-2222-4222-8222-222222222298";
 const PHOTO = "44444444-4444-4444-8444-444444444441";
 const ALERT = "55555555-5555-4555-8555-555555555551";
 
@@ -31,19 +32,27 @@ test("puts the client's alerts and the last technician's note on the card, and o
     date: "2026-09-01",
     photos: [{ angle: "front", url: `/api/tech/jobs/${JOB_ID}/history-photos/${PHOTO}` }],
   };
+  fake.clientVisits = { count: 5, first: "2026-07-05" };
   await page.goto(`/jobs/${JOB_ID}`);
 
   await expect(page.getByRole("heading", { level: 2, name: copy.alerts })).toBeVisible();
+  // The history's row says how many visits came before, and since when.
+  await expect(page.getByText(copy.since(5, "Jul"), { exact: true })).toBeVisible();
   await expect(page.getByRole("listitem").filter({ hasText: "Allergic to latex." })).toBeVisible();
   await expect(page.getByText("Edge lifting at the left temple.")).toBeVisible();
   await expect(page.getByText(copy.handoffBy("Imran", "1 Sep"))).toBeVisible();
   const photo = page.getByRole("img", { name: copy.photo("front") });
   await expect(photo).toBeVisible();
   expect(await photo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  // The tiles say whose they are: the last visit's after photos.
+  await expect(page.getByText(copy.afterPhotos("1 Sep"), { exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: copy.history }).click();
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}/history$`));
-  await expect(page.getByRole("heading", { name: copy.title })).toBeFocused();
+  // The client's name heads it, as the prototype draws it, with their visits counted beneath.
+  await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Rohit M.");
+  await expect(page.getByText(copy.since(5, "Jul"), { exact: true })).toBeVisible();
 });
 
 test("lists each earlier visit with who did it, how it closed, its note, photographs, what was used and the piece", async ({
@@ -65,11 +74,27 @@ test("lists each earlier visit with who did it, how it closed, its note, photogr
         date: "2026-09-01",
         type: "service",
         technician: "Imran",
+        yours: false,
         result: "done",
         note: "Edge lifting at the left temple.",
         photos: [{ angle: "front", url: `/api/tech/jobs/${JOB_ID}/history-photos/${PHOTO}` }],
-        consumables: [{ name: "Walker tape", quantity: 2 }],
+        consumables: [{ name: "Walker tape", quantity: 2, unit: null }],
         piece: "MM-0042",
+      },
+      {
+        id: OLDER,
+        date: "2026-08-01",
+        type: "service",
+        technician: "Sameer",
+        yours: true,
+        result: "done",
+        note: null,
+        photos: [],
+        consumables: [
+          { name: "Tape strips", quantity: 5, unit: "strip" },
+          { name: "Solvent", quantity: 10, unit: "ml" },
+        ],
+        piece: null,
       },
     ],
   };
@@ -81,12 +106,24 @@ test("lists each earlier visit with who did it, how it closed, its note, photogr
   const photo = page.getByRole("img", { name: copy.photo("front") });
   await expect(photo).toBeVisible();
   expect(await photo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
-  await expect(page.getByText(`${copy.used}: Walker tape × 2`)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: copy.clientAlerts })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: copy.visits })).toBeVisible();
+  await expect(page.getByText("Walker tape × 2", { exact: true })).toBeVisible();
+  // A visit of the technician's own is theirs, and what it used reads in the units the stock counts.
+  await expect(page.getByText(copy.byAndResult(copy.you, copy.results.done))).toBeVisible();
+  await expect(page.getByText("5 tape strips · 10 ml solvent", { exact: true })).toBeVisible();
   await expect(page.getByText(copy.piece("MM-0042"))).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("button", { name: copy.back }).click();
+  await page.getByRole("button", { name: techCopy.job.back }).click();
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
+});
+
+test("offers no history on the card of a client with no visit before", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
+  await expect(page.getByRole("link", { name: copy.history })).toHaveCount(0);
 });
 
 test("says when the client has no earlier visit", async ({ page }) => {

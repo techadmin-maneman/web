@@ -54,13 +54,13 @@ describe("the pay step’s promise", () => {
 });
 
 describe("the move sheet’s button", () => {
-  it("only picks a new date for a consultation inside the notice, which moves free", () => {
-    expect(moveButton({ cost: "free" })).toBe("Pick a new date");
+  it("only moves to another time for a consultation inside the notice, which moves free", () => {
+    expect(moveButton({ cost: "free" })).toBe("Move to another time");
   });
 
-  it("only picks a new date for a one visit inside the notice, whose payment carries over", () => {
+  it("only moves to another time for a one visit inside the notice, whose payment carries over", () => {
     const oneVisit = { ...MOVE, notice: "late", paid: 2900000 } as MoveTerms;
-    expect(moveButton(oneVisit)).toBe("Pick a new date");
+    expect(moveButton(oneVisit)).toBe("Move to another time");
   });
 
   it("accepts the charge where the move costs a late fee or the visit", () => {

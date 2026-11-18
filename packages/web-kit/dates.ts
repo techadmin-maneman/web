@@ -49,6 +49,9 @@ export const todayInIndia = (nowMs: number): string => new Date(nowMs + INDIA_OF
 /** India's month at `nowMs`, YYYY-MM. */
 export const monthInIndia = (nowMs: number): string => todayInIndia(nowMs).slice(0, 7);
 
+/** The hour in India, 0 to 23, as Home's greeting goes by it. */
+export const hourInIndia = (nowMs: number): number => new Date(nowMs + INDIA_OFFSET_MS).getUTCHours();
+
 /** India's year at `nowMs`. */
 export const yearInIndia = (nowMs: number): number => partsOf(todayInIndia(nowMs)).year;
 

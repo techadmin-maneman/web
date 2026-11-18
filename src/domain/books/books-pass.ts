@@ -6,10 +6,13 @@ import { failureReason, type Logger } from "../../log.ts";
 import type { BooksProvider } from "../../providers/books/index.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "../platform/alerts.ts";
 import type { BillAccounts } from "./books-bills.ts";
+import type { SettlementAccounts } from "./books-settlements.ts";
 import { tellFailure as tellPassFailure, FAILURES_BEFORE_ALERT } from "./vendor-pass.ts";
 
 export interface BooksSyncOptions {
   readonly refundAccountId: string | null;
+  /** Where Razorpay's settlements post; null until the bank's and the fee's accounts are set, when none is recorded. */
+  readonly settlementAccounts: SettlementAccounts | null;
   /** Where a receipt's bill posts; null until both accounts are set, when no bill is made. */
   readonly billAccounts: BillAccounts | null;
   readonly labelAsTest: boolean;
@@ -40,7 +43,17 @@ export interface Pass {
 // ---------------------------------------------------------------------------
 /** A record Books failed on, in the words its alert uses. */
 interface FailedRecord {
-  readonly kind: "customer" | "customer_update" | "payment" | "apply" | "refund" | "vendor" | "bill" | "credit";
+  readonly kind:
+    | "customer"
+    | "customer_update"
+    | "payment"
+    | "apply"
+    | "refund"
+    | "vendor"
+    | "bill"
+    | "credit"
+    | "settlement"
+    | "kept";
   readonly id: string;
   /** The client it is about; null for a supplier's vendor or a receipt's bill. */
   readonly personId: string | null;
@@ -60,6 +73,8 @@ const ID_FIELDS: Readonly<Record<FailedRecord["kind"], string>> = {
   vendor: "supplier_id",
   bill: "receipt_id",
   credit: "claim_id",
+  settlement: "settlement_id",
+  kept: "payment_id",
 };
 
 /**
@@ -68,6 +83,8 @@ const ID_FIELDS: Readonly<Record<FailedRecord["kind"], string>> = {
  */
 function linkOf(record: FailedRecord): string {
   if (record.kind === "vendor") return "/settings/suppliers";
+  // Razorpay's payout to the bank is the business's money, on Payments.
+  if (record.kind === "settlement") return "/payments";
   if (record.kind === "bill" || record.kind === "credit" || record.personId === null) return "/purchasing";
   const aboutTheCustomer = record.kind === "customer" || record.kind === "customer_update";
   return aboutTheCustomer ? `/clients/${record.personId}` : paymentsTab(record.personId);

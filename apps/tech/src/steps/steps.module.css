@@ -99,17 +99,19 @@
 
 /* ---- The piece --------------------------------------------------- */
 
+/* A group of a step's choices at the step's gutter, under its own head, with no rule between groups, as the prototype
+   draws them. */
 .field {
   display: flex;
   flex-direction: column;
-  padding: var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ui-line);
+  padding: var(--sp-16) var(--screen-gutter) 0;
 }
 
 .fieldTitle {
-  margin: 0 0 var(--sp-16);
+  margin: 0 0 var(--sp-12);
   font-size: var(--fs-15);
-  color: var(--ui-text-soft);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
 }
 
 .fieldLabel {
@@ -132,6 +134,14 @@
 
 .choiceList + .note {
   padding: var(--sp-16) 0 0;
+}
+
+/* A line under a group of radio rows, at the group's own edge. */
+.ruledNote {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
 }
 
 /* The label's field, typed though the board draws "Scan the piece": 64 px, all of it the input, edged in paper. */
@@ -174,22 +184,24 @@
   padding: 0 var(--sp-20) var(--sp-20);
 }
 
+/* A fact by its name, as the prototype draws the summary and the close: the name grey at the start, the value at the
+   end, both 15 px, in a 44 px ruled row. */
 .row {
   display: flex;
   gap: var(--sp-16);
   justify-content: space-between;
-  padding: var(--sp-16) 0;
+  padding: calc(var(--sp-12) - var(--hairline)) 0;
   border-bottom: var(--hairline) solid var(--ui-line);
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
 }
 
 .rowKey {
-  font-size: var(--fs-16);
   color: var(--ui-text-soft);
 }
 
 .rowValue {
   margin: 0;
-  font-size: var(--fs-17);
   font-variant-numeric: tabular-nums;
   text-align: right;
   color: var(--ui-text);
@@ -204,15 +216,30 @@
   padding: var(--sp-20);
 }
 
-/* Chosen: the board's heavier edge, in paper rather than its gold, which is Next's alone (ADR 0025, item 59). */
-
+/* A choice's reasons, as the prototype draws them: a small head, then chips sized to their words that wrap. */
 .reasons {
   display: flex;
   flex-direction: column;
   gap: var(--sp-8);
+  padding: var(--sp-16) var(--screen-gutter) 0;
+}
+
+.reasonHead {
   margin: 0;
-  padding: var(--sp-16) var(--sp-20) var(--sp-20);
-  border-top: var(--hairline) solid var(--ui-line);
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  color: var(--ui-text);
+}
+
+/* Compact chips sized to their words, at the prototype's 14 px, and the glove's height. */
+.chips {
+  --control-text: var(--fs-14);
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
 
@@ -256,8 +283,7 @@
 
 /* A full-width row inside the scrolling body draws its ring inside itself, so the body's edge never cuts it. */
 
-/* The choices and reasons are the shared ToggleButton; these place them: a choice the primary's height, a reason
-   across the column, a chip at least a stepper wide. */
+/* A choice is the shared ToggleButton at the primary's height, its words at the start. */
 .choice {
   display: flex;
   align-items: center;
@@ -265,21 +291,15 @@
   text-align: left;
 }
 
-/* A chosen option is filled in paper, so what it says beside its name takes the option's ink, not the note's. */
+/* A chosen option's words are in the full ink, and what it says beside its name with them, not in the note's grey. */
 .choice[aria-pressed="true"] .note {
   color: inherit;
 }
 
-/* The checklist's one tap for a visit where everything was done. */
-.tickAll {
-  margin: var(--sp-16) var(--sp-20) 0;
-}
-
-/* A guided task (./Checklist.tsx): the client's alerts above, then how far through, its title, where its reference
-   photograph goes, the numbered instructions, and what to watch for in a ruled block. */
+/* A guided task (./Checklist.tsx): how far through, its title, the client's alerts, where its reference photograph
+   goes, the instructions each numbered on a ruled row, and what to watch for in a ruled block. */
 .alerts {
-  margin: var(--sp-16) var(--screen-gutter) 0;
-  width: auto;
+  margin-top: var(--sp-16);
 }
 
 .task {
@@ -302,7 +322,7 @@
 .reference {
   display: flex;
   align-items: flex-end;
-  min-height: calc(var(--sp-64) * 2);
+  min-height: calc(var(--sp-64) * 2 + var(--sp-40));
   margin-top: var(--sp-16);
   padding: var(--sp-12);
   background: var(--placeholder);
@@ -312,9 +332,30 @@
 
 .how {
   margin: var(--sp-16) 0 0;
-  padding-left: var(--sp-24);
+  padding: 0;
+  list-style: none;
+  counter-reset: how;
   font-size: var(--fs-16);
-  line-height: var(--lh-160);
+  line-height: var(--lh-145);
+}
+
+/* Each instruction on its own row, its number in a column of its own, a rule beneath. */
+.how > li {
+  display: grid;
+  grid-template-columns: var(--sp-24) minmax(0, 1fr);
+  column-gap: var(--sp-8);
+  padding: var(--sp-12) 0;
+  border-bottom: var(--hairline) solid var(--ui-line);
+  counter-increment: how;
+}
+
+.how > li::before {
+  content: counter(how);
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: calc(var(--fs-16) * 1.45);
+  color: var(--ui-text);
 }
 
 .watch {
@@ -333,11 +374,4 @@
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-15);
   line-height: var(--lh-145);
-}
-
-/* The task's Done, a full-width row like every list's: it takes back the gutter the task sits in. */
-.taskDone {
-  margin: var(--sp-16) calc(-1 * var(--screen-gutter)) 0;
-  padding: 0;
-  list-style: none;
 }

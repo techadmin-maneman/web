@@ -19,17 +19,30 @@ type RemedyNew = Sent<paths["/api/clients/{id}/remedies"]["post"]>;
 export type CareNumbers = Success<paths["/api/care-numbers"]["get"]>;
 export type CarePeriod = NonNullable<NonNullable<paths["/api/care-numbers"]["get"]["parameters"]["query"]>["days"]>;
 export type CareMember = Success<paths["/api/care-team"]["get"]>["team"][number];
+export type ReportPhoto = Success<paths["/api/conversations/{id}/report-photos"]["get"]>["photos"][number];
 
 export const careApi = {
   conversations: (view: ConversationView, search: string, cursor?: string) =>
     client.get("/api/conversations", { query: { view, ...(search === "" ? {} : { search }), cursor } }),
   conversation: (id: string) => client.get("/api/conversations/{id}", { path: { id } }),
+  /** The photographs the client sent with their reports, listed; each is read on its own, its viewing logged. */
+  reportPhotos: (id: string) => client.get("/api/conversations/{id}/report-photos", { path: { id } }),
+  reportPhoto: (id: string, reportId: string, n: number) =>
+    client.request<Blob>(
+      "GET",
+      `/api/conversations/${encodeURIComponent(id)}/report-photos/${encodeURIComponent(reportId)}/${String(n)}`,
+      { file: true },
+    ),
   replyChat: (id: string, text: string) =>
     client.post("/api/conversations/{id}/replies", { path: { id }, body: { text } }),
   noteChat: (id: string, text: string) =>
     client.post("/api/conversations/{id}/notes", { path: { id }, body: { text } }),
-  closeChat: (id: string, reason: CloseReason) =>
-    client.post("/api/conversations/{id}/close", { path: { id }, body: { reason } }),
+  /** Closed with what it was about, and, where the client's hair system was at fault, why it failed (ADR 0273). */
+  closeChat: (id: string, reason: CloseReason, failure: string | null = null) =>
+    client.post("/api/conversations/{id}/close", {
+      path: { id },
+      body: failure === null ? { reason } : { reason, failure_reason: failure },
+    }),
   careTeam: () => client.get("/api/care-team"),
   moveCarePerson: (personId: string, email: string) =>
     client.post("/api/clients/{id}/care-person", { path: { id: personId }, body: { email } }),

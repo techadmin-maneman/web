@@ -12,7 +12,7 @@
     width: 100%;
     min-height: var(--tap-row);
     padding: 0 var(--sp-16);
-    border: var(--hairline) solid var(--paper-control);
+    border: var(--hairline) solid var(--choice-edge);
     background: var(--white);
     font: inherit;
     color: var(--text);
@@ -39,7 +39,7 @@
   .filled:has(.radio:checked) {
     border-color: var(--ink);
     background: var(--ink);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .filled:has(.radio:checked) .note {
@@ -68,7 +68,47 @@
 
   .picture:has(.radio:checked) {
     border-color: var(--ink);
+    box-shadow: inset 0 0 0 var(--hairline) var(--ink);
     color: var(--text);
+  }
+
+  .round {
+    justify-content: flex-start;
+    gap: calc(var(--sp-12) + var(--sp-2));
+    padding: var(--sp-16);
+    border-color: var(--ui-line);
+    background: var(--ui-box);
+    color: var(--ui-text);
+    font-weight: var(--weight-medium);
+  }
+
+  .round:has(.radio:checked) {
+    border-color: var(--ui-strong);
+    box-shadow: inset 0 0 0 var(--hairline) var(--ui-strong);
+  }
+
+  /* A round's edge is a control's, 3:1 on its ground (WCAG 1.4.11); chosen, it takes the strong ink and a dot. */
+  .dot {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--radio-size);
+    height: var(--radio-size);
+    border: var(--rule-strong) solid var(--ui-line-control);
+    border-radius: 50%;
+  }
+
+  .round:has(.radio:checked) .dot {
+    border-color: var(--ui-strong);
+  }
+
+  .round:has(.radio:checked) .dot::after {
+    content: "";
+    width: 50%;
+    height: 50%;
+    border-radius: 50%;
+    background: var(--ui-strong);
   }
 
   .onInk {
@@ -78,14 +118,14 @@
   }
 
   .onInk:has(.radio:checked) {
-    border-color: var(--paper);
+    border-color: var(--on-ink);
     background: var(--ink);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .card:has(.radio:disabled) {
-    border-color: var(--paper-shade);
-    background: var(--paper-shade);
+    border-color: var(--choice-off);
+    background: var(--choice-off);
     color: var(--text-muted);
     cursor: default;
   }
@@ -101,12 +141,12 @@
     justify-content: center;
     width: var(--sp-20);
     height: var(--sp-20);
-    border: var(--hairline) solid var(--paper-control);
+    border: var(--hairline) solid var(--choice-edge);
   }
 
   .boxOn {
     border-color: var(--ink);
     background: var(--ink);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 }

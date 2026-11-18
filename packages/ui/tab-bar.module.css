@@ -86,9 +86,11 @@
     text-align: center;
   }
 
+  /* An app may box the count, as the client app does in its navy. */
   .count {
-    background: var(--nav-ground);
-    color: var(--nav-label);
+    background: var(--nav-count-ground);
+    color: var(--nav-count-text);
+    font-weight: var(--nav-count-weight);
   }
 
   .urgent {

@@ -196,7 +196,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   // The page watches the render until it is ready; a status that gives no look shows none.
   await page.clock.runFor(10_000);
   expect(named(seen, "result")).toHaveLength(0);
-  await expect(page.locator("[data-screen] img")).toHaveCount(0);
+  await expect(page.getByRole("img", { name: siteCopy.tryOn.sent.ready.lookAlt })).toHaveCount(0);
 
   for (const request of seen) {
     expect(request.url()).not.toContain("Test");
@@ -311,7 +311,7 @@ test("a visitor whose look is no longer kept is told on arrival that it was sent
   const seen = await mockApi(page, { look: OWN_LOOK });
   await visit(page, "/try");
   await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
-  await expect(page.locator("[data-screen] img")).toHaveCount(0);
+  await expect(page.getByRole("img", { name: siteCopy.tryOn.sent.ready.lookAlt })).toHaveCount(0);
   expect(named(seen, "uploadUrl")).toHaveLength(0);
   expect(named(seen, "result")).toHaveLength(0);
   expect((await analyticsEvents(page)).map(([name]) => name)).toEqual([]);

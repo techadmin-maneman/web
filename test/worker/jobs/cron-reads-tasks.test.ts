@@ -236,6 +236,7 @@ describe("a look at the Tasks board or the Stock page", () => {
 
   /** ?3 days before NOW, as the mirror keeps a visit's start. */
   const ITEM_DAY = `strftime('%Y-%m-%dT%H:%M:%fZ', '${NOW.toISOString()}', '-' || (400 - ?4 * 10) || ' days')`;
+  const FITTED_DAY = `strftime('%Y-%m-%dT%H:%M:%fZ', '${NOW.toISOString()}', '-' || (600 - ?4 * 10) || ' days')`;
 
   /**
    * Each client's history item numbered ?4, all of it dealt with: a replacement visit, left partly done and
@@ -247,9 +248,10 @@ describe("a look at the Tasks board or the Stock page", () => {
        fsm_modified_at, synced_at)
      SELECT 'done-' || i || '-' || ?4, 'fsm-done-' || i || '-' || ?4, 'kept-' || i, 'replacement', ${ITEM_DAY},
        ${ITEM_DAY}, 'completed', 'Completed', '${AGO}', '${AGO}' FROM n`,
+    // Fitted 200 days before the replacement that replaced it, as a piece always is before its replacement.
     `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
      SELECT 'piece-' || i || '-' || ?4, 'fsm-piece-' || i || '-' || ?4, 'kept-' || i, 'MM-' || i || '-' || ?4,
-       '${AGO}', ${ITEM_DAY}, '${AGO}' FROM n`,
+       ${FITTED_DAY}, ${ITEM_DAY}, '${AGO}' FROM n`,
     `INSERT INTO visit_outcomes (id, appointment_id, outcome, partial_reason, updated_at)
      SELECT 'part-' || i || '-' || ?4, 'done-' || i || '-' || ?4, 'partial', 'time', '${AGO}' FROM n`,
     `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, write_state,

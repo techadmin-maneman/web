@@ -1,16 +1,27 @@
 /* What ./Looks.tsx alone draws; what it shares is in ./TryOn.module.css. */
+
+/* Two looks to a row on a phone, three on a laptop's column. */
 .lookGrid {
-  margin-top: var(--space-s);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(46%, var(--look-min)), 1fr));
-  gap: var(--sp-16);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--sp-8) + var(--sp-2));
+  margin-top: var(--sp-16);
 }
+
+@media (min-width: 1024px) {
+  .lookGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-8);
+  }
+}
+
 .thumb {
-  aspect-ratio: 4 / 3;
   display: block;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: var(--ink-frame);
+  background: var(--site-band);
 }
+
 .thumbImage {
   display: block;
   width: 100%;
@@ -19,18 +30,24 @@
   /* The square picture in a 4:3 frame, from near its top: the whole hairstyle, which is the point, to the chin. */
   object-position: 50% 20%;
 }
+
 .lookText {
   display: block;
-  padding: var(--sp-12) var(--sp-16) var(--sp-16);
+  min-height: var(--btn-lg);
+  padding: var(--sp-12);
 }
+
 .lookName {
   display: block;
   font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+  color: var(--site-text);
 }
+
 .lookDetail {
   display: block;
+  margin-top: var(--sp-2);
   font-size: var(--fs-13);
-  color: var(--ink-muted);
-  margin-top: var(--sp-4);
   line-height: var(--lh-145);
+  color: var(--site-text-muted);
 }

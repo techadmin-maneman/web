@@ -5,23 +5,23 @@ import Site from "../layouts/Site.astro";
 ---
 
 <Site title={pageTitles.notFound} noindex>
-  <section class="page">
-    <h1 class="section-title">{notFound.title}</h1>
-    <p class="lead">{notFound.body}</p>
-    <a class={buttonLook({ variant: "primary", size: "action" })} href="/">
+  <section class="text-page short">
+    <h1 class="page-title">{notFound.title}</h1>
+    <p class="page-lede">{notFound.body}</p>
+    <a class={buttonLook({ variant: "primary", size: "action", className: "home" })} href="/">
       {notFound.home}
     </a>
   </section>
 </Site>
 
 <style>
-  .page {
-    max-width: var(--page-max);
-    margin: 0 auto;
-    padding: var(--page-pad-top) var(--gutter) var(--section-gap);
-    min-height: calc(100dvh - var(--header-h));
+  .home {
+    margin-top: var(--sp-28);
   }
-  .lead {
-    margin: var(--sp-24) 0 var(--sp-32);
+  /* Across a phone; on a laptop, as wide as its words. */
+  @media (min-width: 761px) {
+    .home {
+      width: fit-content;
+    }
   }
 </style>

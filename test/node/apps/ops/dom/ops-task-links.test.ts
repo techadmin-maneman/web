@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { Task } from "../../../../../apps/ops/src/api.ts";
 import { CLIENT_TABS } from "../../../../../apps/ops/src/route.ts";
 import { decidedAt, taskClientPath, taskTabOf } from "../../../../../apps/ops/src/lib/task-links.ts";
+import { subOf } from "../../../../../apps/ops/src/tasks/task-subs.ts";
 import { TASK_GROUPS } from "../../../../../src/policy/tasks.ts";
 
 const CLIENT = "22000000-0000-4000-8000-000000000001";
@@ -31,6 +32,7 @@ describe("where a task leads", () => {
     expect(taskClientPath("first_fit_to_book", CLIENT)).toBe(`/clients/${CLIENT}/visits`);
     expect(taskClientPath("referral_review", CLIENT)).toBe(`/clients/${CLIENT}/visits`);
     expect(taskClientPath("replacement_order", CLIENT)).toBe(`/clients/${CLIENT}/pieces`);
+    expect(taskClientPath("made_to_order_ask", CLIENT)).toBe(`/clients/${CLIENT}/pieces`);
     expect(taskClientPath("payment_owed", CLIENT)).toBe(`/clients/${CLIENT}/payments`);
     expect(taskClientPath("grievance", CLIENT)).toBe(`/clients/${CLIENT}/consents`);
   });
@@ -40,5 +42,46 @@ describe("where a task leads", () => {
       "/number-changes#change-94000000-0000-4000-8000-000000000001",
     );
     expect(decidedAt("replacement_order", task("91000000-0000-4000-8000-000000000001"))).toBeNull();
+  });
+});
+
+describe("a fit guarantee claim (docs/decisions/0259-the-issue-log.md)", () => {
+  const CHAT = "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e";
+  const claim = (conversation: string | null, signOff: "signed" | null, photos: number): Task => ({
+    ...task("c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f"),
+    facts: {
+      group: "fit_guarantee_claim",
+      reference: "MM-ISS-0002",
+      fitted_on: "2027-09-18",
+      sign_off: signOff,
+      conversation_id: conversation,
+      photos,
+      references: ["MM-ISS-0002"],
+    },
+  });
+
+  it("leads to the client's chat, and nowhere while they have none", () => {
+    expect(decidedAt("fit_guarantee_claim", claim(CHAT, "signed", 2))).toBe(`/messages#chat-${CHAT}`);
+    expect(decidedAt("fit_guarantee_claim", claim(null, "signed", 2))).toBeNull();
+  });
+
+  it("reads its reference, the fit's day, where the sign-off stood and the photographs sent", () => {
+    const now = new Date("2027-09-22T05:00:00.000Z");
+    expect(subOf(claim(CHAT, "signed", 2), now)).toBe("MM-ISS-0002 · fitted Sat 18 Sep · signed off · 2 photos");
+    expect(subOf(claim(CHAT, null, 1), now)).toBe("MM-ISS-0002 · fitted Sat 18 Sep · no sign-off · 1 photo");
+    expect(subOf(claim(CHAT, null, 0), now)).toBe("MM-ISS-0002 · fitted Sat 18 Sep · no sign-off");
+  });
+});
+
+describe("a low rating's task", () => {
+  const low = (technician: string): Task => ({
+    ...task("d4e5f6a7-b8c9-4d0e-8f1a-2b3c4d5e6f70"),
+    facts: { group: "low_rating", kind: "service", stars: 2, technician, visited_on: "2027-09-20" },
+  });
+
+  it("reads the stars, the visit and its day, and whose job it was", () => {
+    const now = new Date("2027-09-22T05:00:00.000Z");
+    expect(subOf(low("Imran Qureshi"), now)).toBe("2 of 5 stars · Service visit Mon 20 Sep · Imran Qureshi");
+    expect(subOf(low(""), now)).toBe("2 of 5 stars · Service visit Mon 20 Sep");
   });
 });

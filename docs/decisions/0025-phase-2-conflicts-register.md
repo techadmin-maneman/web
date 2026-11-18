@@ -336,6 +336,8 @@ Asked on the same day about a separate consent to the history, **the owner ruled
      - `--skeleton-label` and `--skeleton-card`, 120 and 150 px: the loading state's two blocks.
      - `--tracking-number`, 0.04 em: a mobile number spaced for reading.
      - `--tech-row`, 88 px, and `--tech-time`, 76 px: the technician board's job row, and its time column, which holds "12:30 pm" on one line.
+     - `--tech-time-today`, 4.6 em: the redesign prototype's 68 px time column on Today at its 15 px, in em so it grows with a technician's larger text size rather than break a time over two lines.
+     - `--tech-reach-ops`, 10 em: the narrowest Call ops and WhatsApp ops stand side by side with "WhatsApp ops" on one line, as the prototype draws them at 390 px; in em, so with larger text, or at 360 px, they stand one above the other rather than break a label.
 
 A new size starts as a scale token; one that cannot is added to this list and the test's together.
 

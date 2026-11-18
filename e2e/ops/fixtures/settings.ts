@@ -299,7 +299,12 @@ const service = (fields: {
   offered: fields.retired_date === undefined || fields.retired_date === null || fields.retired_date > "2027-09-21",
   updated_by: "ops@maneman.in",
   updated_at: "2027-09-01T06:00:00.000Z",
-  prices: fields.prices.map((price) => ({ item: fields.kind, tier: fields.tier, ...price })),
+  prices: fields.prices.map((price) => ({
+    item: fields.kind,
+    tier: fields.tier,
+    amount: Math.round((price.amount_ex_gst * (100 + price.gst_percent)) / 100),
+    ...price,
+  })),
 });
 
 export const SERVICES = {
@@ -371,6 +376,7 @@ export const SERVICES = {
           item: "late_fee_first_fit" as const,
           tier: "standard",
           amount_ex_gst: 400_000,
+          amount: 400_000,
           gst_percent: 0,
           valid_from: "2026-09-22",
           in_force: true,
@@ -385,6 +391,7 @@ export const SERVICES = {
           item: "late_fee_replacement" as const,
           tier: "standard",
           amount_ex_gst: 300_000,
+          amount: 300_000,
           gst_percent: 0,
           valid_from: "2026-09-22",
           in_force: true,
@@ -395,7 +402,7 @@ export const SERVICES = {
   min_minutes: 30,
   max_minutes: 360,
   max_description: 160,
-  max_amount_ex_gst: 100_000_000,
+  max_amount: 100_000_000,
   max_gst_percent: 28,
 } satisfies OpsReply<"/api/services">;
 
@@ -449,6 +456,7 @@ const priceRow = (item: string, tier: string, amountExGst: number, validFrom: st
   item: item as PriceRow["item"],
   tier,
   amount_ex_gst: amountExGst,
+  amount: amountExGst,
   gst_percent: 0,
   valid_from: validFrom,
   in_force: inForce,
@@ -528,6 +536,6 @@ export const PACKAGES = {
   min_after_months: 1,
   max_after_months: 36,
   max_description: 160,
-  max_amount_ex_gst: 100_000_000,
+  max_amount: 100_000_000,
   max_gst_percent: 28,
 } satisfies OpsReply<"/api/packages">;

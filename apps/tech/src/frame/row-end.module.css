@@ -1,0 +1,11 @@
+/* A one-line row's end (./RowEnd.tsx): its value, then the chevron, 12 px apart, as the prototype's Account list. */
+
+.end {
+  display: inline-flex;
+  gap: var(--sp-12);
+  align-items: center;
+}
+
+.value {
+  font-size: var(--fs-14);
+}

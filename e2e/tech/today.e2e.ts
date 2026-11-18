@@ -4,9 +4,9 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { card, JOB_ID, NOTHING_DONE, ROHITS_PIECE, SECOND_JOB_ID, todayInIndia } from "./fixtures.ts";
+import { card, JOB_ID, jobsToday, NOTHING_DONE, ROHITS_PIECE, SECOND_JOB_ID, todayInIndia } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { keptOnPhone, leftOnPhone } from "./on-phone.ts";
+import { keptOnPhone, leftOnPhone, queuedOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 /** The rest of the day, under Later today. */
@@ -38,7 +38,7 @@ test("puts the next job first with the way there, then the rest of the day, with
   );
   // Message and Call, once the card the phone keeps names the client's number.
   await expect(next.getByRole("link", { name: techCopy.today.call("Rohit") })).toHaveAttribute("href", /^tel:/);
-  await expect(next.getByRole("link", { name: techCopy.today.message("Rohit") })).toBeVisible();
+  await expect(next.getByRole("button", { name: techCopy.today.message("Rohit") })).toBeVisible();
 
   // The rest of the day: each with its drive and when to leave, the locked one by its kind.
   const rows = laterRows(page);
@@ -66,12 +66,16 @@ test("a job closed out on another phone is done with on Today, and the next is t
   };
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1, name: "2 jobs today" })).toBeVisible();
+  // Once one has closed, the title counts those left, as the prototype words it.
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.today.left(2) })).toBeVisible();
   await expect(nextJob(page)).toContainText("Vikram S.");
+  // A row done with: its time over how it closed, and its visit with it, with no drive.
   const closed = laterRows(page).first();
   await expect(closed).toContainText(techCopy.today.closed.partial);
+  await expect(closed).toContainText(`Service visit · ${techCopy.today.closedAfter.partial}`);
+  await expect(closed).not.toContainText("min drive");
   await closed.click();
-  await expect(page.getByText("Closed out · partly done")).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.job.viewSummary })).toBeVisible();
 });
 
 test("says when a job under way runs into the next", async ({ page }) => {
@@ -82,6 +86,24 @@ test("says when a job under way runs into the next", async ({ page }) => {
   await page.goto("/");
   await expect(nextJob(page)).toContainText(techCopy.today.next.inProgress);
   await expect(nextJob(page)).toContainText(techCopy.today.runsOver("11 am", "11:30 am"));
+});
+
+test("says there are no more jobs under the title once every job has closed, the list headed Today", async ({
+  page,
+}) => {
+  await fakeTech(page);
+  const today = todayInIndia();
+  const closed = jobsToday(today).map((job) => ({ ...job, status: "completed" as const }));
+  // Registered after the fake, so it answers first: today's three jobs, each closed.
+  await page.route(
+    (url) => url.pathname === "/api/tech/jobs" && url.searchParams.get("date") === today,
+    (route) => route.fulfill({ json: { date: today, jobs: closed, sent_back: [] } }),
+  );
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.today.allDone })).toBeVisible();
+  await expect(page.getByText(techCopy.today.noMore, { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: techCopy.today.title, exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: techCopy.today.later, exact: true })).toHaveCount(0);
 });
 
 test("says there are no jobs when the day is empty", async ({ page }) => {
@@ -171,7 +193,7 @@ test("opens a job’s card with its address, access notes and the way in (board 
   await page.getByText("Rohit M.").first().click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
-  await expect(page.getByText("9:30–10 am · service")).toBeVisible();
+  await expect(page.getByText("9:30 to 10 am · service")).toBeVisible();
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("Gate code 4417 · visitor bay B")).toBeVisible();
   // A Maps URL now, not `geo:`, which an iPhone ignores (ADR 0054; e2e/tech/job.e2e.ts).
@@ -256,7 +278,9 @@ test("every target on every screen is at least the design’s 48 px, and the pri
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     for (const target of await page.locator("button, a[href], input").all()) {
       if (!(await target.isVisible())) continue;
-      const each = await target.boundingBox();
+      // A radio's tap is its whole labelled row, as the result's rows on the outcome are.
+      const radio = (await target.getAttribute("type")) === "radio";
+      const each = await (radio ? target.locator("xpath=..") : target).boundingBox();
       const name = `${screen}: ${(await target.textContent()) ?? ""}${(await target.getAttribute("aria-label")) ?? ""}`;
       expect(each?.height ?? 0, name).toBeGreaterThanOrEqual(48);
       expect(each?.width ?? 0, name).toBeGreaterThanOrEqual(48);
@@ -293,4 +317,69 @@ test("counts down to leaving while Today stays open", async ({ page }) => {
   await expect(nextJob(page)).toContainText(techCopy.today.next.leaveIn(12));
   await page.clock.fastForward("02:00");
   await expect(nextJob(page)).toContainText(techCopy.today.next.leaveIn(10));
+});
+
+/** The boxes in the rest of the day's rows that cut short what runs past them, by what they hold that they cut. */
+const clipped = (page: Page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('section[aria-labelledby="today-later"] li *')]
+      .filter((box) => getComputedStyle(box).overflowX === "hidden" && box.scrollWidth > box.clientWidth + 1)
+      .map((box) => box.textContent.trim()),
+  );
+
+test("cuts no time or length short at 360 px in Hindi, nor with its text at 130%", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("mm-tech-language", "hi");
+  });
+  await page.setViewportSize({ width: 360, height: 760 });
+  await fakeTech(page);
+  await page.goto("/");
+  // "1 घंटे 30 मिनट" is wider than the time's column: it breaks between its parts, never inside one, and none is cut.
+  await expect(page.locator('section[aria-labelledby="today-later"] li').first()).toBeVisible();
+  expect(await clipped(page)).toEqual([]);
+  // The app's policy refuses a style tag; the property set from script is drawn as zoom draws larger text.
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty("zoom", "1.3");
+  });
+  expect(await clipped(page)).toEqual([]);
+});
+
+test("Message on the next job opens the job's own sheet, and sends the client the word from there", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  await page.goto("/");
+  await nextJob(page)
+    .getByRole("button", { name: techCopy.today.message("Rohit") })
+    .click();
+
+  const sheet = page.getByRole("dialog", { name: techCopy.job.tell.title("Rohit") });
+  await sheet.getByRole("button", { name: techCopy.job.tell.late(20) }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect.poll(() => fake.writes.filter((write) => write.path.endsWith("/updates")).length).toBe(1);
+  expect(fake.writes.find((write) => write.path.endsWith("/updates"))?.body).toEqual({
+    preset: "running_late",
+    minutes: 20,
+  });
+});
+
+// A photo set the API stopped showed only as the sync label's count: the prototype draws it a card of its own.
+test("a photo set the API stopped is a card on Today, opening Pending uploads to send it again", async ({ page }) => {
+  await fakeTech(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1, name: "3 jobs today" })).toBeVisible();
+  await queuedOnPhone(page, [
+    {
+      id: "01000000-0000-7000-8000-000000000031",
+      kind: "before_photos",
+      route: "before-photos",
+      body: {},
+      refused: { note: "photo_invalid_file", fields: [] },
+    },
+  ]);
+  await page.reload();
+  const card = page.getByRole("button").filter({ hasText: techCopy.today.setFailed });
+  await expect(card).toContainText(techCopy.today.setFailedBody("Rohit M.", techCopy.today.toFixSteps.before_photos));
+  await card.click();
+  await expect(page).toHaveURL(/\/waiting$/);
 });

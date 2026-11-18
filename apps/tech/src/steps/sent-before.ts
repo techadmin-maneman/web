@@ -33,15 +33,20 @@ export interface PieceSent {
   readonly lot: string;
   /** The hair system from the kit, by its stock code; null where none was sent. */
   readonly stock: string | null;
-  readonly oldCode: string;
-  readonly oldReason: string;
+  /** On a replacement, why the piece that came off failed, as sent; null where it was not said. */
+  readonly failure: string | null;
+}
+
+/** Why the piece that came off failed, as a step sent it; null for none. */
+function failureSent(oldPiece: unknown): string | null {
+  const reason = fieldsOf(oldPiece)?.failure_reason;
+  return typeof reason === "string" ? reason : null;
 }
 
 /** The piece the refused step sent, or null where there is no refused step. */
 export function pieceSent(refused: Queued | null): PieceSent | null {
   const sent: Unchecked<PieceFitted & PieceDeclined & { fit_later: true }> | null = fieldsOf(refused?.body);
   if (sent === null) return null;
-  const old: Unchecked<NonNullable<PieceFitted["old_piece"]>> | null = fieldsOf(sent.old_piece);
   return {
     declined: sent.declined === true,
     product: typeof sent.product === "string" ? sent.product : null,
@@ -50,8 +55,7 @@ export function pieceSent(refused: Queued | null): PieceSent | null {
     base: textOf(sent.base),
     lot: textOf(sent.supplier_lot),
     stock: typeof sent.stock_code === "string" ? sent.stock_code : null,
-    oldCode: textOf(old?.piece_code),
-    oldReason: textOf(old?.failure_reason),
+    failure: failureSent(sent.old_piece),
   };
 }
 

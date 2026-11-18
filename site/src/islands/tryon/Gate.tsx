@@ -1,4 +1,3 @@
-import { capsLook } from "@maneman/ui/Caps";
 import { messageLook } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
@@ -10,8 +9,10 @@ import { MobileField, NameField } from "../PersonFields.tsx";
 import type { FormRef } from "../useInvalidFocus.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./gate.module.css";
+import shared from "./TryOn.module.css";
+import { LegalLinks } from "../LegalLinks.tsx";
 
-/** The WhatsApp code's field, on the gate's ink. */
+/** The WhatsApp code's field, on the gate's white. */
 const CODE_FIELD: CodeFieldClasses = { hint: styles.codeHint, error: styles.error, again: styles.codeAgain };
 
 /** The code sent to the number typed, while it waits to be entered. */
@@ -35,9 +36,7 @@ function GateSaid({ photoOnItsWay, failure }: { photoOnItsWay: boolean; failure:
   return (
     <div aria-live="polite">
       {photoOnItsWay && <p class={styles.reassurance}>{tryOn.gate.photoOnItsWay}</p>}
-      {failure !== null && (
-        <div class={messageLook({ tone: "error", ground: "ink", className: styles.gateFailure })}>{failure}</div>
-      )}
+      {failure !== null && <div class={messageLook({ tone: "error", className: styles.gateFailure })}>{failure}</div>}
     </div>
   );
 }
@@ -68,24 +67,15 @@ export function Gate(props: {
   const busy = props.sending || code?.checking === true;
   return (
     <div class={styles.gate}>
-      <div class={styles.gateImage}>
-        <div class={styles.gateFrame}>
-          <div class={styles.gateLeft} />
-          <div class={styles.gateRight} />
-          <span class={capsLook(styles.gateFrameLabel)}>{tryOn.gate.frame}</span>
-        </div>
-        <p class={styles.gateCaption}>{tryOn.gate.caption}</p>
-      </div>
       <form ref={props.form} onSubmit={props.onSubmit} noValidate>
         <Title heading={props.heading}>{tryOn.gate.title}</Title>
         <div class={styles.fields}>
-          <NameField id="gate-name" value={props.name} bad={nameBad} words={tryOn.gate} onInk onInput={props.onName} />
+          <NameField id="gate-name" value={props.name} bad={nameBad} words={tryOn.gate} onInput={props.onName} />
           <MobileField
             id="gate-mobile"
             value={props.mobile}
             bad={mobileBad}
             words={tryOn.gate}
-            onInk
             onInput={props.onMobile}
           />
           {code !== null && (
@@ -94,7 +84,7 @@ export function Gate(props: {
               mobile={props.mobile}
               code={code.value}
               failure={code.failure}
-              onInk
+              onInk={false}
               classes={CODE_FIELD}
               onInput={code.onInput}
               onAgain={code.onAgain}
@@ -102,27 +92,25 @@ export function Gate(props: {
           )}
         </div>
         <GateSaid photoOnItsWay={props.photoOnItsWay} failure={props.failure} />
-        <Button
-          variant="light"
-          size="action"
-          className={styles.gateSubmit}
-          type="submit"
-          aria-disabled={busy}
-          icon={busy ? ICONS.sending : undefined}
-        >
-          {submitLabel(code, props.sending)}
-        </Button>
-        {props.notice.line !== undefined && (
-          <p class={styles.reassurance}>
-            <NoticeLine
-              line={props.notice.line}
-              href={props.notice.line.href}
-              more={CLIENT_WORDS.noticeMore}
-              tone="ink"
-            />
-          </p>
-        )}
+        <div class={shared.foot}>
+          <Button
+            variant="primary"
+            size="action"
+            className={styles.gateSubmit}
+            type="submit"
+            aria-disabled={busy}
+            icon={busy ? ICONS.sending : undefined}
+          >
+            {submitLabel(code, props.sending)}
+          </Button>
+          {props.notice.line !== undefined && (
+            <p class={styles.reassurance}>
+              <NoticeLine line={props.notice.line} href={props.notice.line.href} more={CLIENT_WORDS.noticeMore} />
+            </p>
+          )}
+        </div>
       </form>
+      <LegalLinks alone={shared.legal} />
     </div>
   );
 }

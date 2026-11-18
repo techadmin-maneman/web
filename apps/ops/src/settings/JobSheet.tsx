@@ -1,7 +1,7 @@
-// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): what the technician ticks on each kind of visit,
-// the reasons a job is left partly done, and why a client does not go ahead (docs/decisions/0149-lost-reasons.md). A
-// phone keeps the list it got with the job and an item taken off is kept, so older records still read. Until ops save a
-// list, src/config/job-sheet.ts's stands.
+// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): the technician's checklists, why a job is left
+// partly done, why a client does not go ahead (ADR 0149), why a hair system was not fitted (ADR 0270) and why one
+// failed (ADR 0273). A phone keeps the list it got with the job and an item taken off is kept, so older records still
+// read. Until ops save a list, src/config/job-sheet.ts's stands.
 
 import { Field, Select } from "@maneman/ui/Field";
 import { Stack } from "@maneman/ui/Layout";
@@ -33,6 +33,64 @@ function Reasons(
   return <ListEditor {...list} itemLabel={copy.reason} addLabel={copy.addReason} />;
 }
 
+/** The sheet's lists of reasons, each with the call that saves it. */
+const REASON_LISTS = [
+  {
+    id: "partial-reasons",
+    title: copy.reasons,
+    list: "partial_reasons",
+    most: "max_partial_reasons",
+    call: "POST /api/job-sheet/partial-reasons",
+    send: settingsApi.setPartialReasons,
+  },
+  {
+    id: "lost-reasons",
+    title: copy.lostReasons,
+    list: "lost_reasons",
+    most: "max_lost_reasons",
+    call: "POST /api/job-sheet/lost-reasons",
+    send: settingsApi.setLostReasons,
+  },
+  {
+    id: "not-fitted-reasons",
+    title: copy.notFittedReasons,
+    list: "not_fitted_reasons",
+    most: "max_not_fitted_reasons",
+    call: "POST /api/job-sheet/not-fitted-reasons",
+    send: settingsApi.setNotFittedReasons,
+  },
+  {
+    id: "failure-reasons",
+    title: copy.failureReasons,
+    list: "failure_reasons",
+    most: "max_failure_reasons",
+    call: "POST /api/job-sheet/failure-reasons",
+    send: settingsApi.setFailureReasons,
+  },
+] as const;
+
+/** The sheet's lists of reasons: partly done, not going ahead, not fitted, and failed. */
+function ReasonLists({ current, onSaved }: { current: Sheet; onSaved: (sheet: Sheet) => void }) {
+  const access = useAccess();
+  return (
+    <>
+      {REASON_LISTS.map((each) => (
+        <Reasons
+          key={each.id}
+          id={each.id}
+          title={each.title}
+          list={current[each.list]}
+          most={current[each.most]}
+          mayChange={access.mayCall(each.call)}
+          send={each.send}
+          onSaved={onSaved}
+          longest={current.max_label}
+        />
+      ))}
+    </>
+  );
+}
+
 export function JobSheet() {
   const [loaded, retry] = useLoad(settingsApi.jobSheet);
   /** The sheet after a save, so "Set by" follows without reading it again. */
@@ -40,8 +98,6 @@ export function JobSheet() {
   const [kind, setKind] = useState<VisitType>("service");
   const access = useAccess();
   const mayChangeChecklists = access.mayCall("POST /api/job-sheet/checklists/{visit_type}");
-  const mayChangeReasons = access.mayCall("POST /api/job-sheet/partial-reasons");
-  const mayChangeLost = access.mayCall("POST /api/job-sheet/lost-reasons");
 
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
@@ -89,26 +145,7 @@ export function JobSheet() {
           onSaved={setSheet}
         />
       )}
-      <Reasons
-        id="partial-reasons"
-        title={copy.reasons}
-        list={current.partial_reasons}
-        most={current.max_partial_reasons}
-        mayChange={mayChangeReasons}
-        send={(items) => settingsApi.setPartialReasons(items)}
-        onSaved={setSheet}
-        longest={current.max_label}
-      />
-      <Reasons
-        id="lost-reasons"
-        title={copy.lostReasons}
-        list={current.lost_reasons}
-        most={current.max_lost_reasons}
-        mayChange={mayChangeLost}
-        send={(items) => settingsApi.setLostReasons(items)}
-        onSaved={setSheet}
-        longest={current.max_label}
-      />
+      <ReasonLists current={current} onSaved={setSheet} />
     </Stack>
   );
 }

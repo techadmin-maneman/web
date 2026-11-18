@@ -1034,122 +1034,6 @@ The photograph an angle is compared with as it is taken, under the card's own un
 }
 ```
 
-### GET /api/tech/jobs/{id}/last-visit-photo
-
-The client's last visit, after: one photograph, under the card's own unlock, never cached
-
-**200**: The image
-
-**400**: invalid_request
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "invalid_request"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
-**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "session_required",
-                "device_revoked",
-                "technician_inactive"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
-**404**: not_found: no such job of this technician's, not unlocked yet, or no earlier visit's photograph
-
-```json
-{
-  "allOf": [
-    {
-      "$ref": "#/components/schemas/ErrorResponse"
-    },
-    {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string",
-              "enum": [
-                "not_found"
-              ]
-            }
-          },
-          "required": [
-            "code"
-          ],
-          "additionalProperties": {}
-        }
-      },
-      "required": [
-        "error"
-      ],
-      "additionalProperties": {}
-    }
-  ]
-}
-```
-
 ### POST /api/tech/jobs/{id}/checkin
 
 I have arrived: the time and the phone's position, inside the geofence
@@ -3811,6 +3695,340 @@ Request body:
 }
 ```
 
+### POST /api/tech/jobs/{id}/sign-off-request
+
+Ask the client to sign off the fit, or ask again once what they flagged is put right
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SignOffRequest"
+}
+```
+
+**200**: The sign-off as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/SignOff"
+}
+```
+
+**400**: invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF)
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked: ops revoked this phone; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such job, or never this technician's
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: superseded: the job was given to another technician or called off under the phone; already_closed: the visit has closed
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/jobs/{id}/sign-off-declined
+
+Record that the client declined to sign, with why: the fit may then close, and Care are given a Tasks row
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SignOffDeclined"
+}
+```
+
+**200**: The sign-off as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/SignOff"
+}
+```
+
+**400**: invalid_request: the visit takes no sign-off: it is no first fit, one visit or replacement, or clients do not sign off in the app yet (CLIENT_SIGN_OFF); or a reason empty or over 300 characters
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked: ops revoked this phone; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such job, or never this technician's
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: superseded: the job was given to another technician or called off under the phone; already_closed: the visit has closed
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/tech/pieces/lookup
 
 The piece a label names
@@ -5886,7 +6104,7 @@ Every kind of visit's checklist as ops set it, for Guides
 
 ### GET /api/tech/quality
 
-The technician's on-time visits and hairline redo rate over the last 30 days
+The technician's on-time visits and hairline redo rate over the last 30 days, and their rating
 
 **200**: Their counts
 
@@ -6507,6 +6725,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "internal_error",
             "busy",
             "photo_invalid_file",
+            "photos_full",
             "upload_already_received",
             "upload_missing",
             "session_required",
@@ -6573,12 +6792,20 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "service_retired",
             "no_product",
             "no_profile",
+            "made_to_order",
+            "not_made_to_order",
             "unknown_invite",
             "own_invite",
             "already_invited",
             "already_disputed",
             "not_disputable",
             "dispute_window_closed",
+            "sign_off_not_asked",
+            "sign_off_closed",
+            "sign_off_checks_open",
+            "already_rated",
+            "visit_not_done",
+            "rating_closed",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -7444,6 +7671,18 @@ One of the client's try-on looks, under the card's own unlock, never cached
       ],
       "description": "The drive to it by our estimate: from the job before, or from the technician's home for the day's first. Null for a job closed, and for the day's first where the technician's home has no pin."
     },
+    "drive_km": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How far that drive goes by road, in km to one decimal, by our estimate from the two pins. Null where either end has no pin, as for drive_minutes, and while the job is locked."
+    },
     "leave_by": {
       "anyOf": [
         {
@@ -7480,6 +7719,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "address",
     "next",
     "drive_minutes",
+    "drive_km",
     "leave_by"
   ],
   "additionalProperties": false
@@ -8104,16 +8344,11 @@ One of the client's try-on looks, under the card's own unlock, never cached
                 }
               ],
               "description": "The first name of who did it."
-            },
-            "photo_url": {
-              "type": "string",
-              "description": "Its after photograph, never to be kept on the phone."
             }
           },
           "required": [
             "date",
-            "technician",
-            "photo_url"
+            "technician"
           ],
           "additionalProperties": false
         },
@@ -8173,7 +8408,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "piece",
           "after_photos",
           "outcome",
-          "profile"
+          "profile",
+          "sign_off"
         ]
       },
       "description": "The steps this visit type runs, in order; a consultation's, a one visit's and a first fit's take the profile."
@@ -8205,6 +8441,20 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "$ref": "#/components/schemas/JobSheetItem"
       },
       "description": "On a consultation and a one visit, why a client may not go ahead with a fit, as ops set them, in their order (ADR 0149). Empty for any other visit."
+    },
+    "not_fitted_reasons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/JobSheetItem"
+      },
+      "description": "On a visit that fits a piece, why it may not be fitted today, as ops set them, in their order (ADR 0270). Empty for any other visit."
+    },
+    "failure_reasons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/JobSheetItem"
+      },
+      "description": "On a replacement, why the piece that came off may have failed, as ops set them, in their order: what the technician picks from where it came off before it was due (ADR 0273). Empty for any other visit."
     },
     "consumables": {
       "type": "array",
@@ -8365,6 +8615,40 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "handoff": {
       "$ref": "#/components/schemas/Handoff"
     },
+    "client_visits": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "first": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The first's day in India; null for none."
+            }
+          },
+          "required": [
+            "count",
+            "first"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How many of the client's visits closed before this one, as Client history lists them, and when the first was. Null until the day before the visit."
+    },
     "reschedule_asked": {
       "anyOf": [
         {
@@ -8375,6 +8659,33 @@ One of the client's try-on looks, under the card's own unlock, never cached
         }
       ],
       "description": "The technician's open ask that ops move the visit, until it is settled; null for none."
+    },
+    "booked_via": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "app",
+            "site",
+            "ops"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where the visit was booked: the client's app, the site, or ops in the console. Null until the day before the visit, and for one booked before this was kept."
+    },
+    "sign_off": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOff"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed or declined. Null before it is asked, and for a visit that takes none. Outcome's done waits for signed or declined."
     },
     "sent_back": {
       "type": "array",
@@ -8443,6 +8754,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "checklist_if_declined",
     "partial_reasons",
     "lost_reasons",
+    "not_fitted_reasons",
+    "failure_reasons",
     "consumables",
     "kit_hair_systems",
     "products",
@@ -8452,7 +8765,10 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "profile",
     "client_alerts",
     "handoff",
+    "client_visits",
     "reschedule_asked",
+    "booked_via",
+    "sign_off",
     "sent_back"
   ],
   "additionalProperties": false
@@ -8523,7 +8839,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "piece",
           "after_photos",
           "outcome",
-          "profile"
+          "profile",
+          "sign_off"
         ]
       },
       "description": "The steps that have reached us, in that order: the job's events, and the profile once recorded."
@@ -9603,6 +9920,127 @@ One of the client's try-on looks, under the card's own unlock, never cached
 }
 ```
 
+### SignOff
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "asked",
+        "signed",
+        "flagged",
+        "declined"
+      ],
+      "description": "asked: waiting for the client; signed: happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: closed without it, with why."
+    },
+    "checks": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/SignOffChecks"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "As the client last answered; null till then."
+    },
+    "flag_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client last said isn't right, in their words; kept once they sign."
+    },
+    "declined_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Why the client did not sign."
+    },
+    "asked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "asks": {
+      "type": "integer",
+      "description": "How many times it was asked: again after each flag."
+    },
+    "signed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the client signed in their app."
+    },
+    "guarantee_days": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then."
+    }
+  },
+  "required": [
+    "state",
+    "checks",
+    "flag_text",
+    "declined_reason",
+    "asked_at",
+    "asks",
+    "signed_at",
+    "guarantee_days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SignOffChecks
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "hairline": {
+      "type": "boolean"
+    },
+    "blend": {
+      "type": "boolean"
+    },
+    "secure": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "hairline",
+    "blend",
+    "secure"
+  ],
+  "additionalProperties": false,
+  "description": "The hairline, the colour and blend, and that it is secure and comfortable: each ticked or not."
+}
+```
+
 ### TechnicianClientHistory
 
 ```json
@@ -9665,6 +10103,10 @@ One of the client's try-on looks, under the card's own unlock, never cached
         }
       ]
     },
+    "yours": {
+      "type": "boolean",
+      "description": "Whether the technician asking did it."
+    },
     "result": {
       "anyOf": [
         {
@@ -9717,11 +10159,23 @@ One of the client's try-on looks, under the card's own unlock, never cached
           },
           "quantity": {
             "type": "number"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its unit, as ml or strip; null for one used before the stock had codes."
           }
         },
         "required": [
           "name",
-          "quantity"
+          "quantity",
+          "unit"
         ],
         "additionalProperties": false
       }
@@ -9743,6 +10197,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "date",
     "type",
     "technician",
+    "yours",
     "result",
     "note",
     "photos",
@@ -10245,7 +10700,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "null"
       ],
       "minLength": 1,
-      "maxLength": 60
+      "maxLength": 120,
+      "description": "The piece's base; for one from the kit, its hair system's name, which a service's name of up to 60 and its spec make up to about 112 (docs/decisions/0271-the-technician-follow-ups.md)."
     },
     "supplier_lot": {
       "type": [
@@ -10293,7 +10749,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "piece_code"
       ],
       "additionalProperties": false,
-      "description": "On a replacement: the piece that came off, and why it failed where it did; with no reason, it was due and is replaced."
+      "description": "On a replacement: the piece that came off, and why it failed where it did, by a code of the card's failure_reasons or in words; with no reason, it was due and is replaced (ADR 0273)."
     },
     "product": {
       "type": "string",
@@ -10729,6 +11185,12 @@ One of the client's try-on looks, under the card's own unlock, never cached
           ],
           "description": "Can't fit today: a fit closed from its piece step with no piece of the client's spec to fit, its reason `no_piece`. It follows the step before the piece, and ops are given the refit to book."
         },
+        "not_fitted_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "With cannot_fit, why: one of the card's not_fitted_reasons, by its id; one ops have since taken off is still taken. Left out by a phone on a build before it was asked (ADR 0270)."
+        },
         "handoff_note": {
           "type": "string",
           "minLength": 1,
@@ -10782,6 +11244,35 @@ One of the client's try-on looks, under the card's own unlock, never cached
   "required": [
     "preset",
     "minutes"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SignOffRequest
+
+```json
+{
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
+```
+
+### SignOffDeclined
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    }
+  },
+  "required": [
+    "reason"
   ],
   "additionalProperties": false
 }
@@ -11283,7 +11774,43 @@ One of the client's try-on looks, under the card's own unlock, never cached
         ],
         "additionalProperties": false
       },
-      "description": "The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out."
+      "description": "The consumables the technician's visits from today to six days on are expected to use, by the job sheet, against what the kit holds. Hair systems are left out: they are in pieces."
+    },
+    "visits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The visits booked from today to six days on, which the forecast is taken from."
+    },
+    "pieces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The product as its first fit is sold."
+          },
+          "need": {
+            "type": "integer",
+            "description": "The first fits and replacements booked that need one."
+          },
+          "have": {
+            "type": "integer",
+            "description": "The kit's pieces of it fit to use now."
+          }
+        },
+        "required": [
+          "product",
+          "name",
+          "need",
+          "have"
+        ],
+        "additionalProperties": false
+      },
+      "description": "For each product the first fits and replacements from today to six days on need a piece of, against the kit's pieces of it. Shown only: an ask of ops is for consumables."
     },
     "asked": {
       "anyOf": [
@@ -11341,6 +11868,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "coming",
     "returned",
     "forecast",
+    "visits",
+    "pieces",
     "asked",
     "today"
   ],
@@ -11842,13 +12371,31 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "type": "integer",
       "minimum": 0,
       "description": "Of them, those whose free refit was booked within 30 days."
+    },
+    "rating": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The average of clients' ratings of their visits over rating_days, one to five stars to one place; null with fewer than ratings.shown_from. How many is never given (ADR 0260)."
+    },
+    "rating_days": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The days the rating covers (ratings.average_days)."
     }
   },
   "required": [
     "visits",
     "on_time",
     "fits",
-    "redone"
+    "redone",
+    "rating",
+    "rating_days"
   ],
   "additionalProperties": false
 }

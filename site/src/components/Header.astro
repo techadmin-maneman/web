@@ -1,47 +1,62 @@
 ---
-// The fixed header. Below 760 px the section links and the area tag hide, and the design draws no menu button: the
-// footer, full on the home page and slim on every other, carries the way around. The booking button says less there, so
-// it fits beside the wordmark.
-import { capsLook } from "@maneman/ui/Caps";
-import { textLinkLook } from "@maneman/ui/TextLink";
+// The fixed header, white under a hairline (ADR 0263). A phone draws the lockup, Sign in and the free consultation; a
+// laptop adds the section links. The Book is an outline, so the one filled button on a screen is the page's own (ADR
+// 0266). Sign in shows only where the client app answers.
+//
+// On a laptop, /book, the referral landing and /try draw the flow's bar instead (ADR 0265): the lockup, the way back to
+// the site, and on /try the free consultation. On a phone, each flow draws its own top bar in its place
+// (islands/invite/FlowFrame.tsx).
 import { buttonLook } from "@maneman/ui/Button";
-import { header } from "../content/site.ts";
-import { isBookingPage, pagePath } from "../lib/page-path.ts";
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { header, tryOn } from "../content/site.ts";
+import { clientAppOrigin } from "../lib/app-link.ts";
+import { ENVIRONMENT } from "../lib/build.ts";
+import { isBookingPage, isFlowPage, pagePath } from "../lib/page-path.ts";
+import Icon from "./Icon.astro";
+import Lockup from "./Lockup.astro";
 
-const booking = isBookingPage(pagePath(Astro.url.pathname));
+const path = pagePath(Astro.url.pathname);
+const booking = isBookingPage(path);
+const trying = path === "/try";
+const flow = isFlowPage(path);
+const appOrigin = clientAppOrigin(ENVIRONMENT);
 ---
 
-<div class="space" aria-hidden="true"></div>
-<header class="bar on-ink">
-  <a class={textLinkLook({ tone: "ink", quiet: true, className: "brand" })} href="/" aria-label={header.homeLabel}>
-    <svg class="mark" viewBox="0 0 200 217.4" width="34" height="37" aria-hidden="true">
-      <use href="#mm"></use>
-    </svg>
-    <svg class="word" viewBox="-3 -3 638 106" width="96" height="16" aria-hidden="true">
-      <use href="#wms"></use>
-    </svg>
+<div class:list={["space", flow && "framed"]} aria-hidden="true"></div>
+<header class:list={["bar", flow && "flow", flow && "framed", appOrigin !== null && "signing"]}>
+  <a class={textLinkLook({ quiet: true, className: "home" })} href="/" aria-label={header.homeLabel}>
+    <Lockup size="header" tone="navy" />
   </a>
-  <div class="right">
-    <nav class="wide-only" aria-label={header.navLabel}>
-      {header.nav.map((link) => (
-        <a class={textLinkLook({ tone: "ink", quiet: true, className: "link" })} href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
-    <span class={capsLook("area wide-only")}>{header.area}</span>
-    {!booking && (
-      <a class={buttonLook({ variant: "outlineOnInk", size: "small" })} href="/book">
-        <span class="wide-only">{header.book}</span>
-        <span class="phone-only">{header.bookShort}</span>
+  <nav class="sections wide-only" aria-label={header.navLabel}>
+    {header.nav.map((link) => (
+      <a class={textLinkLook({ quiet: true, className: "section" })} href={link.href}>
+        {link.label}
       </a>
-    )}
-  </div>
+    ))}
+  </nav>
+  {appOrigin !== null && (
+    <a class={textLinkLook({ quiet: true, className: "signin" })} href={appOrigin} aria-label={header.signIn}>
+      <Icon name="user" size="sm" class="person" />
+      <span class="signin-words">{header.signIn}</span>
+    </a>
+  )}
+  {!booking && (
+    <a class={buttonLook({ variant: "outline", size: "small", className: "book" })} href="/book">
+      <span class="wide-only">{trying ? header.bookShort : header.book}</span>
+      <span class="phone-only">{header.bookShort}</span>
+    </a>
+  )}
+  {flow && (
+    <a class={buttonLook({ variant: "quiet", size: "small", className: "back" })} href="/">
+      <Icon name="cross" size="md" />
+      {tryOn.backToSite}
+    </a>
+  )}
 </header>
 
 <style>
   .space {
-    height: var(--header-h);
+    height: var(--site-header-h);
     flex-shrink: 0;
   }
   .bar {
@@ -50,46 +65,132 @@ const booking = isBookingPage(pagePath(Astro.url.pathname));
     left: 0;
     right: 0;
     z-index: var(--z-header);
-    height: var(--header-h);
-    background: var(--ink);
+    height: var(--site-header-h);
+    background: var(--site-ground);
+    border-bottom: var(--hairline) solid var(--site-line);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 var(--gutter);
+    gap: var(--sp-4);
+    padding: 0 var(--sp-12) 0 var(--sp-16);
+    container-type: inline-size;
   }
-  .brand {
-    gap: var(--sp-12);
-  }
-  .mark {
-    fill: var(--gilt);
-  }
-  .word {
-    fill: var(--paper);
-  }
-  .right,
-  nav {
+  .home {
     display: flex;
-    align-items: center;
-    gap: var(--header-gap);
+    margin-right: auto;
   }
-  .link {
-    font-size: var(--fs-15);
+  .signin {
+    justify-content: center;
+    min-width: var(--tap);
+    gap: var(--sp-4);
+    padding: 0 var(--sp-4);
+    font-size: var(--fs-14);
+    font-weight: var(--weight-semibold);
+    color: var(--site-navy);
   }
-  .area {
-    font-size: var(--fs-15);
-    color: var(--ink-muted);
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--tap);
+  .book {
+    position: relative;
+    min-height: var(--site-header-button);
+    margin-left: var(--sp-4);
+    padding: 0 var(--sp-12);
+    font-size: var(--fs-14);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
   }
+  /* Drawn 40 px tall, as the board draws it, but a finger's 44 px to press. */
+  .book::after {
+    content: "";
+    position: absolute;
+    inset: calc((var(--site-header-button) - var(--tap)) / 2) 0;
+  }
+  .back {
+    display: none;
+  }
+
   @media (max-width: 760px) {
-    .wide-only {
+    .wide-only,
+    .framed {
       display: none;
     }
   }
+
+  /* Where the lockup, Sign in and the free consultation no longer fit side by side, as on a screen under 357 px or
+     with its text enlarged: the mark alone, and Sign in its icon, a thumb's width and named for a screen reader. The
+     bar's content measures 28 px less than the screen. Without Sign in, the lockup and the consultation fit down to
+     a 279 px screen. */
+  @container (max-width: 328px) {
+    .signing .home :global(.word),
+    .signin-words {
+      display: none;
+    }
+  }
+  @container (max-width: 250px) {
+    .home :global(.word) {
+      display: none;
+    }
+  }
+
   @media (min-width: 761px) {
     .phone-only {
       display: none;
+    }
+    .bar {
+      gap: var(--sp-32);
+      padding: 0 max(var(--site-gutter), calc((100% - var(--site-column)) / 2 + var(--site-gutter)));
+    }
+    .sections {
+      display: flex;
+      gap: var(--sp-28);
+    }
+    .section {
+      font-size: var(--fs-16);
+      font-weight: var(--weight-medium);
+      color: var(--site-text);
+      text-underline-offset: var(--sp-8);
+    }
+    .section:hover {
+      color: var(--site-navy);
+    }
+    .signin {
+      gap: var(--sp-8);
+      font-size: var(--fs-16);
+    }
+    .person {
+      width: var(--sp-20);
+      height: var(--sp-20);
+    }
+    .book {
+      min-height: var(--site-header-button-wide);
+      margin-left: 0;
+      padding: 0 var(--sp-16);
+      font-size: var(--fs-16);
+    }
+    .book::after {
+      content: none;
+    }
+
+    /* The flow's bar: the lockup, the free consultation on /try, and the way back to the site. */
+    .flow {
+      gap: var(--sp-24);
+    }
+    .flow .sections,
+    .flow .signin {
+      display: none;
+    }
+    .flow .book {
+      min-height: var(--tap);
+      padding: 0 var(--sp-16);
+      font-size: var(--fs-15);
+    }
+    .flow .back {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-4);
+      min-height: var(--tap);
+      padding: 0 var(--sp-12);
+      border: var(--hairline) solid var(--site-line);
+      font-size: var(--fs-15);
+      font-weight: var(--weight-medium);
+      color: var(--site-navy);
     }
   }
 </style>

@@ -3,12 +3,15 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  arrival,
   clock,
   countdown,
   dayAfter,
+  dayDate,
   dayMonth,
   lengthOf,
   metres,
+  spanEnds,
   todayInIndia,
 } from "../../../../apps/tech/src/lib/when.ts";
 
@@ -51,5 +54,24 @@ describe("the times and counts", () => {
   it("times a job in hours and minutes, and never backwards", () => {
     expect(lengthOf(0, 82 * 60_000)).toEqual({ hours: 1, minutes: 22 });
     expect(lengthOf(60_000, 0)).toEqual({ hours: 0, minutes: 0 });
+  });
+});
+
+describe("the days and spans the design writes", () => {
+  it("writes a day with its weekday and a comma, and nothing for a field left empty", () => {
+    expect(dayDate("2026-11-12")).toBe("Thu, 12 Nov");
+    expect(dayDate("")).toBe("");
+  });
+
+  it("writes a span's month once where both days share it, and both across a month or a year", () => {
+    expect(spanEnds("2026-11-12", "2026-11-18")).toEqual(["12", "18 Nov"]);
+    expect(spanEnds("2026-11-28", "2026-12-04")).toEqual(["28 Nov", "4 Dec"]);
+    expect(spanEnds("2026-12-29", "2027-01-04")).toEqual(["29 Dec", "4 Jan"]);
+  });
+
+  it("writes the arrival window with to, as the rest of the app does", () => {
+    const at = (time: string) => new Date(`2026-11-12T${time}:00+05:30`).toISOString();
+    expect(arrival({ starts_at: at("09:30"), arrives_by: at("10:00") })).toBe("9:30 to 10 am");
+    expect(arrival({ starts_at: at("11:30"), arrives_by: at("12:30") })).toBe("11:30 am to 12:30 pm");
   });
 });

@@ -5,7 +5,8 @@ import { type RescheduleAsked, rescheduleAskedOf } from "../dispatch/reschedule-
 import { takesProfile } from "../../policy/hair-profile.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { cardStepsFor, type CardStep, type JobEventKind } from "../../policy/in-job-steps.ts";
+import { cardStepsFor, SIGN_OFF_STEP, type CardStep, type JobEventKind } from "../../policy/in-job-steps.ts";
+import { signOffOf, type SignOff } from "./sign-offs.ts";
 import { noShowWaitEnds, type Waits } from "../../policy/no-show.ts";
 import { unlocked } from "../../policy/job-visibility.ts";
 import type { Decision } from "../../policy/one-visit.ts";
@@ -16,7 +17,7 @@ import { latestProfile, profileTakenAt, type HairProfile } from "../clients/hair
 import { alertsForTechnician, type TechnicianAlert } from "../clients/client-alerts.ts";
 import { handoffFor, type Handoff } from "../clients/handoff-notes.ts";
 import { sentBackOf, type SentBack } from "./step-send-backs.ts";
-import { afterPhotosOf, type HistoryPhoto } from "./client-history.ts";
+import { afterPhotosOf, historyCountOf, type HistoryCount, type HistoryPhoto } from "./client-history.ts";
 import { codeOnVisit, type VisitCode } from "../money/discount-code-uses.ts";
 import { decisionAtVisit } from "../visits/one-visit.ts";
 import { evidenceMessage, messageStateOf } from "../no-shows/no-shows.ts";
@@ -56,13 +57,12 @@ interface CardPiece {
   readonly replaced_at: string | null;
 }
 
-/** The client's visit before this one that has after photographs: the job card's "Last visit, after. 22 Aug, Imran." */
+/** The client's visit before this one that has after photographs: the hair profile's "Last visit 22 Aug". */
 interface LastVisit {
   /** YYYY-MM-DD, in India. */
   readonly date: string;
   /** The first name of the technician who did it. */
   readonly technician: string | null;
-  readonly photo_url: string;
 }
 
 interface JobProgress extends JobState {
@@ -114,12 +114,18 @@ interface JobDetail extends JobSummary {
   readonly client_alerts: TechnicianAlert[];
   /** The note the last technician left for this visit's; null while the job is locked, or where none was left. */
   readonly handoff: (Handoff & { readonly photos: HistoryPhoto[] }) | null;
+  /** How many of the client's visits closed before this one, and when the first was; null while the job is locked. */
+  readonly client_visits: HistoryCount | null;
   /** The screens this job runs, in order: its type's steps, and the profile where it takes one and has a client. */
   readonly steps: CardStep[];
   /** The steps ops sent back to the technician, with why, not yet landed again. */
   readonly sent_back: SentBack[];
   /** The technician's open ask that ops move the visit; null for none. */
   readonly reschedule_asked: RescheduleAsked | null;
+  /** Where the visit was booked: the client's app, the site, or ops; null while locked, or booked before it was kept. */
+  readonly booked_via: BookedVia | null;
+  /** A fit's sign-off as it stands (docs/decisions/0254-client-signs-off-the-fit.md); null before it is asked. */
+  readonly sign_off: SignOff | null;
 }
 
 /** A one visit's discount code, and who gave it: the client as they booked, ops, or the technician. */
@@ -140,6 +146,16 @@ interface JobPaymentLink {
   readonly paid: boolean;
 }
 
+/** The card's steps, the sign-off only where clients sign off a fit in their app, and that sign-off where it is one. */
+async function stepsOf(
+  db: D1Database,
+  job: { readonly id: string; readonly type: Parameters<typeof cardStepsFor>[0]; readonly oneVisit: boolean },
+  clientSignOff: boolean,
+) {
+  const steps = cardStepsFor(job.type, job.oneVisit).filter((step) => clientSignOff || step !== SIGN_OFF_STEP);
+  return { steps, sign_off: steps.includes(SIGN_OFF_STEP) ? await signOffOf(db, job.id) : null };
+}
+
 /**
  * One job of this technician's, with everything the day-before unlock allows. Each read is a trip to D1 and back, so
  * the reads that need nothing from each other go together: the job and the day's times, then all the job leads to.
@@ -155,6 +171,8 @@ export async function jobDetail(
     arrivalMinutes: number;
     waits: Waits;
     phoneClock: PhoneClock;
+    /** Whether clients sign off a fit in their app; without, the card has no sign-off. */
+    clientSignOff: boolean;
   },
 ): Promise<JobDetail | null> {
   const [row, schedule] = await Promise.all([
@@ -201,9 +219,11 @@ export async function jobDetail(
     profile: null,
     client_alerts: [],
     handoff: null,
-    steps: cardStepsFor(type, oneVisit),
+    client_visits: null,
     sent_back: sentBack,
     reschedule_asked: await rescheduleAskedOf(db, row.id),
+    booked_via: null,
+    ...(await stepsOf(db, { id: row.id, type, oneVisit }, options.clientSignOff)),
   };
   if (unlockedParts === null) return locked;
   return {
@@ -223,21 +243,44 @@ export async function jobDetail(
   };
 }
 
+/** Where a visit was made: the first hold booked as it, by where it was held. */
+export const BOOKED_VIA = ["app", "site", "ops"] as const;
+type BookedVia = (typeof BOOKED_VIA)[number];
+
+async function bookedViaOf(db: D1Database, visitId: string): Promise<BookedVia | null> {
+  const row = await db
+    .prepare(
+      `SELECT booked_from FROM slot_holds WHERE appointment_id = ?1 AND state = 'booked'
+       ORDER BY created_at, rowid LIMIT 1`,
+    )
+    .bind(visitId)
+    .first<{ booked_from: BookedVia | null }>();
+  return row?.booked_from ?? null;
+}
+
 /**
  * What only an unlocked card carries beyond the job's own row: the client's pieces, profile and alerts, their last
- * visit, and the note left for this one.
+ * visit, the note left for this one, and where it was booked.
  */
 async function unlockedPartsOf(
   db: D1Database,
   row: JobRow,
-): Promise<Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile" | "client_alerts" | "handoff">> {
-  const [pieces, lastVisit, reminder, profile, alerts, handoff] = await Promise.all([
+): Promise<
+  Pick<
+    JobDetail,
+    "pieces" | "last_visit" | "reminder" | "profile" | "client_alerts" | "handoff" | "client_visits" | "booked_via"
+  >
+> {
+  const job = { personId: row.person_id, id: row.id, startsAt: row.window_start };
+  const [pieces, lastVisit, reminder, profile, alerts, handoff, visits, bookedVia] = await Promise.all([
     piecesOf(db, row.person_id),
     lastVisitOf(db, row),
     reminderOf(db, row.id),
     latestProfile(db, row.person_id),
     alertsForTechnician(db, row.person_id),
-    handoffFor(db, { personId: row.person_id, id: row.id, startsAt: row.window_start }),
+    handoffFor(db, job),
+    historyCountOf(db, job),
+    bookedViaOf(db, row.id),
   ]);
   return {
     pieces: pieces.map(cardPiece),
@@ -246,6 +289,8 @@ async function unlockedPartsOf(
     profile,
     client_alerts: alerts,
     handoff: handoff === null ? null : { ...handoff, photos: await afterPhotosOf(db, row.id, handoff.visit_id) },
+    client_visits: visits,
+    booked_via: bookedVia,
   };
 }
 
@@ -310,33 +355,7 @@ async function lastVisitOf(db: D1Database, row: JobRow): Promise<LastVisit | nul
   return {
     date: indiaDate(new Date(visit.window_start)),
     technician: visit.technician === null ? null : firstNameOf(visit.technician),
-    photo_url: `/api/tech/jobs/${row.id}/last-visit-photo`,
   };
-}
-
-/** The front first, as the job card shows it, then the other angles in the order they are taken. */
-const ANGLE_ORDER =
-  "CASE p.angle WHEN 'front' THEN 0 WHEN 'top' THEN 1 WHEN 'left' THEN 2 WHEN 'right' THEN 3 ELSE 4 END";
-/**
- * The last visit's after photograph, for this technician's unlocked job only:
- * the rule the card it sits on keeps. Null when there is none to show.
- */
-export async function lastVisitPhoto(
-  db: D1Database,
-  options: { technicianId: string; jobId: string; now: Date; unlockHour: number },
-): Promise<{ key: string; contentType: string } | null> {
-  const row = await db.prepare(`${SELECT_JOB} AND a.id = ?2`).bind(options.technicianId, options.jobId).first<JobRow>();
-  if (row === null || !unlocked(new Date(row.window_start), options.now, options.unlockHour)) return null;
-  const visit = await lastVisit(db, row);
-  if (visit === null) return null;
-  const photo = await db
-    .prepare(
-      `SELECT p.r2_key, p.content_type FROM photos p JOIN photo_sets s ON s.id = p.photo_set_id
-       WHERE s.appointment_id = ?1 AND s.phase = 'after' ORDER BY ${ANGLE_ORDER} LIMIT 1`,
-    )
-    .bind(visit.id)
-    .first<{ r2_key: string; content_type: string }>();
-  return photo === null ? null : { key: photo.r2_key, contentType: photo.content_type };
 }
 
 /**

@@ -39,40 +39,44 @@ const drawn = blocks.map((block) => {
   ) : "lines" in block ? (
     <p class="lines">{block.lines.map((line, index) => [index > 0 && <br />, <LinkedText text={line} />])}</p>
   ) : (
-    <div class:list={["clause", `depth-${String(depth)}`]}>
-      <p>
+    <>
+      <div class="clause">
         <span class="number">{number}</span>
-        {block.lead !== undefined && <strong class="lead-in">{block.lead}</strong>}
-        {block.lead !== undefined && block.text !== "" && " "}
-        <LinkedText text={block.text} />
-      </p>
-      {block.items !== undefined && <Astro.self blocks={block.items} depth={depth + 1} section={section} />}
-    </div>
+        <p class="words">
+          {block.lead !== undefined && <strong class="lead-in">{block.lead}</strong>}
+          {block.lead !== undefined && block.text !== "" && " "}
+          <LinkedText text={block.text} />
+        </p>
+      </div>
+      {block.items !== undefined && (
+        <div class="items">
+          <Astro.self blocks={block.items} depth={depth + 1} section={section} />
+        </div>
+      )}
+    </>
   ),
 )}
 
 <style>
   .clause {
-    display: block;
-  }
-  .depth-2,
-  .depth-3 {
-    padding-inline-start: var(--sp-24);
+    display: grid;
+    grid-template-columns: var(--site-clause-number) minmax(0, 1fr);
+    gap: var(--sp-4);
+    margin: 0 0 var(--sp-12);
   }
   .number {
-    display: inline-block;
-    min-width: var(--sp-48);
     font-variant-numeric: tabular-nums;
-    color: var(--text-muted);
+    color: var(--site-text-muted);
   }
-  .depth-2 .number,
-  .depth-3 .number {
-    min-width: var(--sp-36);
+  .words {
+    margin: 0;
   }
   .lead-in {
-    font-weight: var(--weight-medium);
+    font-weight: var(--weight-semibold);
   }
+  /* A clause's items, and theirs, one column in. */
+  .items,
   .lines {
-    padding-inline-start: var(--sp-48);
+    margin-left: var(--site-clause-number);
   }
 </style>

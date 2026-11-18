@@ -27,6 +27,6 @@
   }
 
   .onInk {
-    color: var(--paper);
+    color: var(--on-ink);
   }
 }

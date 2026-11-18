@@ -30,9 +30,11 @@ import type { App } from "../../http/context.ts";
 import { registerTechJobReads } from "./jobs.read.ts";
 import { registerTechJobSteps } from "./jobs.steps.ts";
 import { registerTechUpdates } from "./jobs.updates.ts";
+import { registerTechSignOff } from "./jobs.sign-off.ts";
 
 export function registerTechJobs(app: App): void {
   registerTechJobReads(app);
   registerTechJobSteps(app);
   registerTechUpdates(app);
+  registerTechSignOff(app);
 }

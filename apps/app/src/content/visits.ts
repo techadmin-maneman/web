@@ -2,20 +2,27 @@
 
 export const visits = {
   title: "Visits",
+  /** The three views, as a screen reader names their choice, and Issues with how many are open. */
+  show: "Show",
   upcoming: "Upcoming",
-  // Done, missed and cancelled visits alike, so a cancelled one still to come does not read as past.
-  past: "History",
+  past: "Past",
+  issues: "Issues",
   none: "Nothing booked yet.",
-  /** Visits: a visit paid for ahead, or covered by a credit. */
-  prepaid: "Prepaid",
-  /** A visit paid by UPI at the visit while online payment is off (ADR 0209): "Pay Rs. 2,200 by UPI at the visit". */
-  payAtVisit: (amount: string) => `Pay ${amount} by UPI at the visit`,
+  noneYet: "No visits yet. After your consultation, every visit shows here with its photos and invoice.",
+  /** Visits: a visit paid for ahead, or covered by a credit; a consultation, which costs nothing. */
+  paid: "Paid",
+  free: "Free",
+  /**
+   * A visit booked while online payment is off, paid at the visit (ADR 0209), naming no way to pay (ADR 0272): "Pay
+   * Rs. 2,200 at the visit".
+   */
+  payAtVisit: (amount: string) => `Pay ${amount} at the visit`,
   /** A consultation asked for on the site, which ops have yet to confirm. */
   requested: "Requested",
   // A visit that is not this client's, or no longer exists.
   notFound: "We couldn’t find this visit.",
   // Offline, the visits are not kept on the phone.
-  offline: "Your visits will load when you are back online.",
+  offline: "Your visits will load when you’re back online.",
   cancelled: "Cancelled",
   notHome: "Missed visit",
   /** A visit nobody came to, in the history once its day is over, until ops close it. */
@@ -45,15 +52,30 @@ export const visits = {
     back: "Back to visits",
     cancelled: "This visit was cancelled.",
     photographs: "Photos from this visit",
+    /** Beneath a visit's photos. */
+    private: "Only you and your technician see these photos.",
     technician: "Technician",
-    duration: "Duration",
+    duration: "Time taken",
     paid: "Paid",
     receipt: "Receipt",
-    type: "Type",
+    /** A fit the client signed off in their app, and when. */
+    signedOff: "Signed off",
+    signedBy: (when: string) => `By you, ${when}`,
+    /** A first fit's guarantee, and the way to claim it while it runs. */
+    guarantee: "Fit guarantee",
+    guaranteeUntil: (date: string) => `Until ${date}`,
+    notRight: "The fit isn’t right",
+    /** The client's stars for a visit done, given once (docs/decisions/0260-ratings.md). */
+    rating: {
+      title: "How was this visit?",
+      label: "Rate this visit",
+      star: (stars: number) => `${String(stars)} of 5`,
+      thanks: "Thanks. We share ratings with the technician.",
+      low: "Thanks. Tell us what went wrong and we’ll follow up.",
+      report: "Report an issue",
+      failed: "That didn’t go through. Try again.",
+    },
     done: "What was done",
-    /** The checklist the technician ticked, as one sentence: "Hair system removed, scalp cleaned, cut and styled." */
-    doneLine: (items: readonly string[]) =>
-      `${items.map((item, index) => (index === 0 ? item : item.charAt(0).toLowerCase() + item.slice(1))).join(", ")}.`,
     /** The things a finished visit can say about its invoice (ADR 0056). */
     invoice: {
       open: "Tax invoice",
@@ -73,20 +95,25 @@ export const visits = {
     // A visit the client missed, and the dispute of its charge (ADR 0096). The reason ops gave stays with them.
     noShow: {
       label: "Missed visit",
-      line: (minutes: number) => `We came and waited ${String(minutes)} minutes, but no one was home.`,
+      line: (minutes: number) =>
+        `Nobody answered while the technician waited ${String(minutes)} minutes at your door. No work was done.`,
+      charge: "Missed-visit charge",
+      yourDispute: "Your dispute",
       decision: {
-        undecided: "We are looking at it. Nothing is charged until we have.",
-        charged: "Charged.",
-        waived: "Not charged.",
+        undecided: "We’re looking at it. Nothing is charged until we have.",
+        charged: "Charged",
+        waived: "Not charged",
       },
       /** What the charge took, as the booking was sold to cost a no-show. */
-      kept: (amount: string) => `Charged: we kept ${amount} of what you paid.`,
-      creditSpent: "Charged: the free service visit it used is spent.",
+      kept: (amount: string) => `We kept ${amount}`,
+      creditSpent: "The free service visit it used is spent",
       dispute: "Dispute this charge",
+      /** "16 Dec, 12:30 am": the window closes at the charge's own time of day. */
+      disputeUntil: (when: string) => `Were you home? You can dispute the charge until ${when}.`,
       /** Where the button stood, once the days to dispute have passed. */
       disputeClosed: (day: string) => `The days to dispute this charge ended on ${day}.`,
       disputed: {
-        open: "You disputed this charge. We are looking at it.",
+        open: "You disputed this charge. We’re looking at it.",
         refunded: "We looked at your dispute and refunded the charge.",
         upheld: "We looked at your dispute. The charge stands.",
       },

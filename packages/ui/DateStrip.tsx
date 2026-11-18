@@ -3,8 +3,27 @@
 // and the site's /book and invite pages draw it alike, in one look; the site compiles it with Preact
 // (site/astro.config.ts), so it uses nothing Preact lacks.
 
+import { useLayoutEffect, useRef } from "react";
 import { classes } from "./classes.ts";
 import styles from "./date-strip.module.css";
+
+/**
+ * A strip that scrolls brings the day chosen into view, as the sheet opens on a day offered a week in: centred, and only
+ * where it is not wholly in view already, so a day tapped never moves under the finger.
+ */
+function useChosenInView(scrolls: boolean, chosen: string | null) {
+  const strip = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const row = strip.current;
+    const day = row?.querySelector("input:checked")?.closest("label");
+    if (!scrolls || row === null || day === null || day === undefined) return;
+    const shown = row.getBoundingClientRect();
+    const drawn = day.getBoundingClientRect();
+    if (drawn.left >= shown.left && drawn.right <= shown.right) return;
+    row.scrollLeft += drawn.left - shown.left - (shown.width - drawn.width) / 2;
+  }, [scrolls, chosen]);
+  return strip;
+}
 
 export interface StripDate {
   /** YYYY-MM-DD. */
@@ -30,12 +49,16 @@ export function DateStrip(props: {
   /** The heading the group is named by; without one, a fieldset around the strip names it. */
   readonly labelledBy?: string;
   readonly onChoose: (date: string) => void;
+  /** A row of fixed tiles that scrolls sideways, for more days than a week, as the client app's booking draws. */
+  readonly scrolls?: boolean;
   /** The strip's place on its screen. */
   readonly className?: string | undefined;
 }) {
+  const strip = useChosenInView(props.scrolls === true, props.chosen);
   return (
     <div
-      className={classes(styles.strip, props.className)}
+      ref={strip}
+      className={classes(styles.strip, props.scrolls === true && styles.scrolls, props.className)}
       role={props.labelledBy === undefined ? undefined : "radiogroup"}
       aria-labelledby={props.labelledBy}
     >

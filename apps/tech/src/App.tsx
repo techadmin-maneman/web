@@ -5,7 +5,7 @@
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { classes } from "@maneman/ui/classes";
-import { Stopped, StorageFull } from "./frame/Banners.tsx";
+import { NoSignal, Stopped, StorageFull } from "./frame/Banners.tsx";
 import { Interrupted } from "./frame/Interrupted.tsx";
 import { SharePosition } from "./frame/SharePosition.tsx";
 import { update } from "./content.ts";
@@ -19,6 +19,7 @@ import { LeaveScreen } from "./me/LeaveScreen.tsx";
 import { MeScreen } from "./me/MeScreen.tsx";
 import { GuideScreen, GuidesScreen, GuideTaskScreen } from "./guides/GuidesScreen.tsx";
 import { AlertsScreen } from "./alerts/AlertsScreen.tsx";
+import { useLanguage } from "./lang/index.ts";
 import { alertsBack, guideBack } from "./lib/opened-from.ts";
 import { PreviewScreen } from "./schedule/PreviewScreen.tsx";
 import { ScheduleScreen } from "./schedule/ScheduleScreen.tsx";
@@ -37,6 +38,7 @@ import { CloseOut } from "./steps/CloseOut.tsx";
 import { Consumables } from "./steps/Consumables.tsx";
 import { Outcome } from "./steps/Outcome.tsx";
 import { Piece } from "./steps/Piece.tsx";
+import { SignOff } from "./steps/SignOff.tsx";
 import { Profile } from "./steps/Profile.tsx";
 import { TodayScreen } from "./today/TodayScreen.tsx";
 import { WaitingScreen } from "./waiting/WaitingScreen.tsx";
@@ -93,6 +95,8 @@ function pageFor(route: Route) {
           return <Piece id={route.id} />;
         case "profile":
           return <Profile id={route.id} />;
+        case "sign_off":
+          return <SignOff id={route.id} />;
         case "outcome":
           return <Outcome id={route.id} />;
       }
@@ -108,6 +112,8 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
   return (
     <SessionContext value={session}>
       <OutboxContext value={waiting}>
+        {/* No signal, said once at the very top of every screen, as the prototype draws it. */}
+        {session.offline && <NoSignal />}
         <StorageFull />
         <UpdateReady copy={update} resting={route.page === "today"} onInk={!drawnLight(route.page)} />
         {/* A job's work stopped reaching us, said above every screen; the waiting screen says it job by job. */}
@@ -134,6 +140,8 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
 }
 
 export function App() {
+  // Every screen draws again in a language chosen, keeping its place (./lang/words.ts).
+  useLanguage();
   const { state, keeping, check, signOut } = useSessionLifecycle();
   const path = usePath();
   const online = useOnline();
@@ -149,8 +157,8 @@ export function App() {
     case "out":
       // The sign-in's one main landmark, so its heading and the code's status are inside one.
       return (
-        <main>
-          <SignIn why={state.why} onSignedIn={() => void check()} />
+        <main className={styles.out}>
+          <SignIn why={state.why} onSignedIn={check} />
         </main>
       );
     case "in": {

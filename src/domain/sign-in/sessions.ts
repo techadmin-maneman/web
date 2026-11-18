@@ -95,11 +95,14 @@ export async function touchSession(db: D1Database, session: Session, now: Date):
     .run();
 }
 
+/** Ends the session, signed out, and with it any pushes it took. */
 export async function revokeSession(db: D1Database, sessionId: string, now: Date): Promise<void> {
-  await db
-    .prepare("UPDATE sessions SET revoked_at = ?2 WHERE id = ?1 AND revoked_at IS NULL")
-    .bind(sessionId, now.toISOString())
-    .run();
+  await db.batch([
+    db
+      .prepare("UPDATE sessions SET revoked_at = ?2 WHERE id = ?1 AND revoked_at IS NULL")
+      .bind(sessionId, now.toISOString()),
+    db.prepare("DELETE FROM client_push_subscriptions WHERE session_id = ?1").bind(sessionId),
+  ]);
 }
 
 /** Checked in order: an Edge or Chrome User-Agent also names Safari, and an iPhone's names Mac OS X. */

@@ -1,7 +1,6 @@
 // The parts both forms are made of: the pincode they are for, the person's fields, the
 // invite /book remembers, and the button that sends them; and /book's steps, with the name and number it kept first.
 
-import { capsLook } from "@maneman/ui/Caps";
 import { messageLook } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
@@ -10,11 +9,13 @@ import { useEffect, useRef } from "preact/hooks";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { NoticeLine } from "@maneman/ui/NoticeLine";
+import { hiddenOnPhoneLook } from "@maneman/ui/VisuallyHidden";
 import { ICONS } from "@maneman/brand/icons";
 import { referral } from "../../content/referral.ts";
 import { booking, whatsapp, type NoticeWords } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
 import { fill } from "../../lib/text.ts";
+import { LegalLinks } from "../LegalLinks.tsx";
 import { MobileField, NameField } from "../PersonFields.tsx";
 import shared from "./Invite.module.css";
 import styles from "./fields.module.css";
@@ -34,10 +35,13 @@ export interface FormProps {
   onChangePincode: () => void;
 }
 
-/** "For 122018 · Change": the pincode the form is for, and the way back to the field. */
-export function ForPincode(props: { text: string; onChange: () => void }) {
+/**
+ * "For 122018 · Change": the pincode the form is for, and the way back to the field. `wide`: a laptop's alone, where a
+ * phone's banner above the form already says it and carries the Change.
+ */
+export function ForPincode(props: { text: string; onChange: () => void; wide?: boolean }) {
   return (
-    <p class={shared.forPincode}>
+    <p class={props.wide === true ? `${shared.forPincode ?? ""} ${shared.forPincodeWide ?? ""}` : shared.forPincode}>
       {props.text}
       {" · "}
       <TextButton aria-label={referral.pincode.changeLabel} onClick={props.onChange}>
@@ -217,28 +221,11 @@ function TermsBox({ idPrefix, tick }: { idPrefix: string; tick: TermsTick }) {
   );
 }
 
-/** The terms the form binds the visitor to, and the privacy notice, each a link, beneath its agreement. */
-function LegalLinks() {
-  const words = referral.form.legal;
-  return (
-    <p class={styles.legal}>
-      {words.before}
-      <TextLink inline href="/terms">
-        {words.terms}
-      </TextLink>
-      {words.between}
-      <TextLink inline href="/privacy">
-        {words.privacy}
-      </TextLink>
-      {words.after}
-    </p>
-  );
-}
-
 /**
- * /book's progress, "Step 2 of 4 · Your area". The address, once Continue opens it, and the name and
- * number, once the visitor comes back to them, bring the line to the top and give it focus, so a screen reader hears
- * where it is. Elsewhere the pincode's field or its answer takes focus instead.
+ * /book's progress, "Step 2 · Your area": a laptop's line, which a phone's step bar draws in its place and keeps for a
+ * screen reader. The address, once Continue opens it, and the name and number, once the visitor comes back to them,
+ * bring the line to the top and give it focus, so a screen reader hears where it is. Elsewhere the pincode's field or
+ * its answer takes focus instead.
  */
 export function StepLine(props: { at: number; name: string; focus: boolean }) {
   const line = useRef<HTMLParagraphElement>(null);
@@ -248,7 +235,7 @@ export function StepLine(props: { at: number; name: string; focus: boolean }) {
     line.current?.scrollIntoView({ block: "start" });
   }, [props.focus]);
   return (
-    <p ref={line} tabIndex={-1} data-says-where class={capsLook(shared.step)}>
+    <p ref={line} tabIndex={-1} data-says-where class={`${shared.stepLine ?? ""} ${hiddenOnPhoneLook ?? ""}`}>
       {fill(booking.step, { at: String(props.at), name: props.name })}
     </p>
   );
@@ -273,7 +260,10 @@ function markedLine(marked: number): string | null {
   return fill(referral.form.marked, { count: String(marked) });
 }
 
-/** A form's refusal, or the count of the fields it marked, and the button that sends it. */
+/**
+ * A form's refusal, or the count of the fields it marked, and the button that sends it: pinned to a phone's foot
+ * while the form is on the screen, as the client app's booking holds its own; at a laptop's form's foot.
+ */
 export function Send(props: {
   failure: string | null;
   /** How many fields the form marks as wrong. */
@@ -284,7 +274,7 @@ export function Send(props: {
 }) {
   const line = markedLine(props.marked) ?? props.failure;
   return (
-    <>
+    <div class={shared.send}>
       <div aria-live="polite">
         {line !== null && (
           <div class={messageLook({ tone: "error", className: shared.failure })}>
@@ -310,7 +300,7 @@ export function Send(props: {
       >
         {props.sending ? props.sendingLabel : props.label}
       </Button>
-    </>
+    </div>
   );
 }
 

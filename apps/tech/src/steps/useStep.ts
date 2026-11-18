@@ -12,9 +12,12 @@ import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { go, redirect, stepPath, type InJobStep } from "../route.ts";
 import { keepClosed } from "../store/jobs.ts";
-import { correct, queue, replay, type Queued } from "../store/outbox.ts";
+import { correct, queue, replay, type EventKind, type Queued } from "../store/outbox.ts";
 
 const LOADING: KeptLoad<Job> = { state: "loading" };
+
+/** The step's own event; none for the sign-off's step, whose ask and decline are writes of their own. */
+type WrittenAs<K extends InJobStep> = Extract<K, EventKind>;
 
 /** A close without the note for the next technician and the alert, which only the API keeps. */
 function decidedOf(body: OutcomeRequest): OutcomeRequest {
@@ -33,7 +36,7 @@ interface Standing<K extends InJobStep> {
   /** Every write still on the phone, of every job. */
   readonly queued: readonly Queued[];
   /** Queues this step's write, once however often it is tapped, and opens the next screen. */
-  readonly finish: (body: EventBody<K>) => Promise<void>;
+  readonly finish: (body: EventBody<WrittenAs<K>>) => Promise<void>;
   /** Closes the job from this step, as "Can't fit today" does at the piece, and opens the close-out. */
   readonly closeWith: (outcome: EventBody<"outcome">) => Promise<void>;
   readonly back: () => void;
@@ -57,11 +60,12 @@ export function useStep<K extends InJobStep>(id: string, step: K): Standing<K> {
     if (leaves) redirect(`/jobs/${id}`);
   }, [leaves, id]);
 
-  const finish = (body: EventBody<K>) =>
+  const finish = (body: EventBody<WrittenAs<K>>) =>
     once(async () => {
       if (job === null) return;
       setFinishing(true);
-      if (refused === null) await queue(step, id, body, job.starts_at);
+      // A step with no event of its own takes no body, so it never reaches here.
+      if (refused === null) await queue(step as WrittenAs<K>, id, body, job.starts_at);
       else await correct(refused.seq, body);
       // The duration the close-out shows runs from Start job to the outcome, and nothing gives it back. The close's
       // words about the client go to the API alone: the phone keeps what was decided, not what was written.

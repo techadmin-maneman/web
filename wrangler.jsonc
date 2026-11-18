@@ -118,7 +118,12 @@
     "ZOHO_BOOKS_API_HOST": "",
     "ZOHO_BOOKS_ORG_ID": "",
     "BOOKS_REFUND_ACCOUNT_ID": "",
-    // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
+    "BOOKS_BANK_ACCOUNT_ID": "",
+    "BOOKS_GATEWAY_FEES_ACCOUNT_ID": "",
+    // Razorpay's GSTIN and its state, as its tax invoice to us names them, so its fee's GST is input credit.
+    "BOOKS_GATEWAY_GSTIN": "",
+    "BOOKS_GATEWAY_GST_STATE": "",
+    // GST in Books: empty here, where Books is the stub.
     "BOOKS_GSTIN": "",
     "BOOKS_ITEM_PUSH": "false",
     "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "",
@@ -134,6 +139,7 @@
     "ANALYTICS_PROVIDER": "stub",
     "ROUTES_PROVIDER": "stub",
     "SELF_SERVE_BOOKING": "true",
+    "CLIENT_SIGN_OFF": "true",
     "SELF_SERVE_CONSULTATIONS": "true",
     "REFERRER_NAME_ON_INVITE": "true",
     "RAZORPAY_KEY_ID": "",
@@ -261,30 +267,37 @@
         "ZOHO_BOOKS_ACCOUNTS_HOST": "accounts.zoho.in",
         "ZOHO_BOOKS_API_HOST": "www.zohoapis.in",
         "ZOHO_BOOKS_ORG_ID": "60088931635",
-        "BOOKS_REFUND_ACCOUNT_ID": "4242595000000352005",
-        // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
-        "BOOKS_GSTIN": "",
+        "BOOKS_REFUND_ACCOUNT_ID": "4242595000001556003",
+        "BOOKS_BANK_ACCOUNT_ID": "",
+        "BOOKS_GATEWAY_FEES_ACCOUNT_ID": "",
+        // Razorpay's GSTIN and its state, as its tax invoice to us names them, so its fee's GST is input credit.
+        "BOOKS_GATEWAY_GSTIN": "",
+        "BOOKS_GATEWAY_GST_STATE": "",
+        // GST in Books (docs/decisions/0274-gst-on.md): the GSTIN and the state it is registered in; the SAC code once
+        // the CA gives it.
+        "BOOKS_GSTIN": "07AAVCM6347C1Z5",
         "BOOKS_ITEM_PUSH": "true",
         "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "4242595000000000567",
         "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
-        "BOOKS_GST_STATE": "",
+        "BOOKS_GST_STATE": "DL",
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         // Staging alone: the Staff list's test operator, whose grants the test runs' service token acts with. An admin
         // gives it grants on Staff for a run and takes them away after; with none, the token changes nothing.
         "SERVICE_TOKEN_ACTS_AS": "test-operator@maneman.in",
         "BOOKS_SAC": "",
-        // As production launches: no online payment, so paid visits are booked by ops and paid by UPI at the visit (ADR
-        // 0209). Razorpay's test key stays, with its secrets, for the day online payment comes back: "razorpay" here.
-        "PAYMENTS_PROVIDER": "none",
+        // Online payment on staging with Razorpay's test key and its secrets, so the client app's booking and payment are
+        // walked end to end before production takes them (docs/decisions/0257-razorpay-only.md).
+        "PAYMENTS_PROVIDER": "razorpay",
         // The owner's key is in place (docs/provisioning.md, step 13); production waits for the release.
         "GEOCODE_PROVIDER": "google",
         "ANALYTICS_PROVIDER": "none",
         // The owner switched on the Routes and Maps Static APIs for the key (docs/provisioning.md, step 13a).
         "ROUTES_PROVIDER": "google",
-        "SELF_SERVE_BOOKING": "false",
+        "SELF_SERVE_BOOKING": "true",
+        "CLIENT_SIGN_OFF": "true",
         "SELF_SERVE_CONSULTATIONS": "true",
         "REFERRER_NAME_ON_INVITE": "true",
-        "RAZORPAY_KEY_ID": "rzp_test_TvFc2eEnPG73fO",
+        "RAZORPAY_KEY_ID": "rzp_test_Tz0U9jnWcW6ZYU",
         // Daily ceilings; test/node/tooling/free-tier-budget.test.ts proves they fit the free tier.
         "RENDER_DAILY_CEILING": "20",
         "UPLOAD_DAILY_CEILING": "40",
@@ -405,13 +418,19 @@
         "ZOHO_BOOKS_ACCOUNTS_HOST": "",
         "ZOHO_BOOKS_API_HOST": "",
         "ZOHO_BOOKS_ORG_ID": "",
-        "BOOKS_REFUND_ACCOUNT_ID": "",
-        // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
-        "BOOKS_GSTIN": "",
+        "BOOKS_REFUND_ACCOUNT_ID": "4242595000001556003",
+        "BOOKS_BANK_ACCOUNT_ID": "4242595000001689024",
+        "BOOKS_GATEWAY_FEES_ACCOUNT_ID": "4242595000000000507",
+        // Razorpay's GSTIN and its state, as its tax invoice to us names them, so its fee's GST is input credit.
+        "BOOKS_GATEWAY_GSTIN": "",
+        "BOOKS_GATEWAY_GST_STATE": "",
+        // GST in Books (docs/decisions/0274-gst-on.md): the GSTIN and the state it is registered in; the SAC code once
+        // the CA gives it.
+        "BOOKS_GSTIN": "07AAVCM6347C1Z5",
         "BOOKS_ITEM_PUSH": "false",
         "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "4242595000000000567",
         "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
-        "BOOKS_GST_STATE": "",
+        "BOOKS_GST_STATE": "DL",
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         "SERVICE_TOKEN_ACTS_AS": "",
         "BOOKS_SAC": "",
@@ -424,6 +443,7 @@
         "ANALYTICS_PROVIDER": "none",
         "ROUTES_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "false",
+        "CLIENT_SIGN_OFF": "true",
         // A free consultation is booked outright with no payment taken; paid visits go through ops until online
         // payment is on.
         "SELF_SERVE_CONSULTATIONS": "true",

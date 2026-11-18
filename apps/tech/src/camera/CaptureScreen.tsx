@@ -5,23 +5,25 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { classes } from "@maneman/ui/classes";
 import { IconButton } from "@maneman/ui/IconButton";
 import { Shutter } from "@maneman/ui/Shutter";
 import { Tile } from "@maneman/ui/Tile";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { useCamera } from "@maneman/ui/useCamera";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Angle, Phase } from "../api.ts";
-import { capture as copy, storage, visit as visitCopy } from "../content.ts";
-import { NoSignal } from "../frame/Banners.tsx";
+import { capture as copy, visit as visitCopy } from "../content.ts";
+import { CameraStorageFull } from "../frame/Banners.tsx";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
 import { buzz } from "../lib/haptics.ts";
+import { dayMonth } from "../lib/when.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { go } from "../route.ts";
-import { useOnline } from "../session.ts";
 import { useStep } from "../steps/index.ts";
 import { isStorageFull, onStorageFull } from "../store/db.ts";
 import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } from "../store/outbox.ts";
@@ -30,6 +32,7 @@ import { FramingGuide } from "./FramingGuide.tsx";
 import { Torch } from "./Torch.tsx";
 import { useThumbnails } from "./useThumbnails.ts";
 import styles from "./capture.module.css";
+import { theirs } from "../lang/index.ts";
 
 /** Why a refused set is open again: the angles still to take again, or the set as a whole. Null once nothing is. */
 function refusalNotice(refused: readonly Angle[], taken: readonly TakenAngle[]): string | null {
@@ -39,9 +42,26 @@ function refusalNotice(refused: readonly Angle[], taken: readonly TakenAngle[]):
   return copy.refusedPhotos(stillToTake.map((angle) => copy.angles[angle].toLowerCase()));
 }
 
+type LastVisit = { readonly date: string; readonly technician: string | null } | null;
+
+/** What Compare names: the visit before photographs are set beside, by its day and who did it; the before set after. */
+function compareLabel(phase: Phase, last: LastVisit): string {
+  if (phase === "after" || last === null) return copy.compareWith[phase];
+  return copy.compareWithVisit(dayMonth(last.date), last.technician === null ? null : theirs(last.technician));
+}
+
+/** The label over the photograph compared with: whose it is and the angle, "12 Oct, Imran K. · top". */
+function comparedLabel(phase: Phase, last: LastVisit, angle: Angle): string {
+  const whose =
+    phase === "after" || last === null
+      ? copy.comparedWith[phase]
+      : copy.visitOf(dayMonth(last.date), last.technician === null ? null : theirs(last.technician));
+  return copy.compared(whose, copy.angles[angle].toLowerCase());
+}
+
 /** Why a set ops sent back is open again, as they said it; null for a set not sent back. */
 const sentBackNotice = (sentBack: string | null): string | null =>
-  sentBack === null ? null : visitCopy.sentBack(sentBack);
+  sentBack === null ? null : visitCopy.sentBack(theirs(sentBack));
 
 /**
  * While the phone has no room for another photograph, a red bar says so. The shutter stays: the phone learns it has
@@ -106,7 +126,8 @@ function Tiles(props: {
         const one = props.taken.find((each) => each.angle === name);
         const frameId = one?.frameId ?? null;
         const picture = frameId === null ? undefined : props.pictures.get(frameId);
-        const label = <span className={styles.tileLabel}>{copy.angles[name]}</span>;
+        // Bare, as the design draws them: the angle is for a screen reader alone.
+        const label = <VisuallyHidden>{copy.angles[name]}</VisuallyHidden>;
         return (
           <li className={styles.tile} key={name} data-state={tileState(name, props.taken, props.now)}>
             {picture !== undefined && <img className={styles.tilePicture} src={picture} alt="" />}
@@ -145,23 +166,65 @@ function Compare(props: {
   phase: Phase;
   angle: Angle | undefined;
   on: boolean;
+  last: LastVisit;
   onLoad: (url: string | null) => void;
 }) {
   if (props.angle === undefined) return null;
   const url = `/api/tech/jobs/${props.id}/compare/${props.phase}/${props.angle}`;
   return (
-    <img
-      key={url}
-      className={props.on ? styles.compare : styles.compareHidden}
-      src={url}
-      alt={copy.compareImage[props.phase](copy.angles[props.angle])}
-      onLoad={() => {
-        props.onLoad(url);
-      }}
-      onError={() => {
-        props.onLoad(null);
-      }}
-    />
+    <>
+      <img
+        key={url}
+        className={props.on ? styles.compare : styles.compareHidden}
+        src={url}
+        alt={copy.compareImage[props.phase](copy.angles[props.angle])}
+        onLoad={() => {
+          props.onLoad(url);
+        }}
+        onError={() => {
+          props.onLoad(null);
+        }}
+      />
+      {props.on && (
+        <>
+          <p className={styles.compared}>{comparedLabel(props.phase, props.last, props.angle)}</p>
+          <p className={styles.comparedNow}>{copy.now}</p>
+        </>
+      )}
+    </>
+  );
+}
+
+/** What the camera sees, the angle's guide over it, the photograph compared with, and the angle's prompt. */
+function LiveView(props: {
+  attach: (element: HTMLVideoElement | null) => void;
+  onReady: () => void;
+  compare: { id: string; phase: Phase; angle: Angle | undefined; on: boolean; last: LastVisit };
+  onCompareLoad: (url: string | null) => void;
+  prompt: string;
+  missed: boolean;
+}) {
+  return (
+    <>
+      {/* Muted and inline: a technician's phone never plays sound, and never goes full screen. */}
+      <video className={styles.view} ref={props.attach} autoPlay muted playsInline onLoadedMetadata={props.onReady} />
+      <FramingGuide angle={props.compare.angle ?? "front"} />
+      <Compare {...props.compare} onLoad={props.onCompareLoad} />
+      <p className={styles.prompt} role={props.missed ? "alert" : undefined}>
+        {props.prompt}
+      </p>
+    </>
+  );
+}
+
+/** Compare, under the head once there is a photograph to compare with: edged while off, filled once on. */
+function CompareBar(props: { label: string; on: boolean; onToggle: () => void }) {
+  return (
+    <div className={styles.compareBar}>
+      <ToggleButton className={styles.compareToggle} filled pressed={props.on} onClick={props.onToggle}>
+        {props.label}
+      </ToggleButton>
+    </div>
   );
 }
 
@@ -173,38 +236,40 @@ function promptOf(missed: "missed" | "blank" | null, angle: Angle | undefined): 
 
 /**
  * The camera's head: the way back to the visit's plan, as from every step, the step's name with the angles taken, and
- * the torch; beneath it, with no signal, the bar that says the photographs are kept.
+ * the torch.
  */
 function CameraHead(props: {
   id: string;
   title: string;
+  /** The shot being taken; none once all five are. */
+  angle: Angle | undefined;
   taken: number;
   stream: MediaStream | null;
   heading: (element: HTMLHeadingElement | null) => void;
 }) {
-  const online = useOnline();
   return (
-    <>
-      <header className={styles.top}>
-        <IconButton
-          className={styles.back}
-          d={ICONS.back}
-          size="lg"
-          label={copy.back}
-          onClick={() => {
-            go(`/jobs/${props.id}/plan`);
-          }}
-        />
-        <div className={styles.titles}>
-          <h1 className={styles.title} ref={props.heading} tabIndex={-1}>
-            {props.title}
-          </h1>
-          <p className={styles.count}>{copy.of(props.taken)}</p>
-        </div>
-        <Torch stream={props.stream} />
-      </header>
-      {!online && <NoSignal />}
-    </>
+    <header className={styles.top}>
+      <IconButton
+        className={styles.back}
+        d={ICONS.cross}
+        size="lg"
+        label={copy.close}
+        onClick={() => {
+          go(`/jobs/${props.id}/plan`);
+        }}
+      />
+      <div className={styles.titles}>
+        <h1 className={styles.title} ref={props.heading} tabIndex={-1}>
+          {props.title}
+        </h1>
+        <p className={styles.count}>
+          {props.angle === undefined
+            ? copy.of(props.taken)
+            : copy.taking(props.taken + 1, copy.angles[props.angle].toLowerCase())}
+        </p>
+      </div>
+      <Torch stream={props.stream} />
+    </header>
   );
 }
 
@@ -309,68 +374,56 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   // A refused set says which angles to take again; one ops sent back, what they said (ADR 0246).
   const notice = refused === null ? sentBackNotice(sentBack) : refusalNotice(refusedAngles, taken);
   const canCompare = comparable !== null && comparable === compareUrl;
+  const refusedCamera = camera.state === "refused";
   return (
     <div className={styles.look} data-look="light">
       <main className={styles.screen} data-chrome="camera">
-        <CameraHead id={id} title={title} taken={taken.length} stream={stream} heading={heading} />
+        <CameraHead id={id} title={title} angle={angle} taken={taken.length} stream={stream} heading={heading} />
         {canCompare && (
-          <div className={styles.compareBar}>
-            <ToggleButton
-              className={styles.compareToggle}
-              pressed={comparing}
-              onClick={() => {
-                setComparing(!comparing);
-              }}
-            >
-              {copy.compareWith[phase]}
-            </ToggleButton>
-          </div>
+          <CompareBar
+            label={compareLabel(phase, loaded.value.last_visit)}
+            on={comparing}
+            onToggle={() => {
+              setComparing(!comparing);
+            }}
+          />
         )}
-        {full && (
-          <p className={styles.alertBar} role="alert">
-            {storage.title}
-          </p>
-        )}
+        {full && <CameraStorageFull className={styles.alertBar} />}
         {notice !== null && (
           <p className={styles.alertBar} role="alert">
             {notice}
           </p>
         )}
-        <div className={styles.stage}>
-          {camera.state === "refused" ? (
+        <div className={classes(styles.stage, refusedCamera && styles.stageOff)}>
+          {refusedCamera ? (
             <NoCamera onRetry={reopen} onWithout={() => void finish({ phase, unavailable: true })} />
           ) : (
-            <>
-              {/* Muted and inline: a technician's phone never plays sound, and never goes full screen. */}
-              <video
-                className={styles.view}
-                ref={attach}
-                autoPlay
-                muted
-                playsInline
-                onLoadedMetadata={() => {
-                  setReady(true);
-                }}
-              />
-              <FramingGuide angle={angle ?? "front"} />
-              <Compare id={id} phase={phase} angle={angle} on={comparing && canCompare} onLoad={setComparable} />
-              <p className={styles.prompt} role={missed === null ? undefined : "alert"}>
-                {promptOf(missed, angle)}
-              </p>
-            </>
+            <LiveView
+              attach={attach}
+              onReady={() => {
+                setReady(true);
+              }}
+              compare={{ id, phase, angle, on: comparing && canCompare, last: loaded.value.last_visit }}
+              onCompareLoad={setComparable}
+              prompt={promptOf(missed, angle)}
+              missed={missed !== null}
+            />
           )}
         </div>
-        <div className={styles.dock}>
-          <Tiles taken={taken} now={angle} pictures={pictures} onRetake={(frameId) => void retake(frameId)} />
-          <Controls
-            all={all}
-            canRetake={lastOnPhone !== null}
-            canTake={stream !== null && ready}
-            onRetake={() => void retake(lastOnPhone)}
-            onTake={() => void take()}
-            onDone={() => void finish({ phase })}
-          />
-        </div>
+        {/* No camera and nothing taken: no strip or shutter, as drawn; once a photo is taken they stay, with Done. */}
+        {!(refusedCamera && taken.length === 0) && (
+          <div className={styles.dock}>
+            <Tiles taken={taken} now={angle} pictures={pictures} onRetake={(frameId) => void retake(frameId)} />
+            <Controls
+              all={all}
+              canRetake={lastOnPhone !== null}
+              canTake={stream !== null && ready}
+              onRetake={() => void retake(lastOnPhone)}
+              onTake={() => void take()}
+              onDone={() => void finish({ phase })}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

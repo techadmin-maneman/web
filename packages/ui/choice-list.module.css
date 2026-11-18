@@ -8,18 +8,19 @@
 @layer ui {
   .ruled {
     gap: 0;
-    border-top: var(--hairline) solid var(--text);
+    border-top: var(--choice-rule-top);
   }
 
   .ruled > * {
     align-items: center;
     gap: var(--sp-16);
-    min-height: var(--tap);
+    min-height: var(--choice-row-height);
     padding: var(--sp-8) 0;
     border-bottom: var(--hairline) solid var(--paper-line);
   }
 
   .ruled label {
-    font-size: var(--fs-15);
+    font-size: var(--choice-text);
+    font-weight: var(--choice-weight);
   }
 }

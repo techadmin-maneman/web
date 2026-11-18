@@ -24,12 +24,13 @@ export function useSheetData(asking: Asking) {
   const { dispatch, movingId, firstDay, offeredDate, offeredWindow, wanted } = asking;
   /** Whether reminders are on: null when the profile could not say, and the sheet asks. */
   const [reminders, setReminders] = useState<boolean | null>(null);
-  // True once the sheet knows it asks for the address before the date, which adds a step to the boards' three.
+  // True once the sheet knows it asks for the address before the day and time, which adds a step to their two.
   const [addressFirst, setAddressFirst] = useState(false);
   // The profile had no address when it was last read, so the address comes before the date.
   const addressMissing = useRef(false);
-  // The address the profile had when it was last read.
+  // The address the profile had when it was last read: read by the answer that it is not served, and shown on the review.
   const savedAddress = useRef<Address | null>(null);
+  const [address, setAddress] = useState<Address | null>(null);
   const days = useDays({ dispatch, movingId, offeredDate, offeredWindow, addressMissing });
   const { showDays } = days;
 
@@ -41,6 +42,13 @@ export function useSheetData(asking: Asking) {
   /** The API offers nothing at the address saved, which the client changes, or they join the waitlist. */
   const showNotServed = () => {
     dispatch({ kind: "notServed", address: savedAddress.current });
+  };
+
+  /** Why the API offers no days: not at this address, the hair system made to order, or a failure. */
+  const refused = (code: string) => {
+    if (code === "not_served") showNotServed();
+    else if (code === "made_to_order") dispatch({ kind: "madeToOrder" });
+    else dispatch({ kind: "failed" });
   };
 
   /**
@@ -55,9 +63,9 @@ export function useSheetData(asking: Asking) {
     ]);
     setReminders(profile.ok ? remindersOn(profile.body) : null);
     savedAddress.current = profile.ok ? profile.body.address : null;
+    setAddress(savedAddress.current);
     if (answer !== null && !answer.ok) {
-      if (answer.code === "not_served") showNotServed();
-      else dispatch({ kind: "failed" });
+      refused(answer.code);
       return;
     }
     addressMissing.current = profile.ok && profile.body.address === null;
@@ -82,9 +90,14 @@ export function useSheetData(asking: Asking) {
     dispatch({ kind: "asking" });
     const answer = await api.availability(visit, movingId, firstDay);
     if (answer.ok) showDays(answer.body);
-    else if (answer.code === "not_served") showNotServed();
-    else dispatch({ kind: "failed" });
+    else refused(answer.code);
   };
 
-  return { days, reminders, setReminders, addressFirst, askForAddress, showNotServed, load, pick };
+  /** The client ticked "Remind me": their yes to WhatsApp about their visits, recorded under the box's own line. */
+  const switchOnReminders = async () => {
+    const answer = await api.switchConsent("whatsapp_visits", true, "app_booking");
+    if (answer.ok) setReminders(true);
+  };
+
+  return { days, reminders, switchOnReminders, address, addressFirst, askForAddress, showNotServed, load, pick };
 }

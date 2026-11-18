@@ -1,9 +1,29 @@
 /* What ./MobileScreen.tsx alone draws; what it shares is in ./login.module.css. */
 
+.lockup {
+  color: var(--navy-900);
+}
+
+.lockup + h1 {
+  margin-top: var(--sp-40);
+}
+
+.lede {
+  margin: var(--sp-4) 0 var(--sp-16);
+  color: var(--ink-500);
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+}
+
+/* The number right under its label, as drawn. */
+.number {
+  margin-top: var(--sp-8);
+}
+
 .hint {
   margin: 0;
   font-size: var(--fs-14);
   line-height: var(--lh-160);
   text-align: center;
-  color: var(--ink-muted);
+  color: var(--ink-500);
 }

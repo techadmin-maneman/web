@@ -36,10 +36,7 @@ const { pageTitle, description, page } = Astro.props;
   ))}
   {page.sections.map((section, index) => (
     <section>
-      <h2>
-        <span class="number">{index + 1}.</span>
-        {section.heading}
-      </h2>
+      <h2>{`${String(index + 1)}. ${section.heading}`}</h2>
       <LegalBlocks blocks={section.blocks} depth={1} section={index + 1} />
     </section>
   ))}
@@ -72,28 +69,32 @@ const { pageTitle, description, page } = Astro.props;
 <style>
   table {
     width: 100%;
-    margin: var(--sp-24) 0 0;
     border-collapse: collapse;
-    font-size: var(--fs-16);
-    line-height: var(--lh-145);
   }
   th,
   td {
     padding: var(--sp-8) var(--sp-12) var(--sp-8) 0;
-    border-bottom: var(--hairline) solid var(--paper-line);
+    border-bottom: var(--hairline) solid var(--site-line);
     text-align: start;
     vertical-align: top;
   }
-  th {
-    font-weight: var(--weight-medium);
-  }
+  /* The version and its date beneath the title, a name and a value to a row, between hairlines. */
   .version {
-    width: auto;
-    color: var(--text-muted);
+    margin: var(--site-gap-near) 0 var(--sp-24);
+    border-top: var(--hairline) solid var(--site-line);
+    font-size: var(--fs-14);
   }
-  .number {
-    display: inline-block;
-    min-width: var(--sp-48);
-    font-variant-numeric: tabular-nums;
+  .version th {
+    width: var(--site-version-label);
+    padding-right: var(--sp-16);
+    font-weight: var(--weight-regular);
+    color: var(--site-text-muted);
+  }
+  .annex {
+    margin: 0 0 var(--site-gap-paragraph);
+    font-size: var(--fs-15);
+  }
+  .annex th {
+    font-weight: var(--weight-semibold);
   }
 </style>

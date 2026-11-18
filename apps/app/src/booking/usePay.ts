@@ -2,7 +2,7 @@
 // answer or the hold's clock leads to. The hold that has an order is never let go by the app: a payment may still land
 // on it, and the API lets it go once its grace ends.
 
-import { useEffect, useRef, type Dispatch, type RefObject } from "react";
+import { useEffect, useRef, useState, type Dispatch, type RefObject } from "react";
 import { api, type Hold } from "../api.ts";
 import { booking } from "../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -66,8 +66,10 @@ async function startPaying(hold: Hold, context: Paying, refs: Refs): Promise<Pai
 
 /**
  * Paying for the step's hold: `payFor` to start, `letGo` for a hold the sheet closed on, `changed` once money moved or
- * a visit was booked, and `paying` while Checkout is up. When the phone sees the countdown end it lets the hold go too,
- * but not while Checkout is open: it waits for Checkout's answer.
+ * a visit was booked, and `paying` while Checkout is up. `hasOrder`: the hold has a Razorpay order, which keeps it
+ * until its grace ends, so the client can no longer leave it for another time. `dismissedOn`: the hold whose Checkout
+ * was closed unpaid. When the phone sees the countdown end it lets the hold go too, but not while Checkout is open: it
+ * waits for Checkout's answer.
  */
 export function usePay(step: Step, context: Paying) {
   const changed = useRef(false);
@@ -75,6 +77,7 @@ export function usePay(step: Step, context: Paying) {
   // True from the tap until Checkout has answered, so the hold's lapse waits for that answer (ADR 0057).
   const starting = useRef(false);
   const ordered = useRef<string | null>(null);
+  const [dismissedOn, setDismissedOn] = useState<string | null>(null);
   const { dispatch } = context;
 
   /** Lets an unpaid hold go for someone else, unless it has an order, which the API lets go once its grace ends. */
@@ -114,6 +117,7 @@ export function usePay(step: Step, context: Paying) {
     context.once(async () => {
       starting.current = true;
       context.setProblem(null);
+      setDismissedOn(null);
       const outcome = await startPaying(hold, context, { paying, ordered }).finally(() => {
         starting.current = false;
       });
@@ -125,7 +129,10 @@ export function usePay(step: Step, context: Paying) {
       // The hold's time may have run out while the client was paying, and its lapse waited for this answer.
       if (hasRunOut(hold)) void lapse(hold);
       else if (outcome === "failed") dispatch({ kind: "payFailed", hold });
+      else if (outcome === "dismissed") setDismissedOn(hold.id);
     });
 
-  return { payFor, letGo, changed, paying };
+  const hasOrder = (hold: Hold): boolean => ordered.current === hold.id;
+
+  return { payFor, letGo, changed, paying, hasOrder, dismissedOn };
 }

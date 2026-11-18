@@ -7,6 +7,9 @@ export const quantity = (value: number): string => value.toLocaleString("en-IN",
 /** Units of measure, which never take a plural: "5 ml", not "5 mls". */
 const MEASURES = new Set(["ml", "l", "g", "kg", "mg", "cm", "mm", "m", "in"]);
 
+/** Whether a unit is a measure, written after a figure as it is ("5 ml"), rather than a thing counted ("5 strips"). */
+export const isMeasure = (unit: string): boolean => MEASURES.has(unit);
+
 /** 1, "piece" → "1 piece"; 6, "piece" → "6 pieces"; 172, "strip" → "172 strips"; 5, "ml" → "5 ml". */
 export function amountOf(value: number, unit: string): string {
   const one = Math.abs(value) === 1 || MEASURES.has(unit) || unit === "";

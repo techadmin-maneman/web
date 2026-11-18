@@ -16,6 +16,11 @@
   --ui-ground: var(--white-000);
   --ui-raised: var(--white-000);
   --ui-tint: var(--grid-100);
+  /* The one note a screen marks warmly, as the prototype draws a reschedule asked. */
+  --ui-wash: var(--wash-100);
+  /* The SOS, as the prototype draws it: the deep red at rest, the error's red sweeping across as it is held. */
+  --hold-ground: var(--sos-900);
+  --hold-fill: var(--error);
   --ui-shade: var(--disabled);
   --ui-box: var(--white-000);
   --ui-box-off: var(--disabled);
@@ -27,7 +32,14 @@
   --ui-toggle-text: var(--ink-900);
   --ui-hint: var(--ink-500);
   --ui-line: var(--line-200);
+  /* The paper rule a few shared parts draw directly, as a ruled list of choices: grey here, not the paper's warm one. */
+  --paper-line: var(--line-200);
   --ui-line-control: var(--stone);
+  /* An outlined button's edge, grey as the design draws it, at the 3:1 of a control's (WCAG 1.4.11). */
+  --outline-edge: var(--stone);
+  /* One that cannot be used, filled grey as the prototype draws every button it cannot use. */
+  --outline-off-ground: var(--disabled);
+  --outline-off-edge: var(--disabled);
   --ui-strong: var(--navy-900);
   --ui-on-strong: var(--white-000);
   --ui-strong-pressed: var(--navy-700);
@@ -75,9 +87,17 @@
   --message-size: var(--fs-14);
   --radio-size: var(--sp-24);
   --check-text: var(--fs-16);
-  --label-text: var(--ink-900);
-  --label-weight: var(--weight-semibold);
+  /* A field's label small and quiet, as the design's forms draw them; the sign-in keeps its own bold one. */
+  --label-text: var(--ink-500);
+  --label-weight: var(--weight-regular);
   --check-row-height: var(--tap-row);
+  /* A ruled list's choice as the outcome's Result and the language sheet draw them: the prototype's 60 px from rule to
+     rule; no rule over the first, its words 16 px at Plex's medium, under a 20 px title. */
+  --choice-row-height: calc(var(--btn-lg) + var(--sp-4));
+  --choice-rule-top: 0;
+  --choice-text: var(--fs-16);
+  --choice-weight: var(--weight-medium);
+  --legend-title-text: var(--fs-20);
   --check-box-size: var(--sp-24);
 
   /* The tab bar on white: its current tab in navy, under a 2 px navy mark; and a sheet's panel on white. */
@@ -89,13 +109,15 @@
   --tab-mark: var(--navy-900);
   --sheet-ground: var(--white-000);
   --sheet-text: var(--ink-900);
-  /* Rows run the column's width under hairlines, with no box, at the brief's list sizes. */
+  /* Rows run the column's width under hairlines, with no box, their words on the gutter's line, at the prototype's
+     list sizes: a 16 px title; Today's list keeps its rows 16 px in, beside each row's mark. */
   --list-edge: 0;
+  --row-pad-x: 0;
   --row-lead-text: var(--fs-15);
   --row-lead-colour: var(--ink-900);
   --row-lead-wrap: normal;
   --row-lead-align: flex-start;
-  --row-title-text: var(--fs-17);
+  --row-title-text: var(--fs-16);
   --row-title-weight: var(--weight-semibold);
   --row-meta-text: var(--fs-14);
 
@@ -122,7 +144,8 @@
   --ui-text-soft: var(--mist-300);
   --ui-text-muted: var(--mist-300);
   --ui-text-quiet: var(--mist-300);
-  --ui-toggle-text: var(--mist-300);
+  /* A toggle's words white on its navy edge, as Compare is drawn; chosen, it is filled white (`filled`). */
+  --ui-toggle-text: var(--white-000);
   --ui-hint: var(--mist-300);
   --ui-tint: var(--camera-700);
   --ui-raised: var(--camera-900);
@@ -130,6 +153,10 @@
   --ui-line: var(--navy-700);
   --ui-line-control: var(--navy-700);
   --ui-strong: var(--white-000);
+  --outline-edge: var(--ui-strong);
+  /* A button not usable yet, as Retake before a shot: clear on the dark, edged in its navy, not the paper's grey fill. */
+  --outline-off-ground: transparent;
+  --outline-off-edge: var(--navy-700);
   --ui-on-strong: var(--navy-900);
   --ui-strong-pressed: var(--mist-300);
   --focus-colour: var(--white-000);

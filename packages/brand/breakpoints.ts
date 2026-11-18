@@ -16,3 +16,16 @@ export const MEDIA = {
   /** Short of a desktop: a page's own side menu runs across its top, so its tables have the width. */
   belowDesk: "(max-width: 1279px)",
 } as const;
+
+/**
+ * The widths a part changes at by the room its own box has, as its container (`@container <name> <condition>`), written
+ * as they are, as the media conditions are, and held to this list by the same test.
+ */
+export const CONTAINER = {
+  /** Under it a row of five short names, as the live card's stages, no longer fits at the scale's smallest size. */
+  fiveNames: "(width < 13rem)",
+  /** Under it the site's header no longer holds the lockup, Sign in and the free consultation side by side. */
+  siteHeader: "(max-width: 328px)",
+  /** Under it the site's header no longer holds the lockup and the free consultation, where there is no Sign in. */
+  siteHeaderAlone: "(max-width: 250px)",
+} as const;

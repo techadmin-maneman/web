@@ -2,8 +2,6 @@
 // order and the tasks each guides, and every task read-only. Drawn from the visit engine and the checklists as ops set
 // them, which the phone keeps (./checklists.ts), so it opens with no signal.
 
-import { GLYPHS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { cardStepsFor } from "@rules/policy/in-job-steps.ts";
 import { VISIT_TYPES, type VisitType } from "@rules/config/visit-types.ts";
@@ -13,13 +11,19 @@ import { TaskGuide } from "../steps/index.ts";
 import { screensOf, taskFor, type Screen } from "../visit/index.ts";
 import { useChecklists } from "./checklists.ts";
 import styles from "./guides.module.css";
+import { Chevron } from "../frame/Chevron.tsx";
 
 /** A kind of visit's screens, in the order they are worked, as a visit of that kind would have them. */
-const screensFor = (type: VisitType): Screen[] => screensOf({ type, one_visit: false, steps: cardStepsFor(type) });
+export const screensFor = (type: VisitType): Screen[] =>
+  screensOf({ type, one_visit: false, steps: cardStepsFor(type) });
+
+/** What a step is, in a line: "Same 5 shots"; a consultation's outcome, whether the client goes ahead. */
+export const stepLine = (id: Screen["id"], consultation: boolean): string =>
+  consultation && id === "outcome" ? copy.consultationOutcome : copy.what[id];
 
 export function GuidesScreen() {
   return (
-    <CardFrame title={copy.title} sub={copy.sub} back="/me" foot={null}>
+    <CardFrame title={copy.title} back="/me" foot={null}>
       <ListRows className={styles.rows} label={copy.title}>
         {VISIT_TYPES.map((type) => (
           <ListRow
@@ -27,7 +31,7 @@ export function GuidesScreen() {
             title={types[type]}
             meta={copy.steps(screensFor(type).length)}
             to={`/guides/${type}`}
-            end={<Icon d={GLYPHS.chevron} size="sm" />}
+            end={<Chevron />}
           />
         ))}
       </ListRows>
@@ -52,12 +56,12 @@ export function GuideScreen({ type, back }: { readonly type: VisitType; readonly
                     key={item.id}
                     title={taskFor(item).title}
                     to={`/guides/${type}/${item.id}`}
-                    end={<Icon d={GLYPHS.chevron} size="sm" />}
+                    end={<Chevron />}
                   />
                 ))}
               </ListRows>
             ) : (
-              <p className={styles.stepWhat}>{copy.what[screen.id]}</p>
+              <p className={styles.stepWhat}>{stepLine(screen.id, type === "consultation")}</p>
             )}
           </li>
         ))}

@@ -111,6 +111,34 @@ describe("tomorrow's kits", () => {
     expect(told[0]).not.toContain("cover solvent");
   });
 
+  it("carries the hair system of the package a replacement was booked as, not the one the client wears", async () => {
+    await env.DB.prepare(
+      `INSERT INTO services (kind, tier, name, minutes, sort, updated_by, updated_at)
+       VALUES ('first_fit', 'natural', 'Mane Man Natural', 120, 2, 'test', ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const added = await job.opsPost("/api/hair-systems", {
+      product: "natural",
+      base_width_in: 8,
+      base_length_in: 10,
+      colour: "1B",
+      grey_percent: 20,
+      density_percent: 100,
+      unit_cost: 1_400_000,
+    });
+    const natural = (await added.json<{ code: string }>()).code;
+    // The client wears Essential and books Natural for their replacement.
+    await env.DB.prepare(
+      "UPDATE appointments SET type = 'replacement', tier = 'natural' WHERE id = 'fit-tomorrow'",
+    ).run();
+    await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK);
+    const lines = await env.DB.prepare("SELECT consumable_code FROM plan_lines").all<{ consumable_code: string }>();
+    const codes = lines.results.map((line) => line.consumable_code);
+    expect(codes).toContain(natural);
+    expect(codes).not.toContain(code);
+  });
+
   it("carries the city's one-visit range for a one visit whose client's head is not yet measured", async () => {
     const at = NOW.toISOString();
     await env.DB.batch([

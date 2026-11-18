@@ -16,6 +16,7 @@
 // late fees are items of their own, one figure a kind
 // (docs/decisions/0085-services-ops-can-edit.md).
 
+import { exGst } from "../../config/gst.ts";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
 import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -23,7 +24,7 @@ import { firstPriceDay } from "../../policy/prices.ts";
 import { isOffered } from "../../policy/services.ts";
 import { auditStatement, type AuditActor, type AuditEntry } from "../platform/audit.ts";
 import { serviceOf } from "../booking/services.ts";
-import { priceFrom, priceInForce, type Price } from "./price-lookup.ts";
+import { amountOf, priceFrom, priceInForce, type Price } from "./price-lookup.ts";
 
 /** What the book prices: each kind of visit, by its services' tiers, each hair system, and the two late fees. */
 export const PRICE_ITEMS = [...VISIT_TYPES, "hair_system", "late_fee_first_fit", "late_fee_replacement"] as const;
@@ -62,6 +63,8 @@ export interface PriceRow {
   readonly item: PriceItem;
   readonly tier: string;
   readonly amount_ex_gst: number;
+  /** What the client pays, GST included. */
+  readonly amount: number;
   readonly gst_percent: number;
   readonly valid_from: string;
   /** The row that applies on the day asked about; the others are spent or still to come. */
@@ -72,17 +75,17 @@ export interface PriceRow {
 export async function priceBook(db: D1Database, on: string): Promise<PriceRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT item, tier, amount_ex_gst, gst_percent, valid_from FROM price_book
+      `SELECT item, tier, amount_ex_gst, gst_percent, amount_paise AS amount, valid_from FROM price_book
        ORDER BY item, tier, valid_from DESC`,
     )
-    .all<Omit<PriceRow, "in_force">>();
+    .all<Omit<PriceRow, "in_force" | "amount"> & { amount: number | null }>();
 
   const found = new Set<string>();
   return results.map((row) => {
     const key = `${row.item}/${row.tier}`;
     const inForce = row.valid_from <= on && !found.has(key);
     if (inForce) found.add(key);
-    return { ...row, in_force: inForce };
+    return { ...row, amount: amountOf(row), in_force: inForce };
   });
 }
 
@@ -96,11 +99,11 @@ export interface PriceRefusal {
   readonly retired?: true;
 }
 
-/** A price as ops set one: what it prices, from when, and its figures. */
+/** A price as ops set one: what it prices, from when, and what the client pays for it, GST included. */
 interface PriceChange {
   readonly item: PriceItem;
   readonly tier: string;
-  readonly amount_ex_gst: number;
+  readonly amount: number;
   readonly gst_percent: number;
   readonly valid_from: string;
 }
@@ -145,14 +148,14 @@ async function hairSystemRefusal(db: D1Database, price: PriceChange): Promise<Pr
 }
 
 function checkPrice(
-  price: { readonly amount_ex_gst: number; readonly gst_percent: number; readonly valid_from: string },
+  price: { readonly amount: number; readonly gst_percent: number; readonly valid_from: string },
   today: string,
 ): PriceRefusal | null {
   const { minPaise, maxPaise, minGstPercent, maxGstPercent } = PRICE_BOUNDS;
-  if (!Number.isInteger(price.amount_ex_gst) || price.amount_ex_gst < minPaise || price.amount_ex_gst > maxPaise) {
-    return { field: "amount_ex_gst", says: `A price runs from 0 to ${String(maxPaise / 100_000)} lakh rupees.` };
+  if (!Number.isInteger(price.amount) || price.amount < minPaise || price.amount > maxPaise) {
+    return { field: "amount", says: `A price runs from 0 to ${String(maxPaise / 100_000)} lakh rupees.` };
   }
-  if (price.amount_ex_gst % 100 !== 0) return { field: "amount_ex_gst", says: "A price is in whole rupees." };
+  if (price.amount % 100 !== 0) return { field: "amount", says: "A price is in whole rupees." };
   if (!Number.isInteger(price.gst_percent) || price.gst_percent < minGstPercent || price.gst_percent > maxGstPercent) {
     return {
       field: "gst_percent",
@@ -179,34 +182,42 @@ interface PriceWrite {
   readonly now: Date;
 }
 
+/** A row's figures; `amount` is empty on a row set before prices were set with their GST. */
+interface HeldPrice {
+  readonly amount_ex_gst: number;
+  readonly gst_percent: number;
+  readonly amount: number | null;
+}
+
 /** A row still to come, and what it holds; "not_found" or "not_to_come" where it cannot be taken back. */
 async function toTakeBack(
   db: D1Database,
   row: PriceRowKey,
   today: string,
-): Promise<{ amount_ex_gst: number; gst_percent: number } | "not_found" | "not_to_come"> {
+): Promise<HeldPrice | "not_found" | "not_to_come"> {
   const held = await db
-    .prepare("SELECT amount_ex_gst, gst_percent FROM price_book WHERE item = ?1 AND tier = ?2 AND valid_from = ?3")
+    .prepare(
+      "SELECT amount_ex_gst, gst_percent, amount_paise AS amount FROM price_book WHERE item = ?1 AND tier = ?2 AND valid_from = ?3",
+    )
     .bind(row.item, row.tier, row.valid_from)
-    .first<{ amount_ex_gst: number; gst_percent: number }>();
+    .first<HeldPrice>();
   if (held === null) return "not_found";
   return row.valid_from <= today ? "not_to_come" : held;
 }
 
 /** Taking a row back: its audit entry, holding what it would have been, then the delete. */
-function takingBack(
-  db: D1Database,
-  row: PriceRowKey,
-  held: { amount_ex_gst: number; gst_percent: number },
-  write: PriceWrite,
-): D1PreparedStatement[] {
+function takingBack(db: D1Database, row: PriceRowKey, held: HeldPrice, write: PriceWrite): D1PreparedStatement[] {
   const entry: AuditEntry = {
     surface: "ops",
     actor: write.actor,
     action: "price.withdraw",
     subject: { kind: "price", id: `${row.item}/${row.tier}` },
     requestId: write.requestId,
-    detail: { amount_ex_gst: held.amount_ex_gst, gst_percent: held.gst_percent, valid_from: row.valid_from },
+    detail: {
+      amount: amountOf(held),
+      gst_percent: held.gst_percent,
+      valid_from: row.valid_from,
+    },
   };
   return [
     auditStatement(db, entry, write.now),
@@ -229,8 +240,8 @@ async function setting(db: D1Database, price: PriceChange, write: PriceWrite): P
     subject: { kind: "price", id: `${price.item}/${price.tier}` },
     requestId: write.requestId,
     detail: {
-      from: was?.amount_ex_gst ?? null,
-      to: price.amount_ex_gst,
+      from: was?.amount ?? null,
+      to: price.amount,
       gst_percent: price.gst_percent,
       valid_from: price.valid_from,
     },
@@ -239,11 +250,19 @@ async function setting(db: D1Database, price: PriceChange, write: PriceWrite): P
     auditStatement(db, entry, write.now),
     db
       .prepare(
-        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from) VALUES (?1, ?2, ?3, ?4, ?5)
+        `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, amount_paise, valid_from)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
          ON CONFLICT (item, tier, valid_from) DO UPDATE SET
-           amount_ex_gst = excluded.amount_ex_gst, gst_percent = excluded.gst_percent`,
+           amount_ex_gst = excluded.amount_ex_gst, gst_percent = excluded.gst_percent, amount_paise = excluded.amount_paise`,
       )
-      .bind(price.item, price.tier, price.amount_ex_gst, price.gst_percent, price.valid_from),
+      .bind(
+        price.item,
+        price.tier,
+        exGst(price.amount, price.gst_percent),
+        price.gst_percent,
+        price.amount,
+        price.valid_from,
+      ),
   ];
 }
 

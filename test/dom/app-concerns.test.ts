@@ -52,6 +52,7 @@ function draw(grievances: Profile["grievances"]) {
     root.render(
       createElement(DataCard, {
         grievances,
+        answerDays: 30,
         onRaised: () => {
           raised += 1;
         },
@@ -69,7 +70,7 @@ const button = (name: string) => {
 /** Writes a concern and sends it, then waits for the answer to be drawn. */
 async function sendConcern(text: string) {
   act(() => {
-    button("Raise a concern").click();
+    button("Raise a concern about my data").click();
   });
   const field = page.querySelector("textarea");
   if (field === null) throw new Error("No concern field on the page.");

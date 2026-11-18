@@ -11,7 +11,7 @@ import { fakeTech, type Fake } from "./fake-tech.ts";
 import { atTheDoor, heldOnPhone, keptOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 import { askToSignOut, openPending } from "./tabs.ts";
-import { stepAction } from "./steps-fixtures.ts";
+import { stepAction, throughTheTasks, shots } from "./steps-fixtures.ts";
 
 /**
  * Opens the day, checks in at the door, then takes the signal away. The app
@@ -61,7 +61,7 @@ async function photograph(page: Page, from = 1): Promise<void> {
   await expect(capture).toBeEnabled();
   for (let angle = from; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
 }
@@ -71,7 +71,7 @@ async function workTheJob(page: Page): Promise<void> {
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
-  await page.getByRole("button", { name: techCopy.steps.checklist.all }).click();
+  await throughTheTasks(page);
   await stepAction(page).click();
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await page.getByRole("button", { name: "One more tape strips" }).click();
@@ -79,7 +79,7 @@ async function workTheJob(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.after })).toBeVisible();
   await photograph(page);
   await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
-  await page.getByRole("button", { name: techCopy.capture.finish, exact: true }).click();
+  await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
   await stepAction(page).click();
 }
 
@@ -130,14 +130,18 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
   expect(fake.writes.map((write) => write.path.split("/").at(-1))).toEqual(["checkin", "start"]);
 
   await stopped.getByRole("link", { name: techCopy.changed.open }).click();
-  await expect(page.getByText("Before photos · 4 of 5 sent")).toBeVisible();
+  // A stopped set has no line, as the prototype draws it: how far it went is said beside its count.
+  await expect(
+    page.getByText(`${techCopy.queue.photos(5)} · ${techCopy.queue.sentOf(4, 5)}`, { exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.queue.forget.open })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.retake }).click();
 
   // Only the refused angle is asked for: the four that reached us count.
   await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.before })).toBeVisible();
   await expect(page.getByText("The top photo wouldn’t upload. Take it again.")).toBeVisible();
-  await expect(page.getByText("4 of 5")).toBeVisible();
+  // The fifth shot is the refused one, the top.
+  await expect(page.getByText(techCopy.capture.taking(5, "top"), { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.capture.retake })).toBeDisabled();
   fake.refusedPhoto = null;
   await photograph(page, 5);
@@ -201,19 +205,19 @@ test("warns when the phone will not promise to keep the queue, and says how long
 
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
-  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await expect(page.getByRole("list", { name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
 
   await expect(page.getByText(techCopy.atRisk.title)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
-  // And the queue itself names how long the work has been on the phone alone.
+  // The queue names how long the work has been on the phone alone; the warning is Today's alone, as drawn.
   await openPending(page);
-  await expect(page.getByText(techCopy.atRisk.title)).toBeVisible();
   await expect(page.getByText(/^Waiting since /)).toBeVisible();
+  await expect(page.getByText(techCopy.atRisk.title)).toHaveCount(0);
 
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -228,9 +232,9 @@ test("says nothing about keeping the queue when the phone has promised to", asyn
 
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
-  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await expect(page.getByRole("list", { name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
 
@@ -250,9 +254,9 @@ test("accounts plainly for what has not reached us, and says what changed on a s
 
   // Today says what is waiting, without a number of bytes or a spinner. Every
   // move here is a link inside the app: with no signal there is no navigation.
-  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await expect(page.getByRole("list", { name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
@@ -281,7 +285,7 @@ test("accounts plainly for what has not reached us, and says what changed on a s
     page.getByRole("alert").filter({ hasText: `9:30 am service visit · Sector 65: ${movedToSameer}` }),
   ).toBeVisible();
   // And once, over the first screen past Pending uploads, which says it job by job (ADR 0246).
-  const told = page.getByRole("dialog", { name: /: moved to Sameer$/ });
+  const told = page.getByRole("dialog", { name: / moved to Sameer$/ });
   await expect(told).toBeVisible();
   await told.getByRole("button", { name: techCopy.interrupted.today }).click();
   await page.getByText("Rohit M.").first().click();
@@ -348,7 +352,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   await context.setOffline(true);
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
 
@@ -359,7 +363,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await openPending(page);
   await expect(page.getByText(techCopy.today.offline.bar)).toBeVisible();
-  await expect(page.getByText("Before photos · 0 of 5 sent")).toBeVisible();
+  await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuetext", techCopy.queue.sentOf(0, 5));
   await expect(page.getByRole("button", { name: techCopy.queue.retry })).toHaveCount(0);
 
   // Ops gave the job to Sameer at 10:40 while the phone was underground. The
@@ -375,7 +379,7 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
 
   // Deleting never throws away photographs on one tap, and the question opens on the safe answer.
   await page.getByRole("button", { name: techCopy.queue.forget.open }).click();
-  await expect(page.getByText("This deletes 5 photos and 1 action from this phone.")).toBeVisible();
+  await expect(page.getByText("This deletes 5 photos from this phone.")).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.queue.forget.keep })).toBeFocused();
   await page.keyboard.press("Enter");
   expect(await heldOnPhone(page)).toMatchObject({ frames: 5 });
@@ -386,6 +390,35 @@ test("a job ops gave away while its photographs waited says whom to, and asks be
   expect(await heldOnPhone(page)).toMatchObject({ frames: 0, outbox: 0 });
 });
 
+test("names a set whose photographs all went up, its write refused, on the delete sheet", async ({ page, context }) => {
+  const fake = await fakeTech(page);
+  await atTheDoor(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
+  await page.getByRole("button", { name: techCopy.job.start }).click();
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
+  await expect(capture).toBeEnabled();
+  await expect.poll(() => fake.writes.length).toBe(2);
+
+  fake.online = false;
+  await context.setOffline(true);
+  for (let angle = 1; angle <= 5; angle += 1) {
+    await capture.click();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
+  }
+  await page.getByRole("button", { name: techCopy.capture.finish }).click();
+  for (let back = 0; back < 3; back += 1) await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await openPending(page);
+
+  // Ops closed the job meanwhile: the photographs go up, and only then is the set's write refused.
+  fake.closedByOps = true;
+  fake.online = true;
+  await context.setOffline(false);
+  await expect.poll(async () => (await heldOnPhone(page)).frames).toBe(0);
+  await page.getByRole("button", { name: techCopy.queue.forget.open }).click();
+  await expect(page.getByText("This deletes 1 action from this phone.")).toBeVisible();
+});
+
 test("counts a set as sent only as its photographs go up", async ({ page, context }) => {
   const fake = await fakeTech(page);
   await intoTheBasement(page, context, fake);
@@ -394,7 +427,7 @@ test("counts a set as sent only as its photographs go up", async ({ page, contex
   await expect(capture).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: techCopy.capture.finish }).click();
   // Every move here is a link inside the app: with no signal there is no navigation. From a step, the way back is the
@@ -402,9 +435,17 @@ test("counts a set as sent only as its photographs go up", async ({ page, contex
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
-  await openPending(page);
 
-  await expect(page.getByText("Before photos · 0 of 5 sent")).toBeVisible();
+  // The set is one upload wherever it is counted, beside the start that waits with it: its own write is not another.
+  await askToSignOut(page);
+  await expect(page.getByRole("dialog")).toContainText(techCopy.me.sheet.lost(2));
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.me.sheet.cancel }).click();
+  await expect(page.getByText(techCopy.today.sync.offline(2))).toBeVisible();
+  await openPending(page);
+  await expect(page.getByText(techCopy.queue.events(1), { exact: true })).toBeVisible();
+
+  // The line counts what reached us, and says so to a screen reader.
+  await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuetext", techCopy.queue.sentOf(0, 5));
   const width = await page.locator("[data-bar] > div").evaluate((bar) => bar.getBoundingClientRect().width);
   expect(width).toBe(0);
 
@@ -414,7 +455,7 @@ test("counts a set as sent only as its photographs go up", async ({ page, contex
   expect(fake.photos).toHaveLength(5);
 });
 
-test("asks before a sign-out would lose unsent work, sends it first if asked, and signs nobody out without signal", async ({
+test("asks before a sign-out would lose unsent work, keeps it on Cancel, and signs nobody out without signal", async ({
   page,
 }) => {
   const fake = await fakeTech(page);
@@ -427,29 +468,32 @@ test("asks before a sign-out would lose unsent work, sends it first if asked, an
   fake.online = false;
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page.getByText(techCopy.capture.before)).toBeVisible();
-  await page.getByRole("button", { name: techCopy.queue.back }).click();
+  await page.getByRole("button", { name: techCopy.capture.close }).click();
   // From a step, the way back is the visit’s plan, then the job.
-  await expect(page.getByRole("heading", { level: 1, name: techCopy.visit.plan.title })).toBeVisible();
+  await expect(page.getByRole("list", { name: techCopy.visit.plan.title })).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   await page.getByRole("button", { name: techCopy.queue.back }).click();
   // Nothing answered, so the phone reads as offline, and says what it holds.
   await expect(page.getByText(techCopy.today.sync.offline(1))).toBeVisible();
 
-  // One tap on Sign out no longer wipes the phone: it says what would be lost.
+  // One tap on Sign out no longer wipes the phone: it says what would be lost, as the prototype does.
   await askToSignOut(page);
-  await expect(page.getByText("1 action not sent yet")).toBeVisible();
-  await expect(page.getByText(techCopy.leaving.body)).toBeVisible();
+  await expect(page.getByRole("dialog")).toContainText(techCopy.me.sheet.lost(1));
   expect(await axeViolations(page)).toEqual([]);
 
   // With no signal the API cannot end the session, so the phone wipes nothing and says so.
-  await page.getByRole("button", { name: techCopy.leaving.anyway }).click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.me.signOut, exact: true }).click();
   await expect(page.getByText(/^No signal\. You’re still signed in\./)).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
 
-  // Signal again: send first, and only then sign out, with nothing left to lose.
+  // Signal again: Cancel keeps the work, which sends itself the next time the app comes to the front, and only then
+  // is there nothing to lose.
   fake.online = true;
   await page.getByRole("button", { name: techCopy.me.signOut, exact: true }).click();
-  await page.getByRole("button", { name: techCopy.leaving.send }).click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.me.sheet.cancel }).click();
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
   await expect(page.getByText(techCopy.today.sync.synced)).toBeVisible();
   expect(fake.writes.at(-1)?.path).toBe(`/api/tech/jobs/${JOB_ID}/start`);
   await page.getByRole("button", { name: techCopy.me.signOut, exact: true }).click();

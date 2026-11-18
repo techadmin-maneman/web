@@ -47,6 +47,8 @@ const KEYED = [
   "needsAHand.kinds",
   "notices.photo.layout",
   "photo.layout",
+  // A step sent back by its code, "consumables", in the prototype's words, which are the codes themselves.
+  "today.toFixSteps",
 ];
 
 /** Every string a module's exports hold in their objects, however deep; none a function makes, nor a list holds. */

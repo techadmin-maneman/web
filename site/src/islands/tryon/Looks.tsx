@@ -5,6 +5,7 @@ import { looks, tryOn } from "../../content/site.ts";
 import { lookLabel } from "./machine.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import shared from "./TryOn.module.css";
+import { LegalLinks } from "../LegalLinks.tsx";
 import styles from "./looks.module.css";
 
 /**
@@ -29,7 +30,6 @@ export function Looks(props: {
             key={option.id}
             name="look"
             look="picture"
-            onInk
             checked={look === index}
             onChange={() => {
               props.onChoose(index);
@@ -49,15 +49,18 @@ export function Looks(props: {
           </ChoiceCard>
         ))}
       </Fieldset>
-      <Button
-        variant="light"
-        size="action"
-        className={`${shared.next} ${shared.nextSpaced}`}
-        aria-disabled={look < 0}
-        onClick={props.onContinue}
-      >
-        {lookLabel(look)}
-      </Button>
+      <div class={shared.foot}>
+        <Button
+          variant="primary"
+          size="action"
+          className={shared.next}
+          aria-disabled={look < 0}
+          onClick={props.onContinue}
+        >
+          {lookLabel(look)}
+        </Button>
+      </div>
+      <LegalLinks alone={shared.legal} />
     </div>
   );
 }

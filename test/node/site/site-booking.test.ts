@@ -9,7 +9,8 @@ import {
   partsToMark,
   REQUIRED_API_FIELDS,
 } from "../../../site/src/lib/address.ts";
-import { signInLink } from "../../../site/src/lib/app-link.ts";
+import { clientAppOrigin, signInLink } from "../../../site/src/lib/app-link.ts";
+import { ENABLED_SURFACES } from "../../../src/config/environments.ts";
 import { attributionFrom } from "../../../site/src/lib/attribution.ts";
 import { dayStrip, stripMonths } from "../../../site/src/lib/dates.ts";
 import { keyPerRequest } from "../../../site/src/lib/idempotency.ts";
@@ -62,6 +63,14 @@ describe("the link into the client app", () => {
 
   it("opens the plain sign-in for anything that is not a mobile number", () => {
     expect(signInLink(APP, "12345")).toBe(APP);
+  });
+
+  // The header's Sign in reads it, so a build whose app is off, as production's until its release, draws none.
+  it("is there only where the client app is switched on", () => {
+    for (const environment of ["local", "staging", "production"] as const) {
+      const on = ENABLED_SURFACES[environment].includes("client");
+      expect(clientAppOrigin(environment) !== null, environment).toBe(on);
+    }
   });
 });
 

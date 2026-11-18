@@ -37,6 +37,7 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   number_change: "Decide in Number changes",
   erasure_request: "Decide in Deletion requests",
   grievance: "Answer in Concerns",
+  fit_guarantee_claim: "Open the chat",
 };
 
 /**
@@ -97,12 +98,19 @@ export const tasks = {
     // A group the board does not draw (docs/decisions/0086-the-next-visit-is-offered.md).
     first_fit_to_book: "First fit to book",
     replacement_order: "Replacement order",
+    made_to_order_ask: "Made to order",
     stock_at_risk: "Stock at risk",
     at_risk_client: "At-risk client",
     // A group the board does not draw.
     partial_visit: "Partly done visit",
     // A group the board does not draw (docs/decisions/0222-consumables-short-of-expected.md).
     consumables_short: "Consumables short",
+    // A group the board does not draw (docs/decisions/0254-client-signs-off-the-fit.md).
+    fit_unsigned: "Fit closed without sign-off",
+    // A group the board does not draw (docs/decisions/0256-fit-guarantee-setting.md).
+    fit_guarantee_claim: "Fit guarantee claim",
+    // A group the board does not draw (docs/decisions/0260-ratings.md).
+    low_rating: "Low rating",
     // A group the board does not draw.
     kit_request: "Kit request",
     referral_review: "Referral review",
@@ -238,6 +246,8 @@ export const tasks = {
      */
     replacement_order: (piece: string, orderBy: string, due: string) =>
       `${piece} · order by ${orderBy}, replace by ${due}`,
+    /** "Mane Man Essential · Replacement": the hair system to order in the client's size, and the visit it is for. */
+    made_to_order_ask: (hairSystem: string, visit: string) => `${hairSystem} · ${visit}`,
     /**
      * "The piece was not ready · 20 Sep": book the visit that finishes it. The reason is in the
      * words the job sheet gives it, which ops set in Settings (docs/decisions/0087-consumables-and-stock.md).
@@ -252,6 +262,28 @@ export const tasks = {
     },
     /** "Ran out · Imran · Tape strips 2 of 5, Glue 0 of 10 ml", or "Nothing used" where nothing was recorded. */
     consumables_short: (reason: string, technician: string, short: string) => `${reason} · ${technician} · ${short}`,
+    /** "Client in a hurry · Imran", after "Flagged first: “The left edge lifts”" where the client flagged before. */
+    fit_unsigned: (reason: string, technician: string, flag: string | null) =>
+      [...(flag === null ? [] : [`Flagged first: “${flag}”`]), reason, technician].join(" · "),
+    /** "2 of 5 stars · service visit Mon 14 Sep · Imran". */
+    low_rating: (stars: number, visit: string, technician: string) =>
+      [`${String(stars)} of 5 stars`, visit, technician].filter((part) => part !== "").join(" · "),
+    /** "MM-ISS-0032 · fitted Mon 14 Sep · signed off · 2 photos". */
+    fit_guarantee_claim: (reference: string, fittedOn: string, signOff: string, photos: number) =>
+      [
+        reference,
+        `fitted ${fittedOn}`,
+        signOff,
+        ...(photos === 0 ? [] : [photos === 1 ? "1 photo" : `${String(photos)} photos`]),
+      ].join(" · "),
+    /** Where the fit's sign-off stood when the claim came. */
+    signOffs: {
+      asked: "sign-off asked",
+      signed: "signed off",
+      flagged: "flagged at sign-off",
+      declined: "sign-off declined",
+      none: "no sign-off",
+    },
     shortLine: (name: string, used: number, expected: number) => `${name} ${String(used)} of ${String(expected)}`,
     nothingUsed: "Nothing used",
     shortReasons: {
@@ -264,6 +296,8 @@ export const tasks = {
     noReason: "No reason given",
     // "Can't fit today" in the technician app: no piece of the client's spec to fit.
     noPiece: "No piece to fit",
+    /** A fit closed with "Can't fit today", with the technician's reason (docs/decisions/0270-the-design-checks-api-side.md). */
+    notFitted: (reason: string) => `Not fitted · ${reason}`,
     no_show_decision: (technician: string) => `${technician} came by`,
     /** "Disputes the charge that kept Rs. 1,234", or the free service visit it spent. */
     no_show_dispute: (took: string) => `Disputes a charge: ${took}`,
@@ -346,16 +380,25 @@ export const tasks = {
     atRisk: { open: "Close", label: "What came of the call" },
     /** Consumables short close once checked against the kit. */
     consumablesShort: { open: "Checked", label: "What the kit showed" },
+    /** A fit closed without sign-off closes once Care have called the client. */
+    fitUnsigned: { open: "Called", label: "What the client said" },
+    /** A fit guarantee claim closes with what was done: a refit, or a refund. */
+    guaranteeClaim: { open: "Done", label: "What was done" },
+    /** A low rating closes once Care have called, with what the client said. */
+    lowRating: { open: "Called", label: "What the client said" },
     /** A kit request closes once what it asked for is sent, or with why not. */
     kitRequest: { open: "Sent", label: "What was sent" },
     /** A technician's ask to move a visit closes with what was agreed with the client. */
     reschedule: { open: "Close", label: "What was agreed" },
+    /** A hair system made to order closes once it is ordered, paid for and the fitting booked with the client. */
+    madeToOrder: { open: "Ordered", label: "What was ordered and booked" },
     confirm: "Close task",
     closing: "Closing…",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already booked or closed."),
       invalid_request: "Give a reason.",
+      failure_reason: changed("That reason is no longer listed, or no hair system of the fit is on record."),
       offline: OFFLINE,
       unknown: FAILED,
     },
@@ -437,6 +480,7 @@ export const needsAHand = {
     payment_link_failed: "Payment link failed",
     invoice_draft: "Invoice still a draft",
     invoice_unpriced: "Visit has no price to invoice",
+    invoice_untaxed: "Visit priced with no GST",
     invoice_refused: "Books refused an invoice",
     invoice_failed: "Invoice didn’t reach Books",
     books_unapplied: "Payment not matched to an invoice",

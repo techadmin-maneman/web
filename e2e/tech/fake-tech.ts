@@ -156,6 +156,10 @@ export interface Fake {
   relocked: boolean;
   /** Whether there is a photograph to compare each angle with, before the visit and after it. */
   compare: boolean;
+  /** The client's earlier visits counted, as the card carries them; none to begin. */
+  clientVisits: Card["client_visits"];
+  /** Where the visit was booked, as the card says. */
+  bookedVia: Card["booked_via"];
   /** The client's history, as GET /api/tech/jobs/{id}/client-history answers. */
   history: TechReply<"/api/tech/jobs/{id}/client-history">;
   /** The technician's asks for leave, as GET /api/tech/leave answers; an ask adds one, with ops. */
@@ -164,6 +168,8 @@ export interface Fake {
   profile: HairProfile | null;
   /** The checklist on the card: three items unless a test gives a longer one. */
   checklist: Card["checklist"];
+  /** Why a client may not go ahead, as ops set it; the committed list while null. */
+  lostReasons: Card["lost_reasons"] | null;
   /** Parts of the address beyond the fixture's two lines. */
   address: AddressParts;
   /** Whether the client has a last visit with an after photograph. */
@@ -281,10 +287,11 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     clientChoice: null,
     pieces: [],
     kitHairSystems: [],
-    kit: { held: [], coming: [], returned: [], forecast: [], asked: null },
+    kit: { held: [], coming: [], returned: [], forecast: [], visits: 0, pieces: [], asked: null },
     kitAfter: null,
     profile: null,
     checklist: CHECKLIST,
+    lostReasons: null,
     address: {},
     lastVisit: false,
     reminderDelivered: undefined,
@@ -292,7 +299,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     yesterday: false,
     dayFails: false,
     writes: [],
-    quality: { visits: 18, on_time: 17, fits: 9, redone: 1 },
+    quality: { visits: 18, on_time: 17, fits: 9, redone: 1, rating: 4.6, rating_days: 90 },
     inbox: {
       alerts: [],
       settings: { time_to_leave: true, day_ahead: true, job_changes: true, running_over: true },
@@ -338,6 +345,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     sosRefused: false,
     relocked: false,
     history: { alerts: [], visits: [] },
+    clientVisits: { count: 0, first: null },
+    bookedVia: null,
     compare: false,
     photos: [],
     doorPhotos: [],
@@ -372,6 +381,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       oneVisit: fake.oneVisit,
       profile: fake.profile,
       checklist: fake.checklist,
+      lostReasons: fake.lostReasons ?? undefined,
       discountCode: fake.discountCode,
       service: fake.service,
       clientChoice: fake.clientChoice,
@@ -381,6 +391,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       sentBack: fake.sentBack,
       paymentLink: fake.paymentLink,
       rescheduleAsked: fake.rescheduleAsked,
+      clientVisits: fake.clientVisits,
+      bookedVia: fake.bookedVia,
     });
 
   await on.route("**/api/tech/**", async (route: Route) => {
@@ -688,11 +700,6 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
     if (path.startsWith(`/api/tech/jobs/${JOB_ID}/history-photos/`)) {
-      assertInContract("tech", method, path, 200);
-      return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
-    }
-    if (path === `/api/tech/jobs/${JOB_ID}/last-visit-photo`) {
-      if (fake.moved || !fake.lastVisit) return refuse(route, 404, "not_found");
       assertInContract("tech", method, path, 200);
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }

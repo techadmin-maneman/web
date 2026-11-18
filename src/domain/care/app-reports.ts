@@ -1,13 +1,27 @@
-// A client's word from the app that something is wrong with their hair system or with a visit
-// (docs/decisions/0129-the-care-inbox.md): filed in their Care thread as though written on WhatsApp, with a note for
-// Care alone beside it of their piece, when it was fitted and falls due, and its supplier's warranty. Their photographs
-// follow on WhatsApp, into the same thread. Filing it sends nothing.
+// A client's report from the app that something is wrong (docs/decisions/0129-the-care-inbox.md,
+// docs/decisions/0259-the-issue-log.md): recorded with its number for their issue log, and filed in their Care thread
+// as though written on WhatsApp, under its reference and category, with a note for Care alone beside it of their piece,
+// when it was fitted and falls due, and its supplier's warranty. Filing it sends nothing.
 
 import { fullDate, shortDate } from "@maneman/web-kit/dates";
 import { indiaDate } from "../../lib/india-time.ts";
-import type { ProblemAbout } from "../../policy/problems.ts";
+import { guaranteeUntil } from "../../policy/fit-guarantee.ts";
+import { reportReference, type ProblemCategory } from "../../policy/problems.ts";
 import { warrantyEndsOn } from "../../policy/purchasing.ts";
 import { fileInbound } from "./inbox.ts";
+
+/** Each category as Care read it in the thread. */
+const CATEGORY_WORDS: Readonly<Record<ProblemCategory, string>> = {
+  fit_guarantee: "The fit (guarantee)",
+  edges_lifting: "Edges lifting",
+  itching: "Itching or irritation",
+  colour: "Colour or shine",
+  shedding: "Shedding",
+  fit_comfort: "Fit or comfort",
+  visit: "A visit or technician",
+  payment: "Payment or refund",
+  other: "Something else",
+};
 
 interface PieceRow {
   readonly piece_code: string;
@@ -65,25 +79,67 @@ async function visitLine(db: D1Database, personId: string, visitId: string): Pro
 export interface ProblemReport {
   readonly personId: string;
   readonly mobileE164: string;
-  readonly about: ProblemAbout;
-  /** The visit it is about; null for one about the hair system alone. */
+  readonly category: ProblemCategory;
+  /** The visit it is about; null for one about none. */
   readonly visitId: string | null;
   readonly text: string;
   readonly at: Date;
+  /** The fit guarantee's days in force now, for a fit whose sign-off recorded none. */
+  readonly guaranteeDays: number;
 }
 
-/** Files the report and Care's note beside it; false where the visit named is not the client's. */
-export async function reportProblem(db: D1Database, report: ProblemReport): Promise<boolean> {
+/**
+ * The first fit a report on the fit (guarantee) claims: the visit named, else the client's latest first fit done, where
+ * the report comes inside its guarantee, by the days recorded at its sign-off or in force now; null otherwise.
+ */
+async function claimedFit(db: D1Database, report: ProblemReport): Promise<string | null> {
+  if (report.category !== "fit_guarantee") return null;
+  const fit = await db
+    .prepare(
+      `SELECT a.id, a.window_start, s.guarantee_days FROM appointments a
+         JOIN visit_outcomes v ON v.appointment_id = a.id AND v.outcome = 'done'
+         LEFT JOIN fit_sign_offs s ON s.appointment_id = a.id
+        WHERE a.person_id = ?1 AND a.type = 'first_fit' AND a.deleted_at IS NULL AND (?2 IS NULL OR a.id = ?2)
+        ORDER BY a.window_start DESC LIMIT 1`,
+    )
+    .bind(report.personId, report.visitId)
+    .first<{ id: string; window_start: string; guarantee_days: number | null }>();
+  if (fit === null) return null;
+  const until = guaranteeUntil(indiaDate(new Date(fit.window_start)), fit.guarantee_days ?? report.guaranteeDays);
+  return indiaDate(report.at) <= until ? fit.id : null;
+}
+
+/** A report recorded: its ID and the number its reference is made of. */
+export interface Reported {
+  readonly id: string;
+  readonly number: number;
+}
+
+/**
+ * Records the report with the next number, then files it and Care's note beside it in the client's thread; null where
+ * the visit named is not the client's.
+ */
+export async function reportProblem(db: D1Database, report: ProblemReport): Promise<Reported | null> {
   const about = report.visitId === null ? null : await visitLine(db, report.personId, report.visitId);
-  if (report.visitId !== null && about === null) return false;
+  if (report.visitId !== null && about === null) return null;
   const piece = await db.prepare(PIECE_SQL).bind(report.personId).first<PieceRow>();
-  const heading =
-    report.about === "hair_system" ? "Something's wrong with my hair system" : "Something's wrong with a visit";
+  const id = crypto.randomUUID();
+  const claim = await claimedFit(db, report);
+  const recorded = await db
+    .prepare(
+      `INSERT INTO client_reports (id, number, person_id, category, visit_id, claim_visit_id, text, created_at)
+       SELECT ?1, COALESCE(MAX(number), 0) + 1, ?2, ?3, ?4, ?5, ?6, ?7 FROM client_reports
+       RETURNING number`,
+    )
+    .bind(id, report.personId, report.category, report.visitId, claim, report.text, report.at.toISOString())
+    .first<{ number: number }>();
+  const number = recorded?.number ?? 0;
   await fileInbound(db, {
     mobileE164: report.mobileE164,
-    text: `${heading}:\n${report.text}`,
+    text: `${reportReference(number)} · ${CATEGORY_WORDS[report.category]}:\n${report.text}`,
     providerMessageId: null,
     at: report.at,
+    fromApp: true,
   });
   const note = ["From the app.", ...(about === null ? [] : [about]), pieceLine(piece, indiaDate(report.at))].join(" ");
   // A moment after the client's words, so the thread reads it beneath them.
@@ -95,5 +151,60 @@ export async function reportProblem(db: D1Database, report: ProblemReport): Prom
     )
     .bind(crypto.randomUUID(), report.mobileE164, note, at)
     .run();
-  return true;
+  // The thread it went into, which its log reads.
+  await db
+    .prepare(
+      "UPDATE client_reports SET conversation_id = (SELECT id FROM conversations WHERE mobile_e164 = ?2) WHERE id = ?1",
+    )
+    .bind(id, report.mobileE164)
+    .run();
+  return { id, number };
+}
+
+/** A report of the client's, by its number, with the number their Care chat is with; null for any other. */
+export async function reportOf(
+  db: D1Database,
+  personId: string,
+  number: number,
+): Promise<{ readonly id: string; readonly number: number; readonly mobile_e164: string } | null> {
+  return db
+    .prepare(
+      `SELECT r.id, r.number, pe.mobile_e164 FROM client_reports r JOIN people pe ON pe.id = r.person_id
+       WHERE r.person_id = ?1 AND r.number = ?2 AND pe.erased_at IS NULL`,
+    )
+    .bind(personId, number)
+    .first<{ id: string; number: number; mobile_e164: string }>();
+}
+
+/**
+ * The client's later words on a report, an update or a reopening, filed in its Care chat under its reference; either
+ * opens it again, so one settled reads open until Care settle it once more.
+ */
+export async function addToReport(
+  db: D1Database,
+  added: {
+    readonly report: { readonly id: string; readonly number: number };
+    readonly mobileE164: string;
+    readonly text: string;
+    readonly reopening: boolean;
+    readonly at: Date;
+  },
+): Promise<void> {
+  const heading = `${reportReference(added.report.number)} · ${added.reopening ? "Reopened" : "Update"}`;
+  await fileInbound(db, {
+    mobileE164: added.mobileE164,
+    text: `${heading}:\n${added.text}`,
+    providerMessageId: null,
+    at: added.at,
+    fromApp: true,
+  });
+  await db
+    .prepare("UPDATE client_reports SET reopened_at = ?2 WHERE id = ?1")
+    .bind(added.report.id, added.at.toISOString())
+    .run();
+}
+
+/** The client says the report is sorted. */
+export async function markReportSorted(db: D1Database, reportId: string, at: Date): Promise<void> {
+  await db.prepare("UPDATE client_reports SET sorted_at = ?2 WHERE id = ?1").bind(reportId, at.toISOString()).run();
 }

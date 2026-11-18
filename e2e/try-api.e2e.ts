@@ -46,7 +46,7 @@ test("a drawn photograph’s look is made once the gate has the number, and neve
       { timeout: 90_000 },
     )
     .toBe("ready");
-  await expect(page.locator("[data-screen] img")).toHaveCount(0);
+  await expect(page.getByRole("img", { name: siteCopy.tryOn.sent.ready.lookAlt })).toHaveCount(0);
   expect(asked).toEqual([]);
 });
 

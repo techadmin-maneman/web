@@ -11,6 +11,8 @@ import { json } from "../../http/openapi.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";
 import { JOB_EVENT_KINDS, SENT_BACK_KINDS } from "../../policy/in-job-steps.ts";
 import { sendBacksOf } from "../../domain/field/step-send-backs.ts";
+import { signOffOf } from "../../domain/field/sign-offs.ts";
+import { SignOffSchema } from "../schemas/sign-off.ts";
 
 const StorySchema = z
   .object({
@@ -42,6 +44,11 @@ const StorySchema = z
     may_send_back: z.array(z.enum(SENT_BACK_KINDS)).openapi({
       description: "The landed steps ops may send back now: POST /api/visits/{id}/send-back.",
     }),
+    sign_off: z.union([SignOffSchema, z.null()]).openapi({
+      description:
+        "A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed and when and where, or declined " +
+        "with why. Null before it is asked, and for a visit that takes none.",
+    }),
   })
   .strict()
   .openapi("VisitStory");
@@ -63,7 +70,10 @@ export function registerOpsVisitStory(app: App): void {
     if (!(await withinRouteReach(c, "visit", visitId))) return refuse(c, "not_found");
     const steps = await visitStory(c.env.DB, visitId);
     if (steps === null) return refuse(c, "not_found");
-    const sendBacks = await sendBacksOf(c.env.DB, visitId, new Set(steps.map((step) => step.kind)));
-    return c.json({ steps, sent_back: sendBacks.open, may_send_back: sendBacks.may }, 200);
+    const [sendBacks, signOff] = await Promise.all([
+      sendBacksOf(c.env.DB, visitId, new Set(steps.map((step) => step.kind))),
+      signOffOf(c.env.DB, visitId),
+    ]);
+    return c.json({ steps, sent_back: sendBacks.open, may_send_back: sendBacks.may, sign_off: signOff }, 200);
   });
 }

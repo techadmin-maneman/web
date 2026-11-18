@@ -29,23 +29,34 @@ const EVERY_MS = 150;
 const openBackCamera = () =>
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
 
-/** The back camera, reading each frame for a QR code until one is found, which `onRead` is given once. */
+/**
+ * The back camera, reading each frame for a QR code until one is found, which `onRead` is given once. `takes`: whether
+ * to take a code read; one it does not take leaves the camera reading, as the label already in hand held up again.
+ * `aim`: the words beneath a frame drawn over the picture, where a label is held, as the technician's hair system step
+ * draws it.
+ */
 export function QrCamera({
   words,
   onRead,
+  takes,
+  aim,
 }: {
   words: Pick<ScanWords, "opening" | "refused">;
   onRead: (text: string) => void;
+  takes?: (text: string) => boolean;
+  aim?: string;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const read = useRef(onRead);
+  const take = useRef(takes);
   const [camera] = useCamera(openBackCamera);
   // A reader that did not start, which the label is typed past as it is with no camera.
   const [broken, setBroken] = useState(false);
   const state = broken ? "refused" : camera.state;
   useEffect(() => {
     read.current = onRead;
-  }, [onRead]);
+    take.current = takes;
+  }, [onRead, takes]);
   useEffect(() => {
     if (camera.state !== "open") return;
     let live = true;
@@ -70,7 +81,7 @@ export function QrCamera({
           context.drawImage(element, 0, 0, canvas.width, canvas.height);
           // A decoder closed with the camera answers no more, so nothing is read after it closes.
           const found = await decoder.read(context.getImageData(0, 0, canvas.width, canvas.height));
-          if (found !== null && found !== "") {
+          if (found !== null && found !== "" && (take.current?.(found) ?? true)) {
             read.current(found);
             return;
           }
@@ -88,7 +99,15 @@ export function QrCamera({
   }, [camera]);
   return (
     <div className={styles.camera}>
-      <video ref={video} className={styles.video} muted playsInline aria-hidden="true" />
+      <div className={styles.view}>
+        <video ref={video} className={styles.video} muted playsInline aria-hidden="true" />
+        {aim !== undefined && (
+          <>
+            <span className={styles.frame} aria-hidden="true" />
+            <span className={styles.aim}>{aim}</span>
+          </>
+        )}
+      </div>
       {state === "opening" && <p className={styles.note}>{words.opening}</p>}
       {state === "refused" && (
         <p className={styles.note} role="alert">

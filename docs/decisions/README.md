@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0251. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0275. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -72,6 +72,9 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0210](0210-booking-by-start-time.md) Booking by start time
 - [0211](0211-packages.md) Packages
 - [0223](0223-reach-from-home.md) Reach from home, drawn on the city's map and checked at the address
+- [0252](0252-client-app-redesign.md) The client app redrawn: four tabs, the profile, and the client's look
+- [0253](0253-replacement-when-due-and-change-of-hair-system.md) Changing hair system at the replacement booking, and when a replacement is booked
+- [0256](0256-fit-guarantee-setting.md) The fit guarantee's days as a setting, and a claim as a Tasks row
 
 ### Field work
 
@@ -142,6 +145,14 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0248](0248-safety.md) A technician's safety on a visit
 - [0249](0249-schedule-kit-and-me.md) Schedule, Kit and Me
 - [0250](0250-guides-and-alerts.md) Guides and alerts
+- [0251](0251-hindi-and-the-sign-in.md) Hindi on every screen, and the sign-in redrawn
+- [0254](0254-client-signs-off-the-fit.md) The client signs off the fit
+- [0258](0258-the-technician-design-pass.md) The technician app's design pass
+- [0267](0267-the-technician-design-check.md) The technician app's design check
+- [0268](0268-the-visits-design-check.md) The visit's design check
+- [0270](0270-the-design-checks-api-side.md) The design check's API side
+- [0271](0271-the-technician-follow-ups.md) The technician follow-ups
+- [0273](0273-why-a-hair-system-failed.md) Why a hair system failed
 
 ### Money and Books
 
@@ -160,6 +171,9 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0192](0192-free-remakes.md) Free remakes
 - [0202](0202-razorpay-events-queued.md) Razorpay's events are queued, and every queue has its dead letters
 - [0209](0209-paid-at-the-visit-by-upi.md) Paid at the visit by UPI, while online payment is off
+- [0257](0257-razorpay-only.md) Razorpay is the only way to pay
+- [0261](0261-razorpay-money-in-books.md) Razorpay's money in Books, from payment to the bank
+- [0274](0274-gst-on.md) GST on: prices with their GST, and every invoice line and fee carrying its tax
 
 ### Privacy and accounts
 
@@ -207,6 +221,9 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0145](0145-technician-presets.md) A technician's word from the job card
 - [0197](0197-one-inbound-port.md) One inbound port
 - [0203](0203-a-vendor-down-is-held-off.md) A vendor that is down is held off, and a contact change waits in D1
+- [0255](0255-client-alerts-and-push.md) Client alerts and push, and the live visit
+- [0259](0259-the-issue-log.md) The issue log
+- [0260](0260-ratings.md) Ratings
 
 ### Referrals
 
@@ -245,6 +262,13 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0215](0215-the-range-as-a-table.md) The range as a table
 - [0216](0216-the-sites-polish-pass.md) The site's polish pass
 - [0217](0217-the-try-ons-photo-taken-and-looked-at.md) The try-on's photo, taken and looked at; no question of where the hair loss is
+- [0262](0262-the-sites-typeface-and-palette.md) The site's typeface and palette
+- [0263](0263-the-home-pages-order-and-bands.md) The home page's order and bands
+- [0264](0264-the-hero-restyled.md) The hero, restyled
+- [0265](0265-book-and-try-on-the-client-apps-look.md) `/book` and `/try` on the client app's look
+- [0266](0266-the-sites-header-book-and-focus-ring.md) The site's header Book and focus ring
+- [0269](0269-the-one-visits-note-on-book.md) The one visit's note on `/book`
+- [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) The one visit is paid through Razorpay only
 
 ### The ops console
 
@@ -340,7 +364,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0050](0050-crm-in-the-real-org.md) | The CRM moves to the real Zoho org | 2026-09-22 | accepted | [0059](0059-a-clients-history.md), [0070](0070-vendor-correctness.md) |
 | [0051](0051-booking-from-the-site.md) | Booking from the site is the landing's booking | 2026-09-23 | accepted | [0060](0060-an-invited-friend-reaches-ops-and-the-crm.md), [0081](0081-the-site-takes-the-address.md), [0086](0086-the-next-visit-is-offered.md), [0089](0089-an-invite-is-not-lost.md), [0116](0116-book-asks-for-the-name-and-number-first.md) |
 | [0052](0052-technician-sessions.md) | Technician sessions, devices and the day-before unlock | 2026-09-23 | accepted |  |
-| [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted |  |
+| [0053](0053-the-technician-app-offline.md) | The technician app offline: the outbox, the device and the camera | 2026-09-23 | accepted | [0251](0251-hindi-and-the-sign-in.md), [0270](0270-the-design-checks-api-side.md), [0271](0271-the-technician-follow-ups.md) |
 | [0054](0054-address-capture.md) | Capturing an address: the fields, the pin, and the way to the door | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md), [0098](0098-the-door-in-fsms-address.md) |
 | [0055](0055-invoices.md) | The invoice for a finished job | 2026-09-23 | accepted | [0056](0056-issuing-the-invoice.md) |
 | [0056](0056-issuing-the-invoice.md) | The invoice is issued, and shown beside the visit | 2026-09-23 | accepted | [0070](0070-vendor-correctness.md) |
@@ -360,11 +384,11 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0070](0070-vendor-correctness.md) | What we write to Zoho is right, written once, and asked for sparingly | 2026-09-25 | accepted | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
 | [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | superseded in part by 0212 on 18 October 2026: a setting or a record now changes where it reads | [0086](0086-the-next-visit-is-offered.md), [0212](0212-editing-in-place.md), [0221](0221-launches-scheduled-paused-and-checked.md) |
 | [0072](0072-ops-clients-and-queues.md) | The ops console's clients and queues | 2026-09-26 | accepted | [0092](0092-task-owners.md) |
-| [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md), [0103](0103-the-home-pages-first-copy-round.md), [0204](0204-the-sites-price-pipeline-removed.md) |
+| [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md), [0103](0103-the-home-pages-first-copy-round.md), [0204](0204-the-sites-price-pipeline-removed.md), [0274](0274-gst-on.md) |
 | [0074](0074-hand-offs-and-messages.md) | What each person learns when something changes for them | 2026-09-26 | accepted | [0092](0092-task-owners.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0099](0099-the-clients-note-in-fsm.md) |
 | [0075](0075-tests-held-to-the-contract-and-the-local-stack.md) | Tests held to the API's contract, and the whole system on a laptop | 2026-09-27 | accepted |  |
 | [0076](0076-one-ui-layer-and-one-api-client.md) | One component layer and one API client for the front ends | 2026-09-27 | accepted | [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) |
-| [0077](0077-a-token-scale-written-once.md) | A token scale written once, and names for what a value is for | 2026-09-27 | accepted |  |
+| [0077](0077-a-token-scale-written-once.md) | A token scale written once, and names for what a value is for | 2026-09-27 | accepted | [0262](0262-the-sites-typeface-and-palette.md) |
 | [0078](0078-the-queues-no-board-draws.md) | The console's queues that no board draws | 2026-09-27 | accepted |  |
 | [0079](0079-an-address-before-a-slot.md) | An address before any slot | 2026-09-27 | accepted |  |
 | [0080](0080-consents-given-by-booking.md) | The photograph consents, given by booking | 2026-09-27 | accepted, for counsel to confirm before production | [0094](0094-where-a-consent-was-given.md) |
@@ -373,7 +397,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0083](0083-anyone-signed-in-can-refer.md) | Anyone signed in can refer | 2026-09-27 | withdrawn by the owner on 27 September 2026, the day it was made |  |
 | [0084](0084-a-clients-try-on-is-kept.md) | A client's try-on is kept | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 | [0093](0093-the-storage-meter.md), [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
 | [0085](0085-services-ops-can-edit.md) | Services ops can edit | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0211](0211-packages.md) |
-| [0086](0086-the-next-visit-is-offered.md) | The next visit is offered, and the client books it | 2026-09-27 | accepted | [0085](0085-services-ops-can-edit.md), [0105](0105-a-consultation-and-fit-in-one-visit.md), [0211](0211-packages.md) |
+| [0086](0086-the-next-visit-is-offered.md) | The next visit is offered, and the client books it | 2026-09-27 | accepted | [0085](0085-services-ops-can-edit.md), [0105](0105-a-consultation-and-fit-in-one-visit.md), [0211](0211-packages.md), [0253](0253-replacement-when-due-and-change-of-hair-system.md) |
 | [0087](0087-consumables-and-stock.md) | Consumables and their stock, and the job sheet, set in the console | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0085](0085-services-ops-can-edit.md), [0222](0222-consumables-short-of-expected.md) |
 | [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 | [0095](0095-a-booking-fsm-refuses-is-held.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0119](0119-blackouts-by-city-and-trained-fitters.md) |
 | [0089](0089-an-invite-is-not-lost.md) | An invite is not lost when the friend books away from its page | 2026-09-28 | accepted |  |
@@ -391,7 +415,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted | [0213](0213-the-sites-second-copy-round.md), [0215](0215-the-range-as-a-table.md) |
 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 | [0214](0214-from-the-site-into-the-app.md), [0217](0217-the-try-ons-photo-taken-and-looked-at.md), [0219](0219-one-line-consents.md) |
 | [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length |  |
-| [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 | [0240](0240-consultation-rules-and-inches.md) |
+| [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 | [0240](0240-consultation-rules-and-inches.md), [0270](0270-the-design-checks-api-side.md) |
 | [0107](0107-referral-rewards-in-the-console.md) | What a referral earns, set in the console, each side apart | 2026-10-01 | accepted, on the owner's ruling of 1 October 2026 |  |
 | [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
 | [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 | [0198](0198-cities-as-data.md), [0208](0208-the-console-redesigned.md) |
@@ -434,7 +458,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0146](0146-the-nightly-analytics-copy.md) | The nightly analytics copy | 2026-10-12 | accepted | [0196](0196-long-work-in-workflows.md) |
 | [0147](0147-task-spans.md) | Task spans | 2026-10-12 | accepted |  |
 | [0148](0148-the-channel-rule.md) | The channel rule | 2026-10-12 | accepted |  |
-| [0149](0149-lost-reasons.md) | Lost reasons | 2026-10-12 | accepted |  |
+| [0149](0149-lost-reasons.md) | Lost reasons | 2026-10-12 | accepted | [0268](0268-the-visits-design-check.md) |
 | [0150](0150-spend.md) | Spend | 2026-10-12 | accepted |  |
 | [0151](0151-retention-figures.md) | Retention figures | 2026-10-12 | accepted |  |
 | [0152](0152-standard-costs.md) | Standard costs | 2026-10-12 | accepted |  |
@@ -447,14 +471,14 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0159](0159-stock-views-and-expiry.md) | Stock views and expiry | 2026-10-12 | accepted |  |
 | [0160](0160-demand-and-opening-counts.md) | Demand ahead and opening counts | 2026-10-12 | accepted |  |
 | [0161](0161-pieces-as-units.md) | Pieces as units | 2026-10-12 | accepted |  |
-| [0162](0162-scanning-labels.md) | Scanning labels | 2026-10-12 | accepted |  |
+| [0162](0162-scanning-labels.md) | Scanning labels | 2026-10-12 | accepted | [0271](0271-the-technician-follow-ups.md) |
 | [0163](0163-pieces-scanned-from-the-kit.md) | Pieces scanned from the kit | 2026-10-12 | accepted |  |
 | [0164](0164-the-kit-screen.md) | The kit screen | 2026-10-12 | accepted |  |
 | [0165](0165-suppliers.md) | Suppliers | 2026-10-12 | accepted |  |
 | [0166](0166-purchase-orders.md) | Purchase orders | 2026-10-12 | accepted |  |
 | [0167](0167-receipts-and-landed-cost.md) | Receipts and landed cost | 2026-10-12 | accepted |  |
 | [0168](0168-bills-in-books.md) | Bills in Books | 2026-10-12 | accepted |  |
-| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted |  |
+| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md), [0273](0273-why-a-hair-system-failed.md) |
 | [0170](0170-stock-photos.md) | Photographs of stock | 2026-10-12 | accepted |  |
 | [0171](0171-vendor-credits.md) | Vendor credits | 2026-10-12 | accepted |  |
 | [0172](0172-supplier-scorecard.md) | Supplier scorecard | 2026-10-12 | accepted |  |
@@ -473,7 +497,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0185](0185-cycle-counts.md) | Cycle counts | 2026-10-12 | accepted |  |
 | [0186](0186-usage-and-shrinkage.md) | Usage against expected, and shrinkage | 2026-10-12 | accepted |  |
 | [0187](0187-recalls.md) | Recalls | 2026-10-12 | accepted |  |
-| [0188](0188-failure-rates-and-value-at-risk.md) | Failure rates and value at risk | 2026-10-12 | accepted |  |
+| [0188](0188-failure-rates-and-value-at-risk.md) | Failure rates and value at risk | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md), [0273](0273-why-a-hair-system-failed.md) |
 | [0189](0189-the-staff-list-on-by-default.md) | The Staff list on by default | 2026-10-13 | accepted |  |
 | [0190](0190-foreign-orders-judged-at-a-rate.md) | Foreign orders judged at a rate | 2026-10-13 | accepted |  |
 | [0191](0191-a-replaced-piece-comes-off.md) | A replaced piece comes off | 2026-10-13 | accepted |  |
@@ -485,7 +509,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0197](0197-one-inbound-port.md) | One inbound port | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 |  |
 | [0198](0198-cities-as-data.md) | Cities as data | 2026-10-14 | accepted |  |
 | [0199](0199-derived-state-in-the-domain.md) | Derived state in the domain | 2026-10-14 | accepted |  |
-| [0200](0200-staging-tenants-of-its-own.md) | Staging's tenants of its own | 2026-10-14 | accepted |  |
+| [0200](0200-staging-tenants-of-its-own.md) | Staging's tenants of its own | 2026-10-14 | accepted | [0261](0261-razorpay-money-in-books.md) |
 | [0201](0201-the-try-on-on-youcam.md) | The try-on on YouCam | 2026-10-14 | accepted |  |
 | [0202](0202-razorpay-events-queued.md) | Razorpay's events are queued, and every queue has its dead letters | 2026-10-14 | accepted |  |
 | [0203](0203-a-vendor-down-is-held-off.md) | A vendor that is down is held off, and a contact change waits in D1 | 2026-10-14 | accepted |  |
@@ -494,14 +518,14 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0206](0206-trusted-types-and-a-nonce-per-page.md) | Trusted Types enforced, and a nonce on every page | 2026-10-15 | accepted |  |
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
 | [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted | [0225](0225-the-console-on-a-desk-and-a-phone.md) |
-| [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted |  |
+| [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted | [0257](0257-razorpay-only.md) |
 | [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
 | [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |
-| [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted |  |
+| [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted | [0263](0263-the-home-pages-order-and-bands.md) |
 | [0214](0214-from-the-site-into-the-app.md) | From the site into the app, and the look on the page | 2026-10-19 | accepted | [0217](0217-the-try-ons-photo-taken-and-looked-at.md) |
 | [0215](0215-the-range-as-a-table.md) | The range as a table | 2026-10-19 | accepted |  |
-| [0216](0216-the-sites-polish-pass.md) | The site's polish pass | 2026-10-19 | accepted |  |
+| [0216](0216-the-sites-polish-pass.md) | The site's polish pass | 2026-10-19 | accepted | [0262](0262-the-sites-typeface-and-palette.md), [0263](0263-the-home-pages-order-and-bands.md) |
 | [0217](0217-the-try-ons-photo-taken-and-looked-at.md) | The try-on's photo, taken and looked at; no question of where the hair loss is | 2026-10-19 | accepted | [0219](0219-one-line-consents.md) |
 | [0218](0218-refer-opens-at-the-first-consultation.md) | Refer opens at the first consultation | 2026-10-19 | accepted |  |
 | [0219](0219-one-line-consents.md) | One-line consents, with the full notice a link away | 2026-10-19 | accepted |  |
@@ -530,9 +554,33 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0242](0242-client-record.md) | A client's record for the technicians: alerts, the handoff note, and their history | 2026-11-11 | accepted |  |
 | [0243](0243-job-and-the-door.md) | The job and the door in the new look | 2026-11-11 | accepted |  |
 | [0244](0244-the-visit-engine.md) | The visit engine, its plan, and the photographs | 2026-11-11 | accepted | [0245](0245-the-steps.md) |
-| [0245](0245-the-steps.md) | The visit's steps in the new look | 2026-11-12 | accepted | [0246](0246-closed-and-sent-back.md) |
+| [0245](0245-the-steps.md) | The visit's steps in the new look | 2026-11-12 | accepted | [0246](0246-closed-and-sent-back.md), [0258](0258-the-technician-design-pass.md) |
 | [0246](0246-closed-and-sent-back.md) | Closed, and a step sent back | 2026-11-11 | accepted |  |
 | [0247](0247-the-steps-left.md) | The steps left from PR 7 | 2026-11-11 | accepted |  |
 | [0248](0248-safety.md) | A technician's safety on a visit | 2026-11-11 | accepted |  |
-| [0249](0249-schedule-kit-and-me.md) | Schedule, Kit and Me | 2026-11-11 | accepted |  |
+| [0249](0249-schedule-kit-and-me.md) | Schedule, Kit and Me | 2026-11-11 | accepted | [0258](0258-the-technician-design-pass.md) |
 | [0250](0250-guides-and-alerts.md) | Guides and alerts | 2026-11-11 | accepted |  |
+| [0251](0251-hindi-and-the-sign-in.md) | Hindi on every screen, and the sign-in redrawn | 2026-11-11 | accepted |  |
+| [0252](0252-client-app-redesign.md) | The client app redrawn: four tabs, the profile, and the client's look | 2026-11-12 | accepted |  |
+| [0253](0253-replacement-when-due-and-change-of-hair-system.md) | Changing hair system at the replacement booking, and when a replacement is booked | 2026-11-12 | accepted |  |
+| [0254](0254-client-signs-off-the-fit.md) | The client signs off the fit | 2026-11-12 | accepted |  |
+| [0255](0255-client-alerts-and-push.md) | Client alerts and push, and the live visit | 2026-11-12 | accepted |  |
+| [0256](0256-fit-guarantee-setting.md) | The fit guarantee's days as a setting, and a claim as a Tasks row | 2026-11-12 | accepted |  |
+| [0257](0257-razorpay-only.md) | Razorpay is the only way to pay | 2026-11-12 | accepted |  |
+| [0258](0258-the-technician-design-pass.md) | The technician app's design pass | 2026-11-12 | accepted | [0268](0268-the-visits-design-check.md) |
+| [0259](0259-the-issue-log.md) | The issue log | 2026-11-16 | accepted |  |
+| [0260](0260-ratings.md) | Ratings | 2026-11-16 | accepted |  |
+| [0261](0261-razorpay-money-in-books.md) | Razorpay's money in Books, from payment to the bank | 2026-11-17 | accepted | [0274](0274-gst-on.md) |
+| [0262](0262-the-sites-typeface-and-palette.md) | The site's typeface and palette | 2026-11-17 | accepted | [0266](0266-the-sites-header-book-and-focus-ring.md) |
+| [0263](0263-the-home-pages-order-and-bands.md) | The home page's order and bands | 2026-11-17 | accepted |  |
+| [0264](0264-the-hero-restyled.md) | The hero, restyled | 2026-11-17 | accepted |  |
+| [0265](0265-book-and-try-on-the-client-apps-look.md) | `/book` and `/try` on the client app's look | 2026-11-17 | accepted | [0269](0269-the-one-visits-note-on-book.md) |
+| [0266](0266-the-sites-header-book-and-focus-ring.md) | The site's header Book and focus ring | 2026-11-17 | accepted |  |
+| [0267](0267-the-technician-design-check.md) | The technician app's design check | 2026-11-17 | accepted | [0268](0268-the-visits-design-check.md), [0270](0270-the-design-checks-api-side.md) |
+| [0268](0268-the-visits-design-check.md) | The visit's design check | 2026-11-17 | accepted |  |
+| [0269](0269-the-one-visits-note-on-book.md) | The one visit's note on `/book` | 2026-11-17 | accepted | [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) |
+| [0270](0270-the-design-checks-api-side.md) | The design check's API side | 2026-11-17 | accepted | [0271](0271-the-technician-follow-ups.md), [0273](0273-why-a-hair-system-failed.md) |
+| [0271](0271-the-technician-follow-ups.md) | The technician follow-ups | 2026-11-17 | accepted |  |
+| [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) | The one visit is paid through Razorpay only | 2026-11-17 | accepted |  |
+| [0273](0273-why-a-hair-system-failed.md) | Why a hair system failed | 2026-11-18 | accepted |  |
+| [0274](0274-gst-on.md) | GST on: prices with their GST, and every invoice line and fee carrying its tax | 2026-11-18 | accepted |  |

@@ -42,7 +42,7 @@
   .onInk {
     border-color: var(--ink-line-strong);
     background: transparent;
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .onInk::placeholder {
@@ -144,6 +144,33 @@
     outline-offset: var(--focus-inset);
   }
 
+  /* A day written out over its unseen date input (./Field.tsx, DayInput), which takes the tap and the focus. */
+  .day {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .day:focus-within {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-inset);
+  }
+
+  .dayShown {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dayInput {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
   .box:disabled {
     background: var(--ui-box-off);
     color: var(--ui-text-muted);
@@ -243,8 +270,8 @@
   }
 
   .tickOnInk:has(.tickInput:checked) {
-    border-color: var(--paper);
-    background: var(--paper);
+    border-color: var(--on-ink);
+    background: var(--on-ink);
   }
 
   .tick:has(.tickInput[aria-invalid="true"]) {
@@ -275,7 +302,7 @@
   }
 
   .tickOnInk + .checkLabel {
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   /* ---- Choices that answer one question ------------------------------------- */
@@ -306,7 +333,7 @@
     margin-bottom: var(--sp-8);
     padding: 0;
     font-family: var(--title-font);
-    font-size: var(--fs-18);
+    font-size: var(--legend-title-text);
     font-weight: var(--title-weight);
   }
 

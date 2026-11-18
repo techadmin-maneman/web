@@ -3,7 +3,7 @@
 // client. NOW is Monday 21 September 2026, 12 noon in India. Everyone here is
 // made up.
 
-import { aPackage } from "../fixtures/index.ts";
+import { aHold, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
@@ -266,41 +266,42 @@ describe("the card", () => {
     expect((await card(LATER_JOB)).pieces).toBeNull();
   });
 
-  it("names the last visit, and serves its after photograph to this job's technician alone", async () => {
+  it("names the last visit with after photographs, by its day and who did it, for the hair profile's head", async () => {
     await insertJob(OLDER_VISIT, { start: "2026-06-01T05:00:00.000Z", technician: IMRAN, status: "completed" });
     await afterPhoto(OLDER_VISIT, "front", "older");
     await insertJob(LAST_VISIT, { start: "2026-08-22T05:00:00.000Z", technician: SAMEER, status: "completed" });
-    await afterPhoto(LAST_VISIT, "top", "last-top");
     await afterPhoto(LAST_VISIT, "front", "last-front");
 
-    expect((await card(TODAY_JOB)).last_visit).toEqual({
-      date: "2026-08-22",
-      technician: "Sameer",
-      photo_url: `/api/tech/jobs/${TODAY_JOB}/last-visit-photo`,
-    });
+    expect((await card(TODAY_JOB)).last_visit).toEqual({ date: "2026-08-22", technician: "Sameer" });
+  });
 
-    const photo = await get(`/api/tech/jobs/${TODAY_JOB}/last-visit-photo`);
-    expect(photo.status).toBe(200);
-    expect(photo.headers.get("Content-Type")).toBe("image/jpeg");
-    // A client's photograph is never kept on a technician's phone, by the browser or the service worker.
-    expect(photo.headers.get("Cache-Control")).toBe("private, no-store");
-    // The front, as the job card draws it.
-    expect(new TextDecoder().decode(await photo.arrayBuffer())).toContain("last-front");
-
-    // Not before the card unlocks, and not to another technician.
-    expect((await get(`/api/tech/jobs/${LATER_JOB}/last-visit-photo`)).status).toBe(404);
-    const sameer = `mm_tech=${await openTechnicianSession(env.DB, {
-      technicianId: SAMEER,
-      deviceId: "phone-def-456",
-      label: "Chrome on Android",
-      now: NOW,
-    })}`;
-    expect((await get(`/api/tech/jobs/${TODAY_JOB}/last-visit-photo`, sameer)).status).toBe(404);
+  // The card no longer shows the last visit's photograph, so the API serves it to no one
+  // (docs/decisions/0271-the-technician-follow-ups.md).
+  it("serves no last visit's photograph", async () => {
+    await insertJob(LAST_VISIT, { start: "2026-08-22T05:00:00.000Z", technician: SAMEER, status: "completed" });
+    await afterPhoto(LAST_VISIT, "front", "last-front");
+    expect((await get(`/api/tech/jobs/${TODAY_JOB}/last-visit-photo`)).status).toBe(404);
   });
 
   it("has no last visit for a client seen for the first time", async () => {
     expect((await card(TODAY_JOB)).last_visit).toBeNull();
-    expect((await get(`/api/tech/jobs/${TODAY_JOB}/last-visit-photo`)).status).toBe(404);
+  });
+
+  it("says where the visit was booked, from the hold that booked it, and nothing for one booked before it was kept", async () => {
+    expect((await card(TODAY_JOB)).booked_via).toBeNull();
+    const booked = (from: "site" | "app", at: string) =>
+      aHold({
+        person_id: PERSON,
+        technician_id: IMRAN,
+        state: "booked",
+        appointment_id: TODAY_JOB,
+        booked_from: from,
+        created_at: at,
+      });
+    await booked("site", "2026-09-10T05:00:00.000Z");
+    // A later hold of the same visit, a move say, leaves where it was first booked.
+    await booked("app", "2026-09-12T05:00:00.000Z");
+    expect((await card(TODAY_JOB)).booked_via).toBe("site");
   });
 
   it("says whether the day-before WhatsApp reached the client, as the wait screen shows", async () => {

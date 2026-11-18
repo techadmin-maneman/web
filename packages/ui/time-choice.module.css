@@ -1,4 +1,7 @@
-/* The day's starts (./TimeChoice.tsx), under its periods, four to a row. */
+/*
+ * The day's starts (./TimeChoice.tsx), under its periods, four to a row; a look may set its own columns, names and
+ * taken times (./base.css's --time-* roles).
+ */
 
 @layer base, ui;
 
@@ -15,9 +18,22 @@
 
   .name {
     margin: 0;
-    font-size: var(--fs-13);
-    font-variant-caps: all-small-caps;
-    letter-spacing: var(--tracking-14);
+    font-size: var(--time-name-size);
+    font-weight: var(--time-name-weight);
+    font-variant-caps: var(--time-name-caps);
+    letter-spacing: var(--time-name-tracking);
+    color: var(--time-name-colour);
+  }
+
+  /* The name, with what is open beside it at the far side. */
+  .counted {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-8);
+  }
+
+  .count {
+    font-weight: var(--weight-regular);
     color: var(--text-muted);
   }
 
@@ -29,7 +45,7 @@
 
   .times {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--time-columns), minmax(0, 1fr));
     gap: var(--sp-8);
   }
 
@@ -38,10 +54,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: var(--tap-row);
-    border: var(--hairline) solid var(--paper-control);
+    min-height: var(--time-height);
+    border: var(--hairline) solid var(--pick-edge);
     background: var(--white);
     font-size: var(--fs-15);
+    font-weight: var(--time-weight);
     font-variant-numeric: tabular-nums;
     color: var(--text);
     cursor: pointer;
@@ -64,16 +81,16 @@
   }
 
   .on {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--paper);
+    border-color: var(--pick-on);
+    background: var(--pick-on);
+    color: var(--pick-on-text);
   }
 
   /* Taken: where it was, struck through, on the shade a full window has. */
   .taken {
-    border-color: transparent;
-    background: var(--paper-shade);
-    color: var(--text-muted);
+    border-color: var(--time-taken-edge);
+    background: var(--time-taken-ground);
+    color: var(--time-taken-text);
     text-decoration: line-through;
     cursor: default;
   }

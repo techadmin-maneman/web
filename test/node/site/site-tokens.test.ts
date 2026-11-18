@@ -59,6 +59,35 @@ describe("design tokens", () => {
     }
   });
 
+  // The redesign's table (docs/prompts/site-redesign.md, "Tokens"; ADR 0262).
+  it("holds the redesign's colours as its brief gives them", () => {
+    const tokens = readFileSync(TOKENS, "utf8");
+    for (const [name, value] of [
+      ["--ink", "#16233a"],
+      ["--navy-700", "#33435f"],
+      ["--navy-800", "#1f2e49"],
+      ["--gilt", "#c9a363"],
+      ["--gilt-hover", "#d4b47a"],
+      ["--brass", "#b98b45"],
+      ["--white-000", "#fdfdfb"],
+      ["--cool-100", "#f1f3f6"],
+      ["--line-200", "#d9dce1"],
+      ["--ink-900", "#1f2328"],
+      ["--ink-500", "#5f6670"],
+      ["--mist-300", "#a9b2c1"],
+      ["--red-700", "#a3361f"],
+      ["--red-050", "#fbf1ee"],
+    ]) {
+      expect(tokens).toContain(`${name ?? ""}: ${value ?? ""};`);
+    }
+  });
+
+  it("loads IBM Plex Sans alone", () => {
+    expect(readFileSync("site/src/styles/global.css", "utf8")).toContain('@import "@maneman/brand/fonts-plex.css";');
+    const others = /fonts\.css|eb-garamond|instrument-sans|EB Garamond|Instrument Sans|--font-serif|--font-sans/;
+    expect(files(SOURCE).filter((path) => others.test(readFileSync(path, "utf8")))).toEqual([]);
+  });
+
   // The code's boxes and the times drew at their words' height, since their height was the apps' alone.
   it("defines every token the shared controls it uses read", () => {
     // The shared base the site loads with its tokens (site/src/styles/global.css) sets the controls' sizes.

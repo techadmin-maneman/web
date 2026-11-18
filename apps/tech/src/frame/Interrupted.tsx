@@ -1,9 +1,13 @@
 // A job ops cancelled, or gave to another technician, while the phone held it (docs/decisions/0246-closed-and-sent-back.md):
-// said once, in a dialog over whatever screen is showing, with a call to ops and the way back to Today. The banner
-// above every screen (./Banners.tsx) goes on saying it, and Pending uploads keeps what was recorded.
+// said once, in a dialog over whatever screen is showing, as the prototype words it: whose visit, and when ops did it,
+// with a call to ops beside the way back to Today. The banner above every screen (./Banners.tsx) goes on saying it, and
+// Pending uploads keeps what was recorded (docs/decisions/0246-closed-and-sent-back.md, decision 8).
+
+import { GLYPHS } from "@maneman/brand/icons";
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Dialog } from "@maneman/ui/Dialog";
+import { Icon } from "@maneman/ui/Icon";
 import { OPS_NUMBER } from "@maneman/web-kit/whatsapp";
 import { useLoad, type Loaded } from "@maneman/ui/useLoad";
 import { useState } from "react";
@@ -12,7 +16,7 @@ import { interrupted as copy, ops } from "../content.ts";
 import { jobLabel } from "../lib/kind.ts";
 import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
-import { todayInIndia } from "../lib/when.ts";
+import { clock, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
 import type { Queued } from "../store/outbox.ts";
 import styles from "./interrupted.module.css";
@@ -25,12 +29,31 @@ const interruption = (event: Queued): boolean =>
   event.state === "superseded" &&
   (event.fields.includes("status") || event.moved !== null || event.note === "already_closed");
 
-/** The dialog's words: whom a job went to, or that it was closed or cancelled. */
-function wordsOf(event: Queued, job: string): { title: string; body: string } {
+/** Whose visit it was: the client by name where the phone knows it, else the job by its time and kind. */
+interface Whose {
+  readonly name: string | null;
+  readonly job: string;
+}
+
+/** The time ops did it, where the API said and it was today; null otherwise. */
+const timeToday = (at: string | null | undefined): string | null =>
+  at === null || at === undefined || todayInIndia(new Date(at)) !== todayInIndia() ? null : clock(at);
+
+/** The dialog's words: whom a job went to, or that it was closed or cancelled; and that what was recorded is kept. */
+function wordsOf(event: Queued, whose: Whose): { title: string; body: string } {
+  const { name, job } = whose;
   const to = event.moved?.technician ?? null;
-  if (to !== null) return { title: copy.moved(job, to), body: copy.movedBody(to) };
-  if (event.note === "already_closed") return { title: copy.closed(job), body: copy.closedBody };
-  return { title: copy.cancelled(job), body: copy.cancelledBody };
+  if (to !== null) {
+    const title = name === null ? copy.moved(job, to) : copy.movedOf(name, to);
+    return { title, body: `${copy.reassignedAt(timeToday(event.moved?.at))} ${copy.kept}` };
+  }
+  if (event.note === "already_closed") {
+    return { title: name === null ? copy.closed(job) : copy.closedOf(name), body: `${copy.closedBody} ${copy.kept}` };
+  }
+  return {
+    title: name === null ? copy.cancelled(job) : copy.cancelledOf(name),
+    body: `${copy.cancelledAt(null)} ${copy.kept}`,
+  };
 }
 
 /**
@@ -50,9 +73,13 @@ function alertedOf(loaded: Loaded<Alerts>, today: string): Alert | undefined {
   );
 }
 
-function alertWords(alert: Alert, job: string): { title: string; body: string } {
-  if (alert.kind === "job_reassigned") return { title: copy.reassigned(job), body: copy.reassignedBody };
-  return { title: copy.cancelled(job), body: copy.cancelledAlert };
+function alertWords(alert: Alert, whose: Whose): { title: string; body: string } {
+  const { name, job } = whose;
+  const at = timeToday(alert.sent_at);
+  if (alert.kind === "job_reassigned") {
+    return { title: name === null ? copy.reassigned(job) : copy.reassignedOf(name), body: copy.reassignedAt(at) };
+  }
+  return { title: name === null ? copy.cancelled(job) : copy.cancelledOf(name), body: copy.cancelledAt(at) };
 }
 
 /** What the dialog says, and of which job: a refused write's, or else an alert's. */
@@ -62,12 +89,15 @@ function shownOf(
   held: ReturnType<typeof useHeldJobs>,
 ): { jobId: string; words: { title: string; body: string } } | null {
   if (event !== undefined) {
-    return { jobId: event.job_id, words: wordsOf(event, jobLabel(held.get(event.job_id), event.starts_at)) };
+    const kept = held.get(event.job_id);
+    const whose = { name: kept?.client ?? null, job: jobLabel(kept, event.starts_at) };
+    return { jobId: event.job_id, words: wordsOf(event, whose) };
   }
   const jobId = alerted?.job_id ?? null;
   if (alerted === undefined || jobId === null) return null;
-  const job = alerted.client_name ?? jobLabel(held.get(jobId), alerted.starts_at ?? "");
-  return { jobId, words: alertWords(alerted, job) };
+  const kept = held.get(jobId);
+  const whose = { name: alerted.client_name ?? kept?.client ?? null, job: jobLabel(kept, alerted.starts_at ?? "") };
+  return { jobId, words: alertWords(alerted, whose) };
 }
 
 export function Interrupted() {
@@ -94,12 +124,14 @@ export function Interrupted() {
         </h2>
         <p className={styles.body}>{words.body}</p>
         <div className={styles.actions}>
-          <ButtonLink variant="outline" size="action" href={`tel:+${OPS_NUMBER}`}>
-            {ops.call}
+          <ButtonLink variant="outline" size="action" className={styles.action} href={`tel:+${OPS_NUMBER}`}>
+            <Icon d={GLYPHS.phone} size="sm" />
+            <span>{ops.call}</span>
           </ButtonLink>
           <Button
             variant="primary"
             size="action"
+            className={styles.action}
             onClick={() => {
               close();
               go("/");

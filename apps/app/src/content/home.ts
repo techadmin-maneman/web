@@ -3,15 +3,11 @@
 import { visitLength } from "./common.ts";
 
 export const tabs = [
-  { page: "/", label: "Home", icon: "home" },
-  { page: "/visits", label: "Visits", icon: "visits" },
-  { page: "/photos", label: "Photos", icon: "photos" },
-  { page: "/payments", label: "Payments", icon: "payments" },
-  { page: "/refer", label: "Refer", icon: "refer" },
+  { page: "/", label: "Home", counted: (count: number) => `Home, ${String(count)}` },
+  { page: "/visits", label: "Visits", counted: (count: number) => `Visits, ${String(count)} open issues` },
+  { page: "/photos", label: "Photos", counted: (count: number) => `Photos, ${String(count)}` },
+  { page: "/rewards", label: "Rewards", counted: (count: number) => `Rewards, ${freeServiceVisits(count)}` },
 ] as const;
-
-/** The tab bar, as a screen reader names it. */
-export const tabsLabel = "Main";
 
 /**
  * The referral reward has this one name wherever the client reads it: "1 free service visit", "3 free
@@ -34,7 +30,54 @@ export const PAID_IN = "Your payment is in. We’re booking your visit.";
 
 export const TOLD_WHEN_BOOKED = "We’ll message you on WhatsApp when it’s booked.";
 
+/** The part of the day an hour falls in, as Home greets the client. */
+function partOfDay(hour: number): string {
+  if (hour < 12) return "Good morning";
+  return hour < 17 ? "Good afternoon" : "Good evening";
+}
+
 export const home = {
+  /** Home's heading, by the hour in India: "Good morning, Rohit". */
+  greeting: (hour: number, firstName: string) => `${partOfDay(hour)}, ${firstName}`,
+  /** How far off the next visit's day is, beneath it. */
+  away: (days: number) => {
+    if (days <= 0) return "Today";
+    return days === 1 ? "Tomorrow" : `In ${String(days)} days`;
+  },
+  technicianFor: "Your technician for this visit",
+  /** Home's hair system: how far through its months it is, and when its replacement may be booked (ADR 0253). */
+  hairSystem: {
+    title: "Your hair system",
+    history: "History",
+    month: (month: number, of: number) => `Month ${String(month)} of ${String(of)}`,
+    age: "Hair system age",
+    booked: (date: string) => `Replacement booked for ${date}.`,
+    bookNow: (ends: string) => `Ends ${ends}. You can book its replacement now.`,
+    bookFrom: (fitted: string, opens: string) =>
+      `Fitted ${fitted}. You can book its replacement from ${opens}, and pick a different hair system then if you want one.`,
+  },
+  /** Home's rows beneath the hair system. */
+  rows: {
+    creditsMeta: (useBy: string | null) =>
+      useBy === null ? "Applied when you book." : `${useBy}. Applied when you book.`,
+    report: "Report an issue",
+    reportMeta: "Lifting edges, itching, colour, billing",
+    invite: "Invite a friend",
+    /** Issues the client raised that are still open. */
+    openIssues: (count: number) => (count === 1 ? "1 open issue" : `${String(count)} open issues`),
+    openIssuesMeta: (count: number) => (count === 1 ? "See where it stands" : "See where each stands"),
+    /** Before the first fit: the four compared, and questions on WhatsApp. */
+    compareMeta: "Side by side, before you choose",
+    tryOn: "Try on a look",
+    tryOnMeta: "See a style on your own photo before the visit",
+    questions: "Questions before the visit?",
+    questionsFit: "Questions about your fitting?",
+  },
+  /** The last visit done, beneath Home's rows. */
+  lastVisit: {
+    title: "Last visit",
+    all: "All visits",
+  },
   /** The avatar's name begins with the initials it shows, so "tap RM" reaches it by voice. */
   profile: (initials: string) => `${initials}, your profile`,
   reschedule: "Change",
@@ -54,7 +97,7 @@ export const home = {
   },
   note: "Add a note",
   consultation: {
-    label: "Your consultation",
+    label: "Your home consultation",
     labelOneVisit: "Your consultation and fit",
     free: "Free",
     /** Asked for on the site, not yet booked. */
@@ -66,7 +109,7 @@ export const home = {
   customOrder: {
     awaitingPayment: "Your hair system, made to your profile, is ready to order.",
     pay: (amount: string) => `Pay ${amount}`,
-    paid: "Paid in full. We are placing your order.",
+    paid: "Paid in full. We’re placing your order.",
     ordered: (date: string | null) =>
       date === null ? "Your hair system is being made." : `Your hair system is being made, due by ${date}.`,
     arrived: "Your hair system has arrived. We’ll message you to book your first fit.",
@@ -76,8 +119,8 @@ export const home = {
    * replacement's line the same way.
    */
   prompt: {
-    address: "Add your address, so your technician can find the door.",
     addAddress: "Add your address",
+    addressMeta: "So your technician can find the door",
     /** "Your next service visit is due on Tue 27 Oct, in the morning." */
     nextVisit: (what: string, date: string, window: string | null) =>
       window === null
@@ -92,8 +135,9 @@ export const home = {
     /** The booking sheet, at the replacement. */
     bookReplacement: "Book the replacement",
     involves: "See what that involves",
-    invoice: (what: string, date: string) => `The invoice for your ${what.toLowerCase()} on ${date} is ready.`,
-    openInvoice: "Open the invoice",
+    invoiceReady: "Your invoice is ready",
+    /** "Service visit, Tue 27 Oct". */
+    invoiceFor: (what: string, date: string) => `${what}, ${date}`,
   },
   /** A visit not yet closed, once it has begun. */
   stages: {
@@ -104,9 +148,14 @@ export const home = {
     missed: "We’ll be in touch about this visit",
   },
   next: {
-    label: "Your next visit",
-    /** "Service visit · 1 hour 30 minutes". */
-    length: (what: string, minutes: number) => `${what} · ${visitLength(minutes)}`,
+    label: "Next visit",
+    /** The card's line above the day, by the visit's kind. */
+    labels: { first_fit: "Your first fit", replacement: "Your replacement" },
+    /** "Arrives 12–12:30 pm · about 1 hour 30 minutes". */
+    arrives: (when: string, minutes: number) => `Arrives ${when} · about ${visitLength(minutes)}`,
+    /** What the visit costs the client now: paid ahead, or nothing. */
+    paid: "Paid",
+    free: "Free",
     none: "Nothing booked yet.",
     /** Visits' button, which Home's card and Visits both show. */
     book: "Book your next visit",
@@ -121,11 +170,13 @@ export const home = {
     useCredit: "Use a free service visit",
   },
   expect: {
-    label: "What to expect",
+    label: "What happens at the consultation",
+    /** A consultation and fit's, beneath its card. */
+    labelOneVisit: "What happens at the visit",
     steps: [
-      "Your scalp mapped and measured.",
-      "Your colour matched against 40 samples.",
-      "Nothing fitted, nothing ordered on the day.",
+      "Before photos, then your scalp and hairline are mapped.",
+      "Your colour and style are matched, and the technician shows the hair systems that suit you.",
+      "If you go ahead, we book your first fit. Nothing is fitted on the day.",
     ],
   },
   /**
@@ -140,11 +191,11 @@ export const home = {
     unpriced: "You pay only if you go ahead",
     covered: (code: string) => `Nothing to pay: code ${code} covers it`,
     code: (code: string) => `Code ${code} applied`,
-    paidBy: "By UPI at the visit, once fitted",
+    paidBy: "By a Razorpay link, once fitted",
     expect: [
       "Your scalp measured and your colour matched.",
       "Choose your hair system, fitted there and then.",
-      "Decide before it’s fitted: go ahead and pay by UPI once fitted, or decide against it and pay nothing.",
+      "Decide before it’s fitted: go ahead and pay through a Razorpay link once fitted, or decide against it and pay nothing.",
     ],
   },
   /** A visit nobody was home for, until ops decide what follows and the client is told. */
@@ -202,7 +253,6 @@ export const home = {
  */
 export const replacement = {
   title: "What a replacement involves",
-  back: "Back to Home",
   lines: [
     "Your technician removes your current hair system and fits a new one, at home.",
     "It’s cut in and styled to match, just like your first fit.",

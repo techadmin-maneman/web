@@ -82,11 +82,22 @@ function fetchCard(id: string): ReturnType<typeof api.job> {
   return fetching;
 }
 
+/**
+ * A card the API answered, keeping a one visit's choice the phone saw land: an answer to a read sent before the piece
+ * step landed never takes the choice back (docs/decisions/0271-the-technician-follow-ups.md).
+ */
+async function withLandedChoice(card: Job): Promise<Job> {
+  if (!card.one_visit || card.client_choice !== null) return card;
+  const choice = (await keptJob(card.id).catch(() => null))?.client_choice ?? null;
+  return choice === null ? card : { ...card, client_choice: choice };
+}
+
 export async function loadJob(id: string): Promise<KeptLoad<Job>> {
   const answer = await fetchCard(id);
   if (answer.ok) {
-    await keepJob(answer.body).catch(() => undefined);
-    return { state: "loaded", value: answer.body, fromPhone: false };
+    const card = await withLandedChoice(answer.body);
+    await keepJob(card).catch(() => undefined);
+    return { state: "loaded", value: card, fromPhone: false };
   }
   if (!unreachable(answer)) return failed(answer.requestId, answer.code === "not_found");
   const kept = await keptJob(id).catch(() => null);
@@ -145,7 +156,7 @@ async function keepCard(id: string): Promise<void> {
   if (fresh && (await keptJob(id).catch(() => null)) !== null) return;
   const answer = await fetchCard(id);
   if (!answer.ok) return;
-  await keepJob(answer.body).catch(() => undefined);
+  await keepJob(await withLandedChoice(answer.body)).catch(() => undefined);
 }
 
 /**

@@ -197,6 +197,49 @@ describe("a technician's steps", () => {
     expect(await visitRowOf(TODAY_JOB)).toMatchObject({ outcome: "partial", partial_reason: "no_piece" });
   });
 
+  it("keeps why a fit was not fitted, from the job sheet's list, and refuses a reason it never listed", async () => {
+    const sentAt = minutesAfterStart(60);
+    await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME.slice(0, 5));
+    await env.DB.prepare("UPDATE appointments SET type = 'first_fit', tier = 'essential' WHERE id = ?1")
+      .bind(TODAY_JOB)
+      .run();
+    const cannotFit = (why: string) => ({
+      outcome: "partial",
+      reason: "no_piece",
+      cannot_fit: true,
+      not_fitted_reason: why,
+    });
+    const unknown = await postAt(sentAt, `/api/tech/jobs/${TODAY_JOB}/outcome`, cannotFit("too_cold"), uuidv7At(50));
+    expect(await unknown.json()).toMatchObject({ error: { fields: ["not_fitted_reason"] } });
+    // A reason belongs to Can't fit today alone.
+    const partial = { outcome: "partial", reason: "client_stopped_it", not_fitted_reason: "piece_damaged" };
+    const astray = await postAt(sentAt, `/api/tech/jobs/${TODAY_JOB}/outcome`, partial, uuidv7At(51));
+    expect(await astray.json()).toMatchObject({ error: { fields: ["not_fitted_reason"] } });
+
+    const closed = await postAt(
+      sentAt,
+      `/api/tech/jobs/${TODAY_JOB}/outcome`,
+      cannotFit("piece_damaged"),
+      uuidv7At(52),
+    );
+    expect(closed.status).toBe(202);
+    const kept = await env.DB.prepare(
+      "SELECT partial_reason, not_fitted_reason FROM visit_outcomes WHERE appointment_id = ?1",
+    )
+      .bind(TODAY_JOB)
+      .first();
+    expect(kept).toEqual({ partial_reason: "no_piece", not_fitted_reason: "piece_damaged" });
+  });
+
+  it("refuses a consultation closed partly done: it closes done, going ahead or not", async () => {
+    const sentAt = minutesAfterStart(60);
+    await env.DB.prepare("UPDATE appointments SET type = 'consultation' WHERE id = ?1").bind(TODAY_JOB).run();
+    await work(sentAt, TODAY_JOB, UP_TO_THE_OUTCOME.slice(0, 2));
+    const partial = { outcome: "partial", reason: "client_stopped_it" };
+    const refused = await postAt(sentAt, `/api/tech/jobs/${TODAY_JOB}/outcome`, partial, uuidv7At(50));
+    expect(await refused.json()).toMatchObject({ error: { fields: ["outcome"] } });
+  });
+
   it("close a no-show as terminated, never started", async () => {
     await work(NOW, TODAY_JOB, [["checkin", AT_THE_DOOR, -30]]);
 

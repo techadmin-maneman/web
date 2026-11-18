@@ -44,6 +44,7 @@ const BOOK = {
       item: "service",
       tier: "standard",
       amount_ex_gst: 400_000,
+      amount: 472_000,
       gst_percent: 18,
       valid_from: "2027-10-01",
       in_force: false,

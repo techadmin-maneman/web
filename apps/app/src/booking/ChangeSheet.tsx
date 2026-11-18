@@ -4,15 +4,16 @@
 // 24 hours ran out meanwhile, the new terms are shown instead.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { TextButton } from "@maneman/ui/TextLink";
 import { refundDestination } from "../payments/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
-import { fullDate, indiaDate, weekdayName } from "@maneman/web-kit/dates";
+import { fullDate, indiaDate, shortDate, weekdayName } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { CLIENT_ICONS, ICONS } from "@maneman/brand/icons";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type BookableType, type CancelTerms, type Me, type MoveTerms } from "../api.ts";
 import { booking, change, states } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
@@ -20,12 +21,14 @@ import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { BookingSheet } from "./lazy-sheet.tsx";
 import { moveButton } from "./late-change.ts";
-import { LateFee } from "./steps/shared.tsx";
+import { moveLine } from "./steps/shared.tsx";
 import styles from "./booking.module.css";
 
 export interface ChangingVisit {
   readonly id: string;
   readonly type: BookableType;
+  /** What the card calls it: "Service visit", "Consultation and fit". */
+  readonly name: string;
   /** India's calendar date. */
   readonly date: string;
   /** What a message to ops says, should the app not be able to change it. */
@@ -43,14 +46,6 @@ type Step =
 
 /** The cancel sheet's "One left": the credits the client still has, in words. */
 const COUNTS = ["One", "Two", "Three", "Four", "Five", "Six"];
-
-/** What moving costs, in the design's words; a late fee in the pay step's own line. */
-function moveLine(terms: MoveTerms): ReactNode {
-  if (terms.cost === "charged" && terms.credit !== null) return change.move.creditCharged;
-  if (terms.cost === "charged") return change.move.charged(rupees(terms.paid));
-  if (terms.cost === "late_fee") return <LateFee fee={terms.price} noticeHours={terms.notice_hours} />;
-  return terms.paid > 0 ? change.move.free(rupees(terms.paid)) : change.move.freeNothingPaid;
-}
 
 /** What confirming a cancellation says: that a credit is lost, that a fee is kept, or only that it cancels. */
 function cancelButton(terms: CancelTerms): string {
@@ -101,31 +96,18 @@ function PickAnother(props: { type: ChangingVisit["type"]; terms: MoveTerms; onC
   );
 }
 
-/** What moving costs, and the ways on: another time, keeping the visit, or cancelling it instead. */
-function MoveStep(props: {
-  name: string;
-  terms: MoveTerms;
-  onPick: () => void;
-  onKeep: () => void;
-  onCancelInstead: () => void;
-}) {
+/** The visit and its day, what moving costs, and the ways on as rows: another time, or cancelling it. */
+function MoveStep(props: { title: string; terms: MoveTerms; onPick: () => void; onCancelInstead: () => void }) {
   return (
     <>
       <h2 className={styles.changeTitle} id="change-title">
-        {change.move.title(props.name)}
+        {props.title}
       </h2>
       <p className={termsClass(props.terms.cost !== "free")}>{moveLine(props.terms)}</p>
-      <div className={styles.pair}>
-        <Button variant="primary" size="control" className={styles.primary} onClick={props.onPick}>
-          {moveButton(props.terms)}
-        </Button>
-        <Button variant="outline" size="control" className={styles.secondary} onClick={props.onKeep}>
-          {change.move.keep}
-        </Button>
-      </div>
-      <TextButton tone="muted" className={styles.quiet} onClick={props.onCancelInstead}>
-        {change.move.cancelInstead}
-      </TextButton>
+      <ListRows className={styles.changeRows}>
+        <ListRow icon={CLIENT_ICONS.calendar} title={moveButton(props.terms)} onClick={props.onPick} chevron />
+        <ListRow icon={ICONS.cross} title={change.move.cancelInstead} onClick={props.onCancelInstead} chevron />
+      </ListRows>
     </>
   );
 }
@@ -256,12 +238,11 @@ export function ChangeSheet(props: {
         )}
         {step.kind === "move" && (
           <MoveStep
-            name={name}
+            title={change.move.title(visit.name, shortDate(visit.date))}
             terms={step.terms}
             onPick={() => {
               setStep({ kind: "picking", terms: step.terms });
             }}
-            onKeep={close}
             onCancelInstead={() => void show("cancel")}
           />
         )}

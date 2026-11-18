@@ -23,7 +23,7 @@ import {
   forgetStartAtCheckIn,
   keepArrival,
   keepJob,
-  keepLanded,
+  keepWhatLanded,
   keepStartAtCheckIn,
   keptStartAtCheckIn,
 } from "./jobs.ts";
@@ -452,8 +452,7 @@ function stateIn(body: unknown): JobState | null {
 async function landed(event: Queued, body: unknown): Promise<void> {
   // A check-in answers pass or fail with the distance; the job screen shows it.
   if (event.kind === "check_in") await keepArrival(event.job_id, body as CheckIn);
-  const state = stateIn(body);
-  if (state !== null) await keepLanded(event.job_id, state);
+  await keepWhatLanded(event, stateIn(body));
   await remove("outbox", event.seq);
   await dropEarlier(event);
 }

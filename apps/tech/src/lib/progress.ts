@@ -40,9 +40,26 @@ export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   for (const event of queued) {
     if (event.job_id === job.id && event.state === "waiting") sent.add(event.kind);
   }
-  // A client who decided against the fit, or booked it for later, is fitted nothing, so nothing is photographed after.
-  if (fitsNothingToday(job, queued)) sent.add("after_photos");
+  // A client who decided against the fit, or booked it for later, is fitted nothing, so nothing is photographed after,
+  // and there is no fit to sign off.
+  if (fitsNothingToday(job, queued)) {
+    sent.add("after_photos");
+    sent.add("sign_off");
+  }
+  if (signedOff(job, queued)) sent.add("sign_off");
   return sent;
+}
+
+/**
+ * Whether the fit's sign-off lets it close (docs/decisions/0254-client-signs-off-the-fit.md): the client signed in their
+ * app, as the card says, or the technician recorded that they declined, as the card says or the phone holds it to send.
+ */
+export function signedOff(job: Job, queued: readonly Queued[]): boolean {
+  const state = job.sign_off?.state;
+  if (state === "signed" || state === "declined") return true;
+  return queued.some(
+    (event) => event.job_id === job.id && event.state === "waiting" && event.kind === "sign_off_declined",
+  );
 }
 
 /** The step the technician is on, or null when every one of them is in. */
@@ -55,6 +72,21 @@ const started = (job: Tracked, queued: readonly Queued[]): boolean =>
   job.progress.started_at !== null ||
   queued.some((event) => event.job_id === job.id && event.kind === "start" && event.state === "waiting");
 export const checkedIn = (job: Job, queued: readonly Queued[]): boolean => done(job, queued).has("check_in");
+
+/**
+ * When the technician checked in, which a visit's length runs from: as the card says; as the API's answer to the
+ * check-in did, where it passed and the card was not read again; or, checked in with no signal, when the phone took
+ * it. A refused check-in's answer is no check-in, as everywhere else the phone reads one.
+ */
+export function arrivedAt(job: Job, kept: CheckIn | null, queued: readonly Queued[]): number | null {
+  if (job.progress.checked_in_at !== null) return Date.parse(job.progress.checked_in_at);
+  if (kept?.passed === true) return Date.parse(kept.checked_in_at);
+  // Only a tap still on its way: one the API refused as early stays queued until the next lands, and is no check-in.
+  const waiting = queued.find(
+    (event) => event.job_id === job.id && event.kind === "check_in" && event.state === "waiting",
+  );
+  return waiting?.queued_at ?? null;
+}
 
 export type Outcome = "done" | "partial" | "no_show";
 
@@ -93,7 +125,7 @@ export const stepsToFix = (job: Job, queued: readonly Queued[]): InJobStep[] =>
 export type ClientChoice = NonNullable<Job["client_choice"]>;
 
 /** The choice a piece step's body records; null for one that records none. */
-function choiceIn(body: unknown): ClientChoice | null {
+export function choiceIn(body: unknown): ClientChoice | null {
   const sent = body as { declined?: unknown; product?: unknown; fit_later?: unknown } | null;
   if (sent?.declined === true) return { declined: true };
   if (typeof sent?.product !== "string") return null;

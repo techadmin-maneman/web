@@ -1,9 +1,9 @@
 // What Today works out from the day's list (apps/tech/src/lib/today.ts): the job it puts first, its title, and the
-// line above the next job, where the technician is with it, else when to leave.
+// line above the next job, where the technician is with it, else when to leave; and a row's words kept whole.
 
 import { describe, expect, it } from "vitest";
 import { today as copy } from "../../../apps/tech/src/content.ts";
-import { closedAs, nextLine, nextOf, titleOf } from "../../../apps/tech/src/lib/today.ts";
+import { closedAs, keptWhole, nextLine, nextOf, titleOf } from "../../../apps/tech/src/lib/today.ts";
 import type { Queued } from "../../../apps/tech/src/store/outbox.ts";
 
 const NOW = new Date("2026-11-10T03:30:00.000Z"); // 9 am in India
@@ -39,9 +39,11 @@ describe("the job Today puts first, and its title", () => {
       ["c", c],
     ]);
 
-  it("is the first job still to do, and the count is of those still to do", () => {
+  it("is the first job still to do, and the count is of the day's jobs, then of those left once one has closed", () => {
     expect(nextOf(jobs, states("closed", null))?.id).toBe("b");
-    expect(titleOf(jobs, states("closed", null), true)).toBe(copy.jobs(2));
+    expect(titleOf(jobs, states(null, null, null), true)).toBe(copy.jobs(3));
+    expect(titleOf(jobs, states("closed", null), true)).toBe(copy.left(2));
+    expect(titleOf(jobs, states("closed", "closed"), true)).toBe(copy.left(1));
   });
 
   it("is one under way or at its door, ahead of an earlier one never closed", () => {
@@ -53,8 +55,8 @@ describe("the job Today puts first, and its title", () => {
     expect(nextOf(jobs, states("closed", "closed", "closed"))).toBeUndefined();
     expect(titleOf(jobs, states("closed", "closed", "closed"), true)).toBe(copy.allDone);
     expect(titleOf([], new Map(), true)).toBe(copy.noJobs);
-    // Before the list loads, nothing is said to be done.
-    expect(titleOf([], new Map(), false)).toBe(copy.jobs(0));
+    // Before the list loads, or when it failed to, nothing is counted and nothing said to be done.
+    expect(titleOf([], new Map(), false)).toBe(copy.title);
   });
 });
 
@@ -78,5 +80,19 @@ describe("how a job done with closed, in a word", () => {
   it("is the visit's status where no outcome is known", () => {
     expect(closedAs(job(null, "completed"), [], undefined)).toBe(copy.closed.done);
     expect(closedAs(job(null, "terminated"), [], undefined)).toBe(copy.closed.other);
+  });
+});
+
+describe("a row's words in a narrow row", () => {
+  const NB = "\u00a0";
+
+  it("keeps each figure on one line with the word after it, in English and in Hindi", () => {
+    expect(keptWhole("25 min drive · leave 11:05 am")).toBe(`25${NB}min drive · leave 11:05${NB}am`);
+    expect(keptWhole("1 h 30 min")).toBe(`1${NB}h 30${NB}min`);
+    expect(keptWhole("2 घंटे 15 मिनट")).toBe(`2${NB}घंटे 15${NB}मिनट`);
+  });
+
+  it("leaves a figure before anything but a word as it was, so the line can still break there", () => {
+    expect(keptWhole("Replacement · Sector 56 · prepaid")).toBe("Replacement · Sector 56 · prepaid");
   });
 });

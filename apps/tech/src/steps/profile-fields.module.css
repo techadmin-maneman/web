@@ -1,6 +1,6 @@
 /* What ./ProfileFields.tsx alone draws; what it shares is in ./steps.module.css. */
 
-/* Short choices, a stage or a colour code, sit side by side and wrap: 56 px each, the outcome's edge when chosen. */
+/* Short choices, a stage or a colour code, sit side by side, each as wide as its words, and wrap; filled when chosen. */
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -11,8 +11,4 @@
 .figure {
   display: flex;
   flex-direction: column;
-}
-
-.chip {
-  min-width: var(--tech-stepper);
 }

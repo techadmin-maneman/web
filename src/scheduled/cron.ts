@@ -19,6 +19,7 @@ import { bookUnbookedHolds } from "../domain/booking/unbooked-holds.ts";
 import { eraseBooksCustomers } from "../domain/books/books-erasure.ts";
 import { raiseBooksInvoices } from "../domain/books/books-invoices.ts";
 import { checkBooksItems } from "../domain/books/books-items.ts";
+import type { SettlementAccounts } from "../domain/books/books-settlements.ts";
 import { syncBooks } from "../domain/books/books-sync.ts";
 import type { BooksSyncOptions } from "../domain/books/books-pass.ts";
 import { closeStaleLowStock } from "../domain/inventory/low-stock.ts";
@@ -80,6 +81,7 @@ import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { techAlertsJob } from "./tech-alerts.ts";
+import { clientAlertsJob } from "./client-alerts.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -370,10 +372,32 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
 export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   return {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
+    settlementAccounts: settlementAccountsOf(config),
     billAccounts: config.settings.zohoBooks?.billAccounts ?? null,
     labelAsTest: config.environment !== "production",
     gst: booksGst(config),
   };
+}
+
+/**
+ * Where Razorpay's settlements post; null until Razorpay's, the bank's and the fee's accounts are all set, and
+ * outside production, as the one Books organisation's bank is the real one. The fee carries its GST once GST is on and
+ * Razorpay's GSTIN is set.
+ */
+function settlementAccountsOf(config: StaticConfig): SettlementAccounts | null {
+  if (config.environment !== "production") return null;
+  const books = config.settings.zohoBooks;
+  const razorpay = books?.refundAccountId ?? null;
+  const bank = books?.bankAccountId ?? null;
+  const fees = books?.gatewayFeesAccountId ?? null;
+  if (razorpay === null || bank === null || fees === null) return null;
+  const ours = booksGst(config).stateCode;
+  const gateway = books?.gateway ?? null;
+  const feesGst =
+    gateway === null || ours === null
+      ? null
+      : { supplierGstin: gateway.gstin, sourceState: gateway.stateCode, destinationState: ours };
+  return { razorpay, bank, fees, feesGst };
 }
 
 /** The GST registration Books carries here; none where Books is not Zoho's. */
@@ -406,6 +430,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "alerts_retold", needs: "nothing", every: 5, at: 4, run: alertsRetoldJob },
   // A technician's time to leave and running over, the day ahead in the hour ops set, and a push for each (ADR 0250).
   { name: "tech_alerts", needs: "nothing", every: 5, at: 0, run: techAlertsJob },
+  { name: "client_alerts", needs: "nothing", every: 5, at: 0, run: clientAlertsJob },
 
   // Every fifteen minutes.
   { name: "visit_reminders", needs: "messaging", every: 15, at: 1, run: remindersJob },

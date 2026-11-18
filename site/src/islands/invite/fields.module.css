@@ -1,18 +1,13 @@
 /* What ./fields.tsx alone draws; what it shares is in ./Invite.module.css. */
 
+/* A phone's step button fills its foot; a laptop's is as wide as its words, and no narrower than the board's. */
 .submit {
   width: 100%;
 }
 
-/* Beneath a form's agreement: the terms and privacy notice that apply, each a link (fields.tsx). */
-.legal {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
-}
-
-/* Each link's tap reaches a thumb's height above and below its words, padding an inline box leaving the line as it is. */
-.legal a {
-  padding-block: var(--sp-12);
+@media (min-width: 761px) {
+  .submit {
+    width: auto;
+    min-width: var(--flow-action-min);
+  }
 }

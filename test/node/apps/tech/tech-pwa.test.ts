@@ -59,6 +59,8 @@ describe("what the service worker keeps", () => {
       "/assets/index-abc.js",
       "/manifest.webmanifest",
     ]);
+    // A deploy builds source maps for Sentry and deletes them before the app ships: none is kept offline.
+    expect(precacheList(["assets/index-abc.js", "assets/index-abc.js.map"])).toEqual(["/", "/assets/index-abc.js"]);
   });
 
   it("leaves out the fonts the app never draws with: extended Latin, and the rupee", () => {

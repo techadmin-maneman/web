@@ -8,6 +8,7 @@ export const PriceRowSchema = z
     item: z.enum(PRICE_ITEMS),
     tier: z.string(),
     amount_ex_gst: z.number().int().openapi({ description: "In paise, before GST." }),
+    amount: z.number().int().openapi({ description: "In paise, GST included: what the client pays." }),
     gst_percent: z.number().int(),
     valid_from: z.iso.date().openapi({ description: "India's date it applies from." }),
     in_force: z.boolean(),

@@ -15,6 +15,7 @@ import {
 } from "../../../apps/tech/src/content.ts";
 import { referral } from "../../../site/src/content/referral.ts";
 import * as siteCopy from "../../../site/src/content/site.ts";
+import { shots, throughTheTasks } from "../../tech/steps-fixtures.ts";
 import { Phone, razorpayPaid } from "../actors.ts";
 import { appOf, idOf } from "./clients.ts";
 import type { Job } from "./field.ts";
@@ -99,19 +100,17 @@ export async function appBooking(sim: Sim, wave: string, client: Client): Promis
       await expect(page.getByRole("navigation").first()).toBeVisible();
       await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.visits }).click();
       await page.getByRole("button", { name: appCopy.home.next.book }).click();
-      const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
-      await expect(dates.getByText(/^Step 1 of \d$/)).toBeVisible({ timeout: 15_000 });
-      await dates.getByRole("radio").and(page.locator(":enabled")).nth(1).click();
-      await dates.getByRole("button", { name: appCopy.booking.service.continue }).click();
-      const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-      await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
+      const when = page.getByRole("dialog", { name: appCopy.booking.when.title });
+      await expect(when.getByText(/^Step 1 of \d$/)).toBeAttached({ timeout: 15_000 });
+      await when.locator('input[name="booking-date"]:enabled').nth(1).click();
+      await when.locator('input[name="booking-time"]:enabled').first().click();
       const held = page.waitForResponse(
         (answer) => answer.request().method() === "POST" && answer.url().endsWith("/api/holds"),
       );
-      await windows.getByRole("button", { name: /^Continue( to payment)?$/ }).click();
-      check((await held).ok(), "the window was not held");
+      await when.getByRole("button", { name: appCopy.booking.when.continue, exact: true }).click();
+      check((await held).ok(), "the time was not held");
       const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-      await expect(pay.getByText(/^Held for \d+:\d\d$/)).toBeVisible();
+      await expect(pay.getByText(new RegExp(`^${appCopy.booking.pay.holding}\\d+:\\d\\d$`))).toBeVisible();
       await pay.getByRole("checkbox", { name: Object.values(appCopy.booking.pay.agree).join("") }).check();
       const booked = page.waitForResponse(
         (answer) => answer.request().method() === "POST" && answer.url().endsWith("/api/bookings"),
@@ -129,7 +128,7 @@ export async function appBooking(sim: Sim, wave: string, client: Client): Promis
         );
         recordPaid(sim.world, indiaDateOf(sim.clock.now).slice(0, 7), body.checkout.amount);
       }
-      await expect(page.getByText(appCopy.booking.confirmed.label, { exact: true }).first()).toBeVisible({
+      await expect(page.getByText(appCopy.booking.confirmed.label.service, { exact: true }).first()).toBeVisible({
         timeout: 15_000,
       });
     },
@@ -151,7 +150,7 @@ async function photograph(page: Page): Promise<void> {
   await expect(take).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await take.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
   await page.getByRole("button", { name: captureWords.finish }).click();
 }
@@ -208,14 +207,14 @@ export async function techJobOnScreen(
       if (offline) await phone.context.setOffline(true);
       await photograph(page);
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.checklist })).toBeVisible();
-      await page.getByRole("button", { name: stepWords.checklist.all }).click();
+      await throughTheTasks(page);
       await page.getByRole("button", { name: stepWords.next }).click();
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.consumables })).toBeVisible();
       await page.getByRole("button", { name: stepWords.next }).click();
       await expect(page.getByRole("heading", { level: 1, name: captureWords.after })).toBeVisible();
       await photograph(page);
       await expect(page.getByRole("heading", { level: 1, name: stepWords.titles.outcome })).toBeVisible();
-      await page.getByRole("button", { name: captureWords.finish, exact: true }).click();
+      await page.getByRole("radio", { name: stepWords.outcome.done, exact: true }).click();
       await sim.clock.pass(Math.max(30, (job.minutes ?? 90) - 15) * MINUTE);
       await page.getByRole("button", { name: visitWords.close }).click();
       if (offline) {

@@ -3,7 +3,9 @@
 
 import { code, day, money, text, time, words, yesNo, type Part } from "./my-data-fields.ts";
 import { CONSENTS_PART, TERMS_PART } from "./my-data-agreements.ts";
-import { CUSTOM_ORDERS_PART } from "./my-data-orders.ts";
+import { CUSTOM_ORDERS_PART, MADE_TO_ORDER_PART } from "./my-data-orders.ts";
+import { REPORTS_PART } from "./my-data-reports.ts";
+import { RATINGS_PART, SIGN_OFFS_PART } from "./my-data-sign-offs.ts";
 import { CODE_WORDS, PURPOSE_WORDS } from "./my-data-words.ts";
 
 // No design draws the readable copy of a client's data; every word here is ours.
@@ -103,6 +105,7 @@ export const MY_DATA = {
         consents_shown: { label: "Agreed by booking", as: "purposes" },
         state: words("Status"),
         auto_refund_reason: words("Refunded automatically"),
+        booked_from: words("Booked through"),
         created_at: time("Started"),
         confirmed_at: time("Confirmed"),
       },
@@ -200,6 +203,10 @@ export const MY_DATA = {
         ruled_at: time("Ruled"),
       },
     },
+    client_reports: REPORTS_PART,
+    fit_sign_offs: SIGN_OFFS_PART,
+    visit_ratings: RATINGS_PART,
+    made_to_order_asks: MADE_TO_ORDER_PART,
     referral: {
       title: "Your invite",
       fields: {

@@ -124,6 +124,46 @@ describe("a piece to replace", () => {
     expect(await owed("replacement")).toEqual([]);
   });
 
+  // A replacement is booked only once its hair system's month comes (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md),
+  // by ops as in the app; one owed free is booked whenever it suits.
+  it("still worn, and not owed, is booked by ops only from the month it falls due", async () => {
+    await rohit("fitted");
+    await piece(null);
+
+    const early = await book({ client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "morning" });
+    expect(early.status).toBe(422);
+    expect(await early.json()).toMatchObject({ error: { code: "not_bookable" } });
+  });
+
+  it("is booked by ops once while one is booked: a second is refused", async () => {
+    await rohit("fitted");
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-due', 'piece-due', ?1, 'MM-ESS-0000002-B', '2026-03-30', '2026-09-30', ?2)`,
+    )
+      .bind(ROHIT, NOW.toISOString())
+      .run();
+    const first = await book({ client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "morning" });
+    expect(first.status).toBe(201);
+    // Its link is open, so a second would double it.
+    const second = await book({ client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "evening" });
+    expect(await second.json()).toMatchObject({ error: { code: "already_booked" } });
+  });
+
+  it("is refused by ops while a replacement is booked and still to happen", async () => {
+    await rohit("fitted");
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
+       VALUES ('piece-due', 'piece-due', ?1, 'MM-ESS-0000002-B', '2026-03-30', '2026-09-30', ?2)`,
+    )
+      .bind(ROHIT, NOW.toISOString())
+      .run();
+    await visit(ROHIT, "replacement", "scheduled", "2026-09-25T04:30:00.000Z", IMRAN);
+    const second = await book({ client: ROHIT, kind: "replacement", date: WEDNESDAY, window: "evening" });
+    expect(second.status).toBe(422);
+    expect(await second.json()).toMatchObject({ error: { code: "not_bookable" } });
+  });
+
   it("of a recalled lot is owed for the recall; one still worn and not recalled is owed nothing", async () => {
     await rohit("fitted");
     await piece(null);

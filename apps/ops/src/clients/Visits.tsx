@@ -65,6 +65,12 @@ function ClosedWithoutFollowUp({ visit }: { visit: ClientVisit }) {
   );
 }
 
+/** A fit closed with "Can't fit today": why the technician said it was not fitted (docs/decisions/0270-the-design-checks-api-side.md). */
+function NotFittedLine({ visit }: { visit: ClientVisit }) {
+  if (visit.not_fitted_reason === null) return null;
+  return <span className={styles.closedLine}>{copy.notFitted(visit.not_fitted_reason.label)}</span>;
+}
+
 type Change = "cancel" | "close";
 
 /**
@@ -172,6 +178,7 @@ function VisitRow({
       <td>
         <StateBadge visit={visit} />
         <ClosedWithoutFollowUp visit={visit} />
+        <NotFittedLine visit={visit} />
         <LostReasonLine visit={visit} />
       </td>
       <td>

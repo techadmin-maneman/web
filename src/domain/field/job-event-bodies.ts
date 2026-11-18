@@ -18,7 +18,17 @@ export const ChecklistRequestSchema = z
 const PieceFittedSchema = z
   .object({
     piece_code: z.string().min(3).max(40),
-    base: z.string().min(1).max(60).nullable().optional(),
+    base: z
+      .string()
+      .min(1)
+      .max(120)
+      .nullable()
+      .optional()
+      .openapi({
+        description:
+          "The piece's base; for one from the kit, its hair system's name, which a service's name of up to 60 and its " +
+          "spec make up to about 112 (docs/decisions/0271-the-technician-follow-ups.md).",
+      }),
     supplier_lot: z.string().min(1).max(60).nullable().optional(),
     stock_code: z.string().min(1).max(64).nullable().optional().openapi({
       description:
@@ -32,7 +42,8 @@ const PieceFittedSchema = z
       .optional()
       .openapi({
         description:
-          "On a replacement: the piece that came off, and why it failed where it did; with no reason, it was due and is replaced.",
+          "On a replacement: the piece that came off, and why it failed where it did, by a code of the card's " +
+          "failure_reasons or in words; with no reason, it was due and is replaced (ADR 0273).",
       }),
     product: z.string().min(1).max(32).optional().openapi({
       description:
@@ -168,6 +179,16 @@ export const OutcomeRequestSchema = z
             description:
               "Can't fit today: a fit closed from its piece step with no piece of the client's spec to fit, its reason " +
               "`no_piece`. It follows the step before the piece, and ops are given the refit to book.",
+          }),
+        not_fitted_reason: z
+          .string()
+          .min(1)
+          .max(64)
+          .optional()
+          .openapi({
+            description:
+              "With cannot_fit, why: one of the card's not_fitted_reasons, by its id; one ops have since taken off is " +
+              "still taken. Left out by a phone on a build before it was asked (ADR 0270).",
           }),
         ...CLOSE_NOTES,
       })

@@ -110,10 +110,11 @@ describe("GET /api/published-prices", () => {
     };
 
     expect(body.service).toEqual({ amount_ex_gst: 250_000, amount: 295_000, gst_percent: 18 });
-    // A first fit's own row is not read, and a first fit and a replacement each carry the new service visit price.
+    // A first fit's own row is not read, and a first fit and a replacement each carry the new service visit price, at
+    // what the client pays for it, its GST in it.
     const firstFit = body.services.find((each) => each.type === "first_fit");
-    expect(firstFit?.price).toEqual({ amount_ex_gst: 3_050_000, amount: 3_050_000, gst_percent: 0 });
-    expect(body.replacement).toEqual({ amount_ex_gst: 1_750_000, amount: 1_750_000, gst_percent: 0 });
+    expect(firstFit?.price).toEqual({ amount_ex_gst: 3_095_000, amount: 3_095_000, gst_percent: 0 });
+    expect(body.replacement).toEqual({ amount_ex_gst: 1_795_000, amount: 1_795_000, gst_percent: 0 });
   });
 
   it("reads the day in India", async () => {

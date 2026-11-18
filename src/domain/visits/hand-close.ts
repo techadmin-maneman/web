@@ -4,13 +4,17 @@
 // by the client's choice at its piece step, as the phone's own close decides it. A no-show stands on the technician's
 // check-in, once its wait has run out, as the phone's own does, and opens the case ops rule on.
 
+import { unsignedByHand } from "../field/sign-offs.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
+import { CLOSED_BY_HAND, needsSignOff } from "../../policy/sign-off.ts";
+import { fitsToday } from "../../policy/one-visit.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import type { Waits } from "../../policy/no-show.ts";
 import { noShowReadiness, openNoShowCase } from "../no-shows/no-shows.ts";
 import { latestArrival } from "./check-ins.ts";
 import { auditStatementIfClosed, type AuditEntry } from "../platform/audit.ts";
-import { closeOneVisit } from "./one-visit.ts";
+import { closeOneVisit, decisionAtVisit } from "./one-visit.ts";
 import type { LinkDeps } from "../money/payment-links.ts";
 import { landedOutcome } from "./visit-begun.ts";
 import { closeVisit, durationOf, moveVisit, STEPS, type AppointmentStatus, type ClosedByHand } from "./visit-status.ts";
@@ -34,6 +38,8 @@ interface HandClose {
   readonly audit: AuditEntry;
   /** The no-show waits in force, which ops set. */
   readonly waits: Waits;
+  /** Whether clients sign off a fit in their app; without, a fit closed done by hand needs none. */
+  readonly clientSignOff: boolean;
 }
 
 type HandClosed =
@@ -65,6 +71,16 @@ function timesFit(times: { startedAt: string; endedAt: string }, visitStart: str
   return Date.parse(times.endedAt) <= now.getTime();
 }
 
+/**
+ * Whether a fit closed by hand as done needed the client's sign-off (src/policy/sign-off.ts): one with none on record
+ * is then recorded as declined, ops' close as why, so Care are given its Tasks row as for any fit closed without one.
+ */
+async function needsSignOffByHand(db: D1Database, visit: ClosingVisit, appointmentId: string): Promise<boolean> {
+  if (visit.one_visit === null) return needsSignOff(visit.type, null);
+  const decision = await decisionAtVisit(db, appointmentId);
+  return needsSignOff(visit.type, { fitsToday: decision !== null && fitsToday(decision) });
+}
+
 /** Closes the visit as ops say it went, once: refused for a visit already closed, still to come, or not ours. */
 export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClose, now: Date): Promise<HandClosed> {
   const visit = await db
@@ -87,6 +103,19 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
   if (!timesFit(times, windowStart, now)) return { kind: "refused", code: "bad_times" };
 
   const at = now.toISOString();
+  const unsigned =
+    close.outcome === "done" && close.clientSignOff && (await needsSignOffByHand(db, visit, close.appointmentId))
+      ? [
+          unsignedByHand(db, {
+            appointmentId: close.appointmentId,
+            technicianId: visit.technician_id,
+            reason: CLOSED_BY_HAND,
+            guaranteeDays: (await readOpsInputs(db, now)).guaranteeDays,
+            at,
+            by: close.byHand.by,
+          }),
+        ]
+      : [];
   const [moved] = await db.batch([
     moveVisit(db, close.appointmentId, close.outcome, at),
     closeVisit({
@@ -99,6 +128,7 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
       byHand: close.byHand,
     }),
     auditStatementIfClosed(db, close.audit, now, close.appointmentId),
+    ...unsigned,
     ...visitUpkeep(db, { visits: [close.appointmentId] }, at),
   ]);
   if (moved === undefined || moved.meta.changes === 0) return { kind: "refused", code: "already_closed" };

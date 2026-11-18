@@ -4,26 +4,26 @@
 
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { ProblemCard } from "@maneman/ui/ProblemCard";
-import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useState, type Ref } from "react";
 import type { JobSummary } from "../api.ts";
 import { Bell } from "../alerts/index.ts";
-import { NoSignal } from "../frame/Banners.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
-import { atRisk as atRiskCopy, titles, today as copy } from "../content.ts";
+import { atRisk as atRiskCopy, changed, titles, today as copy } from "../content.ts";
+import { sayNow } from "../lang/index.ts";
 import { rowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useRefreshTick } from "../lib/useRefreshTick.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { clock, dayAfter, dayBefore, todayInIndia } from "../lib/when.ts";
+import { clock, dayAfter, dayBefore, dayDate, todayInIndia } from "../lib/when.ts";
 import { kindName } from "../lib/kind.ts";
 import { nextOf, titleOf } from "../lib/today.ts";
 import { go } from "../route.ts";
 import { useSession } from "../session.ts";
 import { type Heard, keptStates, keptToFix } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
+import { isSetWrite } from "../lib/sets.ts";
 import { LaterToday, Tomorrow } from "./LaterToday.tsx";
 import { NextJob } from "./NextJob.tsx";
 import styles from "./today.module.css";
@@ -73,7 +73,7 @@ function Head(props: { readonly date: string; readonly title: string; readonly h
   return (
     <header className={styles.head}>
       <div>
-        <p className={styles.date}>{shortDate(props.date)}</p>
+        <p className={styles.date}>{sayNow(dayDate(props.date))}</p>
         <h1 className={styles.count} ref={props.heading} tabIndex={-1}>
           {props.title}
         </h1>
@@ -105,15 +105,39 @@ function ToFix(props: {
     return (
       <ProblemCard
         key={visit.id}
-        title={copy.toFix(clock(visit.starts_at), who)}
+        title={copy.toFix(steps.length)}
         onOpen={() => {
           go(`/jobs/${visit.id}`);
         }}
       >
-        {copy.toFixBody(steps.map((step) => copy.toFixSteps[step]))}
+        {copy.toFixBody(
+          who,
+          steps.map((step) => copy.toFixSteps[step]),
+        )}
       </ProblemCard>
     );
   });
+}
+
+/** Each photo set the API stopped, as the prototype draws it: whose and which, opening Pending uploads to send it again. */
+function FailedSets(props: { readonly queued: readonly Queued[]; readonly names: ReadonlyMap<string, string> }) {
+  const failed = props.queued.filter(
+    (event) => isSetWrite(event) && (event.state === "refused" || event.state === "superseded"),
+  );
+  return failed.map((event) => (
+    <ProblemCard
+      key={event.seq}
+      title={copy.setFailed}
+      onOpen={() => {
+        go("/waiting");
+      }}
+    >
+      {copy.setFailedBody(
+        props.names.get(event.job_id) ?? changed.someJob,
+        copy.toFixSteps[event.kind === "after_photos" ? "after_photos" : "before_photos"],
+      )}
+    </ProblemCard>
+  ));
 }
 
 /** Yesterday's jobs still open, as a card at the top: each can be finished and sent. */
@@ -138,7 +162,7 @@ function LeftOpen(props: {
 }
 
 export function TodayScreen() {
-  const { offline, atRisk } = useSession();
+  const { atRisk } = useSession();
   const date = todayInIndia();
   const tick = useRefreshTick();
   const [day, retry] = useDay(date, tick);
@@ -165,9 +189,10 @@ export function TodayScreen() {
   return (
     <main className={styles.screen} data-look="light">
       <Head date={date} title={titleOf(jobs, states, day.state === "loaded")} heading={heading} />
-      {offline && <NoSignal />}
 
       <div className={styles.problems}>
+        {/* As the prototype stacks them: a photo set that didn't upload, then a step ops couldn't accept. */}
+        <FailedSets queued={waiting.events} names={names} />
         <ToFix day={day} queued={waiting.events} names={names} />
         <LeftOpen date={date} queued={waiting.events} names={names} />
         {atRisk && unsentOnPhone && <ProblemCard title={atRiskCopy.title}>{atRiskCopy.body}</ProblemCard>}
@@ -187,8 +212,19 @@ export function TodayScreen() {
           cards={round}
         />
       )}
+      {/* Every job closed: said under the title, where the next job would be. */}
+      {day.state === "loaded" && next === undefined && jobs.length > 0 && (
+        <p className={styles.allDone}>{copy.noMore}</p>
+      )}
       {day.state === "loaded" && (
-        <LaterToday jobs={rest} states={states} names={names} queued={waiting.events} heard={heard} />
+        <LaterToday
+          jobs={rest}
+          allDone={next === undefined}
+          states={states}
+          names={names}
+          queued={waiting.events}
+          heard={heard}
+        />
       )}
       <Tomorrow jobs={tomorrowJobs} loaded={tomorrow.state === "loaded"} />
     </main>

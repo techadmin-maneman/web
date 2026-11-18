@@ -1,14 +1,18 @@
 // Step 6: Done, or Partial with one of ops' reasons (docs/decisions/0087-consumables-and-stock.md). Nothing is chosen
 // for the technician, so a gloved tap cannot close a job they have not finished (ADR 0025, "The technician boards").
-// After a consultation, Done asks whether the client goes ahead (docs/decisions/0149-lost-reasons.md).
+// A consultation asks at once whether the client goes ahead (docs/decisions/0268-the-visits-design-check.md), and
+// closes done.
 
+import { sayKnown, theirs } from "../lang/index.ts";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Field, TextArea } from "@maneman/ui/Field";
+import { SectionHead } from "@maneman/ui/SectionHead";
 import { ALERT_MAX_CHARS, HANDOFF_MAX_CHARS } from "@rules/policy/client-record.ts";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { EventBody, Job, OutcomeRequest, PartialReason } from "../api.ts";
-import { oneVisit, options, steps as copy, visit } from "../content.ts";
-import { choiceOf, type ClientChoice } from "../lib/progress.ts";
+import { oneVisit, options, signOff, steps as copy, visit } from "../content.ts";
+import { GoingAheadRows, Result, Summary } from "./OutcomeParts.tsx";
+import { choiceOf, done, type ClientChoice } from "../lib/progress.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
 import { Loading } from "../frame/States.tsx";
 import { put } from "../store/db.ts";
@@ -24,9 +28,13 @@ import styles from "./outcome.module.css";
 
 type Choice = "done" | "partial" | null;
 
-/** What the dim Next says: what is still to choose. */
-function stillToChoose(choice: Choice, unanswered: boolean): string {
+/**
+ * What the dim Next says: what is still to choose. A fit the client has not signed off, nor declined to,
+ * waits for that before it closes done (docs/decisions/0254-client-signs-off-the-fit.md).
+ */
+function stillToChoose(choice: Choice, unanswered: boolean, signOffWaits: boolean): string {
   if (choice === null) return copy.outcome.choose;
+  if (choice === "done" && signOffWaits) return signOff.unfinished;
   if (choice === "partial") return copy.outcome.pickReason;
   return unanswered ? copy.outcome.answerFirst : copy.outcome.pickWhy;
 }
@@ -40,7 +48,7 @@ function codeSaid(code: NonNullable<Job["discount_code"]>): string {
 function linkNote(job: Job, chosen: Extract<ClientChoice, { product: string }> | null): string {
   if (chosen === null) return oneVisit.closeNote;
   const product = job.products.find((one) => one.tier === chosen.product);
-  return oneVisit.linkFor(product?.name ?? oneVisit.chosenProduct);
+  return oneVisit.linkFor(theirs(product?.name ?? oneVisit.chosenProduct));
 }
 
 /** Whether a one visit's client booked the fit for another day, which closes it with nothing to pay now. */
@@ -65,7 +73,9 @@ function OneVisitClose({
   }
   if (bookedLater(clientChoice)) {
     return (
-      <p className={shared.note}>{oneVisit.endsGoingAhead(chosenName(job, clientChoice) ?? oneVisit.chosenProduct)}</p>
+      <p className={shared.note}>
+        {oneVisit.endsGoingAhead(theirs(chosenName(job, clientChoice) ?? oneVisit.chosenProduct))}
+      </p>
     );
   }
   const standingCode = job.discount_code;
@@ -81,48 +91,30 @@ function OneVisitClose({
   );
 }
 
-/** Two outlined buttons, one of which may be chosen. */
-function Pair<T extends string | boolean>(props: {
-  options: readonly [{ value: T; label: string }, { value: T; label: string }];
-  chosen: T | null;
-  onChoose: (value: T) => void;
-}) {
-  return (
-    <div className={shared.choices}>
-      {props.options.map((option) => (
-        <ToggleButton
-          key={String(option.value)}
-          className={shared.choice}
-          pressed={props.chosen === option.value}
-          onClick={() => {
-            props.onChoose(option.value);
-          }}
-        >
-          {option.label}
-        </ToggleButton>
-      ))}
-    </div>
-  );
-}
-
-/** Ops' reasons, one to a row, one of which may be picked. */
+/** Ops' reasons under a small head, as chips that wrap, one of which may be picked: filled once it is. */
 function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | null; onPick: (id: string) => void }) {
+  const headId = useId();
   return (
-    <ul className={shared.reasons}>
-      {props.reasons.map((one) => (
-        <li key={one.id}>
-          <ToggleButton
-            className={styles.reason}
-            pressed={props.picked === one.id}
-            onClick={() => {
-              props.onPick(one.id);
-            }}
-          >
-            {one.label}
-          </ToggleButton>
-        </li>
-      ))}
-    </ul>
+    <div className={shared.reasons}>
+      <p className={shared.reasonHead} id={headId}>
+        {copy.outcome.reason}
+      </p>
+      <ul className={shared.chips} aria-labelledby={headId}>
+        {props.reasons.map((one) => (
+          <li key={one.id}>
+            <ToggleButton
+              filled
+              pressed={props.picked === one.id}
+              onClick={() => {
+                props.onPick(one.id);
+              }}
+            >
+              {sayKnown(one.label)}
+            </ToggleButton>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -169,19 +161,26 @@ function useCloseNotes(sent: { readonly note: string; readonly alert: string } |
   });
   const fields = (
     <div className={styles.notes}>
-      <Field label={copy.outcome.nextNote}>
-        {(control) => (
-          <TextArea
-            {...control}
-            maxLength={HANDOFF_MAX_CHARS}
-            value={note}
-            onChange={(event) => {
-              setNote(event.currentTarget.value);
-            }}
-          />
-        )}
-      </Field>
-      <Field label={copy.outcome.alert} hint={copy.outcome.alertHint}>
+      {/* Under a section's head, as the prototype draws it, the box named for a screen reader, where it shows beneath. */}
+      <div>
+        <SectionHead size="list" title={copy.outcome.nextNote} />
+        <Field label={copy.outcome.nextNote} labelHidden className={styles.noteBox}>
+          {(control) => (
+            <TextArea
+              {...control}
+              placeholder={copy.outcome.notePlaceholder}
+              maxLength={HANDOFF_MAX_CHARS}
+              rows={3}
+              value={note}
+              onChange={(event) => {
+                setNote(event.currentTarget.value);
+              }}
+            />
+          )}
+        </Field>
+        <p className={styles.noteWhere}>{copy.outcome.nextNoteWhere}</p>
+      </div>
+      <Field label={copy.outcome.alert}>
         {(control) => (
           <TextArea
             {...control}
@@ -199,24 +198,43 @@ function useCloseNotes(sent: { readonly note: string; readonly alert: string } |
   return { add, fields };
 }
 
-/** After a consultation: whether the client is going ahead with a fit, and with a yes, what they picked on Options. */
+/** A consultation's question, asked at once, and with a yes, what the client picked on Options. */
 function GoingAhead(props: { answer: boolean | null; pickedName: string | null; onAnswer: (value: boolean) => void }) {
   return (
     <>
-      <p className={shared.note}>{copy.outcome.goingAhead}</p>
-      <Pair<boolean>
-        options={[
-          { value: true, label: copy.outcome.yes },
-          { value: false, label: copy.outcome.notNow },
-        ]}
-        chosen={props.answer}
-        onChoose={props.onAnswer}
-      />
+      <GoingAheadRows answer={props.answer} onAnswer={props.onAnswer} />
       {props.answer === true && props.pickedName !== null && (
-        <p className={shared.note}>{copy.outcome.picked(props.pickedName)}</p>
+        <p className={shared.note}>{copy.outcome.picked(theirs(props.pickedName))}</p>
       )}
     </>
   );
+}
+
+/** What the close is: one closing a one visit, a fit the client declined, and whether Done asks why not. */
+function closeShape(job: Job, choice: Choice, clientChoice: ClientChoice | null) {
+  const closesOneVisit = job.one_visit && choice === "done";
+  const declined = clientChoice !== null && "declined" in clientChoice;
+  const asksWhy = job.lost_reasons.length > 0 && choice === "done" && (!job.one_visit || declined);
+  return { closesOneVisit, declined, asksWhy };
+}
+
+/**
+ * Whether the close may be sent: a code being checked would change the link closing the visit sends, and a fit not yet
+ * signed off waits for that, so Next waits for both.
+ */
+function readyToClose(state: {
+  readonly choice: Choice;
+  readonly reason: string | null;
+  readonly codeChecking: boolean;
+  readonly signOffWaits: boolean;
+  readonly unanswered: boolean;
+  readonly mustSayWhy: boolean;
+  readonly lost: string | null;
+}): boolean {
+  if (state.codeChecking) return false;
+  if (state.choice === "partial") return state.reason !== null;
+  if (state.choice !== "done") return false;
+  return !state.signOffWaits && !state.unanswered && (!state.mustSayWhy || state.lost !== null);
 }
 
 /**
@@ -226,12 +244,14 @@ function GoingAhead(props: { answer: boolean | null; pickedName: string | null; 
 function Choosing({
   job,
   clientChoice,
+  signOffWaits = false,
   refused,
   onFinish,
   onBack,
 }: {
   job: Job;
   clientChoice: ClientChoice | null;
+  signOffWaits?: boolean;
   refused: Queued | null;
   onFinish: (body: EventBody<"outcome">) => void;
   onBack: () => void;
@@ -240,33 +260,30 @@ function Choosing({
     refused,
     job.partial_reasons.map((one) => one.id),
   );
-  const [choice, setChoice] = useState<Choice>(sent?.choice ?? null);
+  // A consultation closes done: what it asks is whether the client goes ahead.
+  const consultation = job.type === "consultation" && !job.one_visit;
+  const [choice, setChoice] = useState<Choice>(consultation ? "done" : (sent?.choice ?? null));
   const [reason, setReason] = useState<PartialReason["id"] | null>(sent?.reason ?? null);
   const [codeChecking, setCodeChecking] = useState(false);
   const [goingAhead, setGoingAhead] = useState<boolean | null>(null);
   const [lost, setLost] = useState<string | null>(null);
   const notes = useCloseNotes(sent);
 
-  const closesOneVisit = job.one_visit && choice === "done";
-  const declined = clientChoice !== null && "declined" in clientChoice;
-  const asksWhy = job.lost_reasons.length > 0 && choice === "done" && (!job.one_visit || declined);
+  const { closesOneVisit, declined, asksWhy } = closeShape(job, choice, clientChoice);
   const notGoingAhead = asksWhy && (declined || goingAhead === false);
   // Not now asks why; a fit the client declined offers the reasons, to pick or leave.
   const mustSayWhy = notGoingAhead && !declined;
   // After a consultation the question must be answered: an unanswered one is never recorded as a yes.
   const unanswered = asksWhy && !job.one_visit && goingAhead === null;
-  // A code being checked would change the link closing the visit sends: Next waits for it.
-  const doneReady = !unanswered && (!mustSayWhy || lost !== null);
-  const ready = !codeChecking && (choice === "done" ? doneReady : choice === "partial" && reason !== null);
+  const ready = readyToClose({ choice, reason, codeChecking, signOffWaits, unanswered, mustSayWhy, lost });
   // The words follow the choice: a one visit closed as done sends the client its payment link.
   const sendsLink = closesOneVisit && !declined && !bookedLater(clientChoice);
-
   return (
     <StepFrame
       title={copy.titles.outcome}
       action={sendsLink ? copy.outcome.sendLinkAndClose : undefined}
       ready={ready}
-      unfinished={stillToChoose(choice, unanswered)}
+      unfinished={stillToChoose(choice, unanswered, signOffWaits)}
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
       onAction={() => {
@@ -274,19 +291,17 @@ function Choosing({
         else onFinish(notes.add(doneOf(asksWhy, notGoingAhead, lost, clientChoice)));
       }}
     >
-      <Pair<"done" | "partial">
-        options={[
-          { value: "done", label: copy.outcome.done },
-          { value: "partial", label: copy.outcome.partial },
-        ]}
-        chosen={choice}
-        onChoose={(value) => {
-          setChoice(value);
-          setReason(null);
-          setGoingAhead(null);
-          setLost(null);
-        }}
-      />
+      {!consultation && (
+        <Result
+          chosen={choice}
+          onChoose={(value) => {
+            setChoice(value);
+            setReason(null);
+            setGoingAhead(null);
+            setLost(null);
+          }}
+        />
+      )}
       {closesOneVisit && <OneVisitClose job={job} clientChoice={clientChoice} onChecking={setCodeChecking} />}
       {asksWhy && !job.one_visit && (
         <GoingAhead
@@ -298,14 +313,10 @@ function Choosing({
           }}
         />
       )}
-      {notGoingAhead && (
-        <>
-          <p className={shared.note}>{copy.outcome.why}</p>
-          <ReasonList reasons={job.lost_reasons} picked={lost} onPick={setLost} />
-        </>
-      )}
+      {notGoingAhead && <ReasonList reasons={job.lost_reasons} picked={lost} onPick={setLost} />}
       {choice === "partial" && <ReasonList reasons={job.partial_reasons} picked={reason} onPick={setReason} />}
-      {choice !== null && notes.fields}
+      {!consultation && <Summary job={job} />}
+      {notes.fields}
     </StepFrame>
   );
 }
@@ -403,6 +414,7 @@ export function Outcome({ id }: { id: string }) {
     <Choosing
       job={job}
       clientChoice={choiceOf(job, queued)}
+      signOffWaits={job.steps.includes("sign_off") && !done(job, queued).has("sign_off")}
       refused={refused}
       onFinish={(body) => void finish(body)}
       onBack={back}

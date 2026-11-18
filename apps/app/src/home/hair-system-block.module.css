@@ -1,0 +1,48 @@
+/* Home's hair system (./HairSystemBlock.tsx): its title and History, then under a hairline its name and month, the
+   line of its months in brass, and when its replacement may be booked. */
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-12);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--weight-semibold);
+}
+
+.history {
+  font-size: var(--fs-14);
+}
+
+.body {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-12);
+  border-top: var(--hairline) solid var(--line-200);
+}
+
+.worn {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  margin: 0;
+  font-size: var(--fs-15);
+}
+
+.month {
+  color: var(--ink-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.age {
+  margin: var(--sp-8) 0;
+}
+
+.line {
+  margin: 0;
+  color: var(--ink-500);
+  font-size: var(--fs-14);
+}

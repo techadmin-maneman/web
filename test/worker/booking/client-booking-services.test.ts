@@ -7,7 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
-import { IMRAN, SANDEEP, SANA, technician, client, visit } from "./client-booking-fixtures.ts";
+import { IMRAN, SANDEEP, SANA, technician, client, visit, wornPiece } from "./client-booking-fixtures.ts";
 import { aPackage } from "../fixtures/index.ts";
 import { startOffers } from "../../../src/domain/booking/start-offers.ts";
 
@@ -47,8 +47,10 @@ describe("choosing a service", () => {
   const availabilityOf = async (who: { cookie: string }, query: string) =>
     (await request(app, `/api/availability?${query}`, { headers: { Cookie: who.cookie } })).json<Days>();
 
-  it("lists on Home the service visit and replacement of the client's package, else the standard ones", async () => {
+  it("lists on Home the service visit of the client's package, else the standard one, and every replacement on sale", async () => {
     const rohit = await client();
+    // Their hair system falls due this month, so its replacement may be booked from tomorrow.
+    await wornPiece(rohit.id, "2026-09-30");
     await aPackage({ code: "premium", name: "Premium", firstFit: 4_000_000, replacement: 3_000_000 });
 
     const me = await (
@@ -58,22 +60,26 @@ describe("choosing a service", () => {
     }>();
 
     // A fitted client books service visits and replacements, not the first fit, which is not theirs to book. They are
-    // on no package, so they are offered the standard service visit and replacement.
+    // on no package, so they are offered the standard service visit; a replacement is every one on sale, which they
+    // choose among as they book it (ADR 0253).
     expect(me.booking.types).toEqual(["service", "replacement"]);
     expect(me.booking.services).toEqual([
       expect.objectContaining({ type: "service", tier: "standard", name: "Service visit", minutes: 90 }),
       expect.objectContaining({ type: "replacement", tier: "standard", name: "Replacement", minutes: 135 }),
+      expect.objectContaining({ type: "replacement", tier: "premium" }),
     ]);
   });
 
-  // A replacement is their package's, with its service visit, once ops sell the package their consultation
-  // recommended; before then it is the standard one.
-  it("offers and holds the replacement of the client's package, priced with its service visit", async () => {
+  // Every replacement on sale is offered; one booked naming none is their package's, with its service visit, once ops
+  // sell the package their consultation recommended; before then it is the standard one.
+  it("offers every replacement on sale, and holds the client's package's where the booking names none", async () => {
     const rohit = await client();
+    await wornPiece(rohit.id, "2026-09-30");
+    // Made to the packages' own hair system's spec, so it is in stock in their size.
     await env.DB.prepare(
       `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
          grey_percent, density_percent)
-       VALUES ('hp-premium', ?1, 'ops@localhost', ?2, 'premium', 8, 10, '1B', 20, 100)`,
+       VALUES ('hp-premium', ?1, 'ops@localhost', ?2, 'premium', 8, 10, '1B', 0, 100)`,
     )
       .bind(rohit.id, NOW.toISOString())
       .run();
@@ -88,9 +94,34 @@ describe("choosing a service", () => {
     expect(await homeReplacements()).toEqual([expect.objectContaining({ tier: "standard" })]);
 
     await aPackage({ code: "premium", name: "Premium", firstFit: 4_000_000, replacement: 3_000_000 });
-    expect(await homeReplacements()).toEqual([expect.objectContaining({ tier: "premium" })]);
+    expect(await homeReplacements()).toEqual([
+      expect.objectContaining({ tier: "standard" }),
+      expect.objectContaining({ tier: "premium" }),
+    ]);
     const held = await hold(rohit, { type: "replacement", date: "2026-09-22", window: "morning" });
     expect(await held.json()).toMatchObject({ service: { tier: "premium" }, price: { amount_ex_gst: 3_000_000 } });
+  });
+
+  it("leaves a first fit in a size no stock code is made to for ops to order and book", async () => {
+    const lead = await client(true);
+    await aPackage({ code: "premium", name: "Premium first fit", firstFit: 4_000_000 });
+    // Their profile is complete, its base an inch wider than any hair system ranged.
+    await env.DB.prepare(
+      `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+         grey_percent, density_percent)
+       VALUES ('hp-wide', ?1, 'ops@localhost', ?2, 'premium', 9, 10, '1B', 0, 100)`,
+    )
+      .bind(lead.id, NOW.toISOString())
+      .run();
+
+    const days = await request(app, "/api/availability?type=first_fit&tier=premium", {
+      headers: { Cookie: lead.cookie },
+    });
+    expect(days.status).toBe(422);
+    expect(await days.json()).toMatchObject({ error: { code: "made_to_order" } });
+    const held = await hold(lead, { type: "first_fit", tier: "premium", date: "2026-09-22", window: "morning" });
+    expect(held.status).toBe(422);
+    expect(await held.json()).toMatchObject({ error: { code: "made_to_order" } });
   });
 
   it("offers a longer service only where its half-slots fit, and holds it for its own length and price", async () => {

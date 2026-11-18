@@ -207,7 +207,6 @@ describe("content", () => {
   it("names one service area on every page", () => {
     const pages = JSON.stringify(site) + JSON.stringify(referral);
     expect(pages).not.toContain("Gurgaon only");
-    expect(site.header.area).toBe("Delhi NCR");
     expect(site.footer.area).toBe("Delhi NCR · home service only");
     expect(site.pageTitles.home).toContain("across Delhi NCR");
     expect(site.pageDescriptions.home).toContain("across Delhi NCR");
@@ -260,7 +259,7 @@ describe("the second copy round", () => {
   it("leaves where the look goes to the gate", () => {
     const screens = JSON.stringify(site.tryOn);
     expect(screens).not.toMatch(/never shown|privately|for your privacy/i);
-    expect(site.tryOn.gate.caption).toContain("WhatsApp");
+    expect(JSON.stringify(site.tryOn.gate)).toContain("WhatsApp");
   });
 
   // No empty "Preview" box stands in for a look's picture.

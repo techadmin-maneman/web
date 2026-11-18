@@ -76,20 +76,23 @@
   color: var(--ui-text-soft);
 }
 
+/* The client block: its head keeps the design's 24 px above its rule, so the section adds none. */
 .section {
-  padding: var(--sp-24) var(--screen-gutter) 0;
+  padding: 0 var(--screen-gutter);
 }
 
 .rows {
-  margin: var(--sp-8) 0 0;
+  margin: 0;
 }
 
+/* The prototype's row: 11 px above and below its 15 px line. */
 .row {
   display: flex;
   gap: var(--sp-16);
   justify-content: space-between;
-  padding: var(--sp-8) 0;
+  padding: calc(var(--sp-12) - var(--hairline)) 0;
   border-bottom: var(--hairline) solid var(--ui-line);
+  line-height: var(--lh-145);
 }
 
 .rowKey {
@@ -103,41 +106,8 @@
   text-align: right;
 }
 
-.warn {
-  margin: var(--sp-12) 0 0;
-  font-size: var(--fs-15);
-  font-weight: var(--weight-semibold);
-  color: var(--ui-error);
-}
-
-.none {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-15);
-  color: var(--ui-text-soft);
-}
-
 .rowList {
-  margin-top: var(--sp-24);
-}
-
-.lastVisit {
-  display: flex;
-  gap: var(--sp-12);
-  align-items: center;
-  padding: var(--sp-24) var(--screen-gutter) 0;
-}
-
-.lastVisitPhoto {
-  width: var(--sp-64);
-  height: var(--sp-64);
-  object-fit: cover;
-  background: var(--placeholder);
-}
-
-.lastVisitLine {
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--ui-text-soft);
+  margin: var(--sp-24) var(--screen-gutter) 0;
 }
 
 .locked {

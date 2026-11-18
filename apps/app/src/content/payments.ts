@@ -1,8 +1,19 @@
 // Payments (board E): what was paid, and an invoice.
 
+/**
+ * How long a refund takes to reach the client: Razorpay's working days for a normal refund, not a rule ops set, and the
+ * one count of days the app's words carry. The design says "3 to 5 working days"; Razorpay's normal refunds take 5 to 7
+ * (ADR 0025, item 28).
+ */
+export const REFUND_TAKES = "5 to 7 working days";
+
 export const payments = {
-  title: "Payments",
+  title: "Payments and invoices",
   back: "Back to payments",
+  /** A method as the list names it: "UPI via Razorpay". */
+  viaRazorpay: (method: string) => `${method} via Razorpay`,
+  /** Beneath the list, while booking in the app, and so paying through Razorpay, is on. */
+  note: "Every payment goes through Razorpay: in the app when you book, or by a Razorpay link we text you. Technicians never take cash or UPI.",
   // An entry that paid for no visit we know of.
   payment: "Payment",
   refund: "Refund",
@@ -91,11 +102,8 @@ export const payments = {
     processed: "Refunded",
     failed: "Refund delayed: we’re on it",
   },
-  /**
-   * How long a refund takes, beside "Refund processing". The design says "3 to 5 working days"; Razorpay's
-   * normal refunds take 5 to 7, and the app says so (ADR 0025, item 28).
-   */
-  speed: { normal: "5 to 7 working days" } as Readonly<Record<string, string>>,
+  /** How long a refund takes, beside "Refund processing". */
+  speed: { normal: REFUND_TAKES } as Readonly<Record<string, string>>,
   // A refund still processing after Razorpay's working days, which the client should hear about.
   lateRefund: "Refund processing · taking longer than it should",
   message: "Message us",

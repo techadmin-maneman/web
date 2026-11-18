@@ -15,23 +15,30 @@ import { deviceId, enrolled, enrolledAt, keepMe, keptMe } from "../../../apps/te
 import {
   forgetOld,
   keepArrival,
+  keepCalled,
   keepClosed,
   keepDay,
   keepJob,
   keepLanded,
   keptArrival,
+  keptCalled,
   keptClosed,
   keptDay,
   keptJob,
   keptJobs,
   keptNames,
+  keptPhotographed,
   keptStates,
+  keepPhotographed,
 } from "../../../apps/tech/src/store/jobs.ts";
 import { queue } from "../../../apps/tech/src/store/outbox.ts";
 import { askToKeep } from "../../../apps/tech/src/store/persist.ts";
 import {
   eighthRelease,
   eleventhRelease,
+  thirteenthRelease,
+  fourteenthRelease,
+  twelfthRelease,
   firstRelease,
   ninthRelease,
   seventhRelease,
@@ -74,6 +81,7 @@ const summary = (id: string, date: string) =>
     address: null,
     next: null,
     drive_minutes: null,
+    drive_km: null,
     leave_by: null,
   }) as JobSummary;
 
@@ -115,6 +123,8 @@ const card = (id: string, date: string) =>
     checklist_if_declined: [],
     partial_reasons: [],
     lost_reasons: [],
+    not_fitted_reasons: [],
+    failure_reasons: [],
     consumables: [],
     kit_hair_systems: [],
     products: [],
@@ -126,6 +136,9 @@ const card = (id: string, date: string) =>
     handoff: null,
     sent_back: [],
     reschedule_asked: null,
+    sign_off: null,
+    client_visits: { count: 0, first: null },
+    booked_via: null,
   }) as Job;
 
 const arrival = {
@@ -197,6 +210,20 @@ describe("what the phone lets go of", () => {
 
     expect(await keptJob("old")).not.toBeNull();
     expect(await keptArrival("old")).not.toBeNull();
+  });
+});
+
+// The door's evidence and the check-in share one record: a check-in landing after the call and the photograph wrote
+// over both, and the no-show's close then said neither.
+describe("the door's record", () => {
+  it("keeps the call and the photograph's time when the check-in lands after them", async () => {
+    await keepCalled("a", 1_000);
+    await keepPhotographed("a", 2_000);
+    await keepArrival("a", arrival);
+
+    expect(await keptCalled("a")).toBe(1_000);
+    expect(await keptPhotographed("a")).toBe(2_000);
+    expect(await keptArrival("a")).toEqual(arrival);
   });
 });
 
@@ -362,6 +389,19 @@ describe("a job’s card", () => {
     await keepJob(card("a", TODAY));
     api({});
     expect(await loadJob("a")).toMatchObject({ state: "loaded", fromPhone: true });
+  });
+
+  // An answer to a read sent before a one visit's piece step landed carried no choice, and took back the one the phone
+  // saw land; the checklist read it as unmade.
+  it("keeps a one visit's landed choice over an answer that has none, and takes the API's where it has one", async () => {
+    await keepJob({ ...card("a", TODAY), one_visit: true, client_choice: { declined: true } });
+    api({ "/api/tech/jobs/a": { status: 200, json: { ...card("a", TODAY), one_visit: true, client_choice: null } } });
+    expect(await loadJob("a")).toMatchObject({ state: "loaded", value: { client_choice: { declined: true } } });
+    expect(await keptJob("a")).toMatchObject({ client_choice: { declined: true } });
+
+    const chosen = { product: "natural" };
+    api({ "/api/tech/jobs/a": { status: 200, json: { ...card("a", TODAY), one_visit: true, client_choice: chosen } } });
+    expect(await loadJob("a")).toMatchObject({ value: { client_choice: chosen } });
   });
 
   it("is never read from the phone after a 401, which ends the session", async () => {
@@ -572,5 +612,32 @@ describe("the promise to keep the store", () => {
   it("is unknown on a browser with nothing to ask", async () => {
     vi.stubGlobal("navigator", {});
     expect(await askToKeep()).toBe("unknown");
+  });
+});
+
+describe("what the build before the design pass kept", () => {
+  it("reads a card with no count of the client's visits, and a day's row with no km, until read again", async () => {
+    const { client_visits: _visits, ...earlierCard } = card("a", TODAY);
+    const { drive_km: _km, ...earlierRow } = summary("a", TODAY);
+    await twelfthRelease([{ ...earlierCard, v: 2 }], [{ date: TODAY, jobs: [earlierRow], v: 2 }]);
+    expect(await keptJob("a")).toMatchObject({ client_visits: null });
+    const [kept] = (await keptDay(TODAY)) ?? [];
+    expect(kept).toMatchObject({ drive_km: null });
+  });
+});
+
+describe("what the build before the design check's API side kept", () => {
+  it("reads a card with no booking's source and no reasons not fitted, so Can't fit today asks none, until read again", async () => {
+    const { booked_via: _via, not_fitted_reasons: _reasons, ...earlier } = card("a", TODAY);
+    await thirteenthRelease([{ ...earlier, v: 2 }]);
+    expect(await keptJob("a")).toMatchObject({ booked_via: null, not_fitted_reasons: [] });
+  });
+});
+
+describe("what the build before the reasons a hair system failed kept", () => {
+  it("reads a replacement's card with no failure reasons, so a piece off early asks none, until read again", async () => {
+    const { failure_reasons: _reasons, ...earlier } = card("a", TODAY);
+    await fourteenthRelease([{ ...earlier, v: 2 }]);
+    expect(await keptJob("a")).toMatchObject({ failure_reasons: [] });
   });
 });

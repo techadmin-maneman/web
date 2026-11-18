@@ -421,7 +421,7 @@ Changing it later voids every code in flight; sessions are unaffected. SMS stays
 
 Our own database is the record of visits (docs/decisions/0110-field-work-without-fsm.md). Zoho Books holds each client's customer, each visit's invoice and the money against it, in the real org (ADR 0025, item 26), on a refresh token of its own. Books' own CRM integration carries customers into CRM Contacts.
 
-1. **The refresh token.** Zoho allows one Self Client per account, so Books uses the CRM's (step 8.5): the same client ID and secret, and a code of its own. In `https://api-console.zoho.in`, as an administrator of the org, open that Self Client. On **Generate Code**, use `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.bills.ALL`, `ZohoBooks.debitnotes.ALL`, `ZohoBooks.accountants.READ`, `ZohoBooks.banking.READ`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Bills and debit notes are for suppliers' bills and credits (step 9); the two reads let `scripts/release/check-books-setup.ts` check the accounts in steps 6 and 9. Exchange the code for a refresh token within its 10 minutes:
+1. **The refresh token.** Zoho allows one Self Client per account, so Books uses the CRM's (step 8.5): the same client ID and secret, and a code of its own. In `https://api-console.zoho.in`, as an administrator of the org, open that Self Client. On **Generate Code**, use `ZohoBooks.contacts.ALL`, `ZohoBooks.invoices.ALL`, `ZohoBooks.customerpayments.ALL`, `ZohoBooks.creditnotes.ALL`, `ZohoBooks.bills.ALL`, `ZohoBooks.debitnotes.ALL`, `ZohoBooks.accountants.READ`, `ZohoBooks.banking.READ`, `ZohoBooks.banking.CREATE`, `ZohoBooks.expenses.READ`, `ZohoBooks.expenses.CREATE`, `ZohoBooks.settings.READ`, `ZohoBooks.settings.CREATE` and `ZohoBooks.settings.UPDATE`. Bills and debit notes are for suppliers' bills and credits (step 9), and banking and expenses for Razorpay's settlements (point 6); the two reads let `scripts/release/check-books-setup.ts` check the accounts in steps 6 and 9. Exchange the code for a refresh token within its 10 minutes:
 
    ```sh
    curl -X POST "https://accounts.zoho.in/oauth/v2/token?grant_type=authorization_code&client_id=<id>&client_secret=<secret>&code=<code>"
@@ -456,10 +456,11 @@ Our own database is the record of visits (docs/decisions/0110-field-work-without
 
 5. **The buckets.** `mm-<t>-client-photos` and `mm-<t>-referral-cards` are step 1's, and must exist before any deploy, since `wrangler.jsonc` binds them. Neither gets a lifecycle rule: a client's photograph is only deleted on purpose.
 
-6. **The refund account.** Payments go to Books by themselves (docs/decisions/0044-payments-mirror.md, "Receipts in Books"). Refunds need the account Books pays them from, which must be a bank account: Books refuses Undeposited Funds.
-   - In Books: Banking → Add Bank or Credit Card → Bank, named "Razorpay", in INR.
-   - Open it; its ID is the number at the end of the address.
-   - Set it as `BOOKS_REFUND_ACCOUNT_ID` in the environment's vars in `wrangler.jsonc`, then deploy. It is not a secret.
+6. **Razorpay's accounts.** Payments go to Books by themselves (docs/decisions/0044-payments-mirror.md, "Receipts in Books"), each Razorpay payment into the account Razorpay holds our money in, which a refund leaves; each settlement is a transfer from it to the bank, and Razorpay's fee an expense (docs/decisions/0261-razorpay-money-in-books.md). Staging and production share one Books, so both name Razorpay Clearing; only production records settlements, so only production names the bank and the fee's account.
+   - In Books: Banking → Add Bank or Credit Card → Payment Clearing, named "Razorpay Clearing", in INR. Its ID, the number at the end of its address, is `BOOKS_REFUND_ACCOUNT_ID`.
+   - The bank Razorpay settles to, added in Banking: its ID is `BOOKS_BANK_ACCOUNT_ID`.
+   - The expense account "Bank Fees and Charges", in the chart of accounts: its ID is `BOOKS_GATEWAY_FEES_ACCOUNT_ID`. Once GST is on in Books, Razorpay's GSTIN and its state's two-letter code, as Razorpay's monthly tax invoice to us names them, are `BOOKS_GATEWAY_GSTIN` and `BOOKS_GATEWAY_GST_STATE`, so the fee's GST is input credit (docs/decisions/0274-gst-on.md).
+   - Set them in the environment's vars in `wrangler.jsonc`, then deploy. None is a secret. Settlements are recorded in production once Razorpay Clearing, the bank and the fee's account are all set; staging leaves the bank and the fee's account empty, as the one Books' bank is the real one.
 
 7. **Each service's item.** A visit is invoiced on its service's Books item, at the price book's price on the day (docs/decisions/0073-prices-from-the-price-book.md). Once an hour the cron's `books_items` job matches each service offered today to its item: the one kept on it, else the active one Books holds under its name.
    - **With the push on,** an item Books lacks is made, and one that differs is written with the console's name, today's price and the SAC code, a few a pass. Ops hear, as `books_item:<kind>/<tier>`, only of one still unsettled an hour on.
@@ -476,10 +477,7 @@ Our own database is the record of visits (docs/decisions/0110-field-work-without
    - A claim settled as a credit becomes a vendor credit on the same account (docs/decisions/0171-vendor-credits.md).
    - Freight, duty and clearing are billed by the forwarder or broker, and entered in Books by hand.
 
-10. **Staging's own organisation** (docs/decisions/0200-staging-tenants-of-its-own.md). Staging and production never share a Books organisation: the config check refuses the release that would. Before production's Books goes on:
-    - In Books, as the owner, add an organisation for staging (or open Zoho's sandbox of the real one), with the custom field of step 3, the bank account of step 6, the discount setting of step 8 and the two accounts of step 9.
-    - Set staging's `ZOHO_BOOKS_ORG_ID` and `BOOKS_REFUND_ACCOUNT_ID` in `wrangler.jsonc`, and its pair in `BOOKS_BILL_ACCOUNTS`, to the new organisation's. Mint staging's refresh token in it (step 1).
-    - Delete staging's records from the real organisation (step 8, "Staging's records in the org"). Production then takes the real organisation.
+10. **One organisation for both** (docs/decisions/0261-razorpay-money-in-books.md, superseding 0200 for Books). Staging and production share the one Books organisation and its accounts; staging's records carry "Staging test", only the environment `BOOKS_ITEM_PUSH` names writes items, and staging's records are cleared from it as step 8 says.
 
 ## 11c. Razorpay
 
@@ -501,7 +499,7 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
 3. **The webhook,** in Razorpay's dashboard, in the mode that matches the keys: Account & Settings → Webhooks → Add New Webhook.
    - URL: `https://<public host>/api/hooks/razorpay`.
    - Secret: the one from point 2.
-   - Events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, and `payment_link.paid`, which names the payment link a consultation and fit in one visit was paid by (ADR 0105).
+   - Events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, `payment_link.paid`, which names the payment link a consultation and fit in one visit was paid by (ADR 0105), and, in production alone, `settlement.processed`, each payout to the bank (ADR 0261). Staging's test mode leaves it off: its settlements are never recorded.
    - Payment links on: the one visit's link is made through the API (`POST /v1/payment_links`), which the account must allow (open point 166).
    - On staging, the hooks path already has its Access bypass (step 12, point 3).
 

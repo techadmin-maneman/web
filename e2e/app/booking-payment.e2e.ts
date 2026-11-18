@@ -18,7 +18,7 @@ import {
   refundedAfterPaying,
 } from "./checkout-fakes.ts";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
-import { continueToPayment, TAKEN, windowsAskedAgain } from "./picking.ts";
+import { continueToPayment, HELD_FOR, OPEN_TIMES, TAKEN, windowsAskedAgain } from "./picking.ts";
 import { toPayment, toWindows, holdAs, AGREE_TERMS } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 import { PAY_SERVICE } from "./booking-fixtures.ts";
@@ -36,7 +36,7 @@ const CHECKOUT = "https://checkout.razorpay.com/v1/checkout.js";
 /** Every hold the page lets go of. */
 /** Waits until the hold's count has moved on a second, which is time passing with the sheet still up. */
 async function ticked(sheet: Locator): Promise<void> {
-  const count = sheet.getByText(/^Held for \d:\d\d more\.$/);
+  const count = sheet.getByText(HELD_FOR);
   const shown = (await count.textContent()) ?? "";
   await expect(count).not.toHaveText(shown);
 }
@@ -51,20 +51,44 @@ function releases(page: Page): string[] {
   return released;
 }
 
-test("says so when the payment fails, with the hold counting outside the alert", async ({ page }) => {
+test("says so on the review when the payment fails, with the hold counting outside the alert", async ({ page }) => {
   await fakeCheckout(page, "failed");
   await toPayment(page);
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
-  const sheet = page.getByRole("dialog", { name: appCopy.booking.failed.title });
-  const alert = sheet.getByRole("alert");
-  await expect(alert).toContainText(appCopy.booking.failed.title);
-  await expect(sheet.getByText(/^Held for \d:\d\d more\.$/)).toBeVisible();
-  await expect(sheet.getByRole("button", { name: appCopy.booking.failed.retry })).toBeVisible();
+  const sheet = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  const alert = sheet.getByRole("alert").filter({ hasText: appCopy.booking.failed.title });
+  await expect(alert).toContainText(appCopy.booking.failed.line);
+  await expect(sheet.getByText(HELD_FOR)).toBeVisible();
+  // Pay tries again, the terms still agreed to.
+  await expect(sheet.getByRole("button", { name: PAY_SERVICE })).toBeEnabled();
   // A screen reader reads an alert again whenever it changes: the ticking count is kept out of it.
   const said = await alert.textContent();
   await ticked(sheet);
   expect(await alert.textContent()).toBe(said);
+});
+
+test("steps back from the review, letting the time go, and holds the next time picked", async ({ page }) => {
+  await toPayment(page);
+  const released = releases(page);
+  const review = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await review.getByRole("button", { name: appCopy.booking.back }).click();
+  await expect(page.getByRole("dialog", { name: appCopy.booking.when.title })).toBeVisible();
+  await expect.poll(() => released.length).toBe(1);
+  await continueToPayment(page);
+  await expect(review.getByText(HELD_FOR)).toBeVisible();
+});
+
+// An ordered hold is kept until its grace ends, and the API hands it back for the next time picked.
+test("offers no way back, nor a change of address, once Checkout has an order for the time", async ({ page }) => {
+  await fakeCheckout(page, "failed");
+  await toPayment(page);
+  const review = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await review.getByRole("checkbox", { name: AGREE_TERMS }).check();
+  await review.getByRole("button", { name: PAY_SERVICE }).click();
+  await expect(review.getByRole("alert").filter({ hasText: appCopy.booking.failed.title })).toBeVisible();
+  await expect(review.getByRole("button", { name: appCopy.booking.back })).toHaveCount(0);
+  await expect(review.getByRole("button", { name: appCopy.booking.pay.changeAddress })).toHaveCount(0);
 });
 
 test("keeps the sheet, and the hold, when Checkout fails the moment it opens", async ({ page }) => {
@@ -109,7 +133,7 @@ test("says the payment failed when Checkout never loads, and keeps the sheet up 
   await ordered;
   await expect(pay).toBeVisible();
   await expect(pay.getByRole("button", { name: PAY_SERVICE })).toBeDisabled();
-  const failed = page.getByRole("dialog", { name: appCopy.booking.failed.title });
+  const failed = pay.getByRole("alert").filter({ hasText: appCopy.booking.failed.title });
   // Checkout is given up on twenty seconds after it was last asked for. On a busy machine the pay step's own ask can
   // lapse before the tap, which asks again only once the order is in, after a single jump of the clock (1 October
   // 2026): so the clock moves on until the sheet has given up.
@@ -117,16 +141,16 @@ test("says the payment failed when Checkout never loads, and keeps the sheet up 
     await page.clock.fastForward("00:20");
     await expect(failed).toBeVisible({ timeout: 1_000 });
   }).toPass({ timeout: 15_000 });
-  await expect(failed.getByText(/^Held for \d:\d\d more\.$/)).toBeVisible();
+  await expect(pay.getByText(HELD_FOR)).toBeVisible();
 });
 
-test("starts one payment, and one order, when the failed step is tapped twice", async ({ page }) => {
+test("starts one payment, and one order, when Pay is tapped twice after a failure", async ({ page }) => {
   await fakeCheckout(page, "failed");
   await toPayment(page);
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
-  const failed = page.getByRole("dialog", { name: appCopy.booking.failed.title });
-  await expect(failed).toBeVisible();
+  const failed = page.getByRole("dialog", { name: appCopy.booking.pay.title });
+  await expect(failed.getByRole("alert").filter({ hasText: appCopy.booking.failed.title })).toBeVisible();
 
   // Every order the API hands back, so two of them would be two ways to pay for one hold.
   const orders: string[] = [];
@@ -157,7 +181,7 @@ test("starts one payment, and one order, when the failed step is tapped twice", 
     await route.continue();
   });
 
-  const tryAgain = failed.getByRole("button", { name: appCopy.booking.failed.retry });
+  const tryAgain = failed.getByRole("button", { name: PAY_SERVICE });
   await tryAgain.click();
   // Forced, because the tap this guards against is one the client makes whether the button takes it or not.
   await tryAgain.click({ force: true });
@@ -187,7 +211,7 @@ test("offers the visit just booked to the client’s calendar, at the time held"
   const hold = (await (await held).json()) as { starts_at: string; ends_at: string };
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
-  const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label });
+  const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label.service });
   await expect(confirmed).toBeVisible({ timeout: 15_000 });
 
   const [start, end] = [new Date(hold.starts_at), new Date(hold.ends_at)];
@@ -199,7 +223,7 @@ test("offers the visit just booked to the client’s calendar, at the time held"
   await expect(file).toHaveAttribute("download", "mane-man-visit.ics");
 });
 
-test("picks another window when one has just gone, and pays for that one", async ({ page }) => {
+test("picks another time when one has just gone, and pays for that one", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   // The first window goes to another client between the sheet offering it and the hold.
@@ -210,15 +234,15 @@ test("picks another window when one has just gone, and pays for that one", async
     return route.fulfill({ status: 409, json: { error: { code: "taken", request_id: "e2e" } } });
   });
   await toWindows(page);
-  const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  const open = windows.getByRole("radio").and(page.locator(":enabled"));
+  const windows = page.getByRole("dialog", { name: appCopy.booking.when.title });
+  const open = windows.locator(OPEN_TIMES);
   const offered = await open.count();
   await open.first().click();
   const redrawn = windowsAskedAgain(page);
-  await windows.getByRole("button", { name: appCopy.booking.window.continue }).click();
+  await windows.getByRole("button", { name: appCopy.booking.when.continue, exact: true }).click();
   await expect(windows.getByRole("alert")).toHaveText(TAKEN);
-  // Nothing is chosen any more: the day's windows have been asked for again, and the client picks from those.
-  await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toBeDisabled();
+  // Nothing is chosen any more: the day's times have been asked for again, and the client picks from those.
+  await expect(windows.getByRole("button", { name: appCopy.booking.when.continue, exact: true })).toBeDisabled();
   await redrawn();
   // The start refused is not offered again in this sheet, though the API, planning on its estimate, offers it.
   await expect(open).toHaveCount(offered - 1);
@@ -226,7 +250,9 @@ test("picks another window when one has just gone, and pays for that one", async
   await continueToPayment(page);
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
-  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label.service),
+  ).toBeVisible();
 });
 
 test("keeps the time picked while the day’s times are still being asked for again", async ({ page }) => {
@@ -261,20 +287,20 @@ test("keeps the time picked while the day’s times are still being asked for ag
       for (const each of day.starts) each.open = each.starts_at === gone ? false : each.starts_at === kept || each.open;
     return route.fulfill({ response: answer, json: body });
   });
-  const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  const open = windows.getByRole("radio").and(page.locator(":enabled"));
+  const windows = page.getByRole("dialog", { name: appCopy.booking.when.title });
+  const open = windows.locator(OPEN_TIMES);
   // Each time's radio is sent as its start.
   gone = (await open.first().getAttribute("value")) ?? "";
   kept = (await open.last().getAttribute("value")) ?? "";
   await open.first().click();
-  await windows.getByRole("button", { name: appCopy.booking.window.continue }).click();
+  await windows.getByRole("button", { name: appCopy.booking.when.continue, exact: true }).click();
   await expect(windows.getByRole("alert")).toHaveText(TAKEN);
   const picked = windows.locator(`input[value="${kept}"]`);
   await picked.click();
   release();
   await expect(windows.locator(`input[value="${gone}"]`)).toBeDisabled();
   await expect(picked).toBeChecked();
-  await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toBeEnabled();
+  await expect(windows.getByRole("button", { name: appCopy.booking.when.continue, exact: true })).toBeEnabled();
 });
 
 test("fetches Home again when the sheet is closed after paying, before the booking is confirmed", async ({ page }) => {
@@ -282,7 +308,7 @@ test("fetches Home again when the sheet is closed after paying, before the booki
   await toPayment(page);
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
-  const confirming = page.getByRole("dialog", { name: appCopy.booking.confirming });
+  const confirming = page.getByRole("dialog", { name: appCopy.booking.confirming.paid });
   await expect(confirming).toBeVisible();
   const home = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/me", { timeout: 5_000 });
   await confirming.getByRole("button", { name: appCopy.booking.close }).click();
@@ -298,7 +324,7 @@ test("shows one Close, its own, when a paid visit could not be booked", async ({
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await page.getByRole("button", { name: PAY_SERVICE }).click();
   const refunded = page.getByRole("dialog", {
-    name: appCopy.booking.refunded,
+    name: appCopy.booking.refunded.title,
   });
   await expect(refunded).toBeVisible();
   await expect(refunded.getByRole("button", { name: appCopy.booking.close })).toHaveCount(1);
@@ -319,7 +345,7 @@ test("lets a lapsed hold go the moment the phone sees it lapse, and picks again"
   await expect(expired).toBeVisible();
   await released;
   await expired.getByRole("button", { name: appCopy.booking.expired.pickAgain }).click();
-  await expect(page.getByRole("dialog", { name: appCopy.booking.date.title })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: appCopy.booking.when.title })).toBeVisible();
 });
 
 // A phone that slept wakes with its timers behind: the clock moves on without firing them, and the sheet must still
@@ -380,7 +406,9 @@ test("keeps the hold while Checkout is open past the countdown, and books the pa
   expect(Math.abs(opened.openedAt + opened.timeout * 1000 - Date.parse(payBy()))).toBeLessThan(5_000);
   await page.clock.fastForward("11:00");
   await paidInCheckout(page);
-  await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label.service),
+  ).toBeVisible();
   expect(released).toEqual([]);
 });
 
@@ -406,7 +434,7 @@ test("counts the hold on the API’s clock, however far out the phone’s is", a
   await page.clock.install({ time: Date.now() + 11 * 60_000 });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-  await expect(pay.getByText(/^Held for (10:00|9:[45]\d)$/)).toBeVisible();
+  await expect(pay.getByText(new RegExp(`^${appCopy.booking.pay.holding}(10:00|9:[45]\\d)$`))).toBeVisible();
   await pay.getByRole("checkbox", { name: AGREE_TERMS }).check();
   await expect(pay.getByRole("button", { name: PAY_SERVICE })).toBeEnabled();
 });

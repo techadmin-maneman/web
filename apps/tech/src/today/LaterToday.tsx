@@ -1,9 +1,9 @@
 // The rest of Today (docs/prompts/tech-redesign.md, "Today"): a row for each job but the next, its time and length,
-// the client, the visit, the area and how it is paid, and the drive with when to leave; a job done with ruled in the
-// ink and quieter, with how it closed; then tomorrow, which opens the Schedule.
+// the client, the visit, the area and how it is paid, and the drive with when to leave; a job done with marked in the
+// ink and quieter, its time over how it closed and its visit with it, as the prototype draws it; then tomorrow, which
+// opens the Schedule.
 
-import { GLYPHS } from "@maneman/brand/icons";
-import { Icon } from "@maneman/ui/Icon";
+import { classes } from "@maneman/ui/classes";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Link } from "@maneman/ui/router";
 import { SectionHead } from "@maneman/ui/SectionHead";
@@ -13,16 +13,13 @@ import { kindName } from "../lib/kind.ts";
 import type { RowState } from "../lib/progress.ts";
 import type { Queued } from "../store/outbox.ts";
 import type { Heard } from "../store/jobs.ts";
-import { closedAs } from "../lib/today.ts";
+import { howClosed, keptWhole } from "../lib/today.ts";
 import { apiDate, clock, dayAfter, runsOver, todayInIndia } from "../lib/when.ts";
 import styles from "./today.module.css";
+import { Chevron } from "../frame/Chevron.tsx";
 
-/**
- * The row's third line: how it closed, that it runs into the next job, where the technician is with it, or the drive
- * and when to leave.
- */
+/** The row's third line: that it runs into the next job, where the technician is with it, or the drive and when to leave. */
 function lastLine(job: JobSummary, state: RowState | null, ahead: Ahead): string | null {
-  if (state === "closed") return closedAs(job, ahead.queued, ahead.heard);
   if (state === "in_progress" && job.next !== null && ahead.later !== undefined && runsOver(job, apiDate())) {
     return copy.runsOver(clock(job.next.finish_by), clock(ahead.later.starts_at));
   }
@@ -48,32 +45,43 @@ function Row(props: {
 }) {
   const { job, state } = props;
   const closed = state === "closed";
-  const what = [kindName(job), job.sector, badgesLower[job.badge]].filter((part) => part !== null).join(" · ");
-  const last = lastLine(job, state, props.ahead);
+  const how = closed ? howClosed(job, props.ahead.queued, props.ahead.heard) : null;
+  const what =
+    how === null
+      ? [kindName(job), job.sector, badgesLower[job.badge]].filter((part) => part !== null).join(" · ")
+      : `${kindName(job)} · ${copy.closedAfter[how]}`;
+  const last = how === null ? lastLine(job, state, props.ahead) : null;
   return (
     <ListRow
       to={`/jobs/${job.id}`}
-      rule={closed ? "done" : undefined}
       lead={
-        <span className={closed ? styles.quiet : undefined}>
-          <span className={styles.rowTime}>{clock(job.starts_at)}</span>
-          {job.minutes !== null && <span className={styles.rowLength}>{jobCopy.minutes(job.minutes)}</span>}
+        <span className={styles.lead}>
+          <span className={classes(styles.mark, closed && styles.markDone)} />
+          <span className={closed ? styles.quiet : undefined}>
+            <span className={styles.rowTime}>{clock(job.starts_at)}</span>
+            {how !== null && <span className={styles.rowLength}>{copy.closed[how]}</span>}
+            {how === null && job.minutes !== null && (
+              <span className={styles.rowLength}>{keptWhole(jobCopy.minutes(job.minutes))}</span>
+            )}
+          </span>
         </span>
       }
       title={<span className={closed ? styles.quiet : undefined}>{props.client ?? kindName(job)}</span>}
       meta={
         <>
-          <span className={styles.rowLine}>{what}</span>
-          {last !== null && <span className={closed ? styles.rowClosed : styles.rowLine}>{last}</span>}
+          <span className={styles.rowLine}>{keptWhole(what)}</span>
+          {last !== null && <span className={styles.rowLine}>{keptWhole(last)}</span>}
         </>
       }
-      end={<Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />}
+      end={<Chevron />}
     />
   );
 }
 
 export function LaterToday(props: {
   readonly jobs: readonly JobSummary[];
+  /** None is left to do: the list is the whole day's, headed by its name. */
+  readonly allDone: boolean;
   readonly states: ReadonlyMap<string, RowState | null>;
   readonly names: ReadonlyMap<string, string>;
   readonly queued: readonly Queued[];
@@ -83,7 +91,7 @@ export function LaterToday(props: {
   return (
     <section className={styles.later} aria-labelledby="today-later">
       <SectionHead
-        title={copy.later}
+        title={props.allDone ? copy.title : copy.later}
         size="list"
         id="today-later"
         end={
@@ -126,7 +134,7 @@ export function Tomorrow({ jobs, loaded }: { readonly jobs: readonly JobSummary[
         {" · "}
         {first === undefined ? copy.nothingBooked : copy.tomorrowJobs(jobs.length, clock(first.starts_at))}
       </span>
-      <Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />
+      <Chevron />
     </Link>
   );
 }

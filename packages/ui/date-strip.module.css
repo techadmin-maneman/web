@@ -16,9 +16,12 @@
     align-items: center;
     justify-content: center;
     gap: var(--sp-4);
+    /* As wide as its column; as tall as the look gives, or by the ratio where it gives none. */
+    width: 100%;
     aspect-ratio: 1 / 1.15;
+    height: var(--strip-day-height);
     padding: 0;
-    border: var(--hairline) solid var(--paper-control);
+    border: var(--hairline) solid var(--pick-edge);
     background: var(--white);
     font: inherit;
     color: var(--text);
@@ -47,7 +50,8 @@
 
   .number {
     font-family: var(--title-font);
-    font-size: var(--fs-18);
+    font-size: var(--strip-number-size);
+    font-weight: var(--strip-number-weight);
     font-variant-numeric: lining-nums;
   }
 
@@ -63,9 +67,9 @@
   }
 
   .day:has(.radio:checked) {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--paper);
+    border-color: var(--pick-on);
+    background: var(--pick-on);
+    color: var(--pick-on-text);
   }
 
   .day:has(.radio:checked) .weekday {
@@ -73,22 +77,53 @@
   }
 
   .day:has(.radio:checked) .mark {
-    background: var(--paper);
+    background: var(--pick-on-text);
   }
 
   .day:has(.radio:disabled) {
-    border-color: var(--paper-shade);
-    background: var(--paper-shade);
-    color: var(--text-muted);
+    border-color: var(--strip-off-ground);
+    background: var(--strip-off-ground);
+    color: var(--strip-off-text);
     cursor: default;
   }
 
-  .day:has(.radio:disabled) .weekday {
-    color: var(--text-muted);
+  .day:has(.radio:disabled) :is(.weekday, .note) {
+    color: var(--strip-off-text);
   }
 
   /* A word beneath the number: how many starts are free, in its day's own colour, chosen or not. */
   .note {
     font-size: var(--fs-13);
+  }
+
+  /*
+   * More days than a week, in a row that scrolls sideways: each a fixed tile, 58 px by 72, the words beneath the
+   * number muted, as the client app's booking draws them.
+   */
+  .scrolls {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .scrolls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrolls .day {
+    flex: none;
+    gap: 0;
+    width: calc(var(--sp-48) + var(--sp-8) + var(--sp-2));
+    height: calc(var(--sp-64) + var(--sp-8));
+    aspect-ratio: auto;
+    line-height: var(--lh-130);
+  }
+
+  .scrolls .note {
+    color: var(--text-muted);
+  }
+
+  .scrolls .day:has(.radio:checked) .note {
+    color: var(--ink-soft);
   }
 }

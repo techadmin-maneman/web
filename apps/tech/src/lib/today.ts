@@ -28,11 +28,16 @@ export function nextOf<Job extends Row>(jobs: readonly Job[], states: ReadonlyMa
   return begun ?? jobs.find((job) => states.get(job.id) !== "closed");
 }
 
-/** What Today's title says: how many jobs are still to do, that they are all done, or that none are booked. */
+/**
+ * What Today's title says: how many jobs there are, then how many are left once one has closed, that they are all
+ * done, or that none are booked; and no count at all until the day has loaded.
+ */
 export function titleOf(jobs: readonly Row[], states: ReadonlyMap<string, Where>, loaded: boolean): string {
-  if (loaded && jobs.length === 0) return copy.noJobs;
+  if (!loaded) return copy.title;
+  if (jobs.length === 0) return copy.noJobs;
   const open = jobs.filter((job) => states.get(job.id) !== "closed").length;
-  return loaded && open === 0 ? copy.allDone : copy.jobs(open);
+  if (open === 0) return copy.allDone;
+  return open < jobs.length ? copy.left(open) : copy.jobs(open);
 }
 
 /**
@@ -44,10 +49,19 @@ export function closedAs(
   queued: readonly Queued[],
   heard: Pick<Heard, "outcome"> | undefined,
 ): string {
+  return copy.closed[howClosed(job, queued, heard)];
+}
+
+/** The same, as which of the words to say, so a row can say it under its time and after its kind of visit. */
+export function howClosed(
+  job: Pick<JobSummary, "id" | "progress" | "status">,
+  queued: readonly Queued[],
+  heard: Pick<Heard, "outcome"> | undefined,
+): keyof typeof copy.closed {
   const landed = { started_at: job.progress.started_at, outcome: job.progress.outcome ?? heard?.outcome ?? null };
   const outcome = outcomeOf({ id: job.id, progress: landed }, queued);
-  if (outcome !== null) return copy.closed[outcome];
-  return job.status === "completed" ? copy.closed.done : copy.closed.other;
+  if (outcome !== null) return outcome;
+  return job.status === "completed" ? "done" : "other";
 }
 
 export function nextLine(job: Pick<JobSummary, "leave_by">, state: Where, now: Date): string {
@@ -58,3 +72,9 @@ export function nextLine(job: Pick<JobSummary, "leave_by">, state: Where, now: D
   if (minutes <= 0) return copy.next.leaveNow;
   return minutes <= LEAVE_IN_WITHIN ? copy.next.leaveIn(minutes) : copy.next.leaveBy(clock(job.leave_by));
 }
+
+/**
+ * A row's words with each figure kept on one line with the word after it, in either language ("11:05 am", "25 min",
+ * "2 घंटे"), so a narrow row breaks between a length's parts but never inside one.
+ */
+export const keptWhole = (line: string): string => line.replace(/(\d) (?=\p{L})/gu, "$1\u00a0");

@@ -131,8 +131,9 @@ const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NO
   address: placed("Tower C, 14th floor", "Sector 65", { lat: 28.39, lng: 77.07 }),
   // Vikram's at 11:30, 20 minutes away: done by 11 for the wrap-up and the drive.
   next: { drive_minutes: 20, finish_by: at(date, "05:30") },
-  // 18 minutes from home: leave by 9:12.
+  // 18 minutes from home, 6.2 km by road: leave by 9:12.
   drive_minutes: 18,
+  drive_km: 6.2,
   leave_by: at(date, "03:42"),
 });
 
@@ -159,6 +160,7 @@ const secondJob = (date: string): Job => ({
   address: placed("House 12", "DLF Phase 4", null),
   next: { drive_minutes: 25, finish_by: at(date, "07:55") },
   drive_minutes: 20,
+  drive_km: 7.5,
   leave_by: at(date, "05:40"),
 });
 
@@ -186,6 +188,7 @@ const lockedJob = (date: string): Job => ({
   address: null,
   next: null,
   drive_minutes: 25,
+  drive_km: 6.9,
   leave_by: at(date, "08:05"),
 });
 
@@ -215,6 +218,7 @@ const tomorrowsJob = (today: string): Job => {
     address: placed("Tower C, 14th floor", "Sector 50", null),
     next: null,
     drive_minutes: 18,
+    drive_km: 5.8,
     leave_by: at(date, "04:12"),
   };
 };
@@ -257,6 +261,24 @@ export const ONE_VISIT_CHECKLIST: Card["checklist"] = [
   { id: "piece_set", label: "Hair system set and pressed" },
   { id: "cut_and_styled", label: "Cut and styled" },
   { id: "aftercare_explained", label: "Aftercare explained" },
+];
+
+/** Why a fit may not be fitted today, as the job sheet's committed list words them. */
+export const NOT_FITTED_REASONS: Card["not_fitted_reasons"] = [
+  { id: "piece_damaged", label: "Piece damaged" },
+  { id: "wrong_piece", label: "Wrong piece" },
+  { id: "client_changed_mind", label: "Client changed mind" },
+  { id: "scalp_not_ready", label: "Scalp not ready" },
+];
+
+/** Why a hair system may have failed, as the job sheet's committed list words them. */
+export const FAILURE_REASONS: Card["failure_reasons"] = [
+  { id: "edges_lifting", label: "Edges lifting" },
+  { id: "shedding", label: "Shedding" },
+  { id: "base_torn", label: "Base torn" },
+  { id: "colour_faded", label: "Colour faded" },
+  { id: "client_damage", label: "Damaged by the client" },
+  { id: "other", label: "Other" },
 ];
 
 /** Why a client may not go ahead after a consultation: the committed list, in src/config/job-sheet.ts's words. */
@@ -358,6 +380,8 @@ export interface CardOptions {
   /** The client's hair profile as it stands; none recorded unless a test gives one. */
   readonly profile?: HairProfile | null;
   readonly checklist?: Card["checklist"];
+  /** Why a client may not go ahead, as ops set it; the committed list unless a test gives its own. */
+  readonly lostReasons?: Card["lost_reasons"];
   /** A one visit's discount code already on it; none unless a test gives one. */
   readonly discountCode?: Card["discount_code"];
   /** The service the visit was sold as; none unless a test gives one. */
@@ -369,15 +393,26 @@ export interface CardOptions {
   readonly alerts?: Card["client_alerts"];
   readonly handoff?: Card["handoff"];
   readonly sentBack?: Card["sent_back"];
+  /** The fit's sign-off as it stands; none asked for where left out. */
+  readonly signOff?: Card["sign_off"];
   readonly paymentLink?: Card["payment_link"];
   readonly rescheduleAsked?: Card["reschedule_asked"];
+  /** The client's earlier visits, counted; none unless a test gives them. */
+  readonly clientVisits?: Card["client_visits"];
+  readonly bookedVia?: Card["booked_via"];
 }
 
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
   const type = options.type ?? "service";
   const oneVisit = options.oneVisit === true;
   // A card carries no next job: the day's list does.
-  const { next: _next, drive_minutes: _drive, leave_by: _leave, ...job } = firstJob(date, type, oneVisit);
+  const {
+    next: _next,
+    drive_minutes: _drive,
+    drive_km: _km,
+    leave_by: _leave,
+    ...job
+  } = firstJob(date, type, oneVisit);
   return {
     ...job,
     starts_at: options.startsAt ?? job.starts_at,
@@ -406,10 +441,7 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     // Not the policy's 200 m: ops have tuned it, and the door says theirs.
     checkin_radius_m: 150,
     pieces: [...(options.pieces ?? [])],
-    last_visit:
-      options.lastVisit === true
-        ? { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${JOB_ID}/last-visit-photo` }
-        : null,
+    last_visit: options.lastVisit === true ? { date: "2030-08-22", technician: "Imran" } : null,
     reminder:
       options.reminderDelivered === undefined
         ? null
@@ -418,7 +450,9 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     checklist: options.checklist ?? CHECKLIST,
     checklist_if_declined: oneVisit ? CONSULTATION_CHECKLIST : [],
     partial_reasons: PARTIAL_REASONS,
-    lost_reasons: oneVisit || type === "consultation" ? LOST_REASONS : [],
+    lost_reasons: options.lostReasons ?? (oneVisit || type === "consultation" ? LOST_REASONS : []),
+    not_fitted_reasons: oneVisit || type === "first_fit" || type === "replacement" ? NOT_FITTED_REASONS : [],
+    failure_reasons: type === "replacement" ? FAILURE_REASONS : [],
     consumables: CONSUMABLES,
     kit_hair_systems: [...(options.kitHairSystems ?? [])],
     products: oneVisit || type === "consultation" ? PRODUCTS : [],
@@ -430,12 +464,15 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
     handoff: options.handoff ?? null,
     sent_back: options.sentBack ?? [],
     reschedule_asked: options.rescheduleAsked ?? null,
+    sign_off: options.signOff ?? null,
+    client_visits: options.clientVisits ?? { count: 0, first: null },
+    booked_via: options.bookedVia ?? null,
   };
 }
 
 /** A job further out: time, type and sector only, as the day-before unlock leaves it. */
 export function lockedCard(date: string): Card {
-  const { next: _next, drive_minutes: _drive, leave_by: _leave, ...job } = lockedJob(date);
+  const { next: _next, drive_minutes: _drive, drive_km: _km, leave_by: _leave, ...job } = lockedJob(date);
   return {
     ...job,
     address: null,
@@ -453,6 +490,8 @@ export function lockedCard(date: string): Card {
     checklist_if_declined: [],
     partial_reasons: PARTIAL_REASONS,
     lost_reasons: [],
+    not_fitted_reasons: [],
+    failure_reasons: [],
     consumables: CONSUMABLES,
     kit_hair_systems: [],
     products: [],
@@ -464,12 +503,22 @@ export function lockedCard(date: string): Card {
     handoff: null,
     sent_back: [],
     reschedule_asked: null,
+    sign_off: null,
+    client_visits: null,
+    booked_via: null,
   };
 }
 
 /** Tomorrow's card: unlocked, so the address is there, and on a day that is not today. */
 export function tomorrowCard(today: string): Card {
   // The card's own address, and no next job, which only the day's list carries.
-  const { address: _address, next: _next, drive_minutes: _drive, leave_by: _leave, ...job } = tomorrowsJob(today);
+  const {
+    address: _address,
+    next: _next,
+    drive_minutes: _drive,
+    drive_km: _km,
+    leave_by: _leave,
+    ...job
+  } = tomorrowsJob(today);
   return { ...card(today, NOTHING_DONE), ...job, progress: NOTHING_DONE };
 }

@@ -205,6 +205,7 @@ export interface Rows {
     readonly amount_ex_gst: number;
     readonly gst_percent: number;
     readonly valid_from: string;
+    readonly amount_paise: number | null;
   };
   readonly city_settings: {
     readonly city: string;
@@ -223,6 +224,43 @@ export interface Rows {
     readonly written_at: string;
     readonly taken_off_at: string | null;
     readonly taken_off_by: string | null;
+  };
+  readonly client_app_alerts: {
+    readonly id: string;
+    readonly person_id: string;
+    readonly kind: string;
+    readonly subject_kind: string;
+    readonly subject_id: string;
+    readonly once_key: string;
+    readonly written_at: string;
+    readonly pushed_at: string | null;
+    readonly read_at: string | null;
+  };
+  readonly client_push_subscriptions: {
+    readonly session_id: string;
+    readonly endpoint: string;
+    readonly subscribed_at: string;
+  };
+  readonly client_report_photos: {
+    readonly report_id: string;
+    readonly n: number;
+    readonly object_key: string;
+    readonly bytes: number;
+    readonly created_at: string;
+  };
+  readonly client_reports: {
+    readonly id: string;
+    readonly number: number;
+    readonly person_id: string;
+    readonly category: string;
+    readonly visit_id: string | null;
+    readonly claim_visit_id: string | null;
+    readonly text: string | null;
+    readonly conversation_id: string | null;
+    readonly created_at: string;
+    readonly closed_at: string | null;
+    readonly sorted_at: string | null;
+    readonly reopened_at: string | null;
   };
   readonly consents: {
     readonly id: string;
@@ -500,12 +538,34 @@ export interface Rows {
     readonly subject_id: string | null;
     readonly payload_json: string | null;
   };
+  readonly failure_reasons: {
+    readonly code: string;
+    readonly label: string;
+    readonly position: number;
+    readonly retired_at: string | null;
+    readonly set_by: string;
+    readonly set_at: string;
+  };
   readonly first_fit_requests: {
     readonly id: string;
     readonly person_id: string;
     readonly preferred_window: string | null;
     readonly created_at: string;
     readonly fitted_since: number;
+  };
+  readonly fit_sign_offs: {
+    readonly appointment_id: string;
+    readonly state: string;
+    readonly checks: string | null;
+    readonly flag_text: string | null;
+    readonly declined_reason: string | null;
+    readonly asked_at: string;
+    readonly asks: number;
+    readonly signed_at: string | null;
+    readonly ask_event_id: string | null;
+    readonly guarantee_days: number | null;
+    readonly technician_id: string | null;
+    readonly updated_at: string;
   };
   readonly forecast_accuracy: {
     readonly run_id: string;
@@ -693,6 +753,14 @@ export interface Rows {
     readonly set_by: string;
     readonly set_at: string;
   };
+  readonly made_to_order_asks: {
+    readonly id: string;
+    readonly person_id: string;
+    readonly kind: string;
+    readonly tier: string;
+    readonly requested_at: string;
+    readonly settled_at: string | null;
+  };
   readonly maintenance: {
     readonly id: number;
     readonly reason: string;
@@ -761,6 +829,14 @@ export interface Rows {
     readonly asked_at: string | null;
     readonly settled_at: string | null;
     readonly razorpay_refund_id: string | null;
+  };
+  readonly not_fitted_reasons: {
+    readonly code: string;
+    readonly label: string;
+    readonly position: number;
+    readonly retired_at: string | null;
+    readonly set_by: string;
+    readonly set_at: string;
   };
   readonly number_change_requests: {
     readonly id: string;
@@ -909,6 +985,7 @@ export interface Rows {
     readonly kind: string;
     readonly amount_ex_gst: number | null;
     readonly gst_percent: number | null;
+    readonly books_kept_invoice_id: string | null;
   };
   readonly people: {
     readonly id: string;
@@ -990,6 +1067,7 @@ export interface Rows {
     readonly deleted_at: string | null;
     readonly replacement_booked: number;
     readonly replaced_at: string | null;
+    readonly failure_code: string | null;
   };
   readonly pincode_demand: {
     readonly pincode: string;
@@ -1068,6 +1146,7 @@ export interface Rows {
     readonly amount_ex_gst: number;
     readonly gst_percent: number;
     readonly valid_from: string;
+    readonly amount_paise: number | null;
   };
   readonly purchase_orders: {
     readonly id: string;
@@ -1108,6 +1187,18 @@ export interface Rows {
     readonly event_id: string;
     readonly event: string;
     readonly received_at: string;
+  };
+  readonly razorpay_settlements: {
+    readonly id: string;
+    readonly amount: number;
+    readonly fees: number;
+    readonly tax: number;
+    readonly utr: string | null;
+    readonly settled_at: string;
+    readonly received_at: string;
+    readonly books_transfer_id: string | null;
+    readonly books_fee_id: string | null;
+    readonly books_checked_at: string | null;
   };
   readonly recall_pieces: {
     readonly recall_id: string;
@@ -1333,6 +1424,7 @@ export interface Rows {
     readonly payment_checked_at: string | null;
     readonly pay_at_visit: number;
     readonly starts_at: string | null;
+    readonly booked_from: string | null;
   };
   readonly slot_times: {
     readonly id: string;
@@ -1819,6 +1911,7 @@ export interface Rows {
     readonly finish_ask: string | null;
     readonly finish_asked_at: string | null;
     readonly picked_tier: string | null;
+    readonly not_fitted_reason: string | null;
   };
   readonly visit_pay_rates: {
     readonly id: string;
@@ -1838,6 +1931,14 @@ export interface Rows {
     readonly accuracy_m: number | null;
     readonly at: string;
     readonly received_at: string;
+  };
+  readonly visit_ratings: {
+    readonly appointment_id: string;
+    readonly person_id: string;
+    readonly technician_id: string | null;
+    readonly stars: number;
+    readonly low: number;
+    readonly created_at: string;
   };
   readonly waitlist_entries: {
     readonly id: string;

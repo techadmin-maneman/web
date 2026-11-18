@@ -46,8 +46,8 @@ describe("the drive to each job", () => {
 
   it("is from home to the day's first, and from the job before to each after it, and says when to leave", () => {
     const [first, second] = drivesTo([job("10:00", 20), job("13:00", 45)], north(0), RULES);
-    expect(first).toEqual({ drive_minutes: 20, leave_by: at("09:40") });
-    expect(second).toEqual({ drive_minutes: 25, leave_by: at("12:35") });
+    expect(first).toEqual({ drive_minutes: 20, drive_km: 20, leave_by: at("09:40") });
+    expect(second).toEqual({ drive_minutes: 25, drive_km: 25, leave_by: at("12:35") });
   });
 
   it("is from a job done as from any other, never less than the shortest drive, and that where a pin is missing", () => {
@@ -57,8 +57,9 @@ describe("the drive to each job", () => {
       RULES,
     );
     // Five kilometres is less than the shortest drive, ten minutes.
-    expect(second).toEqual({ drive_minutes: 10, leave_by: at("12:50") });
-    expect(third).toEqual({ drive_minutes: 10, leave_by: at("15:50") });
+    expect(second).toEqual({ drive_minutes: 10, drive_km: 5, leave_by: at("12:50") });
+    // No pin, so no distance: the shortest drive stands in for the time alone.
+    expect(third).toEqual({ drive_minutes: 10, drive_km: null, leave_by: at("15:50") });
   });
 
   it("is nothing for a job already closed, nor for the day's first from a home with no pin", () => {

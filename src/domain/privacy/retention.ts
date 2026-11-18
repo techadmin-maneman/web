@@ -78,6 +78,7 @@ const STRANGER_CHATS = `SELECT c.id FROM conversations c INDEXED BY conversation
   WHERE c.state = 'closed' AND c.last_message_at < ?1 AND c.person_id IS NULL
     AND NOT EXISTS (SELECT 1 FROM technicians t WHERE t.mobile_e164 = c.mobile_e164)
     AND NOT EXISTS (SELECT 1 FROM city_matters m WHERE m.conversation_id = c.id)
+    AND NOT EXISTS (SELECT 1 FROM client_reports r WHERE r.conversation_id = c.id)
   ORDER BY c.last_message_at LIMIT ?2`;
 
 /**

@@ -9,7 +9,7 @@ import styles from "./login.module.css";
 
 export function MessageUs() {
   return (
-    <TextLink tone="ink" className={styles.link} href={whatsappChat(whatsapp.number)}>
+    <TextLink tone="plain" className={styles.link} href={whatsappChat(whatsapp.number)}>
       <Icon d={ICONS.whatsapp} size="sm" />
       <span>{login.messageUs}</span>
     </TextLink>

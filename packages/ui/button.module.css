@@ -92,12 +92,12 @@
   }
 
   .light {
-    background: var(--paper);
+    background: var(--on-ink);
     color: var(--ink);
   }
 
   .light:active:not(:disabled):not([aria-disabled="true"]) {
-    background: var(--paper-shade);
+    background: var(--on-ink-pressed);
   }
 
   .light:disabled,
@@ -121,6 +121,22 @@
     color: var(--ink-tag);
   }
 
+  /* The public site's gold, on its navy: the brand's navy in its words (ADR 0262). */
+  .goldOnNavy {
+    background: var(--gilt);
+    color: var(--ink);
+  }
+
+  .goldOnNavy:active:not(:disabled):not([aria-disabled="true"]) {
+    box-shadow: inset 0 0 0 var(--rule-strong) var(--ink);
+  }
+
+  .goldOnNavy:disabled,
+  .goldOnNavy[aria-disabled="true"]:not([data-settling]) {
+    background: var(--ink-disabled);
+    color: var(--ink-tag);
+  }
+
   .destructive {
     background: var(--ui-error);
     color: var(--ui-on-strong);
@@ -140,14 +156,17 @@
 
   .outline,
   .outlineOnInk,
+  .outlineOnNavy,
   .quiet,
-  .danger {
+  .danger,
+  .dangerQuiet {
     border-width: var(--hairline);
     font-weight: var(--control-weight);
   }
 
+  /* Its edge in the strong ink, unless a look sets one of its own, as the technician app's grey. */
   .outline {
-    border-color: var(--ui-strong);
+    border-color: var(--outline-edge);
     color: var(--ui-text);
   }
 
@@ -158,7 +177,8 @@
 
   .outline:active:not(:disabled):not([aria-disabled="true"]),
   .quiet:active:not(:disabled):not([aria-disabled="true"]),
-  .danger:active:not(:disabled):not([aria-disabled="true"]) {
+  .danger:active:not(:disabled):not([aria-disabled="true"]),
+  .dangerQuiet:active:not(:disabled):not([aria-disabled="true"]) {
     background: var(--ui-shade);
   }
 
@@ -167,22 +187,37 @@
   .quiet:disabled,
   .quiet[aria-disabled="true"]:not([data-settling]),
   .danger:disabled,
-  .danger[aria-disabled="true"]:not([data-settling]) {
-    border-color: var(--ui-line);
+  .danger[aria-disabled="true"]:not([data-settling]),
+  .dangerQuiet:disabled,
+  .dangerQuiet[aria-disabled="true"]:not([data-settling]) {
+    border-color: var(--outline-off-edge);
+    background: var(--outline-off-ground);
     color: var(--ui-text-quiet);
   }
 
   .outlineOnInk {
     border-color: var(--edge-on-ink);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .outlineOnInk:active:not(:disabled):not([aria-disabled="true"]) {
     background: var(--ink-raised);
   }
 
+  /* The public site's outline on its navy: white words and a white edge at 55%. */
+  .outlineOnNavy {
+    border-color: var(--white-055);
+    color: var(--white-000);
+  }
+
+  .outlineOnNavy:active:not(:disabled):not([aria-disabled="true"]) {
+    background: var(--ink-raised);
+  }
+
   .outlineOnInk:disabled,
   .outlineOnInk[aria-disabled="true"]:not([data-settling]),
+  .outlineOnNavy:disabled,
+  .outlineOnNavy[aria-disabled="true"]:not([data-settling]),
   .dangerOnInk:disabled,
   .dangerOnInk[aria-disabled="true"]:not([data-settling]) {
     border-color: var(--ink-disabled);
@@ -193,7 +228,7 @@
   .dangerOnInk {
     border: var(--rule-strong) solid var(--error-on-ink);
     font-weight: var(--control-weight);
-    color: var(--paper);
+    color: var(--on-ink);
   }
 
   .dangerOnInk:active:not(:disabled):not([aria-disabled="true"]) {
@@ -205,6 +240,11 @@
     color: var(--ui-error);
   }
 
+  .dangerQuiet {
+    border-color: var(--outline-edge);
+    color: var(--ui-error);
+  }
+
   /* ---- A pointer resting on it: at a desk, never a finger's lingering tap ----- */
 
   @media (hover: hover) {
@@ -213,11 +253,19 @@
     }
 
     .light:hover:not(:disabled):not([aria-disabled="true"]) {
-      background: var(--paper-shade);
+      background: var(--on-ink-pressed);
     }
 
     .gold:hover:not(:disabled):not([aria-disabled="true"]) {
       box-shadow: inset 0 0 0 var(--hairline) var(--ink-deep);
+    }
+
+    .goldOnNavy:hover:not(:disabled):not([aria-disabled="true"]) {
+      background: var(--gilt-hover);
+    }
+
+    .outlineOnNavy:hover:not(:disabled):not([aria-disabled="true"]) {
+      border-color: var(--white-000);
     }
 
     .destructive:hover:not(:disabled):not([aria-disabled="true"]) {
@@ -226,7 +274,8 @@
 
     .outline:hover:not(:disabled):not([aria-disabled="true"]),
     .quiet:hover:not(:disabled):not([aria-disabled="true"]),
-    .danger:hover:not(:disabled):not([aria-disabled="true"]) {
+    .danger:hover:not(:disabled):not([aria-disabled="true"]),
+    .dangerQuiet:hover:not(:disabled):not([aria-disabled="true"]) {
       background: var(--ui-shade);
     }
 

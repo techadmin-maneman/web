@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { clientInboxOf } from "../../../src/domain/clients/app-alerts.ts";
 import { composeMoveProposed } from "../../../src/domain/messages/move-proposal-text.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import type { App } from "../../../src/http/context.ts";
@@ -104,6 +105,10 @@ describe("a move to another day ops ask the client to confirm", () => {
 
     const message = await env.DB.prepare("SELECT id, kind, subject_kind, subject_id FROM outbound_messages").first();
     expect(message).toMatchObject({ kind: "move_proposed", subject_kind: "move_proposal", subject_id: proposalId });
+    // Its alert in the client's app opens the visit (docs/decisions/0255-client-alerts-and-push.md).
+    expect(await clientInboxOf(env.DB, ROHIT, NOW)).toEqual([
+      expect.objectContaining({ kind: "move_proposed", visit_id: A }),
+    ]);
     expect(await composeMoveProposed(env.DB, proposalId, ROHIT, NOW)).toEqual({
       template: "move_proposed_v1",
       // The morning's first start, and the arrival window after it.
@@ -168,6 +173,13 @@ describe("a move to another day ops ask the client to confirm", () => {
     const answer = await propose(toSameerWednesdayMorning(A));
     expect(await answer.json()).toMatchObject({ client_notice: "call" });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first("n")).toBe(0);
+    // Told in their app alone, as they agreed to no WhatsApp (docs/decisions/0255-client-alerts-and-push.md).
+    const alerts = await env.DB.prepare("SELECT kind, subject_kind, subject_id FROM client_app_alerts").all();
+    expect(alerts.results).toEqual([expect.objectContaining({ kind: "move_proposed", subject_kind: "move_proposal" })]);
+    // The alert is all they hear of it, so it opens the visit they are to answer about.
+    expect(await clientInboxOf(env.DB, ROHIT, NOW)).toEqual([
+      expect.objectContaining({ kind: "move_proposed", visit_id: A }),
+    ]);
   });
 });
 

@@ -7,7 +7,7 @@ import { MINUTE_MS } from "../lib/durations.ts";
 import type { Pin } from "../lib/geo.ts";
 import { indiaTime } from "../lib/india-time.ts";
 import { minuteOf } from "./day-plan.ts";
-import { driveMinutes, type DriveEstimate } from "./drive-estimate.ts";
+import { driveKm, driveMinutes, type DriveEstimate } from "./drive-estimate.ts";
 import type { BookingRules } from "./start-times.ts";
 
 /** The statuses of a job still to do, or under way. */
@@ -54,6 +54,8 @@ export function nextJobs(
 export interface DriveTo {
   /** The drive to the job, in minutes: from the job before it, or from home for the day's first. */
   readonly drive_minutes: number;
+  /** How far the drive goes by road, in km; null where either end has no pin and the least drive stands in. */
+  readonly drive_km: number | null;
   /** When to set off to reach it by its start. */
   readonly leave_by: string;
 }
@@ -80,6 +82,11 @@ export function drivesTo(
         : doneAt(before, rules.booking.wrap_up);
     const drive =
       from === null || job.pin === null ? rules.drive.least : driveMinutes(from, job.pin, hourOf(setsOff), rules.drive);
-    return { drive_minutes: drive, leave_by: new Date(Date.parse(job.startsAt) - drive * MINUTE_MS).toISOString() };
+    const km = from === null || job.pin === null ? null : driveKm(from, job.pin, rules.drive);
+    return {
+      drive_minutes: drive,
+      drive_km: km,
+      leave_by: new Date(Date.parse(job.startsAt) - drive * MINUTE_MS).toISOString(),
+    };
   });
 }

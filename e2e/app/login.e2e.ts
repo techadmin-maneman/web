@@ -6,6 +6,7 @@
 import type { Page } from "@playwright/test";
 import { DUMMY_TOKEN, expect, randomMobile, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
+import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { CODE } from "./signed-in.ts";
 import { bookedNumber } from "./booked-numbers.ts";
 import { holdOpen } from "./one-tap.ts";
@@ -31,10 +32,10 @@ async function enter(page: Page, code: string): Promise<void> {
 test("a booked number logs in with its code and lands on its consultation", async ({ page }) => {
   const mobile = bookedNumber();
   await sendCode(page, mobile);
-  await expect(page.getByText(`If +91 ${mobile.slice(0, 2)}xxx x${mobile.slice(-4)} has a booking`)).toBeVisible();
+  await expect(page.getByText(`If +91 ${mobile.slice(0, 2)}xxx x${mobile.slice(-4)} has a visit booked`)).toBeVisible();
   await enter(page, CODE);
 
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.consultation.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.consultation.label })).toBeVisible();
   await expect(page.getByText("Morning, 9 am–12 noon")).toBeVisible();
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
   await expect(page.getByText(appCopy.home.consultation.free, { exact: true })).toBeVisible();
@@ -43,7 +44,7 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByRole("link", { name: appCopy.titles.profile })).toHaveText("RM");
   await expect(page.getByRole("link", { name: appCopy.home.reschedule })).toHaveAttribute(
     "href",
-    /^https:\/\/wa\.me\/17116660760\?text=/,
+    /^https:\/\/wa\.me\/919034572990\?text=/,
   );
 });
 
@@ -73,16 +74,16 @@ test("a session that ends mid-use goes back to the login, says why, and returns 
 
   // The session ends while the app is open: it ran out, or was ended on another phone.
   await page.context().clearCookies();
-  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.payments }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.photos }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
   await expect(page.getByText(appCopy.login.mobile.ended)).toBeVisible();
   expect(await page.evaluate(() => caches.has("mm-app-home"))).toBe(false);
-  await expect(page).toHaveURL(/\/payments$/);
+  await expect(page).toHaveURL(/\/photos$/);
 
   await page.getByRole("textbox", { name: appCopy.login.mobile.label }).fill(mobile);
   await page.getByRole("button", { name: appCopy.login.mobile.send }).click();
   await enter(page, CODE);
-  await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
+  await expect(page.getByText(appCopy.empty.photos.lines[0])).toBeVisible();
 });
 
 test("logging out takes the API’s word for it: offline it waits, and a refusal keeps the client in", async ({
@@ -91,7 +92,7 @@ test("logging out takes the API’s word for it: offline it waits, and a refusal
   await sendCode(page, bookedNumber());
   await enter(page, CODE);
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
-  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.profileMenu.account })).toBeVisible();
   const logOut = page.getByRole("button", { name: appCopy.profile.logout });
 
   await page.context().setOffline(true);
@@ -104,31 +105,52 @@ test("logging out takes the API’s word for it: offline it waits, and a refusal
   );
   await logOut.click();
   await expect(page.getByRole("alert")).toHaveText(appCopy.profile.logoutFailed);
-  await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
+  await expect(page.getByRole("link", { name: appCopy.profileMenu.account })).toBeVisible();
 });
 
-test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ page }) => {
+// Before the consultation, the site's try-on, whose look comes back to Photos; once consulted, not on Home.
+test("offers a lead the try-on from Home until the consultation", async ({ page }) => {
+  await sendCode(page, bookedNumber());
+  await enter(page, CODE);
+  const tryOn = page.getByRole("link", { name: new RegExp(`^${appCopy.home.rows.tryOn}`) });
+  await expect(tryOn).toHaveAttribute("href", appCopy.TRY_ON_URL.local);
+  await page.route("**/api/me", async (route) => {
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}/api/me`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
+    const me = (await answer.json()) as Record<string, unknown>;
+    const consulted = { date: "2026-10-01", technician: null, recommended: null };
+    await route.fulfill({ response: answer, json: { ...me, consulted } });
+  });
+  await page.reload();
+  await expect(page.getByRole("link", { name: appCopy.hairSystems.compare })).toBeVisible();
+  await expect(tryOn).toHaveCount(0);
+});
+
+test("the tabs reach Visits, the empty Photos and Rewards, and Payments sits under the profile", async ({ page }) => {
   await sendCode(page, bookedNumber());
   await enter(page, CODE);
   const tabs = page.getByRole("navigation");
 
   await tabs.getByRole("link", { name: appCopy.titles.visits }).click();
-  await expect(page.getByText("Consultation · 9 am–12 noon")).toBeVisible();
+  await expect(page.getByText(/day · 9\sam–12\snoon$/)).toBeVisible();
   await expect(tabs.getByRole("link", { name: appCopy.titles.visits })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: appCopy.empty.photos.title }).click();
-  await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
+  await expect(page.getByText(appCopy.empty.photos.lines[0])).toBeVisible();
   // Nothing to show yet, so the site's try-on, whose look comes back here.
   await expect(page.getByRole("link", { name: appCopy.empty.photos.tryOn })).toHaveAttribute(
     "href",
     "http://127.0.0.1:4321/try",
   );
-  await tabs.getByRole("link", { name: appCopy.titles.payments }).click();
-  await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
-  await tabs.getByRole("link", { name: appCopy.titles.refer }).click();
-  // Refer is the invite itself now; who has been fitted is a page of its own.
+  await tabs.getByRole("link", { name: appCopy.titles.rewards }).click();
+  // Rewards is the invite itself; who has been fitted is a page of its own.
   await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
-  await page.goBack();
+  // A lead's profile lists no payments yet; the page is there all the same.
+  await page.goto("/profile/payments");
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
 });
 
 test("a wrong code says so, in the design’s words, and the fifth voids it", async ({ page }) => {
@@ -193,7 +215,7 @@ test("says to use the last code when no other can be sent just now", async ({ pa
   await expect(page.getByRole("alert")).toHaveText(appCopy.login.code.limited);
   await expect(page.getByRole("link", { name: appCopy.login.messageUs })).toHaveAttribute(
     "href",
-    "https://wa.me/17116660760",
+    "https://wa.me/919034572990",
   );
 });
 
@@ -207,13 +229,13 @@ test("a number out of codes for the day is told so, with WhatsApp under the line
   await expect(page.getByRole("alert")).toHaveText(appCopy.login.mobile.errors.rate_limited);
   await expect(page.getByRole("link", { name: appCopy.login.messageUs })).toHaveAttribute(
     "href",
-    "https://wa.me/17116660760",
+    "https://wa.me/919034572990",
   );
 });
 
 test("a number with no booking sees the same screen, and no code opens it", async ({ page }) => {
   await sendCode(page, randomMobile());
-  await expect(page.getByText("has a booking with us, a code is on its way on WhatsApp.")).toBeVisible();
+  await expect(page.getByText("has a visit booked with us, a code is on its way on WhatsApp.")).toBeVisible();
   await enter(page, CODE);
   await expect(page.getByRole("alert")).toHaveText("That code didn’t match. 4 tries left.");
 });
@@ -239,7 +261,7 @@ test("A3 is reached by choice, and points to booking and WhatsApp", async ({ pag
   );
   await expect(page.getByRole("link", { name: appCopy.login.help.message })).toHaveAttribute(
     "href",
-    "https://wa.me/17116660760",
+    "https://wa.me/919034572990",
   );
   await page.getByRole("button", { name: appCopy.login.code.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.code.title })).toBeVisible();
@@ -318,7 +340,7 @@ test("says the code is read automatically only when it comes by SMS, the one a p
 
 test("names each login screen in the browser’s title, and puts focus where the client carries on", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Your mobile number · Mane Man");
+  await expect(page).toHaveTitle("Sign in · Mane Man");
   await sendCode(page, bookedNumber());
   await expect(page).toHaveTitle("Enter the code · Mane Man");
   const field = page.getByRole("textbox", { name: appCopy.login.code.label });
@@ -329,7 +351,7 @@ test("names each login screen in the browser’s title, and puts focus where the
   await expect(field).toBeFocused();
 
   await page.getByRole("button", { name: appCopy.login.code.noBooking }).click();
-  await expect(page).toHaveTitle("No booking on this number? · Mane Man");
+  await expect(page).toHaveTitle(`${appCopy.login.code.noBooking} · Mane Man`);
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.code.noBooking })).toBeFocused();
   await page.getByRole("button", { name: appCopy.login.code.back }).click();
   await expect(field).toBeFocused();

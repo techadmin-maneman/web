@@ -1,5 +1,5 @@
-// A visit still to come, on ink, as Home draws Home's next one: its date and window, its technician and
-// length, where, and Reschedule and Add a note. Home shows the next; an upcoming visit's own page shows its own.
+// A visit still to come, on navy, as Home draws Home's next one (design/client-redesign, Home): its day and how far
+// off, when, what and how long, where, its technician, and Change and Add a note. Home shows the next; an upcoming visit's own page shows its own.
 // A consultation and fit in one visit says what it costs once fitted, and how it is paid.
 //
 // While self-serve booking is on, Reschedule opens the move sheet, from which the visit can be cancelled
@@ -10,17 +10,20 @@
 // nothing more.
 
 import { ChangeSheet, type ChangingVisit, NoteSheet } from "../booking/index.ts";
+import { CLIENT_ICONS, GLYPHS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
-import { shortDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { Icon } from "@maneman/ui/Icon";
+import { apiNow } from "@maneman/web-kit/clock";
+import { dayMonth, shortDate, todayInIndia, weekdayName } from "@maneman/web-kit/dates";
+import { useState, type ReactNode } from "react";
 import type { OneVisitPrice, VisitSummary } from "../api.ts";
-import { arrivalHours, home, messages, note, visits } from "../content.ts";
-import { rupees } from "@maneman/web-kit/money";
+import { arrivalHours, home, messages, note } from "../content.ts";
 import { oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import { oneVisitLines } from "./one-visit-words.ts";
 import { ProposedMove } from "./ProposedMove.tsx";
+import { paidLine } from "./paid-line.ts";
 import styles from "./home.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
 
@@ -30,6 +33,7 @@ export function changingOf(visit: VisitSummary, what: string): ChangingVisit | n
   return {
     id: visit.id,
     type: visit.type,
+    name: what,
     date: visit.date,
     message: messages.reschedule(what, shortDate(visit.date)),
   };
@@ -118,7 +122,12 @@ function NoteOnWhatsApp({ message }: { message: string }) {
  * on WhatsApp. Tapped offline, it opens WhatsApp, which keeps the note until the phone is back online. A sheet
  * already open stays open when the connection drops, with what the client has written.
  */
-function AddNote(props: { what: string; date: string; noting: NotingVisit | null; onNoted?: (note: string) => void }) {
+export function AddNote(props: {
+  what: string;
+  date: string;
+  noting: NotingVisit | null;
+  onNoted?: (note: string) => void;
+}) {
   const { me, offline } = useSession();
   const [open, setOpen] = useState(false);
   const message = messages.note(props.what, props.date);
@@ -213,49 +222,80 @@ export function OneVisitTerms({ price }: { price: OneVisitPrice }) {
   );
 }
 
-/** Home's card: the visit, its technician, and what can still be done about it. */
+/** Days from today in India to the visit's day: 0 on the day. */
+export function daysAway(date: string): number {
+  return Math.round((Date.parse(date) - Date.parse(todayInIndia(apiNow()))) / 86_400_000);
+}
+
+/** One line of the card's facts, with its icon. */
+export function Fact({ icon, children }: { icon: string; children: ReactNode }) {
+  return (
+    <li className={styles.fact}>
+      <Icon className={styles.factIcon} d={icon} size="sm" />
+      <span>{children}</span>
+    </li>
+  );
+}
+
+/** Who is coming, under a rule. */
+export function Technician({ technician }: { technician: NonNullable<VisitSummary["technician"]> }) {
+  return (
+    <div className={styles.technician}>
+      <span className={styles.initials} aria-hidden="true">
+        {technician.initials}
+      </span>
+      <div>
+        <p className={styles.who}>{firstNameOf(technician.name)}</p>
+        <p className={styles.length}>{home.technicianFor}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Home's card on navy: what the visit is, its day and how far off, when the technician comes, what it is and how long,
+ * where, what it costs, who is coming, and what can still be done about it. `label` names it, as Home heads its card.
+ */
 export function VisitCard({
   visit,
+  label,
   onChanged,
 }: {
   visit: VisitSummary;
+  label?: { readonly id: string; readonly text: string };
   onChanged?: (change: "moved" | "cancelled") => void;
 }) {
   const date = shortDate(visit.date);
   const what = summaryName(visit);
   const oneVisit = oneVisitOf(visit);
+  const begun = hasBegun(visit);
   // A note just saved, shown before the visit is read again.
   const [noted, setNoted] = useState<string | null>(null);
   const clientNote = noted ?? visit.client_note;
   return (
     <div className={styles.card}>
-      <p className={styles.date}>{date}</p>
-      <p className={styles.window}>{whenText(visit)}</p>
-      <div className={styles.technician}>
-        {visit.technician !== null && (
-          <span className={styles.initials} aria-hidden="true">
-            {visit.technician.initials}
-          </span>
+      {label !== undefined && (
+        <h2 className={styles.eyebrow} id={label.id}>
+          {label.text}
+        </h2>
+      )}
+      <p className={styles.date}>{`${weekdayName(visit.date)} ${dayMonth(visit.date)}`}</p>
+      {!begun && <p className={styles.away}>{home.away(daysAway(visit.date))}</p>}
+      <ul className={styles.facts}>
+        <Fact icon={GLYPHS.clock}>
+          {begun ? whenText(visit) : home.next.arrives(arrivalHours(visit), visit.length_minutes)}
+        </Fact>
+        {(oneVisit !== null || visit.type === "first_fit" || visit.type === "replacement") && (
+          <Fact icon={CLIENT_ICONS.layers}>{oneVisit === null ? visitTitle(visit) : what}</Fact>
         )}
-        <div>
-          {visit.technician !== null && <p className={styles.who}>{firstNameOf(visit.technician.name)}</p>}
-          <p className={styles.length}>
-            {home.next.length(oneVisit === null ? visitTitle(visit) : what, visit.length_minutes)}
-          </p>
-        </div>
-      </div>
-      {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}
+        {visit.place !== "" && <Fact icon={GLYPHS.pin}>{visit.place}</Fact>}
+        {paidLine(visit) !== null && <Fact icon={CLIENT_ICONS.receipt}>{paidLine(visit)}</Fact>}
+      </ul>
       {oneVisit !== null && <OneVisitTerms price={oneVisit} />}
-      {visit.pay_at_visit !== null && (
-        <div className={styles.terms}>
-          <p>{visits.payAtVisit(rupees(visit.pay_at_visit))}</p>
-        </div>
-      )}
       {clientNote !== null && <p className={styles.place}>{note.shown(clientNote)}</p>}
-      {!hasBegun(visit) && visit.proposed_move !== null && (
-        <ProposedMove visitId={visit.id} proposal={visit.proposed_move} />
-      )}
-      {!hasBegun(visit) && (
+      {visit.technician !== null && <Technician technician={visit.technician} />}
+      {!begun && visit.proposed_move !== null && <ProposedMove visitId={visit.id} proposal={visit.proposed_move} />}
+      {!begun && (
         <Actions
           what={what}
           date={date}

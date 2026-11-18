@@ -3,7 +3,7 @@
 
 import type { ShortReason } from "../../policy/consumable-shortfall.ts";
 import type { FinishAsk } from "../../policy/finish-the-work.ts";
-import { PARTIAL_REASONS } from "../../config/job-sheet.ts";
+import { NOT_FITTED_REASONS, PARTIAL_REASONS } from "../../config/job-sheet.ts";
 import type { BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import type { RescheduleReason } from "../dispatch/reschedule-requests.ts";
@@ -32,6 +32,7 @@ export type TaskFacts =
       readonly first_fit: { readonly window: BookingWindow | null } | null;
     }
   | { readonly group: "replacement_order"; readonly piece_code: string; readonly due_on: Day }
+  | { readonly group: "made_to_order_ask"; readonly kind: "first_fit" | "replacement"; readonly name: string }
   | { readonly group: "recall_call"; readonly piece_codes: string[] }
   | { readonly group: "stock_at_risk"; readonly consumable_code: string | null; readonly name: string | null }
   | { readonly group: "referral_review"; readonly signal: string | null }
@@ -71,6 +72,8 @@ export type TaskFacts =
       readonly reason_code: string | null;
       /** The reason in the words ops gave it, or the job sheet's. */
       readonly reason: string | null;
+      /** A fit closed with "Can't fit today", why, in the job sheet's words; null for any other close (ADR 0270). */
+      readonly not_fitted: string | null;
       /** How the technician suggested finishing it (docs/decisions/0246-closed-and-sent-back.md); null for none. */
       readonly ask: FinishAsk | null;
     }
@@ -81,6 +84,39 @@ export type TaskFacts =
       readonly technician: string;
       /** Each consumable recorded below what was expected; empty where nothing was used. */
       readonly short: { name: string; expected: number; used: number }[];
+    }
+  | {
+      readonly group: "fit_unsigned";
+      readonly kind: VisitType;
+      /** Why the client did not sign, as the technician recorded it. */
+      readonly reason: string;
+      readonly technician: string;
+      /** What the client last said wasn't right before then, in their words; null where they never flagged. */
+      readonly flag: string | null;
+    }
+  | {
+      readonly group: "low_rating";
+      readonly kind: VisitType;
+      /** The client's stars, low under ops' setting when given. */
+      readonly stars: number;
+      readonly technician: string;
+      /** India's day of the visit. */
+      readonly visited_on: Day;
+    }
+  | {
+      readonly group: "fit_guarantee_claim";
+      /** The report that opened the claim, as MM-ISS-0032. */
+      readonly reference: string;
+      /** India's day the claimed first fit was done. */
+      readonly fitted_on: Day;
+      /** The fit's sign-off, as it stands; null where none was asked. */
+      readonly sign_off: "asked" | "signed" | "flagged" | "declined" | null;
+      /** The client's Care chat, which the claim's photographs are read beside. */
+      readonly conversation_id: string | null;
+      /** How many photographs the claim's reports carry. */
+      readonly photos: number;
+      /** The claim's reports, as MM-ISS-0032, whose photographs its drawer shows. */
+      readonly references: string[];
     }
   | { readonly group: "at_risk_client"; readonly last_visit_at: Instant; readonly due_on: Day }
   | {
@@ -131,7 +167,9 @@ export function factsOf(row: FactsRow, schedule: SlotSchedule): TaskFacts {
   if (row.group === "partial_visit") {
     const code = typeof written.reason_code === "string" ? written.reason_code : null;
     const label = PARTIAL_REASONS.find((each) => each.id === code)?.label ?? code;
-    return { ...written, reason: written.reason ?? label } as TaskFacts;
+    const notFitted = typeof written.not_fitted === "string" ? written.not_fitted : null;
+    const notFittedLabel = NOT_FITTED_REASONS.find((each) => each.id === notFitted)?.label ?? notFitted;
+    return { ...written, reason: written.reason ?? label, not_fitted: notFittedLabel } as TaskFacts;
   }
   if (row.group === "first_fit_to_book" && typeof written.consulted_at === "string") {
     const window = offeredWindow("first_fit", schedule.at(written.consulted_at).window);

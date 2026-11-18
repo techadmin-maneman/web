@@ -3,7 +3,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
-import { ONE_VISIT_NAME, type VisitType, VISIT_TYPE_NAMES } from "../config/visit-types.ts";
+import { isAFitting, ONE_VISIT_NAME, type VisitType, VISIT_TYPE_NAMES } from "../config/visit-types.ts";
 import { bookableTypes } from "../domain/booking/availability.ts";
 import { startBooking } from "../domain/booking/bookings.ts";
 import { checkoutHold } from "../domain/booking/holds.ts";
@@ -12,6 +12,8 @@ import { type PricedService, bookableService, offeredProducts, serviceOf } from 
 import { type Price, lateFeeOn } from "../domain/money/price-book.ts";
 import type { OpsInputs } from "../domain/platform/ops-settings.ts";
 import { bookableDays } from "../domain/visits/next-visit.ts";
+import { madeToOrder, stockFitsFrom } from "../domain/inventory/stock-gap.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import {
   type ChangeableVisit,
   type ChangeTerms,
@@ -22,10 +24,13 @@ import {
 import { type SoldTerms, LATE_FEES } from "../policy/moving-a-visit.ts";
 import { bookHold } from "./book-hold.ts";
 import type { AppEnv } from "./context.ts";
+import { errorBody, refuse } from "./errors.ts";
 import { opsInputs } from "./ops-inputs.ts";
 import { packageWanted } from "../domain/clients/client-package.ts";
 import { pricedFor } from "../domain/booking/client-prices.ts";
 import { cityOfPerson } from "../domain/cities/cities.ts";
+import { currentAddress } from "../domain/clients/profile.ts";
+import { isServed } from "../domain/clients/service-area.ts";
 
 /**
  * The terms for moving one of the client's visits of this type now, and the visit as a move sees it; null if it
@@ -86,17 +91,34 @@ export async function startCheckout(c: Context<AppEnv>, holdId: string, personId
 /** The days this client may book a visit of this type on, by the figures ops set (src/domain/visits/next-visit.ts). */
 export const rangeFor = async (c: Context<AppEnv>, personId: string, type: VisitType) =>
   bookableDays({ db: c.env.DB, personId, type, now: c.var.deps.now(), days: (await opsInputs(c)).nextVisitDays });
+
+/**
+ * The days a visit sold as `sold` may be booked on: a replacement's open no sooner than a fit may use the hair system
+ * of the package it is sold as, where none is in stock or on its way.
+ */
+export async function stockedRange(
+  c: Context<AppEnv>,
+  personId: string,
+  sold: { readonly type: VisitType; readonly tier: string | null },
+  range: { readonly opens: string; readonly last: string },
+): Promise<{ readonly opens: string; readonly last: string }> {
+  if (sold.type !== "replacement") return range;
+  const today = indiaDate(c.var.deps.now());
+  const fits = await stockFitsFrom(c.env.DB, { personId, product: sold.tier, today });
+  return fits === null || fits <= range.opens ? range : { ...range, opens: fits };
+}
 /**
  * The service a client may book, offered that day with its price then: of a kind they may book now, the tier named,
- * or the kind's standard one where they name none. Else why not: no_product for a first fit on a day the console
- * offers no hair system, not_bookable for anything else.
+ * or the kind's standard one where they name none. Else why not: made_to_order for a fit whose hair system no stock
+ * code is made to the client's size, which ops order and book on WhatsApp; no_product for a first fit on a day the
+ * console offers no hair system; not_bookable for anything else.
  */
 export async function bookable(
   c: Context<AppEnv>,
   personId: string,
   wanted: { readonly type: VisitType; readonly tier: string | undefined },
   on: string,
-): Promise<PricedService | "no_product" | "not_bookable"> {
+): Promise<PricedService | "made_to_order" | "no_product" | "not_bookable"> {
   const db = c.env.DB;
   const [onPackage, city] = await Promise.all([
     packageWanted(db, { kind: wanted.type, tier: wanted.tier, personId }),
@@ -107,9 +129,38 @@ export async function bookable(
     bookableService(db, { kind: wanted.type, tier: wanted.tier, on, onPackage, city }),
   ]);
   if (!types.includes(wanted.type)) return "not_bookable";
-  if (service !== null) return (await pricedFor(db, [service], { personId, on, city }))[0] ?? service;
+  if (service !== null) {
+    if (isAFitting(wanted.type) && (await madeToOrder(db, personId, service.tier))) return "made_to_order";
+    return (await pricedFor(db, [service], { personId, on, city }))[0] ?? service;
+  }
   const noProduct = wanted.type === "first_fit" && (await offeredProducts(db, on, city)).length === 0;
   return noProduct ? "no_product" : "not_bookable";
+}
+
+/** Where the visit would be fitted, as a refusal of it says: no address yet, or one we do not come to; null for one we do. */
+export type AddressRefusal = "address_required" | "not_served" | null;
+
+/**
+ * A visit `bookable` refused, answered with its reason; for a hair system made to order, which is ordered only for an
+ * address we come to, the address's own refusal is said first.
+ */
+export async function notOffered(
+  c: Context<AppEnv>,
+  why: Exclude<Awaited<ReturnType<typeof bookable>>, PricedService>,
+  address: AddressRefusal | (() => Promise<AddressRefusal>),
+) {
+  if (why === "made_to_order") {
+    const first = typeof address === "function" ? await address() : address;
+    if (first !== null) return refuse(c, first);
+  }
+  return c.json(errorBody(why, c.var.requestId), 422);
+}
+
+/** Whether the client's address is in a pincode we do not come to; false while they have given none. */
+export async function addressOutsideArea(db: D1Database, personId: string): Promise<boolean> {
+  const address = await currentAddress(db, personId);
+  if (address === null) return false;
+  return !(await isServed(db, address.pincode));
 }
 
 /** A moved visit's own service, by its name as it is now, with the length the visit keeps. */

@@ -17,17 +17,16 @@ import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { steps as copy, visit } from "../content.ts";
-import { NoSignal } from "../frame/Banners.tsx";
 import { Safety } from "../frame/Safety.tsx";
 import { kindNameLower } from "../lib/kind.ts";
 import { done, sentBackFor } from "../lib/progress.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { routeOf, usePath } from "../route.ts";
-import { useSession } from "../session.ts";
 import { keptJob } from "../store/jobs.ts";
 import { screensOf } from "../visit/index.ts";
 import styles from "./step-frame.module.css";
+import { theirs } from "../lang/index.ts";
 
 /** The slide's 300 ms and a little: a second tap of a gloved double tap lands inside it. */
 const SETTLE_MS = 350;
@@ -107,6 +106,10 @@ function labelOf(where: Where | null): string {
   return where.sentBack === null ? visit.close : visit.sendFix;
 }
 
+/** What ops said when they sent the step back, their words as they wrote them, ended as a sentence. */
+const sentBackLine = (reason: string | null): string | null =>
+  reason === null ? null : visit.fixIt(theirs(/[.!?]$/.test(reason.trim()) ? reason.trim() : `${reason.trim()}.`));
+
 export function StepFrame({
   title,
   at,
@@ -139,12 +142,10 @@ export function StepFrame({
 }) {
   const heading = useScreen(title);
   const settled = useSettled(page);
-  const { offline } = useSession();
   const where = useWhere();
   const label = action ?? labelOf(where);
   // A refusal says what to put right; failing one, what ops said when they sent the step back.
-  const said =
-    notice ?? (where?.sentBack === undefined || where.sentBack === null ? null : visit.sentBack(where.sentBack));
+  const said = notice ?? sentBackLine(where?.sentBack ?? null);
   return (
     <main className={styles.screen} data-look="light">
       <header className={styles.head}>
@@ -161,11 +162,10 @@ export function StepFrame({
         </div>
         {where !== null && <Safety jobId={where.job.id} className={styles.safety} />}
       </header>
-      {offline && <NoSignal />}
       {where !== null && <StepBar where={where} />}
       <div className={styles.body}>
         {said !== null && (
-          <ProblemCard className={styles.notice} title={visit.plan.needsFix} live>
+          <ProblemCard className={styles.notice} title={visit.refused} live>
             {said}
           </ProblemCard>
         )}

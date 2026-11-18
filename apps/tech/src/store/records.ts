@@ -28,6 +28,8 @@ export interface KeptArrival {
   readonly arrival?: CheckIn;
   /** When the technician tapped Call at the door, which a no-show needs; a record kept before it was asked has none. */
   readonly called_at?: number;
+  /** When the door's photograph was taken, which its close repeats once the photograph has gone up from the phone. */
+  readonly photographed_at?: number;
 }
 
 /** When the technician took the outcome, which the close-out's duration runs to, and what was chosen, which it repeats. */
@@ -95,7 +97,7 @@ export type DeviceRecord =
       readonly fit: FitForm;
       readonly history: HistoryForm;
     }
-  /** The checklist's ticks as made, so closing the app loses none; gone once sent (../steps/Checklist.tsx). */
+  /** The guided tasks passed, so the app opens on the task it was on; gone once sent (../steps/Checklist.tsx). */
   | { readonly key: "checklist_draft"; readonly job_id: string; readonly done: readonly string[] }
   /** A consultation's pick on Options, by the product's tier, until its close is sent (../steps/Outcome.tsx). */
   | { readonly key: "options_draft"; readonly job_id: string; readonly picked: string | null }

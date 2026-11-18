@@ -10,7 +10,8 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { useEffect, useState, type ReactNode } from "react";
 import { api, type Hold } from "../api.ts";
-import { booking } from "../content.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { booking, missing } from "../content.ts";
 import { amountOff } from "../lib/money.ts";
 import shared from "./booking.module.css";
 import styles from "./code-box.module.css";
@@ -41,6 +42,59 @@ function Applied(props: {
       </TextButton>
       {props.children}
     </div>
+  );
+}
+
+/** The box: the code as typed, and Apply beside it, waiting for a code, with what is missing beneath. */
+function CodeForm(props: {
+  typed: string;
+  problem: string | null;
+  held: boolean;
+  sending: boolean;
+  onTyped: (typed: string) => void;
+  onApply: () => void;
+}) {
+  const empty = props.typed.trim() === "";
+  return (
+    <form
+      className={styles.code}
+      onSubmit={(event) => {
+        event.preventDefault();
+        props.onApply();
+      }}
+    >
+      <Field
+        label={copy.label}
+        error={props.problem}
+        announce
+        look={{ label: capsLook(shared.label), error: shared.problem }}
+      >
+        {(control) => (
+          <div className={styles.codeRow}>
+            <TextInput
+              {...control}
+              className={styles.codeInput}
+              autoCapitalize="characters"
+              autoComplete="off"
+              value={props.typed}
+              onChange={(event) => {
+                props.onTyped(event.target.value);
+              }}
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              size="control"
+              disabled={props.held || empty}
+              aria-describedby={describedBy("discount-code", empty)}
+            >
+              {props.sending ? copy.applying : copy.apply}
+            </Button>
+          </div>
+        )}
+      </Field>
+      <Missing id="discount-code" what={empty ? missing.discountCode : null} />
+    </form>
   );
 }
 
@@ -117,38 +171,16 @@ export function CodeBox(props: {
   }
 
   return (
-    <form
-      className={styles.code}
-      onSubmit={(event) => {
-        event.preventDefault();
-        void apply();
+    <CodeForm
+      typed={typed}
+      problem={problem}
+      held={busy || sending}
+      sending={sending}
+      onTyped={(value) => {
+        setTyped(value);
+        setProblem(null);
       }}
-    >
-      <Field
-        label={copy.label}
-        error={problem}
-        announce
-        look={{ label: capsLook(shared.label), error: shared.problem }}
-      >
-        {(control) => (
-          <div className={styles.codeRow}>
-            <TextInput
-              {...control}
-              className={styles.codeInput}
-              autoCapitalize="characters"
-              autoComplete="off"
-              value={typed}
-              onChange={(event) => {
-                setTyped(event.target.value);
-                setProblem(null);
-              }}
-            />
-            <Button type="submit" variant="outline" size="control" disabled={busy || sending || typed.trim() === ""}>
-              {sending ? copy.applying : copy.apply}
-            </Button>
-          </div>
-        )}
-      </Field>
-    </form>
+      onApply={() => void apply()}
+    />
   );
 }

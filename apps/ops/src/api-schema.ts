@@ -6390,7 +6390,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The labelled pieces fitted in the last year and how many failed, four ways */
+        /** The labelled pieces fitted in the last year and how many failed, five ways */
         get: {
             parameters: {
                 query?: never;
@@ -7540,7 +7540,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description window_closed: the client last wrote longer ago than the provider lets a reply in our own words through (WhatsApp's 24 hours) */
+                /** @description window_closed: the client has not written on WhatsApp within the time the provider lets a reply in our own words through (WhatsApp's 24 hours); words from the app do not count */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -7714,7 +7714,7 @@ export interface paths {
                         "application/json": components["schemas"]["ConversationThread"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: failure_reason is not on the failure list, or the client on the chat's number wears no hair system */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -11430,7 +11430,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -13071,7 +13071,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description not_found: no such client, or the client is outside the caller's cities */
+                /** @description not_found: no such client or piece of theirs, or the client is outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -13094,6 +13094,214 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/pieces/{code}/failure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a client's hair system failed, on a day, for a reason on the failure list */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PieceFailure"];
+                };
+            };
+            responses: {
+                /** @description The pieces, newest fit first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientPieces"];
+                    };
+                };
+                /** @description invalid_request: failure_reason not on the failure list, or failed_on before the fit or after today */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such client or piece of theirs, or the client is outside the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_changeable: the piece is marked failed already */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_changeable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        /** Take back a client's hair system's failure; one fitted over since is replaced when it came off */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Taken back */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such client or piece of theirs, or the client is outside the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_changeable: the piece is not marked failed */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_changeable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -14088,7 +14296,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -14186,7 +14394,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "partial_visit" | "consumables_short" | "at_risk_client" | "city_matter" | "kit_request" | "reschedule_request";
+                    group: "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "at_risk_client" | "city_matter" | "kit_request" | "reschedule_request" | "made_to_order_ask";
                     id: string;
                 };
                 cookie?: never;
@@ -14204,7 +14412,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description invalid_request: no reason, or a group whose tasks close only when their thing is done */
+                /** @description invalid_request: no reason, a group whose tasks close only when their thing is done, or a failure_reason on a task not a guarantee claim, not on the failure list, or for a fit with no hair system on record */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -16541,7 +16749,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
                 };
                 cookie?: never;
             };
@@ -16649,7 +16857,7 @@ export interface paths {
                             prices: components["schemas"]["Price"][];
                             /** Format: date */
                             today: string;
-                            max_amount_ex_gst: number;
+                            max_amount: number;
                             max_gst_percent: number;
                         };
                     };
@@ -21171,6 +21379,158 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/job-sheet/not-fitted-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Why a hair system could not be fitted today, the whole list in its order */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["JobSheetListChange"];
+                };
+            };
+            responses: {
+                /** @description The job sheet as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["JobSheet"];
+                    };
+                };
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/job-sheet/failure-reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Why a hair system failed, the whole list in its order */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["JobSheetListChange"];
+                };
+            };
+            responses: {
+                /** @description The job sheet as it now stands */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["JobSheet"];
+                    };
+                };
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stock": {
         parameters: {
             query?: never;
@@ -24485,6 +24845,192 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/conversations/{id}/report-photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The photographs of the reports a client's chat holds, oldest report first */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The photographs */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ReportPhotos"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conversations/{id}/report-photos/{report_id}/{n}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One photograph of a report the chat holds, never cached, its viewing logged as a client photograph's is */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    report_id: string;
+                    n: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such photograph in this chat */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description unavailable: the view could not be audited, so no photograph is served */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "unavailable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/supplier-scorecard": {
         parameters: {
             query?: never;
@@ -25744,7 +26290,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "made_to_order" | "not_made_to_order" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "already_rated" | "visit_not_done" | "rating_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -25986,8 +26532,41 @@ export interface components {
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
             proposed_move: components["schemas"]["ProposedMove"] | null;
+            /** @description The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone. */
+            latest_update: {
+                /** @enum {string} */
+                kind: "on_the_way" | "running_late" | "at_the_gate";
+                /** @description On the way: minutes away; running late: minutes late; null at the gate. */
+                minutes: number | null;
+                /**
+                 * Format: date-time
+                 * @description When the technician sent it.
+                 */
+                at: string;
+            } | null;
+            /** @description The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress. */
+            step: {
+                /** @description The step under way, counting from 1. */
+                index: number;
+                /** @description How many steps the client is told of. */
+                of: number;
+                /**
+                 * @description The step, as the app names it.
+                 * @enum {string}
+                 */
+                name: "before_photos" | "service" | "scalp" | "hair_profile" | "hair_system" | "fitting" | "after_photos" | "sign_off";
+            } | null;
+            /** @description Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise. */
+            waits_until: string | null;
+            /** @description A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none. */
+            sign_off: components["schemas"]["SignOff"] | null;
             /** @description On a closed consultation, why the client is not going ahead, in ops' words; null where none is kept. */
             lost_reason: {
+                code: string;
+                label: string;
+            } | null;
+            /** @description On a fit closed with "Can't fit today", why it was not fitted, in the job sheet's words; null where none is kept (ADR 0270). */
+            not_fitted_reason: {
                 code: string;
                 label: string;
             } | null;
@@ -26055,6 +26634,33 @@ export interface components {
              */
             expires_at: string;
         };
+        SignOff: {
+            /**
+             * @description asked: waiting for the client; signed: happy with the fit; flagged: something isn't right, which the technician puts right and asks again; declined: closed without it, with why.
+             * @enum {string}
+             */
+            state: "asked" | "signed" | "flagged" | "declined";
+            /** @description As the client last answered; null till then. */
+            checks: components["schemas"]["SignOffChecks"] | null;
+            /** @description What the client last said isn't right, in their words; kept once they sign. */
+            flag_text: string | null;
+            /** @description Why the client did not sign. */
+            declined_reason: string | null;
+            /** Format: date-time */
+            asked_at: string;
+            /** @description How many times it was asked: again after each flag. */
+            asks: number;
+            /** @description When the client signed in their app. */
+            signed_at: string | null;
+            /** @description The fit guarantee's days in force when it was signed or declined (ADR 0256); null before then. */
+            guarantee_days: number | null;
+        };
+        /** @description The hairline, the colour and blend, and that it is secure and comfortable: each ticked or not. */
+        SignOffChecks: {
+            hairline: boolean;
+            blend: boolean;
+            secure: boolean;
+        };
         VisitSummary: {
             /** Format: uuid */
             id: string;
@@ -26101,6 +26707,34 @@ export interface components {
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
             proposed_move: components["schemas"]["ProposedMove"] | null;
+            /** @description The technician's latest word while still to arrive (ADR 0145, 0255). Never where they are, nor their phone. */
+            latest_update: {
+                /** @enum {string} */
+                kind: "on_the_way" | "running_late" | "at_the_gate";
+                /** @description On the way: minutes away; running late: minutes late; null at the gate. */
+                minutes: number | null;
+                /**
+                 * Format: date-time
+                 * @description When the technician sent it.
+                 */
+                at: string;
+            } | null;
+            /** @description The step of the visit under way, by the plan the technician's app works (src/policy/visit-plan.ts); null unless in progress. */
+            step: {
+                /** @description The step under way, counting from 1. */
+                index: number;
+                /** @description How many steps the client is told of. */
+                of: number;
+                /**
+                 * @description The step, as the app names it.
+                 * @enum {string}
+                 */
+                name: "before_photos" | "service" | "scalp" | "hair_profile" | "hair_system" | "fitting" | "after_photos" | "sign_off";
+            } | null;
+            /** @description Checked in and not yet started: the last moment the technician waits at the door, the booked start or the check-in, whichever is later, plus the wait ops set (no_show_wait_min). Null otherwise. */
+            waits_until: string | null;
+            /** @description A fit's sign-off (ADR 0254): while the visit is under way, so the app can ask the client, and on the visit's own page once it is done. Null before the technician asks, and for a visit that takes none. */
+            sign_off: components["schemas"]["SignOff"] | null;
         };
         PaymentEntry: {
             /**
@@ -26203,6 +26837,8 @@ export interface components {
             disputable: boolean;
             /** @description When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed; null otherwise. */
             dispute_closed_at: string | null;
+            /** @description The last moment the charge may be disputed, by the dispute window ops set, while `disputable`; null otherwise. */
+            dispute_until: string | null;
         };
         RefundEntry: {
             /**
@@ -26680,7 +27316,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "photos_full" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "window_closed" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_consulted" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "already_served" | "already_scheduled" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "no_profile" | "made_to_order" | "not_made_to_order" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "sign_off_not_asked" | "sign_off_closed" | "sign_off_checks_open" | "already_rated" | "visit_not_done" | "rating_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "slot_times_in_use" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "paid_by_upi" | "not_due" | "already_paid" | "reference_used";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -27534,6 +28170,13 @@ export interface components {
                 failed: number;
                 rate_percent: number | null;
             }[];
+            /** @description Of every piece fitted, how many failed for each reason, by the failure list's words (ADR 0273); fitted is all of them. */
+            by_reason: {
+                name: string;
+                fitted: number;
+                failed: number;
+                rate_percent: number | null;
+            }[];
         };
         ExpiryRisk: {
             /** @description In paise. */
@@ -27682,6 +28325,10 @@ export interface components {
         ConversationThread: {
             conversation: components["schemas"]["Conversation"];
             items: components["schemas"]["ThreadItem"][];
+            /** @description The reason the close opens on: the latest report still open in the chat's (ADR 0259); null for none. */
+            close_reason: ("booking" | "move_or_cancel" | "fit_problem" | "aftercare" | "billing" | "sign_in" | "try_on" | "data_request" | "other") | null;
+            /** @description That report's category where it is about the hair system the client wears, which the close asks whether it failed (ADR 0273); null for none. */
+            piece_report: ("edges_lifting" | "shedding" | "colour") | null;
         };
         Conversation: {
             /** Format: uuid */
@@ -27742,6 +28389,8 @@ export interface components {
         ChatClose: {
             /** @enum {string} */
             reason: "booking" | "move_or_cancel" | "fit_problem" | "aftercare" | "billing" | "sign_in" | "try_on" | "data_request" | "other";
+            /** @description Where the hair system the client wears was at fault: why it failed, by a code of the job sheet's failure_reasons; it is marked failed today (ADR 0273). Left out where it was not. */
+            failure_reason?: string;
         };
         Conversations: {
             /** @description At most 50, the latest first. */
@@ -27996,6 +28645,8 @@ export interface components {
             }[];
             /** @description The landed steps ops may send back now: POST /api/visits/{id}/send-back. */
             may_send_back: ("before_photos" | "checklist" | "consumables" | "after_photos")[];
+            /** @description A fit's sign-off (ADR 0254): asked, flagged with the client's words, signed and when and where, or declined with why. Null before it is asked, and for a visit that takes none. */
+            sign_off: components["schemas"]["SignOff"] | null;
         };
         SendBack: {
             /**
@@ -28219,7 +28870,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;
@@ -28643,6 +29294,11 @@ export interface components {
         };
         ClientPieces: {
             pieces: components["schemas"]["Piece"][];
+            /** @description Why a hair system may have failed, as ops set them, in their order (ADR 0273). */
+            failure_reasons: {
+                code: string;
+                label: string;
+            }[];
         };
         Piece: {
             piece_code: string;
@@ -28654,6 +29310,15 @@ export interface components {
             failure_reason: string | null;
             /** @description When a later piece was fitted in its place. */
             replaced_at: string | null;
+        };
+        PieceFailure: {
+            /** @description By a code of the job sheet's failure_reasons. */
+            failure_reason: string;
+            /**
+             * Format: date
+             * @description The day in India it failed: not before its fit, nor after today.
+             */
+            failed_on: string;
         };
         Technicians: {
             technicians: {
@@ -28888,7 +29553,7 @@ export interface components {
             lapsed: number;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -28988,6 +29653,16 @@ export interface components {
             due_on: string;
         } | {
             /** @enum {string} */
+            group: "made_to_order_ask";
+            /**
+             * @description The visit it was asked at.
+             * @enum {string}
+             */
+            kind: "first_fit" | "replacement";
+            /** @description The hair system, by its package's name. */
+            name: string;
+        } | {
+            /** @enum {string} */
             group: "recall_call";
             piece_codes: string[];
         } | {
@@ -29078,6 +29753,8 @@ export interface components {
             reason_code: string | null;
             /** @description In the words ops gave it, or the job sheet's. */
             reason: string | null;
+            /** @description A fit closed with "Can't fit today", why, in the job sheet's words; null for any other close. */
+            not_fitted: string | null;
             /**
              * @description How the technician suggested finishing it: a time, or ops to call; null for none.
              * @enum {string|null}
@@ -29097,6 +29774,43 @@ export interface components {
                 expected: number;
                 used: number;
             }[];
+        } | {
+            /** @enum {string} */
+            group: "fit_unsigned";
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description Why the client did not sign, as the technician recorded it. */
+            reason: string;
+            technician: string;
+            /** @description What the client last said wasn't right before then; null where they never flagged. */
+            flag: string | null;
+        } | {
+            /** @enum {string} */
+            group: "low_rating";
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description The client's stars, low under ops' setting when given. */
+            stars: number;
+            technician: string;
+            /**
+             * Format: date
+             * @description India's day of the visit.
+             */
+            visited_on: string;
+        } | {
+            /** @enum {string} */
+            group: "fit_guarantee_claim";
+            /** @description The report that opened the claim, as MM-ISS-0032. */
+            reference: string;
+            /** Format: date */
+            fitted_on: string;
+            /** @enum {string|null} */
+            sign_off: "asked" | "signed" | "flagged" | "declined" | null;
+            /** @description The Care chat the photographs are read beside. */
+            conversation_id: string | null;
+            photos: number;
+            /** @description The claim's reports, as MM-ISS-0032, whose photographs its drawer shows. */
+            references: string[];
         } | {
             /** @enum {string} */
             group: "at_risk_client";
@@ -29165,6 +29879,8 @@ export interface components {
         TaskClosing: {
             /** @description Why no follow-up is booked, in ops' words: kept with the closing, blanked if the client is erased. */
             reason: string;
+            /** @description A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0273). */
+            failure_reason?: string;
         };
         OpenAlerts: {
             /** @description How many are open, all of them. */
@@ -29500,7 +30216,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;
@@ -29533,7 +30249,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;
@@ -29569,6 +30285,8 @@ export interface components {
             tier: string;
             /** @description In paise, before GST. */
             amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
             gst_percent: number;
             /**
              * Format: date
@@ -29585,7 +30303,8 @@ export interface components {
             item: "consultation" | "first_fit" | "service" | "replacement" | "hair_system" | "late_fee_first_fit" | "late_fee_replacement";
             /** @description For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard. */
             tier: string;
-            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
             gst_percent: number;
             /** Format: date */
             valid_from: string;
@@ -29598,7 +30317,8 @@ export interface components {
             item: "consultation" | "first_fit" | "service" | "replacement" | "hair_system" | "late_fee_first_fit" | "late_fee_replacement";
             /** @description For a visit, the code of one of its kind's services; for a hair system, its stock code; for a late fee, standard. */
             tier: string;
-            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
             gst_percent: number;
             /** Format: date */
             valid_from: string;
@@ -29697,6 +30417,8 @@ export interface components {
             item: "consultation" | "first_fit" | "service" | "replacement" | "hair_system" | "late_fee_first_fit" | "late_fee_replacement";
             tier: string;
             amount_ex_gst: number;
+            /** @description In paise, GST included. */
+            amount: number;
             gst_percent: number;
             /** Format: date */
             valid_from: string;
@@ -29720,7 +30442,8 @@ export interface components {
             /** @enum {string} */
             item: "consultation" | "first_fit" | "service" | "replacement" | "hair_system" | "late_fee_first_fit" | "late_fee_replacement";
             tier: string;
-            amount_ex_gst: number;
+            /** @description In paise, GST included: what the client pays. */
+            amount: number;
             gst_percent: number;
             /** Format: date */
             valid_from: string;
@@ -29867,7 +30590,7 @@ export interface components {
             max_minutes: number;
             /** @description The most characters a description may have. */
             max_description: number;
-            max_amount_ex_gst: number;
+            max_amount: number;
             max_gst_percent: number;
         };
         OpsService: {
@@ -29931,7 +30654,7 @@ export interface components {
             min_after_months: number;
             max_after_months: number;
             max_description: number;
-            max_amount_ex_gst: number;
+            max_amount: number;
             max_gst_percent: number;
         };
         Package: {
@@ -30148,9 +30871,43 @@ export interface components {
                 set_by: string | null;
                 set_at: string | null;
             };
+            /** @description Why a hair system could not be fitted today, picked as the technician closes the fit (ADR 0270). */
+            not_fitted_reasons: {
+                /** @description What the technician is offered, in order. */
+                items: {
+                    code: string;
+                    label: string;
+                }[];
+                /** @description Taken off by ops, and still understood: a phone may have queued one before it knew. */
+                retired: {
+                    code: string;
+                    label: string;
+                }[];
+                /** @description Null while the committed list stands. */
+                set_by: string | null;
+                set_at: string | null;
+            };
+            /** @description Why a hair system failed, picked by the technician on a replacement it came off early for and by ops as they mark one failed (ADR 0273). */
+            failure_reasons: {
+                /** @description What the technician is offered, in order. */
+                items: {
+                    code: string;
+                    label: string;
+                }[];
+                /** @description Taken off by ops, and still understood: a phone may have queued one before it knew. */
+                retired: {
+                    code: string;
+                    label: string;
+                }[];
+                /** @description Null while the committed list stands. */
+                set_by: string | null;
+                set_at: string | null;
+            };
             max_checklist_items: number;
             max_partial_reasons: number;
             max_lost_reasons: number;
+            max_not_fitted_reasons: number;
+            max_failure_reasons: number;
             max_label: number;
         };
         JobSheetChecklist: {
@@ -30692,6 +31449,17 @@ export interface components {
         StockPhotoStored: {
             /** Format: uuid */
             photo_id: string;
+        };
+        ReportPhotos: {
+            photos: components["schemas"]["ReportPhoto"][];
+        };
+        ReportPhoto: {
+            report_id: string;
+            /** @description The report's reference, as MM-ISS-0032. */
+            reference: string;
+            n: number;
+            /** Format: date-time */
+            at: string;
         };
         SupplierScorecard: {
             suppliers: {

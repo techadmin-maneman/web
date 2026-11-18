@@ -1,4 +1,4 @@
-// The booking sheet's window step, for the tests that go on to pay.
+// The booking sheet's day and time, for the tests that go on to pay.
 //
 // Three technicians serve every test in this suite (e2e/global-setup.ts). Each
 // worker books on a day of its own (toWindows, ./booking-fixtures.ts), but a day
@@ -12,10 +12,26 @@ import { expect } from "../support.ts";
 import { booking } from "../../apps/app/src/content.ts";
 
 /** The time picker's words when the time went while the client was choosing. */
-export const TAKEN = booking.window.gone;
+export const TAKEN = booking.when.gone;
 
-/** The pay step: "Pay and confirm", or "Confirm" for a visit that costs nothing. */
-const PAY_STEP = /^(Pay and confirm|Confirm)$/;
+/** The day and time step, by its title: any visit's, a first fit's or replacement's, or a move's. */
+export const WHEN_STEP = new RegExp(`^(${booking.when.title}|${booking.when.titleDate}|${booking.when.titleMove})$`);
+
+/** The day and time step's open times, apart from its days, which are radios too. */
+export const OPEN_TIMES = 'input[name="booking-time"]:enabled';
+
+/** The review's count: "We’re holding this time for you for 9:42". */
+export const HELD_FOR = new RegExp(`^${booking.pay.holding}\\d+:\\d\\d$`);
+
+/** The day chosen, and the time chosen on it. */
+export const CHOSEN_DAY = 'input[name="booking-date"]:checked';
+export const CHOSEN_TIME = 'input[name="booking-time"]:checked';
+
+/** A day's name, as the strip says it before how many of its times are left: "Thursday 22 October, 3 left". */
+export const dayNamed = (day: string): RegExp => new RegExp(`^${day}, `);
+
+/** The day and time step's open days. */
+export const OPEN_DAYS = 'input[name="booking-date"]:enabled';
 
 const isCall = (method: string, path: string) => (response: Response) =>
   response.request().method() === method && new URL(response.url()).pathname === path;
@@ -32,19 +48,18 @@ export function windowsAskedAgain(page: Page): () => Promise<void> {
   };
 }
 
-/** Picks a free window on the day the sheet is showing, and continues to the pay step. */
+/** Picks a free time on the day the sheet is showing, and continues to the review. */
 export async function continueToPayment(page: Page): Promise<void> {
-  const windows = page.getByRole("dialog", { name: booking.window.title });
-  const pay = page.getByRole("dialog", { name: PAY_STEP });
+  const windows = page.getByRole("dialog", { name: WHEN_STEP });
+  const pay = page.getByRole("dialog", { name: booking.pay.title });
   // Three tries: a client would give up on the day too.
   for (let tries = 0; tries < 3; tries += 1) {
-    await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
+    await windows.locator(OPEN_TIMES).first().click();
     // The API's answer decides, however long a busy machine takes to give it: a hold can answer after seven seconds,
     // which a five-second wait for the pay step would read as a window gone.
     const answered = page.waitForResponse(isCall("POST", "/api/holds"), { timeout: 30_000 });
     const redrawn = windowsAskedAgain(page);
-    // "Continue" alone where the day costs nothing, as a free move's does.
-    await windows.getByRole("button", { name: /^Continue( to payment)?$/ }).click();
+    await windows.getByRole("button", { name: booking.when.continue, exact: true }).click();
     if ((await answered).ok()) {
       await expect(pay).toBeVisible();
       return;

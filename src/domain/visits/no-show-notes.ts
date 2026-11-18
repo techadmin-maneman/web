@@ -31,6 +31,8 @@ export interface NoShowNote {
   readonly disputable: boolean;
   /** When the days to dispute the charge ran out, once they have, for a charge that took something and was never disputed. */
   readonly dispute_closed_at: string | null;
+  /** The last moment the charge may be disputed, while it still may be; null otherwise. */
+  readonly dispute_until: string | null;
 }
 
 /**
@@ -83,6 +85,7 @@ function noteOf(row: NoteRow, now: Date): NoShowNote {
     dispute,
     disputable: couldDispute(charge, dispute) && open,
     dispute_closed_at: disputeClosed ? row.dispute_until : null,
+    dispute_until: couldDispute(charge, dispute) && open ? row.dispute_until : null,
   };
 }
 

@@ -1,11 +1,14 @@
 // Books' local and test stand-in (./index.ts chooses it): it records what it was asked, and a test can make any
 // call fail or never answer.
 
+import { withGst } from "../../config/gst.ts";
 import { ProviderError } from "../provider-error.ts";
 import type {
   BooksInvoice,
   NewBooksPayment,
   NewBooksRefund,
+  NewBooksTransfer,
+  NewBooksExpense,
   NewBooksCustomer,
   NewBooksInvoice,
   BooksItem,
@@ -26,6 +29,8 @@ const BLANK_PDF =
 export type StubBooksCreate =
   | "recordPayment"
   | "recordRefund"
+  | "recordTransfer"
+  | "recordExpense"
   | "upsertCustomer"
   | "createInvoice"
   | "createItem"
@@ -51,6 +56,9 @@ export interface StubBooks extends BooksProvider {
     readonly payments: NewBooksPayment[];
     readonly applied: { paymentId: string; invoiceId: string; amount: number }[];
     readonly refunds: (NewBooksRefund & { paymentId: string })[];
+    /** Razorpay's settlements: the transfers to the bank, and its fees as expenses. */
+    readonly transfers: NewBooksTransfer[];
+    readonly expenses: NewBooksExpense[];
     /** The invoices marked sent, in the order they were. */
     readonly issued: string[];
     /** Each customer written by person ID, in order, a second write of a person's as well. */
@@ -122,6 +130,8 @@ export function createStubBooks(world: StubBooksWorld = {}): StubBooks {
     payments: [] as NewBooksPayment[],
     applied: [] as { paymentId: string; invoiceId: string; amount: number }[],
     refunds: [] as (NewBooksRefund & { paymentId: string })[],
+    transfers: [] as NewBooksTransfer[],
+    expenses: [] as NewBooksExpense[],
     issued: [] as string[],
     customers: [] as NewBooksCustomer[],
     customerUpdates: [] as ({ customerId: string } & NewBooksCustomer)[],
@@ -140,6 +150,7 @@ export function createStubBooks(world: StubBooksWorld = {}): StubBooks {
     refuseNext: controls.refuseNext,
     loseAnswer: controls.loseAnswer,
     ...stubDocumentsAndPayments(made, world, controls),
+    ...stubSettlements(made, controls),
     ...stubCustomers(made, controls),
     ...stubItems(made, world, controls),
     ...stubPurchases(made, controls),
@@ -190,7 +201,33 @@ type StubMade = StubBooks["made"];
 type StubControls = ReturnType<typeof createStubControls>;
 type CustomerCalls = "upsertCustomer" | "updateCustomer" | "crmContactOf" | "eraseCustomer";
 type ItemCalls = "items" | "createItem" | "updateItem";
+type SettlementCalls = "findTransfer" | "recordTransfer" | "findExpense" | "recordExpense";
 type PurchaseCalls = "upsertVendor" | "findBill" | "createBill" | "findVendorCredit" | "createVendorCredit";
+
+/** Razorpay's settlements: each transfer and fee kept, and found again by its reference. */
+function stubSettlements(made: StubMade, controls: StubControls): Pick<BooksProvider, SettlementCalls> {
+  const transferIds = new Map<string, string>();
+  const expenseIds = new Map<string, string>();
+  return {
+    findTransfer: (fromAccountId, reference) =>
+      Promise.resolve(transferIds.get(`${fromAccountId}:${reference}`) ?? null),
+    async recordTransfer(transfer) {
+      await controls.check("recordTransfer");
+      made.transfers.push(transfer);
+      const id = `stub-transfer-${crypto.randomUUID()}`;
+      transferIds.set(`${transfer.fromAccountId}:${transfer.reference}`, id);
+      return controls.answer("recordTransfer", id, id);
+    },
+    findExpense: (reference) => Promise.resolve(expenseIds.get(reference) ?? null),
+    async recordExpense(expense) {
+      await controls.check("recordExpense");
+      made.expenses.push(expense);
+      const id = `stub-expense-${crypto.randomUUID()}`;
+      expenseIds.set(expense.reference, id);
+      return controls.answer("recordExpense", id, id);
+    },
+  };
+}
 
 function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, controls: StubControls) {
   // What the stub recorded, by the keys a retry looks it up by.
@@ -200,7 +237,7 @@ function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, control
   const invoicesByReference = new Map<string, BooksInvoice>();
   const issuedOrDraft = (id: string) => (made.issued.includes(id) ? "sent" : "draft");
 
-  const stub: Omit<BooksProvider, CustomerCalls | ItemCalls | PurchaseCalls> = {
+  const stub: Omit<BooksProvider, CustomerCalls | ItemCalls | PurchaseCalls | SettlementCalls> = {
     findPayment: (customerId, reference) => Promise.resolve(paymentIds.get(`${customerId}:${reference}`) ?? null),
     async recordPayment(payment) {
       await controls.check("recordPayment");
@@ -240,12 +277,13 @@ function stubDocumentsAndPayments(made: StubMade, world: StubBooksWorld, control
       const found = invoicesByReference.get(reference);
       return found === undefined ? null : { ...found, status: issuedOrDraft(found.id) };
     },
-    // A draft's total is its rate less its discount, as Books works it out with GST at 0%.
+    // A draft's total is its rate, GST included, less its discount with the line's GST added, as Books works out a
+    // discount taken before tax off an inclusive line.
     async createInvoice(invoice) {
       await controls.check("createInvoice");
       made.invoices.push(invoice);
       const id = `stub-invoice-${crypto.randomUUID()}`;
-      const total = invoice.line.rate - invoice.line.discount;
+      const total = invoice.line.rate - withGst(invoice.line.discount, invoice.line.tax?.percent ?? 0);
       const number = `INV-${String(made.invoices.length).padStart(6, "0")}`;
       const raised = {
         id,

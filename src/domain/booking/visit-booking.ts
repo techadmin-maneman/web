@@ -35,7 +35,7 @@ import { lateFeeOn, type Price } from "../money/price-book.ts";
 import { currentAddress } from "../clients/profile.ts";
 import { graceEnds } from "./hold-stages.ts";
 import { holdSlot, type Hold } from "./hold-slot.ts";
-import { liveVisitOf, ONE_AT_A_TIME } from "./availability.ts";
+import { liveVisitOf, ONE_AT_A_TIME, replacementOpenOn } from "./availability.ts";
 import { bookableService, offeredProducts, type PricedService } from "./services.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
@@ -112,7 +112,8 @@ export function bookableRange(now: Date, inputs: Pick<OpsInputs, "nextVisitDays"
  * grace is over, since Razorpay may still be taking the payment.
  */
 async function linkStillOpen(db: D1Database, personId: string, kind: VisitType, now: Date): Promise<boolean> {
-  if (!ONE_AT_A_TIME.includes(kind)) return false;
+  // A replacement is one at a time too, once due (ADR 0253).
+  if (!ONE_AT_A_TIME.includes(kind) && kind !== "replacement") return false;
   const open = await db
     .prepare(
       `SELECT 1 FROM slot_holds
@@ -124,7 +125,10 @@ async function linkStillOpen(db: D1Database, personId: string, kind: VisitType, 
   return open !== null;
 }
 
-/** A consultation or a first fit still to come, or a link open for one, which a second of its kind would double. */
+/**
+ * A consultation or a first fit still to come, or a link open for one or for a replacement, which a second of its kind
+ * would double.
+ */
 async function alreadyToCome(db: D1Database, asked: VisitAsked, now: Date): Promise<boolean> {
   if ((await liveVisitOf(db, asked.personId, { type: asked.kind, now })) !== null) return true;
   if (await linkStillOpen(db, asked.personId, asked.kind, now)) return true;
@@ -235,6 +239,7 @@ export async function saleFor(
   const { opens, last } = bookableRange(now, inputs);
   if (asked.date < opens || asked.date > last) return refused({ code: "not_bookable" });
   if (await alreadyToCome(db, asked, now)) return refused({ code: "already_booked" });
+  if (!(await replacementOpenOn(db, { ...asked, now }))) return refused({ code: "not_bookable" });
 
   const [onPackage, city] = await Promise.all([packageWanted(db, asked), cityOfPerson(db, asked.personId)]);
   const offered = await bookableService(db, { kind: asked.kind, tier: asked.tier, on: asked.date, onPackage, city });

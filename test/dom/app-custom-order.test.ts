@@ -21,6 +21,7 @@ const order = (over: Record<string, unknown>) => ({
   promised_on: "2026-10-20",
   amount: 4500000,
   pay_url: null,
+  refundable_after: null,
   ...over,
 });
 

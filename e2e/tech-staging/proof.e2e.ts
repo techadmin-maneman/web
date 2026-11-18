@@ -14,6 +14,7 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { INSIDE, OUTSIDE, query, stagingFixture } from "./seed.ts";
+import { shots } from "../tech/steps-fixtures.ts";
 import {
   signIn as signInWords,
   notHome,
@@ -146,7 +147,7 @@ test("the code request carries the phone’s own ID, and a wrong code is not an 
   const unlistedBody = (await unlisted).postDataJSON() as { device_id?: string };
   record("otp for an unlisted number", { device_id_sent: unlistedBody.device_id !== undefined });
   expect(unlistedBody.device_id ?? "").toMatch(/^[A-Za-z0-9_-]{8,64}$/);
-  await expect(page.getByText(signInWords.codeSent)).toBeVisible();
+  await expect(page.getByText(/^Code sent to \+91 /)).toBeVisible();
 
   // The seeded technician stays active: an inactive technician's session, the one the seed wrote, ends on its next
   // call (ADR 0065).
@@ -319,7 +320,7 @@ test("the before set: a link for each angle, the PUT, then the set", async ({ pa
   await expect(capture).toBeEnabled({ timeout: 60_000 });
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
-    await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
+    await expect(page.getByText(shots(angle), { exact: true })).toBeVisible();
   }
 
   const setLanding = page.waitForResponse((response) =>

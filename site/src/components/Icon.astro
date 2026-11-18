@@ -1,9 +1,18 @@
 ---
 // A line icon from @maneman/brand/icons, drawn in the surrounding text colour at one of the set's sizes, as the
 // shared Icon draws it in the islands and the apps.
-import { ICON_SIZES, ICON_STROKES, ICONS, SOCIAL_ICONS, type IconSize, type IconWeight } from "@maneman/brand/icons";
+import {
+  CLIENT_ICONS,
+  GLYPHS,
+  ICON_SIZES,
+  ICON_STROKES,
+  ICONS,
+  SOCIAL_ICONS,
+  type IconSize,
+  type IconWeight,
+} from "@maneman/brand/icons";
 
-const PATHS = { ...ICONS, ...SOCIAL_ICONS };
+const PATHS = { ...ICONS, ...SOCIAL_ICONS, user: CLIENT_ICONS.user, chevron: GLYPHS.chevron };
 
 interface Props {
   name: keyof typeof PATHS;

@@ -77,6 +77,8 @@ describe("tasks", () => {
       grievance: 30 * 24,
       // Money owed back to a client: refunded within the day.
       payment_to_refund: 24,
+      // A client told their size is made to order: ordered, and messaged, within the day (ADR 0253).
+      made_to_order_ask: 24,
       // A UPI payment at the visit: recorded the same day it is made (ADR 0209).
       upi_due: 12,
       // A technician's ask for leave: answered within the day, so they can plan theirs.
@@ -114,20 +116,28 @@ describe("tasks", () => {
   });
 
   // Every other task leaves the board only when its thing is done.
-  it("lets ops close a partial visit's task, a City matter, an at-risk client, consumables short and a technician's asks, and no other", () => {
+  it("lets ops close a partial visit's task, a City matter, an at-risk client, consumables short, a fit closed without sign-off, a fit guarantee claim, a technician's asks and a client's ask for a size made to order, and no other", () => {
     expect(CLOSABLE_TASK_GROUPS).toEqual([
       "partial_visit",
       "consumables_short",
+      "fit_unsigned",
+      "fit_guarantee_claim",
+      "low_rating",
       "at_risk_client",
       "city_matter",
       "kit_request",
       "reschedule_request",
+      "made_to_order_ask",
     ]);
     expect(TASK_GROUPS.filter(isClosable).sort()).toEqual([
       "at_risk_client",
       "city_matter",
       "consumables_short",
+      "fit_guarantee_claim",
+      "fit_unsigned",
       "kit_request",
+      "low_rating",
+      "made_to_order_ask",
       "partial_visit",
       "reschedule_request",
     ]);

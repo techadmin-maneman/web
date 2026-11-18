@@ -14,7 +14,12 @@ test("shows who they are, their quality and this month's incentives on Me", asyn
   const { me, month } = techCopy;
   await expect(page.getByText(me.who("Senior", "Gurugram", "+91 98100 00009"))).toBeVisible();
   const quality = page.getByRole("region", { name: me.quality.title });
-  await expect(quality.getByRole("definition")).toHaveText([me.quality.redone(1, 9), me.quality.onTimeShare(17, 18)]);
+  // The clients' rating first, as the prototype orders them.
+  await expect(quality.getByRole("definition")).toHaveText([
+    me.quality.rated(4.6),
+    me.quality.redone(1, 9),
+    me.quality.onTimeShare(17, 18),
+  ]);
   const incentives = page.getByRole("region", { name: /^Incentives, / });
   await expect(incentives).toContainText("Rs. 5,400");
   await expect(incentives.getByRole("term")).toHaveText([
@@ -44,6 +49,7 @@ test("says Me's quality didn't load, with the reference, and loads it on Try aga
   await expect(quality.getByRole("alert")).toContainText("Ref quality-");
   await quality.getByRole("button", { name: techCopy.me.retry }).click();
   await expect(quality.getByRole("definition")).toHaveText([
+    techCopy.me.quality.rated(4.6),
     techCopy.me.quality.redone(1, 9),
     techCopy.me.quality.onTimeShare(17, 18),
   ]);

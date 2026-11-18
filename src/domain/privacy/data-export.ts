@@ -36,7 +36,7 @@ export const EXPORT_QUERIES = {
     FROM visit_changes WHERE person_id = ?1 ORDER BY created_at`,
   bookings_started: `SELECT reference, h.type, (${HAIR_SYSTEM("h")}) AS hair_system, minutes, date, window_label, starts_at, pincode, move_kind, one_visit, amount,
       use_credit, pay_by_link, pay_at_visit, change_notice_hours, late_change_charge, no_show_charge, consents_shown, state,
-      auto_refund_reason, created_at, confirmed_at
+      auto_refund_reason, booked_from, created_at, confirmed_at
     FROM slot_holds h WHERE person_id = ?1 ORDER BY created_at`,
   hair_systems: `SELECT piece_code, base, fitted_at, replacement_due_at, failed_at, failure_reason, replaced_at FROM pieces
     WHERE person_id = ?1 AND deleted_at IS NULL ORDER BY fitted_at`,
@@ -75,6 +75,21 @@ export const EXPORT_QUERIES = {
   no_show_disputes: `SELECT a.window_start AS visit, d.reason, d.created_at, d.ruling, d.ruled_at FROM no_show_disputes d
     JOIN no_show_cases n ON n.id = d.case_id JOIN appointments a ON a.id = n.appointment_id
     WHERE d.person_id = ?1 ORDER BY d.created_at`,
+  // Their fits' sign-offs: their own answer and words; the technician's why they did not sign is for Care alone.
+  // The issues they reported from the app (docs/decisions/0259-the-issue-log.md).
+  client_reports: `SELECT number, category, text, created_at, closed_at, sorted_at, reopened_at
+    FROM client_reports WHERE person_id = ?1 ORDER BY created_at`,
+  // Their asks for a hair system made to their size (docs/decisions/0253-replacement-when-due-and-change-of-hair-system.md).
+  made_to_order_asks: `SELECT kind, tier, requested_at FROM made_to_order_asks WHERE person_id = ?1 ORDER BY requested_at`,
+  // Their stars for their visits (docs/decisions/0260-ratings.md).
+  visit_ratings: `SELECT a.window_start AS visit, r.stars, r.created_at
+    FROM visit_ratings r JOIN appointments a ON a.id = r.appointment_id
+    WHERE r.person_id = ?1 ORDER BY r.created_at`,
+  fit_sign_offs: `SELECT a.window_start AS visit, s.state, json_extract(s.checks, '$.hairline') AS hairline,
+      json_extract(s.checks, '$.blend') AS blend, json_extract(s.checks, '$.secure') AS secure, s.flag_text,
+      s.signed_at
+    FROM appointments a JOIN fit_sign_offs s ON s.appointment_id = a.id
+    WHERE a.person_id = ?1 ORDER BY a.window_start`,
   referral: "SELECT code, card_state, opens, created_at FROM referral_codes WHERE person_id = ?1",
   referred_by: `SELECT code, via, first_touch_at, pincode, friend_first_name, told_notice, grant_state, friend_visits,
       credit_valid_days, created_at

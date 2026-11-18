@@ -8,7 +8,7 @@ import { createCachedIdentityCheck, validateStaticConfig } from "./guard.ts";
 import { byHost } from "./http/surfaces.ts";
 import { meterDatabase, usageFields } from "./lib/d1-meter.ts";
 import { createLogger, type Logger } from "./log.ts";
-import { createErrorTracker } from "./providers/error-tracking.ts";
+import { createErrorTracker, releaseOf } from "./providers/error-tracking.ts";
 import { pingHeartbeat } from "./providers/heartbeat.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
@@ -28,6 +28,8 @@ import { backUp } from "./workflows/backup.ts";
 const config = validateStaticConfig(env as unknown as Record<string, unknown>);
 
 const makeDependencies = productionDependencies(config);
+// The commit the bundle was built from, defined at upload (scripts/lib/release.ts); undeclared locally and in tests.
+declare const BUILD_SHA: string | undefined;
 /** Where error lines are reported, while SENTRY_DSN is set: one tracker for the isolate, its sends counted together. */
 const errors =
   config.settings.sentryDsn === null
@@ -35,7 +37,7 @@ const errors =
     : createErrorTracker({
         dsn: config.settings.sentryDsn,
         environment: config.environment,
-        release: env.CF_VERSION_METADATA.tag === "" ? env.CF_VERSION_METADATA.id : env.CF_VERSION_METADATA.tag,
+        release: releaseOf(env.CF_VERSION_METADATA, typeof BUILD_SHA === "string" ? BUILD_SHA : null),
         fetch: (input, init) => fetch(input, init),
         now: () => new Date(),
       });
@@ -183,17 +185,20 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
-/** A Workflow's run: on this environment's own database only, its errors reported as the cron's are. */
-async function workflowRun(workerEnv: Env, name: string) {
+/**
+ * A Workflow's run: on this environment's own database only, its errors reported as the cron's are, each send kept
+ * alive by the run's own context.
+ */
+async function workflowRun(workerEnv: Env, name: string, ctx: ExecutionContext) {
   await assertOwnDatabase(workerEnv.DB);
-  const log = runLogger({ job: name }, undefined);
+  const log = runLogger({ job: name }, ctx);
   return { env: workerEnv, config, deps: makeDependencies(workerEnv, log, "background") };
 }
 
 /** The nightly reporting copy, a step for each part of the night (src/workflows/analytics-copy.ts). */
 export class AnalyticsCopy extends WorkflowEntrypoint<Env, { readonly date: string }> {
   override async run(event: WorkflowEvent<{ readonly date: string }>, step: WorkflowStep): Promise<void> {
-    const run = await workflowRun(this.env, "analytics_copy");
+    const run = await workflowRun(this.env, "analytics_copy", this.ctx);
     const warehouse = () =>
       warehouseFor(config.providers.ANALYTICS_PROVIDER, this.env.ANALYTICS_DB?.connectionString ?? null);
     await copyNight(step, { ...run, warehouse }, event.payload.date);
@@ -203,6 +208,6 @@ export class AnalyticsCopy extends WorkflowEntrypoint<Env, { readonly date: stri
 /** The weekly backup, a step for each table (src/workflows/backup.ts). */
 export class WeeklyBackup extends WorkflowEntrypoint<Env, { readonly date: string }> {
   override async run(event: WorkflowEvent<{ readonly date: string }>, step: WorkflowStep): Promise<void> {
-    await backUp(step, await workflowRun(this.env, "backup"), event.payload.date);
+    await backUp(step, await workflowRun(this.env, "backup", this.ctx), event.payload.date);
   }
 }

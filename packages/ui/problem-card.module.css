@@ -38,6 +38,19 @@
     color: var(--ui-text);
   }
 
+  /* A title run into its words, as a client's alert on a task. */
+  .runIn {
+    margin: 0;
+    font-size: var(--fs-15);
+    line-height: var(--lh-145);
+    color: var(--ui-text);
+  }
+
+  .runInTitle {
+    font-weight: var(--action-weight);
+    color: var(--ui-error);
+  }
+
   @media (hover: hover) {
     .opens:hover {
       background: var(--ui-tint);

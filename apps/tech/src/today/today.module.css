@@ -53,7 +53,7 @@
 
 /* The next job: its line, its time large, the client, the visit and the place; then its actions. */
 .next {
-  padding: var(--sp-8) var(--screen-gutter) var(--sp-24);
+  padding: var(--sp-8) var(--screen-gutter) 0;
 }
 
 .nextLink {
@@ -134,6 +134,15 @@
   padding: 0;
 }
 
+/* Every job closed: the prototype's line under the title, where the next job would be. */
+.allDone {
+  margin: 0;
+  padding: var(--sp-20) var(--screen-gutter) 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
 /* The rest of the day: the section's head with Day view, then the rows across the column's width. */
 .later {
   padding: 0 var(--screen-gutter);
@@ -148,14 +157,41 @@
   color: var(--ui-text);
 }
 
-/* The rows inside the gutter, as the prototype draws them: a done row's rule on the gutter's line. */
+/*
+ * The rows inside the gutter, as the prototype draws them: 14 px above and below, the lines at the font's own leading,
+ * a 4 px mark on the gutter's line and the time 12 px beside it, in the prototype's 68 px at 15 px — in em, so it grows
+ * with a larger text size rather than break a time over two lines.
+ */
 .rows {
+  --row-pad-y: calc(var(--sp-12) + var(--sp-2));
+  --row-lead-width: calc(var(--sp-4) + var(--sp-12) + var(--tech-time-today));
+  --row-lead-align: stretch;
+
   border-bottom: var(--hairline) solid var(--ui-line);
+  line-height: var(--lh-130);
+}
+
+/* The mark beside the time, as tall as the row's words, so the marks break at each row's rule. */
+.lead {
+  display: flex;
+  gap: var(--sp-12);
+  height: 100%;
+}
+
+.mark {
+  flex: 0 0 var(--sp-4);
+  background: var(--ui-tint);
+}
+
+/* A job done with: its mark in the ink. */
+.markDone {
+  background: var(--ui-strong);
 }
 
 .rowTime {
   display: block;
   font-weight: var(--weight-semibold);
+  white-space: nowrap;
 }
 
 .rowLength,
@@ -168,19 +204,8 @@
   font-size: var(--fs-14);
 }
 
-/* How a job closed, in the ink, beside its rule. */
-.rowClosed {
-  display: block;
-  font-weight: var(--weight-semibold);
-  color: var(--ui-strong);
-}
-
 /* A job done with: its time and name quieter, so the eye goes to what is left. */
 .quiet {
-  color: var(--ui-text-soft);
-}
-
-.chevron {
   color: var(--ui-text-soft);
 }
 

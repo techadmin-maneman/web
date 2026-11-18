@@ -2,8 +2,10 @@
 // build-tech.ts): the production gate on its copy, the Vite build for one
 // environment into apps/<app>/dist/<environment>, its _headers, and the
 // prompt's budget: "first load under 150 KB of gzipped JavaScript"
-// (docs/prompts/phase2-frontend.md), a service worker included. The technician
-// app's is 200 KB, for its redesign (docs/decisions/0247-the-steps-left.md).
+// (docs/prompts/phase2-frontend.md), a service worker included. The phone apps'
+// is 200 KB, for their redesigns: the technician app's
+// (docs/decisions/0247-the-steps-left.md) and the client's
+// (docs/decisions/0252-client-app-redesign.md).
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -30,8 +32,8 @@ export interface BuildOptions {
   readonly allowPlaceholders: boolean;
 }
 
-/** Each app's first load, in gzipped bytes: the technician app's, and every other's. */
-const TECH_BUDGET_BYTES = 200 * 1024;
+/** Each app's first load, in gzipped bytes: the phone apps', the client's and the technician's, and the console's. */
+const PHONE_BUDGET_BYTES = 200 * 1024;
 const BUDGET_BYTES = 150 * 1024;
 
 /** `--env <environment>` and `--allow-placeholders`, as each build script takes them. */
@@ -120,7 +122,7 @@ export function buildSpa(build: SpaBuild, { environment, allowPlaceholders }: Bu
 
   const gzipped = gzippedJavaScript(dist);
   const kilobytes = (gzipped / 1024).toFixed(1);
-  const budget = build.app === "tech" ? TECH_BUDGET_BYTES : BUDGET_BYTES;
+  const budget = build.app === "tech" || build.app === "app" ? PHONE_BUDGET_BYTES : BUDGET_BYTES;
   console.log(`${build.app} JavaScript: ${kilobytes} KB gzipped, of a ${String(budget / 1024)} KB budget`);
   if (gzipped > budget) {
     console.error(`${build.label}'s JavaScript is over its budget`);

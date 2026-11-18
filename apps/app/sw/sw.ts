@@ -7,6 +7,7 @@
 // (packages/web-kit/pwa.ts).
 
 import { marked, serveTheShell } from "../../../packages/web-kit/sw-shell.ts";
+import { listenForAlerts } from "./alerts.ts";
 import { answerFor, HOME_PATH } from "./requests.ts";
 
 declare const self: ServiceWorkerGlobalScope;
@@ -28,6 +29,8 @@ serveTheShell(
   (request) => answerFor(request, self.location.origin),
   home,
 );
+
+listenForAlerts(self);
 
 // A Home kept by an earlier release can lack what this one reads, so a new release starts with none: the next Home
 // that reaches the phone is kept again.

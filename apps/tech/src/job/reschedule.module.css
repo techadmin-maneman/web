@@ -1,15 +1,18 @@
-/* Ask ops to reschedule (./Reschedule.tsx): the way to ask under the job's actions, the sheet with the reasons in a
-   column, and the line once asked, on the paper's tint. */
+/* Ask ops to reschedule (./Reschedule.tsx): the way to ask under the job's actions, the sheet with the reasons as
+   chips, and the line once asked, on the warm wash. */
 
 .ask {
   margin-top: var(--sp-8);
   min-height: var(--tech-min);
+  font-weight: var(--weight-semibold);
 }
 
+/* Once asked: the prototype's note on the warm wash, its words in the ink. */
 .asked {
   margin: var(--sp-8) 0 0;
-  padding: var(--sp-8) var(--sp-12);
-  background: var(--ui-tint);
+  padding: calc(var(--sp-8) + var(--sp-2)) var(--sp-12);
+  background: var(--ui-wash);
+  color: var(--ui-text);
   font-size: var(--fs-14);
   line-height: var(--lh-145);
 }
@@ -27,8 +30,12 @@
   line-height: var(--lh-130);
 }
 
+/* The reasons as chips sized to their words that wrap, at the prototype's 14 px, and the glove's height. */
 .reasons {
-  display: grid;
+  --control-text: var(--fs-14);
+
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-8);
 }
 

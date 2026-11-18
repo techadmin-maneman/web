@@ -233,7 +233,7 @@ test("a fortnight with nothing open says so, and offers WhatsApp", async ({ page
   await expect(page.getByText(referralCopy.referral.consultation.noneOpen)).toBeVisible();
   await expect(page.getByRole("link", { name: referralCopy.referral.consultation.noneOpenAction })).toHaveAttribute(
     "href",
-    "https://wa.me/17116660760",
+    "https://wa.me/919034572990",
   );
   const days = page.getByRole("group", { name: referralCopy.referral.consultation.date }).getByRole("radio");
   await expect(days).toHaveCount(14);
@@ -276,7 +276,10 @@ test("Back steps back through the page, and Forward returns to the confirmation"
   await fillAndBook(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeVisible();
+  // The address step: a phone keeps to what it asks, the area's banner left to the visit step (ADR 0265).
+  const banner = page.getByRole("heading", { name: "We come to Sector 65" });
+  if ((page.viewportSize()?.width ?? 0) <= 760) await expect(banner).toBeHidden();
+  else await expect(banner).toBeVisible();
   await expect(page.getByRole("button", { name: referralCopy.referral.consultation.submit })).toBeVisible();
   await page.goForward();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();

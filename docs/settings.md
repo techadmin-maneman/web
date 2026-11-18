@@ -11,28 +11,33 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `ACCESS_OPS_AUD` | — | `c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4` | `aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773` |
 | `ACCESS_PROVIDER` | `stub` | `cloudflare` | `cloudflare` |
 | `ANALYTICS_PROVIDER` | `stub` | `none` | `none` |
+| `BOOKS_BANK_ACCOUNT_ID` | — | — | `4242595000001689024` |
 | `BOOKS_BILL_CONSUMABLES_ACCOUNT` | — | `4242595000000034057` | `4242595000000034057` |
 | `BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT` | — | `4242595000000000567` | `4242595000000000567` |
-| `BOOKS_GSTIN` | — | — | — |
-| `BOOKS_GST_STATE` | — | — | — |
+| `BOOKS_GATEWAY_FEES_ACCOUNT_ID` | — | — | `4242595000000000507` |
+| `BOOKS_GATEWAY_GSTIN` | — | — | — |
+| `BOOKS_GATEWAY_GST_STATE` | — | — | — |
+| `BOOKS_GSTIN` | — | `07AAVCM6347C1Z5` | `07AAVCM6347C1Z5` |
+| `BOOKS_GST_STATE` | — | `DL` | `DL` |
 | `BOOKS_ITEM_PUSH` | `false` | `true` | `false` |
 | `BOOKS_PROVIDER` | `stub` | `zoho` | `none` |
-| `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000000352005` | — |
+| `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000001556003` | `4242595000001556003` |
 | `BOOKS_SAC` | — | — | — |
+| `CLIENT_SIGN_OFF` | `true` | `true` | `true` |
 | `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |
 | `ENVIRONMENT` | `local` | `staging` | `production` |
 | `GEOCODE_PROVIDER` | `stub` | `google` | `google` |
 | `IMAGE_PROVIDER` | `stub` | `youcam` | `youcam` |
 | `MESSAGING_ENABLED` | `true` | `true` | `false` |
 | `MESSAGING_PROVIDER` | `stub` | `msg91` | `evolution` |
-| `PAYMENTS_PROVIDER` | `stub` | `none` | `none` |
-| `RAZORPAY_KEY_ID` | — | `rzp_test_TvFc2eEnPG73fO` | — |
+| `PAYMENTS_PROVIDER` | `stub` | `razorpay` | `none` |
+| `RAZORPAY_KEY_ID` | — | `rzp_test_Tz0U9jnWcW6ZYU` | — |
 | `REFERRER_NAME_ON_INVITE` | `true` | `true` | `true` |
 | `RENDER_DAILY_CEILING` | `20` | `20` | `40` |
 | `RESULT_READ_DAILY_CEILING` | `400` | `400` | `800` |
 | `RESULT_RETENTION_DAYS` | `3` | `3` | `14` |
 | `ROUTES_PROVIDER` | `stub` | `google` | `google` |
-| `SELF_SERVE_BOOKING` | `true` | `false` | `false` |
+| `SELF_SERVE_BOOKING` | `true` | `true` | `false` |
 | `SELF_SERVE_CONSULTATIONS` | `true` | `true` | `true` |
 | `SERVICE_TOKEN_ACTS_AS` | — | `test-operator@maneman.in` | — |
 | `SMS_PROVIDER` | `stub` | `none` | `none` |
@@ -139,7 +144,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `address_unlock_hour` | Address unlock | hour of the day, in India | `18` |
 | `reminder_hour` | Reminder time | hour of the day, in India | `18` |
 | `phone_clock` | Phone clock limits | minutes | `{"before_start":60,"held_offline":24}` |
-| `task_sla_hours` | Task deadlines | hours | `{"untold_move":4,"move_unanswered":4,"reschedule_request":4,"visit_left_open":24,"unassigned_visit":24,"recall_call":24,"unanswered_chat":24,"city_matter":24,"remedy_approval":24,"leave_request":24,"leave_conflict":48,"address_to_confirm":48,"consultation_request":48,"first_fit_to_book":48,"replacement_order":48,"stock_at_risk":48,"at_risk_client":48,"partial_visit":48,"consumables_short":48,"kit_request":24,"referral_review":48,"no_show_decision":48,"no_show_dispute":48,"number_change":48,"erasure_request":720,"grievance":720,"draft_invoice":48,"payment_owed":48,"upi_due":12,"payment_to_refund":24}` |
+| `task_sla_hours` | Task deadlines | hours | `{"untold_move":4,"move_unanswered":4,"reschedule_request":4,"visit_left_open":24,"unassigned_visit":24,"recall_call":24,"unanswered_chat":24,"city_matter":24,"remedy_approval":24,"leave_request":24,"leave_conflict":48,"address_to_confirm":48,"consultation_request":48,"first_fit_to_book":48,"replacement_order":48,"made_to_order_ask":24,"stock_at_risk":48,"at_risk_client":48,"partial_visit":48,"consumables_short":48,"fit_unsigned":48,"fit_guarantee_claim":48,"low_rating":48,"kit_request":24,"referral_review":48,"no_show_decision":48,"no_show_dispute":48,"number_change":48,"erasure_request":720,"grievance":720,"draft_invoice":48,"payment_owed":48,"upi_due":12,"payment_to_refund":24}` |
 | `task_lapse_days` | Tasks lapse after | days | `60` |
 | `payment_hold` | Payment hold | minutes | `{"countdown":10,"grace":2}` |
 | `dispute_window_days` | Dispute window | days | `30` |
@@ -157,6 +162,8 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `payment_links` | Payment links | hours | `{"holds_hours":24,"closes_before_hours":2,"pay_within_days":14}` |
 | `arrival_notice_min` | Arrival message | minutes | `10` |
 | `move_proposal_hours` | Move proposals | hours | `48` |
+| `guarantee_days` | Fit guarantee | days | `14` |
+| `ratings` | Ratings | days | `{"low_below":4,"average_days":90,"shown_from":5,"rate_within_days":30}` |
 | `credit_reminder_days` | Free visit reminders | days | `{"first":30,"last":7}` |
 | `check_in_days` | Follow-ups after a fit | days | `{"first":2,"second":21}` |
 | `referral_monthly_cap` | Hold referral rewards above | fits a month | `5` |
@@ -193,4 +200,6 @@ In D1, each row from a day on, so a document already issued keeps what was true 
 | `checklist_items` | The job sheet's checklist, in the technician's and the client's words | Settings · Job sheet |
 | `partial_reasons` | Why a visit is left partly done | Settings · Job sheet |
 | `lost_reasons` | Why a lead is lost | Settings · Job sheet |
+| `not_fitted_reasons` | Why a hair system could not be fitted today | Settings · Job sheet |
+| `failure_reasons` | Why a hair system failed | Settings · Job sheet |
 | `word_versions` | The words the site and the apps show, as ops edit them | Words |

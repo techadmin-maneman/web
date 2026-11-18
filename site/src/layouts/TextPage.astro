@@ -1,7 +1,10 @@
 ---
-// A long-form page of text in the site layout: the design's "Placeholder" tag while its wording waits, the title and
-// its lead, then the page's own sections. The guides, the cities, the privacy notice and the terms are drawn in it.
+// A long-form page of text in the site layout: the design's "Placeholder" tag while its wording waits, the way back to
+// the list it belongs to, the title and its lead, then the page's own sections. The guides, the cities, the policies
+// and the notices are drawn in it.
 import { capsLook } from "@maneman/ui/Caps";
+import { textLinkLook } from "@maneman/ui/TextLink";
+import Icon from "../components/Icon.astro";
 import { placeholderTag } from "../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS } from "../lib/build.ts";
 import Site from "./Site.astro";
@@ -14,48 +17,73 @@ interface Props {
   lead?: string;
   /** Its wording is approved; until then, outside production, the page is tagged. */
   publish: boolean;
+  /** Above the title, the way back to the list the page is one of, by the list's title: "Guides". */
+  back?: { href: string; label: string };
+  /** A short page, the cities', in the narrower column. */
+  short?: boolean;
   /** Schema.org objects for the page, as the site layout writes them. */
   structuredData?: readonly object[];
   ogType?: "website" | "article";
 }
 
-const { pageTitle, description, title, lead, publish, structuredData = [], ogType = "website" } = Astro.props;
+const {
+  pageTitle,
+  description,
+  title,
+  lead,
+  publish,
+  back,
+  short = false,
+  structuredData = [],
+  ogType = "website",
+} = Astro.props;
 ---
 
 <Site title={pageTitle} description={description} structuredData={structuredData} ogType={ogType}>
-  <article class="page">
+  <article class:list={["text-page", short && "short"]}>
     {SHOW_PLACEHOLDER_TAGS && !publish && <div class={capsLook("label tag")}>{placeholderTag}</div>}
-    <h1 class="section-title">{title}</h1>
-    <slot name="lead">{lead !== undefined && <p class="lead">{lead}</p>}</slot>
+    {back !== undefined && (
+      <a class={textLinkLook({ tone: "strong", quiet: true, className: "back" })} href={back.href}>
+        <Icon name="back" size="sm" />
+        {back.label}
+      </a>
+    )}
+    <h1 class="page-title">{title}</h1>
+    <slot name="lead">{lead !== undefined && <p class="page-lede">{lead}</p>}</slot>
     <slot />
   </article>
 </Site>
 
 <style>
-  .page {
-    max-width: var(--measure-column);
-    margin: 0 auto;
-    padding: var(--page-pad-top) var(--gutter) var(--section-gap);
-    min-height: calc(100dvh - var(--header-h));
+  /* An address or an email in a policy breaks where it must, so it never runs past a narrow column. */
+  .text-page {
+    font-size: var(--site-fs-article);
+    line-height: var(--lh-155);
+    overflow-wrap: anywhere;
   }
   .tag {
     display: inline-block;
-    margin-bottom: var(--sp-24);
+    margin-bottom: var(--sp-12);
   }
-  .page :global(h2) {
-    margin: var(--sp-48) 0 0;
-    font-family: var(--font-serif);
-    font-size: var(--fs-24);
-    font-weight: var(--weight-regular);
-    line-height: var(--lh-130);
+  /* A thumb's height to tap, its words where the boards draw their line, 24 px tall. */
+  .back {
+    display: flex;
+    width: fit-content;
+    gap: var(--sp-4);
+    margin: calc((var(--sp-24) - var(--tap)) / 2) 0 calc(var(--site-gap-near) + (var(--sp-24) - var(--tap)) / 2);
+    font-size: var(--fs-15);
   }
-  .page :global(p) {
-    margin: var(--sp-16) 0 0;
-    font-size: var(--fs-lead);
-    line-height: var(--lh-160);
+  /* The page's prose, at no weight of its own: a page's own heading or paragraph, the lede and a list's heading keep
+     the look their own rules give them. */
+  :global(:where(.text-page) :where(h2)) {
+    margin: var(--sp-32) 0 var(--sp-12);
+    font-family: var(--site-font);
+    font-size: var(--site-fs-article-head);
+    font-weight: var(--weight-semibold);
+    color: var(--site-navy);
+  }
+  :global(:where(.text-page) :where(p)) {
+    margin: 0 0 var(--site-gap-paragraph);
     text-wrap: pretty;
-  }
-  .page :global(.lead) {
-    color: var(--text-muted);
   }
 </style>

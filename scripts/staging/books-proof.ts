@@ -32,6 +32,9 @@ const settings: ZohoBooksSettings = {
   apiHost: requiredEnv("ZOHO_BOOKS_API_HOST"),
   orgId: requiredEnv("ZOHO_BOOKS_ORG_ID"),
   refundAccountId: null,
+  bankAccountId: null,
+  gatewayFeesAccountId: null,
+  gateway: null,
   itemPush: false,
   billAccounts: null,
   gst: NO_GST,
@@ -127,9 +130,11 @@ try {
     description: "Staging test",
     rate: 200_000,
     discount: 15_000,
+    // GST is on in the org, which refuses a line with no tax: 18% within Delhi, where it is registered.
+    tax: { percent: 18, intraState: true },
   };
   const date = indiaDate(new Date());
-  const invoice = await books.createInvoice({ customerId, reference, date, placeOfSupply: null, branchId: null, line });
+  const invoice = await books.createInvoice({ customerId, reference, date, placeOfSupply: "DL", branchId: null, line });
   invoiceId = invoice.id;
   check("a draft for ₹2,000 less ₹150 totals ₹1,850", invoice.total === 185_000, `${invoice.number} ${invoice.status}`);
   const found = await books.findInvoice(reference);

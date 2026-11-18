@@ -26,6 +26,9 @@ import {
   AGREE_TERMS,
 } from "./book-fixtures.ts";
 
+/** A phone's width, where /book draws the client app's frame (ADR 0265). */
+const narrow = (width: number | undefined) => (width ?? 0) <= 760;
+
 test("the page introduces itself, with no invite and no card", async ({ page }) => {
   await mockApi(page);
   await visit(page, "/book");
@@ -84,12 +87,18 @@ test("keeps the name and number first, then asks for the area, the visit and the
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(requests[0]?.postDataJSON()).toMatchObject({ name: "Test Visitor", mobile: "9810000000", consent: true });
+  // A laptop says where else the booking shows; a phone keeps it out of sight, Open the app saying it (ADR 0265).
+  const wide = !narrow(page.viewportSize()?.width);
+  await expect(page.getByText(referralCopy.referral.booked.appHint)).toBeVisible({ visible: wide });
 });
 
 test("Change returns to the name and number as typed, and the same again is not kept twice", async ({ page }) => {
   await mockApi(page);
   const leads = await leadCalls(page);
-  await openForm(page);
+  // A laptop's visit step names who it is for, two steps on from them; a phone's opens on its banner, so it changes
+  // them from the area step.
+  if (narrow(page.viewportSize()?.width)) await openAtPincode(page);
+  else await openForm(page);
 
   await page.getByRole("button", { name: siteCopy.booking.changeYouLabel }).click();
   await expect(page.getByText("Step 1 · About you")).toBeFocused();
@@ -120,7 +129,10 @@ test("a reload resumes the step it was on, the name and number kept, and Back st
 
   await page.reload();
   await expect(page.getByText("Step 3 · Your visit")).toBeVisible();
-  await expect(page.getByText("For Test Visitor, +91 98100 00000")).toBeVisible();
+  // The visit step names who it is for on a laptop; a phone's opens on the area's banner (ADR 0265).
+  if (!narrow(page.viewportSize()?.width)) {
+    await expect(page.getByText("For Test Visitor, +91 98100 00000")).toBeVisible();
+  }
   await page.goBack();
   await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
   await page.goBack();
@@ -241,7 +253,11 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
   await expect(plan.getByRole("radio")).toHaveCount(2);
   await plan.getByRole("radio", { name: "Consultation and fit · 3 hours" }).check();
   await expect(plan.getByRole("radio", { name: "Consultation and fit · 3 hours" })).toBeChecked();
-  await expect(page.getByText(/^Starts in the morning or the afternoon\./)).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.consultation.plan.oneVisitNote)).toBeVisible();
+  // When it starts, a laptop's alone; a phone's note says only how it is paid (ADR 0269).
+  const when = page.getByText(/^Starts in the morning or the afternoon\./);
+  if (narrow(page.viewportSize()?.width)) await expect(when).toBeHidden();
+  else await expect(when).toBeVisible();
   // The page's heading follows what it books.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.booking.titleOneVisit);
   expect(await axeViolations(page)).toEqual([]);
@@ -425,4 +441,109 @@ test("shows the try-on's name and number in its fields as soon as the page is dr
   await visit(page, "/book");
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
   await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveValue("98100 00000");
+});
+
+// A phone's /book is a flow of its own, as the client app's booking is (ADR 0265): its top bar in the site header's
+// place, one line of intro, How it works folded into the first step, and the steps after it keeping to what they ask,
+// the page's title kept for a screen reader and the step's button held at the screen's foot.
+test("a phone's /book is the app's frame, How it works folded into the first step", async ({ page }) => {
+  test.skip(!narrow(page.viewportSize()?.width), "a phone's frame");
+  const how = referralCopy.referral.howItWorks;
+  await mockApi(page);
+  await visit(page, "/book");
+
+  await expect(page.getByRole("banner")).toBeHidden();
+  await expect(page.getByRole("link", { name: siteCopy.tryOn.backToSite })).toBeVisible();
+  await expect(page.getByRole("button", { name: siteCopy.tryOn.back, exact: true })).toHaveCount(0);
+  await expect(page.getByText(siteCopy.booking.introShort)).toBeVisible();
+  await expect(page.getByText(siteCopy.booking.intro[0] ?? "")).toBeHidden();
+
+  const fold = page.locator("summary", { hasText: how.title });
+  const firstStep = page.getByRole("heading", { name: how.steps[0]?.title ?? "" });
+  await expect(fold).toBeVisible();
+  await expect(firstStep).toBeHidden();
+  await fold.click();
+  await expect(firstStep).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  await fold.click();
+  await expect(firstStep).toBeHidden();
+
+  await leaveDetails(page);
+  await expect(fold).toBeHidden();
+  const title = page.getByRole("heading", { level: 1, name: siteCopy.booking.title });
+  await expect(title).toHaveCount(1);
+  expect(await title.evaluate((heading) => heading.getBoundingClientRect().width)).toBeLessThanOrEqual(1);
+
+  await checkPincode(page, SERVED.pincode);
+  await expect(page.getByRole("button", { name: siteCopy.booking.next })).toBeInViewport();
+  expect(await axeViolations(page)).toEqual([]);
+
+  await toAddress(page);
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+  await expect(page.getByRole("button", { name: siteCopy.booking.next })).toBeVisible();
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+  await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
+});
+
+// A laptop keeps what a phone folds away: both paragraphs of the intro, the step's line and How it works beside the
+// form, under the site's flow bar.
+test("a laptop's /book keeps the full intro, the step's line and How it works beside the form", async ({ page }) => {
+  test.skip(narrow(page.viewportSize()?.width), "a laptop's page");
+  const how = referralCopy.referral.howItWorks;
+  await mockApi(page);
+  await visit(page, "/book");
+
+  await expect(page.getByRole("banner")).toBeVisible();
+  await expect(page.getByText(siteCopy.booking.intro[0] ?? "")).toBeVisible();
+  await expect(page.getByText(siteCopy.booking.introShort)).toBeHidden();
+  await expect(page.getByText("Step 1 · About you")).toBeVisible();
+  await expect(page.locator("summary", { hasText: how.title })).toBeHidden();
+  await expect(page.getByRole("heading", { name: how.steps[0]?.title ?? "" })).toBeVisible();
+
+  await leaveDetails(page);
+  await expect(page.getByText(siteCopy.booking.intro[0] ?? "")).toBeHidden();
+  await expect(page.getByRole("heading", { level: 1, name: siteCopy.booking.title })).toBeVisible();
+
+  // Its Back link steps back as the browser's does, and the first step's intro is there again.
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
+  await expect(page.getByText(siteCopy.booking.intro[0] ?? "")).toBeVisible();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
+  await checkPincode(page, SERVED.pincode);
+  await toAddress(page);
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+  await expect(page.getByRole("button", { name: siteCopy.booking.next })).toBeVisible();
+});
+
+// Tabbing down a phone's long steps, each control comes to rest above the button pinned at the foot (WCAG 2.4.11).
+test("a phone's focused control is never under the pinned button", async ({ page }) => {
+  test.skip(!narrow(page.viewportSize()?.width), "a phone's pinned button");
+  await mockApi(page);
+  await openForm(page);
+  const next = page.getByRole("button", { name: siteCopy.booking.next });
+  const clear = async (control: ReturnType<typeof page.locator>) => {
+    const box = await control.boundingBox();
+    const foot = await next.evaluate((button) => button.parentElement?.getBoundingClientRect().top ?? 0);
+    return box !== null && box.y + box.height <= foot;
+  };
+  // The last open day and the last open start: the controls lowest on the step.
+  const open = (group: string) => page.getByRole("group", { name: group }).locator("input:enabled").last();
+  for (const control of [
+    open(referralCopy.referral.consultation.date),
+    open(referralCopy.referral.consultation.window),
+  ]) {
+    await control.focus();
+    await expect.poll(() => clear(control)).toBe(true);
+  }
+});
+
+// Back at the first step, by the browser or by Change, the page introduces itself again.
+test("the first step keeps its intro however it is reached again", async ({ page }) => {
+  await mockApi(page);
+  await openAtPincode(page);
+  await page.goBack();
+  const intro = narrow(page.viewportSize()?.width) ? siteCopy.booking.introShort : (siteCopy.booking.intro[0] ?? "");
+  await expect(page.getByText(intro)).toBeVisible();
 });

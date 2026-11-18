@@ -7,7 +7,7 @@
 //
 // Neither answer is gold: the screen's one primary action is behind it. It is drawn on the ink-night ground, as the
 // technician app's older screens draw their questions, or on paper (`onPaper`), as its new look does, where the safe
-// answer comes first, filled.
+// answer is the filled one: first, or last where the design puts it nearest the thumb (`safeLast`).
 
 import { useId, useLayoutEffect, useRef } from "react";
 import { Button } from "./Button.tsx";
@@ -23,6 +23,8 @@ export function ConfirmSheet({
   onYes,
   onNo,
   onPaper = false,
+  safeLast = false,
+  quietYes = false,
 }: {
   readonly title: string;
   readonly body: string;
@@ -31,6 +33,10 @@ export function ConfirmSheet({
   readonly onYes: () => void;
   readonly onNo: () => void;
   readonly onPaper?: boolean;
+  /** On paper, the risky answer first and the safe one last, filled. */
+  readonly safeLast?: boolean;
+  /** On paper, the answer that cannot be taken back in the error's words on a control's quiet edge, not a red one. */
+  readonly quietYes?: boolean;
 }) {
   const titleId = useId();
   const safe = useRef<HTMLButtonElement>(null);
@@ -40,6 +46,13 @@ export function ConfirmSheet({
     safe.current?.focus();
   }, []);
 
+  // The safe answer, filled, on paper: first, or last where `safeLast` puts it nearest the thumb.
+  const keep = (
+    <Button ref={safe} variant="primary" size="action" className={styles.no} onClick={onNo}>
+      {no}
+    </Button>
+  );
+
   return (
     <Sheet labelledBy={titleId} rises={false} outsideTapCloses={false} onCancel={onNo}>
       <div className={classes(styles.sheet, onPaper && styles.paper)}>
@@ -48,14 +61,13 @@ export function ConfirmSheet({
         </h2>
         <p className={styles.body}>{body}</p>
         {onPaper ? (
-          <>
-            <Button ref={safe} variant="primary" size="action" className={styles.no} onClick={onNo}>
-              {no}
-            </Button>
-            <Button variant="danger" size="action" className={styles.yes} onClick={onYes}>
+          <div className={styles.answers}>
+            {!safeLast && keep}
+            <Button variant={quietYes ? "dangerQuiet" : "danger"} size="action" className={styles.yes} onClick={onYes}>
               {yes}
             </Button>
-          </>
+            {safeLast && keep}
+          </div>
         ) : (
           <>
             <Button variant="dangerOnInk" size="action" className={styles.yes} onClick={onYes}>

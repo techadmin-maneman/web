@@ -1,4 +1,4 @@
-import { shortDate } from "../../packages/web-kit/dates.ts";
+import { dayMonth, shortDate, weekdayName } from "../../packages/web-kit/dates.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
@@ -12,7 +12,7 @@ import * as appCopy from "../../apps/app/src/content.ts";
 test("Home says a paid visit FSM has not taken yet is being booked, with the payment in", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const waiting = {
     type: "service",
@@ -47,7 +47,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
 }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
   const price = { amount: 3_000_000, from: false, code: null };
@@ -66,7 +66,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [] } }));
   await page.reload();
   const home = page.getByRole("region", { name: appCopy.home.oneVisit.label });
-  await expect(home).toContainText(shortDate("2027-09-25"));
+  await expect(home).toContainText(`${weekdayName("2027-09-25")} ${dayMonth("2027-09-25")}`);
   await expect(home).toContainText("Rs. 30,000, only if you go ahead");
   await expect(home).not.toContainText(appCopy.home.beingBooked.free);
   // Nothing paid and no consent to visit messages, so no WhatsApp is promised.
@@ -74,11 +74,51 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
 
   await tab(page, "Visits").click();
   const card = page.getByRole("main").getByRole("listitem").first();
-  await expect(card).toContainText(shortDate("2027-09-25"));
-  await expect(card).toContainText("Consultation and fit · 9 am–12 noon");
+  await expect(card).toContainText(appCopy.ONE_VISIT);
+  await expect(card).toContainText("Saturday · 9 am–12 noon");
   await expect(card).not.toContainText(appCopy.home.beingBooked.free);
   await expect(page.getByText(appCopy.home.next.none)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
+});
+
+// Visits tags a consultation from the site Free, or Requested while it is only asked for; a consultation and fit costs
+// something once fitted, so is never tagged Free. The API's answers are altered on their way, as above.
+test("Visits tags a consultation free, asked for, or neither when it is a consultation and fit", async ({ page }) => {
+  const client = fittedClient();
+  await logIn(page, client.mobile);
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
+  const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
+  const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
+  const consultation = {
+    date: "2027-09-25",
+    window: "morning",
+    hours: { start: "09:00", end: "12:00" },
+    window_label: null,
+    place: "Gurgaon",
+    requested: false,
+    one_visit: null,
+  };
+  let shown: Record<string, unknown> = consultation;
+  await page.route("**/api/me", (route) =>
+    route.fulfill({ json: { ...me, next_visit: null, being_booked: null, prompt: null, consultation: shown } }),
+  );
+  await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [] } }));
+  const row = page.getByRole("main").getByRole("listitem").first();
+  const opened = async () => {
+    await page.goto("/visits");
+    await expect(row).toContainText("Saturday · 9");
+  };
+
+  await opened();
+  await expect(row.getByText(appCopy.visits.free, { exact: true })).toBeVisible();
+  shown = { ...consultation, requested: true };
+  await opened();
+  await expect(row.getByText(appCopy.visits.requested, { exact: true })).toBeVisible();
+  await expect(row.getByText(appCopy.visits.free, { exact: true })).toHaveCount(0);
+  shown = { ...consultation, one_visit: { amount: 3_000_000, from: false, code: null } };
+  await opened();
+  await expect(row).toContainText(appCopy.ONE_VISIT);
+  await expect(row.getByText(appCopy.visits.free, { exact: true })).toHaveCount(0);
 });
 
 // A consultation and fit in one visit read "First fit · 180 minutes", with no price and no
@@ -86,7 +126,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
 test("Home and Visits name a consultation and fit, what it costs once fitted, and what to expect", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
   const oneVisit = {
@@ -95,29 +135,40 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
     length_minutes: 180,
     one_visit: { amount: 2_700_000, from: false, code: "TENPC" },
   };
-  await page.route("**/api/me", (route) => route.fulfill({ json: { ...me, next_visit: oneVisit, prompt: null } }));
+  // First fits changed in the app, so Change opens the sheet, named as the card names the visit.
+  const booking = me.booking as { self_serve_kinds: string[] };
+  const changeable = { ...booking, self_serve_kinds: [...booking.self_serve_kinds, "first_fit"] };
+  await page.route("**/api/me", (route) =>
+    route.fulfill({ json: { ...me, next_visit: oneVisit, prompt: null, booking: changeable } }),
+  );
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [oneVisit] } }));
   await page.reload();
 
   const card = page.getByRole("region", { name: appCopy.home.oneVisit.label });
-  await expect(card).toContainText("Consultation and fit · 3 hours");
+  await expect(card).toContainText(appCopy.ONE_VISIT);
+  await expect(card).toContainText(/about 3 hours/);
   await expect(card).toContainText("Rs. 27,000, only if you go ahead");
   await expect(card).toContainText("Code TENPC applied");
   await expect(card).toContainText(appCopy.home.oneVisit.paidBy);
-  await expect(page.getByRole("region", { name: appCopy.home.expect.label })).toContainText(
+  await expect(page.getByRole("region", { name: appCopy.home.expect.labelOneVisit })).toContainText(
     "Choose your hair system, fitted there and then.",
   );
   expect(await axeViolations(page)).toEqual([]);
+  await card.getByRole("button", { name: appCopy.home.reschedule }).click();
+  await expect(page.getByRole("dialog", { name: new RegExp(`^${appCopy.ONE_VISIT} on `) })).toBeVisible();
+  await page.keyboard.press("Escape");
 
   await tab(page, "Visits").click();
-  await expect(page.getByRole("main").getByRole("link").first()).toContainText("Consultation and fit · 12–12:30 pm");
+  const row = page.getByRole("main").getByRole("link").first();
+  await expect(row).toContainText(appCopy.ONE_VISIT);
+  await expect(row).toContainText(/day · 12–12:30\spm/);
 });
 
 // Once fitted, the link to pay by lived only in Razorpay's SMS.
 test("Home and Payments show a payment owed once fitted, with the link to pay by", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: appCopy.home.next.label })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const owed = {
     visit_id: client.firstFit.id,
@@ -138,7 +189,7 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
 
   const payments = await page.evaluate(async () => (await fetch("/api/payments")).json() as Promise<object>);
   await page.route("**/api/payments", (route) => route.fulfill({ json: { ...payments, owed: [owed] } }));
-  await tab(page, "Payments").click();
+  await page.goto("/profile/payments");
   const toPay = page.getByRole("region", { name: appCopy.home.owed.label });
   await expect(toPay.getByRole("link")).toHaveAttribute("href", owed.url);
   await expect(toPay).toContainText("Rs. 45,000");

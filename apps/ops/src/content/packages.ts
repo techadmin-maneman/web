@@ -109,13 +109,13 @@ export const packagesCopy = {
   },
   /** A price row's own words. */
   price: {
-    amount: "Before GST, Rs.",
+    amount: "Price incl. GST, Rs.",
     gst: "GST, %",
     from: "From",
     upcoming: (price: string, from: string) => `${price} from ${from}`,
     takeBack: (from: string) => `Withdraw the price from ${from}`,
     withdraw: "Withdraw",
-    gstOf: (rupees: string, gst: number) => (gst === 0 ? rupees : `${rupees} + ${String(gst)}% GST`),
+    gstOf: (rupees: string, gst: number) => (gst === 0 ? rupees : `${rupees} incl. ${String(gst)}% GST`),
   },
   errors: {
     name: "Use 2 to 46 letters, digits, spaces and . , ' ( ) & + / -, a letter or digit first.",
@@ -126,7 +126,7 @@ export const packagesCopy = {
     replacement_minutes: "Between 30 minutes and the length of a day.",
     service_every_days: "Between 7 days and how far ahead clients can book.",
     replace_after_months: "Between 1 and 36 months.",
-    amount_ex_gst: "A whole number of rupees.",
+    amount: "A whole number of rupees.",
     gst_percent: "A whole percentage.",
     valid_from: "Tomorrow or later.",
     hair_system: "Another hair system has that spec.",

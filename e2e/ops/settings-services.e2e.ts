@@ -49,7 +49,7 @@ test.describe("the consultation and the late fees", () => {
     expect((await request).postDataJSON()).toEqual({
       item: "late_fee_first_fit",
       tier: "standard",
-      amount_ex_gst: 450_000,
+      amount: 450_000,
       gst_percent: 0,
       valid_from: "2027-09-22",
     });

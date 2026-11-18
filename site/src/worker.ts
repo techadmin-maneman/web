@@ -25,13 +25,17 @@
 // zone still runs (docs/decisions/0206-trusted-types-and-a-nonce-per-page.md).
 //
 // Every answer of mm-api's that cannot be used is one line in the Worker's log, and a failure is remembered for ten
-// seconds, so a down mm-api is not asked again by every view.
+// seconds, so a down mm-api is not asked again by every view. Anything else that goes wrong while a page is answered is
+// one line in the log too, and reported as a page's own script error is, to mm-api, which takes it on to Sentry; the
+// visitor is given the page as built where the assets can still give it. A throw while a page streams through its
+// rewriter comes after the answer, and is not caught.
 
+import { legalDays } from "./lib/legal-days.ts";
 import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, ReferralReward } from "./lib/api.ts";
 import { partOf } from "./lib/byte-range.ts";
 import { citySlug, isServedCities, namingCities, type ServedCities } from "./lib/cities.ts";
-import { cardPath, HOUSE_CARD, INVITE_PATH, isInvite } from "./lib/invite.ts";
+import { cardPath, HOUSE_CARD, INVITE_PATH, INVITE_PATH_IN_URL, isInvite } from "./lib/invite.ts";
 import { isReferralReward } from "./lib/reward.ts";
 
 export interface SiteEnv {
@@ -55,6 +59,9 @@ const CITY_PAGE = /^\/areas\/[a-z0-9-]+$/;
 /** The page besides the landing that says what a referral earns. */
 const REWARD_PAGE = "/book";
 
+/** The terms, which state the fit guarantee in the days ops set (docs/decisions/0256-fit-guarantee-setting.md). */
+const TERMS_PAGE = "/terms";
+
 /** How long an answer of mm-api's is kept: the console's own minute (docs/decisions/0061-ops-editable-inputs.md). */
 const KEPT_MS = 60_000;
 
@@ -62,7 +69,7 @@ const KEPT_MS = 60_000;
 const FAILURE_KEPT_MS = 10_000;
 
 /** What the Worker asks mm-api for, as its log line names it. */
-type Asked = "invite" | "reward" | "cities";
+type Asked = "invite" | "reward" | "cities" | "guarantee";
 
 /** A page's policy with a nonce of this request's own for its scripts; anything but a page is passed on as it is. */
 export function withNonce(answer: Response): Response {
@@ -120,6 +127,26 @@ const askForReward = (env: SiteEnv, origin: string): Promise<ReferralReward | nu
 /** The cities ops serve, or null when mm-api could not say. */
 const askForCities = (env: SiteEnv, origin: string): Promise<ServedCities | null> =>
   fetchJson(env, new Request(`${origin}/api/served-cities`), "cities", isServedCities);
+
+const isFitGuarantee = (body: unknown): body is { readonly days: number } =>
+  typeof body === "object" && body !== null && "days" in body && Number.isInteger(body.days);
+
+/** How long the fit guarantee runs, or null when mm-api could not say. */
+const askForGuarantee = (env: SiteEnv, origin: string): Promise<{ readonly days: number } | null> =>
+  fetchJson(env, new Request(`${origin}/api/fit-guarantee`), "guarantee", isFitGuarantee);
+
+/** The words an element holds, put in place of the ones it was built with. */
+class Filled {
+  readonly words: string;
+
+  constructor(words: string) {
+    this.words = words;
+  }
+
+  element(element: Element): void {
+    element.setInnerContent(this.words);
+  }
+}
 
 type Ask<T> = (env: SiteEnv, origin: string) => Promise<T | null>;
 
@@ -289,6 +316,48 @@ class UnservedLeftOut {
 const isServedPage = (pathname: string, cities: readonly string[]): boolean =>
   cities.some((city) => pathname === `/areas/${citySlug(city)}`);
 
+/** The longest of each part of a report mm-api takes (src/routes/client-errors.ts). */
+const LONGEST = { message: 500, path: 300, stack: 4000 } as const;
+
+/** What a report from the Worker names as where it was thrown, apart from a page's own scripts. */
+const WORKER_SOURCE = "mm-site Worker";
+
+/**
+ * Something the Worker did not expect: one line in its log, and a report to mm-api as a page's own script error is
+ * (packages/web-kit/client-errors.ts), sent after the answer. An invite's code is a person's own, so its landing is
+ * named without it. A report that cannot be sent is nobody's concern.
+ */
+function reportFailure(request: Request, env: SiteEnv, ctx: ExecutionContext | undefined, thrown: unknown): void {
+  const url = new URL(request.url);
+  const path = url.pathname.replace(INVITE_PATH_IN_URL, "/r/");
+  const message = thrown instanceof Error ? `${thrown.name}: ${thrown.message}` : String(thrown);
+  const stack = thrown instanceof Error ? thrown.stack : undefined;
+  // On the Worker's one console channel, as mm_api_failed is; the line's own level says what it is.
+  console.warn(JSON.stringify({ level: "error", event: "site_page_failed", worker: "mm-site", path, message }));
+  const report = {
+    kind: "error",
+    message: message.slice(0, LONGEST.message),
+    path: path.slice(0, LONGEST.path),
+    source: WORKER_SOURCE,
+    ...(stack === undefined ? {} : { stack: stack.slice(0, LONGEST.stack) }),
+  };
+  const sending = env.API.fetch(
+    new Request(`${url.origin}/api/client-errors`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(report),
+    }),
+  ).catch(() => undefined);
+  ctx?.waitUntil(sending);
+}
+
+/** The page as built, as the Worker serves it while mm-api cannot say: an invite's landing for its code. */
+function asBuilt(request: Request, env: SiteEnv): Promise<Response> {
+  const url = new URL(request.url);
+  const path = INVITE_PATH.test(url.pathname) ? "/r" : url.pathname;
+  return env.ASSETS.fetch(builtFile(request, `${url.origin}${path}`));
+}
+
 export interface SiteWorkerOptions {
   /** What the reward and the cities are kept a minute on: a test gives it its own. */
   readonly clock?: () => number;
@@ -297,48 +366,71 @@ export interface SiteWorkerOptions {
 export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
   const referralReward = cachedFor(KEPT_MS, clock, askForReward);
   const servedCities = cachedFor(KEPT_MS, clock, askForCities);
+  const fitGuarantee = cachedFor(KEPT_MS, clock, askForGuarantee);
+
+  /** A page, as the Worker answers it when nothing goes wrong. */
+  async function answer(request: Request, env: SiteEnv): Promise<Response> {
+    const url = new URL(request.url);
+    if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
+    if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
+    if (url.pathname === TERMS_PAGE && request.method === "GET") {
+      // The terms as built say the days the guarantee began with; while mm-api cannot say, they stand. Either way the
+      // page goes without its validators, so a browser never keeps a figure ops have changed since.
+      const [page, guarantee] = await Promise.all([
+        env.ASSETS.fetch(builtFile(request, `${url.origin}${TERMS_PAGE}`)),
+        fitGuarantee(env, url.origin),
+      ]);
+      if (!page.ok) return withNonce(page);
+      if (guarantee === null) return withNonce(withoutValidators(page));
+      const filled = new HTMLRewriter().on("[data-guarantee-days]", new Filled(legalDays(guarantee.days)));
+      return withNonce(filled.transform(withoutValidators(page)));
+    }
+
+    const code = INVITE_PATH.exec(url.pathname)?.[1]?.toUpperCase();
+    const cityPage = CITY_PAGE.test(url.pathname);
+    const namesCities = CITY_PAGES.has(url.pathname) || cityPage;
+    const saysReward = code !== undefined || url.pathname === REWARD_PAGE;
+    if (!saysReward && !namesCities) return withNonce(await env.ASSETS.fetch(request));
+
+    // The landing is r.html for every code, which the assets serve at /r (site/astro.config.ts builds files).
+    const path = code === undefined ? url.pathname : "/r";
+    const page = await env.ASSETS.fetch(builtFile(request, `${url.origin}${path}`));
+    if (!page.ok || request.method !== "GET") return withNonce(page);
+
+    const [invite, reward, cities] = await Promise.all([
+      code === undefined ? null : lookUp(env, request, url.origin, code),
+      saysReward ? referralReward(env, url.origin) : null,
+      namesCities ? servedCities(env, url.origin) : null,
+    ]);
+    // A city's page says a technician comes there: never of a city with no pincode served.
+    if (cityPage && cities !== null && cities.cities.length > 0 && !isServedPage(url.pathname, cities.cities)) {
+      return Response.redirect(`${url.origin}/areas`, 302);
+    }
+    const rewriter = new HTMLRewriter();
+    if (cities !== null && cities.cities.length > 0) {
+      rewriter.on("[data-cities]", new CitiesNamed(cities.cities));
+      rewriter.on("[data-city]", new UnservedLeftOut(cities.cities));
+    }
+    if (cityPage && cities?.areas !== undefined) {
+      rewriter.on("[data-city-areas], [data-areas-of]", new AreasListed(cities.areas));
+    }
+    if (reward !== null) rewriter.on("body", new Written("data-reward", JSON.stringify(reward)));
+    if (code !== undefined) {
+      rewriter.on("head > title", new Retitled(invitePageTitle(invite)));
+      rewriter.on("meta", new Meta(invite, reward, url.origin, code));
+      if (invite !== null) rewriter.on("#invite", new Written("data-invite", JSON.stringify({ ...invite, code })));
+    }
+    return withNonce(rewriter.transform(withoutValidators(page)));
+  }
 
   return {
-    async fetch(request: Request, env: SiteEnv): Promise<Response> {
-      const url = new URL(request.url);
-      if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
-      if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
-
-      const code = INVITE_PATH.exec(url.pathname)?.[1]?.toUpperCase();
-      const cityPage = CITY_PAGE.test(url.pathname);
-      const namesCities = CITY_PAGES.has(url.pathname) || cityPage;
-      const saysReward = code !== undefined || url.pathname === REWARD_PAGE;
-      if (!saysReward && !namesCities) return withNonce(await env.ASSETS.fetch(request));
-
-      // The landing is r.html for every code, which the assets serve at /r (site/astro.config.ts builds files).
-      const path = code === undefined ? url.pathname : "/r";
-      const page = await env.ASSETS.fetch(builtFile(request, `${url.origin}${path}`));
-      if (!page.ok || request.method !== "GET") return withNonce(page);
-
-      const [invite, reward, cities] = await Promise.all([
-        code === undefined ? null : lookUp(env, request, url.origin, code),
-        saysReward ? referralReward(env, url.origin) : null,
-        namesCities ? servedCities(env, url.origin) : null,
-      ]);
-      // A city's page says a technician comes there: never of a city with no pincode served.
-      if (cityPage && cities !== null && cities.cities.length > 0 && !isServedPage(url.pathname, cities.cities)) {
-        return Response.redirect(`${url.origin}/areas`, 302);
+    async fetch(request: Request, env: SiteEnv, ctx?: ExecutionContext): Promise<Response> {
+      try {
+        return await answer(request, env);
+      } catch (thrown) {
+        reportFailure(request, env, ctx, thrown);
+        return withNonce(await asBuilt(request, env));
       }
-      const rewriter = new HTMLRewriter();
-      if (cities !== null && cities.cities.length > 0) {
-        rewriter.on("[data-cities]", new CitiesNamed(cities.cities));
-        rewriter.on("[data-city]", new UnservedLeftOut(cities.cities));
-      }
-      if (cityPage && cities?.areas !== undefined) {
-        rewriter.on("[data-city-areas], [data-areas-of]", new AreasListed(cities.areas));
-      }
-      if (reward !== null) rewriter.on("body", new Written("data-reward", JSON.stringify(reward)));
-      if (code !== undefined) {
-        rewriter.on("head > title", new Retitled(invitePageTitle(invite)));
-        rewriter.on("meta", new Meta(invite, reward, url.origin, code));
-        if (invite !== null) rewriter.on("#invite", new Written("data-invite", JSON.stringify({ ...invite, code })));
-      }
-      return withNonce(rewriter.transform(withoutValidators(page)));
     },
   } satisfies ExportedHandler<SiteEnv>;
 }

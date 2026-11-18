@@ -99,6 +99,13 @@ describe("a list's row", () => {
     expect(row({})).toMatch(/^<li><div /);
   });
 
+  it("opens a page elsewhere in a new tab, or downloads a file in place", () => {
+    expect(row({ href: "https://wa.me/1" })).toMatch(/^<li><a [^>]*target="_blank" rel="noopener"/);
+    const download = row({ href: "/api/me/export.html", download: true });
+    expect(download).toMatch(/^<li><a [^>]*href="\/api\/me\/export.html" download=""/);
+    expect(download).not.toContain("target=");
+  });
+
   it("reads as what it is, who it is about, and its one figure", () => {
     const markup = row({ end: "Today", onClick: () => undefined });
     expect(
