@@ -3,7 +3,7 @@
 // technician surface's host, at the width its boards are drawn at.
 
 import { LOCAL_LOGIN_CODE } from "../../scripts/lib/local-stack.ts";
-import { expect, outsideContract, test } from "../support.ts";
+import { DUMMY_TOKEN, expect, outsideContract, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { heldOnPhone, storeOnPhone } from "./on-phone.ts";
@@ -129,6 +129,17 @@ test("a phone revoked while the app is open is wiped at its next call, and shows
   await expect(page.getByText("Gate code 4417 · visitor bay B")).toHaveCount(0);
   await expect(page.getByText(techCopy.today.offline.title)).toHaveCount(0);
   expect(await storeOnPhone(page)).toBe(false);
+});
+
+// A technician's number is one clients see, so a code is asked for with Turnstile's token, as the client app's is.
+test("asks for a code with the token Turnstile gives", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  await page.goto("/");
+  const asked = page.waitForRequest((request) => request.url().endsWith("/api/tech/auth/otp"));
+  await page.getByRole("textbox", { name: techCopy.signIn.mobileLabel }).fill("9811000000");
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  expect((await asked).postDataJSON()).toMatchObject({ turnstile_token: DUMMY_TOKEN });
 });
 
 test("once a code is sent, the number can be changed, and a new code asked for after half a minute", async ({

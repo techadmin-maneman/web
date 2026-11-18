@@ -165,9 +165,12 @@ function headersOf(write: Write): Record<string, string> {
 }
 
 export const api = {
-  /** The code goes to the technician's mobile on WhatsApp, and the phone names itself here too. */
-  sendCode: (mobile: string, deviceId: string) =>
-    client.post("/api/tech/auth/otp", { body: { mobile, device_id: deviceId }, patience: PATIENCE_MS.write }),
+  /** The code goes to the technician's mobile on WhatsApp; the phone names itself, and Turnstile's token goes too. */
+  sendCode: (mobile: string, deviceId: string, turnstileToken: string) =>
+    client.post("/api/tech/auth/otp", {
+      body: { mobile, device_id: deviceId, turnstile_token: turnstileToken },
+      patience: PATIENCE_MS.write,
+    }),
   /**
    * Checks the code. A wrong one is a 200 with the attempts left, not an error:
    * only a closed challenge is refused (410). The right one opens the session

@@ -103,6 +103,7 @@
     "./useOtpChallenge": "./useOtpChallenge.ts",
     "./useRowPanel": "./useRowPanel.ts",
     "./useScreenTitle": "./useScreenTitle.ts",
+    "./useTurnstile": "./useTurnstile.ts",
     "./useSecondsLeft": "./useSecondsLeft.ts",
     "./VisuallyHidden": "./VisuallyHidden.tsx",
     "./TimeChoice": "./TimeChoice.tsx",

@@ -13,6 +13,7 @@ import { ActionBar } from "@maneman/ui/ActionBar";
 import { Button } from "@maneman/ui/Button";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { Mark } from "@maneman/ui/Mark";
+import { appSiteKey, useTurnstile } from "@maneman/ui/useTurnstile";
 import { LanguageToggle } from "../lang/index.ts";
 import { fieldDigits, formatMobileField, mobileDigits } from "@maneman/web-kit/mobile";
 import { OPS_NUMBER } from "@maneman/web-kit/whatsapp";
@@ -189,6 +190,23 @@ function Foot(props: { asked: boolean; ready: boolean; working: boolean }) {
   );
 }
 
+/** Asks for a code with Turnstile's token: the challenge, or the refusal to show. */
+async function askForCode(
+  digits: string,
+  turnstile: ReturnType<typeof useTurnstile>,
+): Promise<{ readonly ok: true; readonly challenge: Challenge } | { readonly ok: false; readonly error: Refusal }> {
+  const token = await turnstile.token();
+  if (token === null) return { ok: false, error: refusedWith("turnstile_failed") };
+  try {
+    const answer = await api.sendCode(digits, await deviceId(), token);
+    turnstile.renew();
+    return answer.ok ? { ok: true, challenge: answer.body } : { ok: false, error: refusedWith(answer.code) };
+  } catch {
+    // The phone's store would not give the device ID; the next tap asks it again.
+    return { ok: false, error: refusal(() => copy.errors.unknown) };
+  }
+}
+
 export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => Promise<void> }) {
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
@@ -202,6 +220,8 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => Promis
   const [left, setLeft] = useState(false);
   const number = useRef<HTMLInputElement | null>(null);
   const codeBoxes = useRef<HTMLInputElement | null>(null);
+  // Asking for a code needs Turnstile, invisible unless Cloudflare needs the technician to act.
+  const turnstile = useTurnstile(appSiteKey(import.meta.env.MM_ENV));
 
   // Once a code is out, the keyboard opens on its boxes: a gloved technician need not tap into them.
   useEffect(() => {
@@ -215,17 +235,14 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => Promis
       setError(refusal(() => copy.mobileError));
       return;
     }
-    try {
-      const answer = await api.sendCode(digits, await deviceId());
-      if (answer.ok) {
-        otp.sent(answer.body);
-        setCode("");
-        setError(null);
-      } else setError(refusedWith(answer.code));
-    } catch {
-      // The phone's store would not give the device ID; the next tap asks it again.
-      setError(refusal(() => copy.errors.unknown));
+    const asked = await askForCode(digits, turnstile);
+    if (!asked.ok) {
+      setError(asked.error);
+      return;
     }
+    otp.sent(asked.challenge);
+    setCode("");
+    setError(null);
   }
   const send = () => once(sendOnce);
 
@@ -327,6 +344,8 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => Promis
           {shown}
         </InlineMessage>
       )}
+
+      <div ref={turnstile.box} className={styles.turnstile} />
 
       {challenge === null && <NewNumber />}
 

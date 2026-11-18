@@ -60,11 +60,12 @@ export const SURFACE_HOSTS: Readonly<Record<RemoteEnvironmentName, Readonly<Reco
  * page is refused, though Cloudflare passed it. Locally the test keys answer for any page, so none is checked.
  */
 export const TURNSTILE_HOSTS: Readonly<Record<RemoteEnvironmentName, readonly string[]>> = {
-  staging: [SURFACE_HOSTS.staging.public, SURFACE_HOSTS.staging.client],
+  staging: [SURFACE_HOSTS.staging.public, SURFACE_HOSTS.staging.client, SURFACE_HOSTS.staging.tech],
   production: [
     SURFACE_HOSTS.production.public,
     `www.${SURFACE_HOSTS.production.public}`,
     SURFACE_HOSTS.production.client,
+    SURFACE_HOSTS.production.tech,
   ],
 };
 

@@ -59,6 +59,13 @@ describe.each(POLICIES)("%s’s policy", (_, policy) => {
   });
 });
 
+// A technician's number is one clients see, so asking for its code needs Turnstile, as the client app's login does.
+it("lets the technician app load Turnstile and frame its check, and nothing else from outside", () => {
+  const policy = contentSecurityPolicy(TECHNICIAN_APP_POLICY);
+  expect(sourcesOf(policy, "script-src")).toEqual(["'self'", "https://challenges.cloudflare.com"]);
+  expect(sourcesOf(policy, "frame-src")).toEqual(["https://challenges.cloudflare.com"]);
+});
+
 it("keeps inline styles out of the apps that load nothing of Razorpay’s", () => {
   expect(sourcesOf(contentSecurityPolicy(OPS_CONSOLE_POLICY), "style-src")).toEqual(["'self'"]);
   expect(sourcesOf(contentSecurityPolicy(TECHNICIAN_APP_POLICY), "style-src")).toEqual(["'self'"]);

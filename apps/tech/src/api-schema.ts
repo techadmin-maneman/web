@@ -173,6 +173,24 @@ export interface paths {
                         });
                     };
                 };
+                /** @description turnstile_failed */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "turnstile_failed";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
                 /** @description rate_limited */
                 429: {
                     headers: {
@@ -191,7 +209,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description busy: today's ceiling on codes is reached */
+                /** @description busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -200,7 +218,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"] & ({
                             error: {
                                 /** @enum {string} */
-                                code: "busy";
+                                code: "unavailable" | "busy";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -5082,6 +5100,7 @@ export interface components {
             mobile: string;
             /** @description The app's own ID for this phone, kept in its storage. */
             device_id: string;
+            turnstile_token: string;
         };
         TechnicianVerify: {
             /** @enum {boolean} */

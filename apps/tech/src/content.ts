@@ -27,6 +27,7 @@ export const signIn = localised({
     rate_limited: "Too many codes for this number today. Ask ops.",
     sign_in_stopped: "Ops have stopped sign-in on your number. Ask them to let you back in.",
     busy: "Codes aren’t going out right now. Try again shortly.",
+    turnstile_failed: "We couldn’t confirm you’re a person. Try again.",
     offline: "You’re offline. Reconnect, then sign in.",
     unknown: "That didn’t go through. Try again.",
   },

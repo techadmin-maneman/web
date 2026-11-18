@@ -16,12 +16,12 @@ import { login } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { titled } from "../lib/arrival.ts";
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
+import { appSiteKey, useTurnstile } from "@maneman/ui/useTurnstile";
 import { apiNow } from "@maneman/web-kit/clock";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
 import type { LinkedLogin, LinkedSignIn } from "./linked-mobile.ts";
 import { MobileScreen } from "./MobileScreen.tsx";
-import { useTurnstile } from "./turnstile.ts";
 
 type Step =
   | { readonly kind: "mobile" }
@@ -128,7 +128,7 @@ export function Login({ ended, linked, onSignedIn }: { ended: boolean; linked: L
   // The API's reason no code was sent.
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
-  const turnstile = useTurnstile();
+  const turnstile = useTurnstile(appSiteKey(import.meta.env.MM_ENV));
 
   /** Back to the number, saying why no code was sent. */
   const refused = (code: string) => {

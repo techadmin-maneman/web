@@ -179,6 +179,42 @@ Request body:
 }
 ```
 
+**403**: turnstile_failed
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "turnstile_failed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 **429**: rate_limited
 
 ```json
@@ -215,7 +251,7 @@ Request body:
 }
 ```
 
-**503**: busy: today's ceiling on codes is reached
+**503**: busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached
 
 ```json
 {
@@ -232,6 +268,7 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
+                "unavailable",
                 "busy"
               ]
             }
@@ -7076,11 +7113,17 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]{8,64}$",
       "description": "The app's own ID for this phone, kept in its storage."
+    },
+    "turnstile_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
     }
   },
   "required": [
     "mobile",
-    "device_id"
+    "device_id",
+    "turnstile_token"
   ],
   "additionalProperties": false
 }
