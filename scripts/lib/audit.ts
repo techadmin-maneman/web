@@ -17,6 +17,13 @@ export const ALLOWED: readonly Allowance[] = [
     reason: "braces, inside knip (the dead-code check), runs only in development and CI; no fixed release yet",
     until: "2026-11-03",
   },
+  {
+    advisory: "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+    reason:
+      "picomatch 2, inside @prefresh/vite (the apps' dev-server refresh), matches only our own globs in development; " +
+      "no fixed 2.x release yet",
+    until: "2026-12-18",
+  },
 ];
 
 export interface AuditReport {
