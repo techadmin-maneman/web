@@ -144,10 +144,11 @@ describe("a webhook refused at our door", () => {
 
   it("does the same for MSG91's WhatsApp webhook", async () => {
     const deps = fakeDependencies();
+    const token = "an-msg91-webhook-token-of-thirty-two-chars";
     const msg91: NonNullable<Settings["messaging"]["msg91"]> = {
       authKey: "msg91-key",
       integratedNumber: "919800000000",
-      webhookToken: "an-msg91-webhook-token-of-thirty-two-chars",
+      webhookToken: token,
     };
     const app = appFor("local", deps, { messaging: { ...LOCAL_SETTINGS.messaging, msg91 } });
     const post = (token: string) =>
@@ -163,7 +164,7 @@ describe("a webhook refused at our door", () => {
       );
     for (let refused = 0; refused < 3; refused += 1) expect((await post("a-token-that-is-not-ours")).status).toBe(401);
     expect(deps.alerts).toEqual([expect.stringContaining("Check the MSG91 WhatsApp webhook's secret now") as string]);
-    expect((await post(msg91.webhookToken)).status).toBe(204);
+    expect((await post(token)).status).toBe(204);
     expect(await open("webhook_refused:msg91")).toBeNull();
   });
 });
@@ -280,22 +281,24 @@ describe("Razorpay Checkout failing to load in the client app", () => {
 
   // A link sent for a hold carries the hold in its notes too, so only the order tells a Checkout payment apart.
   it("is closed by a payment made through Checkout, on a hold's own order, and not by a payment link's", async () => {
-    const person = await aPerson();
-    const technician = await aTechnician();
-    await aHold({ person_id: person.id, technician_id: technician.id, razorpay_order_id: "order_hold_1" });
+    const person = "checkout-client";
+    const technician = "checkout-technician";
+    await aPerson({ id: person });
+    await aTechnician({ id: technician });
+    await aHold({ person_id: person, technician_id: technician, razorpay_order_id: "order_hold_1" });
     const paid = (order: string, notes: unknown) => ({
       payload: { payment: { entity: { ...captured.payload.payment.entity, order_id: order, notes } } },
     });
     expect(await paidThroughCheckout(env.DB, paid("order_hold_1", {}))).toBe(true);
     // A hold paid by a link takes the link's order once paid.
     await aHold({
-      person_id: person.id,
-      technician_id: technician.id,
+      person_id: person,
+      technician_id: technician,
       pay_by_link: 1,
       razorpay_order_id: "order_link_2",
     });
     expect(await paidThroughCheckout(env.DB, paid("order_link_2", {}))).toBe(false);
-    const link = paid("order_link_1", { hold_id: "33333333-3333-4333-8333-0000000000aa", person_id: person.id });
+    const link = paid("order_link_1", { hold_id: "33333333-3333-4333-8333-0000000000aa", person_id: person });
     expect(await paidThroughCheckout(env.DB, link)).toBe(false);
   });
 });
