@@ -125,7 +125,7 @@ In `src/config/environments.ts`: hosts, origins and resource names, which change
 | `RESOURCE_TOKEN` | `{"local":"local","staging":"staging","production":"prod"}` |
 | `SURFACE_HOSTS` | `{"staging":{"public":"staging.maneman.in","client":"app-staging.maneman.in","ops":"ops-staging.maneman.in","tech":"tech-staging.maneman.in"},"production":{"public":"maneman.in","client":"app.maneman.in","ops":"ops.maneman.in","tech":"tech.maneman.in"}}` |
 | `SURFACES` | `["public","client","ops","tech"]` |
-| `TURNSTILE_HOSTS` | `{"staging":["staging.maneman.in","app-staging.maneman.in"],"production":["maneman.in","www.maneman.in","app.maneman.in"]}` |
+| `TURNSTILE_HOSTS` | `{"staging":["staging.maneman.in","app-staging.maneman.in","tech-staging.maneman.in"],"production":["maneman.in","www.maneman.in","app.maneman.in","tech.maneman.in"]}` |
 | `ZONE_ID` | `d33891be281c088bf3e0e927d7ed20f9` |
 | `ZONE_NAME` | `maneman.in` |
 

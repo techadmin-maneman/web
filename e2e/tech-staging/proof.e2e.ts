@@ -14,6 +14,7 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { INSIDE, OUTSIDE, query, stagingFixture } from "./seed.ts";
+import { DUMMY_TOKEN } from "../support.ts";
 import { shots } from "../tech/steps-fixtures.ts";
 import {
   signIn as signInWords,
@@ -131,7 +132,7 @@ test("the code request carries the phone’s own ID, and a wrong code is not an 
   // device_id on the code request as well as on the verify.
   const without = await page.request.post("/api/tech/auth/otp", {
     headers: sameOrigin(TECH),
-    data: { mobile: fixture.technicianMobile },
+    data: { mobile: fixture.technicianMobile, turnstile_token: DUMMY_TOKEN },
   });
   record("otp without device_id", `${String(without.status())} ${await without.text()}`);
   expect(without.status()).toBe(400);

@@ -3,7 +3,9 @@
 // technician deletes it (migration 0207's trigger), and the hourly sweep any left past POSITION_KEPT_HOURS. An SOS is
 // kept until ops mark it handled, its position brought up to date while it is open and blanked once handled.
 
+import type { PlacesReached } from "../../policy/access.ts";
 import { PAGE_AGAIN_AFTER_MINUTES, POSITION_KEPT_HOURS } from "../../policy/safety.ts";
+import { reachBinding, withinReach } from "../clients/places.ts";
 
 /** Where the phone was, and when it read it. */
 export interface Position {
@@ -240,7 +242,7 @@ interface OpenSosRow {
 }
 
 /** Every SOS not yet handled, oldest first, with whose it is, the visit they were on and where they were last. */
-export async function openSosList(db: D1Database): Promise<OpenSos[]> {
+export async function openSosList(db: D1Database, reached: PlacesReached): Promise<OpenSos[]> {
   const { results } = await db
     .prepare(
       `SELECT s.id, s.technician_id, t.name AS technician_name, s.appointment_id, a.window_start AS starts_at,
@@ -249,9 +251,10 @@ export async function openSosList(db: D1Database): Promise<OpenSos[]> {
          JOIN technicians t ON t.id = s.technician_id
          LEFT JOIN appointments a ON a.id = s.appointment_id
          LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
-        WHERE s.handled_at IS NULL
+        WHERE s.handled_at IS NULL AND ${withinReach("technician", "t", "?1")}
         ORDER BY s.sent_at`,
     )
+    .bind(reachBinding(reached))
     .all<OpenSosRow>();
   return results.map((row) => ({
     id: row.id,

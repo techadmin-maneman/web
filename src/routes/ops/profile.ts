@@ -7,7 +7,7 @@ import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { afterResponse } from "../../http/after-response.ts";
-import { actorOf } from "../../http/audit.ts";
+import { actorOf, staffMemberOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { type AuditAction, type AuditEntry } from "../../domain/platform/audit.ts";
 import {
@@ -156,6 +156,10 @@ const deletionDecisionRoute = opsRoute({
   responses: {
     200: { description: "Decided", ...json(z.object({ state: z.enum(["done", "rejected"]) }).strict()) },
     400: errorResponse("invalid_request: a rejection needs a reason"),
+    403: errorResponse(
+      "access_required: no Access identity, or a service token, which names no member of staff; not_permitted: the " +
+        "caller's grants do not reach this route",
+    ),
     404: errorResponse("not_found: no request waiting for ops by that ID in the caller's cities"),
     409: {
       description:
@@ -308,6 +312,8 @@ function registerDeletionRequests(app: App): void {
   app.openapi(deletionDecisionRoute, async (c) => {
     const { id } = c.req.valid("param");
     const { decision, reason } = c.req.valid("json");
+    // A client's erasure, or the refusal of one, is a member of staff's decision, as on the client's own page.
+    if (staffMemberOf(c) === null) return refuse(c, "access_required");
     if (needsReason("deletion", decision) && (reason ?? "") === "") {
       return refuse(c, "invalid_request", ["reason"]);
     }

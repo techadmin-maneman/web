@@ -190,7 +190,11 @@ export async function clientSignIn(wire: Wire, mobile: string): Promise<boolean>
 /** Signs a technician in on the wire from a phone of their own. */
 export async function techSignIn(wire: Wire, mobile: string, deviceId: string): Promise<boolean> {
   wire.reauth ??= () => techSignIn(wire, mobile, deviceId);
-  const sent = await wire.call<{ challenge_id: string }>("POST", "/api/tech/auth/otp", { mobile, device_id: deviceId });
+  const sent = await wire.call<{ challenge_id: string }>("POST", "/api/tech/auth/otp", {
+    mobile,
+    device_id: deviceId,
+    turnstile_token: TURNSTILE,
+  });
   if (sent.status !== 202) return false;
   const verified = await wire.call<{ verified: boolean }>("POST", "/api/tech/auth/verify", {
     challenge_id: sent.body.challenge_id,

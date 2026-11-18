@@ -121,7 +121,7 @@ export const test = base.extend<{
   ],
   appTurnstile: [
     async ({ page }, use, testInfo) => {
-      if (testInfo.project.name === "app") await fakeTurnstile(page);
+      if (["app", "tech", "tech-live", "tech-ios"].includes(testInfo.project.name)) await fakeTurnstile(page);
       await use(undefined);
     },
     { auto: true },

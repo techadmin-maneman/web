@@ -6918,7 +6918,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                /** @description access_required: no Access identity, or a service token, which names no member of staff; not_permitted: the caller's grants do not reach this route */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10064,7 +10064,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every technician's SOS not yet handled, oldest first, for the banner on national Operations' every screen */
+        /** Every SOS not yet handled of a technician in the caller's cities, oldest first, for Operations' banner */
         get: {
             parameters: {
                 query?: never;
@@ -28255,7 +28255,7 @@ export interface components {
             }[];
         };
         Erasure: {
-            /** @description Erase even with a visit or booking still to happen, a payment held or a link unpaid: only when ops will settle them by hand today. Bookings not yet visits are let go, and open payment links cancelled. */
+            /** @description Erase even with a visit or booking still to happen, a payment held or a link unpaid. Visits still to come are cancelled free to the client and refunded in full; bookings not yet visits are let go and refunded, one Razorpay refuses left on Tasks; open payment links are cancelled. */
             override_open_bookings?: boolean;
         };
         NumberChangeDecision: {

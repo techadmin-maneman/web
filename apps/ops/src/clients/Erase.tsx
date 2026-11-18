@@ -195,8 +195,8 @@ export function Erased() {
 }
 
 /**
- * The page of a client erased since: their visits and money, as records, under the day they were erased. A visit still
- * to come may be cancelled or closed by hand, as ops who erase despite one promise to.
+ * The page of a client erased since: their visits and money, as records, under the day they were erased. A visit the
+ * erasure could not cancel may be cancelled or closed by hand, and a payment Razorpay would not refund refunded.
  */
 export function ErasedRecord({ record, onChanged }: { record: ErasedClientRecord; onChanged: () => void }) {
   return (

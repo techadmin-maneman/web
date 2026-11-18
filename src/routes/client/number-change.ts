@@ -111,6 +111,7 @@ export function registerClientNumberChange(app: App): void {
       knownCodes: numberChangeCodes(config.settings.login, testRecord),
     });
     await sendCodeAfterResponse({
+      surface: null,
       c,
       mobileE164: current,
       testRecord,
@@ -118,6 +119,7 @@ export function registerClientNumberChange(app: App): void {
       code: started.codes.old.code,
     });
     await sendCodeAfterResponse({
+      surface: null,
       c,
       mobileE164: newMobile,
       testRecord,

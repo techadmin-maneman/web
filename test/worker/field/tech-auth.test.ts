@@ -15,10 +15,13 @@ import {
   appFor,
   captureLogs,
   fakeDependencies,
+  fakeFetch,
+  json,
   LOCAL_SETTINGS,
   markDatabase,
   NOW,
   request,
+  TURNSTILE_URL,
   type TestDependencies,
 } from "../helpers.ts";
 
@@ -52,12 +55,39 @@ const post = (path: string, body: unknown) =>
   });
 
 async function challengeFor(mobile: string): Promise<{ id: string; code: string | undefined }> {
-  const answer = await post("/api/tech/auth/otp", { mobile, device_id: DEVICE });
+  const answer = await post("/api/tech/auth/otp", { mobile, device_id: DEVICE, turnstile_token: "token" });
   const { challenge_id: id } = await answer.json<{ challenge_id: string }>();
   return { id, code: deps.sentCodes.at(-1)?.code };
 }
 
 describe("POST /api/tech/auth/otp", () => {
+  // A technician's number is one clients see, so a stranger's script must not spend its codes for the day.
+  it("refuses without Turnstile, and sends nothing", async () => {
+    deps = fakeDependencies({ fetch: fakeFetch({ [TURNSTILE_URL]: () => json({ success: false }) }).fetch });
+    tech = appFor("local", deps, {}, "tech");
+    const refused = await post("/api/tech/auth/otp", {
+      mobile: "98100 00009",
+      device_id: DEVICE,
+      turnstile_token: "x",
+    });
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toMatchObject({ error: { code: "turnstile_failed" } });
+    expect(deps.sentCodes).toEqual([]);
+    const missing = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+    expect(missing.status).toBe(400);
+
+    // Nothing was counted against the number: its day's codes are all still there.
+    tech = appFor("local", fakeDependencies(), {}, "tech");
+    for (let sent = 0; sent < LOCAL_SETTINGS.login.codeMobileDailyLimit; sent += 1) {
+      const asked = await post("/api/tech/auth/otp", {
+        mobile: "98100 00009",
+        device_id: DEVICE,
+        turnstile_token: "x",
+      });
+      expect(asked.status).toBe(202);
+    }
+  });
+
   it("sends a code to a technician the roster holds as active", async () => {
     const { code } = await challengeFor("98100 00009");
 
@@ -67,14 +97,26 @@ describe("POST /api/tech/auth/otp", () => {
   });
 
   it("says how long until a new code may be asked for, as the client's sign-in does", async () => {
-    const answer = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+    const answer = await post("/api/tech/auth/otp", {
+      mobile: "98100 00009",
+      device_id: DEVICE,
+      turnstile_token: "token",
+    });
     expect(answer.status).toBe(202);
     expect(await answer.json()).toMatchObject({ expires_in_s: 600, resend_in_s: 30 });
   });
 
   it("answers the same for a number the roster does not hold, and sends nothing", async () => {
-    const known = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
-    const unknown = await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
+    const known = await post("/api/tech/auth/otp", {
+      mobile: "98100 00009",
+      device_id: DEVICE,
+      turnstile_token: "token",
+    });
+    const unknown = await post("/api/tech/auth/otp", {
+      mobile: "98100 00004",
+      device_id: DEVICE,
+      turnstile_token: "token",
+    });
 
     expect(unknown.status).toBe(known.status);
     expect(Object.keys(await unknown.json<object>())).toEqual(Object.keys(await known.json<object>()));
@@ -89,7 +131,11 @@ describe("POST /api/tech/auth/otp", () => {
   // The answer is the same whether or not a code went, so the log is the one place that says which.
   it("says in the log why a number the roster does not hold was sent nothing, and never the number", async () => {
     const logs = captureLogs();
-    const answer = await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
+    const answer = await post("/api/tech/auth/otp", {
+      mobile: "98100 00004",
+      device_id: DEVICE,
+      turnstile_token: "token",
+    });
 
     expect(answer.status).toBe(202);
     expect(deps.sentCodes).toEqual([]);
@@ -126,7 +172,11 @@ describe("POST /api/tech/auth/otp", () => {
     tech = appFor("local", deps, { messaging: { ...LOCAL_SETTINGS.messaging, allowlist: ["+919810000099"] } }, "tech");
     const logs = captureLogs();
 
-    const answer = await post("/api/tech/auth/otp", { mobile: "98100 00050", device_id: DEVICE });
+    const answer = await post("/api/tech/auth/otp", {
+      mobile: "98100 00050",
+      device_id: DEVICE,
+      turnstile_token: "token",
+    });
 
     expect(answer.status).toBe(202);
     expect(deps.sentCodes).toEqual([]);
@@ -194,9 +244,16 @@ describe("POST /api/tech/auth/verify", () => {
 describe("POST /api/tech/auth/otp, its limits", () => {
   it("refuses a sixth code to one number in a day", async () => {
     for (let sent = 0; sent < 5; sent += 1) {
-      expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
+      expect(
+        (await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE, turnstile_token: "token" }))
+          .status,
+      ).toBe(202);
     }
-    const refused = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+    const refused = await post("/api/tech/auth/otp", {
+      mobile: "98100 00009",
+      device_id: DEVICE,
+      turnstile_token: "token",
+    });
 
     expect(refused.status).toBe(429);
     expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
@@ -205,9 +262,13 @@ describe("POST /api/tech/auth/otp, its limits", () => {
 
   it("answers busy, and sends nothing, once the technicians' day's ceiling on codes is reached", async () => {
     tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, techCodeDailyCeiling: 1 } }, "tech");
-    await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+    await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE, turnstile_token: "token" });
 
-    const refused = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+    const refused = await post("/api/tech/auth/otp", {
+      mobile: "98100 00009",
+      device_id: DEVICE,
+      turnstile_token: "token",
+    });
 
     expect(refused.status).toBe(503);
     expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
@@ -227,7 +288,11 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     await takeFromCeiling(env.DB, "login_code", { now: NOW, settings: oneCode });
     tech = appFor("local", deps, oneCode, "tech");
 
-    const answer = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+    const answer = await post("/api/tech/auth/otp", {
+      mobile: "98100 00009",
+      device_id: DEVICE,
+      turnstile_token: "token",
+    });
 
     expect(answer.status).toBe(202);
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000009"]);
@@ -238,7 +303,7 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     deps = fakeDependencies({ now: () => clock });
     tech = appFor("local", deps, {}, "tech");
     for (let sent = 0; sent < 6; sent += 1)
-      await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+      await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE, turnstile_token: "token" });
 
     expect(deps.alerts).toEqual([
       "Technician Imran Qureshi was refused a login code: their number has had its 5 codes for today. If they asked " +
@@ -247,15 +312,19 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     ]);
 
     clock = new Date(NOW.getTime() + 24 * 60 * 60_000);
-    expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
+    expect(
+      (await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE, turnstile_token: "token" })).status,
+    ).toBe(202);
     const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
     expect(open).toEqual({ n: 0 });
   });
 
   it("lets them ask for codes again the same day once ops give their codes back", async () => {
     for (let sent = 0; sent < 6; sent += 1)
-      await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
-    expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(429);
+      await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE, turnstile_token: "token" });
+    expect(
+      (await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE, turnstile_token: "token" })).status,
+    ).toBe(429);
 
     const audit = {
       surface: "ops",
@@ -265,17 +334,27 @@ describe("POST /api/tech/auth/otp, its limits", () => {
       requestId: null,
     } as const;
     expect(await allowSignIn(env.DB, IMRAN, { audit, count: CODE_COUNT }, NOW)).toBe(true);
-    expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
+    expect(
+      (await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE, turnstile_token: "token" })).status,
+    ).toBe(202);
     // Nothing more stops them now: a second give-back has nothing to give.
     expect(await allowSignIn(env.DB, IMRAN, { audit, count: CODE_COUNT }, NOW)).toBe(false);
   });
 
   it("tells ops when a technician's network has asked for its codes this hour", async () => {
     for (let other = 0; other < 10; other += 1) {
-      await post("/api/tech/auth/otp", { mobile: `98200 0000${String(other)}`, device_id: DEVICE });
+      await post("/api/tech/auth/otp", {
+        mobile: `98200 0000${String(other)}`,
+        device_id: DEVICE,
+        turnstile_token: "token",
+      });
     }
 
-    const refused = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+    const refused = await post("/api/tech/auth/otp", {
+      mobile: "98100 00009",
+      device_id: DEVICE,
+      turnstile_token: "token",
+    });
 
     expect(refused.status).toBe(429);
     expect(deps.alerts).toEqual([
@@ -287,14 +366,18 @@ describe("POST /api/tech/auth/otp, its limits", () => {
 
   it("tells ops nothing when a number the roster does not hold is refused", async () => {
     for (let sent = 0; sent < 6; sent += 1)
-      await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });
+      await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE, turnstile_token: "token" });
     expect(deps.alerts).toEqual([]);
   });
 
   it("spends none of the day's ceiling on a number the roster does not hold", async () => {
     tech = appFor("local", deps, { login: { ...LOCAL_SETTINGS.login, techCodeDailyCeiling: 1 } }, "tech");
-    expect((await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE })).status).toBe(202);
-    expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
+    expect(
+      (await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE, turnstile_token: "token" })).status,
+    ).toBe(202);
+    expect(
+      (await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE, turnstile_token: "token" })).status,
+    ).toBe(202);
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000009"]);
   });
 });

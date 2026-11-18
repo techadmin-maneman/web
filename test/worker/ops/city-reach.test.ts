@@ -23,6 +23,9 @@ const TECHNICIAN = "33333333-3333-4333-8333-333333334411";
 const TECHNICIAN_NAME = "Tariq Faridi";
 const STOCKROOM = "gurgaon-stockroom";
 const TASK = "55555555-5555-4555-8555-555555554411";
+const SOS = "66666666-6666-4666-8666-666666664411";
+const ORDER = "77777777-7777-4777-8777-777777774411";
+const PAYMENT = "88888888-8888-4888-8888-888888884411";
 const ELSEWHERE_ID = "99999999-9999-4999-8999-999999999999";
 
 /** What would show a Gurgaon record leaked into an answer. */
@@ -63,12 +66,13 @@ const NARROWED_READS = Object.entries(ROUTE_NEEDS)
 
 /** Every department's Manage, in one city. */
 async function staffIn(city: string): Promise<App> {
+  const email = `${city.toLowerCase()}-lead@maneman.in`;
   await enforce();
   await listStaff(
-    "city-lead@maneman.in",
+    email,
     DEPARTMENTS.map((department) => `${department}:manage:city:${city}` as const),
   );
-  return opsAs(person("city-lead@maneman.in"));
+  return opsAs(person(email));
 }
 
 const read = (app: App, route: string) => request(app, pathOf(route));
@@ -86,7 +90,47 @@ beforeEach(async () => {
   await aPerson({ id: CLIENT, name: CLIENT_NAME, mobile_e164: CLIENT_MOBILE });
   await anAddress(CLIENT);
   await aVisit({ id: VISIT, person_id: CLIENT, technician_id: TECHNICIAN });
-  await aPayment({ person_id: CLIENT, appointment_id: VISIT });
+  await aPayment({ id: PAYMENT, person_id: CLIENT, appointment_id: VISIT, method: "card" });
+  await writeRow("sos_alerts", { id: SOS, technician_id: TECHNICIAN, sent_at: AT }, {});
+  await writeRow(
+    "suppliers",
+    {
+      id: "supplier-1",
+      name: "Hairline Works",
+      country: "CN",
+      currency: "USD",
+      payment_terms_days: 30,
+      warranty_days: 30,
+      created_at: AT,
+      updated_at: AT,
+    },
+    {},
+  );
+  await writeRow(
+    "custom_orders",
+    {
+      id: ORDER,
+      number: 1,
+      person_id: CLIENT,
+      product: "Lace front",
+      base_width_in: 7,
+      base_length_in: 9,
+      colour: "1B",
+      grey_percent: 0,
+      density_percent: 100,
+      supplier_id: "supplier-1",
+      supplier_price: 1000,
+      amount: 2_000_000,
+      // Paid, so each of its steps has something to do: a refund, and a link or cancel it refuses as too late.
+      state: "paid",
+      razorpay_payment_id: "pay_custom_order",
+      paid_at: AT,
+      raised_by: "test",
+      raised_at: AT,
+      updated_at: AT,
+    },
+    {},
+  );
   await writeRow(
     "consumables",
     { code: "tape_strips", name: "Tape strips", unit: "strip", unit_cost: 1200, created_at: AT, updated_at: AT },
@@ -177,5 +221,31 @@ describe("the inventory's writes, from another city", () => {
     ).toEqual({
       quantity: 40,
     });
+  });
+});
+
+// A city head acts on their own city's money and technicians' safety, and nobody else's.
+describe("refunds, custom orders and an SOS", () => {
+  const WRITES: readonly [string, unknown][] = [
+    [`/api/payments/${PAYMENT}/refund`, { reason: "Paid twice." }],
+    [`/api/custom-orders/${ORDER}/send-link`, undefined],
+    [`/api/custom-orders/${ORDER}/cancel`, undefined],
+    [`/api/custom-orders/${ORDER}/refund`, { reason: "not_ordered" }],
+    [`/api/sos/${SOS}/handled`, undefined],
+  ];
+
+  it.each(WRITES)("refuses %s from another city as not found", async (path, body) => {
+    expect((await post(await staffIn("Delhi"), path, body)).status).toBe(404);
+  });
+
+  it.each(WRITES)("lets a grant of the record's own city reach %s", async (path, body) => {
+    expect([403, 404]).not.toContain((await post(await staffIn("Gurgaon"), path, body)).status);
+  });
+
+  it("shows each city only its own technicians' SOS", async () => {
+    expect(await (await request(await staffIn("Gurgaon"), "/api/sos")).text()).toContain(TECHNICIAN_NAME);
+    const elsewhere = await request(await staffIn("Delhi"), "/api/sos");
+    expect(elsewhere.status).toBe(200);
+    expect(await elsewhere.text()).not.toContain(TECHNICIAN_NAME);
   });
 });

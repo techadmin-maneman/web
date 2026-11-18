@@ -135,7 +135,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 **Provisioning** (provisioning, step 7, 11, 11a, 11b, 11c, 12 and 13):
 
 - [ ] DNS and Access for `app.maneman.in`, `ops.maneman.in` and `tech.maneman.in`, with `mm-ci-production` on each (provisioning, step 11, points 1 and 2); `ACCESS_OPS_AUD` for the ops console (provisioning, step 11, point 3).
-- [ ] Turnstile for the client app's login: add `app.maneman.in` to the hostnames of the `mm-production` widget (Cloudflare dashboard → Turnstile → mm-production → Hostname management). Until then no one can ask for a login code there (`docs/turnstile.md`).
+- [x] Turnstile for the apps' logins: the `mm-production` widget lists `maneman.in`, which covers `app.maneman.in` and `tech.maneman.in` (confirmed 18 November 2026; `docs/turnstile.md`).
 - [ ] Books: its client and secrets, `check-books-setup.ts --env production`, the provider `zoho`, the hosts and `ZOHO_BOOKS_ORG_ID`, and Razorpay Clearing, the bank and the fee's accounts in its vars, the same as staging's, as both use one Books (provisioning, step 11b, points 1 to 6).
 - [ ] The rest of production's secrets, each before the release that needs it (provisioning, step 7): `OTP_PEPPER` (`openssl rand -hex 32`; the site's WhatsApp codes need it too, so without it the one visit and `/try` cannot prove a number), `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `EVOLUTION_WEBHOOK_TOKEN`, and `GOOGLE_MAPS_API_KEY` once production has its own restricted key (provisioning, step 13). A required secret left empty stops every request, so check `GET /api/health` after each.
 - [ ] Bootstrap `mm-ops-production` and `mm-tech-production`, and add both to `mm-ci-production` (provisioning, step 11, point 6; provisioning, step 6).

@@ -10,7 +10,7 @@ import { written } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { clientInReach } from "../../http/staff-access.ts";
+import { anyClientInReach } from "../../http/staff-access.ts";
 
 const Note = z
   .string()
@@ -79,7 +79,9 @@ export function registerOpsPaymentRefunds(app: App): void {
     const { id } = c.req.valid("param");
     const { reason, amount, key } = c.req.valid("json");
     const paid = await capturedPayment(c.env.DB, id);
-    if (paid === null || (await clientInReach(c, paid.person_id)) === null) return refuse(c, "not_found");
+    // An erased client's too, from the record kept of their money: a refund needs none of their details
+    // (docs/decisions/0066-erasure-all-or-nothing.md).
+    if (paid === null || (await anyClientInReach(c, paid.person_id)) === null) return refuse(c, "not_found");
     const part = amount === undefined || key === undefined ? {} : { part: { amount, key } };
     const refunded = await refundPayment(c.env.DB, c.var.deps, { paymentId: id, reason, ...part }, written(c));
     if (refunded.kind === "missing") return refuse(c, "not_found");

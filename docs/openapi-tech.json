@@ -370,11 +370,17 @@
             "type": "string",
             "pattern": "^[A-Za-z0-9_-]{8,64}$",
             "description": "The app's own ID for this phone, kept in its storage."
+          },
+          "turnstile_token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
           }
         },
         "required": [
           "mobile",
-          "device_id"
+          "device_id",
+          "turnstile_token"
         ],
         "additionalProperties": false
       },
@@ -5750,6 +5756,44 @@
               }
             }
           },
+          "403": {
+            "description": "turnstile_failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "turnstile_failed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "429": {
             "description": "rate_limited",
             "content": {
@@ -5789,7 +5833,7 @@
             }
           },
           "503": {
-            "description": "busy: today's ceiling on codes is reached",
+            "description": "busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached",
             "content": {
               "application/json": {
                 "schema": {
@@ -5806,6 +5850,7 @@
                             "code": {
                               "type": "string",
                               "enum": [
+                                "unavailable",
                                 "busy"
                               ]
                             }

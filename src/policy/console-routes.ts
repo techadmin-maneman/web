@@ -64,9 +64,10 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/visits/{id}/close": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/let-in": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/send-back": inOwnPlaces("operations", "act"),
-  // A technician's SOS, on every screen of national Operations, who mark it handled (docs/decisions/0248-safety.md).
-  "GET /api/sos": need("operations", "view"),
-  "POST /api/sos/{id}/handled": need("operations", "act"),
+  // A technician's SOS, on every screen of Operations in the technician's city, who mark it handled
+  // (docs/decisions/0248-safety.md).
+  "GET /api/sos": inOwnPlaces("operations", "view"),
+  "POST /api/sos/{id}/handled": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/lost-reason": inOwnPlaces("customer_care", "act"),
   "GET /api/technicians": inOwnPlaces("operations", "view"),
   "GET /api/technicians/work": inOwnPlaces("operations", "view"),
@@ -142,9 +143,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/clients/{id}/stock-match": inOwnPlaces("customer_care", "view"),
   "GET /api/clients/{id}/custom-orders": inOwnPlaces("customer_care", "view"),
   "POST /api/clients/{id}/custom-orders": inOwnPlaces("customer_care", "act"),
-  "POST /api/custom-orders/{id}/send-link": need("customer_care", "act"),
-  "POST /api/custom-orders/{id}/cancel": need("customer_care", "act"),
-  "POST /api/custom-orders/{id}/refund": need("customer_care", "manage"),
+  "POST /api/custom-orders/{id}/send-link": inOwnPlaces("customer_care", "act"),
+  "POST /api/custom-orders/{id}/cancel": inOwnPlaces("customer_care", "act"),
+  "POST /api/custom-orders/{id}/refund": inOwnPlaces("customer_care", "manage"),
   "POST /api/clients/{id}/address/suggestions": inOwnPlaces("customer_care", "act"),
   "POST /api/clients/{id}/address": inOwnPlaces("customer_care", "act"),
   "GET /api/grievances": inOwnPlaces("customer_care", "view"),
@@ -162,7 +163,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // service with its prices, so reading it is Finance's; changing a service stays Admin's.
   "GET /api/payments": inOwnPlaces("finance", "view"),
   "GET /api/payments/ledger": inOwnPlaces("finance", "view"),
-  "POST /api/payments/{id}/refund": need("finance", "manage"),
+  "POST /api/payments/{id}/refund": inOwnPlaces("finance", "manage"),
   "GET /api/no-shows": inOwnPlaces("finance", "view"),
   "GET /api/no-shows/{id}/door-photo": inOwnPlaces("finance", "view"),
   "POST /api/no-shows/{id}/decision": inOwnPlaces("finance", "act"),

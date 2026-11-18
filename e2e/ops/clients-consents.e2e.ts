@@ -108,7 +108,7 @@ test("erases a client from their page, once ops confirm the request came from th
   await expect(page.getByRole("link", { name: opsCopy.clients.erasure.done.back })).toBeVisible();
 });
 
-test("erases anyway when a visit is booked, once ops say they will settle it by hand today", async ({ page }) => {
+test("erases anyway when a visit is booked, once ops say to cancel it and refund them", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [ERASE]: json(VISIT_BOOKED, 409) });
   const erasing = page.getByRole("region", { name: opsCopy.clients.erasure.title });
   await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();

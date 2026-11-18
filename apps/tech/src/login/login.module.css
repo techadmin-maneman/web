@@ -91,6 +91,11 @@
   margin: var(--sp-16) 0 0;
 }
 
+/* Turnstile's box takes room only while a check is showing. */
+.turnstile:not(:empty) {
+  margin-top: var(--sp-16);
+}
+
 /* The one action, at the foot, in the same place on every screen. */
 .foot {
   margin: auto calc(-1 * var(--screen-gutter)) 0;

@@ -110,40 +110,24 @@ function codeHeldBack(c: Context<AppEnv>, sendsTo: string, testRecord: boolean):
 }
 
 /**
- * Counts this request's code against the surface's ceiling if it will be sent; false once the ceiling is reached.
- * A number nobody holds is sent nothing and costs nothing, nor does a test record's code the allowlist holds back.
- */
-export async function countCode({
-  c,
-  surface,
-  sendsTo,
-  testRecord,
-  now,
-}: {
-  c: Context<AppEnv>;
-  surface: CodeSurface;
-  sendsTo: string | null;
-  testRecord: boolean;
-  now: Date;
-}): Promise<boolean> {
-  if (sendsTo === null) return true;
-  if (codeHeldBack(c, sendsTo, testRecord)) return true;
-  return withinCodeCeiling(c, now, CEILING_OF[surface]);
-}
-
-/**
  * Nothing is sent when no account here holds the number, and the caller passes none; nor to a test record one of
- * our own scripts made, off the allowlist. Each is logged as `login_code_not_sent` with its reason. Neither the
- * code nor the number is ever logged.
+ * our own scripts made, off the allowlist; nor once the surface's ceiling is reached. Each is logged as
+ * `login_code_not_sent` with its reason. Neither the code nor the number is ever logged.
+ *
+ * A code that will be sent is counted against its surface's ceiling here, after the response, so the answer to a
+ * number someone holds waits on no more than the answer to one nobody does. `surface` is null where the caller
+ * counted it already.
  */
 export async function sendCodeAfterResponse({
   c,
+  surface,
   mobileE164,
   testRecord,
   channel,
   code,
 }: {
   c: Context<AppEnv>;
+  surface: CodeSurface | null;
   mobileE164: string | null;
   testRecord: boolean;
   channel: CodeChannel;
@@ -157,6 +141,10 @@ export async function sendCodeAfterResponse({
     }
     if (codeHeldBack(c, mobileE164, testRecord)) {
       log.info("login_code_not_sent", { channel, reason: "number not on the allowlist" });
+      return;
+    }
+    if (surface !== null && !(await withinCodeCeiling(c, deps.now(), CEILING_OF[surface]))) {
+      log.info("login_code_not_sent", { channel, reason: "the day's codes are spent" });
       return;
     }
     const failed = await sendOne(c, { channel, to: mobileE164, code });

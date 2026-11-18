@@ -192,6 +192,10 @@ describe("GET /api/clients/{id}", () => {
       { CRM_QUEUE: fakeQueue() },
     );
     expect(erased.status).toBe(200);
+    const upcoming = await env.DB.prepare("SELECT status FROM appointments WHERE id = ?1")
+      .bind(UPCOMING)
+      .first("status");
+    expect(upcoming).toBe("cancelled");
 
     const answer = await request(ops, `/api/clients/${PERSON}`);
     expect(answer.status).toBe(200);
@@ -200,9 +204,9 @@ describe("GET /api/clients/{id}", () => {
     expect(body).toMatchObject({
       id: PERSON,
       erased_at: NOW.toISOString(),
-      // The visit still to come is kept for ops to cancel by hand; neither visit takes a discount code any more.
+      // Erasing anyway cancelled the visit still to come; the one before takes no discount code any more.
       visits: {
-        upcoming: [expect.objectContaining({ id: UPCOMING, stage: "booked", price_open: false })],
+        upcoming: [],
         past: [expect.objectContaining({ id: VISIT, outcome: "partial", price_open: false })],
       },
       payments: [{ kind: "payment", id: PAYMENT, reference: "MM-2026-0841", amount: 236000 }],

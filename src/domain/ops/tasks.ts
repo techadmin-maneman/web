@@ -48,8 +48,9 @@ export interface Task {
   readonly id: string;
   readonly group: TaskGroup;
   /**
-   * Whose it is; null for an erased client, whose record is gone. The mobile is there only on a move the client has
-   * not heard of, for the call.
+   * Whose it is; null for an erased client, whose record is gone, but for a payment to refund, which names them as
+   * "Erased" and opens the record kept of their money. The mobile is there only on a move the client has not heard
+   * of, for the call.
    */
   readonly person: { readonly id: string; readonly name: string; readonly mobile: string | null } | null;
   /** The visit the dispatch board settles the task on: a move's, a job on leave's. Null for every other group. */

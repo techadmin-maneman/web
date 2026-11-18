@@ -1,6 +1,6 @@
 # 0248. A technician's safety on a visit
 
-- Status: accepted
+- Status: accepted. Amended 18 November 2026: Operations see the SOS of their own cities' technicians, a national grant every one (item 6).
 - Date: 2026-11-11
 - Topic: Field work
 
@@ -45,8 +45,8 @@ sent every two minutes.
    so a session cannot flood the urgent space, but an SOS raised again after a "safe" ops were told is always paged:
    ops' last word is never "safe" while an SOS stands. Between pages the banner says where the SOS stands. If "I'm safe" does not reach the API, the sheet
    says so and tells them to call ops. Once ops have handled it, the sheet starts afresh.
-6. **National Operations see each open SOS as a red banner on every console screen** (`GET /api/sos`, Operations ·
-   View). It names the technician, the visit's client and time, when it was sent, and whether they said they are safe.
+6. **Operations see each open SOS of a technician in their cities as a red banner on every console screen**
+   (`GET /api/sos`, Operations · View); a national grant sees every one, and a technician with no city only a national grant. It names the technician, the visit's client and time, when it was sent, and whether they said they are safe.
    While there is a position it gives a map link and the time of that position, which is where they were, not
    necessarily where they are. The read carries nothing the banner does not show. Someone with Operations · Act marks it
    handled (`POST /api/sos/{id}/handled`). That keeps who and when, blanks the position, and resolves both alerts. A

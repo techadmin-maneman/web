@@ -77,7 +77,7 @@ async function signedIn(technicianId: string): Promise<string> {
 
 /** Signs in on the technician app by number, as a phone does: a code, then the code back. */
 async function signInBy(tech: App, mobile: string): Promise<Response> {
-  const asked = await send(tech, "POST", "/api/tech/auth/otp", { mobile, device_id: DEVICE });
+  const asked = await send(tech, "POST", "/api/tech/auth/otp", { mobile, device_id: DEVICE, turnstile_token: "token" });
   const { challenge_id: challengeId } = await asked.json<{ challenge_id: string }>();
   const code = deps.sentCodes.at(-1)?.code ?? "000000";
   return send(tech, "POST", "/api/tech/auth/verify", { challenge_id: challengeId, code, device_id: DEVICE });

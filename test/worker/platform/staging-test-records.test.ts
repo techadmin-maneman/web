@@ -141,7 +141,7 @@ describe("a technician signing in on staging", () => {
   }
 
   async function signsInWithTheKnownCode(app: ReturnType<typeof appFor>, mobile: string): Promise<boolean> {
-    const asked = await post(app, "/api/tech/auth/otp", { mobile, device_id: DEVICE });
+    const asked = await post(app, "/api/tech/auth/otp", { mobile, device_id: DEVICE, turnstile_token: "token" });
     const { challenge_id: challengeId } = await asked.json<{ challenge_id: string }>();
     const res = await post(app, "/api/tech/auth/verify", { challenge_id: challengeId, code: KNOWN, device_id: DEVICE });
     return (await res.json<{ verified?: boolean }>()).verified === true;

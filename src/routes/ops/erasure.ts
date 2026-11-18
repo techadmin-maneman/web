@@ -2,11 +2,12 @@
 // (docs/decisions/0019-erasure.md). A request the client made in their app is decided in Deletion requests instead
 // (src/routes/ops/profile.ts); both erase through eraseAndQueue, audited under the member of staff who did it, and
 // keep to the caller's cities. Refused while the client has a visit or booking still to happen, a payment held or a
-// payment link unpaid, unless ops say they will settle it by hand today
-// (docs/decisions/0066-erasure-all-or-nothing.md).
+// payment link unpaid, unless ops say to erase anyway (docs/decisions/0066-erasure-all-or-nothing.md): then each visit
+// still to come is cancelled free to the client, as a cancel on Visits is, and each booking let go refunded.
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
+import type { Context } from "hono";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import type { AuditEntry } from "../../domain/platform/audit.ts";
@@ -17,8 +18,13 @@ import {
   type ErasureBlockers,
   type ErasureSummary,
 } from "../../domain/privacy/erasure.ts";
-import { staffMemberOf } from "../../http/audit.ts";
-import type { App } from "../../http/context.ts";
+import { giveBack, RefundNotDone } from "../../domain/booking/give-back.ts";
+import { auditStatement } from "../../domain/platform/audit.ts";
+import { cancelVisit, type OpsCancel } from "../../domain/visits/visit-cancel.ts";
+import { changeableVisitFor, changeTerms, opsCancelTerms, termsInForce } from "../../domain/visits/visit-changes.ts";
+import { actorOf, staffMemberOf } from "../../http/audit.ts";
+import type { App, AppEnv } from "../../http/context.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";
@@ -96,8 +102,9 @@ const ErasureSchema = z
       .optional()
       .openapi({
         description:
-          "Erase even with a visit or booking still to happen, a payment held or a link unpaid: only when ops will " +
-          "settle them by hand today. Bookings not yet visits are let go, and open payment links cancelled.",
+          "Erase even with a visit or booking still to happen, a payment held or a link unpaid. Visits still to come " +
+          "are cancelled free to the client and refunded in full; bookings not yet visits are let go and refunded, one " +
+          "Razorpay refuses left on Tasks; open payment links are cancelled.",
       }),
   })
   .strict()
@@ -149,6 +156,71 @@ function erasedBody(summary: ErasureSummary): z.infer<typeof ErasedSchema> {
   };
 }
 
+/** What a cancel made by erasing anyway says of itself, where ops would write their reason. */
+const ERASED_REASON = "The client asked to be erased.";
+
+/**
+ * Erasing anyway: each visit still to come is cancelled free to the client, the whole payment refunded, so no
+ * technician is sent to an erased client and nothing paid is kept. Its message is cancelled with the erasure's unsent
+ * ones. A visit begun already, or one a cancel fails, is left on their page for ops.
+ */
+async function cancelStillToCome(c: Context<AppEnv>, visits: ErasureBlockers["visits"], now: Date): Promise<void> {
+  const db = c.env.DB;
+  const { deps, log, requestId } = c.var;
+  const inputs = await opsInputs(c);
+  for (const { id } of visits) {
+    try {
+      const visit = await changeableVisitFor(db, id, now);
+      if (visit === null) continue;
+      const terms = await changeTerms({ db, visit, now, inForce: termsInForce(inputs, visit.type) });
+      const free = opsCancelTerms({ terms, onClientTerms: false });
+      const ops: OpsCancel = {
+        staff: actorOf(c).id,
+        reason: ERASED_REASON,
+        terms: "free",
+        audit: {
+          surface: "ops",
+          actor: actorOf(c),
+          action: "visit.cancel",
+          subject: { kind: "appointment", id },
+          requestId,
+          detail: { terms: "free", refund: free.cancel.refund, kept: free.cancel.kept },
+        },
+      };
+      await cancelVisit({ db, deps, terms: free, now, options: { log, ops } });
+    } catch (error) {
+      log.error("erasure_cancel_failed", { appointment_id: id, error });
+    }
+  }
+}
+
+/**
+ * Erasing anyway: each booking not yet a visit is let go and what was paid for it refunded, once, as a lapsed hold's
+ * is. One Razorpay will not refund is let go by the erasure all the same, and waits under Tasks' payments to refund.
+ */
+async function giveBookingsBack(c: Context<AppEnv>, bookings: ErasureBlockers["bookings"], now: Date): Promise<void> {
+  const db = c.env.DB;
+  const { deps, log, requestId } = c.var;
+  for (const { id } of bookings) {
+    const entry = {
+      surface: "ops",
+      actor: actorOf(c),
+      action: "booking.give_back",
+      subject: { kind: "hold", id },
+      requestId,
+      detail: { reason: ERASED_REASON },
+    } as const;
+    try {
+      await giveBack({ db, payments: deps.payments, now }, id, ERASED_REASON, {
+        alongside: [auditStatement(db, entry, now)],
+      });
+    } catch (error) {
+      if (error instanceof RefundNotDone) log.warn("erasure_refund_not_done", { hold_id: id, outcome: error.outcome });
+      else log.error("erasure_give_back_failed", { hold_id: id, error });
+    }
+  }
+}
+
 export function registerOpsErasure(app: App): void {
   app.openapi(erasureRoute, async (c) => {
     const { id } = c.req.valid("param");
@@ -171,6 +243,10 @@ export function registerOpsErasure(app: App): void {
       links: blockers.links.length,
     };
     if (settledByHand) log.warn("erasure_override", { person_id: id, ...counts });
+    if (settledByHand) {
+      await cancelStillToCome(c, blockers.visits, now);
+      await giveBookingsBack(c, blockers.bookings, now);
+    }
 
     const audit: AuditEntry = {
       surface: "ops",

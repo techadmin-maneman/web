@@ -29,9 +29,9 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { firstNameOf, initialsOf } from "../../lib/names.ts";
 import { afterResponse } from "../../http/after-response.ts";
-import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGate } from "../../http/send-code.ts";
+import { knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGate } from "../../http/send-code.ts";
 import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../../http/technician-session.ts";
-import { visitorOf } from "../../http/visitor.ts";
+import { checkTurnstile, visitorOf } from "../../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { CODE_TEXT, newLoginCode, whatsappResendAt } from "../../policy/one-time-code.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
@@ -93,7 +93,11 @@ const DeviceIdSchema = z
   .openapi({ description: "The app's own ID for this phone, kept in its storage." });
 
 const TechLoginRequestSchema = z
-  .object({ mobile: z.string().regex(INDIAN_MOBILE_PATTERN), device_id: DeviceIdSchema })
+  .object({
+    mobile: z.string().regex(INDIAN_MOBILE_PATTERN),
+    device_id: DeviceIdSchema,
+    turnstile_token: z.string().min(1).max(2048),
+  })
   .strict()
   .openapi("TechnicianLoginRequest");
 
@@ -126,8 +130,9 @@ const otpRoute = createRoute({
   responses: {
     202: { description: "A code is on its way, if the number is a technician's", ...json(TechChallengeSchema) },
     400: errorResponse("invalid_request"),
+    403: errorResponse("turnstile_failed"),
     429: errorResponse("rate_limited"),
-    503: errorResponse("busy: today's ceiling on codes is reached"),
+    503: errorResponse("busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached"),
   },
 });
 
@@ -200,10 +205,15 @@ export function registerTechAuth(app: App): void {
     const db = c.env.DB;
     const now = deps.now();
 
-    const mobileE164 = toE164(c.req.valid("json").mobile);
+    const body = c.req.valid("json");
+    const mobileE164 = toE164(body.mobile);
     if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
-
+    // A technician's number is one clients see, so a script must not spend its codes for the day.
     const visitor = await visitorOf(c);
+    const turnstile = await checkTurnstile(c, body.turnstile_token, visitor);
+    if (turnstile === "rejected") return refuse(c, "turnstile_failed");
+    if (turnstile === "unavailable") return refuse(c, "unavailable");
+
     const technician = await findFieldTechnician(db, mobileE164);
     // Marked when they were added, never read from a name a rename could give (src/policy/staging-test-records.ts).
     const testRecord = technician?.testRecord ?? false;
@@ -214,8 +224,6 @@ export function registerTechAuth(app: App): void {
     if (asked !== "open") return refuse(c, "rate_limited");
 
     const sendsTo = technician?.mobileE164 ?? null;
-    if (!(await countCode({ c, surface: "tech", sendsTo, testRecord, now }))) return refuse(c, "busy");
-
     const code = knownCode({ login: limits, testRecord }) ?? newLoginCode();
     const challenge = await createChallenge(db, {
       holder: "technician",
@@ -224,7 +232,7 @@ export function registerTechAuth(app: App): void {
       pepper: limits.codePepper,
       now,
     });
-    await sendCodeAfterResponse({ c, mobileE164: sendsTo, testRecord, channel: "whatsapp", code });
+    await sendCodeAfterResponse({ c, surface: "tech", mobileE164: sendsTo, testRecord, channel: "whatsapp", code });
     const secondsUntil = (instant: Date) => Math.max(0, Math.ceil((instant.getTime() - now.getTime()) / 1000));
     return c.json(
       {
