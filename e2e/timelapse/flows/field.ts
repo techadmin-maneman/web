@@ -5,6 +5,7 @@
 
 import { stepHeaders, techSignIn, type Wire } from "../actors.ts";
 import { BASE, catalogue, HAIR_SYSTEMS, PACKAGE } from "./catalog.ts";
+import { appOf } from "./clients.ts";
 import { indiaDateOf, MINUTE } from "../sim.ts";
 import { DOOR } from "../stack.ts";
 import { check } from "../steps.ts";
@@ -171,6 +172,14 @@ export async function workOnWire(sim: Sim, wave: string, technician: Technician,
         } else {
           // The close: the clock moves on through the visit first, so the job takes its length.
           await closeAt(sim, Date.parse(job.starts_at) + Math.max(20, (job.minutes ?? 60) - 10) * MINUTE);
+          // A fit closes done once the client signs it off in their own app, or the technician records why not.
+          if (type === "first_fit" || type === "replacement" || job.one_visit) {
+            await post("sign-off-request", {});
+            const app = client === undefined ? undefined : await appOf(sim, client);
+            const checks = { hairline: true, blend: true, secure: true };
+            if (app === undefined) await post("sign-off-declined", { reason: "Not signed in to the app" });
+            else await app.must("POST", `/api/visits/${job.id}/sign-off`, { result: "signed", checks });
+          }
           await post(
             "outcome",
             type === "consultation" ? { outcome: "done", going_ahead: goesAhead(clientIndex) } : { outcome: "done" },

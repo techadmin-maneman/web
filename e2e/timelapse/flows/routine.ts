@@ -7,6 +7,7 @@ import { check } from "../steps.ts";
 import { dateOf } from "../sim.ts";
 import type { Client, Sim } from "../world.ts";
 import { PACKAGE } from "./catalog.ts";
+import { codeOf } from "./field.ts";
 
 /** Days after a visit closed that a fitted client books their next service. */
 const SERVICE_AFTER_DAYS = 26;
@@ -14,7 +15,7 @@ const REPLACE_AFTER_DAYS = 170;
 
 export async function eveningBookings(sim: Sim, wave: string): Promise<void> {
   const day = sim.clock.day;
-  for (const client of sim.world.clients) {
+  for (const [index, client] of sim.world.clients.entries()) {
     if (client.erased) continue;
     const upcoming = client.visits.some((id) => {
       const visit = sim.world.visits.get(id);
@@ -28,7 +29,8 @@ export async function eveningBookings(sim: Sim, wave: string): Promise<void> {
     if (client.goingAhead === true && !client.fitted && leftPartly && client.fitAsked !== day) {
       client.fitAsked = day;
       await refitOwed(sim, wave, client);
-    } else if (client.goingAhead === true && !client.fitted && client.fitAsked !== day) {
+    } else if (client.goingAhead === true && !client.fitted && client.fitAsked !== day && codeOf(index) !== null) {
+      // A profile no stock code matches is made to order: ops order the piece and book its fit (customOrder).
       client.fitAsked = day;
       await bookInApp(sim, wave, client, "first_fit", { tier: PACKAGE });
     } else if (client.fitted && client.lastVisitDay !== undefined) {
