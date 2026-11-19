@@ -1,5 +1,6 @@
 // Google's drives between pins (ADR 0120), kept a day in Cloudflare's cache, each miss counted against the day's
-// ceiling: for the dispatch board's day on the road, and for booking's check of the drives either side of a start.
+// ceiling: for the dispatch board's day on the road, and for booking's check of the drives either side of a start,
+// whose kept answers the starts offered read too, asking Google nothing.
 
 import { sha256Hex } from "../../lib/hash.ts";
 import type { Alert } from "../../providers/alerts.ts";
