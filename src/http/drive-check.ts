@@ -1,5 +1,6 @@
 // Google, to check the drives either side of a start before it is held (src/domain/booking/drive-check.ts): null
-// where the routes provider is off, and booking holds on the free estimate alone.
+// where the routes provider is off, and holds rest on the free estimate alone; the starts offered still leave out
+// those a drive Google gave before leaves no room for, until it lapses.
 
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";

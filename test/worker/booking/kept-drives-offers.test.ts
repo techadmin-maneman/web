@@ -4,7 +4,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { startOffers } from "../../../src/domain/booking/start-offers.ts";
+import { holdSlot } from "../../../src/domain/booking/hold-slot.ts";
+import { startOffers, type StartOffer } from "../../../src/domain/booking/start-offers.ts";
 import { driveThrough } from "../../../src/domain/platform/road-drives.ts";
 import type { RoutesProvider } from "../../../src/providers/routes/index.ts";
 import { LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
@@ -28,8 +29,8 @@ function google(minutes: number): { routes: RoutesProvider; asked: () => number 
   return { routes, asked: () => asked };
 }
 
-/** Tuesday's starts offered to the client, as India's clock writes them. */
-async function offered(personId: string): Promise<string[]> {
+/** Tuesday's starts offered to the client. */
+async function startsFor(personId: string): Promise<readonly StartOffer[]> {
   const [day] = await startOffers({
     db: env.DB,
     placing: { personId },
@@ -38,8 +39,11 @@ async function offered(personId: string): Promise<string[]> {
     days: 1,
     now: NOW,
   });
-  return day?.starts.map((start) => start.time) ?? [];
+  return day?.starts ?? [];
 }
+
+/** Tuesday's starts offered to the client, as India's clock writes them. */
+const offered = async (personId: string): Promise<string[]> => (await startsFor(personId)).map((start) => start.time);
 
 let rohit: string;
 
@@ -80,6 +84,41 @@ describe("The starts offered", () => {
     expect(after.every((time) => time > first)).toBe(true);
     expect(after).toEqual(before.filter((time) => time >= (after[0] ?? "")));
     // Google was asked once, by the hold, and never by the offers.
+    expect(slow.asked()).toBe(1);
+  });
+
+  it("leave out the start a hold was refused for on Google's drive, the next time they are drawn", async () => {
+    // A door of this test's own, so the drive the test before kept is not this one's.
+    await env.DB.prepare("UPDATE addresses SET lat = 28.4495 WHERE person_id = ?1").bind(rohit).run();
+    const [first] = await startsFor(rohit);
+    if (first === undefined) throw new Error("no start offered");
+
+    const slow = google(180);
+    const hold = await holdSlot({
+      db: env.DB,
+      input: {
+        personId: rohit,
+        service: { type: "service", tier: "standard", minutes: 90 },
+        date: "2026-09-22",
+        window: "morning",
+        startsAt: first.startsAt,
+        price: { amount_ex_gst: 0, amount: 0, gst_percent: 0 },
+      },
+      now: NOW,
+      holdSeconds: 600,
+      drives: {
+        routes: slow.routes,
+        alert: () => Promise.resolve(),
+        settings: LOCAL_SETTINGS,
+        refused: () => Promise.resolve(),
+        answered: () => Promise.resolve(),
+      },
+    });
+    expect(hold).toBeNull();
+    expect(slow.asked()).toBe(1);
+
+    const after = await offered(rohit);
+    expect(after).not.toContain(first.time);
     expect(slow.asked()).toBe(1);
   });
 });

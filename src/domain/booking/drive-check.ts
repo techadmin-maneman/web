@@ -1,8 +1,7 @@
 // Google's word on the drives either side of a start a client chose (docs/decisions/0210-booking-by-start-time.md),
 // where the routes provider is on. Every start offered is planned on the free estimate; before one is held, Google
 // drives the road from the stop before it, or from home, and on to the stop after, and the start is held only where
-// both drives, and the time to park, still fit. Google's answer is kept a day, and a start it leaves no room for is
-// not offered while it is kept. Where Google cannot answer, the day's ceiling is spent, or a stop has
+// both drives, and the time to park, still fit. Where Google cannot answer, the day's ceiling is spent, or a stop has
 // no pin, the estimate stands; where Google refuses, ops are told why.
 
 import { minuteOf, type PlanDay, type PlanRules } from "../../policy/day-plan.ts";

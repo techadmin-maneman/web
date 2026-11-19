@@ -4,8 +4,7 @@
 //
 // Today is offered from the lead time on, and only for a kind of visit ops let clients book for today. A day ops
 // black out, or from the day a service is retired on, is offered to nobody; and no technician who took the client's
-// visit just before or just after that day takes it, unless nobody else can. A start Google's kept drive leaves no
-// room for is not offered (docs/decisions/0287-a-start-googles-drive-refused-is-not-offered.md).
+// visit just before or just after that day takes it, unless nobody else can.
 
 import type { VisitType } from "../../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../../lib/india-time.ts";
@@ -208,6 +207,7 @@ export async function startOffers(input: {
         for (const placed of placements(day, toPlan, rules, earliest)) {
           // A start Google's drive was already found to leave no room for is not offered (./drive-check.ts).
           const placing = { time: timeOf(placed.start), minutes: visit.minutes, pin };
+          // Nor a start Google's kept drive leaves no room for: the hold would refuse it.
           if (!(await keptDrivesFit({ day, rules, now }, placing, kept))) continue;
           const takers = byStart.get(placed.start) ?? [];
           takers.push({

@@ -29,5 +29,7 @@ the offer instead.
   is not offered again while Google's answer is kept, a day; the client is not sent round the same refusal.
 - A start in a gap Google has not been asked about may still be refused at the hold, once.
 - Offers spend nothing from the day's route ceiling.
+- With the routes provider switched off, holds check no drive, but a drive Google gave before still leaves its starts
+  out of the offers until it lapses, a day at most: what Google found of the roads still holds.
 - Tests: `test/worker/booking/drive-check.test.ts` ("The starts offered beside a visit") and
   `test/worker/booking/kept-drives-offers.test.ts`.

@@ -12,13 +12,15 @@ Days ops close are never offered: everywhere (`visit_blackouts`) or in one city 
 
 A visit goes to a technician in the client's city (`src/domain/dispatch/technician-fit.ts`); a first fit only to one trained to fit, with a hair system matched to the client. A technician never takes two of a client's visits in a row unless nobody else can (`src/policy/technician-rotation.ts`). Among those free, whoever holds least that day, then that week, takes it (`src/domain/booking/technician-choice.ts`). Leave is read with everything else a day holds, so a job on a day off is refused (`src/domain/booking/occupancy.ts`, `src/domain/dispatch/leave.ts`).
 
+Wherever a visit is booked, on the site, in the app or in the console, the starts offered rest on the free drive estimate, leaving out any Google's kept drive leaves no room for; before a start is held, Google checks the drives either side of it (`src/domain/booking/drive-check.ts`, ADR 0287).
+
 ## Booking from the site
 
 `/book` asks for the name and number first, kept as a lead before the visit is chosen (`src/domain/booking/public-lead.ts`). Then the window and the full address, and it books a free consultation, or a consultation and fit in one visit (`src/domain/booking/public-consultation.ts`). Where we do not come yet, it joins the waitlist (`src/domain/booking/public-waitlist.ts`). A friend's invite at `/r/:code` books the same way. Every booking first proves the number with a WhatsApp code, then signs the client into the app where it is on (ADR 0285); the waitlist asks none. Whoever types a number cannot move where that person's visits go (`src/policy/site-booking.ts`); a number we know that books nothing (a consultation still to come, a client who books in the app, an address we do not come to) is told why on the page and on WhatsApp (`src/domain/booking/site-notices.ts`).
 
 ## Booking in the app
 
-The starts offered rest on the free drive estimate, leaving out any Google's kept drive leaves no room for; before a start is held, Google checks the drives either side of it (`src/domain/booking/drive-check.ts`, ADR 0287). The client holds a window while they pay; the hold keeps the time for the minutes `payment_hold` gives (Settings · Rules), and two holds never take the same time (`src/domain/booking/hold-slot.ts`). Razorpay's payment, or the request for a free visit, books it in one batch (`src/domain/booking/bookings.ts`). A paid hold whose request failed is booked by the half-hour pass (`src/domain/booking/unbooked-holds.ts`); one that cannot be kept is let go and refunded once (`src/domain/booking/give-back.ts`).
+The client holds a window while they pay; the hold keeps the time for the minutes `payment_hold` gives (Settings · Rules), and two holds never take the same time (`src/domain/booking/hold-slot.ts`). Razorpay's payment, or the request for a free visit, books it in one batch (`src/domain/booking/bookings.ts`). A paid hold whose request failed is booked by the half-hour pass (`src/domain/booking/unbooked-holds.ts`); one that cannot be kept is let go and refunded once (`src/domain/booking/give-back.ts`).
 
 The app offers the next visit: the first fit once the consultation is done, then each service as it falls due (`src/policy/next-visit.ts`). Nothing books a visit for the client; ops step in on the Tasks board when a client lets one slide.
 

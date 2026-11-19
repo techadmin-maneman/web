@@ -140,7 +140,8 @@ describe("Google's drives", () => {
   });
 });
 
-// A start Google's drive refused was offered again, refused again, and again (docs/decisions/0210-booking-by-start-time.md).
+// A start Google's drive refused was offered again, refused again, and again
+// (docs/decisions/0287-a-start-googles-drive-refused-is-not-offered.md).
 describe("The starts offered beside a visit", () => {
   it("leave out one whose drive Google already found too long, asking Google nothing", async () => {
     const plan = { day: dayAt(28.46), rules: RULES, now: NOW };
