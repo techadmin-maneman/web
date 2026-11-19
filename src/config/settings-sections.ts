@@ -245,6 +245,16 @@ export function readAccess(
   return { teamDomain, opsAudience: opsOn ? read.text("ACCESS_OPS_AUD") : read.optionalText("ACCESS_OPS_AUD") };
 }
 
+/**
+ * The codes' pepper: a signing key where the client app signs in with them, and present wherever the site is on, since
+ * every booking from it proves its number with one (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
+ */
+function readPepper(read: Reader, environment: EnvironmentName | undefined, clientOn: boolean): string {
+  if (clientOn) return read.key("OTP_PEPPER");
+  if (environment !== undefined && ENABLED_SURFACES[environment].includes("public")) return read.text("OTP_PEPPER");
+  return read.optionalText("OTP_PEPPER") ?? "";
+}
+
 /** The login codes: their pepper, their limits, locally a fixed code, and who sends them by SMS. */
 export function readLogin(
   read: Reader,
@@ -253,7 +263,7 @@ export function readLogin(
 ): LoginSettings {
   const isLocal = environment === "local";
   const login: LoginSettings = {
-    codePepper: clientOn ? read.key("OTP_PEPPER") : (read.optionalText("OTP_PEPPER") ?? ""),
+    codePepper: readPepper(read, environment, clientOn),
     codeMobileDailyLimit: read.fixedLimit("OTP_MOBILE_DAILY_LIMIT", isLocal),
     codeIpHourlyLimit: read.fixedLimit("OTP_IP_HOURLY_LIMIT", isLocal),
     codeDailyCeiling: read.fixedLimit("OTP_DAILY_CEILING", isLocal),

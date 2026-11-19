@@ -16,6 +16,7 @@ import {
   bookPublicConsultation,
   type Consultation as PublicConsultation,
   type Code,
+  type NotBooked,
   type ReferralConsultation,
 } from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow, type StripDay } from "../../lib/dates.ts";
@@ -66,6 +67,12 @@ const CODE_FIELD: CodeFieldClasses = {
   error: styles.error,
   again: undefined,
 };
+
+/** Counts what the API booked or asked of ops; a number we know that had nothing booked was a lead only. */
+function trackBooked(booked: ReferralConsultation | PublicConsultation | NotBooked, page: "invite" | "book"): void {
+  if (booked.state === "not_booked") return;
+  track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
+}
 
 /** The button's words: what the plan books, or, once a code is on its way, confirming it. */
 function submitLabel(plan: Plan, codeWaiting: boolean): string {
@@ -312,7 +319,7 @@ export function Consultation(props: ConsultationProps) {
       props.invited
         ? bookConsultation(codeInPath(), { ...onInvite, turnstile_token: token }, keyFor(onInvite))
         : bookPublicConsultation({ ...onBook, turnstile_token: token }, keyFor(onBook));
-    void form.submit<ReferralConsultation | PublicConsultation>(
+    void form.submit<ReferralConsultation | PublicConsultation | NotBooked>(
       event,
       async (token, keyFor) => {
         const answer = await send(token, keyFor);
@@ -326,7 +333,7 @@ export function Consultation(props: ConsultationProps) {
       },
       (booked) => {
         const page = leadSent(door, { served: true, area: props.answer.area, window: slot.window });
-        track({ name: "booking_confirmed", page, area: booked.area, window: booked.window, state: booked.state });
+        trackBooked(booked, page);
         props.onBooked({ result: booked, mobile: fields.mobile, code: sentCode });
       },
       addressComplete,

@@ -401,6 +401,28 @@ export const referral = {
     back: "Back to the site",
   },
   /**
+   * A number we know that the form booked nothing for, and why, which WhatsApp tells its owner too. A consultation
+   * still to come is restated by its day and hours, as a booking is; its title here stands in only without them.
+   */
+  known: {
+    consultation_exists: {
+      label: "Already booked",
+      title: "Your consultation is booked",
+      body: "That’s your consultation. We haven’t booked another.",
+    },
+    book_in_app: {
+      label: "Welcome back",
+      title: "Book in the app",
+      body: "This number has a Mane Man account, so its visits are booked in the app.",
+    },
+    address_not_served: {
+      label: "Nothing booked",
+      title: "We don’t come to your address yet",
+      body: "That’s the address on your account. Moved? Message us on WhatsApp.",
+    },
+    whatsapp: "Message us on WhatsApp",
+  },
+  /**
    * C4's "Code expired" frame. The invite has lapsed for this friend only, which the API can tell once they have
    * given their number, so the frame shows with the booking's answer rather than before it (ADR 0025).
    */

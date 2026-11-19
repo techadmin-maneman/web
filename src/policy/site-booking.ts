@@ -16,8 +16,12 @@ export function typedAddress(person: { readonly hasSavedAddress: boolean }): Typ
   return person.hasSavedAddress ? "on_account" : "saved";
 }
 
-/** Why the site books nothing for a number we know, which its owner is told on WhatsApp. */
-export type NotBookedFromSite = "consultation_exists" | "book_in_app" | "address_not_served";
+/**
+ * Why the site books nothing for a number we know: the page says it, since the number's WhatsApp code proved it, and
+ * its owner is told on WhatsApp as well.
+ */
+export const NOT_BOOKED_FROM_SITE = ["consultation_exists", "book_in_app", "address_not_served"] as const;
+export type NotBookedFromSite = (typeof NOT_BOOKED_FROM_SITE)[number];
 
 /** Null when the person may book a consultation from the site, as anyone may. */
 export function notBookedFromSite(person: {

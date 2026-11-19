@@ -37,6 +37,7 @@ import {
   BOOKED_DESCRIPTION,
   CreditsSchema,
   InviteStateSchema,
+  NotBookedSchema,
   NumberCodeSchema,
   OneVisitOutcomeSchema,
   OneVisitRequestSchema,
@@ -232,7 +233,8 @@ const consultationRoute = createRoute({
               one_visit: OneVisitOutcomeSchema,
             })
             .strict()
-            .openapi("ReferralConsultation"),
+            .openapi("ReferralConsultation")
+            .or(NotBookedSchema),
         },
       },
     },

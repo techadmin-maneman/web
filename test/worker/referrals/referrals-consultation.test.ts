@@ -222,6 +222,25 @@ describe("POST /api/r/:code/consultation", () => {
     });
   });
 
+  // Every booking proves its number first (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
+  it("refuses a booking without a code that proved the number, and writes nothing", async () => {
+    await pincode("122018", "Gurgaon South City II", true);
+    const code = await codeOf();
+    const body = { ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", address: ADDRESS };
+    const refused = await request(
+      site(),
+      `/api/r/${code}/consultation`,
+      post({ ...body, consent: true, terms: true, number_code_id: undefined }),
+      { CRM_QUEUE: fakeQueue() },
+    );
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toMatchObject({ error: { code: "number_not_proved" } });
+    const friends = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM people WHERE mobile_e164 = '+919810000002'",
+    ).first();
+    expect(friends).toEqual({ n: 0 });
+  });
+
   it("refuses an unserved pincode or a day out of range", async () => {
     await pincode("400050", "Bandra", false);
     const code = await codeOf();

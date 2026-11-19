@@ -38,6 +38,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { LOSS_EXTENTS } from "../../config/booking.ts";
 import { TOLD_NOTICES } from "../../config/notices.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
+import { NOT_BOOKED_FROM_SITE } from "../../policy/site-booking.ts";
 import { WindowHoursSchema } from "../schemas/booking.ts";
 import { TermsSchema } from "../schemas/terms.ts";
 import { openDays, tellIfFullyBooked } from "../../domain/booking/open-windows.ts";
@@ -216,6 +217,36 @@ const ConsultationSchema = z
   .strict()
   .openapi("Consultation");
 
+/**
+ * A number we know that the form books nothing for. Its WhatsApp code proved the number, so the answer says why, as
+ * WhatsApp tells its owner as well.
+ */
+export const NotBookedSchema = z
+  .object({
+    state: z.literal("not_booked"),
+    reason: z.enum(NOT_BOOKED_FROM_SITE).openapi({
+      description:
+        "consultation_exists: a consultation still to come, in consultation; book_in_app: a client, whose visits are " +
+        "booked in the app; address_not_served: the address on the account is in a pincode we do not come to.",
+    }),
+    consultation: z
+      .union([
+        z
+          .object({
+            date: z.iso.date(),
+            window: z.enum(BOOKING_WINDOWS),
+            hours: WindowHoursSchema,
+            starts_at: z.union([z.iso.datetime(), z.null()]),
+            arrives_by: z.union([z.iso.datetime(), z.null()]),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({ description: "The consultation still to come, for consultation_exists; null otherwise." }),
+  })
+  .strict()
+  .openapi("NotBooked");
+
 const WaitlistSchema = z
   .object({
     area: z
@@ -232,10 +263,10 @@ export const takenOrInProgress = errorResponse(
   "taken: that window has gone; idempotency_in_progress: the first request with this key is still running",
 );
 
-/** Booked, or asked for, or the answer a new number would get: a number we know is told the rest on WhatsApp. */
+/** Booked, or asked for; or, for a number we know, why nothing was booked, which WhatsApp tells its owner too. */
 export const BOOKED_DESCRIPTION =
-  "Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a " +
-  "new number would, books nothing, and is told why on WhatsApp.";
+  "Booked, or asked for. A number with a consultation still to happen, a client, or an address on the account we do " +
+  "not come to books nothing, and is answered not_booked with the reason, which WhatsApp tells its owner too.";
 
 const OpenWindowsSchema = z
   .object({
@@ -302,7 +333,10 @@ const consultationRoute = createRoute({
     body: { required: true, content: { "application/json": { schema: ConsultationRequestSchema } } },
   },
   responses: {
-    201: { description: BOOKED_DESCRIPTION, content: { "application/json": { schema: ConsultationSchema } } },
+    201: {
+      description: BOOKED_DESCRIPTION,
+      content: { "application/json": { schema: z.union([ConsultationSchema, NotBookedSchema]) } },
+    },
     400: errorResponse(
       "invalid_request: fields names what was refused, address.pincode for an address in another pincode, window " +
         "for one visit in the evening",

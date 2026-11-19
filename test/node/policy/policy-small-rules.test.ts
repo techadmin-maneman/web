@@ -127,6 +127,8 @@ describe("the limits on each counted use", () => {
 
   it("read the settings where they are set there, and keep their own figure where not", () => {
     expect(limitOf("booking:ip", settings)).toBe(11);
+    expect(limitOf("form:code:ip", settings)).toBe(11);
+    expect(limitOf("login:code:ip", settings)).toBe(13);
     expect(limitOf("ceiling:geocode", settings)).toBe(24);
     expect(limitOf("grievance:person", settings)).toBe(GRIEVANCES_PER_DAY);
   });

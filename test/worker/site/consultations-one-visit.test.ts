@@ -186,15 +186,14 @@ describe("a consultation and fit in one visit", () => {
 
   it("is the number's consultation still to happen, so neither can be booked again beside it", async () => {
     expect((await book({ one_visit: true })).status).toBe(201);
+    const { date, window, hours, starts_at: startsAt, arrives_by: arrivesBy } = BOOKED_MORNING;
     for (const oneVisit of [false, true]) {
       const answer = await book({ date: "2026-09-24", one_visit: oneVisit });
       expect(answer.status).toBe(201);
       expect(await answer.json()).toEqual({
-        ...BOOKED_MORNING,
-        date: "2026-09-24",
-        starts_at: "2026-09-24T03:30:00.000Z",
-        arrives_by: "2026-09-24T04:00:00.000Z",
-        one_visit: oneVisit,
+        state: "not_booked",
+        reason: "consultation_exists",
+        consultation: { date, window, hours, starts_at: startsAt, arrives_by: arrivesBy },
       });
     }
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);

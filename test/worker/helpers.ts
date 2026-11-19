@@ -202,7 +202,7 @@ export async function provedNumberCode(mobileE164: string, now: Date = NOW): Pro
  * A site booking as the site sends it: with the code that proved the number it books with, entered at NOW. A body
  * naming its own `number_code_id`, even as undefined, keeps it.
  */
-export async function withProof<T extends { mobile: string }>(body: T): Promise<T & { number_code_id?: string }> {
+export async function withProof<T extends { mobile: string }>(body: T): Promise<T | (T & { number_code_id: string })> {
   if ("number_code_id" in body) return body;
   const mobile = toE164(body.mobile);
   if (mobile === null) return body;

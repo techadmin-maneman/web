@@ -251,23 +251,20 @@ describe("the address the consultation is at", () => {
     it.each([
       ["we hold but do not serve", "400050", true],
       ["we do not hold", "411001", false],
-    ])(
-      "books nothing in a pincode %s, answers as for a new number, and tells its owner on WhatsApp",
-      async (_, pin, held) => {
-        if (held) await pincode(pin, "Bandra", "Mumbai", false);
-        await onAccount(pin);
-        const messages = fakeQueue();
-        const answer = await book({ address: ADDRESS }, { MESSAGE_QUEUE: messages });
+    ])("books nothing in a pincode %s, and tells its owner why on the page and on WhatsApp", async (_, pin, held) => {
+      if (held) await pincode(pin, "Bandra", "Mumbai", false);
+      await onAccount(pin);
+      const messages = fakeQueue();
+      const answer = await book({ address: ADDRESS }, { MESSAGE_QUEUE: messages });
 
-        expect(answer.status).toBe(201);
-        expect(await answer.json()).toEqual(BOOKED_MORNING);
-        expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
-        expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
-        expect(await count("SELECT COUNT(*) AS n FROM addresses WHERE person_id = 'p-known'")).toBe(1);
-        expect(await told()).toEqual(["address_not_served"]);
-        expect(messages.sent).toHaveLength(1);
-      },
-    );
+      expect(answer.status).toBe(201);
+      expect(await answer.json()).toEqual({ state: "not_booked", reason: "address_not_served", consultation: null });
+      expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
+      expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
+      expect(await count("SELECT COUNT(*) AS n FROM addresses WHERE person_id = 'p-known'")).toBe(1);
+      expect(await told()).toEqual(["address_not_served"]);
+      expect(messages.sent).toHaveLength(1);
+    });
   });
 
   it("leaves the first address untouched when the same number books again with another", async () => {
@@ -275,6 +272,7 @@ describe("the address the consultation is at", () => {
     expect(await first.json()).toEqual(BOOKED_MORNING);
     // Ops cancel the first, so the number may book a consultation again.
     await env.DB.prepare("UPDATE slot_holds SET state = 'released'").run();
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled'").run();
 
     const elsewhere = { ...ADDRESS, flat: "House 9", line1: "Rose Lane", locality: "Sector 45" };
     const second = await book({ date: "2026-09-24", address: elsewhere });

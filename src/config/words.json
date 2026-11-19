@@ -5176,6 +5176,86 @@
     "reviewed": true
   },
   {
+    "key": "site:referral/referral.known.consultation_exists.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Already booked",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.known.consultation_exists.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Your consultation is booked",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.known.consultation_exists.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "That’s your consultation. We haven’t booked another.",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.known.book_in_app.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Welcome back",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.known.book_in_app.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Book in the app",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.known.book_in_app.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "This number has a Mane Man account, so its visits are booked in the app.",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.known.address_not_served.label",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Nothing booked",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.known.address_not_served.title",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We don’t come to your address yet",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.known.address_not_served.body",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "That’s the address on your account. Moved? Message us on WhatsApp.",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.known.whatsapp",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Message us on WhatsApp",
+    "reviewed": false
+  },
+  {
     "key": "site:referral/referral.expired.label",
     "surface": "site",
     "group": "Invite page",

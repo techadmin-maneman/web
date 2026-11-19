@@ -26,7 +26,7 @@ const STOPPED: Readonly<Record<Ceiling, string>> = {
   // Only an active technician's number is sent a code, so clients and strangers cannot spend this one.
   tech_code: "the technician app's login codes",
   // The site's codes go to whatever number is typed, so they have a ceiling of their own and never stop a login.
-  form_code: "the site's WhatsApp codes for the one visit and the try-on",
+  form_code: "the site's WhatsApp codes, so its bookings and the try-on",
   geocode: "address suggestions",
   route: "the dispatch board's drive times",
   route_map: "the dispatch board's day map",

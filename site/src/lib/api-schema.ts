@@ -635,13 +635,13 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp. */
+                /** @description Booked, or asked for. A number with a consultation still to happen, a client, or an address on the account we do not come to books nothing, and is answered not_booked with the reason, which WhatsApp tells its owner too. */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Consultation"];
+                        "application/json": components["schemas"]["Consultation"] | components["schemas"]["NotBooked"];
                     };
                 };
                 /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening */
@@ -1457,13 +1457,13 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp. */
+                /** @description Booked, or asked for. A number with a consultation still to happen, a client, or an address on the account we do not come to books nothing, and is answered not_booked with the reason, which WhatsApp tells its owner too. */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ReferralConsultation"];
+                        "application/json": components["schemas"]["ReferralConsultation"] | components["schemas"]["NotBooked"];
                     };
                 };
                 /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening */
@@ -3368,6 +3368,25 @@ export interface components {
             value: number;
             /** @description The most a percentage takes off, in paise before GST; null for none. */
             cap: number | null;
+        };
+        NotBooked: {
+            /** @enum {string} */
+            state: "not_booked";
+            /**
+             * @description consultation_exists: a consultation still to come, in consultation; book_in_app: a client, whose visits are booked in the app; address_not_served: the address on the account is in a pincode we do not come to.
+             * @enum {string}
+             */
+            reason: "consultation_exists" | "book_in_app" | "address_not_served";
+            /** @description The consultation still to come, for consultation_exists; null otherwise. */
+            consultation: {
+                /** Format: date */
+                date: string;
+                /** @enum {string} */
+                window: "morning" | "afternoon" | "evening";
+                hours: components["schemas"]["WindowHours"];
+                starts_at: string | null;
+                arrives_by: string | null;
+            } | null;
         };
         TypedAddress: {
             line1: string;

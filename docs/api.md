@@ -768,11 +768,18 @@ Request body:
 }
 ```
 
-**201**: Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp.
+**201**: Booked, or asked for. A number with a consultation still to happen, a client, or an address on the account we do not come to books nothing, and is answered not_booked with the reason, which WhatsApp tells its owner too.
 
 ```json
 {
-  "$ref": "#/components/schemas/Consultation"
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/Consultation"
+    },
+    {
+      "$ref": "#/components/schemas/NotBooked"
+    }
+  ]
 }
 ```
 
@@ -2013,11 +2020,18 @@ Request body:
 }
 ```
 
-**201**: Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp.
+**201**: Booked, or asked for. A number with a consultation still to happen, a client, or an address on the account we do not come to books nothing, and is answered not_booked with the reason, which WhatsApp tells its owner too.
 
 ```json
 {
-  "$ref": "#/components/schemas/ReferralConsultation"
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/ReferralConsultation"
+    },
+    {
+      "$ref": "#/components/schemas/NotBooked"
+    }
+  ]
 }
 ```
 
@@ -5191,6 +5205,95 @@ Razorpay's webhook: payments and refunds
     "kind",
     "value",
     "cap"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NotBooked
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "not_booked"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "consultation_exists",
+        "book_in_app",
+        "address_not_served"
+      ],
+      "description": "consultation_exists: a consultation still to come, in consultation; book_in_app: a client, whose visits are booked in the app; address_not_served: the address on the account is in a pincode we do not come to."
+    },
+    "consultation": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "window": {
+              "type": "string",
+              "enum": [
+                "morning",
+                "afternoon",
+                "evening"
+              ]
+            },
+            "hours": {
+              "$ref": "#/components/schemas/WindowHours"
+            },
+            "starts_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "arrives_by": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "date",
+            "window",
+            "hours",
+            "starts_at",
+            "arrives_by"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The consultation still to come, for consultation_exists; null otherwise."
+    }
+  },
+  "required": [
+    "state",
+    "reason",
+    "consultation"
   ],
   "additionalProperties": false
 }

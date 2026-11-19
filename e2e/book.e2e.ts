@@ -434,6 +434,66 @@ test("starts from the try-on's name and number, and a booking for the number it 
   expect(handedOver).toEqual([{ code_id: "5a1e0000-0000-4000-8000-00000000c0de", mobile: "9810000000" }]);
 });
 
+// A number we know that had nothing booked is told why: no "Booked", no calendar, no day but its own consultation's.
+const KNOWN = {
+  consultation_exists: {
+    date: "2026-09-23",
+    window: "morning",
+    hours: { start: "09:00", end: "12:00" },
+    starts_at: "2026-09-23T03:30:00.000Z",
+    arrives_by: "2026-09-23T04:00:00.000Z",
+  },
+  book_in_app: null,
+  address_not_served: null,
+} as const;
+for (const [reason, consultation] of Object.entries(KNOWN)) {
+  test(`a number we know is told why nothing was booked: ${reason}`, async ({ page }) => {
+    const known = { state: "not_booked", reason, consultation };
+    await mockApi(page, { consultation: { status: 201, body: known } });
+    await bookHere(page);
+    const words = referralCopy.referral.known[reason as keyof typeof KNOWN];
+    await expect(page.getByText(words.label, { exact: true })).toBeVisible();
+    await expect(page.getByText(words.body)).toBeVisible();
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toHaveText(consultation === null ? words.title : /^Wednesday 23 September, 9/);
+    await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(referralCopy.referral.booked.calendar.label)).toHaveCount(0);
+    if (reason === "address_not_served") {
+      const whatsapp = page.getByRole("link", { name: referralCopy.referral.known.whatsapp });
+      await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/\d+$/);
+    }
+  });
+}
+
+// A proof the tab kept that the API no longer takes is forgotten, so the next press asks a new code (ADR 0285).
+test("a kept proof that has run out is refused once, then a new code is asked and books", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("seeded") !== null) return;
+    sessionStorage.setItem("seeded", "1");
+    const visitor = { name: "Test Visitor", mobile: "9810000000", proof: "5a1e0000-0000-4000-8000-00000000c0de" };
+    sessionStorage.setItem("mm_visitor", JSON.stringify(visitor));
+  });
+  await mockApi(page);
+  const sent: { number_code_id?: string }[] = [];
+  await page.route("**/api/consultation", (route) => {
+    sent.push(route.request().postDataJSON() as { number_code_id?: string });
+    if (sent.length > 1) return route.fulfill({ status: 201, json: BOOKED });
+    return route.fulfill({ status: 403, json: { error: { code: "number_not_proved", request_id: "r" } } });
+  });
+  await visit(page, "/book");
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
+  await checkPincode(page, SERVED.pincode);
+  await toAddress(page);
+  await fillAddress(page);
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await expect(page.getByText(referralCopy.referral.errors.notProved)).toBeVisible();
+
+  await bookWithCode(page);
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
+  expect(sent.map((body) => body.number_code_id)).toEqual(["5a1e0000-0000-4000-8000-00000000c0de", NUMBER_CODE_ID]);
+});
+
 // On staging the fields stayed empty: hydrating keeps the server's empty fields, and only the referral reward's answer
 // drawing the form again put the remembered name in them here. Held, it draws nothing.
 test("shows the try-on's name and number in its fields as soon as the page is drawn", async ({ page }) => {

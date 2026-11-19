@@ -198,8 +198,7 @@ export const tryOn = {
 // ---------------------------------------------------------------------------
 
 /**
- * The code that proves the number before /book's consultation and fit in one visit, or /try's look, acts on it. Not
- * drawn.
+ * The code that proves the number before a booking, or /try's look, acts on it. Not drawn.
  */
 export const numberCode = {
   label: "WhatsApp code",
