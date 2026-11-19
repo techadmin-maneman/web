@@ -162,7 +162,7 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
   await expect(recent.getByRole("link", NAME)).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
 
   await page.route("**/cdn-cgi/access/logout", (route) => route.fulfill({ contentType: "text/html", body: "" }));
-  await page.getByRole("button", { name: opsCopy.shell.account.label }).click();
+  await page.getByRole("button", { name: opsCopy.shell.account.named("") }).click();
   await page.getByRole("link", { name: opsCopy.shell.account.signOut }).click();
   await page.waitForURL("**/cdn-cgi/access/logout");
   expect(await page.evaluate(() => sessionStorage.getItem("ops.recent-clients"))).toBeNull();

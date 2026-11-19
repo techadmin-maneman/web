@@ -2,23 +2,20 @@
 // else done on it here, the payment link, UPI, the call about a move, leave and a claim's photographs; and at its foot,
 // taking it, giving it to someone or closing it, beside the step that settles it.
 
-import { buttonLook } from "@maneman/ui/Button";
 import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Drawer } from "@maneman/ui/Drawer";
 import { NoValue } from "@maneman/ui/NoValue";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useId } from "react";
+import { Suspense, useId } from "react";
 import { createPortal } from "react-dom";
 import type { Task, TaskGroup } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { CLOSE, tasks } from "../content.ts";
-import { useMayCall } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
-import { mayFollow } from "../route.ts";
-import { decidedAt, taskClientPath } from "../lib/task-links.ts";
+import { taskClientPath } from "../lib/task-links.ts";
 import { nameParts } from "../lib/who.ts";
-import { ReportPhotos } from "../care/index.ts";
+import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { BookFromTask } from "./BookFromTask.tsx";
+import { DecideLink } from "./DecideLink.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
 import { LeaveDecision } from "./LeaveDecision.tsx";
 import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
@@ -26,6 +23,9 @@ import { subOf } from "./task-subs.ts";
 import { TaskActions } from "./TaskActions.tsx";
 import { UpiPaymentAction } from "./UpiPaymentAction.tsx";
 import shared from "./tasks.module.css";
+
+/** A claim's photographs, loaded when a claim is first opened, so Today's first load leaves Care's section out. */
+const ReportPhotos = lazyScreen(() => import("../care/index.ts").then((module) => module.ReportPhotos));
 
 type Group = TaskGroup["group"];
 
@@ -49,32 +49,6 @@ export interface Acting {
   readonly owner: string | null;
   readonly onOwner: (owner: string | null) => void;
   readonly onClosed: () => void;
-}
-
-/** The way to where the task is decided: a row's one action, outlined, and the drawer's main one, filled. */
-export function DecideLink({
-  group,
-  task,
-  subject,
-  primary = false,
-}: {
-  group: Group;
-  task: Task;
-  subject: string;
-  primary?: boolean;
-}) {
-  const mayCall = useMayCall();
-  const where = decidedAt(group, task);
-  const action = tasks.decide[group];
-  // Where the person may not open the section it is decided in, there is no way to it to offer.
-  if (where === null || action === undefined || !mayFollow(mayCall, where)) return null;
-  return (
-    <OpsLink className={buttonLook({ variant: primary ? "primary" : "outline", size: "compact" })} to={where}>
-      {action}
-      {/* Every row of a group links the same words, so each says whose it is to a screen reader. */}
-      <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
-    </OpsLink>
-  );
 }
 
 interface Props {
@@ -144,7 +118,9 @@ export function TaskDrawer({ group, task, subject, now, acting, onDismiss }: Pro
         <CallAboutMove group={group} task={task} subject={subject} onTold={done} />
         <LeaveDecision group={group} task={task} onDecided={done} />
         {task.facts.group === "fit_guarantee_claim" && task.facts.conversation_id !== null && (
-          <ReportPhotos conversationId={task.facts.conversation_id} only={task.facts.references} />
+          <Suspense fallback={null}>
+            <ReportPhotos conversationId={task.facts.conversation_id} only={task.facts.references} />
+          </Suspense>
         )}
       </div>
     </Drawer>,

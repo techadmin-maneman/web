@@ -4,7 +4,7 @@
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, empty, json, type OpsReply } from "./fixtures.ts";
+import { answer, empty, fails, json, type OpsReply } from "./fixtures.ts";
 import { shell } from "../../apps/ops/src/content/shell.ts";
 
 const SOS: OpsReply<"/api/sos">["open"][number] = {
@@ -44,6 +44,43 @@ test("an SOS shows over every screen, with whose it is, the visit and a map, unt
 
   await banner.getByRole("button", { name: shell.sos.handled }).click();
   await expect(banner).toHaveCount(0);
+});
+
+// The console's access is everything until whoami answers, so the banner waits for it, and asks nothing of one
+// the Staff list does not let read SOS.
+test("asks nothing of the API for one not let read SOS, however late whoami answers", async ({ page }) => {
+  const asked: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/sos") asked.push(request.url());
+  });
+  await answer(page, {
+    "GET /api/whoami": async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return json({
+        signed_in_as: "money@maneman.in",
+        sign_out: null,
+        staff: { enforced: true, listed: true, grants: [], may_call: ["GET /api/health", "GET /api/whoami"] },
+        cities: [],
+        every_city: true,
+      })(route);
+    },
+    "GET /api/sos": json({ open: [SOS] }),
+  });
+  await page.goto("/settings/cities");
+  await expect(page.getByRole("main")).toBeVisible();
+  await page.waitForTimeout(1500);
+  expect(asked).toEqual([]);
+  await expect(page.getByRole("alert").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
+});
+
+// An SOS must reach Operations however whoami fares: where it fails, the banner reads as it always did.
+test("shows an SOS where whoami failed", async ({ page }) => {
+  await answer(page, {
+    "GET /api/whoami": fails(500, "internal_error"),
+    "GET /api/sos": json({ open: [SOS] }),
+  });
+  await page.goto("/settings/cities");
+  await expect(page.getByRole("alert").filter({ hasText: shell.sos.title("Imran Qureshi", "12:11 pm") })).toBeVisible();
 });
 
 test("names the visit by its time where its client has since been erased", async ({ page }) => {

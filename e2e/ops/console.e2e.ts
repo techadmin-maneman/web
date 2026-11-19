@@ -172,7 +172,7 @@ test("titles each page by what it is, and says where it sits", async ({ page }) 
 
 test("says who is signed in, at the navigation's foot and in the account's panel", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: opsCopy.shell.account.label }).click();
+  await page.getByRole("button", { name: opsCopy.shell.account.named("") }).click();
   await expect(navigation(page)).toContainText("ops@localhost");
   // No Access stands in front of a laptop, so there is no session to leave.
   await expect(navigation(page).getByRole("link", { name: opsCopy.shell.account.signOut })).toHaveCount(0);
@@ -192,7 +192,7 @@ test("signs out through Access, where Access stands in front", async ({ page }) 
 
 test("keeps the theme chosen, and draws the console dark", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: opsCopy.shell.account.label }).click();
+  await page.getByRole("button", { name: opsCopy.shell.account.named("") }).click();
   await page.getByRole("button", { name: opsCopy.shell.account.themes.dark }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();

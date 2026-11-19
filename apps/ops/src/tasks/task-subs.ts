@@ -8,7 +8,7 @@ import { rupees } from "@maneman/web-kit/money";
 import type { Task } from "../api.ts";
 import { dispatch, referrals, tasks } from "../content.ts";
 import { untoldMoveOf } from "./untold-move.ts";
-import { messageKindName } from "../care/index.ts";
+import { messageKindName } from "../lib/message-kind.ts";
 
 type Facts = Task["facts"];
 type Group = Facts["group"];

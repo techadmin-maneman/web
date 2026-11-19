@@ -97,6 +97,15 @@ test("gives the bar's controls, and a page's boxes and buttons, a finger's heigh
   expect(title.x + title.width).toBeLessThanOrEqual(search.x);
 });
 
+// Its name was "Account" over the initials it shows, so a voice could not ask for what is on the screen.
+test("names the account's button from the initials it shows", async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.goto("/");
+  const account = page.getByRole("button", { name: /, your account$/ });
+  const initials = (await account.innerText()).trim();
+  await expect(account).toHaveAccessibleName(opsCopy.shell.account.label(initials));
+});
+
 // Money's tabs ran off the screen, and the page open was one of those cut off.
 test("keeps every tab in a row in sight, running on to a second line", async ({ page }) => {
   await page.setViewportSize(PHONE);

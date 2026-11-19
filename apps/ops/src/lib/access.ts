@@ -38,6 +38,15 @@ function useStaff(): Whoami["staff"] | undefined {
   return loaded.state === "loaded" ? loaded.value.staff : answered?.staff;
 }
 
+/**
+ * Whether whoami has answered for this load, or failed. Until then access is everything, so a read only some may make,
+ * one that starts by itself, waits for it rather than be refused; where it failed, the read goes ahead as before.
+ */
+export function useAccessSettled(): boolean {
+  const [loaded] = useLoad(whoami);
+  return loaded.state !== "loading" || answered !== null;
+}
+
 export function useMayCall(): MayCall {
   const staff = useStaff();
   return useMemo(() => (staff === undefined ? null : new Set(staff.may_call)), [staff]);

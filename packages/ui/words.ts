@@ -75,6 +75,11 @@ export const tables = {
   /** A table with no rows at all, before any search: nothing has come yet. */
   empty: "Nothing here yet.",
   more: "Show more",
+  /** Rows chosen to act on together (./useRowSelection.ts): "3 chosen". */
+  chosen: (count: number) => `${String(count)} chosen`,
+  clearChosen: "Clear",
+  /** The head's box, taking every row shown. */
+  chooseAll: "Choose every row shown",
 } as const;
 
 /** Deleting something added by mistake: asked once, then gone for good (./DeleteAction.tsx). */

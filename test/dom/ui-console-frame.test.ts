@@ -200,6 +200,12 @@ describe("a figure's tile", () => {
     expect(renderToStaticMarkup(createElement(StatTile, { label: "Visits", value: 18 }))).toMatch(/^<div/);
   });
 
+  it("holds the figure's room while it is on its way, a dash said as loading", () => {
+    const markup = renderToStaticMarkup(createElement(StatTile, { label: "Visits", value: null, note: "" }));
+    expect(markup).toContain('aria-hidden="true">—</span>');
+    expect(markup).toContain(">Loading…</span>");
+  });
+
   it("carries a short line beneath the figure where it has one", () => {
     const markup = renderToStaticMarkup(createElement(StatTile, { label: "Visits", value: 18, note: "6 done" }));
     expect(markup.indexOf(">18<")).toBeLessThan(markup.indexOf(">6 done<"));

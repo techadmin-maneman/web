@@ -1,4 +1,4 @@
-/* The navigation's head (./Navigation.tsx): the mark beside the console's name. */
+/* The navigation's head (./Navigation.tsx): the mark, the drawn wordmark and the product beside it. */
 
 .mark {
   flex-shrink: 0;
@@ -7,6 +7,22 @@
   fill: var(--nav-mark);
 }
 
-.brandName {
-  font-size: var(--fs-15);
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+}
+
+/* The wordmark's small cut, white on the navigation's ink, as the brand kit draws it there. */
+.wordmark {
+  flex-shrink: 0;
+  width: calc(var(--sp-12) * 6);
+  height: var(--sp-12);
+  fill: var(--nav-text-current);
+}
+
+.product {
+  font-size: var(--fs-13);
+  font-weight: var(--weight-medium);
+  color: var(--nav-text);
 }

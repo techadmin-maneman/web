@@ -10,9 +10,16 @@ function notPermitted<T>(): Promise<Answer<T>> {
   return Promise.resolve({ ok: false, status: 403, code: "not_permitted", fields: [], moved: null, requestId: null });
 }
 
-/** What the read answered, once it has; null while it reads, where it failed, and where the call would be refused. */
-export function useRead<T>(read: () => Promise<Answer<T>>, call: OpsCall): T | null {
+/** What a read answered, null where it has not, and whether it is still out: a call that would be refused is not. */
+export interface Read<T> {
+  readonly value: T | null;
+  readonly pending: boolean;
+}
+
+/** A read, and whether it is still out, so what it fills can hold its room meanwhile. */
+export function useReadState<T>(read: () => Promise<Answer<T>>, call: OpsCall): Read<T> {
   const access = useAccess();
-  const [loaded] = useLoad(access.mayCall(call) ? read : notPermitted<T>);
-  return loaded.state === "loaded" ? loaded.value : null;
+  const may = access.mayCall(call);
+  const [loaded] = useLoad(may ? read : notPermitted<T>);
+  return { value: loaded.state === "loaded" ? loaded.value : null, pending: may && loaded.state === "loading" };
 }

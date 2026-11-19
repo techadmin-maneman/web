@@ -2,7 +2,7 @@
 // chat; what the client wrote, our replies and notes, and our automatic messages with how far each got, a row of them
 // folded into one line; and the reply box at its foot. Who it is with is beside it (./ChatClient.tsx).
 
-import { messageKindName } from "./message-kind.ts";
+import { messageKindName } from "../lib/message-kind.ts";
 import { Toast } from "@maneman/ui/Toast";
 import { classes } from "@maneman/ui/classes";
 import { TextButton } from "@maneman/ui/TextLink";

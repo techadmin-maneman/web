@@ -58,8 +58,9 @@ export function Account() {
   const [loaded] = useLoad(whoami);
   if (loaded.state !== "loaded") return null;
   const { signed_in_as: who, sign_out: signOut } = loaded.value;
+  const initials = initialsOf(whoWords(who));
   return (
-    <Popover label={shell.account.label} button={initialsOf(whoWords(who))}>
+    <Popover label={shell.account.label(initials)} button={initials}>
       {() => <Panel who={who} signOut={signOut} />}
     </Popover>
   );

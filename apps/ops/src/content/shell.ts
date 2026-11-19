@@ -29,6 +29,8 @@ export const shell = {
   serviceToken: "System",
   /** The sidebar's own title: the console's name. */
   title: "Mane Man Ops",
+  /** Set beside the drawn wordmark, as the product it is. */
+  product: "Ops",
   /** The header's way to the navigation, in a window too narrow to keep it beside the page. */
   menu: "Menu",
   closeMenu: "Close menu",
@@ -130,7 +132,8 @@ export const shell = {
   },
   /** Who is signed in, the theme, and the way out: Access's own session, which is the only one the console has. */
   account: {
-    label: "Account",
+    /** The account's button on a phone, read out from the initials it shows: "OP, your account" (WCAG 2.5.3). */
+    label: (initials: string) => `${initials}, your account`,
     /** The navigation's foot, read out with the name it shows. */
     named: (name: string) => `Account, ${name}`,
     signOut: "Sign out",

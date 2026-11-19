@@ -36,7 +36,8 @@ test("writes each task’s owner in the board’s column, by first name, and non
   await expect(row(page, "Kunal Mehta")).toContainText("Priya");
   await expect(row(page, "Karan Bose")).toContainText("Anil");
   await expect(row(page, "Deepak Rao")).not.toContainText("Priya");
-  await expect(row(page, "Deepak Rao").getByRole("cell").nth(2)).toHaveText(/^—/);
+  // After its box to choose it, whom it is about and when it is due.
+  await expect(row(page, "Deepak Rao").getByRole("cell").nth(3)).toHaveText(/^—/);
 });
 
 test("takes a task, and hands it back, from its drawer", async ({ page }) => {
@@ -52,7 +53,8 @@ test("takes a task, and hands it back, from its drawer", async ({ page }) => {
   });
   const deepak = await detail(page, "Deepak Rao");
   await deepak.getByRole("button", { name: "Take · Deepak Rao" }).click();
-  await expect(deepak).toContainText("Ops");
+  // Its owner by first name: ops@localhost reads "Ops", a name, not the console's own word.
+  await expect(deepak).toContainText(new RegExp(`${opsCopy.tasks.columns.owner}\\s*Ops`));
   await deepak.getByRole("button", { name: "Hand back · Deepak Rao" }).click();
   await expect(deepak.getByRole("button", { name: "Take · Deepak Rao" })).toBeVisible();
   expect(sent).toEqual([{ owner: "ops@localhost" }, { owner: null }]);

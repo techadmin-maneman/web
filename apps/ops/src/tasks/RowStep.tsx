@@ -7,7 +7,8 @@ import { decidedAt } from "../lib/task-links.ts";
 import { mayFollow } from "../route.ts";
 import { BookFromTask, booksFrom } from "./BookFromTask.tsx";
 import { TakeButton } from "./TaskActions.tsx";
-import { DecideLink, type Acting } from "./TaskDetail.tsx";
+import { DecideLink } from "./DecideLink.tsx";
+import type { Acting } from "./TaskDetail.tsx";
 import type { Row } from "./task-views.ts";
 
 /** The row's one action: the way to where it is decided, the booking that does it, or else taking it. */

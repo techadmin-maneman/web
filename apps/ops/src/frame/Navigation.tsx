@@ -4,9 +4,9 @@
 // (./PhoneTabs.tsx).
 
 import { GLYPHS, TAB_ICONS } from "@maneman/brand/icons";
-import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
-import { Mark } from "@maneman/ui/Mark";
+import { Mark, Wordmark } from "@maneman/ui/Mark";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { FOLDS, NavButton, NavGroup, NavItem, SideNav } from "@maneman/ui/SideNav";
 import { useState } from "react";
 import { shell } from "../content.ts";
@@ -119,7 +119,14 @@ export function Navigation({ route, open, className }: { route: Route; open: boo
       head={
         <>
           <Mark className={styles.mark} />
-          <span className={capsLook(classes(FOLDS, styles.brandName))}>{shell.title}</span>
+          {/* Read out as the console's name; the drawing and its product beside it are what is seen. */}
+          <span className={classes(FOLDS, styles.brand)}>
+            <Wordmark className={styles.wordmark} />
+            <VisuallyHidden>{shell.title}</VisuallyHidden>
+            <span className={styles.product} aria-hidden="true">
+              {shell.product}
+            </span>
+          </span>
         </>
       }
       foot={
