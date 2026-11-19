@@ -1,7 +1,8 @@
 // Builds the client app for one environment into apps/app/dist/<environment>,
 // with its _headers (docs/decisions/0043-client-app.md). Production is refused
-// while its copy is marked PLACEHOLDER, and any build whose JavaScript is over
-// the prompt's 150 KB gzipped fails (scripts/lib/spa-build.ts).
+// while its copy is marked PLACEHOLDER, and a build fails whose first screen,
+// the page and Home, loads over 200 KB of gzipped JavaScript, or whose service
+// worker keeps over 260 KB (scripts/lib/spa-build.ts, docs/decisions/0284-the-first-screen-and-the-precache.md).
 //
 //   npm run build:app -- --env staging
 

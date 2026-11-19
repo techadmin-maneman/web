@@ -56,6 +56,24 @@ describe("something wrong, told from the app", () => {
     expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM outbound_messages").first())?.n).toBe(0);
   });
 
+  // Filed apart from the report once, a failure there let a retry under the same key file it twice.
+  it("gives the client a Care person with the report, as a message filed from WhatsApp does", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO staff (email, active, added_by, added_at) VALUES ('asha@maneman.test', 1, 'test', ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO staff_grants (email, department, level, geography, place, granted_by, granted_at)
+         VALUES ('asha@maneman.test', 'customer_care', 'act', 'national', NULL, 'test', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+    expect((await report(cookie, { about: "colour", text: "The colour has faded." })).status).toBe(201);
+    const owner = await env.DB.prepare("SELECT email, assigned_by FROM care_owners WHERE person_id = ?1")
+      .bind(ROHIT)
+      .first();
+    expect(owner).toEqual({ email: "asha@maneman.test", assigned_by: "system" });
+  });
+
   it("names the visit it is about, and refuses one that is not the client's", async () => {
     await fittedInAugust(ROHIT);
     expect((await report(cookie, { about: "visit", visit_id: crypto.randomUUID(), text: "Late." })).status).toBe(404);
