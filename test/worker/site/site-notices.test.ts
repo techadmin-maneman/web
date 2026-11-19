@@ -1,5 +1,5 @@
-// What the site's booking form tells a number we already know on WhatsApp, as the page tells it too
-// (src/domain/booking/site-notices.ts). Each is written as things stand when the consumer sends it.
+// What the site's booking form tells a number we already know on WhatsApp: why nothing was booked, as the page says
+// too, or that a booked visit goes to the address on its account (src/domain/booking/site-notices.ts). Each is written as things stand when the consumer sends it.
 // NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";

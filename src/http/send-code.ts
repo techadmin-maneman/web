@@ -8,8 +8,8 @@
 // (docs/decisions/0067-alerts-and-silent-failures.md).
 //
 // Every code asked for, a first one or one sent again, counts against its number's day and its address's hour (a
-// day, for the site's forms), whoever holds the number. Only a code that is sent counts against the day's ceiling, so a number nobody here
-// knows costs nothing more and is answered like any other. The client app, the technician app and the site's
+// day, for the site's forms), whoever holds the number. Only a code that is sent counts against the day's ceiling, so
+// a number nobody here knows costs nothing more and is answered like any other. The client app, the technician app and the site's
 // forms each have a ceiling of their own, so none of them can stop another's codes.
 //
 // A code is always asked for by the phone that receives it, so staging's messaging allowlist never holds one back
@@ -58,8 +58,8 @@ async function ceilingSpent(c: Context<AppEnv>, ceiling: CodeCeiling, now: Date)
 
 /**
  * Whether one more code may be asked for this number: the surface's ceiling, then the address's codes (this hour for a
- * login, today for the site's forms) and the number's today, each counted under the surface's own scope. The answer is the same whoever holds the number,
- * except a staging test record, which skips the address's limit.
+ * login, today for the site's forms) and the number's today, each counted under the surface's own scope. The answer is
+ * the same whoever holds the number, except a staging test record, which skips the address's limit.
  */
 export async function mayAskForCode(
   c: Context<AppEnv>,

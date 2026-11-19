@@ -18,7 +18,7 @@
 // (docs/decisions/0081-the-site-takes-the-address.md).
 //
 // The form may book the consultation and the first fit in one visit instead,
-// once a WhatsApp code has proved the number (src/routes/public/number-codes.ts):
+// its number proved as every booking's is (src/routes/public/number-codes.ts):
 // three hours, morning or afternoon, with nothing paid here; the client chooses
 // the product with the technician and pays by a link once fitted
 // (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). That one may

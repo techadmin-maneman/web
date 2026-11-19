@@ -31,7 +31,8 @@ export const MESSAGE_KINDS = [
   "referral_rejected", // to either side: ops refused a held grant
   "credits_expiring", // free service visits run out: a month before their last day, and a week before
   "launch_alert", // the person's pincode went live
-  // The site's booking form, for a number we know (src/domain/booking/site-notices.ts): what the page tells it too.
+  // The site's booking form, for a number we know (src/domain/booking/site-notices.ts): why nothing was booked, as the
+  // page says too, or, booked, that the visit goes to the address on the account, which only WhatsApp says.
   "consultation_exists",
   "book_in_app",
   "address_on_account",

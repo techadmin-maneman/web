@@ -4,7 +4,7 @@
 import type { MessageKind } from "../config/message-kinds.ts";
 
 /**
- * Messages that are WhatsApp's alone: the site's answers to a number we know, the waitlist's confirmation and the
+ * Messages that are WhatsApp's alone: the site's notices to a number we know, the waitlist's confirmation and the
  * answer to a STOP. Migration 0211's trigger leaves out the same kinds.
  */
 export const WHATSAPP_ONLY = [
