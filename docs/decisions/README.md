@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0282. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0283. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -314,6 +314,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0236](0236-second-design-pass.md) The second design pass: heads, folded lists, items, and each thing where it is used
 - [0237](0237-every-list-sorts.md) Every list sorts, a long one narrows, and its heads stand over their figures
 - [0238](0238-third-design-pass.md) Third design pass: one home, the chat's column, a record's facts beside its head, Inventory's one row of tabs
+- [0282](0282-tasks-chosen-together.md) Tasks chosen together, and the keys a desk moves by
 
 ## Every decision, oldest first
 
@@ -408,7 +409,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0087](0087-consumables-and-stock.md) | Consumables and their stock, and the job sheet, set in the console | 2026-09-27 | accepted, on the owner's rulings of 27 September 2026 | [0085](0085-services-ops-can-edit.md), [0222](0222-consumables-short-of-expected.md) |
 | [0088](0088-every-policy-in-the-console.md) | Every policy in the console | 2026-09-28 | accepted, on the owner's standing rule of 27 September 2026 | [0095](0095-a-booking-fsm-refuses-is-held.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0119](0119-blackouts-by-city-and-trained-fitters.md) |
 | [0089](0089-an-invite-is-not-lost.md) | An invite is not lost when the friend books away from its page | 2026-09-28 | accepted |  |
-| [0092](0092-task-owners.md) | Whose each task is, a visit ops close without a follow-up, and an address given to ops | 2026-09-28 | accepted |  |
+| [0092](0092-task-owners.md) | Whose each task is, a visit ops close without a follow-up, and an address given to ops | 2026-09-28 | accepted | [0282](0282-tasks-chosen-together.md) |
 | [0093](0093-the-storage-meter.md) | The storage meter, the photograph upload limit, and thumbnails made on the phone | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 | [0194](0194-the-build-on-workers-paid.md) |
 | [0094](0094-where-a-consent-was-given.md) | Where a consent was given, and an erasure blanks a check-in's coordinates | 2026-09-28 | accepted, on the owner's rulings of 27 September 2026 |  |
 | [0095](0095-a-booking-fsm-refuses-is-held.md) | A booking FSM refuses is held, not refunded | 2026-09-29 | superseded by 0110 on 4 October 2026: no booking waits on FSM, so none is held for ops | [0100](0100-a-refund-is-made-once.md), [0110](0110-field-work-without-fsm.md) |
@@ -598,3 +599,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) | One rule for paying, and the tagline as written | 2026-11-19 | accepted |  |
 | [0280](0280-the-technician-apps-hindi-corrected.md) | The technician app's Hindi corrected, and the job card's arrival named | 2026-11-19 | accepted |  |
 | [0281](0281-the-consoles-first-load-counts-today.md) | The console's first load counts Today, and Today holds its room | 2026-11-19 | accepted |  |
+| [0282](0282-tasks-chosen-together.md) | Tasks chosen together, and the keys a desk moves by | 2026-11-19 | accepted |  |
