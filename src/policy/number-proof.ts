@@ -1,5 +1,6 @@
 // A number typed into a site form is proved with a WhatsApp code before the form acts on it: every booking from the
-// site, which then signs the client into the app (docs/decisions/0285-every-site-booking-is-a-sign-in.md). The code is
+// site, which then signs the client into the app (docs/decisions/0285-every-site-booking-is-a-sign-in.md), and /try's
+// gate. The code is
 // the login's: six digits, ten minutes, five tries (src/policy/one-time-code.ts).
 
 import { MINUTE_MS } from "../lib/durations.ts";

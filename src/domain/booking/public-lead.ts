@@ -2,7 +2,7 @@
 // (docs/decisions/0116-book-asks-for-the-name-and-number-first.md). Someone who stops before the slot or the address
 // has left what ops need to call them, and the CRM has them as a lead with no date yet.
 //
-// Every number gets the same answer, so the form tells nobody whether a number is a client's. Nothing is written for
+// This step asks no code, so it answers every number alike and tells nobody whether a number is a client's. Nothing is written for
 // someone who has had a visit, or booked or asked for one: they are followed up already. Nor is a second lead for
 // someone who left one in the last day. The booking that follows leaves its own lead, which the CRM adds to the same
 // record (src/queues/crm-sync.ts).

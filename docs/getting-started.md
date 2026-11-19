@@ -46,7 +46,7 @@ Our own database is the record of bookings, visits, technicians and pieces, loca
 
 ## The story, end to end
 
-1. **Book.** On the site, book a free consultation at `/book` with any made-up number; or sign in to the client app as a seeded client (`db:seed:local` prints three).
+1. **Book.** On the site, book a free consultation at `/book` with any made-up number, entering `246810` when it asks for the WhatsApp code; or sign in to the client app as a seeded client (`db:seed:local` prints three).
 2. **Pay for a visit.** In the client app, as the fitted client, book a service visit. A client with no address is asked for it first, in the booking sheet, since no slot is held without one (ADR 0079). At _Pay and confirm_, Razorpay's Checkout cannot take a payment locally (the stub has no key): close Checkout's window but leave the booking sheet open, since closing the sheet lets the hold go, and run `npm run pay:local` within the hold's ten minutes. The webhook books the visit, and Visits shows it.
 3. **Do the job.** Sign in to the technician app as the seeded technician (`98100 99001`): their jobs today are at a client's address with no coordinates, so _I have arrived_ passes wherever the laptop is.
 4. **Close it.** `npm run close:local` lists the open visits; close one as its technician would.

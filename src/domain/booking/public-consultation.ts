@@ -190,7 +190,7 @@ async function checkRequest(
     loadSlotSchedule(db),
   ]);
   const hours = windowTimesOf(schedule.on(request.date));
-  // A start is in the window asked for, on any day: the answer, whoever's the number, names the window booked.
+  // A start is in the window asked for, on any day, whoever's the number, so a booking names the window booked.
   if (request.startsAt !== null) {
     const time = indiaTime(request.startsAt);
     if (time < hours[request.window].start || time >= hours[request.window].end) {

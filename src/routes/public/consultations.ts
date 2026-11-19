@@ -8,8 +8,8 @@
 // decided by the pincode, which GET /api/pincodes/{pin} answers for the form.
 //
 // Every booking carries a WhatsApp code that proved its number, so a number we
-// know that books nothing (a consultation still to happen, or past consultations)
-// is answered not_booked with the reason, and its owner is told on WhatsApp too
+// know that books nothing (a consultation still to happen, past consultations, or
+// an address on the account we do not come to) is answered not_booked with the reason, and its owner is told on WhatsApp too
 // (src/policy/site-booking.ts). The same submission sent again under its
 // Idempotency-Key gets its first answer.
 //
@@ -258,7 +258,7 @@ const WaitlistSchema = z
   .strict()
   .openapi("Waitlist");
 
-/** 409, the same for every number: a window gone, or the same submission still running. */
+/** 409: a window gone, or the same submission still running; a number we know that books nothing is never refused it. */
 export const takenOrInProgress = errorResponse(
   "taken: that window has gone; idempotency_in_progress: the first request with this key is still running",
 );

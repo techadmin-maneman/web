@@ -156,7 +156,7 @@ describe("the address the consultation is at", () => {
     expect(saved).toEqual({ line1: "Palm Grove Society", pincode: "122018" });
   });
 
-  // The form needs no login, only a number: whoever types one must not move where that person's visits go.
+  // The form needs no login, only a number its code proved: it must not move where that person's visits go.
   // The page answers as it would for a new number, and only the number's owner is told, on WhatsApp.
   it("never replaces the address a person already has: the visit goes to it, and only WhatsApp says so", async () => {
     await env.DB.prepare(
