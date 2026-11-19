@@ -5,7 +5,7 @@ import { axeViolations } from "./a11y.ts";
 import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
-import { analyticsEvents, expect, expectNoPersonalData, test, visit } from "./support.ts";
+import { analyticsEvents, bookWithCode, expect, expectNoPersonalData, test, visit } from "./support.ts";
 import {
   SERVED,
   UNSERVED,
@@ -49,7 +49,7 @@ test("a booking without the address is stopped at the form, each part it needs m
   await fillAddress(page);
   await page.getByLabel(referralCopy.referral.address.labels.city).fill("Gurugram");
   await page.getByLabel(referralCopy.referral.address.labels.accessNotes).fill("Gate 2, visitor parking");
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect((requests[0]?.postDataJSON() as Record<string, unknown>).address).toEqual({
     // Typed in full, with no building chosen from the search: it books without a pin.
@@ -69,9 +69,9 @@ test("a booking without the address is stopped at the form, each part it needs m
   });
 });
 
-// Whoever typed the number may not be its owner, so every number is answered alike. The details go to the
-// number on WhatsApp, and the app opens with the number filled in.
-test("every number is sent to WhatsApp, and offered the app with the number filled in", async ({ page }) => {
+// A booking goes on into the app signed in once the API hands the sign-in over. Where it does not (here the mocked
+// code is not one the API takes), the details are on WhatsApp and the app opens with the number filled in.
+test("a booking not signed in is sent to WhatsApp, and offered the app with the number filled in", async ({ page }) => {
   await mockApi(page);
   await bookHere(page);
 
@@ -141,7 +141,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await openForm(page);
   await toAddress(page);
   await fillAddress(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
     ["lead_submitted", { page: "book", served: true, window: "morning" }],
@@ -281,12 +281,16 @@ test("a browser that blocks storage books on the invite’s page and here, and s
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
   await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
   await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   expect(new URL(requests[0]?.url() ?? "").pathname).toBe(`/api/r/${CODE}/consultation`);
 
-  await bookHere(page);
+  // The number the invite's page proved is not asked for again.
+  await openForm(page);
+  await toAddress(page);
+  await fillAddress(page);
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(new URL(requests[1]?.url() ?? "").pathname).toBe("/api/consultation");
   expect(requests[1]?.postDataJSON()).not.toHaveProperty("invite_code");

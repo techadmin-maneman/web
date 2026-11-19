@@ -201,7 +201,7 @@ Request body:
 }
 ```
 
-**429**: rate_limited: too many codes for this number today, or from this address this hour
+**429**: rate_limited: too many codes for this number today, or from this address today
 
 ```json
 {
@@ -730,7 +730,7 @@ Request body:
     "number_code_id": {
       "type": "string",
       "format": "uuid",
-      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
+      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. Every booking needs it, and is refused number_not_proved without it."
     },
     "discount_code": {
       "type": "string",
@@ -768,11 +768,18 @@ Request body:
 }
 ```
 
-**201**: Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp.
+**201**: Booked, or asked for. A number with a consultation still to happen, a client, or an address on the account we do not come to books nothing, and is answered not_booked with the reason, which WhatsApp tells its owner too.
 
 ```json
 {
-  "$ref": "#/components/schemas/Consultation"
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/Consultation"
+    },
+    {
+      "$ref": "#/components/schemas/NotBooked"
+    }
+  ]
 }
 ```
 
@@ -812,7 +819,7 @@ Request body:
 }
 ```
 
-**403**: turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes
+**403**: turnstile_failed; number_not_proved: no WhatsApp code that proved the number in the last 30 minutes
 
 ```json
 {
@@ -1981,7 +1988,7 @@ Request body:
     "number_code_id": {
       "type": "string",
       "format": "uuid",
-      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
+      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. Every booking needs it, and is refused number_not_proved without it."
     },
     "consent": {
       "type": "boolean",
@@ -2013,11 +2020,18 @@ Request body:
 }
 ```
 
-**201**: Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp.
+**201**: Booked, or asked for. A number with a consultation still to happen, a client, or an address on the account we do not come to books nothing, and is answered not_booked with the reason, which WhatsApp tells its owner too.
 
 ```json
 {
-  "$ref": "#/components/schemas/ReferralConsultation"
+  "anyOf": [
+    {
+      "$ref": "#/components/schemas/ReferralConsultation"
+    },
+    {
+      "$ref": "#/components/schemas/NotBooked"
+    }
+  ]
 }
 ```
 
@@ -2057,7 +2071,7 @@ Request body:
 }
 ```
 
-**403**: turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes
+**403**: turnstile_failed; number_not_proved: no WhatsApp code that proved the number in the last 30 minutes
 
 ```json
 {
@@ -5191,6 +5205,95 @@ Razorpay's webhook: payments and refunds
     "kind",
     "value",
     "cap"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NotBooked
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "not_booked"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "consultation_exists",
+        "book_in_app",
+        "address_not_served"
+      ],
+      "description": "consultation_exists: a consultation still to come, in consultation; book_in_app: a client, whose visits are booked in the app; address_not_served: the address on the account is in a pincode we do not come to."
+    },
+    "consultation": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "window": {
+              "type": "string",
+              "enum": [
+                "morning",
+                "afternoon",
+                "evening"
+              ]
+            },
+            "hours": {
+              "$ref": "#/components/schemas/WindowHours"
+            },
+            "starts_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "arrives_by": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "date",
+            "window",
+            "hours",
+            "starts_at",
+            "arrives_by"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The consultation still to come, for consultation_exists; null otherwise."
+    }
+  },
+  "required": [
+    "state",
+    "reason",
+    "consultation"
   ],
   "additionalProperties": false
 }

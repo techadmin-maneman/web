@@ -7,8 +7,8 @@
 // Posting takes a Turnstile token, and the same limits per number and address as the booking form. A consultation
 // takes the full address it is at, as the booking form's does (docs/decisions/0081-the-site-takes-the-address.md),
 // and may book the consultation and fit in one visit, as it may there
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Every number gets the same answer, as there
-// (src/policy/site-booking.ts). An unknown code still books or waits, without an invite. The same submission sent
+// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). A number we know is told why nothing was booked, as
+// there (src/policy/site-booking.ts). An unknown code still books or waits, without an invite. The same submission sent
 // again under its Idempotency-Key gets its first answer.
 
 import { indiaDate } from "../../lib/india-time.ts";
@@ -37,7 +37,8 @@ import {
   BOOKED_DESCRIPTION,
   CreditsSchema,
   InviteStateSchema,
-  OneVisitNumberCodeSchema,
+  NotBookedSchema,
+  NumberCodeSchema,
   OneVisitOutcomeSchema,
   OneVisitRequestSchema,
   planOf,
@@ -133,7 +134,7 @@ const ConsultationRequestSchema = z
     starts_at: FormStartSchema,
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
-    number_code_id: OneVisitNumberCodeSchema,
+    number_code_id: NumberCodeSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
     terms: TermsSchema,
   })
@@ -232,7 +233,8 @@ const consultationRoute = createRoute({
               one_visit: OneVisitOutcomeSchema,
             })
             .strict()
-            .openapi("ReferralConsultation"),
+            .openapi("ReferralConsultation")
+            .or(NotBookedSchema),
         },
       },
     },

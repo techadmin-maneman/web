@@ -3,7 +3,7 @@
 // next: the first fit once the consultation went ahead, then each service as it falls due. A paid hold is paid as
 // Razorpay pays it (its signed webhook), and read back booked.
 
-import { Wire, clientSignIn, razorpayPaid } from "../actors.ts";
+import { Wire, clientSignIn, proveNumber, razorpayPaid } from "../actors.ts";
 import { catalogue } from "./catalog.ts";
 import { dateOf, indiaDateOf } from "../sim.ts";
 import { check } from "../steps.ts";
@@ -100,6 +100,7 @@ export async function acquire(sim: Sim, wave: string, count: number, cohort: num
         );
         // The form's list is up to a minute old: a start another booking took meanwhile is refused, and the next tried.
         const starts = open.days.flatMap((day) => day.starts.filter((each) => each.open !== false)).slice(index % 3);
+        const numberCodeId = await proveNumber(sim.site, mobile, name);
         let booked: { state: string } | null = null;
         for (const start of starts.slice(0, 6)) {
           const answer = await sim.site.call<{ state: string }>("POST", "/api/consultation", {
@@ -119,6 +120,7 @@ export async function acquire(sim: Sim, wave: string, count: number, cohort: num
               access_notes: null,
               flat: String(10 + index),
             },
+            number_code_id: numberCodeId,
             consent: true,
             terms: true,
           });

@@ -33,7 +33,9 @@ export const RATE_LIMITS = {
   "login:code:mobile": { per: "day", limit: (settings) => settings.login.codeMobileDailyLimit },
   "tech:code:ip": { per: "hour", limit: (settings) => settings.login.codeIpHourlyLimit },
   "tech:code:mobile": { per: "day", limit: (settings) => settings.login.codeMobileDailyLimit },
-  "form:code:ip": { per: "hour", limit: (settings) => settings.login.codeIpHourlyLimit },
+  // Every booking from the site asks one, so an address counts them by the day, as it does bookings: a mobile network
+  // puts many people behind one address (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
+  "form:code:ip": { per: "day", limit: (settings) => settings.leadIpDailyLimit },
   "form:code:mobile": { per: "day", limit: (settings) => settings.login.codeMobileDailyLimit },
 
   // The try-on (docs/decisions/0014-try-on-api.md), and its result messages to one number (ADR 0104).
@@ -88,7 +90,7 @@ export const RATE_LIMITS = {
   "ceiling:result_read": { per: "day", limit: (settings) => settings.tryon.resultReadDailyCeiling },
   "ceiling:login_code": { per: "day", limit: (settings) => settings.login.codeDailyCeiling },
   "ceiling:tech_code": { per: "day", limit: (settings) => settings.login.techCodeDailyCeiling },
-  "ceiling:form_code": { per: "day", limit: (settings) => settings.login.codeDailyCeiling },
+  "ceiling:form_code": { per: "day", limit: (settings) => settings.login.formCodeDailyCeiling },
   "ceiling:geocode": { per: "day", limit: (settings) => settings.geocode.dailyCeiling },
   // The dispatch board's Google calls: a month of either stays far inside the 70,000 Google gives free (ADR 0120).
   "ceiling:route": { per: "day", limit: 1000 },

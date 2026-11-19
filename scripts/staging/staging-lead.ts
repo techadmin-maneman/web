@@ -7,12 +7,14 @@
 // The booking's name, "Staging test", is one of our own scripts' (isStagingTestRecord,
 // src/policy/staging-test-records.ts), so a booking confirmation on the consultation reaches only a number also on
 // staging's allowlist, whatever it is (ADR 0097). STAGING_TEST_MOBILE, when set, is used instead of a random
-// number, which is otherwise still the default: either way, the rule above keeps a stranger's number silent.
+// number, which is otherwise still the default: either way, the rule above keeps a stranger's number silent. The
+// number is proved first with STAGING_TEST_RECORD_CODE, the code staging knows for a test record, as every booking's
+// number is proved with its WhatsApp code (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
 //
-//   node scripts/staging/staging-lead.ts --pincode 122018 --window morning
+//   node --env-file=.env.staging-access --env-file=.env.staging-test-code scripts/staging/staging-lead.ts --pincode 122018 --window morning
 
 import { parseArgs } from "node:util";
-import { consultationBody, lastBookableDay, testMobile } from "../lib/test-booking.ts";
+import { consultationBody, lastBookableDay, proveTestNumber, testMobile } from "../lib/test-booking.ts";
 
 const WINDOWS = ["morning", "afternoon", "evening"] as const;
 /** Cloudflare Access's service token, for staging's host. */
@@ -33,6 +35,11 @@ if (window === undefined) {
   console.error(`--window is one of ${WINDOWS.join(", ")}`);
   process.exit(2);
 }
+const testRecordCode = process.env.STAGING_TEST_RECORD_CODE;
+if (testRecordCode === undefined || testRecordCode === "") {
+  console.error("STAGING_TEST_RECORD_CODE: the code staging knows for a test record (docs/provisioning.md)");
+  process.exit(2);
+}
 
 // The form asks first whether we come; the booking is refused for a pincode we do not serve.
 const checked = await fetch(`${values.base}/api/pincodes/${values.pincode}`, { headers: ACCESS });
@@ -43,18 +50,22 @@ if (!checked.ok || place?.served !== true || typeof place.city !== "string") {
 }
 
 const mobile = process.env.STAGING_TEST_MOBILE ?? testMobile();
+const numberCodeId = await proveTestNumber(values.base, ACCESS, { name: "Staging test", mobile }, testRecordCode);
 const response = await fetch(`${values.base}/api/consultation`, {
   method: "POST",
   headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID(), ...ACCESS },
   body: JSON.stringify(
-    consultationBody({
-      name: "Staging test",
-      mobile,
-      pincode: values.pincode,
-      city: place.city,
-      date: lastBookableDay(),
-      window,
-    }),
+    consultationBody(
+      {
+        name: "Staging test",
+        mobile,
+        pincode: values.pincode,
+        city: place.city,
+        date: lastBookableDay(),
+        window,
+      },
+      numberCodeId,
+    ),
   ),
   redirect: "manual",
 });

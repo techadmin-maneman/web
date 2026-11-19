@@ -8,7 +8,7 @@ import { axeViolations } from "./a11y.ts";
 import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
-import { enterNumberCode, expect, NUMBER_CODE, NUMBER_CODE_ID, test, visit } from "./support.ts";
+import { bookWithCode, enterNumberCode, expect, NUMBER_CODE, NUMBER_CODE_ID, test, visit } from "./support.ts";
 import {
   SERVED,
   BOOKED,
@@ -145,7 +145,8 @@ test("a reload resumes the step it was on, the name and number kept, and Back st
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByText("Step 1 · About you")).toBeVisible();
-  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("");
+  // The tab keeps the name beside the number its code proved.
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
 });
 
 // The field kept the first ten digits, so "+91 98765 43210" was booked as 91987 65432, someone else's number.
@@ -221,7 +222,7 @@ test("a served pincode books, and asks nothing of where the hair loss is", async
   await toAddress(page);
   await fillAddress(page);
   await expect(page.getByRole("radio", { name: "Receding front", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
@@ -296,12 +297,12 @@ test("books the one visit only with the right WhatsApp code", async ({ page }) =
   await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
 
   await page.getByLabel(siteCopy.numberCode.label).fill("111111");
-  await page.getByRole("button", { name: referralCopy.referral.consultation.confirmOneVisit }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.confirm }).click();
   await expect(page.getByText("That code didn’t match. 4 tries left.")).toBeVisible();
   expect(requests).toHaveLength(0);
 
   await page.getByLabel(siteCopy.numberCode.label).fill(NUMBER_CODE);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.confirmOneVisit }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.confirm }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(verified).toEqual([
     { code_id: NUMBER_CODE_ID, code: "111111" },
@@ -425,9 +426,72 @@ test("starts from the try-on's name and number, and a booking for the number it 
   await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await checkPincode(page, SERVED.pincode);
   const leaving = page.waitForRequest((request) => request.isNavigationRequest() && request.url().includes("app."));
-  await continueAndBook(page);
+  await toAddress(page);
+  await fillAddress(page);
+  // The number the try-on proved is not asked for again.
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   expect(new URL((await leaving).url()).origin).toMatch(/^http:\/\/app\.localhost:\d+$/);
   expect(handedOver).toEqual([{ code_id: "5a1e0000-0000-4000-8000-00000000c0de", mobile: "9810000000" }]);
+});
+
+// A number we know that had nothing booked is told why: no "Booked", no calendar, no day but its own consultation's.
+const KNOWN = {
+  consultation_exists: {
+    date: "2026-09-23",
+    window: "morning",
+    hours: { start: "09:00", end: "12:00" },
+    starts_at: "2026-09-23T03:30:00.000Z",
+    arrives_by: "2026-09-23T04:00:00.000Z",
+  },
+  book_in_app: null,
+  address_not_served: null,
+} as const;
+for (const [reason, consultation] of Object.entries(KNOWN)) {
+  test(`a number we know is told why nothing was booked: ${reason}`, async ({ page }) => {
+    const known = { state: "not_booked", reason, consultation };
+    await mockApi(page, { consultation: { status: 201, body: known } });
+    await bookHere(page);
+    const words = referralCopy.referral.known[reason as keyof typeof KNOWN];
+    await expect(page.getByText(words.label, { exact: true })).toBeVisible();
+    await expect(page.getByText(words.body)).toBeVisible();
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toHaveText(consultation === null ? words.title : /^Wednesday 23 September, 9/);
+    await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(referralCopy.referral.booked.calendar.label)).toHaveCount(0);
+    if (reason === "address_not_served") {
+      const whatsapp = page.getByRole("link", { name: referralCopy.referral.known.whatsapp });
+      await expect(whatsapp).toHaveAttribute("href", /^https:\/\/wa\.me\/\d+$/);
+    }
+  });
+}
+
+// A proof the tab kept that the API no longer takes is forgotten, so the next press asks a new code (ADR 0285).
+test("a kept proof that has run out is refused once, then a new code is asked and books", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("seeded") !== null) return;
+    sessionStorage.setItem("seeded", "1");
+    const visitor = { name: "Test Visitor", mobile: "9810000000", proof: "5a1e0000-0000-4000-8000-00000000c0de" };
+    sessionStorage.setItem("mm_visitor", JSON.stringify(visitor));
+  });
+  await mockApi(page);
+  const sent: { number_code_id?: string }[] = [];
+  await page.route("**/api/consultation", (route) => {
+    sent.push(route.request().postDataJSON() as { number_code_id?: string });
+    if (sent.length > 1) return route.fulfill({ status: 201, json: BOOKED });
+    return route.fulfill({ status: 403, json: { error: { code: "number_not_proved", request_id: "r" } } });
+  });
+  await visit(page, "/book");
+  await page.getByRole("checkbox", { name: AGREE_TERMS }).check();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
+  await checkPincode(page, SERVED.pincode);
+  await toAddress(page);
+  await fillAddress(page);
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await expect(page.getByText(referralCopy.referral.errors.notProved)).toBeVisible();
+
+  await bookWithCode(page);
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
+  expect(sent.map((body) => body.number_code_id)).toEqual(["5a1e0000-0000-4000-8000-00000000c0de", NUMBER_CODE_ID]);
 });
 
 // On staging the fields stayed empty: hydrating keeps the server's empty fields, and only the referral reward's answer

@@ -328,34 +328,6 @@ export async function holdSlot({
   return null;
 }
 
-/**
- * The start a hold would take, as holdSlot chooses it, Google's drives either side checked where it is on; nothing is
- * held. A number we know that books nothing is answered from it, as a new number's hold would answer it
- * (./new-number-state.ts).
- */
-export async function wouldHold({
-  db,
-  input,
-  now,
-  drives,
-}: {
-  db: D1Database;
-  input: HoldInput;
-  now: Date;
-  drives: DriveCheck | null;
-}): Promise<{ readonly startsAt: Date; readonly window: BookingWindow } | null> {
-  const [candidates, schedule, inputs] = await Promise.all([
-    candidatesFor({ db, input, now }),
-    loadSlotSchedule(db),
-    readOpsInputs(db, now),
-  ]);
-  const roadFits = await roadCheck(db, { input, now, inputs, drives, candidates });
-  for (const { technician, time, startsAt } of candidates) {
-    if (await roadFits(technician.id, time)) return { startsAt, window: windowAt(time, schedule.on(input.date)) };
-  }
-  return null;
-}
-
 /** A hold's own time: its technician, day and start, and whose visit it is, where. */
 interface HeldTime {
   readonly id: string;

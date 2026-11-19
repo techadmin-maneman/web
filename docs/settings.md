@@ -99,6 +99,7 @@ In `src/config/limits.ts`: the same everywhere. Only a local run may raise one, 
 | `OTP_IP_HOURLY_LIMIT` | 10 |
 | `OTP_DAILY_CEILING` | 300 |
 | `OTP_TECH_DAILY_CEILING` | 100 |
+| `FORM_CODE_DAILY_CEILING` | 1000 |
 | `LEAD_MOBILE_DAILY_LIMIT` | 15 |
 | `LEAD_IP_DAILY_LIMIT` | 100 |
 | `TRYON_UPLOAD_IP_HOURLY_LIMIT` | 5 |
@@ -185,7 +186,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `planning_period_days` | Planning period | days | `7` |
 | `planning_horizon_periods` | Forecast ahead by | periods | `12` |
 | `forecast_assumptions` | Forecast assumptions | days | `{"baseline_periods":8,"learning_days":180,"enough_to_learn":10,"due_booking_percent":80,"consultation_fit_percent":50,"consultation_to_fit_days":14}` |
-| `daily_ceilings` | Daily ceilings | a day | `{"upload":80,"render":40,"result_read":800,"login_code":300,"tech_code":100,"form_code":300,"geocode":200,"route":1000,"route_map":300}` |
+| `daily_ceilings` | Daily ceilings | a day | `{"upload":80,"render":40,"result_read":800,"login_code":300,"tech_code":100,"form_code":1000,"geocode":200,"route":1000,"route_map":300}` |
 
 ## Dated tables
 

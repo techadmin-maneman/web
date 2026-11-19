@@ -1,21 +1,23 @@
 // The landing's confirmations: the consultation booked (or asked for, while self-serve booking is off),
-// the number on a waitlist, and the invite that has expired for this friend. The booked one says the same to every
-// number, since whoever typed it may not be its owner (src/policy/site-booking.ts): it restates only the day and window
-// picked, the details go to the number on WhatsApp, and the client app shows them once its owner signs in with a code.
-// It also says whether the discount code sent with it stands (ADR 0108). Booked, it is a navy screen of its own, its
-// one filled button the gold "Open the app"; on the list, it stays in the flow's frame on white (ADR 0265).
+// the number on a waitlist, and the invite that has expired for this friend. The booked one restates the day and
+// window picked, the details go to the number on WhatsApp, and the client app shows them once its owner signs in.
+// It also says whether the discount code sent with it stands (ADR 0108). Every booking proves its number with a
+// WhatsApp code first, so a number we know that had nothing booked is told why on the same screen (ADR 0285).
+// Booked, it is a navy screen of its own, its one filled button the gold "Open the app"; on the list, it stays in the
+// flow's frame on white (ADR 0265).
 
 import { indiaClock, indiaTimeOf } from "@maneman/web-kit/dates";
 import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
 import { TextLink } from "@maneman/ui/TextLink";
+import { WHATSAPP_NUMBER, whatsappChat } from "@maneman/web-kit/whatsapp";
 import { LegalLinks } from "../LegalLinks.tsx";
 import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
 import { windowSpan } from "@rules/config/scheduling.ts";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { referral } from "../../content/referral.ts";
-import type { Consultation, ReferralReward } from "../../lib/api.ts";
+import type { Consultation, NotBooked, ReferralReward } from "../../lib/api.ts";
 import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
 import { longDay } from "../../lib/dates.ts";
@@ -23,7 +25,7 @@ import { fill } from "../../lib/text.ts";
 import { Icon } from "@maneman/ui/Icon";
 import styles from "./done.module.css";
 import shared from "./Invite.module.css";
-import type { Booking, Listing } from "./outcomes.ts";
+import type { Answered, Booking, Listing } from "./outcomes.ts";
 
 type HeadingRef = { current: HTMLHeadingElement | null };
 
@@ -84,14 +86,14 @@ function codeNote(booking: Booking): string | null {
  * When the visit is: from its start to the end of its arrival window, "11:30 am–12 pm"
  * (docs/decisions/0210-booking-by-start-time.md); or, for a booking made by window, the window's hours that day, "12–4 pm".
  */
-function hoursOf(result: Booking["result"], spaces = UNBROKEN): string {
+function hoursOf(result: Pick<Answered, "hours" | "starts_at" | "arrives_by">, spaces = UNBROKEN): string {
   if (result.starts_at === null) return timeRange(result.hours.start, result.hours.end, spaces);
   if (result.arrives_by === null) return indiaClock(result.starts_at);
   return timeRange(indiaTimeOf(result.starts_at), indiaTimeOf(result.arrives_by), spaces);
 }
 
 /** Google's link, and the .ics file for every other calendar, holding the window booked. */
-function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
+function AddToCalendar(props: { result: Answered; ready: string }) {
   const { calendar } = referral.booked;
   const { result } = props;
   const entry: CalendarEntry = {
@@ -124,15 +126,78 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
 }
 
 /** What the confirmation's ink block says: the day and window once booked, or that we will fix the hour. */
-function headlineOf(result: Booking["result"]): { label: string; title: string; body: string } {
+function headlineOf(result: Answered): { label: string; title: string; body: string } {
   if (result.state === "requested") return referral.requested;
   const { booked } = referral;
   const title = fill(booked.when, { day: longDay(result.date), hours: hoursOf(result) });
   return { label: booked.label, title, body: booked.body };
 }
 
+/**
+ * A number we know that the form booked nothing for: why, on the same ink screen, with no calendar and no day but
+ * that of a consultation it already has. An address we do not come to is answered with WhatsApp, the rest with the app.
+ */
+function Known(props: { known: NotBooked; mobile: string; heading: HeadingRef }) {
+  const { reason, consultation } = props.known;
+  const words = referral.known[reason];
+  const title =
+    consultation === null
+      ? words.title
+      : fill(referral.booked.when, { day: longDay(consultation.date), hours: hoursOf(consultation) });
+  const app = clientAppOrigin(ENVIRONMENT);
+  const toWhatsapp = reason === "address_not_served";
+  return (
+    <section class={styles.booked}>
+      <div class={`${styles.panel} on-ink`} data-ground="ink">
+        <div class={styles.body}>
+          <div class={styles.label}>{words.label}</div>
+          <h1 ref={props.heading} tabIndex={-1} class={styles.title}>
+            {title}
+          </h1>
+          <p class={styles.line}>{words.body}</p>
+          <LegalLinks alone={styles.legal} onInk />
+        </div>
+        <div class={styles.actions}>
+          {toWhatsapp && (
+            <ButtonLink
+              variant="goldOnNavy"
+              size="action"
+              href={whatsappChat(WHATSAPP_NUMBER)}
+              target="_blank"
+              rel="noopener"
+            >
+              {referral.known.whatsapp}
+            </ButtonLink>
+          )}
+          {!toWhatsapp && app !== null && (
+            <ButtonLink
+              variant="goldOnNavy"
+              size="action"
+              href={app}
+              onClick={(event) => {
+                openApp(event, app, props.mobile);
+              }}
+            >
+              {referral.booked.app}
+            </ButtonLink>
+          )}
+          <ButtonLink variant="outlineOnNavy" size="action" className={styles.backWide} href="/">
+            {referral.booked.back}
+          </ButtonLink>
+          {(toWhatsapp || app !== null) && (
+            <TextLink tone="ink" quiet className={styles.backPhone} href="/">
+              {referral.booked.back}
+            </TextLink>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function Booked(props: { booking: Booking; reward: ReferralReward | null; heading: HeadingRef }) {
   const { result, mobile } = props.booking;
+  if (result.state === "not_booked") return <Known known={result} mobile={mobile} heading={props.heading} />;
   const copy = headlineOf(result);
   const booked = result.state === "booked";
   const ready = result.one_visit ? referral.booked.ready.oneVisit : referral.booked.ready.consultation;

@@ -82,7 +82,7 @@ export function usePageFlow(invited: boolean, allowStateSwitch: boolean) {
       pushStep("address", answer);
       dispatch({ type: "stepped", step: "address" });
     },
-    // A number its code proved, at the try-on or for the one visit, goes on into the app signed in (ADR 0214).
+    // Every booking's number was proved by its code, so it goes on into the app signed in (ADR 0285).
     booked: (booking: Booking) => {
       dispatch({ type: "booked", booking });
       void goOnSignedIn(booking.mobile);

@@ -25,7 +25,7 @@ export const ADDRESS = {
   access_notes: "Gate 2, visitor parking",
 };
 
-/** What every number is answered for 23 September's morning, whether we know it or not. */
+/** What a booking of 23 September's morning is answered. */
 export const BOOKED_MORNING = {
   state: "booked",
   date: "2026-09-23",

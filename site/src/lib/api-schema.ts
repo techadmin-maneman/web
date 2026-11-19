@@ -243,7 +243,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description rate_limited: too many codes for this number today, or from this address this hour */
+                /** @description rate_limited: too many codes for this number today, or from this address today */
                 429: {
                     headers: {
                         [name: string]: unknown;
@@ -616,7 +616,7 @@ export interface paths {
                         one_visit?: boolean;
                         /**
                          * Format: uuid
-                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it.
+                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. Every booking needs it, and is refused number_not_proved without it.
                          */
                         number_code_id?: string;
                         /** @description A discount code for the consultation and fit in one visit, as typed, any case: it comes off the product's price at the payment link (docs/decisions/0108-discount-codes.md). A code that does not apply refuses the booking, code_not_applicable, and so does any code with the consultation alone. */
@@ -635,13 +635,13 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp. */
+                /** @description Booked, or asked for. A number with a consultation still to happen, a client, or an address on the account we do not come to books nothing, and is answered not_booked with the reason, which WhatsApp tells its owner too. */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Consultation"];
+                        "application/json": components["schemas"]["Consultation"] | components["schemas"]["NotBooked"];
                     };
                 };
                 /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening */
@@ -662,7 +662,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes */
+                /** @description turnstile_failed; number_not_proved: no WhatsApp code that proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1440,7 +1440,7 @@ export interface paths {
                         one_visit?: boolean;
                         /**
                          * Format: uuid
-                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it.
+                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. Every booking needs it, and is refused number_not_proved without it.
                          */
                         number_code_id?: string;
                         /**
@@ -1457,13 +1457,13 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Booked, or asked for. A number with a consultation still to happen, or past consultations, gets the answer a new number would, books nothing, and is told why on WhatsApp. */
+                /** @description Booked, or asked for. A number with a consultation still to happen, a client, or an address on the account we do not come to books nothing, and is answered not_booked with the reason, which WhatsApp tells its owner too. */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ReferralConsultation"];
+                        "application/json": components["schemas"]["ReferralConsultation"] | components["schemas"]["NotBooked"];
                     };
                 };
                 /** @description invalid_request: fields names what was refused, address.pincode for an address in another pincode, window for one visit in the evening */
@@ -1484,7 +1484,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes */
+                /** @description turnstile_failed; number_not_proved: no WhatsApp code that proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3368,6 +3368,25 @@ export interface components {
             value: number;
             /** @description The most a percentage takes off, in paise before GST; null for none. */
             cap: number | null;
+        };
+        NotBooked: {
+            /** @enum {string} */
+            state: "not_booked";
+            /**
+             * @description consultation_exists: a consultation still to come, in consultation; book_in_app: a client, whose visits are booked in the app; address_not_served: the address on the account is in a pincode we do not come to.
+             * @enum {string}
+             */
+            reason: "consultation_exists" | "book_in_app" | "address_not_served";
+            /** @description The consultation still to come, for consultation_exists; null otherwise. */
+            consultation: {
+                /** Format: date */
+                date: string;
+                /** @enum {string} */
+                window: "morning" | "afternoon" | "evening";
+                hours: components["schemas"]["WindowHours"];
+                starts_at: string | null;
+                arrives_by: string | null;
+            } | null;
         };
         TypedAddress: {
             line1: string;

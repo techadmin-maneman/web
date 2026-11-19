@@ -10,7 +10,7 @@ else is read or counted. Site keys are public.
 | The site's waitlist, for a pincode not served yet | `POST /api/waitlist`                                                      | the site's            |
 | An invite's booking form, `/r/:code`              | `POST /api/r/{code}/consultation`                                         | the site's            |
 | An invite's waitlist                              | `POST /api/r/{code}/waitlist`                                             | the site's            |
-| The number check before a one visit or a try-on   | `POST /api/number-code`                                                   | the site's            |
+| The number check before every booking or try-on   | `POST /api/number-code`                                                   | the site's            |
 | The try-on's upload                               | `POST /api/tryon/upload-url`                                              | the site's            |
 | The client app's login                            | `POST /api/auth/otp`, so strangers cannot spend codes                     | the app's (see below) |
 | The technician app's login                        | `POST /api/tech/auth/otp`, so strangers cannot spend a technician's codes | the app's (see below) |

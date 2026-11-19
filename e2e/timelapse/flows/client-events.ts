@@ -4,7 +4,7 @@
 // grievance, a refund, a custom order, a number change, the client's data export and their erasure, and a friend
 // referred by a fitted client.
 
-import { stepHeaders, type Wire } from "../actors.ts";
+import { proveNumber, stepHeaders, type Wire } from "../actors.ts";
 import { appOf, idOf } from "./clients.ts";
 
 export { idOf };
@@ -644,6 +644,7 @@ export async function referFriend(sim: Sim, wave: string): Promise<void> {
         erased: false,
         visits: [],
       };
+      const numberCodeId = await proveNumber(sim.site, friend.mobile, friend.name);
       const booked = await sim.site.must<{ state: string; invite: string }>(
         "POST",
         `/api/r/${refer.code}/consultation`,
@@ -651,6 +652,7 @@ export async function referFriend(sim: Sim, wave: string): Promise<void> {
           name: friend.name,
           mobile: friend.mobile,
           turnstile_token: TURNSTILE,
+          number_code_id: numberCodeId,
           pincode,
           date: indiaDateOf(Date.parse(start.starts_at)),
           window: "morning",

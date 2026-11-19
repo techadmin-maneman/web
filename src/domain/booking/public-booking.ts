@@ -26,20 +26,20 @@
 // too on a day the price book charges for a consultation, which a form with no
 // payment cannot book.
 //
-// These forms need no login, only a number, so they never rename the person
-// the number belongs to, never replace the address they have, and never let go
-// of a hold made in the app. They give every number the same answer
-// (src/policy/site-booking.ts): a number with a consultation still to happen, or
-// past consultations, books nothing, and its owner is told why on WhatsApp
-// (src/domain/booking/site-notices.ts). A visit goes to the address already on the
+// These forms need no login, a booking only a number its code proved, so they
+// never rename the person the number belongs to, never replace the address they
+// have, and never let go of a hold made in the app. A number with a consultation
+// still to happen, or past consultations, books nothing, and is told why on the
+// page and on WhatsApp (src/policy/site-booking.ts,
+// src/domain/booking/site-notices.ts). A visit goes to the address already on the
 // account, so that address's pincode is the one checked and booked; where we do
-// not come to it, nothing is booked, and its owner is told so on WhatsApp too. A
+// not come to it, nothing is booked, and its owner is told so the same way. A
 // number joining a waitlist is told of its invite as a new number would be. The
 // person, their consent, their address and the slot are written in one batch: a
 // slot that has gone leaves nothing behind (docs/decisions/0068-a-paid-hold-is-kept.md).
 //
-// The form may book the consultation and the fit in one visit instead, for a
-// number proved with its WhatsApp code (src/policy/number-proof.ts): a first
+// The form may book the consultation and the fit in one visit instead, its
+// number proved as every booking's is (src/policy/number-proof.ts): a first
 // fit marked as one, three hours, with nothing paid. The client chooses the
 // product with the technician and pays by a link once fitted, so the site still
 // takes no money (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
@@ -147,8 +147,8 @@ export async function applyInvite(
 
 /**
  * What a new number is told of the invite it came with: its credits apply, unless it was held on the waitlist of an
- * area that launched more than 12 months ago. A number we know that books nothing, or joins a waitlist, is told the
- * same, whatever stands for it, so the page never says that a number is known.
+ * area that launched more than 12 months ago. A number we know that joins a waitlist, which asks no code, is told the
+ * same, whatever stands for it, so the waitlist never says that a number is known.
  */
 export function inviteAsForANewNumber(
   invite: AnyInvite | null,

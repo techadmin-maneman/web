@@ -1,12 +1,10 @@
 // Booking a free consultation, or a consultation and fit in one visit, from the site's form or an invite (./public-booking.ts).
 
 import { type ToldNotice, CONSULTATION_NOTICES } from "../../config/notices.ts";
-import { newNumbersState } from "./new-number-state.ts";
 import { oneVisitCode } from "./public-booking-code.ts";
 import type { LossExtent } from "../../config/booking.ts";
 import { HOLD_SECONDS, type BookingWindow } from "../../config/scheduling.ts";
 import { type Plan, planStartsIn } from "../../policy/one-visit.ts";
-import { bookingNeedsProof } from "../../policy/number-proof.ts";
 import type { ConsentSource } from "../../policy/consents.ts";
 import { addDays, indiaDate, indiaTime } from "../../lib/india-time.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
@@ -23,17 +21,10 @@ import { type OneVisitCode, useOnNewHold, codeOnHold } from "../money/discount-c
 import type { LeadAttribution } from "../leads/leads.ts";
 import type { InviteState } from "../referrals/referrals.ts";
 import { clientCodeOf, type AnyInvite } from "../referrals/channels.ts";
-import { liveVisitOf, bookableTypes } from "./availability.ts";
+import { liveVisitOf, bookableTypes, type LiveVisit } from "./availability.ts";
 import { siteVisit, type SiteVisit } from "./site-visit.ts";
 import { offeredProducts } from "./services.ts";
-import {
-  type FormRequest,
-  type Refusal,
-  queueMessage,
-  applyInvite,
-  recordLead,
-  inviteAsForANewNumber,
-} from "./public-booking.ts";
+import { type FormRequest, type Refusal, queueMessage, applyInvite, recordLead } from "./public-booking.ts";
 import { holdSlot } from "./hold-slot.ts";
 import { personWithMobile, formPerson } from "./form-person.ts";
 
@@ -41,23 +32,25 @@ import { personWithMobile, formPerson } from "./form-person.ts";
 const placeOf = (pincode: Pincode): string => pincode.area ?? pincode.city;
 
 /**
- * Why a person we know books nothing from a form; null when they may book a consultation there. `addressOutsideArea`:
- * the address on their account is in a pincode we do not come to.
+ * Why a person we know books nothing from a form, with their consultation still to come where they have one; null
+ * when they may book a consultation there. `addressOutsideArea`: the address on their account is in a pincode we do
+ * not come to.
  */
 async function notBookedFor(
   db: D1Database,
   personId: string,
   { addressOutsideArea, now }: { readonly addressOutsideArea: boolean; readonly now: Date },
-): Promise<NotBookedFromSite | null> {
+): Promise<Pick<NotBooked, "reason" | "consultation"> | null> {
   const [consultationToCome, types] = await Promise.all([
     liveVisitOf(db, personId, { type: "consultation", now }),
     bookableTypes(db, personId, now),
   ]);
-  return notBookedFromSite({
+  const reason = notBookedFromSite({
     addressOutsideArea,
     hasConsultationToCome: consultationToCome !== null,
     mayBookConsultation: types.includes("consultation"),
   });
+  return reason === null ? null : { reason, consultation: consultationToCome };
 }
 
 /**
@@ -133,7 +126,7 @@ export interface ConsultationRequest {
    * payment link.
    */
   readonly discountCode: string | null;
-  /** The WhatsApp code that proved the number, which the one visit needs; null for none. */
+  /** The WhatsApp code that proved the number, which every booking needs; null for none. */
   readonly numberCodeId: string | null;
 }
 
@@ -164,6 +157,18 @@ export interface Booked {
   readonly discountCode: StandingCode | null;
 }
 
+/**
+ * A number we know that the form books nothing for, and why. Its WhatsApp code proved the number, so the page says
+ * it: a consultation still to come, a client who books in the app, or an address on the account where we do not come.
+ */
+export interface NotBooked {
+  readonly ok: true;
+  readonly state: "not_booked";
+  readonly reason: NotBookedFromSite;
+  /** Their consultation still to come, for "consultation_exists"; null otherwise. */
+  readonly consultation: LiveVisit | null;
+}
+
 /** A code that stands on a site booking: the code, and what it takes off the hair system's price when they pay. */
 export type StandingCode = Pick<OneVisitCode, "code" | "terms">;
 
@@ -185,7 +190,7 @@ async function checkRequest(
     loadSlotSchedule(db),
   ]);
   const hours = windowTimesOf(schedule.on(request.date));
-  // A start is in the window asked for, on any day: the answer, whoever's the number, names the window booked.
+  // A start is in the window asked for, on any day, whoever's the number, so a booking names the window booked.
   if (request.startsAt !== null) {
     const time = indiaTime(request.startsAt);
     if (time < hours[request.window].start || time >= hours[request.window].end) {
@@ -364,7 +369,10 @@ function consultationLead(
  * Books the free consultation, or the consultation and fit in one visit: the slot, the lead, and the invite's credits
  * where they apply.
  */
-export async function bookConsultation(form: FormRequest, request: ConsultationRequest): Promise<Booked | Refusal> {
+export async function bookConsultation(
+  form: FormRequest,
+  request: ConsultationRequest,
+): Promise<Booked | NotBooked | Refusal> {
   const { db, log, now } = form;
   const oneVisit = request.plan === "one_visit";
   const asked = await checkRequest(db, request, { now, selfServeBooking: form.selfServeBooking });
@@ -372,8 +380,9 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const { pincode } = asked;
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
-  // Nothing is looked up or written for a number the plan needs proved until its code was entered.
-  if (bookingNeedsProof(request.plan) && !(await form.provedNumber(request.numberCodeId, checked.mobile))) {
+  // Nothing is looked up or written for a number until its WhatsApp code was entered, whatever the plan: the code then
+  // signs the client into the app (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
+  if (!(await form.provedNumber(request.numberCodeId, checked.mobile))) {
     return { ok: false, code: "number_not_proved" };
   }
 
@@ -388,7 +397,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   if (knownId !== null) {
     const addressOutsideArea = saved !== null && savedPincode?.served !== 1;
     const notBooked = await notBookedFor(db, knownId, { addressOutsideArea, now });
-    if (notBooked !== null) return answerAsForANewNumber(form, request, pincode, { personId: knownId, notBooked });
+    if (notBooked !== null) return answerKnownNumber(form, { personId: knownId, oneVisit, ...notBooked });
   }
   // The visit goes to the address on the account where there is one, which is served, or the person would have been
   // answered above; else to the address typed, in the pincode checked.
@@ -454,36 +463,14 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   };
 }
 
-/**
- * What a new number would be told, given to a number that books nothing from a form: its code and its window are
- * checked as a new number's would be, nothing is written of the person, and its owner is told why on WhatsApp.
- */
-async function answerAsForANewNumber(
+/** A number we know that books nothing: nothing is written of the person, and the page and WhatsApp say why. */
+async function answerKnownNumber(
   form: FormRequest,
-  request: ConsultationRequest,
-  pincode: Pincode,
-  known: { readonly personId: string; readonly notBooked: NotBookedFromSite },
-): Promise<Booked | Refusal> {
-  const oneVisit = request.plan === "one_visit";
-  const code = await oneVisitCode(form, request, null, oneVisit);
-  if (code?.ok === false) return code;
-  const { state, startsAt } = await newNumbersState(form, request);
-  if (state === "taken") return { ok: false, code: "taken" };
-
-  await tellPrivately(form, known.personId, known.notBooked);
-  form.log.info("consultation_not_booked", { reason: known.notBooked, state, one_visit: oneVisit });
-  return {
-    ok: true,
-    state,
-    date: request.date,
-    window: request.window,
-    // The start a new number booking it is told, so a number we know looks like any other.
-    startsAt,
-    area: placeOf(pincode),
-    ...inviteAsForANewNumber(request.invite, null, form.now),
-    oneVisit,
-    discountCode: code === null ? null : { code: code.code, terms: code.terms },
-  };
+  known: Pick<NotBooked, "reason" | "consultation"> & { readonly personId: string; readonly oneVisit: boolean },
+): Promise<NotBooked> {
+  await tellPrivately(form, known.personId, known.reason);
+  form.log.info("consultation_not_booked", { reason: known.reason, one_visit: known.oneVisit });
+  return { ok: true, state: "not_booked", reason: known.reason, consultation: known.consultation };
 }
 
 /** A notice to a person we know, written and queued on its own. */

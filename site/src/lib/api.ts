@@ -28,6 +28,8 @@ export type ReferralReward = Schemas["ReferralReward"];
 export type ReferralConsultation = Schemas["ReferralConsultation"];
 export type ReferralWaitlist = Schemas["ReferralWaitlist"];
 export type Consultation = Schemas["Consultation"];
+/** A number we know that a booking booked nothing for, and why. */
+export type NotBooked = Schemas["NotBooked"];
 type Waitlist = Schemas["Waitlist"];
 export type TypedAddress = Schemas["TypedAddress"];
 type NumberCodeRequest = Schemas["NumberCodeRequest"];
@@ -101,7 +103,7 @@ function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<
   });
 }
 
-// The WhatsApp code that proves the number typed, before /book's one visit or
+// The WhatsApp code that proves the number typed, before a booking on the site or
 // /try's gate acts on it.
 
 export function askForNumberCode(request: NumberCodeRequest): Promise<Answer<NumberCode>> {
@@ -208,8 +210,8 @@ export function bookConsultation(
   code: string,
   request: ConsultationRequest,
   idempotencyKey: string,
-): Promise<Answer<ReferralConsultation>> {
-  return post<ReferralConsultation>(`/api/r/${code}/consultation`, request, idempotencyKey);
+): Promise<Answer<ReferralConsultation | NotBooked>> {
+  return post<ReferralConsultation | NotBooked>(`/api/r/${code}/consultation`, request, idempotencyKey);
 }
 
 export function joinWaitlist(
@@ -227,8 +229,8 @@ export function joinWaitlist(
 export function bookPublicConsultation(
   request: PublicConsultationRequest,
   idempotencyKey: string,
-): Promise<Answer<Consultation>> {
-  return post<Consultation>("/api/consultation", request, idempotencyKey);
+): Promise<Answer<Consultation | NotBooked>> {
+  return post<Consultation | NotBooked>("/api/consultation", request, idempotencyKey);
 }
 
 /** /book's first step: the name and number, kept as a lead before the visit is chosen. */

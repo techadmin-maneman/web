@@ -29,7 +29,7 @@ flowchart LR
 
 Five Cloudflare Workers make up each environment: `mm-api` answers every `/api/*` call on every host and owns the database, the files, the queues and the cron; `mm-site`, `mm-app`, `mm-ops` and `mm-tech` each serve one front end. A request writes the database and answers at once; the slow work (Zoho, WhatsApp, the try-on's renders) goes onto a queue, and the cron puts back anything that went quiet. That is why the apps stay quick when Zoho is slow, and why nothing is lost when a vendor is down: the database is where every retry starts.
 
-**Staging and production.** Staging (`staging.maneman.in` and its three siblings, all behind Cloudflare Access) runs everything on test money and the owner's real Zoho org. Production runs the Phase 1 API and a placeholder page until the owner's go-ahead; `docs/go-live.md` is the order in which it is switched on, the site first and the apps later.
+**Staging and production.** Staging (`staging.maneman.in` and its three siblings, all behind Cloudflare Access) runs everything on test money and the owner's real Zoho org. Production runs the Phase 1 API and a placeholder page until the owner's go-ahead; `docs/go-live.md` is how it is switched on: the site and the apps together, by the owner's ruling of 19 November 2026.
 
 **The console is the source of truth.** Every price, service and policy is an ops update, not a tech update (ADR 0025, items 66 and 67). What the console already holds is listed under "What changes without a release"; what is still code is `docs/archive/implementation-plan-2026-09-27.md`, C1.
 

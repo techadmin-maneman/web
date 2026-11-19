@@ -17,6 +17,7 @@ import {
   NOW,
   request,
   type TestDependencies,
+  withProof,
 } from "../helpers.ts";
 import { technician } from "../clients.ts";
 import {
@@ -179,26 +180,28 @@ describe("a free booking", () => {
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.9" },
-        body: JSON.stringify({
-          name: "Neha Kapoor",
-          mobile: "98100 00077",
-          pincode: "122018",
-          loss_extent: "crown",
-          turnstile_token: "token",
-          date: "2026-09-23",
-          window: "morning",
-          consent: true,
-          terms: true,
-          address: {
-            flat: "Flat 402",
-            line1: "Palm Grove Society",
-            line2: null,
-            locality: "Sector 65",
-            city: "Gurgaon",
+        body: JSON.stringify(
+          await withProof({
+            name: "Neha Kapoor",
+            mobile: "98100 00077",
             pincode: "122018",
-            access_notes: null,
-          },
-        }),
+            loss_extent: "crown",
+            turnstile_token: "token",
+            date: "2026-09-23",
+            window: "morning",
+            consent: true,
+            terms: true,
+            address: {
+              flat: "Flat 402",
+              line1: "Palm Grove Society",
+              line2: null,
+              locality: "Sector 65",
+              city: "Gurgaon",
+              pincode: "122018",
+              access_notes: null,
+            },
+          }),
+        ),
       },
       bindings(),
     );
