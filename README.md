@@ -53,7 +53,7 @@ The few that come up everywhere. `docs/glossary.md` has the rest, and says which
 
 ## Working locally
 
-Node 24.11 or later (`.nvmrc`, and `engines` in `package.json`).
+Node 24.15 or later (`.nvmrc`, and `engines` in `package.json`).
 
 ```sh
 npm ci

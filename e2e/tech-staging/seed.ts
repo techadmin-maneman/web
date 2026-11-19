@@ -110,7 +110,7 @@ async function execute(statements: readonly string[]): Promise<void> {
   }
 }
 
-/** Reads rows from the staging database, its statement sent as a file (scripts/lib/d1.ts). */
+/** Reads rows from the staging database (scripts/lib/d1.ts). */
 export function query<T>(sql: string): Promise<T[]> {
   return Promise.resolve(d1Query<T>("staging", sql));
 }

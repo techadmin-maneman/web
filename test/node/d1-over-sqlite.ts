@@ -9,7 +9,7 @@ export function migratedDatabase(): DatabaseSync {
   const db = new DatabaseSync(":memory:");
   const migrations = readdirSync("migrations").filter((name) => name.endsWith(".sql"));
   for (const file of migrations.sort()) db.exec(readFileSync(`migrations/${file}`, "utf8"));
-  // D1 refuses a compound SELECT of more than five; node's SQLite takes 500.
+  // D1 refuses a compound SELECT of more than five; node's SQLite takes 500 (limits from Node 24.15, as engines asks).
   db.limits.compoundSelect = 5;
   return db;
 }

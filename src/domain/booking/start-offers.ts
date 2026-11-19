@@ -207,7 +207,6 @@ export async function startOffers(input: {
         for (const placed of placements(day, toPlan, rules, earliest)) {
           // A start Google's drive was already found to leave no room for is not offered (./drive-check.ts).
           const placing = { time: timeOf(placed.start), minutes: visit.minutes, pin };
-          // Nor a start Google's kept drive leaves no room for: the hold would refuse it.
           if (!(await keptDrivesFit({ day, rules, now }, placing, kept))) continue;
           const takers = byStart.get(placed.start) ?? [];
           takers.push({
