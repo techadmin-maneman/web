@@ -31,6 +31,11 @@
     white-space: nowrap;
   }
 
+  /* A figure on its way, in the figure's room. */
+  .pending {
+    color: var(--ui-text-muted);
+  }
+
   /* Beneath the figure, at the tile's foot with it. An empty line keeps its room, so the figures stand level. */
   .note {
     min-height: calc(var(--fs-13) * var(--lh-145));

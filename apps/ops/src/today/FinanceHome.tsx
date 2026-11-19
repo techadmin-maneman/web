@@ -17,16 +17,23 @@ import { clientPath } from "../route.ts";
 import { useCollected } from "./CityHome.tsx";
 import { AsideList, HomeLayout, type AsideRow, type Shown } from "./HomeLayout.tsx";
 import { countOf } from "./homes.ts";
-import { useRead } from "./reads.ts";
+import { useReadState } from "./reads.ts";
 import { todayApi } from "./today-api.ts";
 
 type Payment = Success<paths["/api/payments/ledger"]["get"]>["payments"][number];
 
-function useTodaysPayments(): readonly Payment[] | null {
+function useTodaysPayments(): { readonly payments: readonly Payment[] | null; readonly pending: boolean } {
   const date = todayInIndia(apiNow());
   const { city } = useCity();
   const read = useCallback(() => todayApi.payments(date, city), [date, city]);
-  return useRead(read, "GET /api/payments/ledger")?.payments ?? null;
+  const { value, pending } = useReadState(read, "GET /api/payments/ledger");
+  return { payments: value?.payments ?? null, pending };
+}
+
+/** The line beneath the money collected: how many payments, its room kept only while they are read. */
+function takenNote(payments: readonly Payment[] | null, pending: boolean): string | undefined {
+  if (payments !== null) return copy.notes.payments(payments.filter((payment) => payment.captured_at !== null).length);
+  return pending ? "" : undefined;
 }
 
 /** The payments taken today, the latest first, each with what it was for and how it was paid. */
@@ -50,9 +57,8 @@ function latest(payments: readonly Payment[]): AsideRow[] {
 }
 
 export function FinanceHome({ board, needs }: { readonly board: Tasks; readonly needs: ReactNode }) {
-  const payments = useTodaysPayments();
-  const taken = payments?.filter((payment) => payment.captured_at !== null).length;
-  const collected = useCollected(taken === undefined ? undefined : copy.notes.payments(taken));
+  const { payments, pending } = useTodaysPayments();
+  const collected = useCollected(takenNote(payments, pending));
   useHeading(collected.amount === null ? undefined : copy.greeting.finance(collected.amount));
   const figures: Shown[] = [
     collected.figure,

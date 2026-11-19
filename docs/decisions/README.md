@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0281. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0282. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -46,6 +46,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0207](0207-closed-chats-archived.md) Closed Care threads are archived out of D1
 - [0275](0275-the-apps-phase-2-pairs-retired.md) The apps' Phase 2 fidelity pairs retired
 - [0277](0277-alerts-that-come-sooner.md) Alerts that come sooner
+- [0281](0281-the-consoles-first-load-counts-today.md) The console's first load counts Today, and Today holds its room
 
 ### Booking and visits
 
@@ -340,7 +341,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0020](0020-production-on-the-zoho-test-org.md) | Production uses the Zoho test org, for now | 2026-09-21 | superseded by 0050 on 22 September 2026 | [0050](0050-crm-in-the-real-org.md) |
 | [0021](0021-public-site.md) | The public site: Astro in site/, on staging first | 2026-09-22 | accepted |  |
 | [0022](0022-site-departures-from-v2.md) | Where the site departs from v2 or the front-end prompt | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md), [0103](0103-the-home-pages-first-copy-round.md), [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
-| [0023](0023-launch-hardening.md) | Launch hardening: headers, analytics, budgets | 2026-09-22 | accepted | [0206](0206-trusted-types-and-a-nonce-per-page.md) |
+| [0023](0023-launch-hardening.md) | Launch hardening: headers, analytics, budgets | 2026-09-22 | accepted | [0206](0206-trusted-types-and-a-nonce-per-page.md), [0281](0281-the-consoles-first-load-counts-today.md) |
 | [0024](0024-the-browsers-own-look.md) | The browser's own look: an optional gate, and a look shown again | 2026-09-22 | accepted, on the owner's review of 22 September 2026 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
 | [0025](0025-phase-2-conflicts-register.md) | Phase 2: the conflicts register | 2026-09-22 | accepted, and kept up to date | [0200](0200-staging-tenants-of-its-own.md) |
 | [0026](0026-hosts-and-surfaces.md) | Hosts and surfaces | 2026-09-22 | accepted |  |
@@ -596,3 +597,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0278](0278-a-technician-in-training-takes-no-visits.md) | A technician in training takes no visits | 2026-11-18 | accepted, on the owner's ruling of 18 November 2026 |  |
 | [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) | One rule for paying, and the tagline as written | 2026-11-19 | accepted |  |
 | [0280](0280-the-technician-apps-hindi-corrected.md) | The technician app's Hindi corrected, and the job card's arrival named | 2026-11-19 | accepted |  |
+| [0281](0281-the-consoles-first-load-counts-today.md) | The console's first load counts Today, and Today holds its room | 2026-11-19 | accepted |  |

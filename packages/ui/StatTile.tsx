@@ -5,6 +5,8 @@
 
 import { Link } from "./router.tsx";
 import { classes } from "./classes.ts";
+import { VisuallyHidden } from "./VisuallyHidden.tsx";
+import { states } from "./words.ts";
 import styles from "./stat-tile.module.css";
 
 export type StatTone = "plain" | "attention" | "warning";
@@ -18,7 +20,8 @@ export function StatTile({
   className,
 }: {
   readonly label: string;
-  readonly value: string | number;
+  /** The figure; null while it is on its way, its room kept, a muted dash said as loading. */
+  readonly value: string | number | null;
   readonly tone?: StatTone;
   /** A short line beneath the figure: what it is made of, or the one to look at first. Empty, it keeps the line's room. */
   readonly note?: string | undefined;
@@ -29,7 +32,16 @@ export function StatTile({
   const body = (
     <>
       <span className={styles.label}>{label}</span>
-      <span className={classes(styles.value, styles[tone])}>{value}</span>
+      <span className={classes(styles.value, styles[tone])}>
+        {value ?? (
+          <>
+            <span className={styles.pending} aria-hidden="true">
+              —
+            </span>
+            <VisuallyHidden>{states.loading}</VisuallyHidden>
+          </>
+        )}
+      </span>
       {note !== undefined && <span className={styles.note}>{note}</span>}
     </>
   );

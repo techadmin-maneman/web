@@ -4,12 +4,16 @@
 // stays while a payment link for it waits to be paid.
 
 import { Button, RowButton } from "@maneman/ui/Button";
-import { BookVisit, type Prefill } from "../clients/index.ts";
+import { lazyScreen } from "@maneman/ui/lazyScreen";
+import type { Prefill } from "../clients/index.ts";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useRef, useState, type ReactNode, type RefObject } from "react";
+import { Suspense, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { BookingWindow, Task } from "../api.ts";
 import { tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
+
+/** The booking drawer, loaded when a booking is first opened, so Today's first load leaves the clients' section out. */
+const BookVisit = lazyScreen(() => import("../clients/index.ts").then((module) => module.BookVisit));
 
 const WINDOWS: readonly string[] = ["morning", "afternoon", "evening"];
 const isWindow = (text: string | null): text is BookingWindow => text !== null && WINDOWS.includes(text);
@@ -76,16 +80,18 @@ export function BookFromTask({
         <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
       </BookButton>
       {open && (
-        <BookVisit
-          clientId={person.id}
-          name={person.name}
-          prefill={prefill}
-          onClose={(booked) => {
-            setOpen(false);
-            if (booked !== null && booked.outcome !== "awaiting_payment") onBooked();
-            else requestAnimationFrame(() => opener.current?.focus());
-          }}
-        />
+        <Suspense fallback={null}>
+          <BookVisit
+            clientId={person.id}
+            name={person.name}
+            prefill={prefill}
+            onClose={(booked) => {
+              setOpen(false);
+              if (booked !== null && booked.outcome !== "awaiting_payment") onBooked();
+              else requestAnimationFrame(() => opener.current?.focus());
+            }}
+          />
+        </Suspense>
       )}
     </>
   );
