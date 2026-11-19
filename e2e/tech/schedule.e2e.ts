@@ -27,6 +27,29 @@ test("opens today and the six days after it, today down the hours with the drive
   expect(await axeViolations(page)).toEqual([]);
 });
 
+// A job was a link as tall as its words, 35 px of a 90-minute block, and a short one shorter still.
+test("opens a job from anywhere on its block, a short one from a thumb's 44 px, its drive above it", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.firstMinutes = 30;
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await tab(page, techCopy.tabs.schedule).click();
+  const job = page.locator(`a[href="/jobs/${JOB_ID}"]`);
+  const block = await job.locator("..").boundingBox();
+  const middle = (block?.x ?? 0) + (block?.width ?? 0) / 2;
+  const top = block?.y ?? 0;
+  const opens = await page.evaluate(
+    ({ x, y }) => [y + 2, y + 42].map((at) => document.elementFromPoint(x, at)?.closest("a")?.getAttribute("href")),
+    { x: middle, y: top },
+  );
+  expect(opens).toEqual([`/jobs/${JOB_ID}`, `/jobs/${JOB_ID}`]);
+  // The drive's line ends where the visit begins.
+  const drive = await page.getByText(/^18 min · leave /).boundingBox();
+  expect((drive?.y ?? 0) + (drive?.height ?? 0)).toBeLessThanOrEqual(top + 1);
+});
+
 test("opens tomorrow's job, its card open since 6 pm, from Schedule, and goes back to that day", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.tomorrow = true;

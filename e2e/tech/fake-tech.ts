@@ -178,6 +178,8 @@ export interface Fake {
   reminderDelivered: string | null | undefined;
   /** True puts one unlocked job on tomorrow's list. */
   tomorrow: boolean;
+  /** How long the day's first job lasts on its list, in place of its type's; null for its type's. */
+  firstMinutes: number | null;
   /** True puts a job begun and never closed on yesterday's list. */
   yesterday: boolean;
   /** True fails the call for today's list, as a network having a bad minute would. */
@@ -296,6 +298,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     lastVisit: false,
     reminderDelivered: undefined,
     tomorrow: false,
+    firstMinutes: null,
     yesterday: false,
     dayFails: false,
     writes: [],
@@ -658,7 +661,10 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       }
       if (date === today) {
         const progress = { started_at: fake.progress.started_at, outcome: fake.progress.outcome };
-        const jobs = empty ? [] : jobsToday(date, fake.type, progress, fake.oneVisit);
+        const listed = empty ? [] : jobsToday(date, fake.type, progress, fake.oneVisit);
+        const jobs = listed.map((job, at) =>
+          at === 0 && fake.firstMinutes !== null ? { ...job, minutes: fake.firstMinutes } : job,
+        );
         return reply(route, 200, { date, jobs, sent_back });
       }
       if (date === dayAfter(today) && fake.tomorrow) {
