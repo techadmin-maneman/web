@@ -55,6 +55,9 @@ export const AUDIT_ACTIONS = [
   "quick_reply.add",
   "quick_reply.retire",
   "quick_reply.change",
+  "qc_point.add",
+  "qc_point.change",
+  "qc_point.delete",
   "remedy.give",
   "remedy.ask",
   "remedy.approve",
@@ -406,7 +409,7 @@ export function auditStatementIfDeleted(
   now: Date,
   deleted:
     | {
-        readonly table: "technicians" | "discount_codes" | "partner_payouts" | "slot_times";
+        readonly table: "technicians" | "discount_codes" | "partner_payouts" | "slot_times" | "qc_points";
         readonly column: "id";
         readonly value: string;
       }

@@ -11,6 +11,7 @@ import { registerOpsCarePeople } from "./care-people.ts";
 import { registerOpsCareRota } from "./care-rota.ts";
 import { registerOpsCities } from "./cities.ts";
 import { registerOpsZones } from "./zones.ts";
+import { registerOpsQcPoints } from "./qc-points.ts";
 import { registerOpsCityMatters } from "./city-matters.ts";
 import { registerOpsClientAddress } from "./client-address.ts";
 import { registerOpsClientConsents } from "./client-consents.ts";
@@ -201,6 +202,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   // Our cities, their GST registrations, and what a city sets apart (docs/decisions/0198-cities-as-data.md).
   registerOpsCities,
   registerOpsZones,
+  registerOpsQcPoints,
   // The day's half-slot times, from a day nothing is booked or bookable on (docs/decisions/0102-window-times.md).
   registerOpsSlotTimes,
   registerOpsClientExport,

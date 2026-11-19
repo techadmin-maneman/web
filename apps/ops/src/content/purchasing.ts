@@ -2,7 +2,6 @@
 // every word here is ours. Only the Purchasing page reads it, loaded when it opens.
 
 import { amountOf } from "@maneman/web-kit/figures";
-import type { QcPoint } from "@rules/policy/receipt-checks.ts";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const purchasing = {
@@ -107,14 +106,34 @@ export const purchasing = {
       unknown: FAILED,
     },
   },
-  /** What a hair system is checked against as it arrives, as Settings, the receipt and a claim name each point. */
-  checks: {
-    base_size: "Base size",
-    colour: "Colour against the ring",
-    density: "Density",
-    lace_knots: "Lace and knots",
-    label: "Label",
-  } satisfies Readonly<Record<QcPoint, string>>,
+  /**
+   * What a hair system is checked against as it arrives, at Settings › Purchasing: each check added, renamed, switched
+   * off, or deleted while no claim names it. A receipt and a claim name each by the name ops gave it.
+   */
+  points: {
+    panel: "Checks on a hair system that arrives",
+    columns: { name: "Check", checked: "Checked" },
+    name: "Name",
+    checked: "Checked on arrival",
+    yes: "Yes",
+    no: "No",
+    add: "Add a check",
+    addButton: "Add",
+    added: "Check added.",
+    deleted: "Check deleted.",
+    /** At a check's foot, where a claim names it. */
+    inUse: "A claim names this check. Switch it off instead.",
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      name: "Up to 40 characters.",
+      taken: "Another check has that name.",
+      not_found: changed("That check is gone."),
+      in_use: "A claim names this check. Switch it off instead.",
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
+  },
   receive: {
     open: "Receive",
     title: "What arrived",

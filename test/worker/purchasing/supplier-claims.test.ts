@@ -37,6 +37,14 @@ let job: Working;
 let hair: string;
 
 const claims = async () => (await request(job.ops, "/api/supplier-claims")).json<Claims>();
+
+/** A check on arrival renamed, or switched on or off, at Settings › Purchasing. */
+const setPoint = (id: string, change: { name: string; checked: boolean }) =>
+  request(job.ops, `/api/qc-points/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+    body: JSON.stringify(change),
+  });
 const codeOf = async (res: Response) => (await res.json<{ error: { code: string; fields?: string[] } }>()).error;
 
 /** A USD supplier with a 90-day warranty, sent an order for two hair systems and ten of solvent, which arrives. */
@@ -199,21 +207,28 @@ describe("a hair system's failed check", () => {
     const failed = { po_line_id: hairLine, received: 1, qc_failed: 2 };
     expect(await codeOf(await receive(order, [failed]))).toMatchObject({ fields: ["lines.0.qc_failed_points"] });
 
-    const checks = { base_size: "checked", colour: "checked", density: "checked", lace_knots: "checked" };
-    await job.opsPost("/api/settings/receipt_checks", { value: { ...checks, label: "skipped" } });
+    await setPoint("label", { name: "Label", checked: false });
     const unchecked = await receive(order, [{ ...failed, qc_failed_points: ["label"] }]);
     expect(await codeOf(unchecked)).toMatchObject({ fields: ["lines.0.qc_failed_points"] });
 
     const named = await receive(order, [{ ...failed, qc_failed_points: ["colour", "density"] }]);
     expect(named.status).toBe(200);
     const claim = (await claims()).claims.find((each) => each.failed_points !== null);
-    expect(claim).toMatchObject({ reason: "qc_failed", quantity: 2, failed_points: ["colour", "density"] });
+    const failedOn = ["Colour against the ring", "Density"];
+    expect(claim).toMatchObject({ reason: "qc_failed", quantity: 2, failed_points: failedOn });
+
+    // Renamed after, the claim reads as it did; named by a claim, the check is switched off, never deleted.
+    expect((await setPoint("density", { name: "Hair density", checked: true })).status).toBe(200);
+    expect((await claims()).claims.find((each) => each.id === claim?.id)?.failed_points).toEqual(failedOn);
+    const deleted = await job.opsPost("/api/qc-points/density/delete");
+    expect(deleted.status).toBe(409);
+    expect(await codeOf(deleted)).toMatchObject({ code: "in_use" });
   });
 
   it("is not asked for while ops check none of the points", async () => {
     const { order, hairLine } = await sentAgain();
-    const none = { base_size: "skipped", colour: "skipped", density: "skipped", lace_knots: "skipped" };
-    await job.opsPost("/api/settings/receipt_checks", { value: { ...none, label: "skipped" } });
+    const all = await (await job.opsGet("/api/qc-points")).json<{ points: { id: string; name: string }[] }>();
+    for (const point of all.points) await setPoint(point.id, { name: point.name, checked: false });
     const failed = await receive(order, [{ po_line_id: hairLine, received: 2, qc_failed: 1 }]);
     expect(failed.status).toBe(200);
   });

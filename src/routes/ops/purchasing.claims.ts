@@ -3,7 +3,6 @@
 // Sending, withdrawing and settling pieces with Operations ACT; settling a claim with MANAGE. Each answers the whole of
 // GET's answer.
 
-import { QC_POINTS } from "../../policy/receipt-checks.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -48,9 +47,14 @@ const ClaimSchema = z.object({
   sent_at: z.string().nullable(),
   decided_at: z.string().nullable(),
   photo_id: z.string().nullable().openapi({ description: "The photograph sent with it: GET /api/stock-photos/{id}." }),
-  failed_points: z.array(z.enum(QC_POINTS)).nullable().openapi({
-    description: "What its pieces failed of the checks on arrival, for a hair system's failed check; null otherwise.",
-  }),
+  failed_points: z
+    .array(z.string())
+    .nullable()
+    .openapi({
+      description:
+        "What its pieces failed of the checks on arrival, by name as each read when it was drafted, for a hair system's " +
+        "failed check; null otherwise.",
+    }),
 });
 
 const ReturnedPieceSchema = z.object({

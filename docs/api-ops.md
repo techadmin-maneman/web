@@ -25653,6 +25653,512 @@ Request body:
 }
 ```
 
+### GET /api/qc-points
+
+Every point a hair system is checked against as it arrives, in order
+
+**200**: The points
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "points": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/QcPoint"
+      }
+    }
+  },
+  "required": [
+    "points"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/qc-points
+
+A point added, checked, last in the order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewQcPoint"
+}
+```
+
+**201**: The point added
+
+```json
+{
+  "$ref": "#/components/schemas/QcPoint"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: taken: another point goes by that name, however it is cased
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### PATCH /api/qc-points/{id}
+
+A point renamed, or switched on or off; claims already drafted keep the name they read
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/QcPointChange"
+}
+```
+
+**200**: The point as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/QcPoint"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: taken: another point goes by that name, however it is cased
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/qc-points/{id}/delete
+
+A point deleted, while no claim names it
+
+**204**: Deleted
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: in_use: a claim names it; switch it off instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/slot-times
 
 The day's half-slot times in force, every change set, and the earliest a change may apply from
@@ -48744,6 +49250,9 @@ Request body:
         "quick_reply.add",
         "quick_reply.retire",
         "quick_reply.change",
+        "qc_point.add",
+        "qc_point.change",
+        "qc_point.delete",
         "remedy.give",
         "remedy.ask",
         "remedy.approve",
@@ -54717,7 +55226,6 @@ Request body:
         "scorecard_days",
         "po_second_approval_above_rupees",
         "po_own_approval",
-        "receipt_checks",
         "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
@@ -54920,7 +55428,6 @@ Request body:
         "scorecard_days",
         "po_second_approval_above_rupees",
         "po_own_approval",
-        "receipt_checks",
         "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
@@ -55900,6 +56407,79 @@ Request body:
   },
   "required": [
     "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### QcPoint
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "checked": {
+      "type": "boolean",
+      "description": "Whether each hair system that arrives is checked against it."
+    },
+    "deletable": {
+      "type": "boolean",
+      "description": "Whether no claim names it, so it may be deleted."
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "checked",
+    "deletable"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NewQcPoint
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### QcPointChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "checked": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "checked"
   ],
   "additionalProperties": false
 }
@@ -60156,14 +60736,20 @@ Request body:
     "receipt_checks": {
       "type": "array",
       "items": {
-        "type": "string",
-        "enum": [
-          "base_size",
-          "colour",
-          "density",
-          "lace_knots",
-          "label"
-        ]
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
       },
       "description": "The points ops check a hair system against as it arrives, in order."
     },
@@ -60402,16 +60988,11 @@ Request body:
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "base_size",
-                "colour",
-                "density",
-                "lace_knots",
-                "label"
-              ]
+              "minLength": 1,
+              "maxLength": 64
             },
-            "maxItems": 5,
-            "description": "What a hair system's failed pieces failed, of the checks ops make (receipt_checks); needed where a hair system's line has qc_failed while ops check any point, and named on no other line."
+            "maxItems": 20,
+            "description": "What a hair system's failed pieces failed, by their IDs, of the points ops check (GET /api/qc-points); needed where a hair system's line has qc_failed while ops check any point, and named on no other line."
           },
           "lot_code": {
             "type": [
@@ -60619,16 +61200,9 @@ Request body:
               "null"
             ],
             "items": {
-              "type": "string",
-              "enum": [
-                "base_size",
-                "colour",
-                "density",
-                "lace_knots",
-                "label"
-              ]
+              "type": "string"
             },
-            "description": "What its pieces failed of the checks on arrival, for a hair system's failed check; null otherwise."
+            "description": "What its pieces failed of the checks on arrival, by name as each read when it was drafted, for a hair system's failed check; null otherwise."
           }
         },
         "required": [

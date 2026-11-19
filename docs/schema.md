@@ -38,7 +38,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `not_fitted_reasons`, `failure_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `qc_points`, `checklist_items`, `partial_reasons`, `lost_reasons`, `not_fitted_reasons`, `failure_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, and a fit's stock risk is found or cleared again within the hour | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -157,6 +157,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [price_book](#price_book): Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).
 - [purchase_orders](#purchase_orders): Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
 - [push_subscriptions](#push_subscriptions): The phone that takes a technician's pushes, one subscription a phone, by the push service's address; a phone signed out or revoked takes none (ADR 0250).
+- [qc_points](#qc_points): Each point a hair system is checked against as it arrives, which ops add, rename and switch off, and delete while no claim names it (ADR 0283).
 - [quick_replies](#quick_replies): Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
 - [razorpay_events](#razorpay_events): Each Razorpay webhook event, once, by its event ID (ADR 0044).
 - [razorpay_settlements](#razorpay_settlements): Each payout Razorpay made to the bank, its fee, and its transfer and fee in Books (ADR 0261).
@@ -2557,6 +2558,23 @@ Indexes:
 
 - A `UNIQUE` constraint: unique on (`endpoint`)
 
+## qc_points
+
+Each point a hair system is checked against as it arrives, which ops add, rename and switch off, and delete while no claim names it (ADR 0283).
+
+Made by `0226_qc_points.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key | The key a receipt and a claim name the point by: one of the five below, or a new point's UUID. |
+| `name` | TEXT | no |  |  |  |
+| `sort` | INTEGER | no |  |  |  |
+| `checked` | INTEGER | no | `1` |  | 1 while each hair system that arrives is checked against it; 0 once ops switch it off. |
+
+Indexes:
+
+- `qc_points_by_name`: unique on (`null`)
+
 ## quick_replies
 
 Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).
@@ -3494,7 +3512,7 @@ Made by `0055_storage_meter.sql`.
 
 Each claim on a supplier: what arrived damaged or failed its check, or a returned piece in warranty, and whether it was sent, credited, replaced, rejected or withdrawn (ADR 0169).
 
-Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`, `0146_vendor_credits.sql`, `0224_claim_failed_points.sql`.
+Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`, `0146_vendor_credits.sql`, `0224_claim_failed_points.sql`, `0226_qc_points.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3523,6 +3541,7 @@ Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`, `0146_ve
 | `books_credit_id` | TEXT | yes |  |  | Vendor credits in Zoho Books (docs/decisions/0171-vendor-credits.md): each claim settled as a credit made a vendor credit on its supplier's vendor, once, tried again an hour after a failure. |
 | `books_checked_at` | TEXT | yes |  |  |  |
 | `failed_points` | TEXT | yes |  |  | A JSON array of the points failed (src/policy/receipt-checks.ts); null for any other claim, or one made before. |
+| `failed_point_names` | TEXT | yes |  |  | A JSON array of the points' names as they read when the claim was drafted; null where failed_points is. |
 
 Indexes:
 

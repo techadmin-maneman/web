@@ -92,6 +92,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).",
   remedies:
     "Free service visits Customer Care gave a client, with why: given within the limit, or awaiting a manager (ADR 0143).",
+  qc_points:
+    "Each point a hair system is checked against as it arrives, which ops add, rename and switch off, and delete while no claim names it (ADR 0283).",
   quick_replies: "Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).",
   city_matters:
     "A matter Customer Care sent from a chat to the client's city, on that city's Tasks until it is closed (ADR 0135).",

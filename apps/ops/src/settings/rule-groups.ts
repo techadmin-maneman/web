@@ -62,7 +62,6 @@ export const RULE_GROUPS = [
       "po_second_approval_above_rupees",
       "po_own_approval",
       "po_rupees_to_one",
-      "receipt_checks",
       "custom_order_grace_days",
       "scorecard_days",
     ],
@@ -79,6 +78,9 @@ export type RuleGroupId = (typeof RULE_GROUPS)[number]["id"] | typeof OTHER_GROU
 
 /** The group that also says what storage and the database hold. */
 export const CONSOLE_GROUP: RuleGroupId = "console";
+
+/** The group beneath which the checks on a hair system that arrives are kept. */
+export const PURCHASING_GROUP: RuleGroupId = "purchasing";
 
 /** A section as the page draws it: a group, and those of its rules the API sent. */
 export interface RuleSection<Rule> {
