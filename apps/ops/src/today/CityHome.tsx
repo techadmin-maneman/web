@@ -14,21 +14,23 @@ import { useCity } from "../lib/city.ts";
 import { SECTION_NAMES } from "../route.ts";
 import { roadFigures } from "./DispatchHome.tsx";
 import { countOf } from "./homes.ts";
-import { AsideList, HomeLayout, type AsideRow, type Shown } from "./HomeLayout.tsx";
-import { useRead } from "./reads.ts";
-import { awayToday, useRoad, type Road } from "./road.ts";
+import { AsideList, HomeLayout, pendingFigure, type AsideRow, type Shown } from "./HomeLayout.tsx";
+import { useReadState } from "./reads.ts";
+import { awayToday, useRoadState, type Road } from "./road.ts";
 import { todayApi } from "./today-api.ts";
 
-/** The money collected today, once read: its figure, and the amount for a sentence. */
+/** The money collected today, once read: its figure, holding its room while read, and the amount for a sentence. */
 export function useCollected(note?: string): { figure: Shown; amount: string | null } {
   const date = todayInIndia(apiNow());
   const { city } = useCity();
   const read = useCallback(() => todayApi.money(date, city), [date, city]);
-  const money = useRead(read, "GET /api/payments");
+  const { value: money, pending } = useReadState(read, "GET /api/payments");
+  const label = noShows.money.figures.collected(true);
+  if (money === null && pending) return { figure: pendingFigure(label, "payments", note !== undefined), amount: null };
   if (money === null) return { figure: null, amount: null };
   const amount = rupees(money.collected);
   return {
-    figure: { label: noShows.money.figures.collected(true), value: amount, note, page: "payments" },
+    figure: { label, value: amount, note, page: "payments" },
     amount,
   };
 }
@@ -51,9 +53,9 @@ function technicians(road: Road): AsideRow[] {
 }
 
 export function CityHome({ board, needs }: { readonly board: Tasks; readonly needs: ReactNode }) {
-  const road = useRoad();
+  const { road, pending } = useRoadState();
   const { city } = useCity();
-  const { visits, late } = roadFigures(road);
+  const { visits, late } = roadFigures(road, pending);
   const collected = useCollected().figure;
   const booked = road?.board.utilisation.find((day) => day.date === road.date)?.percent;
   useHeading(booked === undefined ? undefined : copy.greeting.city(city, booked));

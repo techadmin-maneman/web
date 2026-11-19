@@ -66,3 +66,13 @@ test("keeps the navigation in place while a long section scrolls", async ({ page
   });
   await expect(page.getByRole("navigation", { name: shell.title })).toBeInViewport();
 });
+
+// The head set the brand's name in a typeface; the brand kit draws it, with the product beside it.
+test("draws the brand's wordmark in the navigation's head, read out as the console's name", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, "/settings/booking");
+  const brand = page.getByRole("navigation", { name: shell.title }).getByRole("img", { name: shell.title });
+  await expect(brand).toBeVisible();
+  await expect(brand.locator("svg")).toBeVisible();
+  await expect(brand).toContainText(shell.product);
+});

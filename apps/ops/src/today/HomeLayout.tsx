@@ -18,7 +18,8 @@ import styles from "./today.module.css";
 
 interface Figure {
   readonly label: string;
-  readonly value: number | string;
+  /** Null while it is read: its tile holds its room. */
+  readonly value: number | string | null;
   /** Where the figure is acted on; a person who may not open it is not shown the figure. */
   readonly page: Page;
   /** The tone a count above nought takes. */
@@ -27,8 +28,16 @@ interface Figure {
   readonly note?: string | undefined;
 }
 
-/** A figure, or null until what it counts has loaded or where the person may not read it. */
+/** A figure, its tile holding its room while it is read; null where the person may not read it, or it failed. */
 export type Shown = Figure | null;
+
+/** A figure while it is read: its label over its room, and its line's room where it has one once read. */
+export const pendingFigure = (label: string, page: Page, noted = false): Figure => ({
+  label,
+  value: null,
+  page,
+  ...(noted ? { note: "" } : {}),
+});
 
 const toneOf = (figure: Figure): StatTone =>
   typeof figure.value === "number" && figure.value > 0 ? (figure.tone ?? "plain") : "plain";

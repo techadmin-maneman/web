@@ -10,4 +10,8 @@ import { headersFile } from "@maneman/web-kit/headers";
 import { OPS_CONSOLE_POLICY } from "../../apps/ops/headers.ts";
 import { buildOptions, buildSpa } from "../lib/spa-build.ts";
 
-buildSpa({ app: "ops", label: "the ops console", headers: headersFile(OPS_CONSOLE_POLICY) }, buildOptions("build-ops"));
+// The console opens on Today (apps/ops/src/App.tsx), so its first load counts Today's section.
+buildSpa(
+  { app: "ops", label: "the ops console", headers: headersFile(OPS_CONSOLE_POLICY), landing: "TodayScreen" },
+  buildOptions("build-ops"),
+);

@@ -52,7 +52,8 @@ function latest(payments: readonly Payment[]): AsideRow[] {
 export function FinanceHome({ board, needs }: { readonly board: Tasks; readonly needs: ReactNode }) {
   const payments = useTodaysPayments();
   const taken = payments?.filter((payment) => payment.captured_at !== null).length;
-  const collected = useCollected(taken === undefined ? undefined : copy.notes.payments(taken));
+  // Its line's room is kept while today's payments are read.
+  const collected = useCollected(taken === undefined ? "" : copy.notes.payments(taken));
   useHeading(collected.amount === null ? undefined : copy.greeting.finance(collected.amount));
   const figures: Shown[] = [
     collected.figure,

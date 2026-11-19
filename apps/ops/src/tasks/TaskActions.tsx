@@ -12,14 +12,17 @@ import { staffName } from "../lib/who.ts";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useRef, useState, type RefObject } from "react";
+import { Suspense, useRef, useState, type RefObject } from "react";
 import { type ClosableGroup, type Task, type TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
 import shared from "./tasks.module.css";
 import styles from "./task-actions.module.css";
 import { useRereadOnChange } from "@maneman/ui/Refusal";
-import { AtFault } from "../clients/index.ts";
+import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { tasksApi } from "./tasks-api.ts";
+
+/** Who was at fault, loaded when a claim is first decided, so Today's first load leaves the clients' section out. */
+const AtFault = lazyScreen(() => import("../clients/index.ts").then((module) => module.AtFault));
 
 type Group = TaskGroup["group"];
 
@@ -170,7 +173,9 @@ function CloseForm({
         </Field>
       )}
       {group === "fit_guarantee_claim" && personId !== null && (
-        <AtFault clientId={personId} value={fault} disabled={busy} onChange={setFault} />
+        <Suspense fallback={null}>
+          <AtFault clientId={personId} value={fault} disabled={busy} onChange={setFault} />
+        </Suspense>
       )}
       <div className={styles.formActions}>
         <Button

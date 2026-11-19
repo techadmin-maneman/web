@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { mapLink } from "@rules/policy/safety.ts";
 import { api, type OpenSos } from "../api.ts";
 import { shell } from "../content/shell.ts";
-import { useAccess } from "../lib/access.ts";
+import { useAccess, useAccessSettled } from "../lib/access.ts";
 import styles from "./sos-banner.module.css";
 
 const copy = shell.sos;
@@ -60,7 +60,8 @@ function OneSos({ sos, mayHandle, onHandled }: { sos: OpenSos; mayHandle: boolea
 
 export function SosBanner() {
   const access = useAccess();
-  const mayRead = access.mayCall("GET /api/sos");
+  // Not before whoami has said who may: a Finance or Care person's every page was refused it once.
+  const mayRead = useAccessSettled() && access.mayCall("GET /api/sos");
   const mayHandle = access.mayCall("POST /api/sos/{id}/handled");
   const [open, setOpen] = useState<readonly OpenSos[]>([]);
   const read = useCallback(async () => {

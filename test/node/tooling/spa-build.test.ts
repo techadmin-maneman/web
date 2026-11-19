@@ -63,6 +63,27 @@ describe("the JavaScript a first visit fetches", () => {
     ]);
   });
 
+  // The console's first load counted index.html's scripts alone, while every first visit opens Today at once.
+  it("counts the section a first visit opens on, with what it and the page import, and not what loads later", () => {
+    const dist = built(PAGE, false);
+    writeFileSync(join(dist, "assets", "shared-b2.js"), 'import{a as b}from"./base-c3.js";export{};');
+    writeFileSync(join(dist, "assets", "base-c3.js"), "export const a=1;");
+    writeFileSync(join(dist, "assets", "TodayScreen-f6.js"), 'import"./RowStep-g7.js";export{};');
+    writeFileSync(join(dist, "assets", "RowStep-g7.js"), 'const d=()=>import("./Drawer-h8.js");export{d};');
+    writeFileSync(join(dist, "assets", "Drawer-h8.js"), "export{};");
+    expect(names(firstLoadScripts(dist, "TodayScreen"))).toEqual([
+      "assets/RowStep-g7.js",
+      "assets/TodayScreen-f6.js",
+      "assets/base-c3.js",
+      "assets/index-a1.js",
+      "assets/shared-b2.js",
+    ]);
+  });
+
+  it("refuses a section to open on that it cannot find one chunk of", () => {
+    expect(() => firstLoadScripts(built(PAGE, false), "TodayScreen")).toThrow(/0 chunks named TodayScreen/);
+  });
+
   it("refuses a page it finds no script in, rather than count nothing", () => {
     expect(() => firstLoadScripts(built("<html><body></body></html>", false))).toThrow(/loads no script/);
   });

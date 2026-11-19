@@ -7,7 +7,7 @@ import { useCallback } from "react";
 import type { Board } from "../api.ts";
 import { useCity } from "../lib/city.ts";
 import { todayApi } from "./today-api.ts";
-import { useRead } from "./reads.ts";
+import { useReadState } from "./reads.ts";
 
 export type Block = Board["technicians"][number]["days"][number]["blocks"][number];
 
@@ -22,13 +22,13 @@ export interface Road {
   readonly visits: readonly Visit[];
 }
 
-/** Today's board, in the header's city, once read. */
-export function useRoad(): Road | null {
+/** Today's board, in the header's city, once read, and whether it is still read: its figures hold their room. */
+export function useRoadState(): { readonly road: Road | null; readonly pending: boolean } {
   const { city } = useCity();
   const date = todayInIndia(apiNow());
   const read = useCallback(() => todayApi.board(date, city), [date, city]);
-  const board = useRead(read, "GET /api/dispatch");
-  if (board === null) return null;
+  const { value: board, pending } = useReadState(read, "GET /api/dispatch");
+  if (board === null) return { road: null, pending };
   const visits = board.technicians
     .flatMap((technician) =>
       (technician.days.find((day) => day.date === date)?.blocks ?? []).map((block) => ({
@@ -37,7 +37,7 @@ export function useRoad(): Road | null {
       })),
     )
     .sort((one, other) => Date.parse(one.block.starts_at) - Date.parse(other.block.starts_at));
-  return { board, date, visits };
+  return { road: { board, date, visits }, pending: false };
 }
 
 export const isDone = (block: Block): boolean => block.status === "completed" || block.begun === "closed";

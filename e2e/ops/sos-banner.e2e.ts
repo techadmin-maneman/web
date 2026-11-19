@@ -46,6 +46,33 @@ test("an SOS shows over every screen, with whose it is, the visit and a map, unt
   await expect(banner).toHaveCount(0);
 });
 
+// The console's access is everything until whoami answers, so the banner waits for it, and asks nothing of one
+// the Staff list does not let read SOS.
+test("asks nothing of the API for one not let read SOS, however late whoami answers", async ({ page }) => {
+  const asked: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/sos") asked.push(request.url());
+  });
+  await answer(page, {
+    "GET /api/whoami": async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return json({
+        signed_in_as: "money@maneman.in",
+        sign_out: null,
+        staff: { enforced: true, listed: true, grants: [], may_call: ["GET /api/health", "GET /api/whoami"] },
+        cities: [],
+        every_city: true,
+      })(route);
+    },
+    "GET /api/sos": json({ open: [SOS] }),
+  });
+  await page.goto("/settings/cities");
+  await expect(page.getByRole("main")).toBeVisible();
+  await page.waitForTimeout(1500);
+  expect(asked).toEqual([]);
+  await expect(page.getByRole("alert").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
+});
+
 test("names the visit by its time where its client has since been erased", async ({ page }) => {
   const erased = { ...SOS, visit: SOS.visit === null ? null : { ...SOS.visit, client_name: null } };
   await answer(page, { "GET /api/sos": json({ open: [erased] }) });

@@ -11,11 +11,19 @@ import { dispatch, tasks as taskWords } from "../content.ts";
 import { today as copy } from "../content/today.ts";
 import { useHeading } from "../frame/PageHead.tsx";
 import { dispatchPath } from "../route.ts";
-import { AsideList, HomeLayout, type AsideRow, type Shown } from "./HomeLayout.tsx";
-import { isDone, isLate, unassignedToday, useRoad, type Block, type Road } from "./road.ts";
+import { AsideList, HomeLayout, pendingFigure, type AsideRow, type Shown } from "./HomeLayout.tsx";
+import { isDone, isLate, unassignedToday, useRoadState, type Block, type Road } from "./road.ts";
 
 /** The day's visits, how many have no technician, and how many are running late, the longest late named beneath. */
-export function roadFigures(road: Road | null): { visits: Shown; unassigned: Shown; late: Shown } {
+/** The day's figures on the road: each holding its room while the board is read, visits' line beneath it too. */
+export function roadFigures(road: Road | null, pending: boolean): { visits: Shown; unassigned: Shown; late: Shown } {
+  if (road === null && pending) {
+    return {
+      visits: pendingFigure(copy.tiles.visits, "dispatch", true),
+      unassigned: pendingFigure(copy.tiles.unassigned, "dispatch"),
+      late: pendingFigure(copy.road.late, "dispatch"),
+    };
+  }
   if (road === null) return { visits: null, unassigned: null, late: null };
   const now = apiNow();
   const blocks = road.visits.map((visit) => visit.block);
@@ -93,8 +101,8 @@ function comingUp(road: Road): AsideRow[] {
 }
 
 export function DispatchHome({ board, needs }: { readonly board: Tasks; readonly needs: ReactNode }) {
-  const road = useRoad();
-  const { visits, unassigned, late } = roadFigures(road);
+  const { road, pending } = useRoadState();
+  const { visits, unassigned, late } = roadFigures(road, pending);
   useHeading(road === null ? undefined : copy.greeting.dispatch(unassignedToday(road).length));
   const lowStock: Shown = {
     label: copy.tiles.lowStock,

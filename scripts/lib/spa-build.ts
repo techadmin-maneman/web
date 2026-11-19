@@ -9,6 +9,7 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 import { gzipSync } from "node:zlib";
 import { isEnvironmentName, type EnvironmentName } from "../../src/config/environments.ts";
@@ -21,6 +22,11 @@ export interface SpaBuild {
   readonly label: string;
   /** Its _headers file. */
   readonly headers: string;
+  /**
+   * The chunk of the section a first visit opens on, by its name ("TodayScreen" for TodayScreen-abc.js), where the page
+   * loads it as it opens: counted in the first load with every module it imports.
+   */
+  readonly landing?: string;
 }
 
 export interface BuildOptions {
@@ -88,17 +94,44 @@ function pageScripts(dist: string): string[] {
   return files;
 }
 
-/**
- * The JavaScript a first visit fetches. With a service worker, every script, since the worker precaches them all.
- * Without one, as the ops console has none, only what the page loads: a section loaded when it opens is fetched then.
- */
-export function firstLoadScripts(dist: string): string[] {
-  if (existsSync(`${dist}/sw.js`)) return [...everyScript(dist), `${dist}/sw.js`];
-  return pageScripts(dist);
+/** The scripts a built one imports as it loads, `import{a}from"./x-1.js"`: never one it loads later, `import("…")`. */
+function staticImports(file: string): string[] {
+  const named = readFileSync(file, "utf8").matchAll(/(?:from|import)\s*"\.\/([^"]+\.js)"/g);
+  return [...named].map((match) => `${dirname(file)}/${match[1] ?? ""}`);
 }
 
-function gzippedJavaScript(dist: string): number {
-  return firstLoadScripts(dist).reduce((total, file) => total + gzipSync(readFileSync(file)).length, 0);
+/** The scripts given, and every script each imports as it loads, followed through. */
+function withImports(starts: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const waiting = [...starts];
+  for (let file = waiting.pop(); file !== undefined; file = waiting.pop()) {
+    if (seen.has(file)) continue;
+    seen.add(file);
+    waiting.push(...staticImports(file));
+  }
+  return [...seen];
+}
+
+/** The landing section's one chunk; any other count, and the build cannot say what a first visit loads. */
+function landingChunk(dist: string, landing: string): string {
+  const found = readdirSync(`${dist}/assets`).filter((file) => file.startsWith(`${landing}-`) && file.endsWith(".js"));
+  if (found.length !== 1) throw new Error(`${dist} has ${String(found.length)} chunks named ${landing}, not one`);
+  return `${dist}/assets/${found[0] ?? ""}`;
+}
+
+/**
+ * The JavaScript a first visit fetches. With a service worker, every script, since the worker precaches them all.
+ * Without one, as the ops console has none, what the page loads and the section it opens on, each with what it
+ * imports; another section is fetched when it opens.
+ */
+export function firstLoadScripts(dist: string, landing?: string): string[] {
+  if (existsSync(`${dist}/sw.js`)) return [...everyScript(dist), `${dist}/sw.js`];
+  const page = pageScripts(dist);
+  return withImports(landing === undefined ? page : [...page, landingChunk(dist, landing)]);
+}
+
+function gzippedJavaScript(dist: string, landing: string | undefined): number {
+  return firstLoadScripts(dist, landing).reduce((total, file) => total + gzipSync(readFileSync(file)).length, 0);
 }
 
 export function buildSpa(build: SpaBuild, { environment, allowPlaceholders }: BuildOptions): void {
@@ -120,7 +153,7 @@ export function buildSpa(build: SpaBuild, { environment, allowPlaceholders }: Bu
   const dist = `apps/${build.app}/dist/${environment}`;
   writeFileSync(`${dist}/_headers`, build.headers);
 
-  const gzipped = gzippedJavaScript(dist);
+  const gzipped = gzippedJavaScript(dist, build.landing);
   const kilobytes = (gzipped / 1024).toFixed(1);
   const budget = build.app === "tech" || build.app === "app" ? PHONE_BUDGET_BYTES : BUDGET_BYTES;
   console.log(`${build.app} JavaScript: ${kilobytes} KB gzipped, of a ${String(budget / 1024)} KB budget`);
