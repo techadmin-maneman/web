@@ -115,7 +115,10 @@ describe("a fit guarantee claim's drawer", () => {
   });
 
   it("shows the photographs of the claim's own reports, once asked for", async () => {
+    // The photographs' part loads when the drawer first draws it (docs/decisions/0281-the-consoles-first-load-counts-today.md).
+    await import("../../apps/ops/src/care/index.ts");
     const drawer = await open();
+    await answered();
     expect(asked.filter((path) => path.includes("/report-photos/"))).toEqual([]);
     const show = [...(drawer?.querySelectorAll("button") ?? [])].find((button) =>
       button.textContent.includes(care.reportPhotos.show(2)),
