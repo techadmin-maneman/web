@@ -306,6 +306,8 @@ async function addTechnician(
       screen: "/technicians › Add",
       action: `add ${person.name} in ${city}`,
       mode: "ui",
+      // A city with nothing placed on the map yet: the reach map has nothing to draw.
+      allow: [{ status: 404, path: /^\/api\/service-area\/map$/ }],
     },
     async () => {
       await desk.go("/technicians");

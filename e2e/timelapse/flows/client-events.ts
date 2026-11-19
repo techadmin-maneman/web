@@ -5,7 +5,7 @@
 // referred by a fitted client.
 
 import { stepHeaders, type Wire } from "../actors.ts";
-import { appOf, idOf } from "./clients.ts";
+import { appOf, idOf, windowOf, type WindowHours } from "./clients.ts";
 
 export { idOf };
 import { jobsToday, note, type Job } from "./field.ts";
@@ -627,11 +627,12 @@ export async function referFriend(sim: Sim, wave: string): Promise<void> {
       const refer = await wire.must<{ code: string }>("GET", "/api/refer");
       await sim.site.must("GET", `/api/r/${refer.code}`);
       const pincode = sim.world.cities.get(referrer.city)?.pincodes[0] ?? referrer.pincode;
-      const open = await sim.site.must<{ days: { starts: { starts_at: string; open?: boolean }[] }[] }>(
-        "GET",
-        `/api/availability/public?pincode=${pincode}&plan=consultation`,
-      );
-      const start = open.days.flatMap((day) => day.starts.filter((each) => each.open !== false))[2];
+      const open = await sim.site.must<{
+        days: { hours: WindowHours; starts: { starts_at: string; open?: boolean }[] }[];
+      }>("GET", `/api/availability/public?pincode=${pincode}&plan=consultation`);
+      const start = open.days.flatMap((day) =>
+        day.starts.filter((each) => each.open !== false).map((each) => ({ ...each, hours: day.hours })),
+      )[2];
       check(start !== undefined, "no start for the friend");
       if (start === undefined) return;
       const friend: Client = {
@@ -653,7 +654,7 @@ export async function referFriend(sim: Sim, wave: string): Promise<void> {
           turnstile_token: TURNSTILE,
           pincode,
           date: indiaDateOf(Date.parse(start.starts_at)),
-          window: "morning",
+          window: windowOf(start.starts_at, start.hours),
           starts_at: start.starts_at,
           address: {
             line1: "House 7, Block A",

@@ -44,8 +44,12 @@ const nextName = () => {
   return `${FIRST[named % FIRST.length] ?? "Arjun"} ${LAST[Math.floor(named / FIRST.length) % LAST.length] ?? "Mehta"}`;
 };
 
+/** Each window's hours that day, as ops set them. */
+export type WindowHours = Readonly<Record<"morning" | "afternoon" | "evening", { start: string; end: string }>>;
+
 interface PublicDay {
   date: string;
+  hours: WindowHours;
   starts: { starts_at: string; open?: boolean }[];
   windows: Record<string, boolean>;
 }
@@ -99,7 +103,11 @@ export async function acquire(sim: Sim, wave: string, count: number, cohort: num
           `/api/availability/public?pincode=${place.pincode}&plan=consultation`,
         );
         // The form's list is up to a minute old: a start another booking took meanwhile is refused, and the next tried.
-        const starts = open.days.flatMap((day) => day.starts.filter((each) => each.open !== false)).slice(index % 3);
+        const starts = open.days
+          .flatMap((day) =>
+            day.starts.filter((each) => each.open !== false).map((each) => ({ ...each, hours: day.hours })),
+          )
+          .slice(index % 3);
         let booked: { state: string } | null = null;
         for (const start of starts.slice(0, 6)) {
           const answer = await sim.site.call<{ state: string }>("POST", "/api/consultation", {
@@ -108,7 +116,7 @@ export async function acquire(sim: Sim, wave: string, count: number, cohort: num
             pincode: place.pincode,
             turnstile_token: TURNSTILE,
             date: indiaDateOf(Date.parse(start.starts_at)),
-            window: windowOf(start.starts_at),
+            window: windowOf(start.starts_at, start.hours),
             starts_at: start.starts_at,
             address: {
               line1: `House ${String(10 + index)}, Block C`,
@@ -140,8 +148,14 @@ export async function acquire(sim: Sim, wave: string, count: number, cohort: num
 }
 
 /** The window a start falls in, as the form sends it beside the start: morning before noon, evening from four. */
-export function windowOf(startsAt: string): "morning" | "afternoon" | "evening" {
-  const hour = Number(new Date(Date.parse(startsAt) + 330 * 60_000).toISOString().slice(11, 13));
+export function windowOf(startsAt: string, hours?: WindowHours): "morning" | "afternoon" | "evening" {
+  const time = new Date(Date.parse(startsAt) + 330 * 60_000).toISOString().slice(11, 16);
+  // The window whose hours that day, as ops set them, hold the start; the usual hours where none are given.
+  const set = (["morning", "afternoon", "evening"] as const).find(
+    (window) => hours !== undefined && time >= hours[window].start && time < hours[window].end,
+  );
+  if (set !== undefined) return set;
+  const hour = Number(time.slice(0, 2));
   if (hour < 12) return "morning";
   return hour < 16 ? "afternoon" : "evening";
 }
