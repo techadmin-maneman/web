@@ -14,8 +14,8 @@ site already knew was answered as a new one would be (0068, amended 2 October): 
 never made (QA finding A-011), the truth going only to WhatsApp.
 
 The owner ruled, 19 November, that every booking on the site asks the code and, once it is entered, treats it as a
-sign-in and shows the client the signed-in app; that the waitlist asks none; and, as production runs the site without
-the client app, that the page itself tells a number we know why nothing was booked.
+sign-in and shows the client the signed-in app; that the waitlist asks none; that the page itself tells a number we
+know why nothing was booked; and that production goes live with the client app (open point 82).
 
 ## Decision
 
@@ -43,7 +43,7 @@ the client app, that the page itself tells a number we know why nothing was book
 ## Consequences
 
 - A client who books on the site types one code, on the site, and lands on their app's Home; a number we already know
-  sees why nothing was booked, there or, where the client app is not on, on the page.
+  sees why nothing was booked on the page, then goes on into the app.
 - A booking waits on one more read of D1, for the code, before anything else.
 - The staging scripts and the timelapse prove their test numbers first, with staging's known code or the local one.
 - Tests: `test/worker/site/consultations-one-visit.test.ts` and `test/worker/referrals/referrals-consultation.test.ts`

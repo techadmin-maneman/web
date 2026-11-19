@@ -7,8 +7,8 @@
 // third in an hour tells ops; the next code that does go closes the alert
 // (docs/decisions/0067-alerts-and-silent-failures.md).
 //
-// Every code asked for, a first one or one sent again, counts against its number's day and its address's hour,
-// whoever holds the number. Only a code that is sent counts against the day's ceiling, so a number nobody here
+// Every code asked for, a first one or one sent again, counts against its number's day and its address's hour (a
+// day, for the site's forms), whoever holds the number. Only a code that is sent counts against the day's ceiling, so a number nobody here
 // knows costs nothing more and is answered like any other. The client app, the technician app and the site's
 // forms each have a ceiling of their own, so none of them can stop another's codes.
 //

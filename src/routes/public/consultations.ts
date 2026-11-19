@@ -7,9 +7,9 @@
 // same lead behind it so the CRM funnel sees every booking. Whether we come is
 // decided by the pincode, which GET /api/pincodes/{pin} answers for the form.
 //
-// Every number gets the same answer, so the form tells nobody whether a number
-// is a client's: one with a consultation still to happen, or past consultations,
-// books nothing, and its owner is told why on WhatsApp
+// Every booking carries a WhatsApp code that proved its number, so a number we
+// know that books nothing (a consultation still to happen, or past consultations)
+// is answered not_booked with the reason, and its owner is told on WhatsApp too
 // (src/policy/site-booking.ts). The same submission sent again under its
 // Idempotency-Key gets its first answer.
 //
