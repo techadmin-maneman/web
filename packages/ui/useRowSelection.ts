@@ -13,6 +13,8 @@ export interface RowSelection {
   readonly toggle: (key: string, run: boolean) => void;
   readonly toggleAll: () => void;
   readonly clear: () => void;
+  /** Only these rows chosen, as after acting on a choice, the rest let go. */
+  readonly only: (keys: readonly string[]) => void;
 }
 
 /** The rows from `from` to `to` in the order shown, both ends included; only `to` where `from` is not shown. */
@@ -56,5 +58,9 @@ export function useRowSelection(keys: readonly string[]): RowSelection {
     last.current = null;
     setChosen(new Set());
   }, []);
-  return { selected, all, toggle, toggleAll, clear };
+  const only = useCallback((keep: readonly string[]) => {
+    last.current = null;
+    setChosen(new Set(keep));
+  }, []);
+  return { selected, all, toggle, toggleAll, clear, only };
 }

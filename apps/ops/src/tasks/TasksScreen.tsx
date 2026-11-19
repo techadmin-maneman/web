@@ -198,7 +198,7 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
     <>
       <TaskFilters filter={filter} counts={found.counts} onFilter={onFilter} />
       <BoardNotes truncated={board.truncated} lapsed={board.lapsed} shown={lapsed.shown} onToggle={lapsed.toggle} />
-      {chooses && <BulkActions rows={chosen} actingOn={actingOn} onClear={selection.clear} />}
+      {chooses && <BulkActions rows={chosen} actingOn={actingOn} onClear={selection.clear} onKeep={selection.only} />}
       <Panel titleId="tasks" title={tasks.title} headingRef={heading}>
         {found.rows.length === 0 && <EmptyState look="panel" line={tasks.empty} />}
         {found.rows.length > 0 && (phone ? <TaskList {...shown} /> : <TaskTable {...shown} />)}

@@ -42,6 +42,18 @@ describe("the rows chosen in a list", () => {
     hook.unmount();
   });
 
+  it("keeps only the rows named, as after acting on a choice", () => {
+    const hook = renderHook(useRowSelection, ROWS);
+    act(() => {
+      hook.current().toggleAll();
+    });
+    act(() => {
+      hook.current().only(["c"]);
+    });
+    expect(chosen(hook)).toEqual(["c"]);
+    hook.unmount();
+  });
+
   it("takes every row shown by the head's box, then none, and keeps only rows still shown", () => {
     const hook = renderHook(useRowSelection, ROWS);
     act(() => {

@@ -7,9 +7,10 @@ import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { describedBy, Missing } from "@maneman/ui/Missing";
-import { useRereadOnChange } from "@maneman/ui/Refusal";
+import { useRefreshPage } from "@maneman/ui/refresh";
 import { SelectionBar } from "@maneman/ui/SelectionBar";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { isChanged, LATEST } from "@maneman/ui/words";
 import { errorText } from "@maneman/web-kit/refusal";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { useEffect, useState } from "react";
@@ -63,14 +64,21 @@ function saidOf(answers: readonly Answered[], closing: boolean, after: string): 
 
 const signatureOf = (chosen: readonly Chosen[]) => chosen.map(({ row }) => keyOf(row)).join(",");
 
-/** The last run's words, kept while the rows chosen are those it left; a task changed meanwhile reads the board again. */
+/**
+ * The last run's words, kept while the rows chosen are those it left. Where a task had changed meanwhile, the page is
+ * read again, as a row's own refusal reads it, and the frame says the run's words above it, the counts with them.
+ */
 function useSaid(signature: string) {
   const [said, setSaid] = useState<Said | null>(null);
+  const refresh = useRefreshPage();
   useEffect(() => {
     if (said !== null && said.after !== signature) setSaid(null);
   }, [said, signature]);
-  useRereadOnChange(said?.why ?? null);
-  return [said, setSaid] as const;
+  const say = (next: Said) => {
+    if (next.why !== null && isChanged(next.why)) refresh(`${next.text} ${LATEST}`);
+    else setSaid(next);
+  };
+  return [said, say] as const;
 }
 
 /** One reason for every task chosen, where all are of one group that closes. */
@@ -172,10 +180,13 @@ export function BulkActions({
   rows,
   actingOn,
   onClear,
+  onKeep,
 }: {
   readonly rows: readonly Row[];
   readonly actingOn: (row: Row) => Acting;
   readonly onClear: () => void;
+  /** Only the tasks named left chosen. */
+  readonly onKeep: (keys: readonly string[]) => void;
 }) {
   const [busy, once] = useOneAtATime();
   const chosen = rows.map((row) => ({ row, acting: actingOn(row) }));
@@ -192,9 +203,11 @@ export function BulkActions({
         onClear();
         return;
       }
-      // Those refused stay chosen, to try again; a task closed leaves the board, and the choice with it.
-      const closed = new Set(those.flatMap((one, at) => (closing && answers[at]?.ok === true ? [keyOf(one.row)] : [])));
-      setSaid(saidOf(answers, closing, signatureOf(chosen.filter(({ row }) => !closed.has(keyOf(row))))));
+      // Only those refused stay chosen, to try again: one done is not sent twice, and one that left the view under
+      // Unassigned or Mine takes nothing of the words with it.
+      const refused = those.flatMap((one, at) => (answers[at]?.ok === true ? [] : [keyOf(one.row)]));
+      onKeep(refused);
+      setSaid(saidOf(answers, closing, refused.join(",")));
     });
   const ownedBy =
     (owner: string) =>
