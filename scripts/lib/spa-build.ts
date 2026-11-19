@@ -124,7 +124,7 @@ function landingChunk(dist: string, landing: string): string {
 }
 
 /**
- * The JavaScript a first visit fetches before its first screen draws (docs/decisions/0284-the-first-screen-and-the-precache.md):
+ * The JavaScript a first visit fetches before its first screen draws:
  * what the page loads and the section it opens on, each with what it imports. Another section is fetched when it opens,
  * or, with a service worker, after the first screen, as the worker keeps it (precachedScripts).
  */
