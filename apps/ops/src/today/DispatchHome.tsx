@@ -14,8 +14,10 @@ import { dispatchPath } from "../route.ts";
 import { AsideList, HomeLayout, pendingFigure, type AsideRow, type Shown } from "./HomeLayout.tsx";
 import { isDone, isLate, unassignedToday, useRoadState, type Block, type Road } from "./road.ts";
 
-/** The day's visits, how many have no technician, and how many are running late, the longest late named beneath. */
-/** The day's figures on the road: each holding its room while the board is read, visits' line beneath it too. */
+/**
+ * The day's visits, how many have no technician, and how many are running late, the longest late named beneath; each
+ * holding its room while the board is read, the visits' line beneath it too.
+ */
 export function roadFigures(road: Road | null, pending: boolean): { visits: Shown; unassigned: Shown; late: Shown } {
   if (road === null && pending) {
     return {

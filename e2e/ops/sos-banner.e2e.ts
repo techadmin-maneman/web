@@ -4,7 +4,7 @@
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, empty, json, type OpsReply } from "./fixtures.ts";
+import { answer, empty, fails, json, type OpsReply } from "./fixtures.ts";
 import { shell } from "../../apps/ops/src/content/shell.ts";
 
 const SOS: OpsReply<"/api/sos">["open"][number] = {
@@ -71,6 +71,16 @@ test("asks nothing of the API for one not let read SOS, however late whoami answ
   await page.waitForTimeout(1500);
   expect(asked).toEqual([]);
   await expect(page.getByRole("alert").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
+});
+
+// An SOS must reach Operations however whoami fares: where it fails, the banner reads as it always did.
+test("shows an SOS where whoami failed", async ({ page }) => {
+  await answer(page, {
+    "GET /api/whoami": fails(500, "internal_error"),
+    "GET /api/sos": json({ open: [SOS] }),
+  });
+  await page.goto("/settings/cities");
+  await expect(page.getByRole("alert").filter({ hasText: shell.sos.title("Imran Qureshi", "12:11 pm") })).toBeVisible();
 });
 
 test("names the visit by its time where its client has since been erased", async ({ page }) => {

@@ -8,6 +8,7 @@ import { care } from "../../apps/ops/src/content/care.ts";
 import { shell, tables } from "../../apps/ops/src/content.ts";
 import { tasks } from "../../apps/ops/src/content/tasks.ts";
 import { today as copy } from "../../apps/ops/src/content/today.ts";
+import { states } from "../../packages/ui/words.ts";
 
 // Friday 19 September 2025, 12 noon in India: the board's first day, its morning visits begun at 9 and nobody there.
 const NOON = new Date("2025-09-19T06:30:00.000Z");
@@ -81,6 +82,50 @@ test("opens on Dispatch's home: today's visits, those running late, and the visi
   await expect(road.getByRole("listitem").first()).toContainText(copy.road.late);
   // Needs you lists the person's whole board: stock's replacements too, as no other home takes them.
   await expect(page.getByRole("region", { name: copy.needs })).toContainText(tasks.groups.replacement_order);
+});
+
+// The figures were drawn only once read, and the visits' line beneath grew every tile when it came: the page moved.
+test("holds each figure's tile, and the line beneath it, while the board is read, then fills it", async ({ page }) => {
+  await page.clock.setFixedTime(NOON);
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await answer(page, {
+    "GET /api/tasks": json(TASKS),
+    "GET /api/dispatch": async (route) => {
+      await held;
+      await json(BOARD)(route);
+    },
+  });
+  await page.goto("/today");
+  const tile = (label: string) => page.getByRole("main").getByRole("link", { name: new RegExp(`^${label}`) });
+  await expect(tile(copy.tiles.visits)).toContainText(states.loading);
+  const before = await tile(copy.tiles.lowStock).boundingBox();
+  release();
+  await expect(tile(copy.tiles.visits)).toContainText(copy.notes.road(0, 0));
+  await expect(tile(copy.tiles.visits)).not.toContainText(states.loading);
+  // The tile beside it stood where it stands now: nothing below moved.
+  expect(await tile(copy.tiles.lowStock).boundingBox()).toEqual(before);
+});
+
+// A read the person may not make draws no tile, while or after.
+test("draws no tile for a figure whose read is refused", async ({ page }) => {
+  await page.clock.setFixedTime(NOON);
+  await answer(page, {
+    "GET /api/whoami": json({
+      signed_in_as: "ops@localhost",
+      sign_out: null,
+      staff: { enforced: true, listed: true, grants: [], may_call: ["GET /api/whoami", "GET /api/tasks"] },
+      cities: [],
+      every_city: true,
+    }),
+    "GET /api/tasks": json(TASKS),
+  });
+  await page.goto("/today");
+  await expect(page.getByRole("region", { name: copy.needs })).toBeVisible();
+  await expect(page.getByRole("main").getByText(copy.tiles.visits)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(states.loading)).toHaveCount(0);
 });
 
 test("opens Customer Care on Care's home: their board under Needs you, and the chats waiting on us", async ({

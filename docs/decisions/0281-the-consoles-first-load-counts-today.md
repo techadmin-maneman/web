@@ -30,4 +30,6 @@ page moved twice as it loaded: a layout shift of 0.22 on a phone and 0.39 at a d
 ## Consequences
 
 - A section that grows Today's imports past 150 KB fails the build, as any first load does.
-- Opening a task's drawer or a booking from Today fetches its part then, once.
+- Opening a task's drawer or a booking from Today fetches its part then, once, with nothing drawn meanwhile. A part
+  that will not load reloads the page as any section loaded on opening does (`loadOrReload`), at the moment it opens,
+  before anything is typed in it.
