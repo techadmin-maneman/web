@@ -3,7 +3,7 @@
 import { quantity } from "@maneman/web-kit/figures";
 import type { components } from "../api-schema.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
-import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN, UNCONFIRMED } from "./common.ts";
 import { DEPARTMENT_NAMES } from "./shell.ts";
 
 /** A task group as the API names it, from the generated schema, which the Worker-typed tests can read too. */
@@ -380,6 +380,7 @@ export const tasks = {
       not_found: changed("Already handled."),
       invalid_request: "That person hasn’t used the console recently.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },
@@ -391,11 +392,12 @@ export const tasks = {
     assignTo: "Assign to",
     assign: (count: number) => `Assign ${String(count)}`,
     close: (count: number) => `Close ${String(count)}`,
-    /** After: how many changed, and how many could not be. */
-    done: (done: number, failed: number) =>
-      failed === 0
-        ? `${String(done)} done.`
-        : `${String(done)} done. ${String(failed)} could not be changed: handled already, or not yours to change.`,
+    /** After: how many changed; with some not, how many, and why, as the first refused row's own words say. */
+    done: (done: number) => `${String(done)} done.`,
+    partly: (done: number, failed: number, why: string) =>
+      `${String(done)} done, ${String(failed)} not changed. ${why}`,
+    /** What Close waits for. */
+    whyFirst: "Say why first.",
   },
   /**
    * A visit left partly done closed without a follow-up, with why
@@ -434,6 +436,7 @@ export const tasks = {
       invalid_request: "Give a reason.",
       failure_reason: changed("That reason is no longer listed, or no hair system of the fit is on record."),
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },

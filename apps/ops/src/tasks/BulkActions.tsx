@@ -1,19 +1,23 @@
 // Many tasks changed at once on the Tasks board (./TasksScreen.tsx): taken, assigned to someone, or closed with one
-// reason where every one chosen is of one group that closes. Each change is the API's own, task by task, as one row's
-// is, so each keeps its own audit entry; those that could not be changed are counted, not hidden
-// (docs/decisions/0282-tasks-chosen-together.md).
+// reason where every one chosen is of one group whose row closes with a reason alone. Each change is the API's own,
+// task by task, as one row's is, so each keeps its own audit entry; those not changed are counted and said why, and
+// stay chosen to try again (docs/decisions/0282-tasks-chosen-together.md).
 
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { useRereadOnChange } from "@maneman/ui/Refusal";
 import { SelectionBar } from "@maneman/ui/SelectionBar";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { errorText } from "@maneman/web-kit/refusal";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { tasks } from "../content.ts";
 import { staffName } from "../lib/who.ts";
 import { closableAs, closeWords } from "./TaskActions.tsx";
 import type { Acting } from "./TaskDetail.tsx";
+import { keyOf } from "./TaskTable.tsx";
 import type { Row } from "./task-views.ts";
 import { tasksApi } from "./tasks-api.ts";
 
@@ -24,13 +28,49 @@ interface Chosen {
   readonly acting: Acting;
 }
 
-/** Each chosen task changed in turn: true for each the API took. */
-async function eachOf(chosen: readonly Chosen[], change: (one: Chosen) => Promise<boolean>): Promise<number> {
-  let done = 0;
-  for (const one of chosen) {
-    if (await change(one)) done += 1;
-  }
-  return done;
+/** What one change came to: done, or refused with the API's code. */
+type Answered = { readonly ok: true } | { readonly ok: false; readonly code: string };
+
+/**
+ * Groups whose row closes with more than a reason, or none, so never together: a guarantee claim asks whether the hair
+ * system was at fault (docs/decisions/0273-why-a-hair-system-failed.md), and an erasure finished in the CRM closes with no words.
+ */
+const CLOSED_ALONE: ReadonlySet<string> = new Set(["fit_guarantee_claim", "erasure_follow_up"]);
+
+/** Each chosen task changed in turn, and what each came to. */
+async function eachOf(chosen: readonly Chosen[], change: (one: Chosen) => Promise<Answered>): Promise<Answered[]> {
+  const answers: Answered[] = [];
+  for (const one of chosen) answers.push(await change(one));
+  return answers;
+}
+
+/** A run's words: how many done, and for those not, why, as the row's own refusal says it; a changed task first. */
+interface Said {
+  readonly text: string;
+  readonly why: string | null;
+  /** The rows chosen it left, by key: the words go once the choice is another. */
+  readonly after: string;
+}
+
+function saidOf(answers: readonly Answered[], closing: boolean, after: string): Said {
+  const done = answers.filter((answer) => answer.ok).length;
+  const refusals = answers.flatMap((answer) => (answer.ok ? [] : [answer]));
+  const refused = refusals.find((answer) => answer.code === "not_found") ?? refusals[0];
+  if (refused === undefined) return { text: copy.done(done), why: null, after };
+  const why = errorText(closing ? tasks.close.errors : tasks.owner.errors, refused);
+  return { text: copy.partly(done, refusals.length, why), why, after };
+}
+
+const signatureOf = (chosen: readonly Chosen[]) => chosen.map(({ row }) => keyOf(row)).join(",");
+
+/** The last run's words, kept while the rows chosen are those it left; a task changed meanwhile reads the board again. */
+function useSaid(signature: string) {
+  const [said, setSaid] = useState<Said | null>(null);
+  useEffect(() => {
+    if (said !== null && said.after !== signature) setSaid(null);
+  }, [said, signature]);
+  useRereadOnChange(said?.why ?? null);
+  return [said, setSaid] as const;
 }
 
 /** One reason for every task chosen, where all are of one group that closes. */
@@ -47,7 +87,8 @@ function CloseAll({
   const [first] = chosen;
   const group = first === undefined ? null : closableAs(first.row.group);
   const one = chosen.every(({ row, acting }) => acting.closable && row.group === first?.row.group);
-  if (group === null || !one) return null;
+  if (group === null || !one || CLOSED_ALONE.has(group)) return null;
+  const waiting = reason.trim() === "";
   return (
     <>
       <Field label={closeWords(group).label}>
@@ -68,13 +109,15 @@ function CloseAll({
         variant="outline"
         size="small"
         busy={busy}
-        disabled={reason.trim() === ""}
+        disabled={waiting}
+        aria-describedby={describedBy("close-chosen-why", waiting)}
         onClick={() => {
           onClose(reason.trim());
         }}
       >
         {copy.close(chosen.length)}
       </Button>
+      <Missing id="close-chosen-why" what={waiting ? copy.whyFirst : null} />
     </>
   );
 }
@@ -135,33 +178,41 @@ export function BulkActions({
   readonly onClear: () => void;
 }) {
   const [busy, once] = useOneAtATime();
-  const [said, setSaid] = useState<string | null>(null);
   const chosen = rows.map((row) => ({ row, acting: actingOn(row) }));
+  const [said, setSaid] = useSaid(signatureOf(chosen));
   const { me = null, staff = [] } = chosen[0]?.acting ?? {};
   const ownable = chosen.filter(({ acting }) => acting.mayOwn);
   const takeable = ownable.filter(({ acting }) => me !== null && staff.includes(me) && acting.owner !== me);
 
-  const run = (those: readonly Chosen[], change: (one: Chosen) => Promise<boolean>) =>
+  const run = (those: readonly Chosen[], change: (one: Chosen) => Promise<Answered>, closing = false) =>
     once(async () => {
-      const done = await eachOf(those, change);
-      setSaid(copy.done(done, those.length - done));
-      onClear();
+      const answers = await eachOf(those, change);
+      if (answers.every((answer) => answer.ok)) {
+        setSaid(saidOf(answers, closing, ""));
+        onClear();
+        return;
+      }
+      // Those refused stay chosen, to try again; a task closed leaves the board, and the choice with it.
+      const closed = new Set(those.flatMap((one, at) => (closing && answers[at]?.ok === true ? [keyOf(one.row)] : [])));
+      setSaid(saidOf(answers, closing, signatureOf(chosen.filter(({ row }) => !closed.has(keyOf(row))))));
     });
   const ownedBy =
     (owner: string) =>
     async ({ row, acting }: Chosen) => {
       const answer = await tasksApi.setTaskOwner(row.group, row.task.id, owner);
-      if (answer.ok) acting.onOwner(answer.body.owner);
-      return answer.ok;
+      if (!answer.ok) return answer;
+      acting.onOwner(answer.body.owner);
+      return { ok: true } as const;
     };
   const closedFor =
     (why: string) =>
     async ({ row, acting }: Chosen) => {
       const group = closableAs(row.group);
-      if (group === null) return false;
+      if (group === null) return { ok: false, code: "invalid_request" } as const;
       const answer = await tasksApi.closeTask(group, row.task.id, why);
-      if (answer.ok) acting.onClosed();
-      return answer.ok;
+      if (!answer.ok) return answer;
+      acting.onClosed();
+      return { ok: true } as const;
     };
 
   return (
@@ -182,10 +233,10 @@ export function BulkActions({
               onAssign={(email) => void run(ownable, ownedBy(email))}
             />
           )}
-          <CloseAll chosen={chosen} busy={busy} onClose={(why) => void run(chosen, closedFor(why))} />
+          <CloseAll chosen={chosen} busy={busy} onClose={(why) => void run(chosen, closedFor(why), true)} />
         </SelectionBar>
       )}
-      {said !== null && rows.length === 0 && <InlineMessage tone="saved">{said}</InlineMessage>}
+      {said !== null && <InlineMessage tone={said.why === null ? "saved" : "error"}>{said.text}</InlineMessage>}
     </>
   );
 }

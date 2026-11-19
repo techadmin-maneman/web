@@ -48,12 +48,14 @@ function useRowKeys(selection: RowSelection | null) {
       if (event.target.closest("textarea, select, input:not([type=checkbox])") !== null) return;
       const row = event.target.closest<HTMLTableRowElement>("tr[data-row]");
       if (row === null) return;
-      if (event.key === "x" && selection !== null) {
+      // Shift, or Caps Lock, sends a letter's capital.
+      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      if (key === "x" && selection !== null) {
         event.preventDefault();
         selection.toggle(row.dataset.row ?? "", event.shiftKey);
         return;
       }
-      const step = MOVES[event.key];
+      const step = MOVES[key];
       if (step === undefined) return;
       const next = step > 0 ? row.nextElementSibling : row.previousElementSibling;
       const name = next?.querySelector<HTMLElement>("th button");
@@ -110,7 +112,14 @@ export function TaskTable({ rows, now, onOpen, onBooked, actingOn, selection = n
           const subject = subjectOf(group, task);
           const sub = subOf(task, now);
           return (
-            <tr key={keyOf(row)} data-row={keyOf(row)} className={rowRule(dueRule(task.due, now))}>
+            <tr
+              key={keyOf(row)}
+              data-row={keyOf(row)}
+              className={classes(
+                rowRule(dueRule(task.due, now)),
+                selection?.selected.has(keyOf(row)) === true && styles.chosen,
+              )}
+            >
               {selection !== null && <ChooseCell row={row} subject={subject} selection={selection} />}
               <th scope="row">
                 <RowOpener

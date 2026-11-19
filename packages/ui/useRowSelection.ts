@@ -2,7 +2,7 @@
 // held ticks or clears the run from the last one ticked, and the head's box takes every row shown, or none. A row no
 // longer shown, closed or narrowed away, is let go.
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface RowSelection {
   /** The rows chosen, of those shown. */
@@ -28,6 +28,10 @@ export function useRowSelection(keys: readonly string[]): RowSelection {
   const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
   const last = useRef<string | null>(null);
   const selected = useMemo(() => new Set(keys.filter((key) => chosen.has(key))), [keys, chosen]);
+  // A row narrowed away or closed is let go, so it is not chosen when it is shown again.
+  useEffect(() => {
+    setChosen((was) => (selected.size === was.size ? was : new Set(selected)));
+  }, [selected]);
   const toggle = useCallback(
     (key: string, run: boolean) => {
       const rows = run ? runOf(keys, last.current, key) : [key];

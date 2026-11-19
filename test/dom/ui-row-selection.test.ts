@@ -27,6 +27,21 @@ describe("the rows chosen in a list", () => {
     hook.unmount();
   });
 
+  it("lets go of a row narrowed away, so it is not chosen when it is shown again", () => {
+    const hook = renderHook(useRowSelection, ROWS);
+    act(() => {
+      hook.current().toggleAll();
+    });
+    act(() => {
+      hook.rerender(["a"]);
+    });
+    act(() => {
+      hook.rerender(ROWS);
+    });
+    expect(chosen(hook)).toEqual(["a"]);
+    hook.unmount();
+  });
+
   it("takes every row shown by the head's box, then none, and keeps only rows still shown", () => {
     const hook = renderHook(useRowSelection, ROWS);
     act(() => {

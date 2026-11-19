@@ -48,6 +48,11 @@
   text-align: center;
 }
 
+/* A row chosen, shaded as a control pressed. */
+.chosen > * {
+  background: var(--ui-shade);
+}
+
 /* Each cell on the row's middle, as what it is runs to two lines. */
 .table :is(th, td) {
   vertical-align: middle;

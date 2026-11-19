@@ -46,7 +46,7 @@ const BOARD: OpsReply<"/api/tasks"> = {
 const box = (page: Parameters<typeof rows>[0], name: string) =>
   page.getByRole("checkbox", { name: opsCopy.tasks.bulk.choose(opsCopy.tasks.groups.partial_visit, name) });
 
-test("takes the tasks chosen, a run with Shift, each its own change, and counts what could not be", async ({
+test("takes the tasks chosen, a run with Shift, each its own change, and keeps those refused chosen, saying why", async ({
   page,
 }) => {
   const owners: unknown[] = [];
@@ -54,8 +54,8 @@ test("takes the tasks chosen, a run with Shift, each its own change, and counts 
     "PUT /api/tasks/{group}/{id}/owner": async (route) => {
       const body = route.request().postDataJSON() as { owner: string };
       owners.push(body.owner);
-      // The third was taken by someone else first.
-      if (route.request().url().endsWith("00000000003/owner")) return fails(404, "not_found")(route);
+      // The third is no longer the person's to take.
+      if (route.request().url().endsWith("00000000003/owner")) return fails(403, "not_permitted")(route);
       return json({ owner: body.owner })(route);
     },
   });
@@ -65,10 +65,30 @@ test("takes the tasks chosen, a run with Shift, each its own change, and counts 
   expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("button", { name: opsCopy.tasks.bulk.take(3) }).click();
-  await expect(page.getByText(opsCopy.tasks.bulk.done(2, 1))).toBeVisible();
+  await expect(page.getByText(opsCopy.tasks.bulk.partly(2, 1, opsCopy.tasks.owner.errors.not_permitted))).toBeVisible();
   expect(owners).toEqual(["ops@localhost", "ops@localhost", "ops@localhost"]);
   await expect(rows(page).filter({ hasText: PEOPLE[0] })).toContainText("Ops");
-  await expect(box(page, PEOPLE[0])).not.toBeChecked();
+  // Chosen still, to try again.
+  await expect(box(page, PEOPLE[2])).toBeChecked();
+});
+
+test("says it could not confirm the changes whose answers never came, and keeps every task chosen", async ({
+  page,
+}) => {
+  await open(page, BOARD, undefined, {
+    "PUT /api/tasks/{group}/{id}/owner": (route) => route.abort("internetdisconnected"),
+  });
+  await page.getByRole("checkbox", { name: tables.chooseAll }).check();
+  await page.getByRole("button", { name: opsCopy.tasks.bulk.take(3) }).click();
+  await expect(page.getByText(opsCopy.tasks.bulk.partly(0, 3, opsCopy.tasks.owner.errors.unconfirmed))).toBeVisible();
+  await expect(page.getByText(tables.chosen(3))).toBeVisible();
+});
+
+test("offers no Close where the tasks chosen are not all of one group that closes", async ({ page }) => {
+  await open(page);
+  await page.getByRole("checkbox", { name: tables.chooseAll }).check();
+  await expect(page.getByRole("button", { name: /^Take \d+$|^Assign \d+$/ }).first()).toBeVisible();
+  await expect(page.getByLabel(opsCopy.tasks.close.label)).toHaveCount(0);
 });
 
 test("assigns every row shown to one person, and closes them all with one reason", async ({ page }) => {
@@ -88,25 +108,38 @@ test("assigns every row shown to one person, and closes them all with one reason
   await page.getByRole("checkbox", { name: tables.chooseAll }).check();
   await page.getByLabel(opsCopy.tasks.bulk.assignTo).selectOption("anil@maneman.in");
   await page.getByRole("button", { name: opsCopy.tasks.bulk.assign(3) }).click();
-  await expect(page.getByText(opsCopy.tasks.bulk.done(3, 0))).toBeVisible();
+  await expect(page.getByText(opsCopy.tasks.bulk.done(3))).toBeVisible();
   expect(owners).toEqual(["anil@maneman.in", "anil@maneman.in", "anil@maneman.in"]);
 
   await page.getByRole("checkbox", { name: tables.chooseAll }).check();
+  // Close waits for why, and says so.
+  await expect(page.getByRole("button", { name: opsCopy.tasks.bulk.close(3) })).toBeDisabled();
+  await expect(page.getByText(opsCopy.tasks.bulk.whyFirst)).toBeVisible();
   await page.getByLabel(opsCopy.tasks.close.label).fill("Moved away; no more visits.");
   await page.getByRole("button", { name: opsCopy.tasks.bulk.close(3) }).click();
   await expect(rows(page)).toHaveCount(0);
   expect(reasons).toEqual(Array.from({ length: 3 }, () => ({ reason: "Moved away; no more visits." })));
 });
 
-test("moves along the rows by j and k, chooses one by x, and opens one by Enter", async ({ page }) => {
+test("moves along the rows by j, k and the arrows, chooses by x, a run by Shift and x, and opens by Enter", async ({
+  page,
+}) => {
   await open(page, BOARD);
   const name = (person: string) => rows(page).filter({ hasText: person }).getByRole("button").first();
   await name(PEOPLE[0]).focus();
   await page.keyboard.press("j");
   await expect(name(PEOPLE[1])).toBeFocused();
+  await page.keyboard.press("k");
+  await expect(name(PEOPLE[0])).toBeFocused();
   await page.keyboard.press("x");
-  await expect(box(page, PEOPLE[1])).toBeChecked();
-  await expect(page.getByText(tables.chosen(1))).toBeVisible();
+  await expect(box(page, PEOPLE[0])).toBeChecked();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await expect(name(PEOPLE[2])).toBeFocused();
+  // Shift sends the letter's capital: the run from the last one chosen.
+  await page.keyboard.press("Shift+KeyX");
+  await expect(page.getByText(tables.chosen(3))).toBeVisible();
+  await page.keyboard.press("ArrowUp");
   await page.keyboard.press("ArrowUp");
   await expect(name(PEOPLE[0])).toBeFocused();
   await page.keyboard.press("Enter");
