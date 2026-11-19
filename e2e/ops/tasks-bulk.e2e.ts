@@ -129,7 +129,7 @@ test("takes the tasks chosen, a run with Shift, each its own change, and keeps t
   await page.getByRole("button", { name: opsCopy.tasks.bulk.take(3) }).click();
   await expect(page.getByText(opsCopy.tasks.bulk.partly(2, 1, opsCopy.tasks.owner.errors.not_permitted))).toBeVisible();
   expect(owners).toEqual(["ops@localhost", "ops@localhost", "ops@localhost"]);
-  // Its owner by first name, ops@localhost read as "Ops", in the owner's cell after its box, whom and when.
+  // Its owner by first name, ops@localhost read as "Ops", in the cell after its box, whom and when.
   await expect(rows(page).filter({ hasText: PEOPLE[0] }).getByRole("cell").nth(3)).toHaveText(/^Ops$/);
   // Chosen still, to try again.
   await expect(box(page, PEOPLE[2])).toBeChecked();
