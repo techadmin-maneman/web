@@ -69,9 +69,9 @@ test("a booking without the address is stopped at the form, each part it needs m
   });
 });
 
-// Whoever typed the number may not be its owner, so every number is answered alike. The details go to the
-// number on WhatsApp, and the app opens with the number filled in.
-test("every number is sent to WhatsApp, and offered the app with the number filled in", async ({ page }) => {
+// A booking goes on into the app signed in once the API hands the sign-in over. Where it does not (here the mocked
+// code is not one the API takes), the details are on WhatsApp and the app opens with the number filled in.
+test("a booking not signed in is sent to WhatsApp, and offered the app with the number filled in", async ({ page }) => {
   await mockApi(page);
   await bookHere(page);
 

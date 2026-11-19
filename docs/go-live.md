@@ -115,7 +115,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 - [ ] **After it:** `npm run apply-triggers -- --env production`, then `node --env-file=.env.cf-read scripts/release/check-triggers.ts production --strict` and the bucket check again (provisioning, step 9).
 - [ ] **Proofs:** `GET https://maneman.in/api/health` answers production and the release's SHA; `npm run smoke -- --base https://maneman.in --environment production`; a consultation booked on `/book` reaches the CRM as a lead, assigned (provisioning, step 8); Web Analytics counts the first day (item 144; provisioning, step 14).
 
-With self-serve booking off, a consultation booked on the site is a request: the person, their consent, their address and a CRM lead, which ops answer from the CRM until the console is live (settled item 120).
+With self-serve booking off, a consultation booked on the site is a request: the person, their consent, their address and a CRM lead, which ops answer from the console's Tasks board (settled item 120).
 
 ## 4. The apps' release
 

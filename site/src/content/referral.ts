@@ -365,10 +365,9 @@ export const referral = {
     marked: "Check the {count} fields marked above.",
   },
   /**
-   * What a booking answers, the same for every number, since whoever typed it may not be its owner: the details
-   * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. The day and window
-   * picked, what the visit asks of the client, and the calendar restate what was typed, so they tell whoever typed it
-   * nothing about the number.
+   * What a booking answers: the day and window booked, what the visit asks of the client, and the calendar. The
+   * details go to the number on WhatsApp too, and the app shows them once its owner is signed in. A number we know
+   * that had nothing booked is answered with the `known` lines below instead.
    */
   booked: {
     label: "Booked",

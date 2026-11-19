@@ -657,8 +657,8 @@ test("an invite that has expired for this friend says so once the booking is mad
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
 
-// The booking ends the same for every number, sending its details to the number on WhatsApp, and opening the
-// client app with the number filled in; the code is still asked for there.
+// A booking sends its details to the number on WhatsApp. Where the page does not go on into the app signed in (here
+// the mocked code is not one the API takes), its link opens the client app with the number filled in.
 test("a booking sends the details to WhatsApp, and opens the app with the number filled in", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
