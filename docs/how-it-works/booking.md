@@ -14,7 +14,7 @@ A visit goes to a technician in the client's city (`src/domain/dispatch/technici
 
 ## Booking from the site
 
-`/book` asks for the name and number first, kept as a lead before the visit is chosen (`src/domain/booking/public-lead.ts`). Then the window and the full address, and it books a free consultation, or a consultation and fit in one visit (`src/domain/booking/public-consultation.ts`). Where we do not come yet, it joins the waitlist (`src/domain/booking/public-waitlist.ts`). A friend's invite at `/r/:code` books the same way. Whoever types a number cannot move where that person's visits go or learn anything about them (`src/policy/site-booking.ts`); what the form needs to tell a known number goes privately on WhatsApp (`src/domain/booking/site-notices.ts`).
+`/book` asks for the name and number first, kept as a lead before the visit is chosen (`src/domain/booking/public-lead.ts`). Then the window and the full address, and it books a free consultation, or a consultation and fit in one visit (`src/domain/booking/public-consultation.ts`). Where we do not come yet, it joins the waitlist (`src/domain/booking/public-waitlist.ts`). A friend's invite at `/r/:code` books the same way. Every booking first proves the number with a WhatsApp code, then signs the client into the app where it is on (ADR 0285); the waitlist asks none. Whoever types a number cannot move where that person's visits go (`src/policy/site-booking.ts`); a number we know that books nothing (a consultation still to come, a client who books in the app, an address we do not come to) is told why on the page and on WhatsApp (`src/domain/booking/site-notices.ts`).
 
 ## Booking in the app
 

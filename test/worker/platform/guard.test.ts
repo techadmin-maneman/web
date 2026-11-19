@@ -75,6 +75,8 @@ describe("validateStaticConfig: settings and secrets", () => {
   it("needs the codes' pepper wherever the site is on, with the client app or without it", () => {
     const { OTP_PEPPER: _pepper, ...withoutPepper } = production;
     expect(problemsOf(withoutPepper)).toEqual(["OTP_PEPPER is not set"]);
+    const { OTP_PEPPER: _stagingPepper, ...stagingWithout } = stagingBase;
+    expect(problemsOf(stagingWithout)).toEqual(["OTP_PEPPER is not set"]);
   });
 
   it("refuses a short IP salt", () => {
@@ -179,6 +181,7 @@ describe("validateStaticConfig: the limits fixed in src/config", () => {
       codeIpHourlyLimit: 10,
       codeDailyCeiling: 300,
       techCodeDailyCeiling: 100,
+      formCodeDailyCeiling: 1000,
     });
     expect(settings).toMatchObject({ leadMobileDailyLimit: 15, leadIpDailyLimit: 100 });
     expect(settings.tryon).toMatchObject({

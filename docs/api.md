@@ -201,7 +201,7 @@ Request body:
 }
 ```
 
-**429**: rate_limited: too many codes for this number today, or from this address this hour
+**429**: rate_limited: too many codes for this number today, or from this address today
 
 ```json
 {

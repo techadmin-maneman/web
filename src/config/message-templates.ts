@@ -140,7 +140,7 @@ export const TEMPLATES = {
     "Hi {{1}}, your booking hasn't changed.\nWe couldn't move your {{2}} to {{3}}, so it stays as booked. We've refunded {{6}} to your {{8}} (5 to 7 working days).",
   move_not_made_v1:
     "Hi {{1}}, your booking hasn't changed.\nWe couldn't move your {{2}} to {{3}}, so it stays as booked.",
-  // To a number our site's booking form was just sent for, since the page tells every number the same thing
+  // To a number our site's booking form was just sent for, as the page tells it too
   // (src/domain/booking/site-notices.ts): {{1}} the first name, and for a consultation still to happen {{2}} the visit, {{3}}
   // its day and {{4}} its window.
   consultation_exists_v2:

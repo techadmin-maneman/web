@@ -57,8 +57,8 @@ async function ceilingSpent(c: Context<AppEnv>, ceiling: CodeCeiling, now: Date)
 }
 
 /**
- * Whether one more code may be asked for this number: the surface's ceiling, then the address's codes this hour and
- * the number's today, each counted under the surface's own scope. The answer is the same whoever holds the number,
+ * Whether one more code may be asked for this number: the surface's ceiling, then the address's codes (this hour for a
+ * login, today for the site's forms) and the number's today, each counted under the surface's own scope. The answer is the same whoever holds the number,
  * except a staging test record, which skips the address's limit.
  */
 export async function mayAskForCode(

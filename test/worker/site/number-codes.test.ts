@@ -108,7 +108,7 @@ describe("POST /api/number-code", () => {
   });
 
   it("stops at a day's ceiling of its own, so codes sent to numbers typed here never stop a login", async () => {
-    build({ login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } });
+    build({ login: { ...LOCAL_SETTINGS.login, formCodeDailyCeiling: 1 } });
     expect((await ask("98100 00001")).status).toBe(202);
 
     const busy = await ask("98100 00002");

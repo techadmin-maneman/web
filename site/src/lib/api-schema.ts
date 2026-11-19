@@ -243,7 +243,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description rate_limited: too many codes for this number today, or from this address this hour */
+                /** @description rate_limited: too many codes for this number today, or from this address today */
                 429: {
                     headers: {
                         [name: string]: unknown;

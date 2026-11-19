@@ -68,6 +68,7 @@ export const LOCAL_SETTINGS: Settings = {
     codeMobileDailyLimit: 5,
     codeIpHourlyLimit: 10,
     codeDailyCeiling: 300,
+    formCodeDailyCeiling: 1000,
     techCodeDailyCeiling: 100,
     fixedCode: null,
     testRecordCode: null,

@@ -14,6 +14,9 @@ export const FIXED_LIMITS = {
   OTP_IP_HOURLY_LIMIT: 10,
   OTP_DAILY_CEILING: 300,
   OTP_TECH_DAILY_CEILING: 100,
+  // The site's codes have a day's ceiling of their own as well: every booking from the site asks one, so it is sized
+  // for the bookings of a busy day, not the logins (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
+  FORM_CODE_DAILY_CEILING: 1000,
   // Leads and bookings from the site (docs/decisions/0011-lead-api.md): per number and per address, a day. Each
   // Continue and each booking counts, so a person who goes back and changes their mind a few times still books; and
   // a mobile network puts many people behind one address, where Turnstile, not this count, keeps the robots out.

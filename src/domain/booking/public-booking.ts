@@ -26,14 +26,14 @@
 // too on a day the price book charges for a consultation, which a form with no
 // payment cannot book.
 //
-// These forms need no login, only a number, so they never rename the person
-// the number belongs to, never replace the address they have, and never let go
-// of a hold made in the app. They give every number the same answer
-// (src/policy/site-booking.ts): a number with a consultation still to happen, or
-// past consultations, books nothing, and its owner is told why on WhatsApp
-// (src/domain/booking/site-notices.ts). A visit goes to the address already on the
+// These forms need no login, only a number its WhatsApp code proved, so they
+// never rename the person the number belongs to, never replace the address they
+// have, and never let go of a hold made in the app. A number with a consultation
+// still to happen, or past consultations, books nothing, and is told why on the
+// page and on WhatsApp (src/policy/site-booking.ts,
+// src/domain/booking/site-notices.ts). A visit goes to the address already on the
 // account, so that address's pincode is the one checked and booked; where we do
-// not come to it, nothing is booked, and its owner is told so on WhatsApp too. A
+// not come to it, nothing is booked, and its owner is told so the same way. A
 // number joining a waitlist is told of its invite as a new number would be. The
 // person, their consent, their address and the slot are written in one batch: a
 // slot that has gone leaves nothing behind (docs/decisions/0068-a-paid-hold-is-kept.md).

@@ -267,6 +267,7 @@ export function readLogin(
     codeMobileDailyLimit: read.fixedLimit("OTP_MOBILE_DAILY_LIMIT", isLocal),
     codeIpHourlyLimit: read.fixedLimit("OTP_IP_HOURLY_LIMIT", isLocal),
     codeDailyCeiling: read.fixedLimit("OTP_DAILY_CEILING", isLocal),
+    formCodeDailyCeiling: read.fixedLimit("FORM_CODE_DAILY_CEILING", isLocal),
     techCodeDailyCeiling: read.fixedLimit("OTP_TECH_DAILY_CEILING", isLocal),
     fixedCode: read.optionalText("OTP_FIXED_CODE"),
     testRecordCode: read.optionalText("STAGING_TEST_RECORD_CODE"),

@@ -92,9 +92,10 @@ describe("POST /api/r/:code/consultation", () => {
         }),
       ),
     );
-    // Refer is a fitted client's, so the referrer is a number we know: told what a new number would be, so the page
-    // never says it is known, and attributed nothing.
+    // Refer is a fitted client's, so the referrer is a number we know: its code proved it, so it is told why nothing
+    // was booked, and attributed nothing.
     expect(self.status).toBe(201);
+    expect(await self.json()).toEqual({ state: "not_booked", reason: "book_in_app", consultation: null });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM referral_attributions").first()).toEqual({ n: 0 });
     const unknown = await request(
       site(),

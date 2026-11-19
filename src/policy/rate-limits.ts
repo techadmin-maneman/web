@@ -90,7 +90,7 @@ export const RATE_LIMITS = {
   "ceiling:result_read": { per: "day", limit: (settings) => settings.tryon.resultReadDailyCeiling },
   "ceiling:login_code": { per: "day", limit: (settings) => settings.login.codeDailyCeiling },
   "ceiling:tech_code": { per: "day", limit: (settings) => settings.login.techCodeDailyCeiling },
-  "ceiling:form_code": { per: "day", limit: (settings) => settings.login.codeDailyCeiling },
+  "ceiling:form_code": { per: "day", limit: (settings) => settings.login.formCodeDailyCeiling },
   "ceiling:geocode": { per: "day", limit: (settings) => settings.geocode.dailyCeiling },
   // The dispatch board's Google calls: a month of either stays far inside the 70,000 Google gives free (ADR 0120).
   "ceiling:route": { per: "day", limit: 1000 },

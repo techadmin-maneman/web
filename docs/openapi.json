@@ -2102,7 +2102,7 @@
             }
           },
           "429": {
-            "description": "rate_limited: too many codes for this number today, or from this address this hour",
+            "description": "rate_limited: too many codes for this number today, or from this address today",
             "content": {
               "application/json": {
                 "schema": {

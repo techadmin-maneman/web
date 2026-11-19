@@ -83,7 +83,7 @@ const askRoute = createRoute({
     202: { description: "The code is on its way", ...json(NumberCodeSchema) },
     400: errorResponse("invalid_request"),
     403: errorResponse("turnstile_failed"),
-    429: errorResponse("rate_limited: too many codes for this number today, or from this address this hour"),
+    429: errorResponse("rate_limited: too many codes for this number today, or from this address today"),
     503: errorResponse("busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached"),
   },
 });

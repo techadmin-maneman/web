@@ -104,7 +104,13 @@ describe("the limits on each counted use", () => {
   const settings = {
     leadIpDailyLimit: 11,
     leadMobileDailyLimit: 12,
-    login: { codeIpHourlyLimit: 13, codeMobileDailyLimit: 14, codeDailyCeiling: 15, techCodeDailyCeiling: 16 },
+    login: {
+      codeIpHourlyLimit: 13,
+      codeMobileDailyLimit: 14,
+      codeDailyCeiling: 15,
+      techCodeDailyCeiling: 16,
+      formCodeDailyCeiling: 25,
+    },
     tryon: {
       uploadIpHourlyLimit: 17,
       generateIpHourlyLimit: 18,
@@ -129,6 +135,8 @@ describe("the limits on each counted use", () => {
     expect(limitOf("booking:ip", settings)).toBe(11);
     expect(limitOf("form:code:ip", settings)).toBe(11);
     expect(limitOf("login:code:ip", settings)).toBe(13);
+    expect(limitOf("ceiling:form_code", settings)).toBe(25);
+    expect(limitOf("ceiling:login_code", settings)).toBe(15);
     expect(limitOf("ceiling:geocode", settings)).toBe(24);
     expect(limitOf("grievance:person", settings)).toBe(GRIEVANCES_PER_DAY);
   });

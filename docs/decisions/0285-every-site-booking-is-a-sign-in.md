@@ -34,7 +34,9 @@ the client app, that the page itself tells a number we know why nothing was book
    account where we do not come, with WhatsApp's button. No "Booked", no calendar. WhatsApp tells its owner as before.
    No hold is tried for it first, as one was to make its answer a new number's.
 6. **The site's codes count by the address's day, 100, as its bookings do**, since a mobile network puts many people
-   behind one address; the number's 5 a day and the day's ceiling still hold. The app's login codes keep 10 an hour.
+   behind one address; the number's 5 a day still holds. The app's login codes keep 10 an hour. The site's codes have
+   a day's ceiling of their own, 1,000, apart from the logins' 300 and sized for every booking asking one; ops change
+   it in Settings › Rules, as every ceiling. The per-address and per-number limits stay fixed in code.
 7. **The codes' pepper is required wherever the site is on**, as the Worker refuses to start without it; production
    holds it.
 
