@@ -17,10 +17,20 @@ describe("CI's Playwright image", () => {
   it("names an image of another version, and a workflow that names none", () => {
     const workflow = `image: mcr.microsoft.com/playwright:v1.64.0-noble@${DIGEST}`;
     expect(playwrightImageProblems(workflow, "1.65.0")).toEqual([
-      "the Playwright image is v1.64.0, the lockfile installs 1.65.0: bump them together",
+      "the Playwright image is v1.64.0-noble, the lockfile installs 1.65.0: bump them together",
     ]);
-    expect(playwrightImageProblems("image: node:24", "1.65.0")).toEqual([
-      "no Playwright image, pinned by its digest, is named",
+    expect(playwrightImageProblems("image: node:24", "1.65.0")).toEqual(["no Playwright image is named"]);
+  });
+
+  it("names an image no digest pins, though another job's is pinned, and one with a prerelease tag", () => {
+    const workflow = [
+      `image: mcr.microsoft.com/playwright:v1.65.0-noble@${DIGEST}`,
+      "image: mcr.microsoft.com/playwright:v1.65.0-noble",
+      `image: mcr.microsoft.com/playwright:v1.66.0-beta-1-noble@${DIGEST}`,
+    ].join("\n");
+    expect(playwrightImageProblems(workflow, "1.65.0")).toEqual([
+      "mcr.microsoft.com/playwright:v1.65.0-noble is not pinned by its digest",
+      "the Playwright image is v1.66.0-beta-1-noble, the lockfile installs 1.65.0: bump them together",
     ]);
   });
 });

@@ -20,6 +20,11 @@
       ]
     },
     {
+      "description": "CI's browser jobs run in Playwright's image, which must be @playwright/test's version (scripts/ci/playwright-image.ts).",
+      "groupName": "playwright",
+      "matchPackageNames": ["@playwright/test", "playwright", "playwright-core", "mcr.microsoft.com/playwright"]
+    },
+    {
       "description": "typescript-eslint caps TypeScript; update them together.",
       "groupName": "typescript",
       "matchPackageNames": ["typescript", "typescript-eslint", "@eslint/js", "eslint"]

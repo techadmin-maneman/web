@@ -1,15 +1,23 @@
 // The Playwright images a workflow runs its jobs in, held to the version the lockfile installs
 // (scripts/ci/playwright-image.ts).
 
-const IMAGE = /mcr\.microsoft\.com\/playwright:v(\d+\.\d+\.\d+)-[a-z]+@sha256:[0-9a-f]{64}/g;
+const IMAGE = /mcr\.microsoft\.com\/playwright(?::([^\s@"']+))?(@sha256:[0-9a-f]{64})?/g;
 
-/** Why the workflow's images do not match `installed`: none named, or one of another version. Empty when they match. */
+/**
+ * Why the workflow's images do not match `installed`: none named, one not pinned by its digest, or one of another
+ * version. Empty when they match.
+ */
 export function playwrightImageProblems(workflow: string, installed: string): string[] {
-  const versions = [...workflow.matchAll(IMAGE)].map((match) => match[1]);
-  if (versions.length === 0) return ["no Playwright image, pinned by its digest, is named"];
-  return versions
-    .filter((version) => version !== installed)
-    .map(
-      (version) => `the Playwright image is v${version ?? "?"}, the lockfile installs ${installed}: bump them together`,
-    );
+  const images = [...workflow.matchAll(IMAGE)].map(([image, tag, digest]) => ({ image, tag, digest }));
+  if (images.length === 0) return ["no Playwright image is named"];
+  const problems: string[] = [];
+  for (const { image, tag, digest } of images) {
+    if (digest === undefined) problems.push(`${image} is not pinned by its digest`);
+    const version = /^v(.+?)-[a-z]+$/.exec(tag ?? "")?.[1];
+    if (version !== installed)
+      problems.push(
+        `the Playwright image is ${tag ?? "untagged"}, the lockfile installs ${installed}: bump them together`,
+      );
+  }
+  return problems;
 }

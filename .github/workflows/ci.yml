@@ -307,7 +307,7 @@ jobs:
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ubuntu-latest
     # Playwright's own image, Chromium and every library it needs already in it, so the job never waits on Ubuntu's
-    # mirrors for them. Its tag is @playwright/test's version, which the first step checks.
+    # mirrors for them. Its tag is @playwright/test's version, which a step below checks.
     container:
       image: mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe
       options: --ipc=host
@@ -336,7 +336,7 @@ jobs:
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ubuntu-24.04
     # Playwright's own image on Ubuntu 24.04 (noble), Chromium, WebKit and every library they need already in it, so
-    # no run waits on Ubuntu's mirrors for them. Its tag is @playwright/test's version, which the first step checks.
+    # no run waits on Ubuntu's mirrors for them. Its tag is @playwright/test's version, which a step below checks.
     container:
       image: mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe
       options: --ipc=host
