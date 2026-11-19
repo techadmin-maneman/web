@@ -8,7 +8,7 @@ import { axeViolations } from "./a11y.ts";
 import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
-import { enterNumberCode, expect, NUMBER_CODE, NUMBER_CODE_ID, test, visit } from "./support.ts";
+import { bookWithCode, enterNumberCode, expect, NUMBER_CODE, NUMBER_CODE_ID, test, visit } from "./support.ts";
 import {
   SERVED,
   BOOKED,
@@ -145,7 +145,8 @@ test("a reload resumes the step it was on, the name and number kept, and Back st
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByText("Step 1 · About you")).toBeVisible();
-  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("");
+  // The tab keeps the name beside the number its code proved.
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
 });
 
 // The field kept the first ten digits, so "+91 98765 43210" was booked as 91987 65432, someone else's number.
@@ -221,7 +222,7 @@ test("a served pincode books, and asks nothing of where the hair loss is", async
   await toAddress(page);
   await fillAddress(page);
   await expect(page.getByRole("radio", { name: "Receding front", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   const sent = requests[0]?.postDataJSON() as Record<string, unknown>;
@@ -296,12 +297,12 @@ test("books the one visit only with the right WhatsApp code", async ({ page }) =
   await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
 
   await page.getByLabel(siteCopy.numberCode.label).fill("111111");
-  await page.getByRole("button", { name: referralCopy.referral.consultation.confirmOneVisit }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.confirm }).click();
   await expect(page.getByText("That code didn’t match. 4 tries left.")).toBeVisible();
   expect(requests).toHaveLength(0);
 
   await page.getByLabel(siteCopy.numberCode.label).fill(NUMBER_CODE);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.confirmOneVisit }).click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.confirm }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(verified).toEqual([
     { code_id: NUMBER_CODE_ID, code: "111111" },
@@ -425,7 +426,10 @@ test("starts from the try-on's name and number, and a booking for the number it 
   await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await checkPincode(page, SERVED.pincode);
   const leaving = page.waitForRequest((request) => request.isNavigationRequest() && request.url().includes("app."));
-  await continueAndBook(page);
+  await toAddress(page);
+  await fillAddress(page);
+  // The number the try-on proved is not asked for again.
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   expect(new URL((await leaving).url()).origin).toMatch(/^http:\/\/app\.localhost:\d+$/);
   expect(handedOver).toEqual([{ code_id: "5a1e0000-0000-4000-8000-00000000c0de", mobile: "9810000000" }]);
 });

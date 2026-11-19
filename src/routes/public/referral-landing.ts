@@ -37,7 +37,7 @@ import {
   BOOKED_DESCRIPTION,
   CreditsSchema,
   InviteStateSchema,
-  OneVisitNumberCodeSchema,
+  NumberCodeSchema,
   OneVisitOutcomeSchema,
   OneVisitRequestSchema,
   planOf,
@@ -133,7 +133,7 @@ const ConsultationRequestSchema = z
     starts_at: FormStartSchema,
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
-    number_code_id: OneVisitNumberCodeSchema,
+    number_code_id: NumberCodeSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
     terms: TermsSchema,
   })

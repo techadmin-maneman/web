@@ -70,7 +70,7 @@ const CODE_FIELD: CodeFieldClasses = {
 /** The button's words: what the plan books, or, once a code is on its way, confirming it. */
 function submitLabel(plan: Plan, codeWaiting: boolean): string {
   const { consultation } = referral;
-  if (codeWaiting) return consultation.confirmOneVisit;
+  if (codeWaiting) return consultation.confirm;
   return plan === "one_visit" ? consultation.submitOneVisit : consultation.submit;
 }
 
@@ -222,8 +222,8 @@ function AddressPart(
  * consultation is at, so nothing is booked without one (ADR 0081). It may book the
  * consultation and fit in one visit instead, in the morning or the
  * afternoon, paid for once the client is fitted (ADR 0105), and, on the site's own page, with a discount code that
- * comes off the hair system's price when they pay. That one is booked only once the WhatsApp code sent to
- * the number has been entered.
+ * comes off the hair system's price when they pay. Either is booked only once the WhatsApp code sent to the number
+ * has been entered, which then signs the client into the app (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
  */
 export function Consultation(props: ConsultationProps) {
   const { person, stage, plan } = props;
@@ -252,8 +252,8 @@ export function Consultation(props: ConsultationProps) {
   const addressComplete = missingParts(address).length === 0;
   const addressBad = partsToMark(address, form.touched, form.refusedFields);
   const marked = addressBad.length + form.personBad.length + (codeRefused ? 1 : 0);
-  // The one visit is booked only for a number its WhatsApp code proved.
-  const codeWaiting = plan === "one_visit" && numberCode.waitingFor(digits);
+  // Booked only for a number its WhatsApp code proved.
+  const codeWaiting = numberCode.waitingFor(digits);
 
   function submit(event: Event) {
     if (stage === "visit") {
@@ -262,12 +262,11 @@ export function Consultation(props: ConsultationProps) {
       props.onNext();
       return;
     }
-    if (plan === "one_visit") void bookOneVisit(event);
-    else book(event, null);
+    void bookProved(event);
   }
 
-  /** The one visit: a code to the number first, then the booking once the code is entered. */
-  async function bookOneVisit(event: Event) {
+  /** A code to the number first, then the booking once the code is entered. */
+  async function bookProved(event: Event) {
     const proved = numberCode.proofFor(digits);
     if (proved !== null) {
       book(event, proved);
@@ -292,7 +291,7 @@ export function Consultation(props: ConsultationProps) {
     );
   }
 
-  function book(event: Event, numberCodeId: string | null) {
+  function book(event: Event, numberCodeId: string) {
     const { fields } = form;
     const request = {
       name: fields.name.trim(),
@@ -303,7 +302,7 @@ export function Consultation(props: ConsultationProps) {
       ...(slot.start === null ? {} : { starts_at: slot.start }),
       address: addressToSend(address, pincode),
       ...(plan === "one_visit" ? { one_visit: true } : {}),
-      ...(numberCodeId === null ? {} : { number_code_id: numberCodeId }),
+      number_code_id: numberCodeId,
       ...AGREED,
     };
     const door = { invited: props.invited, credits: props.credits, remembered };

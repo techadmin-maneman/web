@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0285. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0286. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -277,6 +277,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0266](0266-the-sites-header-book-and-focus-ring.md) The site's header Book and focus ring
 - [0269](0269-the-one-visits-note-on-book.md) The one visit's note on `/book`
 - [0272](0272-the-one-visit-is-paid-through-razorpay-only.md) The one visit is paid through Razorpay only
+- [0285](0285-every-site-booking-is-a-sign-in.md) Every booking on the site asks the WhatsApp code, and signs the client in
 
 ### The ops console
 
@@ -402,7 +403,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0078](0078-the-queues-no-board-draws.md) | The console's queues that no board draws | 2026-09-27 | accepted |  |
 | [0079](0079-an-address-before-a-slot.md) | An address before any slot | 2026-09-27 | accepted |  |
 | [0080](0080-consents-given-by-booking.md) | The photograph consents, given by booking | 2026-09-27 | accepted, for counsel to confirm before production | [0094](0094-where-a-consent-was-given.md) |
-| [0081](0081-the-site-takes-the-address.md) | The site takes the address before it books | 2026-09-27 | accepted | [0098](0098-the-door-in-fsms-address.md) |
+| [0081](0081-the-site-takes-the-address.md) | The site takes the address before it books | 2026-09-27 | accepted | [0098](0098-the-door-in-fsms-address.md), [0285](0285-every-site-booking-is-a-sign-in.md) |
 | [0082](0082-try-ons-in-the-app.md) | A client's try-on in the app | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 | [0084](0084-a-clients-try-on-is-kept.md) |
 | [0083](0083-anyone-signed-in-can-refer.md) | Anyone signed in can refer | 2026-09-27 | withdrawn by the owner on 27 September 2026, the day it was made |  |
 | [0084](0084-a-clients-try-on-is-kept.md) | A client's try-on is kept | 2026-09-27 | accepted, on the owner's ruling of 27 September 2026 | [0093](0093-the-storage-meter.md), [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
@@ -533,7 +534,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
 | [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |
 | [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted | [0263](0263-the-home-pages-order-and-bands.md), [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) |
-| [0214](0214-from-the-site-into-the-app.md) | From the site into the app, and the look on the page | 2026-10-19 | accepted | [0217](0217-the-try-ons-photo-taken-and-looked-at.md) |
+| [0214](0214-from-the-site-into-the-app.md) | From the site into the app, and the look on the page | 2026-10-19 | accepted | [0217](0217-the-try-ons-photo-taken-and-looked-at.md), [0285](0285-every-site-booking-is-a-sign-in.md) |
 | [0215](0215-the-range-as-a-table.md) | The range as a table | 2026-10-19 | accepted |  |
 | [0216](0216-the-sites-polish-pass.md) | The site's polish pass | 2026-10-19 | accepted | [0262](0262-the-sites-typeface-and-palette.md), [0263](0263-the-home-pages-order-and-bands.md) |
 | [0217](0217-the-try-ons-photo-taken-and-looked-at.md) | The try-on's photo, taken and looked at; no question of where the hair loss is | 2026-10-19 | accepted | [0219](0219-one-line-consents.md) |
@@ -604,3 +605,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0282](0282-tasks-chosen-together.md) | Tasks chosen together, and the keys a desk moves by | 2026-11-19 | accepted |  |
 | [0283](0283-changed-and-deleted-while-unused.md) | What ops configure is changed, and deleted while nothing uses it | 2026-11-19 | accepted |  |
 | [0284](0284-the-first-screen-and-the-precache.md) | A phone app's budget counts its first screen, and its precache has a ceiling of its own | 2026-11-19 | accepted |  |
+| [0285](0285-every-site-booking-is-a-sign-in.md) | Every booking on the site asks the WhatsApp code, and signs the client in | 2026-11-19 | accepted, on the owner's ruling of 19 November 2026 |  |

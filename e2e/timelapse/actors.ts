@@ -187,6 +187,21 @@ export async function clientSignIn(wire: Wire, mobile: string): Promise<boolean>
   return verified.status === 200 && verified.body.verified;
 }
 
+/** Proves a number on the wire with the local code, as the site's booking form does before it books. */
+export async function proveNumber(wire: Wire, mobile: string, name: string): Promise<string> {
+  const sent = await wire.must<{ code_id: string }>("POST", "/api/number-code", {
+    mobile,
+    name,
+    turnstile_token: TURNSTILE,
+  });
+  const verified = await wire.must<{ verified: boolean }>("POST", "/api/number-code/verify", {
+    code_id: sent.code_id,
+    code: LOGIN_CODE,
+  });
+  if (!verified.verified) throw new Error(`the code did not prove ${mobile}`);
+  return sent.code_id;
+}
+
 /** Signs a technician in on the wire from a phone of their own. */
 export async function techSignIn(wire: Wire, mobile: string, deviceId: string): Promise<boolean> {
   wire.reauth ??= () => techSignIn(wire, mobile, deviceId);

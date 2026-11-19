@@ -71,9 +71,11 @@ describe("a consultation and fit in one visit", () => {
     expect(told.results).toEqual([{ kind: "consultation_confirmation" }]);
   });
 
-  it("asks no code of the consultation alone", async () => {
+  it("asks the same code of the consultation alone, and writes nothing without it", async () => {
     const answer = await book({ number_code_id: undefined });
-    expect(answer.status).toBe(201);
+    expect(answer.status).toBe(403);
+    expect(await answer.json()).toMatchObject({ error: { code: "number_not_proved" } });
+    expect(await count("SELECT COUNT(*) AS n FROM people")).toBe(0);
   });
 
   it("holds the first fit's three hours with nothing paid, sold to cost nothing if missed or moved", async () => {

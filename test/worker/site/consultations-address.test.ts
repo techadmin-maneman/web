@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, withProof } from "../helpers.ts";
 import { ADDRESS, pincode, VISITOR, post, site, BOOKED_MORNING } from "./consultations-fixtures.ts";
 
 beforeEach(async () => {
@@ -19,19 +19,21 @@ beforeEach(async () => {
 
 // The full address before a slot is confirmed, on the site too (ADR 0081).
 describe("the address the consultation is at", () => {
-  const book = (body: object, bindings = {}) =>
+  const book = async (body: object, bindings = {}) =>
     request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        ...body,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          ...body,
+        }),
+      ),
       { CRM_QUEUE: fakeQueue(), ...bindings },
     );
   const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
@@ -133,15 +135,17 @@ describe("the address the consultation is at", () => {
     const answer = await request(
       site({ selfServeBooking: false, selfServeConsultations: false }),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
       { CRM_QUEUE: fakeQueue() },
     );
     expect(await answer.json()).toMatchObject({ state: "requested" });
@@ -226,15 +230,17 @@ describe("the address the consultation is at", () => {
       const answer = await request(
         site({ selfServeBooking: false, selfServeConsultations: false }),
         "/api/consultation",
-        post({
-          ...VISITOR,
-          pincode: "122018",
-          date: "2026-09-23",
-          window: "morning",
-          consent: true,
-          terms: true,
-          address: ADDRESS,
-        }),
+        post(
+          await withProof({
+            ...VISITOR,
+            pincode: "122018",
+            date: "2026-09-23",
+            window: "morning",
+            consent: true,
+            terms: true,
+            address: ADDRESS,
+          }),
+        ),
         { CRM_QUEUE: fakeQueue() },
       );
       expect(await answer.json()).toMatchObject({ state: "requested" });

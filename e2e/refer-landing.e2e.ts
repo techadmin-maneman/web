@@ -14,6 +14,7 @@ import { AGREE_TERMS, CONSULTATION_CONSENT as CONSENT } from "./book-fixtures.ts
 import {
   analyticsCommands,
   analyticsEvents,
+  bookWithCode,
   enterNumberCode,
   expect,
   fakeTurnstile,
@@ -126,7 +127,7 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await page.getByRole("radio", { name: /Afternoon/ }).check();
   await expect(page.getByRole("radio", { name: /Afternoon/ })).toBeChecked();
   await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
@@ -148,7 +149,7 @@ test("a booking through the invite is counted, with nothing personal and no code
   await fillForm(page);
   await page.getByRole("radio", { name: /Afternoon/ }).check();
   await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
 
   expect(await analyticsEvents(page)).toEqual([
@@ -179,7 +180,7 @@ test("a valid invite is remembered in this browser, and forgotten once its own b
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
   await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   // The landing books with its own invite, and sends no other.
   expect(requests[0]?.postDataJSON()).not.toHaveProperty("invite_code");
@@ -212,7 +213,7 @@ test("says what ops set each side gets, and promises the friend nothing ops do n
   await expect(page.getByText("Rohit is told when you are fitted.", { exact: true })).toBeVisible();
   await fillForm(page);
   await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText(/land when you are fitted/)).toHaveCount(0);
 });
@@ -299,7 +300,7 @@ test("a code we do not know still books, without the invite’s visits", async (
 
   await fillForm(page);
   await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
 });
@@ -383,7 +384,7 @@ test("a consultation nobody can book outright is confirmed as a request", async 
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
   await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
 
   await expect(page.getByText(referralCopy.referral.requested.label)).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(referralCopy.referral.requested.title);
@@ -418,7 +419,7 @@ test("a window found full says so, and the form stays", async ({ page }) => {
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
   await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
 
   await expect(page.getByText(referralCopy.referral.errors.taken)).toBeVisible();
   await expect(page.getByRole("button", { name: referralCopy.referral.consultation.submit })).toBeVisible();
@@ -562,11 +563,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
     return route.fulfill({ status: 201, json: body });
   });
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
-  await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
-  await fillForm(page);
-  await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookThrough(page);
   await expect(page.getByText(referralCopy.referral.errors.network)).toBeVisible();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
@@ -604,7 +601,7 @@ test("gives up on a request that never answers, says so, and sends it again unde
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
   await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
   await expect.poll(() => keys.length).toBe(1);
 
   await page.clock.runFor(21_000);
@@ -636,7 +633,7 @@ async function bookThrough(page: Page): Promise<void> {
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
   await agree(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
 }
 
 // The invite had lapsed for this friend, which only the booking's answer can say (ADR 0025, item 40).

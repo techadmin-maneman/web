@@ -1,6 +1,6 @@
 // M4's load test, on the site's booking form: 50 concurrent submissions, and no duplicates.
 //
-//   node --env-file=.env.staging-access scripts/staging/load-test-leads.ts [--people 25]
+//   node --env-file=.env.staging-access --env-file=.env.staging-test-code scripts/staging/load-test-leads.ts [--people 25]
 //
 // Each test person ("Load test", a random 9xxxxxxxxx number) books a consultation twice at the same moment with the
 // same Idempotency-Key, as a double-tapped submit would be. Every request goes out at once. Expected: every answer is
@@ -13,11 +13,12 @@
 // shares with production (docs/decisions/0025-phase-2-conflicts-register.md, item 26). A "booked" answer means the
 // version holds slots, and the test stops at once. The leads reach the CRM, named "Load test".
 //
-// The count is read from staging's D1 with wrangler, so CLOUDFLARE_API_TOKEN must be staging's as well.
+// The count is read from staging's D1 with wrangler, so CLOUDFLARE_API_TOKEN must be staging's as well. Each number
+// is proved first with STAGING_TEST_RECORD_CODE, the code staging knows for a test record, as every booking's is.
 
 import { d1Query } from "../lib/d1.ts";
 import { parseArgs } from "node:util";
-import { consultationBody, lastBookableDay, testMobile } from "../lib/test-booking.ts";
+import { consultationBody, lastBookableDay, proveTestNumber, testMobile } from "../lib/test-booking.ts";
 
 /** Cloudflare Access's service token, for staging's host. */
 const ACCESS = {
@@ -45,7 +46,7 @@ interface Outcome {
   readonly ms: number;
 }
 
-async function submit(person: number, mobile: string): Promise<Outcome> {
+async function submit(person: number, mobile: string, numberCodeId: string): Promise<Outcome> {
   const started = Date.now();
   const response = await fetch(`${values.base}/api/consultation`, {
     method: "POST",
@@ -55,14 +56,17 @@ async function submit(person: number, mobile: string): Promise<Outcome> {
       ...ACCESS,
     },
     body: JSON.stringify(
-      consultationBody({
-        name: "Load test",
-        mobile,
-        pincode: values.pincode,
-        city: values.city,
-        date,
-        window: "morning",
-      }),
+      consultationBody(
+        {
+          name: "Load test",
+          mobile,
+          pincode: values.pincode,
+          city: values.city,
+          date,
+          window: "morning",
+        },
+        numberCodeId,
+      ),
     ),
     redirect: "manual",
   });
@@ -85,10 +89,22 @@ function leadsPerNumber(mobiles: readonly string[]): Map<string, number> {
   return new Map(rows.map((row) => [row.mobile.slice(3), row.leads]));
 }
 
+const testRecordCode = process.env.STAGING_TEST_RECORD_CODE;
+if (testRecordCode === undefined || testRecordCode === "") {
+  console.error("STAGING_TEST_RECORD_CODE: the code staging knows for a test record (docs/provisioning.md)");
+  process.exit(2);
+}
 const mobiles = Array.from({ length: people }, () => testMobile());
+// Proved before the burst, which then times the bookings alone.
+const proofs = await Promise.all(
+  mobiles.map((mobile) => proveTestNumber(values.base, ACCESS, { name: "Load test", mobile }, testRecordCode)),
+);
 const started = Date.now();
 const outcomes = await Promise.all(
-  mobiles.flatMap((mobile, person) => [submit(person, mobile), submit(person, mobile)]),
+  mobiles.flatMap((mobile, person) => {
+    const proof = proofs[person] ?? "";
+    return [submit(person, mobile, proof), submit(person, mobile, proof)];
+  }),
 );
 const elapsed = Date.now() - started;
 

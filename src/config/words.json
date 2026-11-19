@@ -4576,12 +4576,12 @@
     "reviewed": true
   },
   {
-    "key": "site:referral/referral.consultation.confirmOneVisit",
+    "key": "site:referral/referral.consultation.confirm",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
     "text": "Confirm and book",
-    "reviewed": true
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.consultation.sending",

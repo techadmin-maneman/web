@@ -28,6 +28,8 @@ jobs:
     env:
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      # Proves the test number first, as every booking's number is proved (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
+      STAGING_TEST_RECORD_CODE: ${{ secrets.STAGING_TEST_RECORD_CODE }}
       PINCODE: ${{ inputs.pincode }}
       WINDOW: ${{ inputs.window }}
     steps:

@@ -6,7 +6,6 @@ import { oneVisitCode } from "./public-booking-code.ts";
 import type { LossExtent } from "../../config/booking.ts";
 import { HOLD_SECONDS, type BookingWindow } from "../../config/scheduling.ts";
 import { type Plan, planStartsIn } from "../../policy/one-visit.ts";
-import { bookingNeedsProof } from "../../policy/number-proof.ts";
 import type { ConsentSource } from "../../policy/consents.ts";
 import { addDays, indiaDate, indiaTime } from "../../lib/india-time.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
@@ -372,8 +371,9 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const { pincode } = asked;
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
-  // Nothing is looked up or written for a number the plan needs proved until its code was entered.
-  if (bookingNeedsProof(request.plan) && !(await form.provedNumber(request.numberCodeId, checked.mobile))) {
+  // Nothing is looked up or written for a number until its WhatsApp code was entered, whatever the plan: the code then
+  // signs the client into the app (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
+  if (!(await form.provedNumber(request.numberCodeId, checked.mobile))) {
     return { ok: false, code: "number_not_proved" };
   }
 

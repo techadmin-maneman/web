@@ -5,7 +5,7 @@
 import { aGenericFirstFit, aPackage } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { fakeQueue, markDatabase, NOW, provedNumberCode, request } from "../helpers.ts";
+import { fakeQueue, markDatabase, NOW, provedNumberCode, request, withProof } from "../helpers.ts";
 import { ADDRESS, pincode, VISITOR, post, site } from "./consultations-fixtures.ts";
 import { BOOKING_RULES, SAME_DAY_BOOKING } from "../../../src/policy/start-times.ts";
 
@@ -46,20 +46,22 @@ describe("GET /api/availability/public", () => {
     return (await answer.json<Open>()).days;
   };
   const windowsOn = (days: Open["days"], date: string) => days.find((day) => day.date === date)?.windows;
-  const book = (body: object) =>
+  const book = async (body: object) =>
     request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-        ...body,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+          ...body,
+        }),
+      ),
       { CRM_QUEUE: fakeQueue() },
     );
 
@@ -113,20 +115,22 @@ describe("GET /api/availability/public", () => {
 
   it("asks ops for today only at a start the form offers, while self-serve booking is off", async () => {
     const off = { selfServeBooking: false, selfServeConsultations: false };
-    const ask = (body: object) =>
+    const ask = async (body: object) =>
       request(
         site(off),
         "/api/consultation",
-        post({
-          ...VISITOR,
-          pincode: "122018",
-          consent: true,
-          terms: true,
-          address: ADDRESS,
-          date: "2026-09-21",
-          window: "evening",
-          ...body,
-        }),
+        post(
+          await withProof({
+            ...VISITOR,
+            pincode: "122018",
+            consent: true,
+            terms: true,
+            address: ADDRESS,
+            date: "2026-09-21",
+            window: "evening",
+            ...body,
+          }),
+        ),
         { CRM_QUEUE: fakeQueue() },
       );
     // 19:30 is no start: an hour and its wrap-up end by 8 only from 18:30.

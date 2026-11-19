@@ -12,7 +12,17 @@ import type { ZohoSettings } from "../../../src/config/settings.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createZohoCrm } from "../../../src/providers/crm/zoho.ts";
 import { syncLead } from "../../../src/queues/crm-sync.ts";
-import { NOW, appFor, fakeDependencies, fakeFetch, fakeQueue, json, markDatabase, request } from "../helpers.ts";
+import {
+  NOW,
+  appFor,
+  fakeDependencies,
+  fakeFetch,
+  fakeQueue,
+  json,
+  markDatabase,
+  request,
+  withProof,
+} from "../helpers.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
 
 const SETTINGS: ZohoSettings = {
@@ -51,29 +61,31 @@ async function book(): Promise<string> {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Arjun Mehta",
-        mobile: "9810000001",
-        pincode: "122018",
-        loss_extent: "crown",
-        turnstile_token: "token",
-        date: "2026-09-23",
-        window: "morning",
-        address: {
-          flat: "House 12",
-          floor: null,
-          tower: null,
-          line1: "Palm Grove Society",
-          line2: null,
-          landmark: null,
-          locality: "Sector 65",
-          city: "Gurgaon",
+      body: JSON.stringify(
+        await withProof({
+          name: "Arjun Mehta",
+          mobile: "9810000001",
           pincode: "122018",
-          access_notes: null,
-        },
-        consent: true,
-        terms: true,
-      }),
+          loss_extent: "crown",
+          turnstile_token: "token",
+          date: "2026-09-23",
+          window: "morning",
+          address: {
+            flat: "House 12",
+            floor: null,
+            tower: null,
+            line1: "Palm Grove Society",
+            line2: null,
+            landmark: null,
+            locality: "Sector 65",
+            city: "Gurgaon",
+            pincode: "122018",
+            access_notes: null,
+          },
+          consent: true,
+          terms: true,
+        }),
+      ),
     },
     { CRM_QUEUE: fakeQueue() },
   );

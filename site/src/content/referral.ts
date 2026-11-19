@@ -273,7 +273,7 @@ export const referral = {
     submit: "Book the consultation",
     submitOneVisit: "Book the consultation and fit",
     // Once the WhatsApp code is on its way, the button confirms it and books.
-    confirmOneVisit: "Confirm and book",
+    confirm: "Confirm and book",
     sending: "Booking…",
     told: toldWhenFitted,
   },

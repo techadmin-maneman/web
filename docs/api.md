@@ -730,7 +730,7 @@ Request body:
     "number_code_id": {
       "type": "string",
       "format": "uuid",
-      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
+      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. Every booking needs it, and is refused number_not_proved without it."
     },
     "discount_code": {
       "type": "string",
@@ -812,7 +812,7 @@ Request body:
 }
 ```
 
-**403**: turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes
+**403**: turnstile_failed; number_not_proved: no WhatsApp code that proved the number in the last 30 minutes
 
 ```json
 {
@@ -1981,7 +1981,7 @@ Request body:
     "number_code_id": {
       "type": "string",
       "format": "uuid",
-      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it."
+      "description": "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. Every booking needs it, and is refused number_not_proved without it."
     },
     "consent": {
       "type": "boolean",
@@ -2057,7 +2057,7 @@ Request body:
 }
 ```
 
-**403**: turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes
+**403**: turnstile_failed; number_not_proved: no WhatsApp code that proved the number in the last 30 minutes
 
 ```json
 {

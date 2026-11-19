@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { fakeQueue, leaseRefused, markDatabase, NOW, request } from "../helpers.ts";
+import { fakeQueue, leaseRefused, markDatabase, NOW, request, withProof } from "../helpers.ts";
 import { ADDRESS, pincode, VISITOR, post, site, BOOKED_MORNING } from "./consultations-fixtures.ts";
 
 beforeEach(async () => {
@@ -22,21 +22,23 @@ beforeEach(async () => {
 describe("an invite the browser remembered", () => {
   const REFERRER = "11111111-1111-4111-8111-111111111111";
   const bindings = () => ({ CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() });
-  const book = (inviteCode: string, told: object = { invite_told: true }) =>
+  const book = async (inviteCode: string, told: object = { invite_told: true }) =>
     request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-        invite_code: inviteCode,
-        ...told,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+          invite_code: inviteCode,
+          ...told,
+        }),
+      ),
       bindings(),
     );
   const attributions = () =>
@@ -90,17 +92,19 @@ describe("an invite the browser remembered", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-        invite_code: "RM4K7P",
-        invite_told: true,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+          invite_code: "RM4K7P",
+          invite_told: true,
+        }),
+      ),
       { DB: leaseRefused(env.DB), CRM_QUEUE: crm, MESSAGE_QUEUE: fakeQueue() },
     );
 
@@ -165,18 +169,20 @@ describe("an invite the browser remembered", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        mobile: "9810000001",
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-        invite_code: "RM4K7P",
-        invite_told: true,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          mobile: "9810000001",
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+          invite_code: "RM4K7P",
+          invite_told: true,
+        }),
+      ),
       bindings(),
     );
     expect(answer.status).toBe(201);
@@ -189,11 +195,11 @@ describe("an invite the browser remembered", () => {
 // The page answers it as it would a new number, so it never says whose a number is; its owner is told the rest on
 // WhatsApp.
 describe("a number the site already knows", () => {
-  const book = (body: object, settings = {}) =>
+  const book = async (body: object, settings = {}) =>
     request(
       site(settings),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", consent: true, terms: true, address: ADDRESS, ...body }),
+      post(await withProof({ ...VISITOR, pincode: "122018", consent: true, terms: true, address: ADDRESS, ...body })),
       { CRM_QUEUE: fakeQueue() },
     );
   const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;

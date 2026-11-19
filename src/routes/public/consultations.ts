@@ -118,20 +118,19 @@ export const OneVisitRequestSchema = z
       "false, the consultation alone.",
   });
 
-/** The code that proved the number, which the one visit needs. */
-export const OneVisitNumberCodeSchema = z
+/** The code that proved the number, which every booking needs. */
+export const NumberCodeSchema = z
   .uuid()
   .optional()
   .openapi({
     description:
-      "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit " +
-      "needs it, and is refused number_not_proved without it.",
+      "The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. Every " +
+      "booking needs it, and is refused number_not_proved without it.",
   });
 
 /** 403, for a booking from either page. */
 export const turnstileOrNotProved = errorResponse(
-  "turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 " +
-    "minutes",
+  "turnstile_failed; number_not_proved: no WhatsApp code that proved the number in the last 30 minutes",
 );
 
 /** What a booking says of the plan it booked. */
@@ -150,7 +149,7 @@ const ConsultationRequestSchema = z
     starts_at: FormStartSchema,
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
-    number_code_id: OneVisitNumberCodeSchema,
+    number_code_id: NumberCodeSchema,
     discount_code: z
       .string()
       .trim()

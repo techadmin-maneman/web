@@ -224,6 +224,12 @@ export async function enterNumberCode(page: Page, confirm: string): Promise<void
   await page.getByRole("button", { name: confirm }).click();
 }
 
+/** Books the consultation on the site's form, entering the WhatsApp code it sends the number first. */
+export async function bookWithCode(page: Page): Promise<void> {
+  await page.getByRole("button", { name: referral.consultation.submit }).click();
+  await enterNumberCode(page, referral.consultation.confirm);
+}
+
 /** Fills in the gate, which the look is sent to, and sends it, entering the WhatsApp code sent to the number. */
 export async function sendFromGate(page: Page, mobile: string, name = "Test Visitor"): Promise<void> {
   await page.getByLabel(referral.form.name).fill(name);

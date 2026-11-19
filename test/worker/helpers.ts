@@ -19,6 +19,7 @@ import type { Dependencies } from "../../src/dependencies.ts";
 import { createAlertOnce, createResolveAlert } from "../../src/domain/platform/alerts.ts";
 import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/privacy/erasure.ts";
 import { mobileHashOf } from "../../src/domain/clients/number-codes.ts";
+import { toE164 } from "../../src/lib/mobile.ts";
 import { CODE_TTL_MS } from "../../src/policy/one-time-code.ts";
 import type { StaticConfig } from "../../src/guard.ts";
 import { createAccessVerifier } from "../../src/providers/cloudflare-access.ts";
@@ -195,6 +196,17 @@ export async function provedNumberCode(mobileE164: string, now: Date = NOW): Pro
     .bind(id, at, await mobileHashOf(LOCAL_SETTINGS.ipHashSalt, mobileE164), expiresAt)
     .run();
   return id;
+}
+
+/**
+ * A site booking as the site sends it: with the code that proved the number it books with, entered at NOW. A body
+ * naming its own `number_code_id`, even as undefined, keeps it.
+ */
+export async function withProof<T extends { mobile: string }>(body: T): Promise<T & { number_code_id?: string }> {
+  if ("number_code_id" in body) return body;
+  const mobile = toE164(body.mobile);
+  if (mobile === null) return body;
+  return { ...body, number_code_id: await provedNumberCode(mobile) };
 }
 
 /**

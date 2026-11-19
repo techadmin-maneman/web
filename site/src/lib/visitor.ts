@@ -35,6 +35,15 @@ export function rememberedVisitor(): Visitor | null {
   }
 }
 
+/** Forgets the visitor, once the API no longer takes the proof kept for them. */
+export function forgetVisitor(): void {
+  try {
+    sessionStorage.removeItem(KEY);
+  } catch {
+    // Nothing was kept.
+  }
+}
+
 /** The proof kept for these digits; null for another number, or none kept. */
 export function proofFor(digits: string): string | null {
   const visitor = rememberedVisitor();

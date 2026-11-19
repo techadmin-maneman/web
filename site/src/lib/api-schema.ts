@@ -616,7 +616,7 @@ export interface paths {
                         one_visit?: boolean;
                         /**
                          * Format: uuid
-                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it.
+                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. Every booking needs it, and is refused number_not_proved without it.
                          */
                         number_code_id?: string;
                         /** @description A discount code for the consultation and fit in one visit, as typed, any case: it comes off the product's price at the payment link (docs/decisions/0108-discount-codes.md). A code that does not apply refuses the booking, code_not_applicable, and so does any code with the consultation alone. */
@@ -662,7 +662,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes */
+                /** @description turnstile_failed; number_not_proved: no WhatsApp code that proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1440,7 +1440,7 @@ export interface paths {
                         one_visit?: boolean;
                         /**
                          * Format: uuid
-                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. One visit needs it, and is refused number_not_proved without it.
+                         * @description The WhatsApp code that proved the number (POST /api/number-code/verify) in the last 30 minutes. Every booking needs it, and is refused number_not_proved without it.
                          */
                         number_code_id?: string;
                         /**
@@ -1484,7 +1484,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description turnstile_failed; number_not_proved: one visit, without a WhatsApp code that proved the number in the last 30 minutes */
+                /** @description turnstile_failed; number_not_proved: no WhatsApp code that proved the number in the last 30 minutes */
                 403: {
                     headers: {
                         [name: string]: unknown;

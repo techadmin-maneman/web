@@ -4,7 +4,7 @@
 // answer the API can give, against a mocked one.
 
 import type { Page } from "@playwright/test";
-import { expect, fakeTurnstile, randomMobile, test, visit } from "./support.ts";
+import { bookWithCode, expect, fakeTurnstile, randomMobile, test, visit } from "./support.ts";
 import { AGREE_TERMS } from "./book-fixtures.ts";
 import { SERVED, UNSERVED } from "./booking-area.ts";
 import { fillAddress } from "./address-form.ts";
@@ -33,7 +33,9 @@ async function leaveDetails(page: Page, consent: string): Promise<void> {
   expect((await kept).status()).toBe(201);
 }
 
-test("a served pincode books a real date and window, at the address given", async ({ page }) => {
+test("a served pincode books a real date and window at the address given, once the number's code is entered, and goes on into the app signed in", async ({
+  page,
+}) => {
   await visit(page, "/book");
   await leaveDetails(page, referralCopy.referral.consultation.consent.says);
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
@@ -43,11 +45,12 @@ test("a served pincode books a real date and window, at the address given", asyn
   await page.getByRole("button", { name: siteCopy.booking.next }).click();
   await fillAddress(page);
   const answered = page.waitForResponse("**/api/consultation");
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  const leaving = page.waitForRequest((request) => request.isNavigationRequest() && request.url().includes("app."));
+  await bookWithCode(page);
 
-  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   // The form picks tomorrow first, and the API answers with the day it booked.
   expect(await (await answered).json()).toMatchObject({ state: "booked", date: tomorrow() });
+  expect(new URL((await leaving).url()).origin).toMatch(/^http:\/\/app\.localhost:\d+$/);
 });
 
 test("a pincode we do not serve takes the number instead", async ({ page }) => {
