@@ -6,6 +6,7 @@
 import { stepHeaders, techSignIn, type Wire } from "../actors.ts";
 import { BASE, catalogue, HAIR_SYSTEMS, PACKAGE } from "./catalog.ts";
 import { indiaDateOf, MINUTE } from "../sim.ts";
+import { DOOR } from "../stack.ts";
 import { check } from "../steps.ts";
 import type { Client, Sim, Technician } from "../world.ts";
 
@@ -121,7 +122,7 @@ export async function workOnWire(sim: Sim, wave: string, technician: Technician,
       const checkin = await wire.must<{ passed: boolean }>(
         "POST",
         `/api/tech/jobs/${job.id}/checkin`,
-        { lat: 28.4598, lng: 77.0268, accuracy_m: 12 },
+        { ...DOOR, accuracy_m: 12 },
         headers(),
       );
       check(checkin.passed, "the check-in did not pass the geofence");

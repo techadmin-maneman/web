@@ -9,7 +9,7 @@ import { request as httpRequest } from "node:http";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { contractErrors, type Surface } from "../contract.ts";
 import { clockHeaders, simNow, type SimClock } from "./sim.ts";
-import { API, APP, LOGIN_CODE, OPS, PORTS, SITE, TECH, TURNSTILE } from "./stack.ts";
+import { API, APP, DOOR, LOGIN_CODE, OPS, PORTS, SITE, TECH, TURNSTILE } from "./stack.ts";
 import type { AppName, Steps } from "./steps.ts";
 
 export interface Answer<T = unknown> {
@@ -275,7 +275,7 @@ export class Phone {
       serviceWorkers: "block",
       reducedMotion: "reduce",
       permissions: app === "tech" ? ["camera", "geolocation"] : [],
-      geolocation: app === "tech" ? { latitude: 28.4598, longitude: 77.0268, accuracy: 12 } : undefined,
+      geolocation: app === "tech" ? { latitude: DOOR.lat, longitude: DOOR.lng, accuracy: 12 } : undefined,
     });
     context.setDefaultTimeout(8_000);
     // The stand-ins every page needs from outside: Turnstile hands out the dummy token, Razorpay's Checkout pays at

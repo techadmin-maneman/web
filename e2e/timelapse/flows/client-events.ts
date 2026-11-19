@@ -12,7 +12,7 @@ import { jobsToday, note, type Job } from "./field.ts";
 import { catalogue, PACKAGE } from "./catalog.ts";
 import { dateOf, indiaDateOf, MINUTE } from "../sim.ts";
 import { check } from "../steps.ts";
-import { TURNSTILE } from "../stack.ts";
+import { DOOR, TURNSTILE } from "../stack.ts";
 import { mobileFor, type Client, type Sim, type Visit } from "../world.ts";
 
 interface Hold {
@@ -305,7 +305,7 @@ export async function noShow(sim: Sim, wave: string, ruling: "refunded" | "uphel
         const checkin = await wire.must<{ wait_ends_at: string | null }>(
           "POST",
           `/api/tech/jobs/${job.id}/checkin`,
-          { lat: 28.4598, lng: 77.0268, accuracy_m: 10 },
+          { ...DOOR, accuracy_m: 10 },
           stepHeaders(job.starts_at),
         );
         check(checkin.wait_ends_at !== null, "the check-in gave no wait");

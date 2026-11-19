@@ -360,7 +360,7 @@ export async function priceChange(sim: Sim, wave: string, step: number): Promise
       await sim.ops.must("POST", "/api/prices", {
         item: "service",
         tier: PACKAGE,
-        amount_ex_gst: service,
+        amount: service,
         gst_percent: 0,
         valid_from: dateOf(sim.clock.day + 1),
       });
@@ -368,7 +368,7 @@ export async function priceChange(sim: Sim, wave: string, step: number): Promise
         await sim.ops.must("POST", "/api/prices", {
           item: "hair_system",
           tier: code,
-          amount_ex_gst: 2_800_000 + step * 140_000,
+          amount: 2_800_000 + step * 140_000,
           gst_percent: 0,
           valid_from: dateOf(sim.clock.day + 1),
         });
@@ -376,7 +376,7 @@ export async function priceChange(sim: Sim, wave: string, step: number): Promise
       await sim.ops.must("POST", `/api/cities/Gurgaon/prices`, {
         item: "service",
         tier: PACKAGE,
-        amount_ex_gst: service + 20_000,
+        amount: service + 20_000,
         gst_percent: 0,
         valid_from: dateOf(sim.clock.day + 1),
       });
