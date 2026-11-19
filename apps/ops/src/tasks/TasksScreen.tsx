@@ -5,10 +5,9 @@
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
-import { NoValue } from "@maneman/ui/NoValue";
 import { Panel } from "@maneman/ui/Panel";
 import { PanelFailed, PanelLoading } from "@maneman/ui/States";
-import { RowOpener, rowRule, Table } from "@maneman/ui/Table";
+import { useRowSelection } from "@maneman/ui/useRowSelection";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -17,17 +16,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Tasks } from "../api.ts";
 import { needsAHand, tasks } from "../content.ts";
 import { useHeaderSub } from "../frame/PageHead.tsx";
-import { OpsLink } from "../frame/Shell.tsx";
 import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { dueRule } from "../lib/due.ts";
 import { Left } from "../lib/Left.tsx";
 import { useIsPhone } from "../lib/media.ts";
-import { subjectOf, taskClientPath } from "../lib/task-links.ts";
+import { subjectOf } from "../lib/task-links.ts";
 import { useCity } from "../lib/city.ts";
 import { readTasks } from "../lib/waiting.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
-import { RowStep } from "./RowStep.tsx";
-import { ownerName, TaskDrawer, type Acting } from "./TaskDetail.tsx";
+import { BulkActions } from "./BulkActions.tsx";
+import { keyOf, TaskTable, type Listed } from "./TaskTable.tsx";
+import { TaskDrawer, type Acting } from "./TaskDetail.tsx";
 import { TaskFilters } from "./TaskFilters.tsx";
 import { narrowed, NO_FILTER, type Row, type TaskFilter } from "./task-views.ts";
 import { subOf } from "./task-subs.ts";
@@ -35,9 +34,6 @@ import styles from "./tasks-screen.module.css";
 
 /** As many as one look down the table takes in; the rest once ops ask for them. */
 const SHOWN_FIRST = 50;
-
-/** A task by its group and its row's id, as the API names it. */
-const keyOf = (row: Pick<Row, "group" | "task">) => `${row.group}/${row.task.id}`;
 
 /** The board, read with the tasks lapsed off it or without, and the switch between the two. */
 function useBoard() {
@@ -79,66 +75,6 @@ function rowsOf(board: Tasks, closed: readonly string[], owners: ReadonlyMap<str
     )
     .filter((row) => !closed.includes(keyOf(row)))
     .sort((one, other) => Date.parse(one.task.due) - Date.parse(other.task.due));
-}
-
-interface Listed {
-  readonly rows: readonly Row[];
-  readonly now: Date;
-  readonly onOpen: (row: Row) => void;
-  readonly onBooked: (row: Row) => void;
-  readonly actingOn: (row: Row) => Acting;
-}
-
-function TaskTable({ rows, now, onOpen, onBooked, actingOn }: Listed) {
-  const columns = tasks.columns;
-  return (
-    <Table fixed className={styles.table}>
-      <thead>
-        <tr>
-          <th scope="col">{columns.what}</th>
-          <th scope="col">{columns.who}</th>
-          <th scope="col">{columns.due}</th>
-          <th scope="col">{columns.owner}</th>
-          <th scope="col" />
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => {
-          const { group, task } = row;
-          const subject = subjectOf(group, task);
-          const sub = subOf(task, now);
-          return (
-            <tr key={keyOf(row)} className={rowRule(dueRule(task.due, now))}>
-              <th scope="row">
-                <RowOpener
-                  meta={sub === "" ? undefined : sub}
-                  onOpen={() => {
-                    onOpen(row);
-                  }}
-                >
-                  {tasks.groups[group]}
-                </RowOpener>
-              </th>
-              <td>
-                {task.person === null ? (
-                  subject
-                ) : (
-                  <OpsLink to={taskClientPath(group, task.person.id)}>{subject}</OpsLink>
-                )}
-              </td>
-              <td>
-                <Left due={task.due} now={now} />
-              </td>
-              <td>{row.owner === null ? <NoValue /> : ownerName(row.owner)}</td>
-              <td className={styles.step}>
-                <RowStep row={row} subject={subject} acting={actingOn(row)} onBooked={onBooked} />
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </Table>
-  );
 }
 
 function TaskList({ rows, now, onOpen }: Listed) {
@@ -213,14 +149,15 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
   const open = board === null ? 0 : board.groups.reduce((sum, group) => sum + group.count, 0) - closed.length;
   useOpenCount(open, alerts, onOpen);
 
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  if (board === null) return <PanelLoading />;
-
   const now = new Date(apiNow());
   const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as : null;
-  const rows = rowsOf(board, closed, owners);
+  const rows = board === null ? [] : rowsOf(board, closed, owners);
   const found = narrowed(rows, filter, me, now);
   const listed = all ? found.rows : found.rows.slice(0, SHOWN_FIRST);
+  const selection = useRowSelection(listed.map(keyOf));
+
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
+  if (board === null) return <PanelLoading />;
   const openRow = rows.find((row) => keyOf(row) === opened);
   const closeRow = (row: Row) => {
     setClosed((was) => [...was, keyOf(row)]);
@@ -244,6 +181,9 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
     },
   });
 
+  const chosen = listed.filter((row) => selection.selected.has(keyOf(row)));
+  // A row is chosen only where the person may change whose it is, or close it.
+  const chooses = !phone && listed.some((row) => actingOn(row).mayOwn || actingOn(row).closable);
   const shown = {
     rows: listed,
     now,
@@ -252,11 +192,13 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
     },
     onBooked: closeRow,
     actingOn,
+    selection: chooses ? selection : null,
   };
   return (
     <>
       <TaskFilters filter={filter} counts={found.counts} onFilter={onFilter} />
       <BoardNotes truncated={board.truncated} lapsed={board.lapsed} shown={lapsed.shown} onToggle={lapsed.toggle} />
+      {chooses && <BulkActions rows={chosen} actingOn={actingOn} onClear={selection.clear} onKeep={selection.only} />}
       <Panel titleId="tasks" title={tasks.title} headingRef={heading}>
         {found.rows.length === 0 && <EmptyState look="panel" line={tasks.empty} />}
         {found.rows.length > 0 && (phone ? <TaskList {...shown} /> : <TaskTable {...shown} />)}

@@ -3,7 +3,7 @@
 import { quantity } from "@maneman/web-kit/figures";
 import type { components } from "../api-schema.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
-import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN, UNCONFIRMED } from "./common.ts";
 import { DEPARTMENT_NAMES } from "./shell.ts";
 
 /** A task group as the API names it, from the generated schema, which the Worker-typed tests can read too. */
@@ -380,8 +380,24 @@ export const tasks = {
       not_found: changed("Already handled."),
       invalid_request: "That person hasn’t used the console recently.",
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
+  },
+  /** Tasks chosen on the board and changed together, each change its own as one row's is (./BulkActions.tsx). */
+  bulk: {
+    /** A row's box, read with what and whom: "Choose Replacement order · Rohit Malhotra". */
+    choose: (what: string, subject: string) => `Choose ${what} · ${subject}`,
+    take: (count: number) => `Take ${String(count)}`,
+    assignTo: "Assign to",
+    assign: (count: number) => `Assign ${String(count)}`,
+    close: (count: number) => `Close ${String(count)}`,
+    /** After: how many changed; with some not, how many, and why, as the first refused row's own words say. */
+    done: (done: number) => `${String(done)} done.`,
+    partly: (done: number, failed: number, why: string) =>
+      `${String(done)} done, ${String(failed)} not changed. ${why}`,
+    /** What Close waits for. */
+    whyFirst: "Say why first.",
   },
   /**
    * A visit left partly done closed without a follow-up, with why
@@ -420,6 +436,7 @@ export const tasks = {
       invalid_request: "Give a reason.",
       failure_reason: changed("That reason is no longer listed, or no hair system of the fit is on record."),
       offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },

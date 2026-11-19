@@ -304,7 +304,14 @@ export function Checkbox({
   readonly onInk?: boolean;
 }) {
   const box = (
-    <span className={classes(styles.tick, onInk && styles.tickOnInk, label === undefined && className)}>
+    <span
+      className={classes(
+        styles.tick,
+        onInk && styles.tickOnInk,
+        label === undefined && styles.tickAlone,
+        label === undefined && className,
+      )}
+    >
       <input {...rest} className={styles.tickInput} type="checkbox" />
       <Icon className={styles.tickMark} d={ICONS.tick} size="xs" />
     </span>

@@ -234,6 +234,16 @@
     cursor: pointer;
   }
 
+  /* A box with no words beside it, in a table's row: its tap a finger's, centred on the box drawn. */
+  .tickAlone .tickInput {
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    width: var(--tap);
+    height: var(--tap);
+    transform: translate(-50%, -50%);
+  }
+
   .tickMark {
     visibility: hidden;
     pointer-events: none;

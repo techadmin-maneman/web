@@ -36,7 +36,8 @@ test("writes each task’s owner in the board’s column, by first name, and non
   await expect(row(page, "Kunal Mehta")).toContainText("Priya");
   await expect(row(page, "Karan Bose")).toContainText("Anil");
   await expect(row(page, "Deepak Rao")).not.toContainText("Priya");
-  await expect(row(page, "Deepak Rao").getByRole("cell").nth(2)).toHaveText(/^—/);
+  // After its box to choose it, whom it is about and when it is due.
+  await expect(row(page, "Deepak Rao").getByRole("cell").nth(3)).toHaveText(/^—/);
 });
 
 test("takes a task, and hands it back, from its drawer", async ({ page }) => {
