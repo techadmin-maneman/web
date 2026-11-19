@@ -16,7 +16,7 @@ export interface ReceiptLine {
   readonly received: number;
   readonly damaged: number;
   readonly qcFailed: number;
-  /** What a hair system's failed pieces failed, of the checks ops make (src/policy/receipt-checks.ts). */
+  /** What a hair system's failed pieces failed, by their IDs, of the checks ops make (./qc-points.ts). */
   readonly qcFailedPoints: readonly string[];
   readonly lotCode: string | null;
   readonly expiresOn: string | null;
@@ -166,7 +166,7 @@ export async function receiveOrder(
     readonly poId: string;
     readonly lines: readonly ReceiptLine[];
     readonly supplierInvoice: string | null;
-    /** The points ops check a hair system against (src/policy/receipt-checks.ts). */
+    /** The points ops check a hair system against (./qc-points.ts). */
     readonly checks: readonly string[];
     /** Micro-rupees to one whole unit of the order's currency; null for an order in rupees. */
     readonly rateMicro: number | null;

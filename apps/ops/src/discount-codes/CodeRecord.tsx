@@ -1,6 +1,6 @@
 // A discount code's record (docs/decisions/0108-discount-codes.md): what it takes off, on what, until when, and what
-// it has come to. A code never changes once made, so its values only read; at its foot it is switched off, asked once,
-// or deleted while no booking has taken it.
+// it has come to. Until a booking takes it, its terms change and it is deleted (0283-changed-and-deleted-while-unused);
+// after, its values only read, and at its foot it is switched off, asked once.
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { rupees } from "@maneman/web-kit/money";
@@ -10,6 +10,9 @@ import { ReadRow } from "@maneman/ui/RecordRows";
 import form from "@maneman/ui/forms.module.css";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
+import { Button } from "@maneman/ui/Button";
+import { useState } from "react";
+import { ChangeCodeForm } from "./DiscountCodeForm.tsx";
 import { discountCodesApi } from "./discount-codes-api.ts";
 
 const copy = settings.discountCodes;
@@ -20,9 +23,24 @@ export function CodeRecord(props: {
   /** What it takes off, what it covers, when it ends, how far it is used and when last: as its row reads them. */
   readonly reads: Readonly<Record<"discount" | "covers" | "ends" | "uses" | "lastUsed" | "offOn", string>>;
   readonly onDone: (said: string) => Promise<void>;
+  /** India's date today, the earliest a changed code may end. */
+  readonly today: string;
 }) {
   const { code, reads } = props;
   const access = useAccess();
+  const [changing, setChanging] = useState(false);
+  if (changing) {
+    return (
+      <ChangeCodeForm
+        code={code}
+        today={props.today}
+        onChanged={() => void props.onDone(copy.changed)}
+        onClose={() => {
+          setChanging(false);
+        }}
+      />
+    );
+  }
   const rows: readonly (readonly [string, string])[] = [
     [columns.discount, reads.discount],
     [columns.covers, reads.covers],
@@ -42,6 +60,17 @@ export function CodeRecord(props: {
         ))}
       </div>
       <div className={form.recordFoot}>
+        {code.deletable && access.mayCall("PATCH /api/discount-codes/{id}") && (
+          <Button
+            variant="outline"
+            size="small"
+            onClick={() => {
+              setChanging(true);
+            }}
+          >
+            {copy.change}
+          </Button>
+        )}
         {code.switched_off === null && access.mayCall("POST /api/discount-codes/{id}/off") && (
           <DeleteAction
             name={code.code}
@@ -56,7 +85,7 @@ export function CodeRecord(props: {
           <DeleteAction
             name={code.code}
             send={() => discountCodesApi.deleteDiscountCode(code.id)}
-            refusal={(refused) => (refused === "in_use" ? copy.inUse : errorText(copy.errors, { code: refused }))}
+            refusal={(refused) => errorText(copy.errors, { code: refused })}
             onDeleted={() => props.onDone(copy.deleted)}
           />
         )}

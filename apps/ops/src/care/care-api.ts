@@ -65,6 +65,8 @@ export const careApi = {
       : client.post("/api/remedies/{id}/decline", { path: { id } }),
   addQuickReply: (title: string, text: string) => client.post("/api/quick-replies", { body: { title, text } }),
   retireQuickReply: (id: string) => client.post("/api/quick-replies/{id}/retire", { path: { id } }),
+  changeQuickReply: (id: string, title: string, text: string) =>
+    client.patch("/api/quick-replies/{id}", { path: { id }, body: { title, text } }),
   linkChat: (id: string, personId: string) =>
     client.post("/api/conversations/{id}/link", { path: { id }, body: { person_id: personId } }),
   saveStranger: (id: string, name: string, foundUs: FoundUs | undefined) =>

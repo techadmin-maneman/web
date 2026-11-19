@@ -12,6 +12,7 @@ import { codeOnVisit } from "../../domain/money/discount-code-uses.ts";
 import { codeTotals } from "../../domain/money/discount-code-figures.ts";
 import { enterOnVisit, removeFromVisit } from "../../domain/money/discount-code-visits.ts";
 import {
+  changeCode,
   BATCH_MOST,
   deleteCode,
   listCodes,
@@ -210,6 +211,25 @@ const deleteRoute = opsRoute({
   },
 });
 
+const changeRoute = opsRoute({
+  method: "patch",
+  path: "/api/discount-codes/{id}",
+  summary: "A code's terms changed, while no booking has taken it; its text stays as it was made",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    body: {
+      required: true,
+      ...json(NewCodesSchema.omit({ code: true, count: true }).openapi("DiscountCodeTerms")),
+    },
+  },
+  responses: {
+    204: { description: "Changed" },
+    400: errorResponse("invalid_request: fields names value, cap, covers or expires_on, as for a code made"),
+    404: errorResponse("not_found"),
+    409: errorResponse("in_use: a booking has taken it; switch it off and make another"),
+  },
+});
+
 const visitId = z.object({ id: z.uuid().openapi({ description: "The client's visit." }) });
 
 const enterRoute = opsRoute({
@@ -290,6 +310,18 @@ export function registerOpsDiscountCodes(app: App): void {
     const made = await makeCodes(c.env.DB, newCodesOf(body), { actor: actorOf(c), requestId, now });
     if (made.kind === "code_exists") return refuse(c, "code_exists");
     return c.json({ codes: [...made.codes] }, 201);
+  });
+
+  app.openapi(changeRoute, async (c) => {
+    const { requestId, deps } = c.var;
+    const now = deps.now();
+    const body = c.req.valid("json");
+    const refused = makeRefusal({ ...body, count: 1 }, indiaDate(now));
+    if (refused !== null) return refuse(c, "invalid_request", [refused]);
+    const terms = newCodesOf({ ...body, count: 1 });
+    const changed = await changeCode(c.env.DB, c.req.valid("param").id, terms, { actor: actorOf(c), requestId, now });
+    if (changed !== "changed") return refuse(c, changed);
+    return c.body(null, 204);
   });
 
   app.openapi(offRoute, async (c) => {

@@ -173,6 +173,7 @@ function OpenCode(props: {
     <FormDrawer title={code.code} onClose={props.onClose}>
       <CodeRecord
         code={code}
+        today={props.today}
         reads={{
           discount: discountOf(code),
           covers: coversOf(code),

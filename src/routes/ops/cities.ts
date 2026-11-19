@@ -6,6 +6,8 @@ import { z } from "@hono/zod-openapi";
 import { GSTIN_FORMAT, STATE_CODE_FORMAT } from "../../config/gst.ts";
 import { addCity, changeCity, type CityFields } from "../../domain/cities/city-changes.ts";
 import { allCities, cityNamed, techniciansByCity } from "../../domain/cities/cities.ts";
+import { deletableCities } from "../../domain/cities/city-delete.ts";
+import { deletableZones } from "../../domain/cities/zones.ts";
 import { cityPrices, setCityPrice, withdrawCityPrice } from "../../domain/money/city-prices.ts";
 import { cityRules, setCityRule } from "../../domain/cities/city-rules.ts";
 import { removeRegistration, setRegistration, stateRegistrations } from "../../domain/cities/gst-registrations.ts";
@@ -92,9 +94,13 @@ const citiesRoute = opsRoute({
             cities: z.array(
               CitySchema.extend({
                 technicians: z.number().int().openapi({ description: "Active technicians who work there." }),
+                deletable: z.boolean().openapi({ description: "Whether nothing but its own settings names it." }),
               }).openapi("ListedCity"),
             ),
             zones: z.array(z.string()),
+            deletable_zones: z
+              .array(z.string())
+              .openapi({ description: "The zones nothing names, which may be deleted." }),
             registrations: z.array(RegistrationSchema),
             rules: z.array(z.object({ city: z.string(), rule: z.enum(CITY_SETTING_NAMES), value: RuleValue }).strict()),
             rule_names: z.array(z.enum(CITY_SETTING_NAMES)).openapi({ description: "The rules a city may set." }),
@@ -280,9 +286,10 @@ export function registerOpsCities(app: App): void {
   app.openapi(citiesRoute, async (c) => {
     const db = c.env.DB;
     const today = indiaDate(c.var.deps.now());
-    const [cities, technicians, zones, registrations, rules, prices, inputs] = await Promise.all([
+    const [cities, technicians, deletable, zones, registrations, rules, prices, inputs] = await Promise.all([
       allCities(db),
       techniciansByCity(db),
+      deletableCities(db),
       db.prepare("SELECT name FROM zones ORDER BY sort, name").all<{ name: string }>(),
       stateRegistrations(db),
       cityRules(db),
@@ -299,8 +306,13 @@ export function registerOpsCities(app: App): void {
     );
     return c.json(
       {
-        cities: cities.map((city) => ({ ...city, technicians: technicians.get(city.name) ?? 0 })),
+        cities: cities.map((city) => ({
+          ...city,
+          technicians: technicians.get(city.name) ?? 0,
+          deletable: deletable.has(city.name),
+        })),
         zones: zones.results.map((row) => row.name),
+        deletable_zones: await deletableZones(db),
         registrations,
         rules: ruleRows,
         rule_names: [...CITY_SETTING_NAMES],

@@ -1,11 +1,13 @@
 // A city's record (docs/decisions/0198-cities-as-data.md): its name, its state for GST, its zone, and whether we serve
 // it and offer it, each changed where it reads; a new name moves every row that names it. Beneath, the rules it sets
-// for itself, each the national rule's until it sets its own, and the national rule's again once emptied.
+// for itself, each the national rule's until it sets its own, and the national rule's again once emptied. One that
+// nothing but those names is deleted, with them (docs/decisions/0283-changed-and-deleted-while-unused.md).
 
 import type { Sent } from "@maneman/web-kit/api";
 import { dayClock } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import type { paths } from "../api-schema.ts";
+import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { ChoiceRow, figureOrNone, FigureRow, TextRow } from "@maneman/ui/RecordRows";
 import form from "@maneman/ui/forms.module.css";
 import { cities as words } from "../content/cities.ts";
@@ -35,6 +37,7 @@ interface Props {
   /** Reads the page again, so a value kept shows as it now stands. */
   readonly reread: () => Promise<void>;
   readonly onRenamed: (name: string) => void;
+  readonly onDeleted: () => void;
 }
 
 /** A rule's figure as it reads: "200 metres", "6 pm". */
@@ -44,7 +47,12 @@ const figureOf = (rule: CityRuleName, figure: number) =>
     : `${String(figure)} ${rules.units[rule]}`;
 
 /** A rule the city sets for itself: its figure, or the national rule's while it sets none. */
-function OwnRule({ city, cities, reread, rule }: Omit<Props, "onRenamed"> & { readonly rule: CityRuleName }) {
+function OwnRule({
+  city,
+  cities,
+  reread,
+  rule,
+}: Pick<Props, "city" | "cities" | "reread"> & { readonly rule: CityRuleName }) {
   const access = useAccess();
   const set = cities.rules.find((each) => each.city === city.name && each.rule === rule)?.value;
   const own = typeof set === "number" ? set : null;
@@ -69,6 +77,22 @@ function OwnRule({ city, cities, reread, rule }: Omit<Props, "onRenamed"> & { re
         return null;
       }}
     />
+  );
+}
+
+/** A city nothing but its own settings names, deleted at its record's foot, asked once. */
+function DeleteCity({ city, onDeleted }: Pick<Props, "city" | "onDeleted">) {
+  const mayDelete = useAccess().mayCall("DELETE /api/cities/{name}");
+  if (!city.deletable || !mayDelete) return null;
+  return (
+    <div className={form.recordFoot}>
+      <DeleteAction
+        name={city.name}
+        send={() => citiesApi.deleteCity(city.name)}
+        refusal={(code) => errorText(copy.errors, { code })}
+        onDeleted={onDeleted}
+      />
+    </div>
   );
 }
 
@@ -143,6 +167,7 @@ export function CityRecord(props: Props) {
           ))}
         </div>
       </section>
+      <DeleteCity city={city} onDeleted={props.onDeleted} />
     </>
   );
 }

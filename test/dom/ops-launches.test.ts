@@ -22,6 +22,7 @@ const row = (pincode: string, served: boolean, pausedUntil: string | null = null
   waiting: 0,
   to_alert: 0,
   paused_until: pausedUntil,
+  deletable: false,
 });
 
 const LAUNCH: PincodeLaunch = {

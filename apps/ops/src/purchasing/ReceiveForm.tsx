@@ -9,7 +9,6 @@ import { Refusal } from "@maneman/ui/Refusal";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { microRupeesFromRupees, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import type { QcPoint } from "@rules/policy/receipt-checks.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "@maneman/ui/forms.module.css";
 import type { Order, Orders } from "./types.ts";
@@ -22,8 +21,8 @@ interface LineDraft {
   readonly received: string;
   readonly damaged: string;
   readonly failed: string;
-  /** What a hair system's failed pieces failed, of the checks ops make. */
-  readonly points: readonly QcPoint[];
+  /** What a hair system's failed pieces failed, of the checks ops make, by their IDs. */
+  readonly points: readonly string[];
   readonly lot: string;
   readonly expires: string;
 }
@@ -85,8 +84,11 @@ const boxesOf = (order: Order): string[] => [
 /** Words for the box the API refused, if it is this one. */
 type Refused = (box: string) => string | null;
 
+/** A check ops make, as the order list names it. */
+type Check = Orders["receipt_checks"][number];
+
 /** The checks a hair system's failed pieces failed, each ticked: those ops make, in their order. */
-function FailedPoints(props: { checks: readonly QcPoint[]; draft: LineDraft; onDraft: (draft: LineDraft) => void }) {
+function FailedPoints(props: { checks: readonly Check[]; draft: LineDraft; onDraft: (draft: LineDraft) => void }) {
   const { draft, onDraft } = props;
   return (
     <ChoiceGroup
@@ -96,13 +98,13 @@ function FailedPoints(props: { checks: readonly QcPoint[]; draft: LineDraft; onD
     >
       {props.checks.map((point) => (
         <Checkbox
-          key={point}
-          label={copy.checks[point]}
-          checked={draft.points.includes(point)}
+          key={point.id}
+          label={point.name}
+          checked={draft.points.includes(point.id)}
           onChange={(event) => {
             const points = event.target.checked
-              ? [...draft.points, point]
-              : draft.points.filter((each) => each !== point);
+              ? [...draft.points, point.id]
+              : draft.points.filter((each) => each !== point.id);
             onDraft({ ...draft, points });
           }}
         />
@@ -115,7 +117,7 @@ function LineFields(props: {
   name: string;
   draft: LineDraft;
   /** The checks ops make, for a hair system's line; null for any other. */
-  checks: readonly QcPoint[] | null;
+  checks: readonly Check[] | null;
   onDraft: (draft: LineDraft) => void;
   refused: Refused;
 }) {

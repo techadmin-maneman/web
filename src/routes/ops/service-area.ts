@@ -5,6 +5,8 @@
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { addPincode, serviceArea, setServiceArea } from "../../domain/clients/service-area.ts";
+import { deletePincode } from "../../domain/clients/pincode-delete.ts";
+import { cityOfPincode } from "../../domain/cities/cities.ts";
 import { listCities } from "../../domain/cities/cities.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
@@ -59,6 +61,19 @@ const addPincodeRoute = opsRoute({
     400: errorResponse("invalid_request: fields names the box refused, city for a city that is not one of ours"),
     403: errorResponse("access_required, or not_permitted: the city is outside the caller's Growth MANAGE"),
     409: errorResponse("pincode_held: the service area holds that pincode already"),
+  },
+});
+
+const deletePincodeRoute = opsRoute({
+  method: "delete",
+  path: "/api/pincodes/{pin}",
+  summary: "A pincode deleted, while we do not go there and no client, visit, waitlist or launch names it",
+  request: { params: z.object({ pin: z.string().regex(/^[1-8]\d{5}$/) }) },
+  responses: {
+    204: { description: "Deleted" },
+    403: errorResponse("access_required, or not_permitted: its city is outside the caller's Growth MANAGE"),
+    404: errorResponse("not_found: the service area does not hold it"),
+    409: errorResponse("in_use: we go there, or something names it; stop serving it instead"),
   },
 });
 
@@ -181,5 +196,15 @@ export function registerOpsServiceArea(app: App): void {
     if (added === "held") return refuse(c, "pincode_held");
     if (added === "unknown_city") return refuse(c, "invalid_request", ["city"]);
     return c.json(added, 201);
+  });
+
+  app.openapi(deletePincodeRoute, async (c) => {
+    const { pin } = c.req.valid("param");
+    const city = await cityOfPincode(c.env.DB, pin);
+    if (city === null) return refuse(c, "not_found");
+    if (!reachesCity(await routeReach(c), city)) return refuse(c, "not_permitted");
+    const change = { pincode: pin, city, actor: actorOf(c), requestId: c.var.requestId };
+    const deleted = await deletePincode(c.env.DB, change, c.var.deps.now());
+    return deleted === "deleted" ? c.body(null, 204) : refuse(c, "in_use");
   });
 }

@@ -34,6 +34,7 @@ const servedRow = (pincode: string, area: string, city: string): ServedPincode =
   waiting: 0,
   to_alert: 0,
   paused_until: null,
+  deletable: true,
 });
 
 let page: HTMLDivElement;

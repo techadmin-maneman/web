@@ -58,6 +58,11 @@ beforeEach(() => {
     contractChecked("ops", (url: string, init?: RequestInit) => {
       const address = new URL(url, "https://ops.maneman.test");
       asked.push(`${address.pathname}${address.search}`);
+      if (init?.method === "PATCH" && typeof init.body === "string") {
+        const body = JSON.parse(init.body) as Record<string, unknown>;
+        posted.push({ path: address.pathname, body });
+        return Promise.resolve(Response.json({ ...LATE, ...body }));
+      }
       if (init?.method === "POST" && typeof init.body === "string") {
         posted.push({ path: address.pathname, body: JSON.parse(init.body) as unknown });
         if (address.pathname.endsWith("/city-matter")) return Promise.resolve(Response.json({ city: "Gurgaon" }));
@@ -398,6 +403,33 @@ describe("the Messages page", () => {
     expect(posted.at(-1)).toEqual({
       path: "/api/quick-replies",
       body: { title: "Running late", text: "Hi {name}, about 20 minutes away." },
+    });
+  });
+
+  // A quick reply could be added and retired, never changed.
+  it("changes a quick reply in its own form, its title and words as they stand", async () => {
+    await showSettings();
+    act(() => {
+      [...document.body.querySelectorAll("button")]
+        .find((each) => each.textContent.trim() === copy.quick.change(LATE.title))
+        ?.click();
+    });
+    const title = document.body.querySelector<HTMLInputElement>('input[maxlength="60"]');
+    expect(title?.value).toBe(LATE.title);
+    act(() => {
+      if (title === null) return;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(title, "See you then");
+      title.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      [...document.body.querySelectorAll("button")]
+        .find((each) => each.textContent.trim() === copy.quick.save)
+        ?.click();
+      await answered();
+    });
+    expect(posted.at(-1)).toEqual({
+      path: `/api/quick-replies/${LATE.id}`,
+      body: { title: "See you then", text: LATE.text },
     });
   });
 

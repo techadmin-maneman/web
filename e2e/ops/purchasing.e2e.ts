@@ -53,7 +53,13 @@ const BOOK = {
   ],
   consumables: [{ code: "solvent", name: "Solvent", unit: "ml", unit_cost: 4000 }],
   second_approval_above_rupees: 0,
-  receipt_checks: ["base_size", "colour", "density", "lace_knots", "label"],
+  receipt_checks: [
+    { id: "base_size", name: "Base size" },
+    { id: "colour", name: "Colour against the ring" },
+    { id: "density", name: "Hair density" },
+    { id: "lace_knots", name: "Lace and knots" },
+    { id: "label", name: "Label" },
+  ],
   letterhead: null,
 } satisfies OpsReply<"/api/purchase-orders">;
 
@@ -254,7 +260,7 @@ test("receives what arrived of a sent order, and lists the receipt with its land
 
 // A receipt's quality check was one number: the supplier was told how many failed, never what was wrong.
 /** A sent order of three hair systems, its receive form open with two accepted and one failed, as ops check `checks`. */
-async function receivingHair(page: Page, checks: readonly ("colour" | "density")[]) {
+async function receivingHair(page: Page, checks: readonly string[]) {
   const hairLine = {
     id: "pl-2",
     consumable_code: "hs_essential",
@@ -266,7 +272,7 @@ async function receivingHair(page: Page, checks: readonly ("colour" | "density")
   const sent = {
     ...BOOK,
     consumables: [...BOOK.consumables, { code: "hs_essential", name: "Essential 8x10", unit: "piece", unit_cost: 0 }],
-    receipt_checks: [...checks],
+    receipt_checks: BOOK.receipt_checks.filter((check) => checks.includes(check.id)),
     orders: [{ ...ORDER, state: "sent" as const, approved_by: "a@maneman.in", lines: [hairLine] }],
   };
   await open(page, {
@@ -289,7 +295,7 @@ test("asks what a hair system's failed pieces failed, of the checks ops make, an
   const send = form.getByRole("button", { name: copy.receive.send });
   await expect(send).toBeDisabled();
 
-  await failed.getByRole("checkbox", { name: copy.checks.density }).check();
+  await failed.getByRole("checkbox", { name: "Hair density" }).check();
   const posted_ = posted(page, "/api/purchase-orders/po-1/receipts");
   await send.click();
   expect((await posted_).postDataJSON()).toMatchObject({

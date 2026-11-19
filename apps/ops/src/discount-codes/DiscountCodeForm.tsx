@@ -10,15 +10,18 @@ import { settings } from "../content/settings.ts";
 import {
   checkLines,
   codeError,
+  draftOf,
   COVERS,
   EMPTY,
   isBatch,
   isReady,
   requestOf,
+  termsOf,
   type Covered,
   type Draft,
 } from "./discount-draft.ts";
 import { AddForm } from "@maneman/ui/AddForm";
+import type { DiscountCode } from "../api.ts";
 import form from "@maneman/ui/forms.module.css";
 import { discountCodesApi } from "./discount-codes-api.ts";
 import styles from "./discount-codes.module.css";
@@ -206,6 +209,39 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
         }}
       />
     </>
+  );
+}
+
+/** A code's terms changed, no booking having taken it: its boxes as it stands, its text kept. */
+export function ChangeCodeForm({
+  code,
+  today,
+  onChanged,
+  onClose,
+}: {
+  code: DiscountCode;
+  today: string;
+  onChanged: () => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState<Draft>(() => draftOf(code));
+  const edit: Edit = (change) => {
+    setDraft({ ...draft, ...change });
+  };
+  return (
+    <AddForm
+      title={copy.changeTitle(code.code)}
+      words={{ add: copy.save }}
+      errors={copy.errors}
+      boxes={["kind", "value", "cap", "covers", "expires_on", "max_uses"]}
+      send={() => discountCodesApi.changeDiscountCode(code.id, termsOf(draft))}
+      onAdded={onChanged}
+      onCancel={onClose}
+    >
+      <WhatItTakesOff draft={draft} edit={edit} />
+      <Covers draft={draft} edit={edit} />
+      <Limits draft={draft} today={today} edit={edit} />
+    </AddForm>
   );
 }
 

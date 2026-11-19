@@ -5,7 +5,6 @@ import { rupees } from "@maneman/web-kit/money";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 import { grantPhrasing } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
-import { purchasing } from "./purchasing.ts";
 import { tasks } from "./tasks.ts";
 
 /** A unit's noun for one of it: "1 visit", not "1 visits". */
@@ -119,8 +118,12 @@ export const settings = {
     never: "—",
     narrow: "Filter codes",
     switchedOff: "Switched off.",
-    inUse: "A booking has used it. Switch it off instead.",
     deleted: "Deleted.",
+    /** A code no booking has taken: its terms changed, its text kept. */
+    change: "Change terms",
+    changeTitle: (code: string) => `Change ${code}`,
+    save: "Save",
+    changed: "Terms changed.",
     /** Codes are found by how they begin, so "SPR" finds SPRTEST. */
     find: "Code starts with",
     findButton: "Find",
@@ -149,6 +152,7 @@ export const settings = {
       expires_on: "The last day can’t be in the past.",
       max_uses: "Generated codes are single-use.",
       code_exists: "That code already exists.",
+      in_use: "A booking has used it. Switch it off instead.",
       not_found: changed("That code no longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -213,7 +217,6 @@ export const settings = {
       late_change_charge: dispatch.typeNames,
       same_day_booking: dispatch.typeNames,
       po_own_approval: { drafter: "On its drafter’s approval" },
-      receipt_checks: purchasing.checks,
       booking_rules: {
         step: "Starts every",
         arrival: "Arrives within",
@@ -350,7 +353,6 @@ export const settings = {
       no_show_waiver: { refunded: "Refunded", kept: "Kept", returned: "Returned", spent: "Spent" },
       same_day_booking: { yes: "Yes", no: "No" },
       po_own_approval: { alone: "Approved", second: "Waits for a second manager" },
-      receipt_checks: { checked: "Checked", skipped: "Not checked" },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /** The check before a rule is sent: each figure that moves, the old beside the new. */
     confirm: {

@@ -1,8 +1,8 @@
-// Saved answers for the Care inbox (docs/decisions/0141-quick-replies.md): a Customer Care manager adds and retires
-// them; Care pick one in a chat, and the console fills in {name} and {next_visit} before it is sent. Each change is
+// Saved answers for the Care inbox (docs/decisions/0141-quick-replies.md): a Customer Care manager adds, changes and
+// retires them; Care pick one in a chat, and the console fills in {name} and {next_visit} before it is sent. Each change is
 // audited.
 
-import { auditStatement, type AuditActor } from "../platform/audit.ts";
+import { auditStatement, auditStatementWhen, type AuditActor } from "../platform/audit.ts";
 
 export interface QuickReply {
   readonly id: string;
@@ -47,6 +47,33 @@ export async function addQuickReply(
     ),
   ]);
   return { id, title: change.title, text: change.text };
+}
+
+/** An answer still on the list, its title and words changed; null for one not on it. */
+export async function changeQuickReply(
+  db: D1Database,
+  change: Change & { readonly id: string; readonly title: string; readonly text: string },
+): Promise<QuickReply | null> {
+  const [changed] = await db.batch([
+    db
+      .prepare("UPDATE quick_replies SET title = ?2, text = ?3 WHERE id = ?1 AND retired_at IS NULL")
+      .bind(change.id, change.title, change.text),
+    // Written only where the answer was on the list, as the change was.
+    auditStatementWhen(
+      db,
+      {
+        surface: "ops",
+        actor: change.actor,
+        action: "quick_reply.change",
+        subject: { kind: "quick_reply", id: change.id },
+        requestId: change.requestId,
+        detail: { title: change.title },
+      },
+      change.now,
+      { sql: "EXISTS (SELECT 1 FROM quick_replies WHERE id = ?10 AND retired_at IS NULL)", binds: [change.id] },
+    ),
+  ]);
+  return changed?.meta.changes === 1 ? { id: change.id, title: change.title, text: change.text } : null;
 }
 
 /** Takes an answer off the list; false for one not on it. */
