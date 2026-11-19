@@ -137,10 +137,13 @@ function purchasingDatabase(): DatabaseSync {
   return db;
 }
 
+/** The rows one statement answers, as the script reads them from D1. */
+const rowsOf = (db: DatabaseSync, sql: string) => db.prepare(sql).all() as { kind: KnownId["kind"]; id: string }[];
+
 describe("the IDs staging's database keeps", () => {
   it("are every client's Books customer and CRM lead, erased clients' too, and each payment's and invoice's, a kept charge's too", () => {
     const db = stagingDatabase();
-    const known = knownIds((sql) => db.prepare(sql).all() as KnownId[]);
+    const known = knownIds((sql) => rowsOf(db, sql));
 
     expect(known).toEqual(
       expect.arrayContaining([
@@ -161,7 +164,7 @@ describe("the IDs staging's database keeps", () => {
   it("are each supplier's vendor and each receipt's bill", () => {
     const db = purchasingDatabase();
 
-    expect(knownIds((sql) => db.prepare(sql).all() as KnownId[])).toEqual([
+    expect(knownIds((sql) => rowsOf(db, sql))).toEqual([
       { kind: "books/contacts", id: "vendor-1" },
       { kind: "books/bills", id: "bill-1" },
     ]);
