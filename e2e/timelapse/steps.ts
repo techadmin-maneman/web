@@ -20,8 +20,11 @@ export interface StepMeta {
   readonly action: string;
   /** "ui" when a person's clicks did it, "api" when the page's own API calls did and the screen was read after. */
   readonly mode?: "ui" | "api" | "ui+api";
-  /** Answers of these statuses are the step's point, not a fault (a refusal it means to provoke). */
-  readonly allow?: readonly number[];
+  /**
+   * Answers of these statuses are the step's point, not a fault (a refusal it means to provoke); one with a path is
+   * allowed on that path alone (an answer the screen draws nothing for, by design).
+   */
+  readonly allow?: readonly (number | { readonly status: number; readonly path: RegExp })[];
 }
 
 export interface Problem {
@@ -108,7 +111,9 @@ export class Steps {
     const status = response.status();
     const method = response.request().method();
     const where = `${method} ${url.pathname}`;
-    const allowed = this.current?.allow?.includes(status) ?? false;
+    const allowed = (this.current?.allow ?? []).some((each) =>
+      typeof each === "number" ? each === status : each.status === status && each.path.test(url.pathname),
+    );
     if (status >= 400 && !allowed) {
       const step = this.current;
       const read = response

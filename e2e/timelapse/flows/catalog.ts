@@ -119,7 +119,7 @@ export async function setUpCatalogue(sim: Sim, wave: string): Promise<void> {
         await ops.must("POST", "/api/prices", {
           item,
           tier: PACKAGE,
-          amount_ex_gst: amount,
+          amount: amount,
           gst_percent: 0,
           valid_from: dateOf(day + 1),
         });
@@ -137,7 +137,7 @@ export async function setUpCatalogue(sim: Sim, wave: string): Promise<void> {
         await ops.must("POST", "/api/prices", {
           item: "hair_system",
           tier: code,
-          amount_ex_gst: 2_800_000,
+          amount: 2_800_000,
           gst_percent: 0,
           valid_from: dateOf(day + 1),
         });

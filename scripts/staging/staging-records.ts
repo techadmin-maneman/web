@@ -28,7 +28,7 @@ import {
   crmScopeMissing,
   isStagingLabelled,
   isStagingMarked,
-  KNOWN_IDS_SQL,
+  knownIds,
   leftAlone,
   looksLikeATest,
   REVIEWED_LIST,
@@ -239,7 +239,8 @@ async function leadName(id: string): Promise<string | null> {
  * listed too. One the org no longer holds is noted, for its link to be cleared.
  */
 async function readKnown(found: Found): Promise<void> {
-  for (const known of unlisted(d1Query<KnownId>("staging", KNOWN_IDS_SQL), found.records)) {
+  const kept = knownIds((sql) => d1Query<KnownId>("staging", sql));
+  for (const known of unlisted(kept, found.records)) {
     if (known.kind === "crm/Leads" && found.unreadable.includes("Leads")) continue;
     const name = known.kind === "crm/Leads" ? await leadName(known.id) : await booksName(known.kind, known.id);
     if (name === null) found.gone.push(known);

@@ -1,6 +1,6 @@
 # Getting started: the whole system on your laptop
 
-Everything runs locally with stub providers: no Zoho, no Razorpay, no WhatsApp and no Google, and nothing leaves the machine. You need Node 24.11 or later (`.nvmrc`) and Chrome or Firefox, which resolve `app.localhost` and the other `*.localhost` hosts on their own.
+Everything runs locally with stub providers: no Zoho, no Razorpay, no WhatsApp and no Google, and nothing leaves the machine. You need Node 24.15 or later (`.nvmrc`) and Chrome or Firefox, which resolve `app.localhost` and the other `*.localhost` hosts on their own.
 
 ```sh
 npm ci

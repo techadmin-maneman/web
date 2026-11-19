@@ -5,14 +5,14 @@
 // referred by a fitted client.
 
 import { proveNumber, stepHeaders, type Wire } from "../actors.ts";
-import { appOf, idOf } from "./clients.ts";
+import { appOf, idOf, windowOf, type WindowHours } from "./clients.ts";
 
 export { idOf };
-import { jobsToday, note, type Job } from "./field.ts";
+import { codeOf, jobsToday, note, type Job } from "./field.ts";
 import { catalogue, PACKAGE } from "./catalog.ts";
 import { dateOf, indiaDateOf, MINUTE } from "../sim.ts";
 import { check } from "../steps.ts";
-import { TURNSTILE } from "../stack.ts";
+import { DOOR, TURNSTILE } from "../stack.ts";
 import { mobileFor, type Client, type Sim, type Visit } from "../world.ts";
 
 interface Hold {
@@ -305,7 +305,7 @@ export async function noShow(sim: Sim, wave: string, ruling: "refunded" | "uphel
         const checkin = await wire.must<{ wait_ends_at: string | null }>(
           "POST",
           `/api/tech/jobs/${job.id}/checkin`,
-          { lat: 28.4598, lng: 77.0268, accuracy_m: 10 },
+          { ...DOOR, accuracy_m: 10 },
           stepHeaders(job.starts_at),
         );
         check(checkin.wait_ends_at !== null, "the check-in gave no wait");
@@ -472,8 +472,10 @@ export async function grievanceAndRefund(sim: Sim, wave: string): Promise<void> 
 
 /** A client whose profile matches no stock code: a custom order raised to it, its link paid. */
 export async function customOrder(sim: Sim, wave: string): Promise<void> {
-  const client = live(sim).find(
-    (each, index) => index % 9 === 8 && each.goingAhead === true && !each.fitted && each.customOrder !== true,
+  // Signed in to the app or not: one whose fit is never booked there may not be, and the step signs them in.
+  const client = sim.world.clients.find(
+    (each, index) =>
+      codeOf(index) === null && !each.erased && each.goingAhead === true && !each.fitted && each.customOrder !== true,
   );
   if (client === undefined || catalogue.supplier === undefined) return;
   await sim.steps.run(
@@ -627,11 +629,12 @@ export async function referFriend(sim: Sim, wave: string): Promise<void> {
       const refer = await wire.must<{ code: string }>("GET", "/api/refer");
       await sim.site.must("GET", `/api/r/${refer.code}`);
       const pincode = sim.world.cities.get(referrer.city)?.pincodes[0] ?? referrer.pincode;
-      const open = await sim.site.must<{ days: { starts: { starts_at: string; open?: boolean }[] }[] }>(
-        "GET",
-        `/api/availability/public?pincode=${pincode}&plan=consultation`,
-      );
-      const start = open.days.flatMap((day) => day.starts.filter((each) => each.open !== false))[2];
+      const open = await sim.site.must<{
+        days: { hours: WindowHours; starts: { starts_at: string; open?: boolean }[] }[];
+      }>("GET", `/api/availability/public?pincode=${pincode}&plan=consultation`);
+      const start = open.days.flatMap((day) =>
+        day.starts.filter((each) => each.open !== false).map((each) => ({ ...each, hours: day.hours })),
+      )[2];
       check(start !== undefined, "no start for the friend");
       if (start === undefined) return;
       const friend: Client = {
@@ -655,7 +658,7 @@ export async function referFriend(sim: Sim, wave: string): Promise<void> {
           number_code_id: numberCodeId,
           pincode,
           date: indiaDateOf(Date.parse(start.starts_at)),
-          window: "morning",
+          window: windowOf(start.starts_at, start.hours),
           starts_at: start.starts_at,
           address: {
             line1: "House 7, Block A",

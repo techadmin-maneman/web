@@ -65,6 +65,7 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 | `lighthouse.ts`             | Lighthouse on the built site and the client app                                                                                    | `npm run lighthouse`, CI         | no     |
 | `lint.ts`                   | ESLint in four runs, each holding its own part's TypeScript projects                                                               | `npm run lint`, CI               | no     |
 | `old-code-on-new-schema.ts` | the deployed code's Worker tests against the new migrations                                                                        | `ci.yml`                         | no     |
+| `playwright-image.ts`       | each job's Playwright image is pinned by its digest and is the version the lockfile installs                                       | CI's build and browser jobs      | no     |
 | `pr-size.ts`                | warns when a pull request changes more by hand than one review reads well                                                          | `ci.yml`                         | no     |
 
 ## release/

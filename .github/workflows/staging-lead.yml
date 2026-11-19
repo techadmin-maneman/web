@@ -26,8 +26,6 @@ jobs:
     timeout-minutes: 5
     environment: staging
     env:
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
       PINCODE: ${{ inputs.pincode }}
       WINDOW: ${{ inputs.window }}
     steps:
@@ -36,7 +34,10 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: node scripts/staging/staging-lead.ts --pincode "$PINCODE" --window "$WINDOW"
+        # The secrets reach this step alone, not the setup before it, which runs packages' install scripts.
         env:
-          # Proves the test number first, as every booking's number is proved, in this step alone
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          # Proves the test number first, as every booking's number is proved
           # (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
           STAGING_TEST_RECORD_CODE: ${{ secrets.STAGING_TEST_RECORD_CODE }}

@@ -37,5 +37,7 @@ export const BASELINE = ".wrangler/timelapse-baseline";
 export const OUT = "test-results/timelapse";
 
 export const LOGIN_CODE = "246810";
+/** Where the local geocoder places an address it has no building for, as every one the run types (src/providers/geocode/stub.ts): the door. */
+export const DOOR = { lat: 28.39, lng: 77.06 } as const;
 /** Cloudflare's dummy token, which the local API accepts (docs/turnstile.md). */
 export const TURNSTILE = "XXXX.DUMMY.TOKEN.XXXX";

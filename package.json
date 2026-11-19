@@ -9,7 +9,7 @@
     "tools/*"
   ],
   "engines": {
-    "node": ">=24.11.0"
+    "node": ">=24.15.0"
   },
   "scripts": {
     "gen": "npm run types && npm run openapi && npm run schema && npm run upkeep-sql && npm run adr-index && npm run words && npm run settings",

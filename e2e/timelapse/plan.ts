@@ -49,7 +49,7 @@ import { distribute, draftAndSend, receive, stockAtRisk } from "./flows/purchasi
 import { eveningBookings } from "./flows/routine.ts";
 import { CHECKPOINT_PAGES, EVERY_PAGE, sweep } from "./flows/sweep.ts";
 import { at, isMonthEnd, monthOf, weekdayOf } from "./sim.ts";
-import type { Sim } from "./world.ts";
+import type { Client, Sim } from "./world.ts";
 
 export interface Wave {
   readonly name: string;
@@ -249,13 +249,7 @@ const WAVES: readonly Wave[] = [
       await eveningBookings(sim, `bookings#${String(day)}`);
       await settleHolds(sim, `bookings#${String(day)}`);
       if (day % 14 === 3) {
-        const due = sim.world.clients.find(
-          (client) =>
-            client.fitted &&
-            !client.erased &&
-            client.wire !== undefined &&
-            !client.visits.some((id) => sim.world.visits.get(id)?.status === "booked"),
-        );
+        const due = await offeredABooking(sim);
         if (due !== undefined) await appBooking(sim, `app-booking#${String(Math.ceil(day / 14))}`, due);
       }
     },
@@ -283,5 +277,23 @@ const WAVES: readonly Wave[] = [
     },
   },
 ];
+
+/**
+ * A fitted client the app offers a booking to: one with no visit booked, under way or being booked, and no consultation
+ * to come, as the app reads it (apps/app/src/visits/VisitsScreen.tsx).
+ */
+async function offeredABooking(sim: Sim): Promise<Client | undefined> {
+  for (const client of sim.world.clients) {
+    if (!client.fitted || client.erased || client.wire === undefined) continue;
+    const me = await client.wire.call<{ next_visit: unknown; being_booked: unknown; consultation: unknown }>(
+      "GET",
+      "/api/me",
+    );
+    if (me.status !== 200) continue;
+    const { next_visit: next, being_booked: booking, consultation } = me.body;
+    if (next === null && booking === null && consultation === null) return client;
+  }
+  return undefined;
+}
 
 export const wavesOn = (day: number): readonly Wave[] => WAVES.filter((wave) => wave.on(day));

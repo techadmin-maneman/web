@@ -194,7 +194,13 @@ export async function techJobOnScreen(
       screen: `/jobs/${job.id}`,
       action: `${technician.name} works ${job.client_name ?? "a client"}'s ${job.type ?? "visit"} on the phone${offline ? ", signal lost mid-job" : ""}`,
       mode: "ui",
-      allow: [401],
+      // The last visit's photo at an angle it has none of: the camera hides the comparison. An upload link that
+      // lapsed while the clock ran on: the phone asks for another and sends again (apps/tech/src/store/outbox.ts).
+      allow: [
+        401,
+        { status: 404, path: /^\/api\/tech\/jobs\/[^/]+\/compare\// },
+        { status: 404, path: /^\/api\/tech\/photos\// },
+      ],
     },
     async () => {
       const phone = await phoneOf(sim, technician);

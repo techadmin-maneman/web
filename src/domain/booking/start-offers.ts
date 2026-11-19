@@ -17,6 +17,9 @@ import { tieRange } from "./technician-choice.ts";
 import { loadDayPlans, type CityOf, type DayPlans, type Leaving } from "./day-plans.ts";
 import { bookingCity, loadBlackouts, techniciansFor, type Fitting, type Moving, type Technician } from "./occupancy.ts";
 import { visitsOfClient } from "./technician-rotation.ts";
+import { keptDrivesFit } from "./drive-check.ts";
+import { keptDriveThrough } from "../platform/road-drives.ts";
+import type { Point, RouteResult } from "../../providers/routes/index.ts";
 
 /** A visit to place: its kind, how long it takes, the day its service is retired from, and the fit it is. */
 export interface StartVisit {
@@ -140,6 +143,17 @@ function inReach(
   });
 }
 
+/** Google's kept drives, each set of pins looked up once for the request: the starts in one gap share their drives. */
+function keptOnce(): (points: readonly Point[]) => Promise<RouteResult | null> {
+  const seen = new Map<string, Promise<RouteResult | null>>();
+  return (points) => {
+    const key = JSON.stringify(points);
+    const found = seen.get(key) ?? keptDriveThrough(points);
+    seen.set(key, found);
+    return found;
+  };
+}
+
 /** Each day from `from`, for `days` days, with the starts some technician can take and who, best first. */
 export async function startOffers(input: {
   readonly db: D1Database;
@@ -179,35 +193,46 @@ export async function startOffers(input: {
   const rules = planRulesOf(inputs);
   const toPlan = { minutes: visit.minutes, pin, fit: visit.fitting !== null && visit.fitting !== undefined };
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
-  return Array.from({ length: days }, (_, index): DayStarts => {
-    const date = addDays(from, index);
-    const earliest = earliestOn(date, visit, inputs, now);
-    if (earliest === null || closed.has(date) || retired(date)) return { date, starts: [] };
-    const byStart = new Map<number, (Taker & { load: { day: number; week: number } })[]>();
-    for (const technician of technicians) {
-      const day = plans.day(technician.id, date);
-      if (day === null) continue;
-      const load = loadOf(plans, technician.id, date);
-      for (const placed of placements(day, toPlan, rules, earliest)) {
-        const takers = byStart.get(placed.start) ?? [];
-        takers.push({ technician, addedDrive: placed.addedDrive, revision: plans.revision(technician.id, date), load });
-        byStart.set(placed.start, takers);
+  const kept = keptOnce();
+  return Promise.all(
+    Array.from({ length: days }, async (_, index): Promise<DayStarts> => {
+      const date = addDays(from, index);
+      const earliest = earliestOn(date, visit, inputs, now);
+      if (earliest === null || closed.has(date) || retired(date)) return { date, starts: [] };
+      const byStart = new Map<number, (Taker & { load: { day: number; week: number } })[]>();
+      for (const technician of technicians) {
+        const day = plans.day(technician.id, date);
+        if (day === null) continue;
+        const load = loadOf(plans, technician.id, date);
+        for (const placed of placements(day, toPlan, rules, earliest)) {
+          // A start Google's drive was already found to leave no room for is not offered (./drive-check.ts).
+          const placing = { time: timeOf(placed.start), minutes: visit.minutes, pin };
+          if (!(await keptDrivesFit({ day, rules, now }, placing, kept))) continue;
+          const takers = byStart.get(placed.start) ?? [];
+          takers.push({
+            technician,
+            addedDrive: placed.addedDrive,
+            revision: plans.revision(technician.id, date),
+            load,
+          });
+          byStart.set(placed.start, takers);
+        }
       }
-    }
-    const barred = techniciansBarredOn(clientVisits, date);
-    const starts = [...byStart.entries()]
-      .sort(([a], [b]) => a - b)
-      .map(([start, takers]): StartOffer => {
-        const allowed = allowedTechnicians(takers, (taker) => barred.has(taker.technician.id)).sort(
-          (a, b) => a.addedDrive - b.addedDrive || a.load.day - b.load.day || a.load.week - b.load.week,
-        );
-        const time = timeOf(start);
-        return {
-          time,
-          startsAt: indiaInstant(date, time),
-          takers: allowed.map(({ technician, addedDrive, revision }) => ({ technician, addedDrive, revision })),
-        };
-      });
-    return { date, starts };
-  });
+      const barred = techniciansBarredOn(clientVisits, date);
+      const starts = [...byStart.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([start, takers]): StartOffer => {
+          const allowed = allowedTechnicians(takers, (taker) => barred.has(taker.technician.id)).sort(
+            (a, b) => a.addedDrive - b.addedDrive || a.load.day - b.load.day || a.load.week - b.load.week,
+          );
+          const time = timeOf(start);
+          return {
+            time,
+            startsAt: indiaInstant(date, time),
+            takers: allowed.map(({ technician, addedDrive, revision }) => ({ technician, addedDrive, revision })),
+          };
+        });
+      return { date, starts };
+    }),
+  );
 }

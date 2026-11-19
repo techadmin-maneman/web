@@ -15,13 +15,14 @@ import {
   crmScopeMissing,
   DELETE_ORDER,
   isStagingMarked,
-  KNOWN_IDS_SQL,
+  knownIds,
   leftAlone,
   looksLikeATest,
   REVIEWED_LIST,
   toDelete,
   unlinkStatements,
   unlisted,
+  type KnownId,
   type StagingRecord,
 } from "../../../scripts/lib/staging-records.ts";
 import { migratedDatabase } from "../d1-over-sqlite.ts";
@@ -136,9 +137,13 @@ function purchasingDatabase(): DatabaseSync {
   return db;
 }
 
+/** The rows one statement answers, as the script reads them from D1. */
+const rowsOf = (db: DatabaseSync, sql: string) => db.prepare(sql).all() as { kind: KnownId["kind"]; id: string }[];
+
 describe("the IDs staging's database keeps", () => {
   it("are every client's Books customer and CRM lead, erased clients' too, and each payment's and invoice's, a kept charge's too", () => {
-    const known = stagingDatabase().prepare(KNOWN_IDS_SQL).all();
+    const db = stagingDatabase();
+    const known = knownIds((sql) => rowsOf(db, sql));
 
     expect(known).toEqual(
       expect.arrayContaining([
@@ -159,9 +164,9 @@ describe("the IDs staging's database keeps", () => {
   it("are each supplier's vendor and each receipt's bill", () => {
     const db = purchasingDatabase();
 
-    expect(db.prepare(KNOWN_IDS_SQL).all()).toEqual([
-      { kind: "books/bills", id: "bill-1" },
+    expect(knownIds((sql) => rowsOf(db, sql))).toEqual([
       { kind: "books/contacts", id: "vendor-1" },
+      { kind: "books/bills", id: "bill-1" },
     ]);
   });
 
