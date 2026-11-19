@@ -69,6 +69,18 @@ test.describe("the service area", () => {
     await expect(row(page, "122018")).toHaveCount(0);
   });
 
+  // A phone shows the table's head here, for its box that chooses every pincode; its sorts were 24 px taps.
+  test("gives each column's sort a thumb's tap on a phone, beside the box that chooses every pincode", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, "/settings/areas");
+    const sorts = page.locator("thead button");
+    await expect(sorts.first()).toBeVisible();
+    const heights = await sorts.evaluateAll((all) => all.map((sort) => sort.getBoundingClientRect().height));
+    expect(heights.filter((height) => height < 44)).toEqual([]);
+  });
+
   test("narrows a city’s pincodes to those served or not, or by a search", async ({ page }) => {
     await open(page, "/settings/areas");
     const rows = page.getByRole("table").getByRole("row");
