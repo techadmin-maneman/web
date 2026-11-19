@@ -30,7 +30,8 @@ const mobile = process.env.STAGING_TEST_MOBILE;
 const testRecordCode = process.env.STAGING_TEST_RECORD_CODE;
 if (values.photo === undefined || mobile === undefined || testRecordCode === undefined) {
   console.error(
-    "usage: node --env-file=.env.staging-access --env-file=.env.staging-test-code staging-tryon.ts --photo <path> " +
+    "usage: node --env-file=.env.staging-access --env-file=.env.staging-test-code scripts/staging/staging-tryon.ts " +
+      "--photo <path> " +
       "[--preset …], with STAGING_TEST_MOBILE an allowlisted number",
   );
   process.exit(2);

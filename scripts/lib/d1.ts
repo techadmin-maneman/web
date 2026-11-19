@@ -1,5 +1,5 @@
 // A database a script reads or writes, through wrangler: the local one by its binding, a deployed one by its name and
-// its environment. Statements go as a file, never through the shell's quoting.
+// its environment. Nothing goes through a shell's quoting.
 
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -15,25 +15,19 @@ function targetOf(environment: EnvironmentName): string[] {
 }
 
 /**
- * The rows one statement answers. It goes as a file too: wrangler on Windows runs only the first line of a statement
- * given with --command.
+ * wrangler's arguments for one read. The statement goes by --command, every line of it, as no shell stands between:
+ * by --file, a deployed database runs it as an import, which answers with counts, never rows.
  */
+export function queryArguments(environment: EnvironmentName, sql: string): string[] {
+  return [WRANGLER, "d1", "execute", ...targetOf(environment), "--json", "--command", sql, "--yes"];
+}
+
+/** The rows one statement answers. */
 export function d1Query<T>(environment: EnvironmentName, sql: string): T[] {
-  const folder = mkdtempSync(join(tmpdir(), "mm-d1-"));
-  try {
-    const file = join(folder, "query.sql");
-    writeFileSync(file, sql);
-    const output = execFileSync(
-      process.execPath,
-      [WRANGLER, "d1", "execute", ...targetOf(environment), "--json", "--file", file, "--yes"],
-      { encoding: "utf8" },
-    );
-    // wrangler prints its banner before the JSON when the terminal is not a TTY.
-    const answers = JSON.parse(output.slice(output.indexOf("["))) as { results: T[] }[];
-    return answers[0]?.results ?? [];
-  } finally {
-    rmSync(folder, { recursive: true, force: true });
-  }
+  const output = execFileSync(process.execPath, queryArguments(environment, sql), { encoding: "utf8" });
+  // wrangler prints its banner before the JSON when the terminal is not a TTY.
+  const answers = JSON.parse(output.slice(output.indexOf("["))) as { results: T[] }[];
+  return answers[0]?.results ?? [];
 }
 
 /** Runs the statements as one file. `show` passes wrangler's own report of it through to the terminal. */

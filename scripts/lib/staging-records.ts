@@ -93,17 +93,30 @@ export function unlisted(known: readonly KnownId[], found: readonly StagingRecor
   return known.filter((each) => !listed.has(keyOf(each)));
 }
 
-/** Every Books and CRM ID staging's database keeps, with where its record is. */
-export const KNOWN_IDS_SQL = [
-  "SELECT 'books/contacts' AS kind, books_customer_id AS id FROM people WHERE books_customer_id IS NOT NULL",
-  "UNION SELECT 'books/customerpayments', books_payment_id FROM payments WHERE books_payment_id IS NOT NULL",
-  "UNION SELECT 'books/invoices', books_invoice_id FROM appointments WHERE books_invoice_id IS NOT NULL",
-  "UNION SELECT 'books/invoices', books_kept_invoice_id FROM payments WHERE books_kept_invoice_id IS NOT NULL",
-  "UNION SELECT 'books/contacts', books_vendor_id FROM suppliers WHERE books_vendor_id IS NOT NULL",
-  "UNION SELECT 'books/bills', books_bill_id FROM receipts WHERE books_bill_id IS NOT NULL",
-  "UNION SELECT 'books/vendorcredits', books_credit_id FROM supplier_claims WHERE books_credit_id IS NOT NULL",
-  "UNION SELECT 'crm/Leads', zoho_lead_id FROM people WHERE zoho_lead_id IS NOT NULL",
-].join(" ");
+/**
+ * Where staging's database keeps each Books and CRM ID, read one statement each: D1 refuses a compound SELECT of more
+ * than five.
+ */
+const KNOWN_IDS = [
+  ["books/contacts", "people", "books_customer_id"],
+  ["books/customerpayments", "payments", "books_payment_id"],
+  ["books/invoices", "appointments", "books_invoice_id"],
+  ["books/invoices", "payments", "books_kept_invoice_id"],
+  ["books/contacts", "suppliers", "books_vendor_id"],
+  ["books/bills", "receipts", "books_bill_id"],
+  ["books/vendorcredits", "supplier_claims", "books_credit_id"],
+  ["crm/Leads", "people", "zoho_lead_id"],
+] as const;
+
+/** Every Books and CRM ID staging's database keeps, with where its record is, each once; `read` runs one statement. */
+export function knownIds(read: (sql: string) => readonly KnownId[]): KnownId[] {
+  const ids = new Map<string, KnownId>();
+  for (const [kind, table, column] of KNOWN_IDS) {
+    const sql = `SELECT DISTINCT '${kind}' AS kind, ${column} AS id FROM ${table} WHERE ${column} IS NOT NULL`;
+    for (const row of read(sql)) ids.set(keyOf(row), row);
+  }
+  return [...ids.values()];
+}
 
 /**
  * Where staging's database keeps each kind of ID it may let go of. A payment's, a refund's and a bill's stay: cleared,
