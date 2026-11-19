@@ -71,8 +71,12 @@ test("keeps the navigation in place while a long section scrolls", async ({ page
 test("draws the brand's wordmark in the navigation's head, read out as the console's name", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await open(page, "/settings/booking");
-  const brand = page.getByRole("navigation", { name: shell.title }).getByRole("img", { name: shell.title });
-  await expect(brand).toBeVisible();
-  await expect(brand.locator("svg")).toBeVisible();
-  await expect(brand).toContainText(shell.product);
+  const head = page.getByRole("navigation", { name: shell.title });
+  // The mark, then the wordmark drawn beside it; the console's name said, and the product seen.
+  await expect(head.locator("svg").nth(1)).toBeVisible();
+  const name = head.getByText(shell.title, { exact: true });
+  await expect(name).toBeAttached();
+  // Once the foot names who is signed in, "Ops" here too: the product is the one beside the drawing.
+  await expect(head.getByRole("button", { name: shell.account.named("") })).toBeVisible();
+  await expect(name.locator("..").getByText(shell.product, { exact: true })).toBeVisible();
 });

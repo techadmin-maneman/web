@@ -6,6 +6,7 @@
 import { GLYPHS, TAB_ICONS } from "@maneman/brand/icons";
 import { classes } from "@maneman/ui/classes";
 import { Mark, Wordmark } from "@maneman/ui/Mark";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { FOLDS, NavButton, NavGroup, NavItem, SideNav } from "@maneman/ui/SideNav";
 import { useState } from "react";
 import { shell } from "../content.ts";
@@ -118,9 +119,13 @@ export function Navigation({ route, open, className }: { route: Route; open: boo
       head={
         <>
           <Mark className={styles.mark} />
-          <span className={classes(FOLDS, styles.brand)} role="img" aria-label={shell.title}>
+          {/* Read out as the console's name; the drawing and its product beside it are what is seen. */}
+          <span className={classes(FOLDS, styles.brand)}>
             <Wordmark className={styles.wordmark} />
-            <span className={styles.product}>{shell.product}</span>
+            <VisuallyHidden>{shell.title}</VisuallyHidden>
+            <span className={styles.product} aria-hidden="true">
+              {shell.product}
+            </span>
           </span>
         </>
       }
