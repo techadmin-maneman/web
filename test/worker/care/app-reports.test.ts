@@ -78,6 +78,29 @@ describe("something wrong, told from the app", () => {
     ]);
   });
 
+  // A report sent again because its answer never came was filed twice, and one cut short left a report no thread held.
+  it("is filed once however often it is sent under one key, its report and its thread together", async () => {
+    const keyed = (text: string) =>
+      asClient(cookie, "/api/me/problems", {
+        method: "POST",
+        body: { about: "payment", text },
+        headers: { "Idempotency-Key": "report-key-0001" },
+      });
+    const first = await keyed("Charged twice.");
+    expect(first.status).toBe(201);
+    const again = await keyed("Charged twice.");
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual(await first.json());
+    expect((await keyed("Something else.")).status).toBe(422);
+    const reports = await env.DB.prepare("SELECT number, conversation_id FROM client_reports").all<{
+      number: number;
+      conversation_id: string | null;
+    }>();
+    expect(reports.results).toHaveLength(1);
+    expect(reports.results[0]?.conversation_id).not.toBeNull();
+    expect((await thread()).results).toHaveLength(2);
+  });
+
   it("is five a day", async () => {
     for (let n = 0; n < 5; n += 1) {
       expect((await report(cookie, { about: "hair_system", text: `Try ${String(n)}` })).status).toBe(201);

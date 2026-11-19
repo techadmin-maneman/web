@@ -6,8 +6,10 @@
 import { fullDate, shortDate } from "@maneman/web-kit/dates";
 import { indiaDate } from "../../lib/india-time.ts";
 import { guaranteeUntil } from "../../policy/fit-guarantee.ts";
-import { reportReference, type ProblemCategory } from "../../policy/problems.ts";
+import { reportReference, reportReferenceSql, type ProblemCategory } from "../../policy/problems.ts";
 import { warrantyEndsOn } from "../../policy/purchasing.ts";
+import { giveCarePerson } from "./care-people.ts";
+import { chatOpened, FROM_APP } from "./chat-opened.ts";
 import { fileInbound } from "./inbox.ts";
 
 /** Each category as Care read it in the thread. */
@@ -116,8 +118,31 @@ export interface Reported {
 }
 
 /**
- * Records the report with the next number, then files it and Care's note beside it in the client's thread; null where
- * the visit named is not the client's.
+ * The client's words filed in their thread, from the app, headed by the report's reference and what it is about: the
+ * reference read from the number the report took in the same batch.
+ */
+function filedWords(db: D1Database, report: ProblemReport, id: string): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+       SELECT ?1, c.id, 'in', ?5, ${reportReferenceSql("r.number")} || ' · ' || ?3 || ':' || char(10) || ?4, ?6, ?6
+         FROM conversations c JOIN client_reports r ON r.id = ?7 WHERE c.mobile_e164 = ?2`,
+    )
+    .bind(
+      crypto.randomUUID(),
+      report.mobileE164,
+      CATEGORY_WORDS[report.category],
+      report.text,
+      FROM_APP,
+      report.at.toISOString(),
+      id,
+    );
+}
+
+/**
+ * Records the report with the next number, files it and Care's note beside it in the client's thread, and links the
+ * report to that thread: one batch, so none of it is kept where any of it fails. Null where the visit named is not the
+ * client's.
  */
 export async function reportProblem(db: D1Database, report: ProblemReport): Promise<Reported | null> {
   const about = report.visitId === null ? null : await visitLine(db, report.personId, report.visitId);
@@ -125,40 +150,35 @@ export async function reportProblem(db: D1Database, report: ProblemReport): Prom
   const piece = await db.prepare(PIECE_SQL).bind(report.personId).first<PieceRow>();
   const id = crypto.randomUUID();
   const claim = await claimedFit(db, report);
-  const recorded = await db
-    .prepare(
-      `INSERT INTO client_reports (id, number, person_id, category, visit_id, claim_visit_id, text, created_at)
-       SELECT ?1, COALESCE(MAX(number), 0) + 1, ?2, ?3, ?4, ?5, ?6, ?7 FROM client_reports
-       RETURNING number`,
-    )
-    .bind(id, report.personId, report.category, report.visitId, claim, report.text, report.at.toISOString())
-    .first<{ number: number }>();
-  const number = recorded?.number ?? 0;
-  await fileInbound(db, {
-    mobileE164: report.mobileE164,
-    text: `${reportReference(number)} · ${CATEGORY_WORDS[report.category]}:\n${report.text}`,
-    providerMessageId: null,
-    at: report.at,
-    fromApp: true,
-  });
   const note = ["From the app.", ...(about === null ? [] : [about]), pieceLine(piece, indiaDate(report.at))].join(" ");
   // A moment after the client's words, so the thread reads it beneath them.
-  const at = new Date(report.at.getTime() + 1).toISOString();
-  await db
-    .prepare(
-      `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
-       SELECT ?1, id, 'note', 'system', ?3, ?4, ?4 FROM conversations WHERE mobile_e164 = ?2`,
-    )
-    .bind(crypto.randomUUID(), report.mobileE164, note, at)
-    .run();
-  // The thread it went into, which its log reads.
-  await db
-    .prepare(
-      "UPDATE client_reports SET conversation_id = (SELECT id FROM conversations WHERE mobile_e164 = ?2) WHERE id = ?1",
-    )
-    .bind(id, report.mobileE164)
-    .run();
-  return { id, number };
+  const noteAt = new Date(report.at.getTime() + 1).toISOString();
+  const [recorded] = await db.batch<{ number: number }>([
+    db
+      .prepare(
+        `INSERT INTO client_reports (id, number, person_id, category, visit_id, claim_visit_id, text, created_at)
+         SELECT ?1, COALESCE(MAX(number), 0) + 1, ?2, ?3, ?4, ?5, ?6, ?7 FROM client_reports
+         RETURNING number`,
+      )
+      .bind(id, report.personId, report.category, report.visitId, claim, report.text, report.at.toISOString()),
+    chatOpened(db, report.mobileE164, report.at.toISOString()),
+    filedWords(db, report, id),
+    db
+      .prepare(
+        `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+         SELECT ?1, id, 'note', 'system', ?3, ?4, ?4 FROM conversations WHERE mobile_e164 = ?2`,
+      )
+      .bind(crypto.randomUUID(), report.mobileE164, note, noteAt),
+    // The thread it went into, which its log reads.
+    db
+      .prepare(
+        "UPDATE client_reports SET conversation_id = (SELECT id FROM conversations WHERE mobile_e164 = ?2) WHERE id = ?1",
+      )
+      .bind(id, report.mobileE164),
+  ]);
+  // The thread's Care person, as a message filed from WhatsApp is given one.
+  await giveCarePerson(db, report.personId, report.at);
+  return { id, number: recorded?.results[0]?.number ?? 0 };
 }
 
 /** A report of the client's, by its number, with the number their Care chat is with; null for any other. */
