@@ -22,6 +22,17 @@ describe("a code from words", () => {
     expect(freshCode("टेप", 32, "consumable", new Set())).toBe("consumable");
   });
 
+  // A second hair system of a package, its words already 32 long, was numbered to 34, and no price could name it.
+  it("keeps a numbered code inside its length, the words giving way to the number", () => {
+    const words = "hs mane_man_essential 8x10 1B g0 d120";
+    const first = freshCode(words, 32, "hair_system", new Set());
+    expect(first).toBe("hs_mane_man_essential_8x10_1b_g0");
+    const second = freshCode(words, 32, "hair_system", new Set([first]));
+    expect(second).toBe("hs_mane_man_essential_8x10_1b_2");
+    expect(second.length).toBeLessThanOrEqual(32);
+    expect(freshCode(words, 32, "hair_system", new Set([first, second]))).toBe("hs_mane_man_essential_8x10_1b_3");
+  });
+
   it("starts a service tier's code with a letter, as its prices' key must", () => {
     expect(tierCodeOf("3M tape")).toBe("m_tape");
     expect(tierCodeOf("Premium")).toBe("premium");

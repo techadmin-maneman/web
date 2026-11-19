@@ -13,10 +13,16 @@ export function slugOf(words: string, length: number): string {
     .replace(/_+$/, "");
 }
 
-/** A new code from words, or `fallback` where they give none, numbered past those taken: tape_strips, tape_strips_2. */
+/**
+ * A new code from words, or `fallback` where they give none, numbered past those taken: tape_strips, tape_strips_2.
+ * The number fits inside `length`, the words giving way to it, so a price can still name the code.
+ */
 export function freshCode(words: string, length: number, fallback: string, taken: ReadonlySet<string>): string {
   const base = slugOf(words, length) || fallback;
   let code = base;
-  for (let next = 2; taken.has(code); next += 1) code = `${base}_${String(next)}`;
+  for (let next = 2; taken.has(code); next += 1) {
+    const number = `_${String(next)}`;
+    code = `${base.slice(0, length - number.length).replace(/_+$/, "")}${number}`;
+  }
   return code;
 }
