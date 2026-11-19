@@ -3,6 +3,7 @@
 // names it, and a city put in it from its row.
 
 import { Toast } from "@maneman/ui/Toast";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { DeleteAction } from "@maneman/ui/DeleteAction";
@@ -90,7 +91,7 @@ function ZoneRecord(props: {
               onDeleted={() => void props.onDeleted()}
             />
           ) : (
-            <p className={form.note}>{copy.inUse}</p>
+            <Note>{copy.inUse}</Note>
           )}
         </div>
       )}

@@ -7,6 +7,7 @@ import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { ChoiceRow, TextRow } from "@maneman/ui/RecordRows";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -118,7 +119,7 @@ function PointRecord(props: {
               onDeleted={props.onDeleted}
             />
           ) : (
-            <p className={form.note}>{copy.inUse}</p>
+            <Note>{copy.inUse}</Note>
           )}
         </div>
       )}
