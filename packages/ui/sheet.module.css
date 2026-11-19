@@ -10,8 +10,13 @@
   .frame {
     width: 100%;
     max-width: var(--column-max);
-    height: 100dvh;
-    max-height: 100dvh;
+    /*
+     * The screen's height from the dialog's own edges, not 100dvh: a page drawn larger by zoom grows a dvh with it, and
+     * the sheet's foot, its choices, went below the screen.
+     */
+    inset-block: 0;
+    height: auto;
+    max-height: 100%;
     margin: 0 auto;
     padding: 0;
     border: 0;

@@ -80,6 +80,23 @@ test("the language chosen outlasts a sign-out, which wipes the phone", async ({ 
   await expect(page.getByRole("heading", { level: 1, name: "साइन इन" })).toBeVisible();
 });
 
+// With its text at 130% the sheet put its choices below a 390 x 844 screen, where no tap reached them.
+test("Me's Language sheet keeps both languages on the screen with its text at 130%", async ({ page }) => {
+  await fakeTech(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/me");
+  // The app's policy refuses a style tag; the property set from script is drawn as zoom draws larger text.
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty("zoom", "1.3");
+  });
+  await page.getByRole("button", { name: new RegExp(`^${techCopy.me.language}`) }).click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByRole("radio", { name: ENGLISH })).toBeInViewport();
+  await expect(sheet.getByRole("radio", { name: HINDI })).toBeInViewport();
+  await sheet.getByRole("radio", { name: HINDI }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "hi");
+});
+
 test("Me's Language row switches every screen without a reload, and a visit keeps its place", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");

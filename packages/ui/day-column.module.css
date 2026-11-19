@@ -89,6 +89,7 @@
   /* The now-line across a block it falls inside: over its words, as the design draws it, and in the way of no tap. */
   .nowMark {
     position: absolute;
+    z-index: calc(var(--z-raised) + 1);
     inset: 0;
     width: 100%;
     height: 100%;
@@ -120,8 +121,14 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-4);
-    overflow: hidden;
     padding: var(--sp-4) var(--sp-8);
+    /* Over the cells after it, so a short visit's reach is its own; a block after it, on the same layer, is over it. */
+    z-index: var(--z-raised);
+  }
+
+  /* A block that lists others inside it cuts them all where it ends. */
+  .words:has(> .label + .label) {
+    overflow: hidden;
   }
 
   .label {
@@ -129,6 +136,21 @@
     flex-direction: column;
     color: inherit;
     text-decoration: none;
+  }
+
+  /* A block's own link fills it, its words cut where it ends, and answers a tap a thumb's 44 px tall however short the
+     visit: the reach runs on below a short block, where a block after it, drawn later, keeps its own. */
+  .words > .label:only-child {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .words > a.label:only-child::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: max(100%, var(--tap));
   }
 
   .drive .words,
@@ -139,7 +161,10 @@
     white-space: nowrap;
   }
 
+  /* A drive's line stays inside its hatching, cut on a drive shorter than the line: its way there never takes a tap
+     from the visit on either side of it. */
   .drive .words {
+    overflow: hidden;
     padding-block: 0;
   }
 

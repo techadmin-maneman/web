@@ -140,3 +140,18 @@
 .secondary {
   gap: var(--sp-12);
 }
+
+/* On a laptop the sign-in keeps the phone's column, centred, its action under its field rather than at the window's
+   foot, where the field ran the width of the frame and the button sat half a screen below it. */
+@media (min-width: 1024px) {
+  .top,
+  .body {
+    width: 100%;
+    max-width: var(--app-column-max);
+    margin-inline: auto;
+  }
+
+  .foot {
+    margin-top: var(--sp-32);
+  }
+}

@@ -15,6 +15,7 @@
   }
 
   .segment {
+    position: relative;
     display: inline-flex;
     flex: var(--segmented-grow);
     align-items: center;
@@ -29,6 +30,13 @@
     font-weight: var(--segmented-weight);
     color: var(--ui-text-muted);
     cursor: pointer;
+  }
+
+  /* Drawn inside the track's padding, as the design draws it, and answering a tap the control's full 44 px tall. */
+  .segment::after {
+    content: "";
+    position: absolute;
+    inset: calc(-1 * (var(--sp-2) + var(--hairline))) 0;
   }
 
   .segment:is([aria-checked="true"], [aria-pressed="true"]) {
