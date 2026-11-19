@@ -30,7 +30,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/tech/src/steps/Piece.tsx": { fn: 84 },
   "apps/tech/src/steps/Profile.tsx": { fn: 85 },
   "scripts/lib/wrangler-config-check.ts": { lines: 419 },
-  "site/src/islands/invite/Consultation.tsx": { fn: 143 },
+  "site/src/islands/invite/Consultation.tsx": { fn: 142 },
   "site/src/islands/invite/Waitlist.tsx": { fn: 95 },
   "site/src/islands/tryon/TryOn.tsx": { fn: 118 },
   "site/src/islands/tryon/useGate.ts": { fn: 139 },
