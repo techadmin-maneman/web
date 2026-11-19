@@ -1,8 +1,7 @@
-// Many tasks changed at once on the Tasks board (./TasksScreen.tsx): taken, assigned to someone, or closed with one
-// reason where every one chosen is of one group whose row closes with a reason alone. Each change is the API's own,
-// task by task, as one row's is, so each keeps its own audit entry; those not changed are counted and said why, and
-// stay chosen to try again, or, where a task had changed meanwhile, the page is read again and the frame says it
-// (docs/decisions/0282-tasks-chosen-together.md).
+// Tasks changed together on the Tasks board (./TasksScreen.tsx): taken, assigned, or closed with one reason where all
+// are of one group that closes with a reason alone. Each change is the API's own, task by task, with its audit entry;
+// those refused stay chosen with why, or, where a task had changed meanwhile, the page is read again and the frame says
+// so (docs/decisions/0282-tasks-chosen-together.md).
 
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
