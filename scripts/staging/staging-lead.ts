@@ -11,7 +11,7 @@
 // number is proved first with STAGING_TEST_RECORD_CODE, the code staging knows for a test record, as every booking's
 // number is proved with its WhatsApp code (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
 //
-//   STAGING_TEST_RECORD_CODE=<staging's code> node scripts/staging/staging-lead.ts --pincode 122018 --window morning
+//   node --env-file=.env.staging-access --env-file=.env.staging-test-code scripts/staging/staging-lead.ts --pincode 122018 --window morning
 
 import { parseArgs } from "node:util";
 import { consultationBody, lastBookableDay, proveTestNumber, testMobile } from "../lib/test-booking.ts";
