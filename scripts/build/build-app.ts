@@ -9,4 +9,7 @@ import { headersFile } from "@maneman/web-kit/headers";
 import { CLIENT_APP_POLICY } from "../../apps/app/headers.ts";
 import { buildOptions, buildSpa } from "../lib/spa-build.ts";
 
-buildSpa({ app: "app", label: "the client app", headers: headersFile(CLIENT_APP_POLICY) }, buildOptions("build-app"));
+buildSpa(
+  { app: "app", label: "the client app", headers: headersFile(CLIENT_APP_POLICY), landing: "HomeScreen" },
+  buildOptions("build-app"),
+);

@@ -8,7 +8,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import { guaranteeUntil } from "../../policy/fit-guarantee.ts";
 import { reportReference, reportReferenceSql, type ProblemCategory } from "../../policy/problems.ts";
 import { warrantyEndsOn } from "../../policy/purchasing.ts";
-import { giveCarePerson } from "./care-people.ts";
+import { carePersonStatement } from "./care-people.ts";
 import { chatOpened, FROM_APP } from "./chat-opened.ts";
 import { fileInbound } from "./inbox.ts";
 
@@ -175,9 +175,9 @@ export async function reportProblem(db: D1Database, report: ProblemReport): Prom
         "UPDATE client_reports SET conversation_id = (SELECT id FROM conversations WHERE mobile_e164 = ?2) WHERE id = ?1",
       )
       .bind(id, report.mobileE164),
+    // The thread's Care person, as a message filed from WhatsApp is given one.
+    carePersonStatement(db, report.personId, report.at),
   ]);
-  // The thread's Care person, as a message filed from WhatsApp is given one.
-  await giveCarePerson(db, report.personId, report.at);
   return { id, number: recorded?.results[0]?.number ?? 0 };
 }
 

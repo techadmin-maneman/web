@@ -32,7 +32,7 @@ function named(): { about: Category | null; visit: string | null } {
   return { about: known === undefined ? null : known[0], visit: query.get("visit") };
 }
 
-/** The last report sent, and the key it went with. */
+/** The last report sent and the key it went with, until it is filed. */
 let lastSent: { readonly sent: string; readonly key: string } | null = null;
 
 /** The key a report goes with: the one it went with before where the same report is sent again, else a new one. */
@@ -50,6 +50,8 @@ async function sent(report: { about: Category; visit: string | null; text: strin
   const key = keyFor([report.about, report.visit, report.text]);
   const answer = await api.reportProblem({ about: report.about, visit_id: report.visit, text: report.text }, key);
   if (!answer.ok) return answer.status === 429 ? issues.raise.limited : issues.raise.failed;
+  // Filed: the same words sent again are another report, under a key of their own.
+  lastSent = null;
   const { reference } = answer.body;
   let photosFailed = false;
   for (const photo of report.photos) {

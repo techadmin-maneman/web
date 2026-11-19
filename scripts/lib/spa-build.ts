@@ -2,10 +2,11 @@
 // build-tech.ts): the production gate on its copy, the Vite build for one
 // environment into apps/<app>/dist/<environment>, its _headers, and the
 // prompt's budget: "first load under 150 KB of gzipped JavaScript"
-// (docs/prompts/phase2-frontend.md), a service worker included. The phone apps'
+// (docs/prompts/phase2-frontend.md), what the first screen loads. The phone apps'
 // is 200 KB, for their redesigns: the technician app's
 // (docs/decisions/0247-the-steps-left.md) and the client's
-// (docs/decisions/0252-client-app-redesign.md).
+// (docs/decisions/0252-client-app-redesign.md); what their service workers keep
+// has a ceiling of its own (docs/decisions/0284-the-first-screen-and-the-precache.md).
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";

@@ -134,8 +134,6 @@
   .label {
     display: flex;
     flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
     color: inherit;
     text-decoration: none;
   }
@@ -144,6 +142,8 @@
      visit: the reach runs on below a short block, where a block after it, drawn later, keeps its own. */
   .words > .label:only-child {
     flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .words > a.label:only-child::after {
@@ -161,11 +161,10 @@
     white-space: nowrap;
   }
 
-  /* A drive's line sits on the foot of its hatching, and a drive shorter than the line runs it up into the free time
-     before, never down over the visit it leads to. */
+  /* A drive's line stays inside its hatching, cut on a drive shorter than the line: its way there never takes a tap
+     from the visit on either side of it. */
   .drive .words {
-    top: auto;
-    min-height: 100%;
+    overflow: hidden;
     padding-block: 0;
   }
 

@@ -33,5 +33,5 @@ ceiling of its own.
 - A screen opened for the first time with no signal and before the worker has kept it shows the app's loading state,
   then the page reloads to the new release if its parts have gone (`loadOrReload`), as a lazy screen does in the
   console.
-- The client app's first screen counts 105.0 KB and its worker keeps 190.3 KB, both within the new figures, with no
-  change to the app.
+- The client app's first screen is its page and Home, where a signed-in client opens (`landing: "HomeScreen"`): 133.4 KB
+  counted, and its worker keeps 190.3 KB, both within the new figures, with no change to the app.
