@@ -27,7 +27,7 @@ const AtFault = lazyScreen(() => import("../clients/index.ts").then((module) => 
 type Group = TaskGroup["group"];
 
 /** The group as the close route names it, for the groups whose tasks ops may close; null for any other. */
-const closableAs = (group: Group): ClosableGroup | null =>
+export const closableAs = (group: Group): ClosableGroup | null =>
   group === "erasure_follow_up" ||
   group === "partial_visit" ||
   group === "consumables_short" ||
@@ -59,7 +59,7 @@ const CLOSE_WORDS: Readonly<Record<ClosableGroup, { readonly open: string; reado
   message_undelivered: tasks.close.messageUndelivered,
 };
 
-const closeWords = (group: ClosableGroup) => CLOSE_WORDS[group];
+export const closeWords = (group: ClosableGroup) => CLOSE_WORDS[group];
 
 /** A label every row repeats, with whose it is said to a screen reader. */
 const Named = ({ label, subject }: { label: string; subject: string }) => (
