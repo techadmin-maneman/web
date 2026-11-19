@@ -544,7 +544,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0224](0224-demand-and-the-next-to-open.md) | Demand, and the next pincodes to open | 2026-10-26 | accepted |  |
 | [0225](0225-the-console-on-a-desk-and-a-phone.md) | The console on a desk and a phone, to the November redesign | 2026-11-02 | accepted | [0226](0226-the-console-frame-redesigned.md), [0227](0227-today-by-home-and-tasks-as-one-table.md), [0229](0229-dispatch-and-booking-redesigned.md), [0230](0230-clients-redesigned.md), [0231](0231-messages-redesigned.md), [0232](0232-technicians-stock-and-money-redesigned.md), [0233](0233-settings-redesigned.md), [0235](0235-full-size-check-fixes.md), [0236](0236-second-design-pass.md) |
 | [0226](0226-the-console-frame-redesigned.md) | The console's frame, to the November redesign | 2026-11-02 | accepted | [0228](0228-the-header-city-within-a-persons-reach.md) |
-| [0227](0227-today-by-home-and-tasks-as-one-table.md) | Today by home, and Tasks as one table | 2026-11-02 | accepted | [0228](0228-the-header-city-within-a-persons-reach.md), [0238](0238-third-design-pass.md) |
+| [0227](0227-today-by-home-and-tasks-as-one-table.md) | Today by home, and Tasks as one table | 2026-11-02 | accepted | [0228](0228-the-header-city-within-a-persons-reach.md), [0238](0238-third-design-pass.md), [0282](0282-tasks-chosen-together.md) |
 | [0228](0228-the-header-city-within-a-persons-reach.md) | The header's city, within a person's reach | 2026-11-02 | accepted |  |
 | [0229](0229-dispatch-and-booking-redesigned.md) | Dispatch and booking, to the November redesign | 2026-11-02 | accepted |  |
 | [0230](0230-clients-redesigned.md) | Clients and a client's page, to the November redesign | 2026-11-02 | accepted |  |

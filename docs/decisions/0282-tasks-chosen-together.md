@@ -3,8 +3,8 @@
 - Status: accepted
 - Date: 2026-11-19
 - Topic: The ops console
-- Amends [0092](0092-task-owners.md) on how a task is taken, assigned or closed, and
-  [0227](0227-today-by-home-and-tasks-as-one-table.md) on the Tasks table's columns and keys
+- Amends [0092](0092-task-owners.md) and [0227](0227-today-by-home-and-tasks-as-one-table.md): how a task is taken,
+  assigned or closed, and the Tasks table's columns and keys
 
 ## Context
 
@@ -29,7 +29,7 @@ morning, ops took each in turn.
 4. **The keys**: j or ↓ to the next row's name, k or ↑ to the one before, x to choose the row (with Shift, the run),
    and Enter on a row's name to open its drawer. A box being typed in or a list being chosen from keeps its keys.
 5. **How overdue a row is** shows in its order, the longest overdue first, as before. Graded weights by age, which
-   the finding also asked for, are not drawn: no design gives them yet.
+   the finding also asked for, are not drawn: the owner kept one red, oldest first (19 November 2026).
 
 ## Consequences
 
