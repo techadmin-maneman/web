@@ -1,6 +1,6 @@
 # Mane Man — logo files
 
-Thirteen SVGs. Every file is a filled outline: no strokes to expand, no live
+Eleven SVGs. Every file is a filled outline: no strokes to expand, no live
 text, no embedded fonts. One path per colour, so each file prints in a single
 ink.
 
@@ -11,8 +11,9 @@ ink.
     mark-white.svg     #FFFFFF   knockout
     mark-black.svg     #000000   single-colour print, stamps, fax-grade repro
 
-Artboard 200 × 217.4. Minimum reproduction **9 mm / 34 px wide**. Below that,
-use the favicon drawing — the fan strands close up and the crooks fill in.
+Artboard 200 × 217.4. Minimum reproduction **9 mm / 34 px wide**. Below that
+the fan strands close up and the crooks fill in; only the browser's icons go
+smaller (see Favicons).
 
 ## The wordmark
 
@@ -43,12 +44,10 @@ Minimum reproduction **26 mm / 92 px wide**.
 
 ## Favicons
 
-    favicon-32.svg     crown with the crooks legible
-    favicon-16.svg     outer silhouette only
-
-Neither is the mark scaled down. At 16 px the interior line work turns to mud,
-so that cut carries the silhouette alone. Export to PNG at 16, 32, 48 and 180
-(Apple touch icon) against `#16233A`.
+The gilt mark itself, against `#16233A`: PNG at 16, 32, 48 and 180 (Apple
+touch icon), and the apps' 192 and 512. At 16 px its line work runs together;
+an icon that is the logo was chosen over a crisper crown cut, which this kit
+drew once and retired (docs/decisions/0286-the-icons-are-the-mark.md).
 
 ## Never
 
