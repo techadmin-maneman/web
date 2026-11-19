@@ -24,8 +24,9 @@ morning, ops took each in turn.
 3. **Each change is the API's own, task by task**, as one row's is: `PUT /api/tasks/{group}/{id}/owner` and
    `POST /api/tasks/{group}/{id}/close`, so each keeps its own audit entry and its own refusal. No route takes many
    at once. The bar then says how many were changed; where some were not, how many, and why in the words the first
-   refused row's own refusal uses, a task changed meanwhile first, which reads the board again. Those refused stay
-   chosen, to try again.
+   refused row's own refusal uses, and only those refused stay chosen, to try again. Where a task had changed
+   meanwhile, the page is read again instead, as a row's own refusal reads it: the frame says the run's words, counts
+   and all, above the fresh board, and the choice and the view are let go.
 4. **The keys**: j or ↓ to the next row's name, k or ↑ to the one before, x to choose the row (with Shift, the run),
    and Enter on a row's name to open its drawer. A box being typed in or a list being chosen from keeps its keys.
 5. **How overdue a row is** shows in its order, the longest overdue first, as before. Graded weights by age, which
