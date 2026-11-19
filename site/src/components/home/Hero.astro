@@ -274,6 +274,8 @@ const showFootage = isShown(heroFootage);
     line-height: var(--lh-160);
     color: var(--site-on-navy-muted);
     max-width: var(--measure-hero-body);
+    /* No word left alone on the last line, where a phone breaks it. */
+    text-wrap: pretty;
   }
   /* On a phone the two stack at one width; on a wider screen they sit side by side at their own. */
   @media (max-width: 760px) {
