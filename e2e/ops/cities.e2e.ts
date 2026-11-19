@@ -7,7 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, empty, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { cities as copy } from "../../apps/ops/src/content/cities.ts";
-import { EDITING } from "../../apps/ops/src/content/common.ts";
+import { deleting, EDITING } from "../../apps/ops/src/content/common.ts";
 
 const GURGAON = {
   name: "Gurgaon",
@@ -180,6 +180,40 @@ test("lists each zone with its cities, and adds one as typed", async ({ page }) 
   await form.getByRole("button", { name: copy.form.add, exact: true }).click();
   expect((await sent).postDataJSON()).toEqual({ name: "Deccan" });
   await expect(page.getByRole("status").filter({ hasText: copy.zones.added })).toBeVisible();
+});
+
+// A zone could be added, never renamed or deleted.
+test("renames a zone from its record, and deletes one no city is in, but not one a city is in", async ({ page }) => {
+  await open(page, {
+    "GET /api/cities": json({ ...BOOK, zones: ["NCR", "Deccan"] }),
+    "PATCH /api/zones/{name}": json({ zones: ["NCR", "Western"] }),
+    "POST /api/zones/{name}/delete": json({ zones: ["NCR"] }),
+  });
+  const zones = page.getByRole("region", { name: copy.zones.panel });
+  await zones.getByRole("button", { name: "NCR", exact: true }).click();
+  const ncr = page.getByRole("dialog", { name: "NCR" });
+  await expect(ncr).toContainText(copy.zones.inUse);
+  await expect(ncr.getByRole("button", { name: deleting.label("NCR") })).toHaveCount(0);
+  expect(await axeViolations(page)).toEqual([]);
+  await page.keyboard.press("Escape");
+
+  await zones.getByRole("button", { name: "Deccan", exact: true }).click();
+  const deccan = page.getByRole("dialog", { name: "Deccan" });
+  await deccan.getByRole("button", { name: `${EDITING.change} ${copy.zones.name}` }).click();
+  await deccan.getByRole("textbox", { name: copy.zones.name }).fill("Western");
+  const renamed = page.waitForRequest((request) => request.method() === "PATCH");
+  await deccan.getByRole("button", { name: EDITING.save }).click();
+  expect((await renamed).url()).toContain("/api/zones/Deccan");
+  expect((await renamed).postDataJSON()).toEqual({ name: "Western" });
+
+  await page.keyboard.press("Escape");
+  await zones.getByRole("button", { name: "Deccan", exact: true }).click();
+  const again = page.getByRole("dialog", { name: "Deccan" });
+  await again.getByRole("button", { name: deleting.label("Deccan") }).click();
+  const deleted = page.waitForRequest((request) => request.url().endsWith("/api/zones/Deccan/delete"));
+  await again.getByRole("button", { name: deleting.confirm, exact: true }).click();
+  await deleted;
+  await expect(page.getByRole("status").filter({ hasText: copy.zones.deleted })).toBeVisible();
 });
 
 test("refuses a zone another goes by, in the form’s own words", async ({ page }) => {

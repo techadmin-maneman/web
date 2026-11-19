@@ -15,6 +15,10 @@ export const citiesApi = {
   addGstRegistration: (body: Sent<paths["/api/gst-registrations"]["post"]>) =>
     client.post("/api/gst-registrations", { body }),
   addZone: (body: Sent<paths["/api/zones"]["post"]>) => client.post("/api/zones", { body }),
+  /** A zone renamed: its cities, stock places, technicians and grants follow. */
+  renameZone: (name: string, to: string) => client.patch("/api/zones/{name}", { path: { name }, body: { name: to } }),
+  /** A zone nothing names, deleted. */
+  deleteZone: (name: string) => client.post("/api/zones/{name}/delete", { path: { name } }),
   addPrice: (name: string, body: Sent<paths["/api/cities/{name}/prices"]["post"]>) =>
     client.post("/api/cities/{name}/prices", { path: { name }, body }),
   changeCity: (name: string, body: Sent<paths["/api/cities/{name}"]["patch"]>) =>

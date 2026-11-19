@@ -113,10 +113,15 @@ export const cities = {
     add: "Add a zone",
     name: "Name",
     added: "Zone added.",
+    deleted: "Zone deleted.",
+    /** Beside the way to delete it, where something still names the zone. */
+    inUse: "A city, stock place, technician or staff access still names this zone.",
     errors: {
       ...common,
       name: "Letters first, up to 40 characters.",
       taken: "A zone goes by that name already.",
+      not_found: changed("That zone is gone."),
+      in_use: "A city, stock place, technician or staff access still names this zone.",
     },
   },
   registrations: {

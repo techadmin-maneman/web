@@ -93,6 +93,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "city.add": "City added",
   "city.change": "City changed",
   "zone.add": "Zone added",
+  "zone.rename": "Zone renamed",
+  "zone.delete": "Zone deleted",
   "city.rename": "City renamed",
   "gst_registration.set": "GST registration set",
   "gst_registration.remove": "GST registration removed",

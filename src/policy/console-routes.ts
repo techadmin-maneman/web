@@ -273,6 +273,8 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "GET /api/cities": need("admin", "view"),
   "POST /api/cities": need("admin", "manage"),
   "POST /api/zones": need("admin", "manage"),
+  "PATCH /api/zones/{name}": need("admin", "manage"),
+  "POST /api/zones/{name}/delete": need("admin", "manage"),
   "PATCH /api/cities/{name}": need("admin", "manage"),
   "PATCH /api/cities/{name}/rules/{rule}": need("admin", "manage"),
   "DELETE /api/cities/{name}/rules/{rule}": need("admin", "manage"),
