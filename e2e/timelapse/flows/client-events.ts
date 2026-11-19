@@ -8,7 +8,7 @@ import { proveNumber, stepHeaders, type Wire } from "../actors.ts";
 import { appOf, idOf, windowOf, type WindowHours } from "./clients.ts";
 
 export { idOf };
-import { jobsToday, note, type Job } from "./field.ts";
+import { codeOf, jobsToday, note, type Job } from "./field.ts";
 import { catalogue, PACKAGE } from "./catalog.ts";
 import { dateOf, indiaDateOf, MINUTE } from "../sim.ts";
 import { check } from "../steps.ts";
@@ -472,8 +472,13 @@ export async function grievanceAndRefund(sim: Sim, wave: string): Promise<void> 
 
 /** A client whose profile matches no stock code: a custom order raised to it, its link paid. */
 export async function customOrder(sim: Sim, wave: string): Promise<void> {
-  const client = live(sim).find(
-    (each, index) => index % 9 === 8 && each.goingAhead === true && !each.fitted && each.customOrder !== true,
+  const client = sim.world.clients.find(
+    (each, index) =>
+      codeOf(index) === null &&
+      live(sim).includes(each) &&
+      each.goingAhead === true &&
+      !each.fitted &&
+      each.customOrder !== true,
   );
   if (client === undefined || catalogue.supplier === undefined) return;
   await sim.steps.run(

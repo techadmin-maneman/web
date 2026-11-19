@@ -30,7 +30,7 @@ export async function eveningBookings(sim: Sim, wave: string): Promise<void> {
       client.fitAsked = day;
       await refitOwed(sim, wave, client);
     } else if (client.goingAhead === true && !client.fitted && client.fitAsked !== day && codeOf(index) !== null) {
-      // A profile no stock code matches is made to order: ops order the piece and book its fit (customOrder).
+      // A profile no stock code matches is made to order: ops raise its order (customOrder), and no fit is booked here.
       client.fitAsked = day;
       await bookInApp(sim, wave, client, "first_fit", { tier: PACKAGE });
     } else if (client.fitted && client.lastVisitDay !== undefined) {

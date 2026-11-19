@@ -289,8 +289,9 @@ async function offeredABooking(sim: Sim): Promise<Client | undefined> {
       "GET",
       "/api/me",
     );
+    if (me.status !== 200) continue;
     const { next_visit: next, being_booked: booking, consultation } = me.body;
-    if (me.status === 200 && next === null && booking === null && consultation === null) return client;
+    if (next === null && booking === null && consultation === null) return client;
   }
   return undefined;
 }

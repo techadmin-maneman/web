@@ -149,7 +149,10 @@ export async function acquire(sim: Sim, wave: string, count: number, cohort: num
   }
 }
 
-/** The window a start falls in, as the form sends it beside the start: morning before noon, evening from four. */
+/**
+ * The window a start falls in, as the form sends it beside the start: the one whose hours that day hold it, or, given
+ * no hours, morning before noon and evening from four.
+ */
 export function windowOf(startsAt: string, hours?: WindowHours): "morning" | "afternoon" | "evening" {
   const time = new Date(Date.parse(startsAt) + 330 * 60_000).toISOString().slice(11, 16);
   // The window whose hours that day, as ops set them, hold the start; the usual hours where none are given.
