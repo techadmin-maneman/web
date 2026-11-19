@@ -22,6 +22,7 @@ import {
   auditStatement,
   auditStatementIfDeleted,
   auditStatementIfStamped,
+  auditStatementWhen,
   type AuditActor,
   type AuditEntry,
 } from "../platform/audit.ts";
@@ -308,6 +309,57 @@ export async function deleteCode(
   ]);
   const kept = await db.prepare("SELECT 1 FROM discount_codes WHERE id = ?1").bind(id).first();
   return kept === null ? "deleted" : "in_use";
+}
+
+/** No booking has taken the code, `id` the bound parameter for its ID, nor has a partner's channel named it. */
+const unused = (id: string): string =>
+  `NOT EXISTS (SELECT 1 FROM discount_code_uses WHERE code_id = ${id})
+   AND NOT EXISTS (SELECT 1 FROM referral_channels WHERE discount_code_id = ${id})`;
+
+/** A code's terms changed, its text kept, while nothing has taken it; its audit entry is written only then. */
+export async function changeCode(
+  db: D1Database,
+  id: string,
+  terms: NewCodes,
+  change: Change,
+): Promise<"changed" | "in_use" | "not_found"> {
+  const refused = termsRefusal(terms);
+  if (refused !== null) throw new Error(`A discount code cannot take that ${refused}.`);
+  const covers = (kind: Coverable) => (terms.covers.includes(kind) ? 1 : 0);
+  const entry: AuditEntry = {
+    surface: "ops",
+    actor: change.actor,
+    action: "discount_code.change",
+    subject: { kind: "discount_code", id },
+    requestId: change.requestId,
+  };
+  const [changed] = await db.batch([
+    db
+      .prepare(
+        `UPDATE discount_codes SET kind = ?2, value = ?3, cap = ?4, covers_first_fit = ?5, covers_service = ?6,
+           covers_replacement = ?7, expires_on = ?8, max_uses = ?9, once_per_client = ?10
+         WHERE id = ?1 AND ${unused("?1")}`,
+      )
+      .bind(
+        id,
+        terms.kind,
+        terms.value,
+        terms.kind === "percent" ? terms.cap : null,
+        covers("first_fit"),
+        covers("service"),
+        covers("replacement"),
+        terms.expiresOn,
+        terms.maxUses,
+        terms.oncePerClient ? 1 : 0,
+      ),
+    auditStatementWhen(db, entry, change.now, {
+      sql: `EXISTS (SELECT 1 FROM discount_codes WHERE id = ?10) AND ${unused("?10")}`,
+      binds: [id],
+    }),
+  ]);
+  if (changed?.meta.changes === 1) return "changed";
+  const known = await db.prepare("SELECT 1 FROM discount_codes WHERE id = ?1").bind(id).first();
+  return known === null ? "not_found" : "in_use";
 }
 
 /** Switches a code off, with its audit entry: no booking takes it from then on, and its uses stay as they are. */

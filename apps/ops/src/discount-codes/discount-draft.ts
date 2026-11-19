@@ -4,7 +4,7 @@
 import { shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { isCodeText } from "@rules/policy/discount-codes.ts";
-import type { DiscountCodesNew } from "../api.ts";
+import type { DiscountCode, DiscountCodesNew } from "../api.ts";
 import { settings } from "../content/settings.ts";
 
 const copy = settings.discountCodes;
@@ -54,6 +54,39 @@ function usesOf(draft: Draft): { max_uses?: number } {
   if (isBatch(draft)) return { max_uses: 1 };
   const typed = optional(draft.maxUses);
   return typed === null ? {} : { max_uses: Number(typed) };
+}
+
+/** A code's terms, as a change to them sends them: what a code made sends, but its text and how many. */
+export type DiscountCodeTerms = Omit<DiscountCodesNew, "code" | "count">;
+
+/** A code made, in the form's boxes, to change its terms: rupees back from paise. */
+export function draftOf(code: DiscountCode): Draft {
+  return {
+    how: "typed",
+    code: code.code,
+    count: "1",
+    kind: code.kind,
+    value: code.kind === "percent" ? String(code.value) : String(code.value / 100),
+    cap: code.cap === null ? "" : String(code.cap / 100),
+    covers: code.covers,
+    expiresOn: code.expires_on ?? "",
+    maxUses: code.max_uses === null ? "" : String(code.max_uses),
+    oncePerClient: code.once_per_client,
+  };
+}
+
+/** What a change to a code's terms sends: the form's terms, its text left as it was made. */
+export function termsOf(draft: Draft): DiscountCodeTerms {
+  const { kind, value, cap, covers, expires_on, max_uses, once_per_client } = requestOf({ ...draft, how: "typed" });
+  return {
+    kind,
+    value,
+    ...(cap === undefined ? {} : { cap }),
+    covers,
+    ...(expires_on === undefined ? {} : { expires_on }),
+    ...(max_uses === undefined ? {} : { max_uses }),
+    once_per_client,
+  };
 }
 
 /** What the form sends: numbers and paise from its text. */

@@ -2,6 +2,7 @@
 // is the console's client's (../api.ts), one function a route, so a call is found, and changed, in one place.
 
 import { client, type DiscountCodesNew } from "../api.ts";
+import type { DiscountCodeTerms } from "./discount-draft.ts";
 
 export const discountCodesApi = {
   /** The latest codes made, or the one with this text, each with its uses and what it has given. */
@@ -13,4 +14,7 @@ export const discountCodesApi = {
   switchOffDiscountCode: (id: string) => client.post("/api/discount-codes/{id}/off", { path: { id } }),
   /** Refused, as in_use, once a booking has taken it. */
   deleteDiscountCode: (id: string) => client.post("/api/discount-codes/{id}/delete", { path: { id } }),
+  /** A code's terms changed, while no booking has taken it. */
+  changeDiscountCode: (id: string, terms: DiscountCodeTerms) =>
+    client.patch("/api/discount-codes/{id}", { path: { id }, body: terms }),
 };

@@ -6,7 +6,8 @@ import { deleting } from "../../apps/ops/src/content/common.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 
 // Discount codes (docs/decisions/0108-discount-codes.md), which no board draws. A row opens its code's record, where
-// it is switched off or deleted (docs/decisions/0212-editing-in-place.md).
+// it is switched off, or changed and deleted while no booking has used it
+// (docs/decisions/0283-changed-and-deleted-while-unused.md).
 test.describe("the discount codes", () => {
   const copy = settingsCopy.discountCodes;
 
@@ -81,11 +82,13 @@ test.describe("the discount codes", () => {
     await expect(row(page, "TYPO10")).toContainText("Ended Wed 1 Sep");
     const typo = await recordOf(page, "TYPO10");
     await expect(typo.getByRole("button", { name: deleting.label("TYPO10") })).toBeVisible();
+    await expect(typo.getByRole("button", { name: copy.change, exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
     // A code a booking has used is switched off, never deleted.
     const wedding = await recordOf(page, "WEDDNG25");
     await expect(wedding).toContainText("Rs. 64,000");
     await expect(wedding.getByRole("button", { name: deleting.label("WEDDNG25") })).toHaveCount(0);
+    await expect(wedding.getByRole("button", { name: copy.change, exact: true })).toHaveCount(0);
   });
 
   test("lists the codes switched off with the rest, marked Off, their figures kept", async ({ page }) => {
@@ -128,6 +131,30 @@ test.describe("the discount codes", () => {
 
     await expect(page.getByRole("status").filter({ hasText: settingsCopy.discountCodes.deleted })).toBeVisible();
     await expect(row(page, "TYPO10")).toHaveCount(0);
+  });
+
+  test("changes the terms of a code no booking has used, in its record, its text kept", async ({ page }) => {
+    const typo = DISCOUNT_CODES.codes.find((code) => code.code === "TYPO10");
+    if (typo === undefined) throw new Error("the fixture has no unused code");
+    const path = `/api/discount-codes/${typo.id}`;
+    await open(page, "/settings/discount-codes", { [`PATCH ${path}` as const]: empty() });
+    const record = await recordOf(page, "TYPO10");
+    await record.getByRole("button", { name: copy.change, exact: true }).click();
+    const form = record.getByRole("group", { name: copy.changeTitle("TYPO10") });
+    await expect(form.getByLabel(copy.value)).toHaveValue("10");
+    await expect(form.getByLabel(copy.code, { exact: true })).toHaveCount(0);
+    await form.getByLabel(copy.value).fill("15");
+    // Its last day has passed: cleared, it runs on.
+    await form.getByLabel(copy.expires).fill("");
+    const request = page.waitForRequest((sent) => sent.url().endsWith(path) && sent.method() === "PATCH");
+    await form.getByRole("button", { name: copy.save, exact: true }).click();
+    expect((await request).postDataJSON()).toEqual({
+      kind: "percent",
+      value: 15,
+      covers: ["service"],
+      once_per_client: true,
+    });
+    await expect(page.getByRole("status").filter({ hasText: copy.changed })).toBeVisible();
   });
 
   test("makes a code ops typed, saying what it takes off beneath the boxes before it is made", async ({ page }) => {

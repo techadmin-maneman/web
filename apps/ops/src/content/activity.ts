@@ -199,6 +199,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "discount_code.make": "Discount codes made",
   "discount_code.switch_off": "Discount code switched off",
   "discount_code.delete": "Discount code deleted",
+  "discount_code.change": "Discount code changed",
   "discount_code.apply": "Discount code applied",
   "discount_code.remove": "Discount code taken off",
   "staff.set": "Staff access changed",

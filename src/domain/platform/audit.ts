@@ -272,6 +272,7 @@ export const AUDIT_ACTIONS = [
   "discount_code.switch_off",
   // One made by mistake, deleted before any booking took it.
   "discount_code.delete",
+  "discount_code.change",
   "discount_code.apply",
   "discount_code.remove",
   // The Staff list: a member of staff added or changed, the list enforced or not, and a service token let in or

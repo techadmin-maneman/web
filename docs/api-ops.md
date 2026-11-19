@@ -35135,6 +35135,166 @@ Request body:
 }
 ```
 
+### PATCH /api/discount-codes/{id}
+
+A code's terms changed, while no booking has taken it; its text stays as it was made
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DiscountCodeTerms"
+}
+```
+
+**204**: Changed
+
+**400**: invalid_request: fields names value, cap, covers or expires_on, as for a code made
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: in_use: a booking has taken it; switch it off and make another
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken",
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/discount-codes/{id}/off
 
 Switch a code off: no booking takes it from then on, and its uses stay as they are
@@ -48435,6 +48595,7 @@ Request body:
         "discount_code.make",
         "discount_code.switch_off",
         "discount_code.delete",
+        "discount_code.change",
         "discount_code.apply",
         "discount_code.remove",
         "staff.set",
@@ -61003,6 +61164,90 @@ Request body:
       "maximum": 100,
       "description": "How many to generate, one if left out; more than one is a batch of single-use codes."
     },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ]
+    },
+    "value": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000000,
+      "description": "Per cent, 1 to 100, for a percentage; paise in whole rupees, before GST, for an amount."
+    },
+    "cap": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A percentage's most, in paise in whole rupees, before GST; none if left out."
+    },
+    "covers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "first_fit",
+          "service",
+          "replacement"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 3
+    },
+    "expires_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last day in India it may be entered, today or later; no end if left out."
+    },
+    "max_uses": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How many bookings it may be on; no limit if left out. A batch's codes are 1 each."
+    },
+    "once_per_client": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "kind",
+    "value",
+    "covers",
+    "once_per_client"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCodeTerms
+
+```json
+{
+  "type": "object",
+  "properties": {
     "kind": {
       "type": "string",
       "enum": [

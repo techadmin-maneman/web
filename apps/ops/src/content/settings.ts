@@ -119,8 +119,12 @@ export const settings = {
     never: "—",
     narrow: "Filter codes",
     switchedOff: "Switched off.",
-    inUse: "A booking has used it. Switch it off instead.",
     deleted: "Deleted.",
+    /** A code no booking has taken: its terms changed, its text kept. */
+    change: "Change terms",
+    changeTitle: (code: string) => `Change ${code}`,
+    save: "Save",
+    changed: "Terms changed.",
     /** Codes are found by how they begin, so "SPR" finds SPRTEST. */
     find: "Code starts with",
     findButton: "Find",
@@ -149,6 +153,7 @@ export const settings = {
       expires_on: "The last day can’t be in the past.",
       max_uses: "Generated codes are single-use.",
       code_exists: "That code already exists.",
+      in_use: "A booking has used it. Switch it off instead.",
       not_found: changed("That code no longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
