@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0283. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0284. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -315,6 +315,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0237](0237-every-list-sorts.md) Every list sorts, a long one narrows, and its heads stand over their figures
 - [0238](0238-third-design-pass.md) Third design pass: one home, the chat's column, a record's facts beside its head, Inventory's one row of tabs
 - [0282](0282-tasks-chosen-together.md) Tasks chosen together, and the keys a desk moves by
+- [0283](0283-changed-and-deleted-while-unused.md) What ops configure is changed, and deleted while nothing uses it
 
 ## Every decision, oldest first
 
@@ -425,8 +426,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length |  |
 | [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 | [0240](0240-consultation-rules-and-inches.md), [0270](0270-the-design-checks-api-side.md) |
 | [0107](0107-referral-rewards-in-the-console.md) | What a referral earns, set in the console, each side apart | 2026-10-01 | accepted, on the owner's ruling of 1 October 2026 |  |
-| [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
-| [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 | [0198](0198-cities-as-data.md), [0208](0208-the-console-redesigned.md) |
+| [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 | [0283](0283-changed-and-deleted-while-unused.md) |
+| [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 | [0198](0198-cities-as-data.md), [0208](0208-the-console-redesigned.md), [0283](0283-changed-and-deleted-while-unused.md) |
 | [0110](0110-field-work-without-fsm.md) | Field work without Zoho FSM | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
 | [0111](0111-a-technician-never-takes-two-visits-in-a-row.md) | A technician never takes two visits in a row | 2026-10-05 | accepted, on the owner's ruling of 5 October 2026 | [0118](0118-booking-never-dead-ends.md) |
 | [0112](0112-workers-paid.md) | Workers Paid | 2026-10-06 | accepted, on the owner's purchase of 6 October 2026 |  |
@@ -458,7 +459,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0138](0138-strangers-in-the-inbox.md) | Chats from numbers we don't know | 2026-10-12 | accepted |  |
 | [0139](0139-care-shifts.md) | Care on shift | 2026-10-12 | accepted |  |
 | [0140](0140-the-client-panel.md) | The client beside their chat | 2026-10-12 | accepted |  |
-| [0141](0141-quick-replies.md) | Quick replies | 2026-10-12 | accepted |  |
+| [0141](0141-quick-replies.md) | Quick replies | 2026-10-12 | accepted | [0283](0283-changed-and-deleted-while-unused.md) |
 | [0142](0142-moving-every-client.md) | Moving every client, and technicians in the inbox | 2026-10-12 | accepted |  |
 | [0143](0143-remedies.md) | Remedies | 2026-10-12 | accepted |  |
 | [0144](0144-care-numbers.md) | The Care numbers | 2026-10-12 | accepted |  |
@@ -486,7 +487,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0166](0166-purchase-orders.md) | Purchase orders | 2026-10-12 | accepted |  |
 | [0167](0167-receipts-and-landed-cost.md) | Receipts and landed cost | 2026-10-12 | accepted |  |
 | [0168](0168-bills-in-books.md) | Bills in Books | 2026-10-12 | accepted |  |
-| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md), [0273](0273-why-a-hair-system-failed.md) |
+| [0169](0169-supplier-claims.md) | Supplier claims | 2026-10-12 | accepted | [0270](0270-the-design-checks-api-side.md), [0273](0273-why-a-hair-system-failed.md), [0283](0283-changed-and-deleted-while-unused.md) |
 | [0170](0170-stock-photos.md) | Photographs of stock | 2026-10-12 | accepted |  |
 | [0171](0171-vendor-credits.md) | Vendor credits | 2026-10-12 | accepted |  |
 | [0172](0172-supplier-scorecard.md) | Supplier scorecard | 2026-10-12 | accepted |  |
@@ -515,7 +516,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0195](0195-the-cron-a-job-at-a-time.md) | The cron a job at a time | 2026-10-13 | accepted |  |
 | [0196](0196-long-work-in-workflows.md) | Long work in Workflows | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 |  |
 | [0197](0197-one-inbound-port.md) | One inbound port | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 | [0276](0276-a-message-whatsapp-refuses.md) |
-| [0198](0198-cities-as-data.md) | Cities as data | 2026-10-14 | accepted |  |
+| [0198](0198-cities-as-data.md) | Cities as data | 2026-10-14 | accepted | [0283](0283-changed-and-deleted-while-unused.md) |
 | [0199](0199-derived-state-in-the-domain.md) | Derived state in the domain | 2026-10-14 | accepted |  |
 | [0200](0200-staging-tenants-of-its-own.md) | Staging's tenants of its own | 2026-10-14 | accepted | [0261](0261-razorpay-money-in-books.md) |
 | [0201](0201-the-try-on-on-youcam.md) | The try-on on YouCam | 2026-10-14 | accepted |  |
@@ -600,3 +601,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0280](0280-the-technician-apps-hindi-corrected.md) | The technician app's Hindi corrected, and the job card's arrival named | 2026-11-19 | accepted |  |
 | [0281](0281-the-consoles-first-load-counts-today.md) | The console's first load counts Today, and Today holds its room | 2026-11-19 | accepted |  |
 | [0282](0282-tasks-chosen-together.md) | Tasks chosen together, and the keys a desk moves by | 2026-11-19 | accepted |  |
+| [0283](0283-changed-and-deleted-while-unused.md) | What ops configure is changed, and deleted while nothing uses it | 2026-11-19 | accepted |  |

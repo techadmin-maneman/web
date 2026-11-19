@@ -11,8 +11,7 @@ import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { opsInputs } from "../../http/ops-inputs.ts";
-import { checkedPoints, QC_POINTS } from "../../policy/receipt-checks.ts";
+import { checkedPoints } from "../../domain/purchasing/qc-points.ts";
 import { after, Note, orderPath, ORDERS, ordersAnswer, written } from "./purchasing.ts";
 
 const Count = z.number().int().min(0).max(1_000_000);
@@ -29,12 +28,12 @@ const ReceiptSchema = z
             damaged: Count,
             qc_failed: Count,
             qc_failed_points: z
-              .array(z.enum(QC_POINTS))
-              .max(QC_POINTS.length)
+              .array(z.string().min(1).max(64))
+              .max(20)
               .optional()
               .openapi({
                 description:
-                  "What a hair system's failed pieces failed, of the checks ops make (receipt_checks); needed where " +
+                  "What a hair system's failed pieces failed, by their IDs, of the points ops check (GET /api/qc-points); needed where " +
                   "a hair system's line has qc_failed while ops check any point, and named on no other line.",
               }),
             lot_code: z.string().trim().min(1).max(40).nullable(),
@@ -118,7 +117,7 @@ export function registerOpsReceipts(app: App): void {
           expiresOn: line.expires_on,
         })),
         supplierInvoice: body.supplier_invoice,
-        checks: checkedPoints((await opsInputs(c)).receiptChecks),
+        checks: (await checkedPoints(c.env.DB)).map((point) => point.id),
         rateMicro: rateOf(body),
         extras: { freight: body.freight_paise, duty: body.duty_paise, clearing: body.clearing_paise },
         note: body.note,

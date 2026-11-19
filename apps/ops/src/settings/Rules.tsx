@@ -21,7 +21,15 @@ import { useTargetRow } from "@maneman/ui/target";
 import { settingsPath } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { RuleRows, saveRule } from "./RuleFields.tsx";
-import { CHARGES_A_LATE_FEE, CONSOLE_GROUP, sectionsOf, type RuleGroupId, type RuleSection } from "./rule-groups.ts";
+import { QcPoints } from "./QcPoints.tsx";
+import {
+  CHARGES_A_LATE_FEE,
+  CONSOLE_GROUP,
+  PURCHASING_GROUP,
+  sectionsOf,
+  type RuleGroupId,
+  type RuleSection,
+} from "./rule-groups.ts";
 import { settingsApi } from "./settings-api.ts";
 import styles from "./rules.module.css";
 
@@ -189,6 +197,7 @@ export function Rules({ groups }: { readonly groups: readonly RuleGroupId[] }) {
           {section.id === CONSOLE_GROUP && <Storage />}
         </Group>
       ))}
+      {groups.includes(PURCHASING_GROUP) && <QcPoints />}
     </Stack>
   );
 }

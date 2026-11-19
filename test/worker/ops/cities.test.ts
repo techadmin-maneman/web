@@ -85,6 +85,28 @@ describe("a city", () => {
     expect((await auditFor("city.rename")).results).toEqual([expect.objectContaining({ subject_id: "Gurugram" })]);
   });
 
+  it("is deleted, its own rules with it, only while nothing else names it", async () => {
+    await send("POST", "/api/cities", PUNE);
+    await send("PATCH", "/api/cities/Pune/rules/checkin_radius_m", { value: 400 });
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65', 'Gurgaon', 0)",
+    ).run();
+    const listed = await (await send("GET", "/api/cities")).json<{ cities: { name: string; deletable: boolean }[] }>();
+    expect(listed.cities.filter((city) => ["Gurgaon", "Pune"].includes(city.name))).toEqual([
+      expect.objectContaining({ name: "Gurgaon", deletable: false }),
+      expect.objectContaining({ name: "Pune", deletable: true }),
+    ]);
+
+    const named = await send("DELETE", "/api/cities/Gurgaon");
+    expect(named.status).toBe(409);
+    expect(await named.json()).toMatchObject({ error: { code: "in_use" } });
+    expect((await send("DELETE", "/api/cities/Pune")).status).toBe(204);
+    expect(await env.DB.prepare("SELECT 1 FROM cities WHERE name = 'Pune'").first()).toBeNull();
+    expect(await env.DB.prepare("SELECT 1 FROM city_settings WHERE city = 'Pune'").first()).toBeNull();
+    expect((await auditFor("city.delete")).results).toEqual([expect.objectContaining({ subject_id: "Pune" })]);
+    expect((await send("DELETE", "/api/cities/Pune")).status).toBe(404);
+  });
+
   it("is the only city a served pincode may name", async () => {
     await expect(
       env.DB.prepare(
@@ -110,6 +132,62 @@ describe("a zone", () => {
     expect(await taken.json()).toMatchObject({ error: { code: "taken", fields: ["name"] } });
     expect((await send("POST", "/api/zones", { name: "=SUM(A1)" })).status).toBe(400);
     expect((await auditFor("zone.add")).results).toEqual([]);
+  });
+
+  // A zone could be added, never renamed or deleted.
+  it("is renamed, its cities, hub and staff grants moving with it in one batch, and audited", async () => {
+    await send("POST", "/api/zones", { name: "Deccan" });
+    expect((await send("POST", "/api/cities", { ...PUNE, zone: "Deccan" })).status).toBe(201);
+    await aTechnician({ id: "t-deccan", zone: "Deccan" });
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO stock_places (id, kind, name, parent_id, zone, created_by, created_at)
+         VALUES ('hub-deccan', 'hub', 'Deccan hub', 'central', 'Deccan', 'test', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        "INSERT INTO staff (email, active, added_by, added_at) VALUES ('lead@maneman.test', 1, 'test', ?1)",
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO staff_grants (email, department, level, geography, place, granted_by, granted_at)
+         VALUES ('lead@maneman.test', 'operations', 'act', 'zone', 'Deccan', 'test', ?1)`,
+      ).bind(NOW.toISOString()),
+    ]);
+
+    const renamed = await send("PATCH", "/api/zones/Deccan", { name: "Western" });
+    expect(renamed.status).toBe(200);
+    expect(await renamed.json()).toEqual({ zones: ["NCR", "Western"] });
+    const named = env.DB.prepare(
+      `SELECT (SELECT zone FROM cities WHERE name = 'Pune') AS city,
+              (SELECT zone FROM stock_places WHERE id = 'hub-deccan') AS hub,
+              (SELECT place FROM staff_grants WHERE email = 'lead@maneman.test') AS grant_place,
+              (SELECT zone FROM technicians WHERE id = 't-deccan') AS technician`,
+    );
+    const western = { city: "Western", hub: "Western", grant_place: "Western", technician: "Western" };
+    expect(await named.first()).toEqual(western);
+    expect((await auditFor("zone.rename")).results).toEqual([expect.objectContaining({ subject_id: "Western" })]);
+
+    // Another zone's name, exactly or however cased, merges nothing into it: the grant over Western reaches no further.
+    for (const name of ["NCR", "ncr"]) {
+      const taken = await send("PATCH", "/api/zones/Western", { name });
+      expect(taken.status).toBe(409);
+      expect(await taken.json()).toMatchObject({ error: { code: "taken", fields: ["name"] } });
+    }
+    expect(await named.first()).toEqual(western);
+    expect((await auditFor("zone.rename")).results).toHaveLength(1);
+    expect((await send("PATCH", "/api/zones/Nowhere", { name: "Eastern" })).status).toBe(404);
+  });
+
+  it("is deleted only while nothing names it, as the list says", async () => {
+    await send("POST", "/api/zones", { name: "Deccan" });
+    const listed = await (await send("GET", "/api/cities")).json<{ deletable_zones: string[] }>();
+    expect(listed.deletable_zones).toEqual(["Deccan"]);
+    const named = await send("DELETE", "/api/zones/NCR");
+    expect(named.status).toBe(409);
+    expect(await named.json()).toMatchObject({ error: { code: "in_use" } });
+    expect((await send("DELETE", "/api/zones/Deccan")).status).toBe(204);
+    expect(await env.DB.prepare("SELECT name FROM zones").all()).toMatchObject({ results: [{ name: "NCR" }] });
+    expect((await auditFor("zone.delete")).results).toEqual([expect.objectContaining({ subject_id: "Deccan" })]);
+    expect((await send("DELETE", "/api/zones/Deccan")).status).toBe(404);
   });
 });
 

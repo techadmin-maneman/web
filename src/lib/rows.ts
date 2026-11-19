@@ -1180,6 +1180,12 @@ export interface Rows {
     readonly endpoint: string;
     readonly subscribed_at: string;
   };
+  readonly qc_points: {
+    readonly id: string;
+    readonly name: string;
+    readonly sort: number;
+    readonly checked: number;
+  };
   readonly quick_replies: {
     readonly id: string;
     readonly title: string;
@@ -1665,6 +1671,7 @@ export interface Rows {
     readonly books_credit_id: string | null;
     readonly books_checked_at: string | null;
     readonly failed_points: string | null;
+    readonly failed_point_names: string | null;
   };
   readonly supplier_items: {
     readonly supplier_id: string;

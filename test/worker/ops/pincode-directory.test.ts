@@ -102,6 +102,7 @@ describe("adding from the directory", () => {
           waiting: 0,
           to_alert: 0,
           paused_until: null,
+          deletable: true,
         },
         {
           pincode: "400051",
@@ -112,6 +113,7 @@ describe("adding from the directory", () => {
           waiting: 0,
           to_alert: 0,
           paused_until: null,
+          deletable: true,
         },
       ],
       held: ["110001"],

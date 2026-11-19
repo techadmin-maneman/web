@@ -110,10 +110,10 @@ test("lists each claim with its reason and value, and marks a drafted one sent",
 });
 
 test("names what a hair system's pieces failed on a claim for its failed check", async ({ page }) => {
-  const failed = { ...CLAIM, reason: "qc_failed" as const, failed_points: ["colour", "density"] };
+  const failed = { ...CLAIM, reason: "qc_failed" as const, failed_points: ["Colour against the ring", "Hair density"] };
   await open(page, { "GET /api/supplier-claims": json({ ...CLAIMS, claims: [failed] }) });
   const row = page.getByRole("region", { name: copy.claims.title }).getByRole("row").filter({ hasText: "CL-0001" });
-  await expect(row).toContainText(copy.claims.failedOn(`${copy.checks.colour}, ${copy.checks.density}`));
+  await expect(row).toContainText(copy.claims.failedOn("Colour against the ring, Hair density"));
 });
 
 test("settles a sent claim as the credit the supplier gave", async ({ page }) => {

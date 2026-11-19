@@ -1,5 +1,5 @@
 // Saved answers (docs/decisions/0141-quick-replies.md): picked in a chat and filled in with the client's first name and
-// next visit, and kept on the Messages page by a Customer Care manager, who adds them and retires them, asked once.
+// next visit, and kept on the Messages page by a Customer Care manager, who adds, changes and retires them.
 
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -74,9 +74,18 @@ const HOLES = [
   ["{next_visit}", copy.insertNextVisit],
 ] as const;
 
-function AddReply({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => void }) {
-  const [title, setTitle] = useState("");
-  const [text, setText] = useState("");
+/** A quick reply's form: a new one's, or, given one, its own to change. */
+function ReplyForm({
+  reply,
+  onAdded,
+  onCancel,
+}: {
+  reply?: { readonly id: string; readonly title: string; readonly text: string };
+  onAdded: () => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(reply?.title ?? "");
+  const [text, setText] = useState(reply?.text ?? "");
   const box = useRef<HTMLTextAreaElement>(null);
   const insert = (hole: string) => {
     const at = box.current?.selectionStart ?? text.length;
@@ -89,11 +98,15 @@ function AddReply({ onAdded, onCancel }: { onAdded: () => void; onCancel: () => 
   };
   return (
     <AddForm
-      title={copy.addOne}
-      words={copy}
+      title={reply === undefined ? copy.addOne : copy.changeOne}
+      words={reply === undefined ? copy : { add: copy.save }}
       errors={copy.errors}
       boxes={["title", "text"]}
-      send={() => careApi.addQuickReply(title.trim(), text.trim())}
+      send={() =>
+        reply === undefined
+          ? careApi.addQuickReply(title.trim(), text.trim())
+          : careApi.changeQuickReply(reply.id, title.trim(), text.trim())
+      }
       onAdded={onAdded}
       onCancel={onCancel}
     >
@@ -162,6 +175,20 @@ export function QuickRepliesPanel() {
             <li key={reply.id}>
               <span className={styles.who}>{reply.title}</span> · {reply.text}{" "}
               {mayKeep && (
+                <DrawerButton label={copy.change(reply.title)}>
+                  {(close) => (
+                    <ReplyForm
+                      reply={reply}
+                      onAdded={() => {
+                        retry();
+                        close();
+                      }}
+                      onCancel={close}
+                    />
+                  )}
+                </DrawerButton>
+              )}
+              {mayKeep && (
                 <DeleteAction
                   name={reply.title}
                   tone="danger"
@@ -179,7 +206,7 @@ export function QuickRepliesPanel() {
         <PageActions>
           <DrawerButton primary label={copy.addOne}>
             {(close) => (
-              <AddReply
+              <ReplyForm
                 onAdded={() => {
                   retry();
                   close();

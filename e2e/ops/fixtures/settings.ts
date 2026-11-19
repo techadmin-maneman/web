@@ -426,6 +426,7 @@ export const SERVICE_AREA = {
       waiting: 0,
       to_alert: 0,
       paused_until: null,
+      deletable: false,
     },
     {
       pincode: "110024",
@@ -436,6 +437,7 @@ export const SERVICE_AREA = {
       waiting: 5,
       to_alert: 3,
       paused_until: null,
+      deletable: false,
     },
     {
       pincode: "122018",
@@ -446,6 +448,7 @@ export const SERVICE_AREA = {
       waiting: 0,
       to_alert: 0,
       paused_until: null,
+      deletable: true,
     },
   ],
   cities: ["Gurgaon", "Delhi", "Mumbai"],
@@ -539,3 +542,11 @@ export const PACKAGES = {
   max_amount: 100_000_000,
   max_gst_percent: 28,
 } satisfies OpsReply<"/api/packages">;
+
+/** Two checks on a hair system that arrives: one a claim names, checked; one no claim names, switched off. */
+export const QC_POINTS = {
+  points: [
+    { id: "density", name: "Hair density", checked: true, deletable: false },
+    { id: "q-knots", name: "Knot bleaching", checked: false, deletable: true },
+  ],
+} satisfies OpsReply<"/api/qc-points">;

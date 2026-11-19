@@ -12,8 +12,15 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 
 /** "child.column -> parent": how the rows pointing at a deleted row are dealt with first. */
-/** A city's row goes only in a rename, after every row naming it has moved to the new one. */
-const RENAMED = "src/domain/cities/cities.ts moves it to the city's new name before the old row goes";
+/**
+ * A city's row goes in a rename, after every row naming it has moved to the new one, or deleted while nothing but its
+ * own settings names it (src/domain/cities/city-delete.ts).
+ */
+const RENAMED = "moved to a renamed city's new name first; a city one names is never deleted";
+/** A city's own settings, which go with it. */
+const OWN = "moved to a renamed city's new name first, or deleted first, in the batch that deletes the city";
+/** A zone renamed moves what names it; one something names is never deleted (src/domain/cities/zones.ts). */
+const ZONED = "moved to a renamed zone's new name first; a zone one names is never deleted";
 
 const HANDLED: Readonly<Record<string, string>> = {
   // A technician deleted with nothing worked (src/domain/dispatch/technician-roster.ts): their asks for leave first.
@@ -41,14 +48,20 @@ const HANDLED: Readonly<Record<string, string>> = {
   // A city renamed (docs/decisions/0198-cities-as-data.md).
   "leads.city -> cities": RENAMED,
   "technicians.city -> cities": RENAMED,
-  "city_blackouts.city -> cities": RENAMED,
-  "visit_pay_rates.city -> cities": RENAMED,
+  "city_blackouts.city -> cities": OWN,
+  "visit_pay_rates.city -> cities": OWN,
   "spend_entries.city -> cities": RENAMED,
   "targets.city -> cities": RENAMED,
   "stock_places.city -> cities": RENAMED,
-  "city_prices.city -> cities": RENAMED,
-  "city_settings.city -> cities": RENAMED,
+  "city_prices.city -> cities": OWN,
+  "city_settings.city -> cities": OWN,
   "pincode_launches.city -> cities": RENAMED,
+  // A zone renamed or deleted (docs/decisions/0283-changed-and-deleted-while-unused.md).
+  "cities.zone -> zones": ZONED,
+  "stock_places.zone -> zones": ZONED,
+  // A pincode added by mistake, deleted while we do not go there and nothing names it.
+  "pincode_launch_pincodes.pincode -> serviceable_pincodes":
+    "src/domain/clients/pincode-delete.ts deletes a pincode only while no launch names it",
   // A pay grade goes only once nothing uses it (docs/decisions/0122-technician-pay-per-visit.md).
   "technicians.pay_grade_id -> pay_grades":
     "src/domain/field/technician-pay.ts deletes a grade only while no technician holds it",

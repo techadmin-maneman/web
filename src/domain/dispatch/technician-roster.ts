@@ -328,3 +328,10 @@ export async function deleteTechnician(
   const kept = await db.prepare("SELECT 1 FROM technicians WHERE id = ?1").bind(technicianId).first();
   return kept === null ? "deleted" : "has_work";
 }
+
+/**
+ * A renamed zone's technicians moved to its new name, in the rename's batch (src/routes/ops/zones.ts), which fails as a
+ * whole where the rename cannot be made, so a rename that did not happen moves no one.
+ */
+export const technicianZoneMoved = (db: D1Database, from: string, to: string): D1PreparedStatement =>
+  db.prepare("UPDATE technicians SET zone = ?2 WHERE zone = ?1").bind(from, to);

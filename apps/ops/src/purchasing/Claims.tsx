@@ -27,7 +27,7 @@ import { purchasingApi } from "./purchasing-api.ts";
 const reasonWords = (claim: Claim) =>
   claim.failed_points === null || claim.failed_points.length === 0
     ? copy.claims.reasons[claim.reason]
-    : copy.claims.failedOn(claim.failed_points.map((point) => copy.checks[point]).join(", "));
+    : copy.claims.failedOn(claim.failed_points.join(", "));
 
 const loadClaims = () => purchasingApi.claims();
 

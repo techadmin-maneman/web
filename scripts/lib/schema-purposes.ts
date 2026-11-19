@@ -92,6 +92,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).",
   remedies:
     "Free service visits Customer Care gave a client, with why: given within the limit, or awaiting a manager (ADR 0143).",
+  qc_points:
+    "Each point a hair system is checked against as it arrives, which ops add, rename and switch off, and delete while no claim names it (ADR 0283).",
   quick_replies: "Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR 0141).",
   city_matters:
     "A matter Customer Care sent from a chat to the client's city, on that city's Tasks until it is closed (ADR 0135).",
@@ -325,6 +327,8 @@ export const PATHS_MOVED: Readonly<Record<string, string>> = Object.fromEntries(
 
 /** A column whose migration's note no longer says what it is today, in today's words. */
 export const NOTES_NOW: Readonly<Record<string, string>> = {
+  "supplier_claims.failed_points":
+    "A JSON array of the IDs of the checks failed (src/domain/purchasing/qc-points.ts); null for any other claim, or one made before.",
   "stock_balances.place": "'central' for the central store; for a technician's kit, their ID.",
   "technicians.mobile_e164":
     "The technician's own number, as ops keep it on the Technicians page, which they sign in with by a one-time code, " +

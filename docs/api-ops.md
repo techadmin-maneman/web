@@ -12202,6 +12202,135 @@ Request body:
 }
 ```
 
+### PATCH /api/quick-replies/{id}
+
+A saved answer on the list, its title and words changed
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/QuickReplyChange"
+}
+```
+
+**200**: Changed
+
+```json
+{
+  "$ref": "#/components/schemas/QuickReply"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such answer on the list
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/quick-replies/{id}/retire
 
 Take a saved answer off the list
@@ -23612,6 +23741,157 @@ Request body:
 }
 ```
 
+### DELETE /api/pincodes/{pin}
+
+A pincode deleted, while we do not go there and no client, visit, waitlist or launch names it
+
+**204**: Deleted
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required, or not_permitted: its city is outside the caller's Growth MANAGE
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: the service area does not hold it
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: in_use: we go there, or something names it; stop serving it instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/cities
 
 Every city, its state and zone, the GST registrations, and each city's own rules and prices
@@ -23955,6 +24235,157 @@ Request body:
               "type": "string",
               "enum": [
                 "taken"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### DELETE /api/cities/{name}
+
+A city deleted, its own prices and rules with it, while nothing else names it
+
+**204**: Deleted
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such city
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: in_use: a client, visit, pincode, technician, stock or staff access names it
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "in_use"
               ]
             }
           },
@@ -24759,6 +25190,322 @@ A state's registration taken off: its visits are supplied from the registration 
 }
 ```
 
+### PATCH /api/zones/{name}
+
+A zone renamed: its cities, stock places, technicians and the staff grants over it follow, in one batch
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/ZoneRename"
+}
+```
+
+**200**: The zones as they now stand, in order
+
+```json
+{
+  "$ref": "#/components/schemas/Zones"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no zone goes by that name
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: taken: another zone goes by the new name, however it is cased
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### DELETE /api/zones/{name}
+
+A zone deleted, while no city, stock place, technician or staff grant names it
+
+**204**: Deleted
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no zone goes by that name
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: in_use: a city, stock place, technician or staff grant names it
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/zones
 
 A zone added, last in the order: a region of cities a grant of staff access may name
@@ -24882,6 +25629,512 @@ Request body:
               "type": "string",
               "enum": [
                 "taken"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/qc-points
+
+Every point a hair system is checked against as it arrives, in order
+
+**200**: The points
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "points": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/QcPoint"
+      }
+    }
+  },
+  "required": [
+    "points"
+  ],
+  "additionalProperties": false
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/qc-points
+
+A point added, checked, last in the order
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/NewQcPoint"
+}
+```
+
+**201**: The point added
+
+```json
+{
+  "$ref": "#/components/schemas/QcPoint"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: taken: another point goes by that name, however it is cased
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### PATCH /api/qc-points/{id}
+
+A point renamed, or switched on or off; claims already drafted keep the name they read
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/QcPointChange"
+}
+```
+
+**200**: The point as it now stands
+
+```json
+{
+  "$ref": "#/components/schemas/QcPoint"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: taken: another point goes by that name, however it is cased
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### DELETE /api/qc-points/{id}
+
+A point deleted, while no claim names it
+
+**204**: Deleted
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: in_use: a claim names it; switch it off instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "in_use"
               ]
             }
           },
@@ -34684,6 +35937,166 @@ Request body:
 }
 ```
 
+### PATCH /api/discount-codes/{id}
+
+A code's terms changed, while no booking has taken it; its text stays as it was made
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/DiscountCodeTerms"
+}
+```
+
+**204**: Changed
+
+**400**: invalid_request: fields names value, cap, covers or expires_on, as for a code made
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: in_use: a booking has taken it; switch it off and make another
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken",
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/discount-codes/{id}/off
 
 Switch a code off: no booking takes it from then on, and its uses stay as they are
@@ -42021,6 +43434,10 @@ Request body:
         }
       ],
       "description": "The day a paused pincode takes new clients again; null when it is not paused."
+    },
+    "deletable": {
+      "type": "boolean",
+      "description": "Whether it may be deleted: we do not go there and nothing names it."
     }
   },
   "required": [
@@ -42031,7 +43448,8 @@ Request body:
     "launch_on",
     "waiting",
     "to_alert",
-    "paused_until"
+    "paused_until",
+    "deletable"
   ],
   "additionalProperties": false
 }
@@ -45965,6 +47383,31 @@ Request body:
 }
 ```
 
+### QuickReplyChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "title",
+    "text"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### SpendList
 
 ```json
@@ -47800,6 +49243,10 @@ Request body:
         "care_name.set",
         "quick_reply.add",
         "quick_reply.retire",
+        "quick_reply.change",
+        "qc_point.add",
+        "qc_point.change",
+        "qc_point.delete",
         "remedy.give",
         "remedy.ask",
         "remedy.approve",
@@ -47846,6 +49293,7 @@ Request body:
         "pincode.set",
         "pincode.rename",
         "pincode.add",
+        "pincode.delete",
         "pincode.pause",
         "pincode.resume",
         "launch.schedule",
@@ -47853,7 +49301,10 @@ Request body:
         "city.add",
         "city.change",
         "zone.add",
+        "zone.rename",
+        "zone.delete",
         "city.rename",
+        "city.delete",
         "gst_registration.set",
         "gst_registration.remove",
         "city_rule.set",
@@ -47956,6 +49407,7 @@ Request body:
         "discount_code.make",
         "discount_code.switch_off",
         "discount_code.delete",
+        "discount_code.change",
         "discount_code.apply",
         "discount_code.remove",
         "staff.set",
@@ -53768,7 +55220,6 @@ Request body:
         "scorecard_days",
         "po_second_approval_above_rupees",
         "po_own_approval",
-        "receipt_checks",
         "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
@@ -53971,7 +55422,6 @@ Request body:
         "scorecard_days",
         "po_second_approval_above_rupees",
         "po_own_approval",
-        "receipt_checks",
         "po_rupees_to_one",
         "custom_order_grace_days",
         "planning_period_days",
@@ -54400,6 +55850,13 @@ Request body:
         "type": "string"
       }
     },
+    "deletable_zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The zones nothing names, which may be deleted."
+    },
     "registrations": {
       "type": "array",
       "items": {
@@ -54486,6 +55943,7 @@ Request body:
   "required": [
     "cities",
     "zones",
+    "deletable_zones",
     "registrations",
     "rules",
     "rule_names",
@@ -54552,6 +56010,10 @@ Request body:
     "technicians": {
       "type": "integer",
       "description": "Active technicians who work there."
+    },
+    "deletable": {
+      "type": "boolean",
+      "description": "Whether nothing but its own settings names it."
     }
   },
   "required": [
@@ -54562,7 +56024,8 @@ Request body:
     "served",
     "active",
     "sort",
-    "technicians"
+    "technicians",
+    "deletable"
   ],
   "additionalProperties": false
 }
@@ -54895,6 +56358,44 @@ Request body:
 }
 ```
 
+### Zones
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "zones"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ZoneRename
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^\\p{L}[\\p{L}\\d .'-]{0,39}$/u"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### NewZone
 
 ```json
@@ -54908,6 +56409,79 @@ Request body:
   },
   "required": [
     "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### QcPoint
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "checked": {
+      "type": "boolean",
+      "description": "Whether each hair system that arrives is checked against it."
+    },
+    "deletable": {
+      "type": "boolean",
+      "description": "Whether no claim names it, so it may be deleted."
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "checked",
+    "deletable"
+  ],
+  "additionalProperties": false
+}
+```
+
+### NewQcPoint
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### QcPointChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "checked": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "checked"
   ],
   "additionalProperties": false
 }
@@ -59164,14 +60738,20 @@ Request body:
     "receipt_checks": {
       "type": "array",
       "items": {
-        "type": "string",
-        "enum": [
-          "base_size",
-          "colour",
-          "density",
-          "lace_knots",
-          "label"
-        ]
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
       },
       "description": "The points ops check a hair system against as it arrives, in order."
     },
@@ -59410,16 +60990,11 @@ Request body:
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "base_size",
-                "colour",
-                "density",
-                "lace_knots",
-                "label"
-              ]
+              "minLength": 1,
+              "maxLength": 64
             },
-            "maxItems": 5,
-            "description": "What a hair system's failed pieces failed, of the checks ops make (receipt_checks); needed where a hair system's line has qc_failed while ops check any point, and named on no other line."
+            "maxItems": 20,
+            "description": "What a hair system's failed pieces failed, by their IDs, of the points ops check (GET /api/qc-points); needed where a hair system's line has qc_failed while ops check any point, and named on no other line."
           },
           "lot_code": {
             "type": [
@@ -59627,16 +61202,9 @@ Request body:
               "null"
             ],
             "items": {
-              "type": "string",
-              "enum": [
-                "base_size",
-                "colour",
-                "density",
-                "lace_knots",
-                "label"
-              ]
+              "type": "string"
             },
-            "description": "What its pieces failed of the checks on arrival, for a hair system's failed check; null otherwise."
+            "description": "What its pieces failed of the checks on arrival, by name as each read when it was drafted, for a hair system's failed check; null otherwise."
           }
         },
         "required": [
@@ -60486,6 +62054,90 @@ Request body:
       "maximum": 100,
       "description": "How many to generate, one if left out; more than one is a batch of single-use codes."
     },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "percent",
+        "amount"
+      ]
+    },
+    "value": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000000,
+      "description": "Per cent, 1 to 100, for a percentage; paise in whole rupees, before GST, for an amount."
+    },
+    "cap": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A percentage's most, in paise in whole rupees, before GST; none if left out."
+    },
+    "covers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "first_fit",
+          "service",
+          "replacement"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 3
+    },
+    "expires_on": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The last day in India it may be entered, today or later; no end if left out."
+    },
+    "max_uses": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "How many bookings it may be on; no limit if left out. A batch's codes are 1 each."
+    },
+    "once_per_client": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "kind",
+    "value",
+    "covers",
+    "once_per_client"
+  ],
+  "additionalProperties": false
+}
+```
+
+### DiscountCodeTerms
+
+```json
+{
+  "type": "object",
+  "properties": {
     "kind": {
       "type": "string",
       "enum": [

@@ -2,7 +2,8 @@
 // grant of staff access may name and a city is put in from its own row. Each is audited under who added it.
 
 import { z } from "@hono/zod-openapi";
-import { addZone, zoneNames } from "../../domain/cities/zones.ts";
+import { addZone, deleteZone, renameZone, zoneNames } from "../../domain/cities/zones.ts";
+import { technicianZoneMoved } from "../../domain/dispatch/technician-roster.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -37,7 +38,65 @@ const addZoneRoute = opsRoute({
   },
 });
 
+const ZonesSchema = z
+  .object({ zones: z.array(z.string()) })
+  .strict()
+  .openapi("Zones");
+const ZoneParams = z.object({ name: z.string().min(1).max(40) });
+
+const renameZoneRoute = opsRoute({
+  method: "patch",
+  path: "/api/zones/{name}",
+  summary: "A zone renamed: its cities, stock places, technicians and the staff grants over it follow, in one batch",
+  request: {
+    params: ZoneParams,
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({ name: z.string().trim().regex(ZONE_NAME) })
+          .strict()
+          .openapi("ZoneRename"),
+      ),
+    },
+  },
+  responses: {
+    200: { description: "The zones as they now stand, in order", ...json(ZonesSchema) },
+    400: errorResponse("invalid_request"),
+    404: errorResponse("not_found: no zone goes by that name"),
+    409: errorResponse("taken: another zone goes by the new name, however it is cased"),
+  },
+});
+
+const deleteZoneRoute = opsRoute({
+  method: "delete",
+  path: "/api/zones/{name}",
+  summary: "A zone deleted, while no city, stock place, technician or staff grant names it",
+  request: { params: ZoneParams },
+  responses: {
+    204: { description: "Deleted" },
+    404: errorResponse("not_found: no zone goes by that name"),
+    409: errorResponse("in_use: a city, stock place, technician or staff grant names it"),
+  },
+});
+
 export function registerOpsZones(app: App): void {
+  app.openapi(renameZoneRoute, async (c) => {
+    const audit = { surface: "ops", actor: actorOf(c), requestId: c.var.requestId } as const;
+    const [from, to] = [c.req.valid("param").name, c.req.valid("json").name];
+    const change = { from, to, technicians: technicianZoneMoved(c.env.DB, from, to) };
+    const renamed = await renameZone(c.env.DB, change, audit, c.var.deps.now());
+    if (renamed === "not_found") return refuse(c, "not_found");
+    if (renamed === "taken") return refuse(c, "taken", ["name"]);
+    return c.json({ zones: await zoneNames(c.env.DB) }, 200);
+  });
+  app.openapi(deleteZoneRoute, async (c) => {
+    const audit = { surface: "ops", actor: actorOf(c), requestId: c.var.requestId } as const;
+    const deleted = await deleteZone(c.env.DB, c.req.valid("param").name, audit, c.var.deps.now());
+    if (deleted === "not_found") return refuse(c, "not_found");
+    if (deleted === "in_use") return refuse(c, "in_use");
+    return c.body(null, 204);
+  });
   app.openapi(addZoneRoute, async (c) => {
     const { name } = c.req.valid("json");
     const audit = { surface: "ops", actor: actorOf(c), requestId: c.var.requestId } as const;

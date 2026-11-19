@@ -11,6 +11,7 @@ import {
   DISCOUNT_CODES,
   json,
   PACKAGES,
+  QC_POINTS,
   SERVICE_AREA,
   SERVICES,
   SETTINGS,
@@ -25,6 +26,7 @@ export const ROUTES: Answers = {
   "GET /api/service-area": json(SERVICE_AREA),
   "GET /api/blackouts": json(BLACKOUTS),
   "GET /api/discount-codes": json(DISCOUNT_CODES),
+  "GET /api/qc-points": json(QC_POINTS),
 };
 
 /** A Settings page by its path's last part: "/settings/booking" is headed "Booking". */

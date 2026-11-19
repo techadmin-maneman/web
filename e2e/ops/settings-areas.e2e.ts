@@ -9,7 +9,8 @@
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { BLACKOUTS, fails, json, SERVICE_AREA, type Answer, type OpsReply } from "./fixtures.ts";
+import { BLACKOUTS, empty, fails, json, SERVICE_AREA, type Answer, type OpsReply } from "./fixtures.ts";
+import { deleting } from "../../apps/ops/src/content/common.ts";
 import { open, posted } from "./settings-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
@@ -45,6 +46,27 @@ test.describe("the service area", () => {
 
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
     await expect(row(page, "122018")).toContainText("Sec65");
+  });
+
+  // A pincode added by mistake could only be left unserved.
+  test("deletes a pincode we do not go to that nothing names, from its drawer", async ({ page }) => {
+    await open(page, "/settings/areas", { "DELETE /api/pincodes/122018": empty() });
+    // Five wait at Lajpat Nagar, so it stays.
+    await page.getByRole("button", { name: served.editLabel("110024") }).click();
+    await expect(page.getByRole("dialog").getByRole("button", { name: deleting.label("110024") })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
+    await page.getByRole("button", { name: served.editLabel("122018") }).click();
+    const drawer = page.getByRole("dialog");
+    await drawer.getByRole("button", { name: deleting.label("122018") }).click();
+    const sent = page.waitForRequest(
+      (request) => request.method() === "DELETE" && request.url().endsWith("/api/pincodes/122018"),
+    );
+    await drawer.getByRole("button", { name: deleting.confirm, exact: true }).click();
+    await sent;
+    await expect(page.getByRole("status").filter({ hasText: served.deleted("122018") })).toBeVisible();
+    await expect(row(page, "122018")).toHaveCount(0);
   });
 
   test("narrows a city’s pincodes to those served or not, or by a search", async ({ page }) => {
@@ -311,6 +333,7 @@ test.describe("the service area", () => {
       waiting: 0,
       to_alert: 0,
       paused_until: null,
+      deletable: false,
     };
     await open(page, "/settings/areas", { "POST /api/pincodes": json(added, 201) });
     const form = page.getByRole("group", { name: opsCopy.areas.add.title });

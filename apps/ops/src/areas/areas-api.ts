@@ -25,6 +25,8 @@ export const areasApi = {
     }),
   /** A pincode the service area does not hold, added unserved in one of our cities. */
   addPincode: (pincode: NewPincode) => client.post("/api/pincodes", { body: pincode }),
+  /** A pincode we do not go to that nothing names, deleted. */
+  deletePincode: (pin: string) => client.delete("/api/pincodes/{pin}", { path: { pin } }),
   /** India Post's states, a state's districts, and the pincodes of those chosen, for opening a city. */
   states: () => client.get("/api/pincode-directory/states"),
   districts: (state: string) => client.get("/api/pincode-directory/districts", { query: { state } }),

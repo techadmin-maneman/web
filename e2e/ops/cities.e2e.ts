@@ -7,7 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, empty, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { cities as copy } from "../../apps/ops/src/content/cities.ts";
-import { EDITING } from "../../apps/ops/src/content/common.ts";
+import { deleting, EDITING } from "../../apps/ops/src/content/common.ts";
 
 const GURGAON = {
   name: "Gurgaon",
@@ -30,10 +30,11 @@ const MUMBAI = {
 
 const BOOK = {
   cities: [
-    { ...GURGAON, technicians: 2 },
-    { ...MUMBAI, technicians: 0 },
+    { ...GURGAON, technicians: 2, deletable: false },
+    { ...MUMBAI, technicians: 0, deletable: true },
   ],
   zones: ["NCR"],
+  deletable_zones: [],
   registrations: [],
   rules: [{ city: "Mumbai", rule: "checkin_radius_m", value: 400 }],
   rule_names: ["checkin_radius_m", "reminder_hour"],
@@ -84,8 +85,8 @@ test("counts each city's technicians, and warns of one served with none", async 
     "GET /api/cities": json({
       ...BOOK,
       cities: [
-        { ...GURGAON, technicians: 2 },
-        { ...MUMBAI, name: "Delhi", served: true, technicians: 0 },
+        { ...GURGAON, technicians: 2, deletable: false },
+        { ...MUMBAI, name: "Delhi", served: true, technicians: 0, deletable: false },
       ],
     }),
   });
@@ -180,6 +181,64 @@ test("lists each zone with its cities, and adds one as typed", async ({ page }) 
   await form.getByRole("button", { name: copy.form.add, exact: true }).click();
   expect((await sent).postDataJSON()).toEqual({ name: "Deccan" });
   await expect(page.getByRole("status").filter({ hasText: copy.zones.added })).toBeVisible();
+});
+
+// A zone could be added, never renamed or deleted.
+test("renames a zone from its record, and deletes one no city is in, but not one a city is in", async ({ page }) => {
+  await open(page, {
+    "GET /api/cities": json({ ...BOOK, zones: ["NCR", "Deccan"], deletable_zones: ["Deccan"] }),
+    "PATCH /api/zones/{name}": json({ zones: ["NCR", "Western"] }),
+    "DELETE /api/zones/{name}": empty(),
+  });
+  const zones = page.getByRole("region", { name: copy.zones.panel });
+  await zones.getByRole("button", { name: "NCR", exact: true }).click();
+  const ncr = page.getByRole("dialog", { name: "NCR" });
+  await expect(ncr).toContainText(copy.zones.inUse);
+  await expect(ncr.getByRole("button", { name: deleting.label("NCR") })).toHaveCount(0);
+  expect(await axeViolations(page)).toEqual([]);
+  await page.keyboard.press("Escape");
+
+  await zones.getByRole("button", { name: "Deccan", exact: true }).click();
+  const deccan = page.getByRole("dialog", { name: "Deccan" });
+  await deccan.getByRole("button", { name: `${EDITING.change} ${copy.zones.name}` }).click();
+  await deccan.getByRole("textbox", { name: copy.zones.name }).fill("Western");
+  const renamed = page.waitForRequest((request) => request.method() === "PATCH");
+  await deccan.getByRole("button", { name: EDITING.save }).click();
+  expect((await renamed).url()).toContain("/api/zones/Deccan");
+  expect((await renamed).postDataJSON()).toEqual({ name: "Western" });
+
+  await page.keyboard.press("Escape");
+  await zones.getByRole("button", { name: "Deccan", exact: true }).click();
+  const again = page.getByRole("dialog", { name: "Deccan" });
+  await again.getByRole("button", { name: deleting.label("Deccan") }).click();
+  const deleted = page.waitForRequest(
+    (request) => request.method() === "DELETE" && request.url().endsWith("/api/zones/Deccan"),
+  );
+  await again.getByRole("button", { name: deleting.confirm, exact: true }).click();
+  await deleted;
+  await expect(page.getByRole("status").filter({ hasText: copy.zones.deleted })).toBeVisible();
+});
+
+// A city added by mistake could only be hidden.
+test("deletes a city nothing names from its record, and offers no delete on one in use", async ({ page }) => {
+  let deleted = false;
+  const left = { ...BOOK, cities: BOOK.cities.filter((city) => city.name !== "Mumbai") };
+  await open(page, {
+    "DELETE /api/cities/Mumbai": (route) => {
+      deleted = true;
+      return empty()(route);
+    },
+    "GET /api/cities": (route) => json(deleted ? left : BOOK)(route),
+  });
+  const gurgaon = await recordOf(page, "Gurgaon");
+  await expect(gurgaon.getByRole("button", { name: deleting.label("Gurgaon") })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  const mumbai = await recordOf(page, "Mumbai");
+  await mumbai.getByRole("button", { name: deleting.label("Mumbai") }).click();
+  await mumbai.getByRole("button", { name: deleting.confirm, exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: copy.form.deleted })).toBeVisible();
+  await expect(cityRow(page, "Mumbai")).toHaveCount(0);
 });
 
 test("refuses a zone another goes by, in the form’s own words", async ({ page }) => {

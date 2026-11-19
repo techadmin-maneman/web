@@ -61,7 +61,10 @@ const SENT_FOR_YOU: Readonly<Record<string, { readonly file: string; readonly pr
 };
 
 /** The functions a row's `save` hands its value to, each with the file that keeps it. */
-const SAVES: Readonly<Record<string, string>> = { saveRule: "apps/ops/src/settings/RuleFields.tsx" };
+const SAVES: Readonly<Record<string, string>> = {
+  saveRule: "apps/ops/src/settings/RuleFields.tsx",
+  saveQcPoint: "apps/ops/src/settings/QcPoints.tsx",
+};
 
 /** Whether a call sits in a row's save, or the send of a part that waits on its own press. */
 function sentTheOneWay(node: ts.Node): boolean {

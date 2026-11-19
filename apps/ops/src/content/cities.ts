@@ -37,6 +37,7 @@ export const cities = {
     served: "Served",
     active: "Offered",
     added: "City added.",
+    deleted: "City deleted.",
     add: "Add",
     yes: "Yes",
     no: "No",
@@ -49,6 +50,7 @@ export const cities = {
       zone: "Choose one of our zones.",
       taken: "Another city has that name.",
       not_found: changed("That city has gone."),
+      in_use: "Clients, pincodes or staff now name this city. Set Offered to No instead.",
     },
   },
   /** The rules a city sets for itself, in its record; one emptied is the national rule's again. */
@@ -113,10 +115,15 @@ export const cities = {
     add: "Add a zone",
     name: "Name",
     added: "Zone added.",
+    deleted: "Zone deleted.",
+    /** Beside the way to delete it, where something still names the zone. */
+    inUse: "A city, stock place, technician or staff access still names this zone.",
     errors: {
       ...common,
       name: "Letters first, up to 40 characters.",
       taken: "A zone goes by that name already.",
+      not_found: changed("That zone is gone."),
+      in_use: "A city, stock place, technician or staff access still names this zone.",
     },
   },
   registrations: {

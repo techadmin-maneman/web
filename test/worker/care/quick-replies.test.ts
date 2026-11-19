@@ -46,6 +46,27 @@ describe("quick replies", () => {
     expect(results.map((row) => row.action)).toEqual(["quick_reply.add", "quick_reply.add", "quick_reply.retire"]);
   });
 
+  // An answer could be added and retired, never changed.
+  it("are changed by a manager while on the list, and audited", async () => {
+    const lead = opsAs(person(LEAD));
+    const added = await post(lead, "/api/quick-replies", { title: "Late", text: "About 20 minutes away." });
+    const { id } = await added.json<{ id: string }>();
+    const change = (body: unknown) =>
+      request(lead, `/api/quick-replies/${id}`, {
+        method: "PATCH",
+        headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    const changed = await change({ title: "Running late", text: "Hi {name}, about 20 minutes away." });
+    expect(changed.status).toBe(200);
+    expect(await changed.json()).toEqual({ id, title: "Running late", text: "Hi {name}, about 20 minutes away." });
+    expect((await listed()).map((reply) => reply.title)).toEqual(["Running late"]);
+    await post(lead, `/api/quick-replies/${id}/retire`);
+    expect((await change({ title: "Again", text: "Gone." })).status).toBe(404);
+    const audited = await env.DB.prepare("SELECT 1 FROM audit_log WHERE action = 'quick_reply.change'").all();
+    expect(audited.results).toHaveLength(1);
+  });
+
   it("are a manager's to keep, once the Staff list is enforced", async () => {
     await enforce();
     const refused = await post(opsAs(person(CARE)), "/api/quick-replies", { title: "Hello", text: "Hi {name}." });

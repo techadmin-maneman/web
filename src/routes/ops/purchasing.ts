@@ -23,7 +23,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { needsSecondApproval, ownApprovalNeedsSecond, PO_STATES } from "../../policy/purchasing.ts";
-import { checkedPoints, QC_POINTS } from "../../policy/receipt-checks.ts";
+import { checkedPoints } from "../../domain/purchasing/qc-points.ts";
 import { CIN, GSTIN } from "../../policy/suppliers.ts";
 
 const Text = z.string();
@@ -128,7 +128,7 @@ const OrdersSchema = z
         .strict(),
     ),
     second_approval_above_rupees: z.number().int(),
-    receipt_checks: z.array(z.enum(QC_POINTS)).openapi({
+    receipt_checks: z.array(z.object({ id: z.string(), name: z.string() }).strict()).openapi({
       description: "The points ops check a hair system against as it arrives, in order.",
     }),
     letterhead: z
@@ -339,7 +339,7 @@ export async function ordersAnswer(c: Context<AppEnv>) {
     suppliers: suppliers.map(supplierJson),
     consumables: consumables.results,
     second_approval_above_rupees: above,
-    receipt_checks: checkedPoints(inputs.receiptChecks),
+    receipt_checks: await checkedPoints(c.env.DB),
     letterhead:
       letterhead === null
         ? null

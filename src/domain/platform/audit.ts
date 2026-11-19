@@ -54,6 +54,10 @@ export const AUDIT_ACTIONS = [
   "care_name.set",
   "quick_reply.add",
   "quick_reply.retire",
+  "quick_reply.change",
+  "qc_point.add",
+  "qc_point.change",
+  "qc_point.delete",
   "remedy.give",
   "remedy.ask",
   "remedy.approve",
@@ -120,6 +124,7 @@ export const AUDIT_ACTIONS = [
   "pincode.rename",
   // A pincode ops add to the service area, unserved, in one of our cities.
   "pincode.add",
+  "pincode.delete",
   // A served pincode paused, taking no new clients for a while, and the pause taken off; a launch scheduled for a later
   // day, and one cancelled (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
   "pincode.pause",
@@ -132,7 +137,10 @@ export const AUDIT_ACTIONS = [
   "city.change",
   // A zone that groups cities, which a grant of staff access may name (docs/decisions/0109-console-departments-and-access.md).
   "zone.add",
+  "zone.rename",
+  "zone.delete",
   "city.rename",
+  "city.delete",
   "gst_registration.set",
   "gst_registration.remove",
   "city_rule.set",
@@ -269,6 +277,7 @@ export const AUDIT_ACTIONS = [
   "discount_code.switch_off",
   // One made by mistake, deleted before any booking took it.
   "discount_code.delete",
+  "discount_code.change",
   "discount_code.apply",
   "discount_code.remove",
   // The Staff list: a member of staff added or changed, the list enforced or not, and a service token let in or
@@ -400,12 +409,14 @@ export function auditStatementIfDeleted(
   now: Date,
   deleted:
     | {
-        readonly table: "technicians" | "discount_codes" | "partner_payouts" | "slot_times";
+        readonly table: "technicians" | "discount_codes" | "partner_payouts" | "slot_times" | "qc_points";
         readonly column: "id";
         readonly value: string;
       }
     | { readonly table: "staff"; readonly column: "email"; readonly value: string }
-    | { readonly table: "consumables"; readonly column: "code"; readonly value: string },
+    | { readonly table: "consumables"; readonly column: "code"; readonly value: string }
+    | { readonly table: "cities" | "zones"; readonly column: "name"; readonly value: string }
+    | { readonly table: "serviceable_pincodes"; readonly column: "pincode"; readonly value: string },
 ): D1PreparedStatement {
   return db
     .prepare(

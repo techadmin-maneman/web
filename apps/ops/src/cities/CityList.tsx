@@ -163,6 +163,12 @@ export function CityList({ cities, reread }: { cities: Cities; reread: () => Pro
                 setWas(opened.name);
                 setOpen(name);
               }}
+              onDeleted={() => {
+                setOpen(null);
+                setWas(null);
+                setSaid(words.form.deleted);
+                void reread();
+              }}
             />
           </FormDrawer>
         )}
