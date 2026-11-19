@@ -9,6 +9,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { receiptClaimStatements } from "../../../src/domain/purchasing/supplier-claims.ts";
 import { jpegOf } from "../cards.ts";
 import { A_NUMBER, markDatabase, NOW, request } from "../helpers.ts";
 import { working, type Working } from "../job-fixtures.ts";
@@ -234,6 +235,36 @@ describe("a hair system's failed check", () => {
     for (const point of all.points) await setPoint(point.id, { name: point.name, checked: false });
     const failed = await receive(order, [{ po_line_id: hairLine, received: 2, qc_failed: 1 }]);
     expect(failed.status).toBe(200);
+  });
+
+  // A check deleted while a receipt naming it was saved left the claim naming a check that was not there.
+  it("is kept on a claim only while the check is held as its receipt lands, and none kept is none named", async () => {
+    const { order, hairLine, solventLine } = await sentAgain();
+    const arrived = await receive(order, [
+      { po_line_id: hairLine, received: 1 },
+      { po_line_id: solventLine, received: 1 },
+    ]);
+    expect(arrived.status).toBe(200);
+    const { results } = await env.DB.prepare("SELECT id, po_line_id FROM receipt_lines WHERE po_line_id IN (?1, ?2)")
+      .bind(hairLine, solventLine)
+      .all<{ id: string; po_line_id: string }>();
+    const lineOf = (poLine: string) => results.find((each) => each.po_line_id === poLine)?.id ?? "";
+    const written = { actor: { kind: "staff", id: "ops@localhost" }, requestId: "r", now: NOW } as const;
+    const failed = (poLine: string, points: string[]) =>
+      receiptClaimStatements(
+        env.DB,
+        { id: lineOf(poLine), poLineId: poLine, damaged: 0, qcFailed: 1, qcFailedPoints: points },
+        written,
+      );
+    await env.DB.batch([...failed(hairLine, ["gone", "colour"]), ...failed(solventLine, ["gone"])]);
+    const claimed = env.DB.prepare(
+      "SELECT failed_points, failed_point_names FROM supplier_claims WHERE receipt_line_id = ?1",
+    );
+    expect(await claimed.bind(lineOf(hairLine)).first()).toEqual({
+      failed_points: '["colour"]',
+      failed_point_names: '["Colour against the ring"]',
+    });
+    expect(await claimed.bind(lineOf(solventLine)).first()).toEqual({ failed_points: null, failed_point_names: null });
   });
 
   it("is named on a hair system's line alone, and only for pieces that failed", async () => {

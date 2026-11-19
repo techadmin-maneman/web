@@ -4,7 +4,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { enterOnVisit } from "../../../src/domain/money/discount-code-visits.ts";
-import { makeCodes } from "../../../src/domain/money/discount-codes.ts";
+import { makeCodes, type NewCodes } from "../../../src/domain/money/discount-codes.ts";
 import type { App } from "../../../src/http/context.ts";
 import { aVisit } from "../fixtures/index.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
@@ -29,11 +29,12 @@ interface Listed {
   covers: string[];
   max_uses: number | null;
   once_per_client: boolean;
+  deletable: boolean;
 }
 
 const listed = async () => (await (await request(ops, "/api/discount-codes")).json<{ codes: Listed[] }>()).codes;
 
-const make = (code: string) =>
+const make = (code: string, covers: NewCodes["covers"] = ["service"]) =>
   makeCodes(
     env.DB,
     {
@@ -42,7 +43,7 @@ const make = (code: string) =>
       kind: "percent",
       value: 10,
       cap: null,
-      covers: ["service"],
+      covers,
       expiresOn: null,
       maxUses: null,
       oncePerClient: true,
@@ -88,6 +89,24 @@ describe("Settings · Discount codes, a code's terms changed", () => {
     expect(refused.status).toBe(409);
     expect(await refused.json()).toMatchObject({ error: { code: "in_use" } });
     expect(await listed()).toEqual([expect.objectContaining({ kind: "percent", value: 10, covers: ["service"] })]);
+    const audit = await env.DB.prepare("SELECT 1 FROM audit_log WHERE action = 'discount_code.change'").all();
+    expect(audit.results).toEqual([]);
+  });
+
+  it("refuses a code a partner gives its friends, as the list says, and writes nothing", async () => {
+    await make("SALON2K", ["first_fit"]);
+    const partner = { name: "Looks Salon, Sector 29", friend_visits: 0, valid_days: 180, commission: 150_000 };
+    const added = await request(ops, "/api/referral-channels", {
+      method: "POST",
+      headers: { Origin: "https://maneman.test", "Content-Type": "application/json" },
+      body: JSON.stringify({ ...partner, discount_code: "salon2k" }),
+    });
+    expect(added.status).toBe(200);
+    const [code] = await listed();
+    expect(code).toMatchObject({ code: "SALON2K", deletable: false });
+    const refused = await patch(code?.id ?? "", FIVE_HUNDRED);
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "in_use" } });
     const audit = await env.DB.prepare("SELECT 1 FROM audit_log WHERE action = 'discount_code.change'").all();
     expect(audit.results).toEqual([]);
   });

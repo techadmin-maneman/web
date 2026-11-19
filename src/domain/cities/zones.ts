@@ -2,8 +2,8 @@
 // (docs/decisions/0109-console-departments-and-access.md). Admin › Cities adds one, renames it and deletes one nothing
 // names; a city is put in it from its own row.
 
-import { failedUniqueOn } from "../../lib/d1-errors.ts";
-import { auditStatementIfDeleted, auditStatementWhen, type AuditEntry } from "../platform/audit.ts";
+import { failedNotNullOn, failedUniqueOn } from "../../lib/d1-errors.ts";
+import { auditStatement, auditStatementIfDeleted, auditStatementWhen, type AuditEntry } from "../platform/audit.ts";
 
 /** The zones, in their order. */
 export async function zoneNames(db: D1Database): Promise<string[]> {
@@ -57,10 +57,15 @@ export async function deletableZones(db: D1Database): Promise<string[]> {
   return results.map((row) => row.name);
 }
 
+/** Whether a write failed on zones' own rules: a name another zone holds, or a sort it could not take. */
+const refusedByZones = (error: unknown): boolean =>
+  failedUniqueOn(error, "zones") || failedNotNullOn(error, "zones.sort");
+
 /**
  * A zone renamed, every row that names it moved to the new name in the same batch: its cities, stock places and
- * technicians, and the staff grants over it. The new name stands first, so nothing ever names a zone that is not there;
- * each move waits on it, so a rename another request beat moves nothing, and its audit entry is written only if it went.
+ * technicians, and the staff grants over it. The new name stands first, so nothing ever names a zone that is not there.
+ * Where the old name has gone, or another zone goes by the new one however cased, the new row takes no sort and the
+ * whole batch fails, so nothing moves and nothing is audited.
  */
 export async function renameZone(
   db: D1Database,
@@ -76,32 +81,25 @@ export async function renameZone(
   const { from, to } = change;
   if (!(await zoneExists(db, from))) return "not_found";
   if (from === to) return "renamed";
-  const stands = "AND EXISTS (SELECT 1 FROM zones WHERE name = ?2)";
-  const entry: AuditEntry = { ...audit, action: "zone.rename", subject: { kind: "zone", id: to }, detail: { from } };
   try {
     await db.batch([
-      // Another zone of exactly the new name fails the batch; one cased otherwise leaves it unwritten.
       db
         .prepare(
-          `INSERT INTO zones (name, sort) SELECT ?2, sort FROM zones WHERE name = ?1
-           AND NOT EXISTS (SELECT 1 FROM zones WHERE lower(name) = lower(?2) AND name <> ?1)`,
+          `INSERT INTO zones (name, sort) VALUES (?2, (SELECT sort FROM zones WHERE name = ?1
+             AND NOT EXISTS (SELECT 1 FROM zones WHERE lower(name) = lower(?2) AND name <> ?1)))`,
         )
         .bind(from, to),
-      db.prepare(`UPDATE cities SET zone = ?2 WHERE zone = ?1 ${stands}`).bind(from, to),
-      db.prepare(`UPDATE stock_places SET zone = ?2 WHERE zone = ?1 ${stands}`).bind(from, to),
+      db.prepare("UPDATE cities SET zone = ?2 WHERE zone = ?1").bind(from, to),
+      db.prepare("UPDATE stock_places SET zone = ?2 WHERE zone = ?1").bind(from, to),
       change.technicians,
-      db.prepare(`UPDATE staff_grants SET place = ?2 WHERE geography = 'zone' AND place = ?1 ${stands}`).bind(from, to),
-      db.prepare(`DELETE FROM zones WHERE name = ?1 ${stands}`).bind(from, to),
-      auditStatementWhen(db, entry, now, {
-        sql: "EXISTS (SELECT 1 FROM zones WHERE name = ?10) AND NOT EXISTS (SELECT 1 FROM zones WHERE name = ?11)",
-        binds: [to, from],
-      }),
+      db.prepare("UPDATE staff_grants SET place = ?2 WHERE geography = 'zone' AND place = ?1").bind(from, to),
+      db.prepare("DELETE FROM zones WHERE name = ?1").bind(from),
+      auditStatement(db, { ...audit, action: "zone.rename", subject: { kind: "zone", id: to }, detail: { from } }, now),
     ]);
   } catch (error) {
-    if (!failedUniqueOn(error, "zones")) throw error;
-    return "taken";
+    if (!refusedByZones(error)) throw error;
+    return (await zoneExists(db, from)) ? "taken" : "not_found";
   }
-  if (!(await zoneExists(db, to))) return (await zoneExists(db, from)) ? "taken" : "not_found";
   return "renamed";
 }
 
