@@ -472,13 +472,10 @@ export async function grievanceAndRefund(sim: Sim, wave: string): Promise<void> 
 
 /** A client whose profile matches no stock code: a custom order raised to it, its link paid. */
 export async function customOrder(sim: Sim, wave: string): Promise<void> {
+  // Signed in to the app or not: one whose fit is never booked there may not be, and the step signs them in.
   const client = sim.world.clients.find(
     (each, index) =>
-      codeOf(index) === null &&
-      live(sim).includes(each) &&
-      each.goingAhead === true &&
-      !each.fitted &&
-      each.customOrder !== true,
+      codeOf(index) === null && !each.erased && each.goingAhead === true && !each.fitted && each.customOrder !== true,
   );
   if (client === undefined || catalogue.supplier === undefined) return;
   await sim.steps.run(
