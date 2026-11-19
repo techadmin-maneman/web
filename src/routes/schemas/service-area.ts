@@ -17,6 +17,9 @@ export const AreaSchema = z
     paused_until: z.union([z.iso.date(), z.null()]).openapi({
       description: "The day a paused pincode takes new clients again; null when it is not paused.",
     }),
+    deletable: z
+      .boolean()
+      .openapi({ description: "Whether it may be deleted: we do not go there and nothing names it." }),
   })
   .strict()
   .openapi("ServedPincode");

@@ -30,8 +30,8 @@ const MUMBAI = {
 
 const BOOK = {
   cities: [
-    { ...GURGAON, technicians: 2 },
-    { ...MUMBAI, technicians: 0 },
+    { ...GURGAON, technicians: 2, deletable: false },
+    { ...MUMBAI, technicians: 0, deletable: true },
   ],
   zones: ["NCR"],
   registrations: [],
@@ -84,8 +84,8 @@ test("counts each city's technicians, and warns of one served with none", async 
     "GET /api/cities": json({
       ...BOOK,
       cities: [
-        { ...GURGAON, technicians: 2 },
-        { ...MUMBAI, name: "Delhi", served: true, technicians: 0 },
+        { ...GURGAON, technicians: 2, deletable: false },
+        { ...MUMBAI, name: "Delhi", served: true, technicians: 0, deletable: false },
       ],
     }),
   });
@@ -214,6 +214,28 @@ test("renames a zone from its record, and deletes one no city is in, but not one
   await again.getByRole("button", { name: deleting.confirm, exact: true }).click();
   await deleted;
   await expect(page.getByRole("status").filter({ hasText: copy.zones.deleted })).toBeVisible();
+});
+
+// A city added by mistake could only be hidden.
+test("deletes a city nothing names from its record, and offers no delete on one in use", async ({ page }) => {
+  let deleted = false;
+  const left = { ...BOOK, cities: BOOK.cities.filter((city) => city.name !== "Mumbai") };
+  await open(page, {
+    "POST /api/cities/Mumbai/delete": (route) => {
+      deleted = true;
+      return empty()(route);
+    },
+    "GET /api/cities": (route) => json(deleted ? left : BOOK)(route),
+  });
+  const gurgaon = await recordOf(page, "Gurgaon");
+  await expect(gurgaon.getByRole("button", { name: deleting.label("Gurgaon") })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  const mumbai = await recordOf(page, "Mumbai");
+  await mumbai.getByRole("button", { name: deleting.label("Mumbai") }).click();
+  await mumbai.getByRole("button", { name: deleting.confirm, exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: copy.form.deleted })).toBeVisible();
+  await expect(cityRow(page, "Mumbai")).toHaveCount(0);
 });
 
 test("refuses a zone another goes by, in the form’s own words", async ({ page }) => {

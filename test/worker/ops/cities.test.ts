@@ -85,6 +85,28 @@ describe("a city", () => {
     expect((await auditFor("city.rename")).results).toEqual([expect.objectContaining({ subject_id: "Gurugram" })]);
   });
 
+  it("is deleted, its own rules with it, only while nothing else names it", async () => {
+    await send("POST", "/api/cities", PUNE);
+    await send("PATCH", "/api/cities/Pune/rules/checkin_radius_m", { value: 400 });
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('122018', 'Sector 65', 'Gurgaon', 0)",
+    ).run();
+    const listed = await (await send("GET", "/api/cities")).json<{ cities: { name: string; deletable: boolean }[] }>();
+    expect(listed.cities.filter((city) => ["Gurgaon", "Pune"].includes(city.name))).toEqual([
+      expect.objectContaining({ name: "Gurgaon", deletable: false }),
+      expect.objectContaining({ name: "Pune", deletable: true }),
+    ]);
+
+    const named = await send("POST", "/api/cities/Gurgaon/delete");
+    expect(named.status).toBe(409);
+    expect(await named.json()).toMatchObject({ error: { code: "in_use" } });
+    expect((await send("POST", "/api/cities/Pune/delete")).status).toBe(204);
+    expect(await env.DB.prepare("SELECT 1 FROM cities WHERE name = 'Pune'").first()).toBeNull();
+    expect(await env.DB.prepare("SELECT 1 FROM city_settings WHERE city = 'Pune'").first()).toBeNull();
+    expect((await auditFor("city.delete")).results).toEqual([expect.objectContaining({ subject_id: "Pune" })]);
+    expect((await send("POST", "/api/cities/Pune/delete")).status).toBe(404);
+  });
+
   it("is the only city a served pincode may name", async () => {
     await expect(
       env.DB.prepare(

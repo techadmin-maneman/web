@@ -18,6 +18,7 @@
 // whoever waits there and asked to be told is told, once
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { deletablePincodes } from "./pincode-delete.ts";
 import { indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { isLaunchInFuture } from "../../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
@@ -99,6 +100,8 @@ export interface AreaPincode {
   readonly to_alert: number;
   /** India's date a paused pincode takes new clients again; null when it is not paused. */
   readonly paused_until: string | null;
+  /** Whether it may be deleted: we do not go there and nothing names it. */
+  readonly deletable: boolean;
 }
 
 /** One pincode's two columns, as ops send them, and a new name for its area if they gave one. */
@@ -125,7 +128,7 @@ export async function serviceArea(db: D1Database): Promise<AreaPincode[]> {
       "SELECT pincode, area, city, served, launched_at, paused_until FROM serviceable_pincodes ORDER BY city, pincode",
     )
     .all<Row>();
-  const waiting = await waitingByPincode(db);
+  const [waiting, deletable] = await Promise.all([waitingByPincode(db), deletablePincodes(db)]);
   return results.map((row) => ({
     pincode: row.pincode,
     area: row.area,
@@ -135,6 +138,7 @@ export async function serviceArea(db: D1Database): Promise<AreaPincode[]> {
     waiting: waiting.get(row.pincode)?.waiting ?? 0,
     to_alert: waiting.get(row.pincode)?.toAlert ?? 0,
     paused_until: row.paused_until,
+    deletable: deletable.has(row.pincode),
   }));
 }
 
@@ -419,6 +423,7 @@ export async function addPincode(
     waiting: waiting.waiting,
     to_alert: waiting.alerts,
     paused_until: null,
+    deletable: (await deletablePincodes(db)).has(pincode.pincode),
   };
 }
 

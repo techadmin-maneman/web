@@ -23741,6 +23741,157 @@ Request body:
 }
 ```
 
+### POST /api/pincodes/{pin}/delete
+
+A pincode deleted, while we do not go there and no client, visit, waitlist or launch names it
+
+**204**: Deleted
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required, or not_permitted: its city is outside the caller's Growth MANAGE
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: the service area does not hold it
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: in_use: we go there, or something names it; stop serving it instead
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/cities
 
 Every city, its state and zone, the GST registrations, and each city's own rules and prices
@@ -24084,6 +24235,157 @@ Request body:
               "type": "string",
               "enum": [
                 "taken"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/cities/{name}/delete
+
+A city deleted, its own prices and rules with it, while nothing else names it
+
+**204**: Deleted
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such city
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: in_use: a client, visit, pincode, technician, stock or staff access names it
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "in_use"
               ]
             }
           },
@@ -42632,6 +42934,10 @@ Request body:
         }
       ],
       "description": "The day a paused pincode takes new clients again; null when it is not paused."
+    },
+    "deletable": {
+      "type": "boolean",
+      "description": "Whether it may be deleted: we do not go there and nothing names it."
     }
   },
   "required": [
@@ -42642,7 +42948,8 @@ Request body:
     "launch_on",
     "waiting",
     "to_alert",
-    "paused_until"
+    "paused_until",
+    "deletable"
   ],
   "additionalProperties": false
 }
@@ -48483,6 +48790,7 @@ Request body:
         "pincode.set",
         "pincode.rename",
         "pincode.add",
+        "pincode.delete",
         "pincode.pause",
         "pincode.resume",
         "launch.schedule",
@@ -48493,6 +48801,7 @@ Request body:
         "zone.rename",
         "zone.delete",
         "city.rename",
+        "city.delete",
         "gst_registration.set",
         "gst_registration.remove",
         "city_rule.set",
@@ -55192,6 +55501,10 @@ Request body:
     "technicians": {
       "type": "integer",
       "description": "Active technicians who work there."
+    },
+    "deletable": {
+      "type": "boolean",
+      "description": "Whether nothing but its own settings names it."
     }
   },
   "required": [
@@ -55202,7 +55515,8 @@ Request body:
     "served",
     "active",
     "sort",
-    "technicians"
+    "technicians",
+    "deletable"
   ],
   "additionalProperties": false
 }

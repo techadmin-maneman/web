@@ -17,6 +17,8 @@ export const citiesApi = {
   addZone: (body: Sent<paths["/api/zones"]["post"]>) => client.post("/api/zones", { body }),
   /** A zone renamed: its cities, stock places, technicians and grants follow. */
   renameZone: (name: string, to: string) => client.patch("/api/zones/{name}", { path: { name }, body: { name: to } }),
+  /** A city nothing but its own settings names, deleted with them. */
+  deleteCity: (name: string) => client.post("/api/cities/{name}/delete", { path: { name } }),
   /** A zone nothing names, deleted. */
   deleteZone: (name: string) => client.post("/api/zones/{name}/delete", { path: { name } }),
   addPrice: (name: string, body: Sent<paths["/api/cities/{name}/prices"]["post"]>) =>

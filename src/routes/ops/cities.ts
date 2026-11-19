@@ -6,6 +6,7 @@ import { z } from "@hono/zod-openapi";
 import { GSTIN_FORMAT, STATE_CODE_FORMAT } from "../../config/gst.ts";
 import { addCity, changeCity, type CityFields } from "../../domain/cities/city-changes.ts";
 import { allCities, cityNamed, techniciansByCity } from "../../domain/cities/cities.ts";
+import { deletableCities, deleteCity } from "../../domain/cities/city-delete.ts";
 import { cityPrices, setCityPrice, withdrawCityPrice } from "../../domain/money/city-prices.ts";
 import { cityRules, setCityRule } from "../../domain/cities/city-rules.ts";
 import { removeRegistration, setRegistration, stateRegistrations } from "../../domain/cities/gst-registrations.ts";
@@ -92,6 +93,7 @@ const citiesRoute = opsRoute({
             cities: z.array(
               CitySchema.extend({
                 technicians: z.number().int().openapi({ description: "Active technicians who work there." }),
+                deletable: z.boolean().openapi({ description: "Whether nothing but its own settings names it." }),
               }).openapi("ListedCity"),
             ),
             zones: z.array(z.string()),
@@ -141,6 +143,18 @@ const changeRoute = opsRoute({
     400: errorResponse("invalid_request: fields names what was refused, zone where it is none of ours"),
     404: errorResponse("not_found: no such city"),
     409: errorResponse("taken: another city has the new name"),
+  },
+});
+
+const deleteRoute = opsRoute({
+  method: "post",
+  path: "/api/cities/{name}/delete",
+  summary: "A city deleted, its own prices and rules with it, while nothing else names it",
+  request: { params: NameParam },
+  responses: {
+    204: { description: "Deleted" },
+    404: errorResponse("not_found: no such city"),
+    409: errorResponse("in_use: a client, visit, pincode, technician, stock or staff access names it"),
   },
 });
 
@@ -280,9 +294,10 @@ export function registerOpsCities(app: App): void {
   app.openapi(citiesRoute, async (c) => {
     const db = c.env.DB;
     const today = indiaDate(c.var.deps.now());
-    const [cities, technicians, zones, registrations, rules, prices, inputs] = await Promise.all([
+    const [cities, technicians, deletable, zones, registrations, rules, prices, inputs] = await Promise.all([
       allCities(db),
       techniciansByCity(db),
+      deletableCities(db),
       db.prepare("SELECT name FROM zones ORDER BY sort, name").all<{ name: string }>(),
       stateRegistrations(db),
       cityRules(db),
@@ -299,7 +314,11 @@ export function registerOpsCities(app: App): void {
     );
     return c.json(
       {
-        cities: cities.map((city) => ({ ...city, technicians: technicians.get(city.name) ?? 0 })),
+        cities: cities.map((city) => ({
+          ...city,
+          technicians: technicians.get(city.name) ?? 0,
+          deletable: deletable.has(city.name),
+        })),
         zones: zones.results.map((row) => row.name),
         registrations,
         rules: ruleRows,
@@ -340,6 +359,11 @@ function registerCityChanges(app: App): void {
     if (changed === "held") return refuse(c, "taken");
     if (changed === "not_found") return refuse(c, "not_found");
     return c.json({ city: changed }, 200);
+  });
+
+  app.openapi(deleteRoute, async (c) => {
+    const deleted = await deleteCity(c.env.DB, c.req.valid("param").name, auditOf(c), c.var.deps.now());
+    return deleted === "deleted" ? c.body(null, 204) : refuse(c, deleted);
   });
 }
 

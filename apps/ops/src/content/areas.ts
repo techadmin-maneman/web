@@ -273,6 +273,16 @@ export const areas = {
     edit: "Edit",
     editLabel: (pincode: string) => `Edit ${pincode}`,
     editTitle: (pincode: string, area: string) => (area === "" ? pincode : `${pincode} · ${area}`),
+    /** A pincode we do not go to that nothing names, deleted from its drawer. */
+    deleted: (pincode: string) => `${pincode} deleted.`,
+    deleteErrors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "That pincode is already gone.",
+      in_use: "A client, booking or waitlist now names this pincode, so it stays.",
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
     /** The name a row's box holds: a letter or a digit first, as the API takes it. */
     badName: (pincode: string) => `${pincode}: 2–40 characters, starting with a letter or digit.`,
     save: "Save",

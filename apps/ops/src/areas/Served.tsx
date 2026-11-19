@@ -13,7 +13,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { type ServedPincode } from "../api.ts";
+import { type AreaChange, type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { saveFile } from "../lib/save-file.ts";
@@ -59,8 +59,11 @@ function PincodeTable(props: {
   chosen: ReadonlySet<string> | null;
   onChosen: (next: ReadonlySet<string>) => void;
   onSave: (pincode: string, next: Row) => string | null;
+  /** A pincode deleted from its drawer, to take off the list. */
+  onGone: (pincode: string) => void;
 }) {
   const { view, chosen, onChosen } = props;
+  const [deleted, setDeleted] = useState<string | null>(null);
   const shown = view.shown.map((each) => each.pincode);
   const choose = (pincodes: readonly string[], on: boolean) => {
     const next = new Set(chosen);
@@ -105,12 +108,50 @@ function PincodeTable(props: {
                 choose([each.pincode], on);
               }}
               onSave={(next) => props.onSave(each.pincode, next)}
+              onDeleted={() => {
+                props.onGone(each.pincode);
+                setDeleted(each.pincode);
+              }}
             />
           ))}
         </tbody>
       </Table>
       <TableEnd view={view} />
+      {deleted !== null && <Toast>{copy.deleted(deleted)}</Toast>}
     </>
+  );
+}
+
+/** A file of pincodes read and its changes shown, then its new pincodes added or its changes saved. */
+function FromFile(props: {
+  pincodes: readonly ServedPincode[];
+  upload: Upload | null;
+  setUpload: (upload: Upload | null) => void;
+  onAdded: (rows: readonly ServedPincode[]) => void;
+  onApply: (changes: readonly AreaChange[]) => void;
+}) {
+  const { pincodes, setUpload } = props;
+  const readFile = async (file: File) => {
+    const read = readServiceAreaCsv(await file.text());
+    if (read.ok) setUpload(readUpload(pincodes, read.rows));
+    else setUpload({ step: "failed", says: uploadRefusal(read) });
+  };
+  return (
+    <UploadFile
+      upload={props.upload}
+      onFile={(file) => void readFile(file)}
+      onAdd={async (lines, adds) => {
+        const done = await addFromFile(pincodes, lines, adds);
+        props.onAdded(done.added);
+        setUpload(done.upload);
+      }}
+      onApply={(rows) => {
+        props.onApply(changesIn(pincodes, fileDraft(rows)));
+      }}
+      onCancel={() => {
+        setUpload(null);
+      }}
+    />
   );
 }
 
@@ -183,12 +224,6 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     setCity(rows[0]?.city ?? city);
   };
 
-  const readFile = async (file: File) => {
-    const read = readServiceAreaCsv(await file.text());
-    if (read.ok) setUpload(readUpload(pincodes, read.rows));
-    else setUpload({ step: "failed", says: uploadRefusal(read) });
-  };
-
   return (
     <>
       <Panel titleId="area" title={copy.title} actions={<DownloadCsv pincodes={pincodes} />}>
@@ -224,22 +259,24 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           />
         )}
         <SaveNotes saving={saves.saving} onLaunch={(changes, reason) => void saves.send(changes, reason)} />
-        <PincodeTable view={view} chosen={mayChange ? chosen : null} onChosen={setChosen} onSave={saveRow} />
+        <PincodeTable
+          view={view}
+          chosen={mayChange ? chosen : null}
+          onChosen={setChosen}
+          onSave={saveRow}
+          onGone={(pincode) => {
+            setPincodes((all) => all.filter((each) => each.pincode !== pincode));
+          }}
+        />
       </Panel>
       {mayChange && (
-        <UploadFile
+        <FromFile
+          pincodes={pincodes}
           upload={upload}
-          onFile={(file) => void readFile(file)}
-          onAdd={async (lines, adds) => {
-            const done = await addFromFile(pincodes, lines, adds);
-            addRows(done.added);
-            setUpload(done.upload);
-          }}
-          onApply={(rows) => {
-            saves.commit(changesIn(pincodes, fileDraft(rows)));
-          }}
-          onCancel={() => {
-            setUpload(null);
+          setUpload={setUpload}
+          onAdded={addRows}
+          onApply={(changes) => {
+            saves.commit(changes);
           }}
         />
       )}

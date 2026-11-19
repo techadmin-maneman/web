@@ -1,4 +1,4 @@
-// Settings › Areas' parts (./Served.tsx): the city tabs, one pincode's row and its drawer, who a save would message,
+// Settings › Areas' parts (./Served.tsx): the city tabs, one pincode's row (its drawer ./PincodeDrawer.tsx), who a save would message,
 // how the last save went, and a file read with its changes shown before they are saved.
 
 import { AreaSection } from "./AreaSection.tsx";
@@ -6,7 +6,7 @@ import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Badge } from "@maneman/ui/Badge";
-import { Field, Checkbox, DateInput, FileInput, TextInput } from "@maneman/ui/Field";
+import { Field, Checkbox, FileInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -27,7 +27,7 @@ import type { Saving } from "./useAreaSaves.ts";
 import { Refusal } from "@maneman/ui/Refusal";
 import { FormActions } from "@maneman/ui/FormActions";
 import { RowHead } from "@maneman/ui/RowHead";
-import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { PincodeDrawer } from "./PincodeDrawer.tsx";
 
 const copy = areas.served;
 const launch = areas.launch;
@@ -39,75 +39,10 @@ interface PincodeRowProps {
   readonly onChoose: (chosen: boolean) => void;
   /** Sends the row's settings, or answers why they cannot go. */
   readonly onSave: (next: Row) => string | null;
+  readonly onDeleted: () => void;
 }
 
-/** One pincode's three settings, a box each, in a drawer beside the table; Save sends them. */
-function PincodeDrawer({
-  id,
-  row,
-  onSave,
-  onClose,
-}: {
-  id: string;
-  row: Row;
-  onSave: (next: Row) => string | null;
-  onClose: () => void;
-}) {
-  const [next, setNext] = useState(row);
-  const [refused, setRefused] = useState<string | null>(null);
-  return (
-    <FormDrawer title={copy.editTitle(id, row.area)} onClose={onClose}>
-      <div className={form.fields}>
-        <Field label={copy.columns[1]}>
-          {(control) => (
-            <TextInput
-              {...control}
-              maxLength={40}
-              value={next.area}
-              onChange={(event) => {
-                setNext({ ...next, area: event.target.value });
-              }}
-            />
-          )}
-        </Field>
-        <Checkbox
-          label={copy.columns[2]}
-          checked={next.served}
-          onChange={(event) => {
-            setNext({ ...next, served: event.target.checked });
-          }}
-        />
-        <Field label={copy.columns[3]}>
-          {(control) => (
-            <DateInput
-              {...control}
-              width="date"
-              value={next.launch_on ?? ""}
-              onChange={(event) => {
-                setNext({ ...next, launch_on: event.target.value === "" ? null : event.target.value });
-              }}
-            />
-          )}
-        </Field>
-      </div>
-      {refused !== null && <Refusal className={form.error} said={refused} />}
-      <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          onClick={() => {
-            setRefused(onSave(next));
-          }}
-        >
-          {copy.save}
-        </Button>
-        <CancelButton onClick={onClose} />
-      </FormActions>
-    </FormDrawer>
-  );
-}
-
-export function PincodeRow({ pincode, chosen, onChoose, onSave }: PincodeRowProps) {
+export function PincodeRow({ pincode, chosen, onChoose, onSave, onDeleted }: PincodeRowProps) {
   const id = pincode.pincode;
   const [editing, setEditing] = useState(false);
   return (
@@ -146,8 +81,9 @@ export function PincodeRow({ pincode, chosen, onChoose, onSave }: PincodeRowProp
           </RowButton>
           {editing && (
             <PincodeDrawer
-              id={id}
+              pincode={pincode}
               row={rowOf(pincode)}
+              onDeleted={onDeleted}
               onSave={(next) => {
                 const refused = onSave(next);
                 if (refused === null) setEditing(false);
