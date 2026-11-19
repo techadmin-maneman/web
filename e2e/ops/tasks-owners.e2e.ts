@@ -53,7 +53,7 @@ test("takes a task, and hands it back, from its drawer", async ({ page }) => {
   const deepak = await detail(page, "Deepak Rao");
   await deepak.getByRole("button", { name: "Take · Deepak Rao" }).click();
   // Its owner by first name: ops@localhost reads "Ops", a name, not the console's own word.
-  await expect(deepak).toContainText(/Owner\s*Ops/);
+  await expect(deepak).toContainText(new RegExp(`${opsCopy.tasks.columns.owner}\\s*Ops`));
   await deepak.getByRole("button", { name: "Hand back · Deepak Rao" }).click();
   await expect(deepak.getByRole("button", { name: "Take · Deepak Rao" })).toBeVisible();
   expect(sent).toEqual([{ owner: "ops@localhost" }, { owner: null }]);
