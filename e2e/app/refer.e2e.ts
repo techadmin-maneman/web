@@ -451,6 +451,21 @@ test("says what ops set each side gets, and beside each friend what the client e
   await expect(page.getByText(appCopy.refer.fitted.earned, { exact: true })).toBeVisible();
 });
 
+// Visits granted today last a year: their day alone read as today.
+test("names the year of the day the free visits must be used by, where it is not this year", async ({ page }) => {
+  const year = new Date().getFullYear() + 2;
+  await changed(page, "/api/refer", (refer) => ({
+    ...refer,
+    credits: {
+      ...(refer.credits as Record<string, unknown>),
+      visits: 3,
+      earliest_expiry: `${String(year)}-01-15T18:29:59.000Z`,
+    },
+  }));
+  await toRefer(page);
+  await expect(page.getByText(appCopy.refer.leftUseBy(`15 Jan ${String(year)}`))).toBeVisible();
+});
+
 // The Home the service worker kept from before mm-api answered the reward, and an mm-api rolled back, carry none,
 // nor each friend's visits (apps/app/src/refer/reward.ts): Refer still draws, and gives no count.
 test("draws Refer, its preview and its tracker, with no count, where the answers carry no reward", async ({ page }) => {

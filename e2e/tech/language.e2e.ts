@@ -68,7 +68,7 @@ test("the language chosen outlasts a sign-out, which wipes the phone", async ({ 
   await page.goto("/me");
   await page.getByRole("button", { name: new RegExp(`^${techCopy.me.language}`) }).click();
   await page.getByRole("dialog").getByRole("radio", { name: HINDI }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "मैं" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "प्रोफ़ाइल" })).toBeVisible();
 
   await page.getByRole("button", { name: "साइन आउट", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "साइन आउट", exact: true }).click();
@@ -95,7 +95,7 @@ test("Me's Language row switches every screen without a reload, and a visit keep
   // The choice closes the sheet as it is made.
   await page.getByRole("dialog").getByRole("radio", { name: HINDI }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.getByRole("heading", { level: 1, name: "मैं" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "प्रोफ़ाइल" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^भाषा/ })).toContainText(HINDI);
   expect(await axeViolations(page)).toEqual([]);
 

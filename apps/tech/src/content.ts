@@ -495,6 +495,8 @@ export const job = localised({
   /** "9:30 am · service · 1 h 30 min", and "Tomorrow · …" for a job on another day. */
   when: (parts: readonly string[]) => parts.join(" · "),
   tomorrow: "Tomorrow",
+  /** The client's arrival window, named as the client app names it: "Arrive 9:30 to 10 am". */
+  arrive: (range: string) => `Arrive ${range}`,
   // The board writes "1 slot"; the visit's length says more.
   minutes: lengthOf,
   /** The map's place at the top: the drive there when the day's list knows it; an address with no pin says so. */

@@ -194,7 +194,7 @@ export function PaymentsScreen() {
               </ListRows>
             </section>
           ))}
-          {me.booking.self_serve && <p className={styles.note}>{payments.note}</p>}
+          <p className={styles.note}>{payments.note}</p>
         </div>
       )}
     </Shell>

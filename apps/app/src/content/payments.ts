@@ -12,8 +12,11 @@ export const payments = {
   back: "Back to payments",
   /** A method as the list names it: "UPI via Razorpay". */
   viaRazorpay: (method: string) => `${method} via Razorpay`,
-  /** Beneath the list, while booking in the app, and so paying through Razorpay, is on. */
-  note: "Every payment goes through Razorpay: in the app when you book, or by a Razorpay link we text you. Technicians never take cash or UPI.",
+  /**
+   * Beneath the list: the one rule in every way of paying, in the app, by a link we text or by UPI at the visit
+   * (docs/decisions/0209-paid-at-the-visit-by-upi.md), so it names none of them.
+   */
+  note: "Every payment goes to Mane Man, never to a technician.",
   // An entry that paid for no visit we know of.
   payment: "Payment",
   refund: "Refund",
