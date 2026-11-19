@@ -2,7 +2,7 @@
 // service token) and Turnstile (Cloudflare's dummy token, which only staging
 // accepts), and reports what happened at each step. Used for the M3 proofs.
 //
-//   node --env-file=.env.staging-access scripts/staging/staging-tryon.ts --photo <path> \
+//   node --env-file=.env.staging-access --env-file=.env.staging-test-code scripts/staging/staging-tryon.ts --photo <path> \
 //     [--preset side-part] [--stage crown]
 //
 // The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so the gate is
@@ -30,8 +30,8 @@ const mobile = process.env.STAGING_TEST_MOBILE;
 const testRecordCode = process.env.STAGING_TEST_RECORD_CODE;
 if (values.photo === undefined || mobile === undefined || testRecordCode === undefined) {
   console.error(
-    "usage: STAGING_TEST_MOBILE=<allowlisted number> STAGING_TEST_RECORD_CODE=<staging's known code> " +
-      "staging-tryon.ts --photo <path> [--preset …]",
+    "usage: node --env-file=.env.staging-access --env-file=.env.staging-test-code staging-tryon.ts --photo <path> " +
+      "[--preset …], with STAGING_TEST_MOBILE an allowlisted number",
   );
   process.exit(2);
 }
