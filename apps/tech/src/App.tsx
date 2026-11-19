@@ -2,27 +2,16 @@
 // (docs/decisions/0052-technician-sessions.md). A 401 from any call wipes the phone and shows the sign-in. The
 // session's lifecycle is ./lib/useSessionLifecycle.ts, and when the phone sends what it holds ./lib/useReplayTriggers.ts.
 
-import { CaptureScreen } from "./camera/CaptureScreen.tsx";
+import { lazyScreen } from "@maneman/ui/lazyScreen";
+import { Suspense, useEffect } from "react";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
 import { classes } from "@maneman/ui/classes";
 import { NoSignal, Stopped, StorageFull } from "./frame/Banners.tsx";
 import { Interrupted } from "./frame/Interrupted.tsx";
 import { SharePosition } from "./frame/SharePosition.tsx";
 import { update } from "./content.ts";
-import { JobScreen } from "./job/JobScreen.tsx";
-import { OptionsScreen } from "./job/OptionsScreen.tsx";
-import { ClientHistoryScreen } from "./job/ClientHistoryScreen.tsx";
-import { DoorScreen } from "./job/DoorScreen.tsx";
-import { PlanScreen } from "./visit/PlanScreen.tsx";
-import { KitScreen } from "./kit/KitScreen.tsx";
-import { LeaveScreen } from "./me/LeaveScreen.tsx";
-import { MeScreen } from "./me/MeScreen.tsx";
-import { GuideScreen, GuidesScreen, GuideTaskScreen } from "./guides/GuidesScreen.tsx";
-import { AlertsScreen } from "./alerts/AlertsScreen.tsx";
 import { useLanguage } from "./lang/index.ts";
 import { alertsBack, guideBack } from "./lib/opened-from.ts";
-import { PreviewScreen } from "./schedule/PreviewScreen.tsx";
-import { ScheduleScreen } from "./schedule/ScheduleScreen.tsx";
 import { OutboxContext, useOutboxSubscription } from "./lib/useOutbox.ts";
 import { useReplayTriggers } from "./lib/useReplayTriggers.ts";
 import { useSessionLifecycle } from "./lib/useSessionLifecycle.ts";
@@ -33,17 +22,51 @@ import { SessionContext, useOnline, type Session } from "./session.ts";
 import { ErrorBoundary } from "./frame/ErrorBoundary.tsx";
 import { drawnLight, hasTabs, Tabs } from "./frame/Tabs.tsx";
 import { Loading } from "./frame/States.tsx";
-import { Checklist } from "./steps/Checklist.tsx";
-import { CloseOut } from "./steps/CloseOut.tsx";
-import { Consumables } from "./steps/Consumables.tsx";
-import { Outcome } from "./steps/Outcome.tsx";
-import { Piece } from "./steps/Piece.tsx";
-import { SignOff } from "./steps/SignOff.tsx";
-import { Profile } from "./steps/Profile.tsx";
 import { TodayScreen } from "./today/TodayScreen.tsx";
 import { WaitingScreen } from "./waiting/WaitingScreen.tsx";
 import styles from "./app.module.css";
 import light from "./frame/light.module.css";
+
+/**
+ * Every screen behind Today, loaded the first time it opens (docs/decisions/0284-the-first-screen-and-the-precache.md):
+ * the first screen draws without the steps, the camera or the guides, and the service worker keeps every part.
+ */
+const jobScreens = () => import("./job-screens.ts");
+const tabScreens = () => import("./tab-screens.ts");
+
+/**
+ * Both parts fetched as soon as the first screen has drawn, so every screen opens with no signal from then on, before the
+ * service worker keeps them on a phone's first visit. One that cannot be fetched now is fetched when its screen opens.
+ */
+function useEveryScreen(): void {
+  useEffect(() => {
+    for (const part of [jobScreens, tabScreens]) {
+      part().catch(() => undefined);
+    }
+  }, []);
+}
+const CaptureScreen = lazyScreen(() => jobScreens().then((module) => module.CaptureScreen));
+const JobScreen = lazyScreen(() => jobScreens().then((module) => module.JobScreen));
+const OptionsScreen = lazyScreen(() => jobScreens().then((module) => module.OptionsScreen));
+const ClientHistoryScreen = lazyScreen(() => jobScreens().then((module) => module.ClientHistoryScreen));
+const DoorScreen = lazyScreen(() => jobScreens().then((module) => module.DoorScreen));
+const PlanScreen = lazyScreen(() => jobScreens().then((module) => module.PlanScreen));
+const KitScreen = lazyScreen(() => tabScreens().then((module) => module.KitScreen));
+const LeaveScreen = lazyScreen(() => tabScreens().then((module) => module.LeaveScreen));
+const MeScreen = lazyScreen(() => tabScreens().then((module) => module.MeScreen));
+const AlertsScreen = lazyScreen(() => tabScreens().then((module) => module.AlertsScreen));
+const PreviewScreen = lazyScreen(() => tabScreens().then((module) => module.PreviewScreen));
+const ScheduleScreen = lazyScreen(() => tabScreens().then((module) => module.ScheduleScreen));
+const Checklist = lazyScreen(() => jobScreens().then((module) => module.Checklist));
+const CloseOut = lazyScreen(() => jobScreens().then((module) => module.CloseOut));
+const Consumables = lazyScreen(() => jobScreens().then((module) => module.Consumables));
+const Outcome = lazyScreen(() => jobScreens().then((module) => module.Outcome));
+const Piece = lazyScreen(() => jobScreens().then((module) => module.Piece));
+const SignOff = lazyScreen(() => jobScreens().then((module) => module.SignOff));
+const Profile = lazyScreen(() => jobScreens().then((module) => module.Profile));
+const GuidesScreen = lazyScreen(() => tabScreens().then((module) => module.GuidesScreen));
+const GuideScreen = lazyScreen(() => tabScreens().then((module) => module.GuideScreen));
+const GuideTaskScreen = lazyScreen(() => tabScreens().then((module) => module.GuideTaskScreen));
 
 function pageFor(route: Route) {
   switch (route.page) {
@@ -105,6 +128,7 @@ function pageFor(route: Route) {
 
 /** The screens once there is a session, each reading the one account of the outbox kept here. */
 function SignedIn({ session, path }: { session: Session; path: string }) {
+  useEveryScreen();
   const waiting = useOutboxSubscription();
   const route = routeOf(path);
   notePage(path);
@@ -127,12 +151,16 @@ function SignedIn({ session, path }: { session: Session; path: string }) {
         {tabbed ? (
           <>
             <div className={drawnLight(route.page) ? classes(styles.tabbed, light.ground) : styles.tabbed}>
-              <ErrorBoundary key={path}>{pageFor(route)}</ErrorBoundary>
+              <ErrorBoundary key={path}>
+                <Suspense fallback={<Loading />}>{pageFor(route)}</Suspense>
+              </ErrorBoundary>
             </div>
             <Tabs page={route.page} />
           </>
         ) : (
-          <ErrorBoundary key={path}>{pageFor(route)}</ErrorBoundary>
+          <ErrorBoundary key={path}>
+            <Suspense fallback={<Loading />}>{pageFor(route)}</Suspense>
+          </ErrorBoundary>
         )}
       </OutboxContext>
     </SessionContext>

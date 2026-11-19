@@ -1,10 +1,11 @@
-// What an app's budget counts (scripts/lib/spa-build.ts): the JavaScript a first visit fetches.
+// What an app's budgets count (scripts/lib/spa-build.ts): the JavaScript a first visit fetches before its first screen
+// draws, and everything a service worker keeps.
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { firstLoadScripts } from "../../../scripts/lib/spa-build.ts";
+import { firstLoadScripts, precachedScripts } from "../../../scripts/lib/spa-build.ts";
 
 const PAGE = `<!doctype html><html><head>
 <script type="module" crossorigin src="/assets/index-a1.js"></script>
@@ -43,26 +44,36 @@ describe("the JavaScript a first visit fetches", () => {
     expect(names(firstLoadScripts(built(PAGE, false)))).toEqual(["assets/index-a1.js", "assets/shared-b2.js"]);
   });
 
-  it("is every script, and the worker, where a service worker precaches them all", () => {
-    expect(names(firstLoadScripts(built(PAGE, true)))).toEqual([
+  // A phone app counted every script its worker keeps, so splitting it to draw its first screen sooner only grew it.
+  it("is what the page loads, a service worker or none, and not what the worker fetches after", () => {
+    expect(names(firstLoadScripts(built(PAGE, true)))).toEqual(["assets/index-a1.js", "assets/shared-b2.js"]);
+  });
+});
+
+describe("what a service worker keeps", () => {
+  it("is every script, and the worker; nothing where there is no worker", () => {
+    expect(names(precachedScripts(built(PAGE, true)))).toEqual([
       "assets/PartsScreen-e5.js",
       "assets/SettingsScreen-d4.js",
       "assets/index-a1.js",
       "assets/shared-b2.js",
       "sw.js",
     ]);
+    expect(precachedScripts(built(PAGE, false))).toEqual([]);
   });
 
   // The parts page a local build adds is never served to a phone (apps/tech/src/main.tsx); any other build counts it.
   it("leaves out a local build's parts page, and only a local build's", () => {
-    expect(names(firstLoadScripts(built(PAGE, true, "local")))).toEqual([
+    expect(names(precachedScripts(built(PAGE, true, "local")))).toEqual([
       "assets/SettingsScreen-d4.js",
       "assets/index-a1.js",
       "assets/shared-b2.js",
       "sw.js",
     ]);
   });
+});
 
+describe("the section a first visit opens on", () => {
   // The console's first load counted index.html's scripts alone, while every first visit opens Today at once.
   it("counts the section a first visit opens on, with what it and the page import, and not what loads later", () => {
     const dist = built(PAGE, false);

@@ -91,6 +91,8 @@ test("with no signal shows the days the phone keeps, says the rest didn't load, 
   const fake = await fakeTech(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
+  // The rest of the app is fetched once the first screen has drawn, as a phone fetches it in its first seconds.
+  await page.waitForLoadState("networkidle");
   fake.online = false;
   await context.setOffline(true);
   await tab(page, techCopy.tabs.schedule).click();

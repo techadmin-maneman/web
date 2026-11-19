@@ -42,6 +42,9 @@ export interface BuildOptions {
 const PHONE_BUDGET_BYTES = 200 * 1024;
 const BUDGET_BYTES = 150 * 1024;
 
+/** Everything a phone app's service worker keeps, in gzipped bytes, which a first visit fetches after the first screen. */
+const PRECACHE_BUDGET_BYTES = 260 * 1024;
+
 /** `--env <environment>` and `--allow-placeholders`, as each build script takes them. */
 export function buildOptions(script: string): BuildOptions {
   const { values } = parseArgs({
@@ -120,18 +123,30 @@ function landingChunk(dist: string, landing: string): string {
 }
 
 /**
- * The JavaScript a first visit fetches. With a service worker, every script, since the worker precaches them all.
- * Without one, as the ops console has none, what the page loads and the section it opens on, each with what it
- * imports; another section is fetched when it opens.
+ * The JavaScript a first visit fetches before its first screen draws (docs/decisions/0284-the-first-screen-and-the-precache.md):
+ * what the page loads and the section it opens on, each with what it imports. Another section is fetched when it opens,
+ * or, with a service worker, after the first screen, as the worker keeps it (precachedScripts).
  */
 export function firstLoadScripts(dist: string, landing?: string): string[] {
-  if (existsSync(`${dist}/sw.js`)) return [...everyScript(dist), `${dist}/sw.js`];
   const page = pageScripts(dist);
   return withImports(landing === undefined ? page : [...page, landingChunk(dist, landing)]);
 }
 
-function gzippedJavaScript(dist: string, landing: string | undefined): number {
-  return firstLoadScripts(dist, landing).reduce((total, file) => total + gzipSync(readFileSync(file)).length, 0);
+/** Every script a service worker keeps, and the worker: none where the app has no worker. */
+export function precachedScripts(dist: string): string[] {
+  return existsSync(`${dist}/sw.js`) ? [...everyScript(dist), `${dist}/sw.js`] : [];
+}
+
+const gzipped = (files: readonly string[]): number =>
+  files.reduce((total, file) => total + gzipSync(readFileSync(file)).length, 0);
+
+/** Says what a build's JavaScript comes to against its budget, and stops the build where it is over. */
+function heldTo(label: string, what: string, bytes: number, budget: number): void {
+  console.log(`${what}: ${(bytes / 1024).toFixed(1)} KB gzipped, of a ${String(budget / 1024)} KB budget`);
+  if (bytes > budget) {
+    console.error(`${label}'s ${what} is over its budget`);
+    process.exit(1);
+  }
 }
 
 export function buildSpa(build: SpaBuild, { environment, allowPlaceholders }: BuildOptions): void {
@@ -153,12 +168,8 @@ export function buildSpa(build: SpaBuild, { environment, allowPlaceholders }: Bu
   const dist = `apps/${build.app}/dist/${environment}`;
   writeFileSync(`${dist}/_headers`, build.headers);
 
-  const gzipped = gzippedJavaScript(dist, build.landing);
-  const kilobytes = (gzipped / 1024).toFixed(1);
   const budget = build.app === "tech" || build.app === "app" ? PHONE_BUDGET_BYTES : BUDGET_BYTES;
-  console.log(`${build.app} JavaScript: ${kilobytes} KB gzipped, of a ${String(budget / 1024)} KB budget`);
-  if (gzipped > budget) {
-    console.error(`${build.label}'s JavaScript is over its budget`);
-    process.exit(1);
-  }
+  heldTo(build.label, `${build.app} JavaScript`, gzipped(firstLoadScripts(dist, build.landing)), budget);
+  const kept = precachedScripts(dist);
+  if (kept.length > 0) heldTo(build.label, `${build.app} precache`, gzipped(kept), PRECACHE_BUDGET_BYTES);
 }
