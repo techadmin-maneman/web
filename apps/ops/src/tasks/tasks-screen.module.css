@@ -23,6 +23,31 @@
   width: 10%;
 }
 
+/* With a box to choose each row (./TaskTable.tsx): the box a narrow column first, the rest as before beside it. */
+.chooses th:nth-child(1) {
+  width: var(--sp-48);
+}
+
+.chooses th:nth-child(2) {
+  width: 32%;
+}
+
+.chooses th:nth-child(3) {
+  width: 21%;
+}
+
+.chooses th:nth-child(4) {
+  width: 13%;
+}
+
+.chooses th:nth-child(5) {
+  width: 10%;
+}
+
+.choose {
+  text-align: center;
+}
+
 /* Each cell on the row's middle, as what it is runs to two lines. */
 .table :is(th, td) {
   vertical-align: middle;

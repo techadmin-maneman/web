@@ -383,6 +383,20 @@ export const tasks = {
       unknown: FAILED,
     },
   },
+  /** Tasks chosen on the board and changed together, each change its own as one row's is (./BulkActions.tsx). */
+  bulk: {
+    /** A row's box, read with what and whom: "Choose Replacement order · Rohit Malhotra". */
+    choose: (what: string, subject: string) => `Choose ${what} · ${subject}`,
+    take: (count: number) => `Take ${String(count)}`,
+    assignTo: "Assign to",
+    assign: (count: number) => `Assign ${String(count)}`,
+    close: (count: number) => `Close ${String(count)}`,
+    /** After: how many changed, and how many could not be. */
+    done: (done: number, failed: number) =>
+      failed === 0
+        ? `${String(done)} done.`
+        : `${String(done)} done. ${String(failed)} could not be changed: handled already, or not yours to change.`,
+  },
   /**
    * A visit left partly done closed without a follow-up, with why
    *.
