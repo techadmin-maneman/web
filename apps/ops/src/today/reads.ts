@@ -23,8 +23,3 @@ export function useReadState<T>(read: () => Promise<Answer<T>>, call: OpsCall): 
   const [loaded] = useLoad(may ? read : notPermitted<T>);
   return { value: loaded.state === "loaded" ? loaded.value : null, pending: may && loaded.state === "loading" };
 }
-
-/** What the read answered, once it has; null while it reads, where it failed, and where the call would be refused. */
-export function useRead<T>(read: () => Promise<Answer<T>>, call: OpsCall): T | null {
-  return useReadState(read, call).value;
-}
