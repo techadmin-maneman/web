@@ -1,7 +1,8 @@
 // Google's word on the drives either side of a start a client chose (docs/decisions/0210-booking-by-start-time.md),
 // where the routes provider is on. Every start offered is planned on the free estimate; before one is held, Google
 // drives the road from the stop before it, or from home, and on to the stop after, and the start is held only where
-// both drives, and the time to park, still fit. Where Google cannot answer, the day's ceiling is spent, or a stop has
+// both drives, and the time to park, still fit. Google's answer is kept a day, and a start it leaves no room for is
+// not offered while it is kept. Where Google cannot answer, the day's ceiling is spent, or a stop has
 // no pin, the estimate stands; where Google refuses, ops are told why.
 
 import { minuteOf, type PlanDay, type PlanRules } from "../../policy/day-plan.ts";
@@ -9,7 +10,8 @@ import type { Pin } from "../../lib/geo.ts";
 import type { Alert } from "../../providers/alerts.ts";
 import type { RoutesProvider } from "../../providers/routes/index.ts";
 import type { Settings } from "../../config/settings.ts";
-import { driveThrough } from "../platform/road-drives.ts";
+import { driveThrough, keptDriveThrough } from "../platform/road-drives.ts";
+import type { Point, RouteResult } from "../../providers/routes/index.ts";
 import { driveMinutes } from "../../policy/drive-estimate.ts";
 
 /** What Google is asked through, from the route's caller. */
@@ -44,15 +46,25 @@ const minutesOf = (seconds: number): number => Math.ceil(seconds / 60);
 /** The hour of the day `minute` falls in. */
 const hourOf = (minute: number): number => Math.floor(minute / 60) % 24;
 
-/** Whether Google's drives leave room for a visit of `minutes` at `time` on the day; true where nothing can be checked. */
-export async function drivesFit(
-  db: D1Database,
-  check: DriveCheck,
-  plan: { readonly day: PlanDay; readonly rules: PlanRules; readonly now: Date },
-  visit: { readonly time: string; readonly minutes: number; readonly pin: Pin | null },
-): Promise<boolean> {
-  const { day, rules } = plan;
-  const wrap = rules.booking.wrap_up;
+/** The day a visit is placed in. */
+interface Plan {
+  readonly day: PlanDay;
+  readonly rules: PlanRules;
+  readonly now: Date;
+}
+
+/** A visit placed at `time` for `minutes`, at its pin. */
+interface Placed {
+  readonly time: string;
+  readonly minutes: number;
+  readonly pin: Pin | null;
+}
+
+/**
+ * The drives either side of a visit placed on the day: the stop before it, or home, and the stop after, and the pins
+ * Google drives through; null where there is nothing to drive, the visit or both its neighbours having no pin.
+ */
+function around(day: PlanDay, visit: Placed) {
   const start = minuteOf(visit.time);
   const end = start + visit.minutes;
   const stops = [...day.stops].sort((a, b) => a.start - b.start);
@@ -60,27 +72,66 @@ export async function drivesFit(
   const after = stops.find((stop) => stop.start >= end);
   const from = before === undefined ? day.home : before.pin;
   const to = after?.pin ?? null;
-  if (visit.pin === null || (from === null && to === null)) return true;
-  const points = [...(from === null ? [] : [from]), visit.pin, ...(to === null ? [] : [to])];
-  const answer = await driveThrough(db, check, { points, at: { now: plan.now, settings: check.settings } });
+  if (visit.pin === null || (from === null && to === null)) return null;
+  const points: Point[] = [...(from === null ? [] : [from]), visit.pin, ...(to === null ? [] : [to])];
+  return { start, end, before, after, from, to, pin: visit.pin, points };
+}
+
+/** Whether Google's drives leave room for a visit of `minutes` at `time` on the day; true where nothing can be checked. */
+export async function drivesFit(db: D1Database, check: DriveCheck, plan: Plan, visit: Placed): Promise<boolean> {
+  const legs = around(plan.day, visit);
+  if (legs === null) return true;
+  const answer = await driveThrough(db, check, {
+    points: legs.points,
+    at: { now: plan.now, settings: check.settings },
+  });
   if (!answer.ok) {
     if (answer.detail.startsWith("HTTP 4")) await check.refused(answer.detail);
     return true;
   }
   await check.answered();
+  return legsFit(plan, legs, answer, check.tooTight);
+}
+
+/**
+ * Whether the drives Google already answered for these pins leave room for the visit, asking Google nothing, so a
+ * start next to a visit whose drive Google has found too long is not offered again after the hold it refused. True
+ * where no answer is kept, as the free estimate then stands.
+ */
+export async function keptDrivesFit(
+  plan: Plan,
+  visit: Placed,
+  kept: (points: readonly Point[]) => Promise<RouteResult | null> = keptDriveThrough,
+): Promise<boolean> {
+  const legs = around(plan.day, visit);
+  if (legs === null) return true;
+  const answer = await kept(legs.points);
+  return answer === null || !answer.ok || legsFit(plan, legs, answer);
+}
+
+/** Whether Google's legs, and the time to park, fit the gaps either side of the visit; tells `tooTight` which did not. */
+function legsFit(
+  plan: Plan,
+  legs: NonNullable<ReturnType<typeof around>>,
+  answer: Extract<RouteResult, { ok: true }>,
+  tooTight?: (short: TooTight) => void,
+): boolean {
+  const { day, rules } = plan;
+  const wrap = rules.booking.wrap_up;
+  const { start, end, before, after, from, to } = legs;
   const parking = rules.drive.parking;
   const [first, second] = answer.legs;
   if (from !== null && first !== undefined) {
     const readyFrom = before === undefined ? day.opens : before.end + wrap;
     const google = minutesOf(first.seconds) + parking;
     if (readyFrom + google > start) {
-      check.tooTight?.({
+      tooTight?.({
         leg: "before",
         google_minutes: google,
         // At the hour the start was offered on: the stop's end, or the day's opening from home (src/policy/day-plan.ts).
         estimate_minutes: driveMinutes(
           from,
-          visit.pin,
+          legs.pin,
           hourOf(before === undefined ? day.opens : before.end),
           rules.drive,
         ),
@@ -93,10 +144,10 @@ export async function drivesFit(
   if (after !== undefined && to !== null && leaving !== undefined) {
     const google = minutesOf(leaving.seconds) + parking;
     if (end + wrap + google > after.start) {
-      check.tooTight?.({
+      tooTight?.({
         leg: "after",
         google_minutes: google,
-        estimate_minutes: driveMinutes(visit.pin, to, hourOf(end + wrap), rules.drive),
+        estimate_minutes: driveMinutes(legs.pin, to, hourOf(end + wrap), rules.drive),
         past_gap_minutes: end + wrap + google - after.start,
       });
       return false;

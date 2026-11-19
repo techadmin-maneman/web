@@ -18,7 +18,7 @@ A visit goes to a technician in the client's city (`src/domain/dispatch/technici
 
 ## Booking in the app
 
-The client holds a window while they pay; the hold keeps the time for the minutes `payment_hold` gives (Settings · Rules), and two holds never take the same time (`src/domain/booking/hold-slot.ts`). Razorpay's payment, or the request for a free visit, books it in one batch (`src/domain/booking/bookings.ts`). A paid hold whose request failed is booked by the half-hour pass (`src/domain/booking/unbooked-holds.ts`); one that cannot be kept is let go and refunded once (`src/domain/booking/give-back.ts`).
+The starts offered rest on the free drive estimate, leaving out any Google's kept drive leaves no room for; before a start is held, Google checks the drives either side of it (`src/domain/booking/drive-check.ts`, ADR 0287). The client holds a window while they pay; the hold keeps the time for the minutes `payment_hold` gives (Settings · Rules), and two holds never take the same time (`src/domain/booking/hold-slot.ts`). Razorpay's payment, or the request for a free visit, books it in one batch (`src/domain/booking/bookings.ts`). A paid hold whose request failed is booked by the half-hour pass (`src/domain/booking/unbooked-holds.ts`); one that cannot be kept is let go and refunded once (`src/domain/booking/give-back.ts`).
 
 The app offers the next visit: the first fit once the consultation is done, then each service as it falls due (`src/policy/next-visit.ts`). Nothing books a visit for the client; ops step in on the Tasks board when a client lets one slide.
 

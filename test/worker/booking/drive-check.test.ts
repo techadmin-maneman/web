@@ -3,7 +3,7 @@
 // cannot answer, the estimate stands. Every pin here is made up.
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { drivesFit, type DriveCheck, type TooTight } from "../../../src/domain/booking/drive-check.ts";
+import { drivesFit, keptDrivesFit, type DriveCheck, type TooTight } from "../../../src/domain/booking/drive-check.ts";
 import { minuteOf, type PlanDay, type PlanRules } from "../../../src/policy/day-plan.ts";
 import { DRIVE_ESTIMATE, driveMinutes } from "../../../src/policy/drive-estimate.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
@@ -137,5 +137,31 @@ describe("Google's drives", () => {
     const back = google(5);
     await drivesFit(env.DB, back.check, plan, visit);
     expect(back.told).toEqual(["answered"]);
+  });
+});
+
+// A start Google's drive refused was offered again, refused again, and again (docs/decisions/0210-booking-by-start-time.md).
+describe("The starts offered beside a visit", () => {
+  it("leave out one whose drive Google already found too long, asking Google nothing", async () => {
+    const plan = { day: dayAt(28.46), rules: RULES, now: NOW };
+    const visit = { minutes: 60, pin: { lat: 28.48, lng: 77.05 } };
+    // Nothing kept yet: the estimate stands, and the start is offered.
+    expect(await keptDrivesFit(plan, { ...visit, time: "12:00" })).toBe(true);
+    // A hold asks Google, which finds the drive too long, and keeps the answer.
+    const { check, asked } = google(30);
+    expect(await drivesFit(env.DB, check, plan, { ...visit, time: "12:00" })).toBe(false);
+    expect(await keptDrivesFit(plan, { ...visit, time: "12:00" })).toBe(false);
+    // Later in the same gap, the same kept drive fits.
+    expect(await keptDrivesFit(plan, { ...visit, time: "12:30" })).toBe(true);
+    expect(asked).toEqual([2]);
+  });
+
+  it("stay offered where the visit has no pin, or the kept answer is Google failing", async () => {
+    const plan = { day: dayAt(28.49), rules: RULES, now: NOW };
+    expect(await keptDrivesFit(plan, { minutes: 60, pin: null, time: "12:00" })).toBe(true);
+    const failed = () => Promise.resolve({ ok: false as const, detail: "down" });
+    expect(await keptDrivesFit(plan, { minutes: 60, pin: { lat: 28.5, lng: 77.05 }, time: "12:00" }, failed)).toBe(
+      true,
+    );
   });
 });
