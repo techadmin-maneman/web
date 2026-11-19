@@ -16,6 +16,7 @@ import {
   NOW,
   request,
   TURNSTILE_URL,
+  withProof,
 } from "../helpers.ts";
 import { ADDRESS, pincode, VISITOR, site, BOOKED_MORNING } from "./consultations-fixtures.ts";
 
@@ -41,7 +42,7 @@ describe("the Idempotency-Key", () => {
 
   it("answers a consultation sent again with its first answer, and books it once", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
-    const body = {
+    const body = await withProof({
       ...VISITOR,
       pincode: "122018",
       date: "2026-09-23",
@@ -49,7 +50,7 @@ describe("the Idempotency-Key", () => {
       consent: true,
       terms: true,
       address: ADDRESS,
-    };
+    });
 
     const first = await request(site(), "/api/consultation", keyed(body, "key-consult-0001"), bindings());
     const again = await request(site(), "/api/consultation", keyed(body, "key-consult-0001"), bindings());
@@ -76,7 +77,7 @@ describe("the Idempotency-Key", () => {
 
   it("refuses the key with a different submission, and frees it when the submission is refused", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
-    const body = {
+    const body = await withProof({
       ...VISITOR,
       pincode: "122018",
       date: "2026-09-23",
@@ -84,7 +85,7 @@ describe("the Idempotency-Key", () => {
       consent: true,
       terms: true,
       address: ADDRESS,
-    };
+    });
     await request(site(), "/api/consultation", keyed(body, "key-consult-0002"), bindings());
 
     const changed = { ...body, window: "evening" };
@@ -122,8 +123,9 @@ describe("the Idempotency-Key", () => {
 
   it("answers a consultation pressed again with a new Turnstile token with its first answer, before checking it", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
-    const firstPress = keyed({ ...CONSULTATION, turnstile_token: "first-press" }, "key-consult-0004");
-    const secondPress = keyed({ ...CONSULTATION, turnstile_token: "second-press" }, "key-consult-0004");
+    const consultation = await withProof(CONSULTATION);
+    const firstPress = keyed({ ...consultation, turnstile_token: "first-press" }, "key-consult-0004");
+    const secondPress = keyed({ ...consultation, turnstile_token: "second-press" }, "key-consult-0004");
 
     const first = await request(site(), "/api/consultation", firstPress, bindings());
     const again = await request(turnstileRefuses(), "/api/consultation", secondPress, bindings());
@@ -164,7 +166,12 @@ describe("the Idempotency-Key", () => {
     const logs = captureLogs();
 
     const writesBack = await refuseWrites("UPDATE", "idempotency");
-    const booked = await request(site(), "/api/consultation", keyed(CONSULTATION, "key-consult-0005"), bindings());
+    const booked = await request(
+      site(),
+      "/api/consultation",
+      keyed(await withProof(CONSULTATION), "key-consult-0005"),
+      bindings(),
+    );
     await writesBack();
 
     expect(booked.status).toBe(201);
@@ -181,20 +188,21 @@ describe("the Idempotency-Key", () => {
   it("lets a retry take the key of a request that died unfinished, once two minutes have passed", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
     captureLogs();
+    const consultation = await withProof(CONSULTATION);
 
     const holdsBack = await refuseWrites("INSERT", "slot_holds");
     const keysBack = await refuseWrites("DELETE", "idempotency");
-    const died = await request(site(), "/api/consultation", keyed(CONSULTATION, "key-consult-0006"), bindings());
+    const died = await request(site(), "/api/consultation", keyed(consultation, "key-consult-0006"), bindings());
     await holdsBack();
     await keysBack();
     expect(died.status).toBe(500);
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
 
-    const soon = await request(siteAt(1), "/api/consultation", keyed(CONSULTATION, "key-consult-0006"), bindings());
+    const soon = await request(siteAt(1), "/api/consultation", keyed(consultation, "key-consult-0006"), bindings());
     expect(soon.status).toBe(409);
     expect(await soon.json()).toMatchObject({ error: { code: "idempotency_in_progress" } });
 
-    const later = await request(siteAt(3), "/api/consultation", keyed(CONSULTATION, "key-consult-0006"), bindings());
+    const later = await request(siteAt(3), "/api/consultation", keyed(consultation, "key-consult-0006"), bindings());
     expect(later.status).toBe(201);
     expect(await later.json()).toEqual(BOOKED_MORNING);
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);

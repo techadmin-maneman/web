@@ -81,7 +81,8 @@ function useFormWidget(
 }
 
 /**
- * The name and number given at the try-on in this tab, if any (ADR 0214), put in the fields once the form is drawn.
+ * The name and number given with a code in this tab, at the try-on or a booking (ADR 0214), put in the fields once the
+ * form is drawn.
  * The server drew the fields empty, and hydrating keeps what it drew, so fields that started from them would show
  * nothing until something else drew the form again.
  */
@@ -103,7 +104,7 @@ function useRememberedPerson(empty: boolean, setFields: (fields: PersonFields) =
  * the box it renders into does not exist until the pincode has decided which form the page shows. `marks` are the fields, by the API's names, that the
  * form marks itself when a refusal names them; a refusal that names none of them is said by the button. On /book the
  * name and number are given first (./AboutYou.tsx), and the forms after it start from them. A form that `remembers`
- * fills in the name and number given at the try-on, once it is drawn.
+ * fills in the name and number given with a code in this tab, once it is drawn.
  */
 export function useTurnstileForm(
   siteKey: string,

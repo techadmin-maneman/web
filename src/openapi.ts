@@ -52,6 +52,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
       codeMobileDailyLimit: 0,
       codeIpHourlyLimit: 0,
       codeDailyCeiling: 0,
+      formCodeDailyCeiling: 0,
       techCodeDailyCeiling: 0,
       fixedCode: null,
       testRecordCode: null,

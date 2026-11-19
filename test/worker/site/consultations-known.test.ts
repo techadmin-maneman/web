@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { fakeQueue, leaseRefused, markDatabase, NOW, request } from "../helpers.ts";
+import { fakeQueue, leaseRefused, markDatabase, NOW, request, withProof } from "../helpers.ts";
 import { ADDRESS, pincode, VISITOR, post, site, BOOKED_MORNING } from "./consultations-fixtures.ts";
 
 beforeEach(async () => {
@@ -22,21 +22,23 @@ beforeEach(async () => {
 describe("an invite the browser remembered", () => {
   const REFERRER = "11111111-1111-4111-8111-111111111111";
   const bindings = () => ({ CRM_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() });
-  const book = (inviteCode: string, told: object = { invite_told: true }) =>
+  const book = async (inviteCode: string, told: object = { invite_told: true }) =>
     request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-        invite_code: inviteCode,
-        ...told,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+          invite_code: inviteCode,
+          ...told,
+        }),
+      ),
       bindings(),
     );
   const attributions = () =>
@@ -90,17 +92,19 @@ describe("an invite the browser remembered", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-        invite_code: "RM4K7P",
-        invite_told: true,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+          invite_code: "RM4K7P",
+          invite_told: true,
+        }),
+      ),
       { DB: leaseRefused(env.DB), CRM_QUEUE: crm, MESSAGE_QUEUE: fakeQueue() },
     );
 
@@ -165,18 +169,20 @@ describe("an invite the browser remembered", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        mobile: "9810000001",
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-        invite_code: "RM4K7P",
-        invite_told: true,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          mobile: "9810000001",
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+          invite_code: "RM4K7P",
+          invite_told: true,
+        }),
+      ),
       bindings(),
     );
     expect(answer.status).toBe(201);
@@ -185,15 +191,15 @@ describe("an invite the browser remembered", () => {
   });
 });
 
-// A form anyone can fill in with a number (docs/decisions/0068-a-paid-hold-is-kept.md).
-// The page answers it as it would a new number, so it never says whose a number is; its owner is told the rest on
-// WhatsApp.
+// A form anyone can fill in with a number (docs/decisions/0068-a-paid-hold-is-kept.md). Every booking proves its
+// number with a WhatsApp code first, so a number we know is told why nothing was booked, on the page and on WhatsApp
+// (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
 describe("a number the site already knows", () => {
-  const book = (body: object, settings = {}) =>
+  const book = async (body: object, settings = {}) =>
     request(
       site(settings),
       "/api/consultation",
-      post({ ...VISITOR, pincode: "122018", consent: true, terms: true, address: ADDRESS, ...body }),
+      post(await withProof({ ...VISITOR, pincode: "122018", consent: true, terms: true, address: ADDRESS, ...body })),
       { CRM_QUEUE: fakeQueue() },
     );
   const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
@@ -205,6 +211,9 @@ describe("a number the site already knows", () => {
     ).all<{ kind: string }>();
     return rows.results.map((row) => row.kind);
   };
+
+  /** What a client past their consultation is answered: their visits are booked in the app. */
+  const IN_THE_APP = { state: "not_booked", reason: "book_in_app", consultation: null };
 
   async function fittedClient() {
     await env.DB.prepare(
@@ -225,33 +234,28 @@ describe("a number the site already knows", () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
   });
 
-  it("with a consultation to come gets a new number's answer, books nothing, and is told on WhatsApp", async () => {
+  it("with a consultation to come is told it, books nothing more, and is told on WhatsApp too", async () => {
     expect((await book({ date: "2026-09-23", window: "morning" })).status).toBe(201);
     const again = await book({ name: "Somebody Else", date: "2026-09-24", window: "evening" });
-    const stranger = await book({ mobile: "9810000003", date: "2026-09-24", window: "evening" });
 
     expect(again.status).toBe(201);
-    expect(await again.json()).toEqual(await stranger.json());
+    const { date, window, hours, starts_at: startsAt, arrives_by: arrivesBy } = BOOKED_MORNING;
+    expect(await again.json()).toEqual({
+      state: "not_booked",
+      reason: "consultation_exists",
+      consultation: { date, window, hours, starts_at: startsAt, arrives_by: arrivesBy },
+    });
     expect(await count(`SELECT COUNT(*) AS n FROM slot_holds WHERE person_id = ${karans}`)).toBe(1);
     expect(await count(`SELECT COUNT(*) AS n FROM consents WHERE person_id = ${karans}`)).toBe(1);
     expect(await count(`SELECT COUNT(*) AS n FROM leads WHERE person_id = ${karans}`)).toBe(1);
     expect(await told()).toEqual(["consultation_confirmation", "consultation_exists"]);
   });
 
-  // Today booked for a new number was refused as taken for one we know: the answer said who was a client.
-  it("is answered for a start today as a new number is", async () => {
+  it("is told why whatever start it asked for, today's included", async () => {
     await fittedClient();
-    const today = { date: "2026-09-21", window: "evening", starts_at: "2026-09-21T10:30:00.000Z" };
-    const known = await book(today);
-    const stranger = await book({ ...today, mobile: "9810000003" });
-    expect(known.status).toBe(201);
-    expect(stranger.status).toBe(201);
-    const {
-      state,
-      date,
-      starts_at: startsAt,
-    } = await stranger.json<{ state: string; date: string; starts_at: string }>();
-    expect(await known.json()).toMatchObject({ state, date, starts_at: startsAt });
+    const answer = await book({ date: "2026-09-21", window: "evening", starts_at: "2026-09-21T10:30:00.000Z" });
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual(IN_THE_APP);
   });
 
   // A known number's answer named the window asked for, a new number's the window its start fell in.
@@ -276,32 +280,32 @@ describe("a number the site already knows", () => {
     });
   });
 
-  it("books no consultation for a client past them, and tells them on WhatsApp to book in the app", async () => {
+  it("books no consultation for a client past them, and tells them on the page and WhatsApp to book in the app", async () => {
     await fittedClient();
     const answer = await book({ date: "2026-09-23", window: "morning" });
     expect(answer.status).toBe(201);
-    expect(await answer.json()).toEqual(BOOKED_MORNING);
+    expect(await answer.json()).toEqual(IN_THE_APP);
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
     expect(await count("SELECT COUNT(*) AS n FROM consents")).toBe(0);
     expect(await told()).toEqual(["book_in_app"]);
   });
 
-  it("is answered taken when nobody is free, as a new number is, and told nothing", async () => {
+  it("is told why when nobody is free as well, since nothing would be booked for it anyway", async () => {
     await fittedClient();
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
     const answer = await book({ date: "2026-09-23", window: "morning" });
-    expect(answer.status).toBe(409);
-    expect(await answer.json()).toMatchObject({ error: { code: "taken" } });
-    expect(await told()).toEqual([]);
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toEqual(IN_THE_APP);
+    expect(await told()).toEqual(["book_in_app"]);
   });
 
-  it("is answered requested while self-serve booking is off, as a new number is, and leaves ops nothing", async () => {
+  it("is told why while self-serve booking is off too, and leaves ops nothing", async () => {
     await fittedClient();
     const answer = await book(
       { date: "2026-09-23", window: "morning" },
       { selfServeBooking: false, selfServeConsultations: false },
     );
-    expect(await answer.json()).toEqual({ ...BOOKED_MORNING, state: "requested", starts_at: null, arrives_by: null });
+    expect(await answer.json()).toEqual(IN_THE_APP);
     expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
     expect(await told()).toEqual(["book_in_app"]);
   });

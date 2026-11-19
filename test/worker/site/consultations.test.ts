@@ -5,14 +5,15 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { consultationBody, lastBookableDay } from "../../../scripts/lib/test-booking.ts";
-import { captureLogs, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import { captureLogs, fakeQueue, markDatabase, NOW, provedNumberCode, request, withProof } from "../helpers.ts";
 import { ADDRESS, pincode, VISITOR, post, site } from "./consultations-fixtures.ts";
 
 /**
  * The most round trips to D1 a booking from the site may wait on in turn. It waited on 14 when each read waited for the
- * one before. A typed address waits on one more, the day's geocode ceiling, before Google is asked to place it.
+ * one before. A typed address waits on one more, the day's geocode ceiling, before Google is asked to place it, and
+ * the number on one, first, for the WhatsApp code that proved it (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
  */
-const CONSULTATION_TRIPS = 10;
+const CONSULTATION_TRIPS = 11;
 
 /** The round trips of the free booking written in the same request (src/http/book-hold.ts), which the form waits on. */
 const BOOKING_TRIPS = 8;
@@ -33,15 +34,17 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
       { CRM_QUEUE: crm },
     );
 
@@ -99,15 +102,17 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
       { CRM_QUEUE: fakeQueue() },
     );
     const line = logs.lines().find((each) => each.event === "request");
@@ -120,19 +125,20 @@ describe("POST /api/consultation", () => {
   // The staging check and the load test book this way (scripts/staging/staging-lead.ts, scripts/staging/load-test-leads.ts).
   it("takes the booking a script sends on staging, with Cloudflare's dummy token", async () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
-    const body = consultationBody({
-      name: "Staging test",
-      mobile: "9810000009",
-      pincode: "122018",
-      city: "Gurgaon",
-      date: lastBookableDay(NOW),
-      window: "evening",
-    });
+    const body = consultationBody(
+      {
+        name: "Staging test",
+        mobile: "9810000009",
+        pincode: "122018",
+        city: "Gurgaon",
+        date: lastBookableDay(NOW),
+        window: "evening",
+      },
+      await provedNumberCode("+919810000009"),
+    );
     const staging = site({ turnstileSecret: "0x4AAAAAAA-the-real-widget-secret", acceptTurnstileTestToken: true });
 
-    const answer = await request(staging, "/api/consultation", post(body), {
-      CRM_QUEUE: fakeQueue(),
-    });
+    const answer = await request(staging, "/api/consultation", post(body), { CRM_QUEUE: fakeQueue() });
 
     expect(answer.status).toBe(201);
     expect(await answer.json()).toMatchObject({ state: "booked", date: "2026-10-04", window: "evening" });
@@ -151,7 +157,7 @@ describe("POST /api/consultation", () => {
       // Today's morning, over by noon and the lead time after it.
       { ...body, pincode: "122018", date: "2026-09-21" },
     ]) {
-      const answer = await request(site(), "/api/consultation", post(refused));
+      const answer = await request(site(), "/api/consultation", post(await withProof(refused)));
       expect(answer.status).toBe(422);
       expect(await answer.json()).toMatchObject({ error: { code: "not_bookable" } });
     }
@@ -171,7 +177,7 @@ describe("POST /api/consultation", () => {
     };
 
     for (const name of ["Win at example.com", "https://x.co", "Asha 2"]) {
-      const answer = await request(site(), "/api/consultation", post({ ...body, name }));
+      const answer = await request(site(), "/api/consultation", post(await withProof({ ...body, name })));
       expect(answer.status).toBe(400);
       expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["name"] } });
     }
@@ -184,15 +190,17 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site({ selfServeBooking: false }),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
       { CRM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
@@ -209,15 +217,17 @@ describe("POST /api/consultation", () => {
     const answer = await request(
       site({ selfServeBooking: false, selfServeConsultations: false }),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
       { CRM_QUEUE: crm },
     );
 
@@ -267,15 +277,17 @@ describe("an area ops have not named yet", () => {
     const answer = await request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "110048",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: { ...ADDRESS, locality: "Greater Kailash II", city: "Delhi", pincode: "110048" },
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "110048",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: { ...ADDRESS, locality: "Greater Kailash II", city: "Delhi", pincode: "110048" },
+        }),
+      ),
       { CRM_QUEUE: fakeQueue() },
     );
     expect(await answer.json()).toMatchObject({ state: "booked", area: "Delhi" });

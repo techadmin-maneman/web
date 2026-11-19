@@ -5,7 +5,7 @@ import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
-import { captureLogs, fakeQueue, markDatabase, NOW, provedNumberCode, request } from "../helpers.ts";
+import { captureLogs, fakeQueue, markDatabase, NOW, provedNumberCode, request, withProof } from "../helpers.ts";
 import { REFERRER, person, pincode, client, site, codeOf, post, FRIEND, ADDRESS } from "./referrals-fixtures.ts";
 
 beforeEach(async () => {
@@ -27,15 +27,17 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({
-        ...FRIEND,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...FRIEND,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
     );
     expect(answer.status).toBe(201);
     const agreed = await env.DB.prepare("SELECT terms_version, privacy_version, source FROM terms_acceptances").all();
@@ -77,33 +79,38 @@ describe("POST /api/r/:code/consultation", () => {
     const self = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({
-        ...FRIEND,
-        mobile: "98100 00001",
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...FRIEND,
+          mobile: "98100 00001",
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
     );
-    // Refer is a fitted client's, so the referrer is a number we know: told what a new number would be, so the page
-    // never says it is known, and attributed nothing.
+    // Refer is a fitted client's, so the referrer is a number we know: its code proved it, so it is told why nothing
+    // was booked, and attributed nothing.
     expect(self.status).toBe(201);
+    expect(await self.json()).toEqual({ state: "not_booked", reason: "book_in_app", consultation: null });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM referral_attributions").first()).toEqual({ n: 0 });
     const unknown = await request(
       site(),
       "/api/r/ZZ9999/consultation",
-      post({
-        ...FRIEND,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "afternoon",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...FRIEND,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "afternoon",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
     );
     expect(await unknown.json()).toMatchObject({ state: "booked", credits: false, invite: "unknown" });
   });
@@ -129,15 +136,17 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({
-        ...FRIEND,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...FRIEND,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
       { CRM_QUEUE: fakeQueue() },
     );
     expect(answer.status).toBe(201);
@@ -152,15 +161,17 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({
-        ...FRIEND,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...FRIEND,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
     );
     expect(answer.status).toBe(201);
     const attributed = await env.DB.prepare(
@@ -179,18 +190,23 @@ describe("POST /api/r/:code/consultation", () => {
     const body = { ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, terms: true };
     const bindings = { CRM_QUEUE: fakeQueue() };
 
-    const without = await request(site(), `/api/r/${code}/consultation`, post(body), bindings);
+    const without = await request(site(), `/api/r/${code}/consultation`, post(await withProof(body)), bindings);
     expect(without.status).toBe(400);
     expect(await without.json()).toMatchObject({ error: { code: "invalid_request", fields: ["address"] } });
 
     const elsewhere = { ...body, address: { ...ADDRESS, pincode: "122017" } };
-    const mismatched = await request(site(), `/api/r/${code}/consultation`, post(elsewhere), bindings);
+    const mismatched = await request(site(), `/api/r/${code}/consultation`, post(await withProof(elsewhere)), bindings);
     expect(mismatched.status).toBe(400);
     expect(await mismatched.json()).toMatchObject({
       error: { code: "invalid_request", fields: ["address.pincode"] },
     });
 
-    const booked = await request(site(), `/api/r/${code}/consultation`, post({ ...body, address: ADDRESS }), bindings);
+    const booked = await request(
+      site(),
+      `/api/r/${code}/consultation`,
+      post(await withProof({ ...body, address: ADDRESS })),
+      bindings,
+    );
     expect(booked.status).toBe(201);
     const friend = await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = '+919810000002'").first<{
       id: string;
@@ -207,6 +223,25 @@ describe("POST /api/r/:code/consultation", () => {
     });
   });
 
+  // Every booking proves its number first (docs/decisions/0285-every-site-booking-is-a-sign-in.md).
+  it("refuses a booking without a code that proved the number, and writes nothing", async () => {
+    await pincode("122018", "Gurgaon South City II", true);
+    const code = await codeOf();
+    const body = { ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", address: ADDRESS };
+    const refused = await request(
+      site(),
+      `/api/r/${code}/consultation`,
+      post({ ...body, consent: true, terms: true, number_code_id: undefined }),
+      { CRM_QUEUE: fakeQueue() },
+    );
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toMatchObject({ error: { code: "number_not_proved" } });
+    const friends = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM people WHERE mobile_e164 = '+919810000002'",
+    ).first();
+    expect(friends).toEqual({ n: 0 });
+  });
+
   it("refuses an unserved pincode or a day out of range", async () => {
     await pincode("400050", "Bandra", false);
     const code = await codeOf();
@@ -219,10 +254,10 @@ describe("POST /api/r/:code/consultation", () => {
       terms: true,
       address: ADDRESS,
     };
-    expect((await request(site(), `/api/r/${code}/consultation`, post(body))).status).toBe(422);
+    expect((await request(site(), `/api/r/${code}/consultation`, post(await withProof(body)))).status).toBe(422);
     await pincode("122018", "Gurgaon South City II", true);
     const late = { ...body, pincode: "122018", date: "2026-10-30" };
-    expect((await request(site(), `/api/r/${code}/consultation`, post(late))).status).toBe(422);
+    expect((await request(site(), `/api/r/${code}/consultation`, post(await withProof(late)))).status).toBe(422);
   });
 
   it("leaves the lead the CRM syncs, which names no loss extent because the landing does not ask", async () => {
@@ -232,15 +267,17 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({
-        ...FRIEND,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...FRIEND,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
       { CRM_QUEUE: crm },
     );
 
@@ -267,15 +304,17 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site({ selfServeBooking: false, selfServeConsultations: false }),
       `/api/r/${code}/consultation`,
-      post({
-        ...FRIEND,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...FRIEND,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
       { CRM_QUEUE: crm },
     );
 
@@ -318,17 +357,19 @@ describe("POST /api/r/:code/consultation", () => {
     const answer = await request(
       site(),
       `/api/r/${code}/consultation`,
-      post({
-        ...FRIEND,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-        one_visit: true,
-        number_code_id: await provedNumberCode("+919810000002"),
-      }),
+      post(
+        await withProof({
+          ...FRIEND,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+          one_visit: true,
+          number_code_id: await provedNumberCode("+919810000002"),
+        }),
+      ),
     );
     expect(answer.status).toBe(201);
     expect(await answer.json()).toMatchObject({ state: "booked", credits: true, one_visit: true });

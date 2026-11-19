@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
-import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request, withProof } from "../helpers.ts";
 import { ADDRESS, pincode, VISITOR, post, site, BOOKED_MORNING } from "./consultations-fixtures.ts";
 
 beforeEach(async () => {
@@ -19,19 +19,21 @@ beforeEach(async () => {
 
 // The full address before a slot is confirmed, on the site too (ADR 0081).
 describe("the address the consultation is at", () => {
-  const book = (body: object, bindings = {}) =>
+  const book = async (body: object, bindings = {}) =>
     request(
       site(),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        ...body,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          ...body,
+        }),
+      ),
       { CRM_QUEUE: fakeQueue(), ...bindings },
     );
   const count = async (sql: string) => (await env.DB.prepare(sql).first<{ n: number }>())?.n;
@@ -133,15 +135,17 @@ describe("the address the consultation is at", () => {
     const answer = await request(
       site({ selfServeBooking: false, selfServeConsultations: false }),
       "/api/consultation",
-      post({
-        ...VISITOR,
-        pincode: "122018",
-        date: "2026-09-23",
-        window: "morning",
-        consent: true,
-        terms: true,
-        address: ADDRESS,
-      }),
+      post(
+        await withProof({
+          ...VISITOR,
+          pincode: "122018",
+          date: "2026-09-23",
+          window: "morning",
+          consent: true,
+          terms: true,
+          address: ADDRESS,
+        }),
+      ),
       { CRM_QUEUE: fakeQueue() },
     );
     expect(await answer.json()).toMatchObject({ state: "requested" });
@@ -152,7 +156,7 @@ describe("the address the consultation is at", () => {
     expect(saved).toEqual({ line1: "Palm Grove Society", pincode: "122018" });
   });
 
-  // The form needs no login, only a number: whoever types one must not move where that person's visits go.
+  // The form needs no login, only a number its code proved: it must not move where that person's visits go.
   // The page answers as it would for a new number, and only the number's owner is told, on WhatsApp.
   it("never replaces the address a person already has: the visit goes to it, and only WhatsApp says so", async () => {
     await env.DB.prepare(
@@ -226,15 +230,17 @@ describe("the address the consultation is at", () => {
       const answer = await request(
         site({ selfServeBooking: false, selfServeConsultations: false }),
         "/api/consultation",
-        post({
-          ...VISITOR,
-          pincode: "122018",
-          date: "2026-09-23",
-          window: "morning",
-          consent: true,
-          terms: true,
-          address: ADDRESS,
-        }),
+        post(
+          await withProof({
+            ...VISITOR,
+            pincode: "122018",
+            date: "2026-09-23",
+            window: "morning",
+            consent: true,
+            terms: true,
+            address: ADDRESS,
+          }),
+        ),
         { CRM_QUEUE: fakeQueue() },
       );
       expect(await answer.json()).toMatchObject({ state: "requested" });
@@ -245,23 +251,20 @@ describe("the address the consultation is at", () => {
     it.each([
       ["we hold but do not serve", "400050", true],
       ["we do not hold", "411001", false],
-    ])(
-      "books nothing in a pincode %s, answers as for a new number, and tells its owner on WhatsApp",
-      async (_, pin, held) => {
-        if (held) await pincode(pin, "Bandra", "Mumbai", false);
-        await onAccount(pin);
-        const messages = fakeQueue();
-        const answer = await book({ address: ADDRESS }, { MESSAGE_QUEUE: messages });
+    ])("books nothing in a pincode %s, and tells its owner why on the page and on WhatsApp", async (_, pin, held) => {
+      if (held) await pincode(pin, "Bandra", "Mumbai", false);
+      await onAccount(pin);
+      const messages = fakeQueue();
+      const answer = await book({ address: ADDRESS }, { MESSAGE_QUEUE: messages });
 
-        expect(answer.status).toBe(201);
-        expect(await answer.json()).toEqual(BOOKED_MORNING);
-        expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
-        expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
-        expect(await count("SELECT COUNT(*) AS n FROM addresses WHERE person_id = 'p-known'")).toBe(1);
-        expect(await told()).toEqual(["address_not_served"]);
-        expect(messages.sent).toHaveLength(1);
-      },
-    );
+      expect(answer.status).toBe(201);
+      expect(await answer.json()).toEqual({ state: "not_booked", reason: "address_not_served", consultation: null });
+      expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
+      expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
+      expect(await count("SELECT COUNT(*) AS n FROM addresses WHERE person_id = 'p-known'")).toBe(1);
+      expect(await told()).toEqual(["address_not_served"]);
+      expect(messages.sent).toHaveLength(1);
+    });
   });
 
   it("leaves the first address untouched when the same number books again with another", async () => {
@@ -269,6 +272,7 @@ describe("the address the consultation is at", () => {
     expect(await first.json()).toEqual(BOOKED_MORNING);
     // Ops cancel the first, so the number may book a consultation again.
     await env.DB.prepare("UPDATE slot_holds SET state = 'released'").run();
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled'").run();
 
     const elsewhere = { ...ADDRESS, flat: "House 9", line1: "Rose Lane", locality: "Sector 45" };
     const second = await book({ date: "2026-09-24", address: elsewhere });

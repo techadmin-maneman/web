@@ -7,7 +7,16 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { codeOnHold } from "../../../src/domain/money/discount-code-holds.ts";
 import type { App } from "../../../src/http/context.ts";
-import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, provedNumberCode, request } from "../helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  markDatabase,
+  NOW,
+  provedNumberCode,
+  request,
+  withProof,
+} from "../helpers.ts";
 import { client, SANA, technician } from "../booking/client-booking-fixtures.ts";
 import { make } from "../booking/discount-code-entries-fixtures.ts";
 import { ADDRESS, FRIEND, pincode, post, site } from "./referrals-fixtures.ts";
@@ -36,17 +45,19 @@ const bookFrom = async (partnerCode: string, oneVisit: boolean) =>
   request(
     site(),
     `/api/r/${partnerCode}/consultation`,
-    post({
-      ...FRIEND,
-      pincode: "122018",
-      date: "2026-09-23",
-      window: "morning",
-      consent: true,
-      terms: true,
-      address: ADDRESS,
-      one_visit: oneVisit,
-      ...(oneVisit ? { number_code_id: await provedNumberCode("+919810000002") } : {}),
-    }),
+    post(
+      await withProof({
+        ...FRIEND,
+        pincode: "122018",
+        date: "2026-09-23",
+        window: "morning",
+        consent: true,
+        terms: true,
+        address: ADDRESS,
+        one_visit: oneVisit,
+        ...(oneVisit ? { number_code_id: await provedNumberCode("+919810000002") } : {}),
+      }),
+    ),
   );
 
 const heldCode = async () => {

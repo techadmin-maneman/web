@@ -39,11 +39,11 @@ describe("the client app’s manifest", () => {
     expect(html).toContain('<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />');
   });
 
-  it("keeps a maskable icon’s crown inside the circle a launcher may crop it to", () => {
+  it("keeps a maskable icon’s mark inside the circle a launcher may crop it to", () => {
     const maskable = ICONS.find((icon) => icon.purpose === "maskable");
-    // The favicon drawing is 64 by 44.3: its corners must sit within a circle 80% of the icon wide.
+    // The mark is 200 by 217.4: its corners must sit within a circle 80% of the icon wide.
     const art = maskable?.art ?? Infinity;
-    expect(Math.hypot(art, (art * 44.3) / 64)).toBeLessThan(0.8 * (maskable?.size ?? 0));
+    expect(Math.hypot(art, (art * 217.4) / 200)).toBeLessThan(0.8 * (maskable?.size ?? 0));
   });
 });
 

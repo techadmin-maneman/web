@@ -5,7 +5,7 @@ import type { Page, Request } from "@playwright/test";
 import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
-import { expect, fakeTurnstile, mockNumberCode, visit } from "./support.ts";
+import { bookWithCode, expect, fakeTurnstile, mockNumberCode, visit } from "./support.ts";
 
 export const SERVED = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
 export const UNSERVED = { pincode: "400050", served: false, area: "Bandra", city: "Mumbai" };
@@ -159,10 +159,10 @@ export async function toAddress(page: Page): Promise<void> {
   await expect(page.getByText("Step 4 · Your address")).toBeFocused();
 }
 
-/** The address filled in and the booking sent. */
+/** The address filled in and the booking sent, with the WhatsApp code it sends the number. */
 export async function fillAndBook(page: Page): Promise<void> {
   await fillAddress(page);
-  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await bookWithCode(page);
 }
 
 /** From the visit: on to the address, and booked. */

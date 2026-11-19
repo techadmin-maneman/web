@@ -99,7 +99,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerPublishedPrices,
     registerServedCities,
     registerSiteWords,
-    // A WhatsApp code that proves a number before /book's one visit or /try's gate acts on it.
+    // A WhatsApp code that proves a number before a booking on the site or /try's gate acts on it.
     registerNumberCodes,
     registerConsultations,
     registerBuildingSuggestions,

@@ -1,9 +1,9 @@
-// A WhatsApp code that proves a number typed into the site before a form acts on it: /book's consultation and fit
-// in one visit, and /try's gate (src/policy/number-proof.ts).
+// A WhatsApp code that proves a number typed into the site before a form acts on it: every booking, and /try's gate
+// (src/policy/number-proof.ts).
 //
-// The code goes to whatever number is typed, so asking for one needs Turnstile and counts against the number's day
-// and the address's hour, as a login code does, and against a day's ceiling of its own, so that codes asked for
-// here never stop clients and technicians signing in.
+// The code goes to whatever number is typed, so asking for one needs Turnstile and counts against the number's day,
+// as a login code does, and the address's day, as a booking does, and against a day's ceiling of its own, so that
+// codes asked for here never stop clients and technicians signing in.
 //
 // A number proved here that a booking holds may also be signed in to the client app, so a visitor who has just
 // booked goes on into it: the app finishes the sign-in with the challenge and code this answers (ADR 0214).
@@ -53,7 +53,7 @@ const NumberCodeVerifySchema = z
   ])
   .openapi("NumberCodeVerify");
 
-/** The ID of a code that proved the number, which /book's one visit and /try's gate need. */
+/** The ID of a code that proved the number, which every booking and /try's gate need. */
 export const NumberCodeIdSchema = z.uuid().openapi({
   description:
     "The code that proved the number (POST /api/number-code/verify). It proves it for 30 minutes after it was entered.",
@@ -83,7 +83,7 @@ const askRoute = createRoute({
     202: { description: "The code is on its way", ...json(NumberCodeSchema) },
     400: errorResponse("invalid_request"),
     403: errorResponse("turnstile_failed"),
-    429: errorResponse("rate_limited: too many codes for this number today, or from this address this hour"),
+    429: errorResponse("rate_limited: too many codes for this number today, or from this address today"),
     503: errorResponse("busy: today's ceiling on codes is reached; unavailable: Turnstile could not be reached"),
   },
 });

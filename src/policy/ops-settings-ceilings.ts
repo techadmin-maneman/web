@@ -31,7 +31,7 @@ export const PRODUCTION_CEILINGS: Readonly<Record<Ceiling, number>> = {
   result_read: 800,
   login_code: 300,
   tech_code: 100,
-  form_code: 300,
+  form_code: 1000,
   geocode: 200,
   route: 1000,
   route_map: 300,

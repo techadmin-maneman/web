@@ -1,4 +1,4 @@
-// A WhatsApp code that proves a number typed into the site, before /book's one visit or /try's gate acts on it
+// A WhatsApp code that proves a number typed into the site, before a booking on the site or /try's gate acts on it
 // (src/policy/number-proof.ts, src/routes/public/number-codes.ts). Every number here is made up.
 
 import { env } from "cloudflare:workers";
@@ -96,8 +96,19 @@ describe("POST /api/number-code", () => {
     expect(deps.sentCodes).toHaveLength(LOCAL_SETTINGS.login.codeMobileDailyLimit);
   });
 
+  // Every booking asks one, and a mobile network puts many people behind one address.
+  it("counts an address's codes by the day, as its bookings are", async () => {
+    build({ leadIpDailyLimit: 2 });
+    expect((await ask("98100 00001")).status).toBe(202);
+    expect((await ask("98100 00002")).status).toBe(202);
+    const refused = await ask("98100 00003");
+    expect(refused.status).toBe(429);
+    expect(refused.body.error?.code).toBe("rate_limited");
+    expect(deps.sentCodes).toHaveLength(2);
+  });
+
   it("stops at a day's ceiling of its own, so codes sent to numbers typed here never stop a login", async () => {
-    build({ login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } });
+    build({ login: { ...LOCAL_SETTINGS.login, formCodeDailyCeiling: 1 } });
     expect((await ask("98100 00001")).status).toBe(202);
 
     const busy = await ask("98100 00002");
@@ -105,7 +116,7 @@ describe("POST /api/number-code", () => {
     expect(busy.body.error?.code).toBe("busy");
     expect(deps.sentCodes).toHaveLength(1);
     expect(deps.alerts).toEqual([
-      'The daily form_code ceiling (1) is reached; the site\'s WhatsApp codes for the one visit and the try-on answer "busy" until midnight IST. Raise it in Settings · Rules if the day calls for more.',
+      'The daily form_code ceiling (1) is reached; the site\'s WhatsApp codes, so its bookings and the try-on answer "busy" until midnight IST. Raise it in Settings · Rules if the day calls for more.',
     ]);
     const oneCode = { ...LOCAL_SETTINGS, login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } };
     expect(await ceilingReached(env.DB, "login_code", { now: clock, settings: oneCode })).toBe(false);

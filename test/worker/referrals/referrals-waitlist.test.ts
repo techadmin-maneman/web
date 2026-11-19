@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { captureLogs, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import { captureLogs, fakeQueue, markDatabase, NOW, request, withProof } from "../helpers.ts";
 import { REFERRER, person, pincode, site, codeOf, post, FRIEND, ADDRESS } from "./referrals-fixtures.ts";
 
 beforeEach(async () => {
@@ -209,7 +209,7 @@ describe("POST /api/r/:code/*: the Idempotency-Key", () => {
   it("answers a consultation sent again with its first answer, and books it once", async () => {
     await pincode("122018", "Gurgaon South City II", true);
     const code = await codeOf();
-    const body = {
+    const body = await withProof({
       ...FRIEND,
       pincode: "122018",
       date: "2026-09-23",
@@ -217,7 +217,7 @@ describe("POST /api/r/:code/*: the Idempotency-Key", () => {
       consent: true,
       terms: true,
       address: ADDRESS,
-    };
+    });
 
     const first = await request(site(), `/api/r/${code}/consultation`, keyed(body, "key-invite-0001"));
     const again = await request(site(), `/api/r/${code}/consultation`, keyed(body, "key-invite-0001"));

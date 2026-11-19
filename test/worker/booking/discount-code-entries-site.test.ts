@@ -142,13 +142,13 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     });
   });
 
-  // A number we know that books nothing hears what a new number would, its code included.
-  it("answers a number we know, which books nothing, with the code as a new number hears it", async () => {
+  // A number we know that books nothing is told why, and the code it sent is neither checked nor used.
+  it("tells a number with its visit to come that nothing was booked, and uses none of a code sent with it", async () => {
     await make();
     expect((await book({})).status).toBe(201);
     const again = await book({ discount_code: "tenpc", date: "2026-09-24" });
     expect(again.status).toBe(201);
-    expect(await again.json()).toMatchObject({ state: "booked", one_visit: true, discount_code: TENPC_STANDS });
+    expect(await again.json()).toMatchObject({ state: "not_booked", reason: "consultation_exists" });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_holds").first("n")).toBe(1);
     expect((await uses()).results).toEqual([]);
   });

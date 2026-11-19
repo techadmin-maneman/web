@@ -56,10 +56,16 @@ export async function siteBooking(sim: Sim, wave: string, pincode: string, city:
       await page.getByLabel(referral.address.labels.line1).fill("Palm Grove Society");
       await page.getByLabel(referral.address.labels.locality).fill("Sector 65");
       const answered = page.waitForResponse("**/api/consultation");
+      const intoApp = page.waitForRequest(
+        (request) => request.isNavigationRequest() && new URL(request.url()).hostname === "app.localhost",
+      );
       await page.getByRole("button", { name: referral.consultation.submit }).click();
+      await page.getByLabel(siteCopy.numberCode.label).fill(LOGIN_CODE);
+      await page.getByRole("button", { name: referral.consultation.confirm }).click();
       const answer = await answered;
       check(answer.status() === 201, `/api/consultation answered ${String(answer.status())}`);
-      await expect(page.getByText(referral.booked.label, { exact: true })).toBeVisible();
+      // The code proved the number, so the visitor goes on into the app signed in.
+      await intoApp;
       sim.world.clients.push({
         name,
         mobile,

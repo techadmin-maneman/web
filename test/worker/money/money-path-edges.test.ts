@@ -21,6 +21,7 @@ import {
   markDatabase,
   NOW,
   request,
+  withProof,
 } from "../helpers.ts";
 import { technician } from "../clients.ts";
 import {
@@ -103,26 +104,28 @@ describe("the public form, with a client's number, while that client's hold is p
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.9" },
-        body: JSON.stringify({
-          name: "Somebody Else",
-          mobile: "98100 00001",
-          pincode: "122018",
-          loss_extent: "crown",
-          turnstile_token: "token",
-          date: "2026-09-25",
-          window: "evening",
-          consent: true,
-          terms: true,
-          address: {
-            flat: "Flat 402",
-            line1: "Palm Grove Society",
-            line2: null,
-            locality: "Sector 65",
-            city: "Gurgaon",
+        body: JSON.stringify(
+          await withProof({
+            name: "Somebody Else",
+            mobile: "98100 00001",
             pincode: "122018",
-            access_notes: null,
-          },
-        }),
+            loss_extent: "crown",
+            turnstile_token: "token",
+            date: "2026-09-25",
+            window: "evening",
+            consent: true,
+            terms: true,
+            address: {
+              flat: "Flat 402",
+              line1: "Palm Grove Society",
+              line2: null,
+              locality: "Sector 65",
+              city: "Gurgaon",
+              pincode: "122018",
+              access_notes: null,
+            },
+          }),
+        ),
       },
       { MESSAGE_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
     );
@@ -302,26 +305,28 @@ describe("where a visit booked from the site is", () => {
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.9" },
-        body: JSON.stringify({
-          name: "Neha Kapoor",
-          mobile: "98100 00077",
-          pincode: "122018",
-          loss_extent: "crown",
-          turnstile_token: "token",
-          date: "2026-09-23",
-          window: "morning",
-          consent: true,
-          terms: true,
-          address: {
-            flat: "Flat 402",
-            line1: "Palm Grove Society",
-            line2: null,
-            locality: "Sector 65",
-            city: "Gurgaon",
+        body: JSON.stringify(
+          await withProof({
+            name: "Neha Kapoor",
+            mobile: "98100 00077",
             pincode: "122018",
-            access_notes: null,
-          },
-        }),
+            loss_extent: "crown",
+            turnstile_token: "token",
+            date: "2026-09-23",
+            window: "morning",
+            consent: true,
+            terms: true,
+            address: {
+              flat: "Flat 402",
+              line1: "Palm Grove Society",
+              line2: null,
+              locality: "Sector 65",
+              city: "Gurgaon",
+              pincode: "122018",
+              access_notes: null,
+            },
+          }),
+        ),
       },
       { MESSAGE_QUEUE: fakeQueue(), CRM_QUEUE: fakeQueue() },
     );

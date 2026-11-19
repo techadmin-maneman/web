@@ -1,13 +1,13 @@
-// The WhatsApp code that proves the number typed, before /book's consultation and fit in one visit or /try's gate
-// acts on it. A form asks for the code once its fields are complete, shows the code's field, and once the code is
-// entered sends what it acts on with the code's ID. A code is for the number it was sent to: another number needs
-// its own. A number proved is kept for the tab with the name typed beside it, so /book starts from them and a
-// booking for it goes on into the app signed in (../lib/visitor.ts, ADR 0214).
+// The WhatsApp code that proves the number typed, before a booking on the site or /try's gate acts on it. A form asks
+// for the code once its fields are complete, shows the code's field, and once the code is entered sends what it acts
+// on with the code's ID. A code is for the number it was sent to: another number needs its own. A number proved is
+// kept for the tab with the name typed beside it, so /book starts from them, its code is not asked again while the
+// API takes it, and a booking for it goes on into the app signed in (../lib/visitor.ts, ADR 0214).
 
 import { CODE_TEXT } from "@rules/policy/one-time-code.ts";
 import { useState } from "preact/hooks";
 import { numberCode as words } from "../content/site.ts";
-import { rememberVisitor } from "../lib/visitor.ts";
+import { forgetVisitor, proofFor as keptProofFor, rememberVisitor } from "../lib/visitor.ts";
 import { askForNumberCode, verifyNumberCode, type Answer, type NumberCode, type NumberCodeVerify } from "../lib/api.ts";
 
 /** The code sent, to the ten digits it went to and the name typed beside them, and whether it has been entered. */
@@ -32,10 +32,10 @@ export function useNumberCode() {
   const [checking, setChecking] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 
-  /** The code's ID once it has proved these digits; null until then. */
+  /** The code's ID once it has proved these digits, here or earlier in the tab; null until then. */
   function proofFor(digits: string): string | null {
-    if (sent === null || !sent.proved || sent.digits !== digits) return null;
-    return sent.codeId;
+    if (sent !== null && sent.digits === digits) return sent.proved ? sent.codeId : null;
+    return keptProofFor(digits);
   }
 
   /** Whether a code went to these digits and waits to be entered. */
@@ -75,11 +75,12 @@ export function useNumberCode() {
     return null;
   }
 
-  /** Forgets the code, so the form asks for a new one: the API no longer takes it. */
+  /** Forgets the code, and the tab's, so the form asks for a new one: the API no longer takes it. */
   function forget(): void {
     setSent(null);
     setCode("");
     setFailure(null);
+    forgetVisitor();
   }
 
   return { code, setCode, checking, failure, proofFor, waitingFor, ask, confirm, forget };

@@ -273,7 +273,7 @@ export const referral = {
     submit: "Book the consultation",
     submitOneVisit: "Book the consultation and fit",
     // Once the WhatsApp code is on its way, the button confirms it and books.
-    confirmOneVisit: "Confirm and book",
+    confirm: "Confirm and book",
     sending: "Booking…",
     told: toldWhenFitted,
   },
@@ -365,10 +365,9 @@ export const referral = {
     marked: "Check the {count} fields marked above.",
   },
   /**
-   * What a booking answers, the same for every number, since whoever typed it may not be its owner: the details
-   * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. The day and window
-   * picked, what the visit asks of the client, and the calendar restate what was typed, so they tell whoever typed it
-   * nothing about the number.
+   * What a booking answers: the day and window booked, what the visit asks of the client, and the calendar. The
+   * details go to the number on WhatsApp too, and the app shows them once its owner is signed in. A number we know
+   * that had nothing booked is answered with the `known` lines below instead.
    */
   booked: {
     label: "Booked",
@@ -399,6 +398,28 @@ export const referral = {
     appHint: "See it in the app too: sign in with this number.",
     app: "Open the app",
     back: "Back to the site",
+  },
+  /**
+   * A number we know that the form booked nothing for, and why, which WhatsApp tells its owner too. A consultation
+   * still to come is restated by its day and hours, as a booking is; its title here stands in only without them.
+   */
+  known: {
+    consultation_exists: {
+      label: "Already booked",
+      title: "Your consultation is booked",
+      body: "That’s your consultation. We haven’t booked another.",
+    },
+    book_in_app: {
+      label: "Welcome back",
+      title: "Book in the app",
+      body: "This number has a Mane Man account, so its visits are booked in the app.",
+    },
+    address_not_served: {
+      label: "Nothing booked",
+      title: "We don’t come to your address yet",
+      body: "That’s the address on your account. Moved? Message us on WhatsApp.",
+    },
+    whatsapp: "Message us on WhatsApp",
   },
   /**
    * C4's "Code expired" frame. The invite has lapsed for this friend only, which the API can tell once they have

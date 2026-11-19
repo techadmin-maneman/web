@@ -172,6 +172,8 @@ export interface LoginSettings {
   readonly codeIpHourlyLimit: number;
   /** Codes sent a day across every number: the hard limit on what a flood of requests can send. */
   readonly codeDailyCeiling: number;
+  /** The site's codes in a day: every booking from it asks one. */
+  readonly formCodeDailyCeiling: number;
   /** The same limit for the technician app's codes, which only an active technician's number is sent. */
   readonly techCodeDailyCeiling: number;
   /**

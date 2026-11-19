@@ -18,7 +18,7 @@ describe("the daily ceilings' committed figures", () => {
       result_read: Number(production.RESULT_READ_DAILY_CEILING),
       login_code: FIXED_LIMITS.OTP_DAILY_CEILING,
       tech_code: FIXED_LIMITS.OTP_TECH_DAILY_CEILING,
-      form_code: FIXED_LIMITS.OTP_DAILY_CEILING,
+      form_code: FIXED_LIMITS.FORM_CODE_DAILY_CEILING,
       geocode: FIXED_LIMITS.GEOCODE_DAILY_CEILING,
       route: RATE_LIMITS["ceiling:route"].limit,
       route_map: RATE_LIMITS["ceiling:route_map"].limit,

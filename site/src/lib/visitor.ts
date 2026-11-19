@@ -1,6 +1,7 @@
-// The name and number a visitor gave the try-on's gate, and the code that proved the number, kept for this tab only
-// (sessionStorage, gone when it closes), so /book starts from them and a booking for that number goes on into the app
-// signed in (ADR 0214). Storage a browser refuses keeps nothing, and every page works without it.
+// The name and number a visitor gave with the last WhatsApp code they entered, at the try-on's gate or a booking, and
+// that code, kept for this tab only (sessionStorage, gone when it closes): /book starts from them, a later booking for
+// that number asks no code again and goes on into the app signed in, and the proof is forgotten once the API no
+// longer takes it (ADR 0214). Storage a browser refuses keeps nothing, and every page works without it.
 
 import { mobileDigits } from "@maneman/web-kit/mobile";
 
@@ -32,6 +33,15 @@ export function rememberedVisitor(): Visitor | null {
     return { name, mobile, proof };
   } catch {
     return null;
+  }
+}
+
+/** Forgets the visitor, once the API no longer takes the proof kept for them. */
+export function forgetVisitor(): void {
+  try {
+    sessionStorage.removeItem(KEY);
+  } catch {
+    // Nothing was kept.
   }
 }
 

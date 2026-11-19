@@ -67,6 +67,7 @@ export const LOCAL_VARS: Readonly<Record<string, string>> = {
   OTP_MOBILE_DAILY_LIMIT: "10000",
   OTP_DAILY_CEILING: "10000",
   OTP_TECH_DAILY_CEILING: "10000",
+  FORM_CODE_DAILY_CEILING: "10000",
   // Each saved address takes from the address-lookup ceiling too. Its own cap is GEOCODE_CEILING_MAX, so no further.
   GEOCODE_DAILY_CEILING: "1800",
 };
