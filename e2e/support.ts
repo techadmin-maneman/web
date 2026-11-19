@@ -212,7 +212,7 @@ export const NUMBER_CODE = LOCAL_LOGIN_CODE;
 /** The code's ID a mocked API answers with. */
 export const NUMBER_CODE_ID = "33333333-3333-4333-8333-333333333333";
 
-/** A mocked API's WhatsApp code, which proves a number before /book's one visit or /try's gate acts on it. */
+/** A mocked API's WhatsApp code, which proves a number before a booking on the site or /try's gate acts on it. */
 export async function mockNumberCode(page: Page): Promise<void> {
   await page.route("**/api/number-code", (route) => route.fulfill({ status: 202, json: { code_id: NUMBER_CODE_ID } }));
   await page.route("**/api/number-code/verify", (route) => route.fulfill({ json: { verified: true } }));

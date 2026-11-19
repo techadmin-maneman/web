@@ -1,4 +1,4 @@
-// A WhatsApp code that proves a number typed into the site, before /book's one visit or /try's gate acts on it
+// A WhatsApp code that proves a number typed into the site, before a booking on the site or /try's gate acts on it
 // (src/policy/number-proof.ts, src/routes/public/number-codes.ts). Every number here is made up.
 
 import { env } from "cloudflare:workers";

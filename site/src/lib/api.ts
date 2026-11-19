@@ -103,7 +103,7 @@ function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<
   });
 }
 
-// The WhatsApp code that proves the number typed, before /book's one visit or
+// The WhatsApp code that proves the number typed, before a booking on the site or
 // /try's gate acts on it.
 
 export function askForNumberCode(request: NumberCodeRequest): Promise<Answer<NumberCode>> {
