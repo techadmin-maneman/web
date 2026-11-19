@@ -306,6 +306,11 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
     runs-on: ubuntu-latest
+    # Playwright's own image, Chromium and every library it needs already in it, so the job never waits on Ubuntu's
+    # mirrors for them. Its tag is @playwright/test's version, which the first step checks.
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe
+      options: --ipc=host
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -319,9 +324,8 @@ jobs:
       - name: The production site's publish gate
         run: node scripts/ci/site-production-gate.ts
       # The browser tests run local builds; production's pages are opened here, as built, before a release ships them.
-      - uses: ./.github/actions/ubuntu-mirror
-      - name: Chromium for production's pages
-        run: npx playwright install --with-deps chromium
+      - name: The image's Playwright is the lockfile's
+        run: node scripts/ci/playwright-image.ts
       - name: Production's pages open without an error
         run: node scripts/ci/production-pages.ts
 
@@ -330,8 +334,12 @@ jobs:
     name: browser tests (${{ matrix.part == 'lighthouse' && 'Lighthouse' || format('{0} of 4', matrix.part) }})
     needs: changes
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.suite-passed != 'true'
-    # Ubuntu 24.04, not ubuntu-latest: on 26.04 Playwright's WebKit cannot find the ICU 74 library it is built against.
     runs-on: ubuntu-24.04
+    # Playwright's own image on Ubuntu 24.04 (noble), Chromium, WebKit and every library they need already in it, so
+    # no run waits on Ubuntu's mirrors for them. Its tag is @playwright/test's version, which the first step checks.
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe
+      options: --ipc=host
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -343,49 +351,14 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
 
-      # WebKit is the engine an iPhone runs, for the technician app's tech-ios
-      # project alone (playwright.config.ts). Everything else is Chromium.
-      # On GitHub's runners the browsers are cached by Playwright's version; the
-      # system libraries they need are not files a cache can keep, so they are
-      # installed either way.
-      - name: Which Playwright
-        id: playwright
-        run: |
-          version=$(node -p "require('@playwright/test/package.json').version")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Playwright's browsers, from the cache
-        id: browsers
-        if: runner.environment == 'github-hosted'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
-      # The system libraries come from Ubuntu's mirror, which can take minutes for their 114 MB: apt keeps what it
-      # downloads where the cache can keep it too, so a run that finds them installs them without a download.
-      - name: The system libraries' packages, from the cache
-        if: runner.environment == 'github-hosted'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/apt-archives
-          key: apt-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-webkit
-      - name: apt's downloads kept where the cache finds them
-        if: runner.environment == 'github-hosted'
-        run: |
-          mkdir -p ~/apt-archives/partial
-          printf 'Dir::Cache::Archives "%s";\nAPT::Keep-Downloaded-Packages "true";\n' "$HOME/apt-archives" \
-            | sudo tee /etc/apt/apt.conf.d/99-kept-packages > /dev/null
-      - uses: ./.github/actions/ubuntu-mirror
-      - name: Chromium and WebKit for Playwright
-        if: steps.browsers.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
-      - name: Their system libraries
-        if: steps.browsers.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
-      # apt, as root, takes its partial/ folder and a lock file for itself, which the cache, saving as the runner, could
-      # not read: the folder goes back to the runner, so the cache can keep it.
-      - name: apt's downloads given back to the runner, for the cache
-        if: runner.environment == 'github-hosted'
-        run: sudo chown -R "$(id -un)" ~/apt-archives
+      # WebKit is the engine an iPhone runs, for the technician app's tech-ios project alone (playwright.config.ts).
+      # Everything else is Chromium. Both come with the image.
+      - name: The image's Playwright is the lockfile's
+        run: node scripts/ci/playwright-image.ts
+      # The browser opens the apps at app.localhost, ops.localhost and tech.localhost; Node's own calls to them need the
+      # names too, which a container's resolver does not give.
+      - name: The local hosts' names
+        run: echo "127.0.0.1 app.localhost ops.localhost tech.localhost" >> /etc/hosts
       - name: Local secrets, and every migration applied to an empty D1
         run: |
           node scripts/dev/ensure-dev-vars.ts
