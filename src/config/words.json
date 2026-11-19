@@ -308,8 +308,8 @@
     "surface": "site",
     "group": "Home",
     "where": "hero",
-    "text": "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",
-    "reviewed": true
+    "text": "Your technician comes when it suits you, matches a hair system to your hair and fits it.",
+    "reviewed": false
   },
   {
     "key": "site:home/hero.tryOn",

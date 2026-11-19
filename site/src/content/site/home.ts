@@ -87,7 +87,7 @@ export const hero = {
     "Be the Main Man, again!",
   ],
   title: "A full head of hair, matched to your own.",
-  body: "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",
+  body: "Your technician comes when it suits you, matches a hair system to your hair and fits it.",
   tryOn: "Try a new look",
   book: "Book a free consultation",
   // The footage and the opening line loop, so both can be stopped (WCAG 2.2.2).

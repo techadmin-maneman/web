@@ -180,6 +180,9 @@ The flow frame's other words are live strings, reused by key: "Free consultation
 15. **On a screen narrower than 357 px** with Sign in shown (279 px without it), as a small phone's or one with its text
     enlarged, the header draws the mark without the wordmark, and Sign in as its icon: a 44 px target, named for a
     screen reader.
+16. **The hero's body line** leaves no word alone on its last row (`text-wrap: pretty`), at the owner's request on 19
+    November 2026, where the boards break it as it falls: a phone 360 px wide shows it in three rows, the last of two
+    words.
 
 ## How each PR is verified
 
