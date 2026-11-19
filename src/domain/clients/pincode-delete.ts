@@ -22,12 +22,26 @@ const unused = (pin: string): string =>
     " AND ",
   );
 
+/** That nothing names a held pincode, each table read once for the whole list rather than once a row. */
+const NAMED_BY_NONE = PINCODE_COLUMNS.map(
+  ([table, column]) => `pincode NOT IN (SELECT ${column} FROM ${table} WHERE ${column} IS NOT NULL)`,
+).join(" AND ");
+
 /** The pincodes we hold but do not go to, which nothing names: those that may be deleted. */
 export async function deletablePincodes(db: D1Database): Promise<ReadonlySet<string>> {
   const { results } = await db
-    .prepare(`SELECT pincode FROM serviceable_pincodes p WHERE p.served = 0 AND ${unused("p.pincode")}`)
+    .prepare(`SELECT pincode FROM serviceable_pincodes WHERE served = 0 AND ${NAMED_BY_NONE}`)
     .all<{ pincode: string }>();
   return new Set(results.map((row) => row.pincode));
+}
+
+/** Whether one pincode we hold may be deleted: we do not go there and nothing names it. */
+export async function pincodeDeletable(db: D1Database, pincode: string): Promise<boolean> {
+  const row = await db
+    .prepare(`SELECT 1 FROM serviceable_pincodes WHERE pincode = ?1 AND served = 0 AND ${unused("?1")}`)
+    .bind(pincode)
+    .first();
+  return row !== null;
 }
 
 /** A pincode deleted while we do not go there and nothing names it; its audit entry only if it went. */

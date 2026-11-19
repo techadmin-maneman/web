@@ -50,7 +50,7 @@ test.describe("the service area", () => {
 
   // A pincode added by mistake could only be left unserved.
   test("deletes a pincode we do not go to that nothing names, from its drawer", async ({ page }) => {
-    await open(page, "/settings/areas", { "POST /api/pincodes/122018/delete": empty() });
+    await open(page, "/settings/areas", { "DELETE /api/pincodes/122018": empty() });
     // Five wait at Lajpat Nagar, so it stays.
     await page.getByRole("button", { name: served.editLabel("110024") }).click();
     await expect(page.getByRole("dialog").getByRole("button", { name: deleting.label("110024") })).toHaveCount(0);
@@ -60,7 +60,9 @@ test.describe("the service area", () => {
     await page.getByRole("button", { name: served.editLabel("122018") }).click();
     const drawer = page.getByRole("dialog");
     await drawer.getByRole("button", { name: deleting.label("122018") }).click();
-    const sent = posted(page, "/api/pincodes/122018/delete");
+    const sent = page.waitForRequest(
+      (request) => request.method() === "DELETE" && request.url().endsWith("/api/pincodes/122018"),
+    );
     await drawer.getByRole("button", { name: deleting.confirm, exact: true }).click();
     await sent;
     await expect(page.getByRole("status").filter({ hasText: served.deleted("122018") })).toBeVisible();

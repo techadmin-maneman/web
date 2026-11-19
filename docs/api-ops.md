@@ -23741,7 +23741,7 @@ Request body:
 }
 ```
 
-### POST /api/pincodes/{pin}/delete
+### DELETE /api/pincodes/{pin}
 
 A pincode deleted, while we do not go there and no client, visit, waitlist or launch names it
 
@@ -24253,7 +24253,7 @@ Request body:
 }
 ```
 
-### POST /api/cities/{name}/delete
+### DELETE /api/cities/{name}
 
 A city deleted, its own prices and rules with it, while nothing else names it
 
@@ -25355,17 +25355,11 @@ Request body:
 }
 ```
 
-### POST /api/zones/{name}/delete
+### DELETE /api/zones/{name}
 
 A zone deleted, while no city, stock place, technician or staff grant names it
 
-**200**: The zones as they now stand, in order
-
-```json
-{
-  "$ref": "#/components/schemas/Zones"
-}
-```
+**204**: Deleted
 
 **400**: invalid_request
 
@@ -26008,7 +26002,7 @@ Request body:
 }
 ```
 
-### POST /api/qc-points/{id}/delete
+### DELETE /api/qc-points/{id}
 
 A point deleted, while no claim names it
 
@@ -55856,6 +55850,13 @@ Request body:
         "type": "string"
       }
     },
+    "deletable_zones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The zones nothing names, which may be deleted."
+    },
     "registrations": {
       "type": "array",
       "items": {
@@ -55942,6 +55943,7 @@ Request body:
   "required": [
     "cities",
     "zones",
+    "deletable_zones",
     "registrations",
     "rules",
     "rule_names",

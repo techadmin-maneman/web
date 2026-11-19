@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-11-19
-- Topic: Console
+- Topic: The ops console
 - Amends [0108](0108-discount-codes.md), [0109](0109-console-departments-and-access.md), [0141](0141-quick-replies.md), [0169](0169-supplier-claims.md) and [0198](0198-cities-as-data.md) on what may be changed or deleted
 
 ## Context
@@ -36,8 +36,12 @@ retire their own.
 
 ## Consequences
 
-- Each list says whether a row may be deleted (`deletable`), and the console offers Delete only then. A delete that
-  loses a race to a first use is refused as `in_use`, in the words of the screen it was asked from.
+- Each list says whether a row may be deleted (`deletable` on each row; for zones, `deletable_zones` beside the
+  cities), and the console offers Delete only then. Each delete holds its condition in its own statement, so one that
+  loses a race to a first use is refused as `in_use`, in the words of the screen it was asked from. A rename another
+  request beats moves nothing and is refused as `taken` or `not_found`.
+- A check deleted while a receipt that names it is being saved is left off that receipt's claim, which names the rest:
+  a claim never names a check that is not there.
 - A row in use is never deleted, so nothing that names one is ever left pointing at nothing.
 - Renaming a zone or a check changes only the name read from then on. A claim already drafted keeps the names it read,
   and the audit keeps IDs.

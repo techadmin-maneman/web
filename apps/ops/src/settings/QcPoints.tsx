@@ -13,7 +13,7 @@ import { RowHead } from "@maneman/ui/RowHead";
 import { PanelFailed, PanelLoading } from "@maneman/ui/States";
 import { RowOpener, Table } from "@maneman/ui/Table";
 import { Toast } from "@maneman/ui/Toast";
-import { useLoad } from "@maneman/ui/useLoad";
+import { useLiveLoad } from "@maneman/ui/useLoad";
 import { errorText } from "@maneman/web-kit/refusal";
 import form from "@maneman/ui/forms.module.css";
 import { useState } from "react";
@@ -25,9 +25,12 @@ import { qcPointsApi } from "./qc-points-api.ts";
 
 const copy = purchasing.points;
 
+/** How often the list is read again while it is in view. */
+const EVERY_MS = 10 * 60_000;
+
 type QcPoint = Success<paths["/api/qc-points"]["get"]>["points"][number];
 
-function AddPoint({ onAdded }: { readonly onAdded: () => void }) {
+function AddPoint({ onAdded }: { readonly onAdded: () => Promise<void> }) {
   const [name, setName] = useState("");
   return (
     <DrawerButton label={copy.add}>
@@ -38,9 +41,9 @@ function AddPoint({ onAdded }: { readonly onAdded: () => void }) {
           errors={copy.errors}
           boxes={["name"]}
           send={() => qcPointsApi.add(name.trim())}
-          onAdded={() => {
+          onAdded={async () => {
             close();
-            onAdded();
+            await onAdded();
           }}
           onCancel={close}
         >
@@ -64,13 +67,26 @@ function AddPoint({ onAdded }: { readonly onAdded: () => void }) {
   );
 }
 
+/** A check renamed or switched on or off from its record's row, then the list read again; the words of a refusal. */
+async function saveQcPoint(
+  { point, reread }: { readonly point: QcPoint; readonly reread: () => Promise<void> },
+  change: Partial<{ name: string; checked: boolean }>,
+): Promise<string | null> {
+  const answer = await qcPointsApi.change(point.id, { name: point.name, checked: point.checked, ...change });
+  if (!answer.ok) return errorText(copy.errors, answer);
+  await reread();
+  return null;
+}
+
 /** A check's record: its name and whether it is made, each changed where it reads; Delete while no claim names it. */
-function PointRecord(props: { readonly point: QcPoint; readonly mayChange: boolean; readonly onDeleted: () => void }) {
+function PointRecord(props: {
+  readonly point: QcPoint;
+  readonly mayChange: boolean;
+  /** Reads the list again, so the record and its row show what was saved. */
+  readonly reread: () => Promise<void>;
+  readonly onDeleted: () => void;
+}) {
   const { point, mayChange } = props;
-  const save = async (change: Partial<{ name: string; checked: boolean }>) => {
-    const answer = await qcPointsApi.change(point.id, { name: point.name, checked: point.checked, ...change });
-    return answer.ok ? null : errorText(copy.errors, answer);
-  };
   return (
     <>
       <div className={form.record}>
@@ -79,7 +95,7 @@ function PointRecord(props: { readonly point: QcPoint; readonly mayChange: boole
           value={point.name}
           maxLength={40}
           mayChange={mayChange}
-          save={(typed) => save({ name: typed.trim() })}
+          save={(typed) => saveQcPoint(props, { name: typed.trim() })}
         />
         <ChoiceRow
           label={copy.checked}
@@ -89,7 +105,7 @@ function PointRecord(props: { readonly point: QcPoint; readonly mayChange: boole
             ["no", copy.no],
           ]}
           mayChange={mayChange}
-          save={(said) => save({ checked: said === "yes" })}
+          save={(said) => saveQcPoint(props, { checked: said === "yes" })}
         />
       </div>
       {mayChange && (
@@ -112,7 +128,7 @@ function PointRecord(props: { readonly point: QcPoint; readonly mayChange: boole
 
 /** Each check, in order, with whether it is made; a row opens its record. */
 export function QcPoints() {
-  const [loaded, retry] = useLoad(qcPointsApi.points);
+  const { loaded, reread, retry } = useLiveLoad(qcPointsApi.points, EVERY_MS);
   const access = useAccess();
   const [opened, setOpened] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
@@ -128,8 +144,9 @@ export function QcPoints() {
       actions={
         access.mayCall("POST /api/qc-points") && (
           <AddPoint
-            onAdded={() => {
+            onAdded={async () => {
               setSaid(copy.added);
+              await reread();
             }}
           />
         )
@@ -171,9 +188,11 @@ export function QcPoints() {
           <PointRecord
             point={open}
             mayChange={access.mayCall("PATCH /api/qc-points/{id}")}
+            reread={reread}
             onDeleted={() => {
               setOpened(null);
               setSaid(copy.deleted);
+              void reread();
             }}
           />
         </FormDrawer>

@@ -82,7 +82,7 @@ function OwnRule({
 
 /** A city nothing but its own settings names, deleted at its record's foot, asked once. */
 function DeleteCity({ city, onDeleted }: Pick<Props, "city" | "onDeleted">) {
-  const mayDelete = useAccess().mayCall("POST /api/cities/{name}/delete");
+  const mayDelete = useAccess().mayCall("DELETE /api/cities/{name}");
   if (!city.deletable || !mayDelete) return null;
   return (
     <div className={form.recordFoot}>

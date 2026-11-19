@@ -97,14 +97,14 @@ describe("a city", () => {
       expect.objectContaining({ name: "Pune", deletable: true }),
     ]);
 
-    const named = await send("POST", "/api/cities/Gurgaon/delete");
+    const named = await send("DELETE", "/api/cities/Gurgaon");
     expect(named.status).toBe(409);
     expect(await named.json()).toMatchObject({ error: { code: "in_use" } });
-    expect((await send("POST", "/api/cities/Pune/delete")).status).toBe(204);
+    expect((await send("DELETE", "/api/cities/Pune")).status).toBe(204);
     expect(await env.DB.prepare("SELECT 1 FROM cities WHERE name = 'Pune'").first()).toBeNull();
     expect(await env.DB.prepare("SELECT 1 FROM city_settings WHERE city = 'Pune'").first()).toBeNull();
     expect((await auditFor("city.delete")).results).toEqual([expect.objectContaining({ subject_id: "Pune" })]);
-    expect((await send("POST", "/api/cities/Pune/delete")).status).toBe(404);
+    expect((await send("DELETE", "/api/cities/Pune")).status).toBe(404);
   });
 
   it("is the only city a served pincode may name", async () => {
@@ -168,15 +168,14 @@ describe("a zone", () => {
   });
 
   it("is deleted only while nothing names it", async () => {
-    const named = await send("POST", "/api/zones/NCR/delete");
+    const named = await send("DELETE", "/api/zones/NCR");
     expect(named.status).toBe(409);
     expect(await named.json()).toMatchObject({ error: { code: "in_use" } });
     await send("POST", "/api/zones", { name: "Deccan" });
-    const deleted = await send("POST", "/api/zones/Deccan/delete");
-    expect(deleted.status).toBe(200);
-    expect(await deleted.json()).toEqual({ zones: ["NCR"] });
+    expect((await send("DELETE", "/api/zones/Deccan")).status).toBe(204);
+    expect(await env.DB.prepare("SELECT name FROM zones").all()).toMatchObject({ results: [{ name: "NCR" }] });
     expect((await auditFor("zone.delete")).results).toEqual([expect.objectContaining({ subject_id: "Deccan" })]);
-    expect((await send("POST", "/api/zones/Deccan/delete")).status).toBe(404);
+    expect((await send("DELETE", "/api/zones/Deccan")).status).toBe(404);
   });
 });
 

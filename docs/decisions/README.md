@@ -315,6 +315,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0237](0237-every-list-sorts.md) Every list sorts, a long one narrows, and its heads stand over their figures
 - [0238](0238-third-design-pass.md) Third design pass: one home, the chat's column, a record's facts beside its head, Inventory's one row of tabs
 - [0282](0282-tasks-chosen-together.md) Tasks chosen together, and the keys a desk moves by
+- [0283](0283-changed-and-deleted-while-unused.md) What ops configure is changed, and deleted while nothing uses it
 
 ## Every decision, oldest first
 

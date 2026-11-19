@@ -5,14 +5,14 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
+import { aPerson } from "../fixtures/index.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { POST, auditFor } from "./ops-settings-fixtures.ts";
 import { enforce, listStaff, opsAs, person } from "./staff-fixtures.ts";
 
 let ops: App;
 
-const remove = (app: App, pin: string) =>
-  request(app, `/api/pincodes/${pin}/delete`, { method: "POST", headers: POST });
+const remove = (app: App, pin: string) => request(app, `/api/pincodes/${pin}`, { method: "DELETE", headers: POST });
 
 const deletable = async () =>
   (await (await request(ops, "/api/service-area")).json<{ pincodes: { pincode: string; deletable: boolean }[] }>())
@@ -26,13 +26,11 @@ const pincode = (pin: string, city: string, served: number) =>
 beforeEach(async () => {
   await markDatabase();
   ops = appFor("local", fakeDependencies(), {}, "ops");
+  await aPerson({ id: "p1", contactable: 1 });
   await env.DB.batch([
     pincode("110001", "Delhi", 1),
     pincode("110017", "Delhi", 0),
     pincode("122018", "Gurgaon", 0),
-    env.DB.prepare(
-      "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p1', ?1, '+919810000001', 'Someone', 1)",
-    ).bind(NOW.toISOString()),
     env.DB.prepare(
       `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, created_at)
        VALUES ('wl-1', '110017', 'p1', ?1, ?1)`,

@@ -3540,7 +3540,7 @@ Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`, `0146_ve
 | `photo_id` | TEXT | yes |  |  |  |
 | `books_credit_id` | TEXT | yes |  |  | Vendor credits in Zoho Books (docs/decisions/0171-vendor-credits.md): each claim settled as a credit made a vendor credit on its supplier's vendor, once, tried again an hour after a failure. |
 | `books_checked_at` | TEXT | yes |  |  |  |
-| `failed_points` | TEXT | yes |  |  | A JSON array of the points failed (src/policy/receipt-checks.ts); null for any other claim, or one made before. |
+| `failed_points` | TEXT | yes |  |  | A JSON array of the IDs of the checks failed (src/domain/purchasing/qc-points.ts); null for any other claim, or one made before. |
 | `failed_point_names` | TEXT | yes |  |  | A JSON array of the points' names as they read when the claim was drafted; null where failed_points is. |
 
 Indexes:

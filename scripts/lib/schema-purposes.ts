@@ -327,6 +327,8 @@ export const PATHS_MOVED: Readonly<Record<string, string>> = Object.fromEntries(
 
 /** A column whose migration's note no longer says what it is today, in today's words. */
 export const NOTES_NOW: Readonly<Record<string, string>> = {
+  "supplier_claims.failed_points":
+    "A JSON array of the IDs of the checks failed (src/domain/purchasing/qc-points.ts); null for any other claim, or one made before.",
   "stock_balances.place": "'central' for the central store; for a technician's kit, their ID.",
   "technicians.mobile_e164":
     "The technician's own number, as ops keep it on the Technicians page, which they sign in with by a one-time code, " +

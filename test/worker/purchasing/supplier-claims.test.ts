@@ -220,7 +220,10 @@ describe("a hair system's failed check", () => {
     // Renamed after, the claim reads as it did; named by a claim, the check is switched off, never deleted.
     expect((await setPoint("density", { name: "Hair density", checked: true })).status).toBe(200);
     expect((await claims()).claims.find((each) => each.id === claim?.id)?.failed_points).toEqual(failedOn);
-    const deleted = await job.opsPost("/api/qc-points/density/delete");
+    const deleted = await request(job.ops, "/api/qc-points/density", {
+      method: "DELETE",
+      headers: { Origin: "https://maneman.test" },
+    });
     expect(deleted.status).toBe(409);
     expect(await codeOf(deleted)).toMatchObject({ code: "in_use" });
   });

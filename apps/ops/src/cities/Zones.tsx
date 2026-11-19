@@ -55,10 +55,10 @@ function ZoneForm({ onAdded, onCancel }: { onAdded: () => Promise<void>; onCance
   );
 }
 
-/** A zone's record: its name, changed in place, and, while no city is in it, the way to delete it. */
+/** A zone's record: its name, changed in place, and, while nothing names it, the way to delete it. */
 function ZoneRecord(props: {
   readonly zone: string;
-  readonly cities: number;
+  readonly deletable: boolean;
   readonly mayChange: boolean;
   readonly onRenamed: (name: string) => Promise<void>;
   readonly onDeleted: () => Promise<void>;
@@ -82,7 +82,7 @@ function ZoneRecord(props: {
       </div>
       {mayChange && (
         <div className={form.recordFoot}>
-          {props.cities === 0 ? (
+          {props.deletable ? (
             <DeleteAction
               name={zone}
               send={() => citiesApi.deleteZone(zone)}
@@ -112,7 +112,7 @@ function OpenedZone(props: {
     <FormDrawer title={zone} onClose={props.onClose}>
       <ZoneRecord
         zone={zone}
-        cities={cities.cities.filter((city) => city.zone === zone).length}
+        deletable={cities.deletable_zones.includes(zone)}
         mayChange={props.mayChange}
         onRenamed={props.onRenamed}
         onDeleted={props.onDeleted}

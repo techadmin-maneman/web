@@ -6,9 +6,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { enterOnVisit } from "../../../src/domain/money/discount-code-visits.ts";
 import { makeCodes } from "../../../src/domain/money/discount-codes.ts";
 import type { App } from "../../../src/http/context.ts";
+import { aVisit } from "../fixtures/index.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
-const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
 const OPS = { kind: "ops", actor: { kind: "staff", id: "ops@localhost" } } as const;
 
@@ -63,15 +63,7 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   ops = appFor("local", fakeDependencies(), {}, "ops");
-  await env.DB.batch([
-    env.DB.prepare(
-      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810000001', 'Rohit Malhotra')",
-    ).bind(PERSON, NOW.toISOString()),
-    env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, synced_at)
-       VALUES (?1, ?1, ?2, 'service', 'standard', 'scheduled', '2026-09-23T04:30:00.000Z', '2026-09-23T06:00:00.000Z', ?3)`,
-    ).bind(VISIT, PERSON, NOW.toISOString()),
-  ]);
+  await aVisit({ id: VISIT, window_start: "2026-09-23T04:30:00.000Z" });
 });
 
 describe("Settings · Discount codes, a code's terms changed", () => {

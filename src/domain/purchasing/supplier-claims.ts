@@ -37,12 +37,12 @@ export interface SupplierClaim {
 }
 
 /**
- * The names of the points in `ids`, a JSON array of their IDs, as they read now, in its order; null for null. A claim
- * keeps them so; one drafted before it kept names reads them this way.
+ * Of the points in `ids`, a JSON array of their IDs, those still held, as a JSON array of their `column` in its order;
+ * null where none is. A claim keeps their IDs and names so: a check deleted while its receipt was saved is left off.
  */
-const namesOf = (ids: string): string =>
-  `CASE WHEN ${ids} IS NULL THEN NULL ELSE (SELECT json_group_array(q.name)
-     FROM (SELECT q.name FROM json_each(${ids}) j JOIN qc_points q ON q.id = j.value ORDER BY j.key) q) END`;
+const heldPoints = (ids: string, column: "id" | "name"): string =>
+  `(SELECT NULLIF(json_group_array(h.${column}), '[]')
+     FROM (SELECT q.${column} FROM json_each(${ids}) j JOIN qc_points q ON q.id = j.value ORDER BY j.key) h)`;
 
 /** How many settled claims the list shows after every open one. */
 const SETTLED_SHOWN = 50;
@@ -73,7 +73,7 @@ export function receiptClaimStatements(
         `INSERT INTO supplier_claims (id, number, supplier_id, consumable_code, quantity, reason, receipt_line_id,
            unit_price, currency, state, drafted_by, drafted_at, failed_points, failed_point_names)
          SELECT ?1, ${freshNumber("supplier_claims", "?8")}, o.supplier_id, p.consumable_code, ?2, ?3, ?4, p.unit_price,
-           o.currency, 'drafted', ?5, ?6, ?9, ${namesOf("?9")}
+           o.currency, 'drafted', ?5, ?6, ${heldPoints("?9", "id")}, ${heldPoints("?9", "name")}
          FROM po_lines p JOIN purchase_orders o ON o.id = p.po_id WHERE p.id = ?7`,
       )
       .bind(
@@ -117,7 +117,7 @@ type ClaimRow = {
 export async function supplierClaims(db: D1Database): Promise<SupplierClaim[]> {
   const columns = `k.id, k.number, k.supplier_id, k.consumable_code, c.name, k.quantity, k.reason, o.number AS order_number,
     u.code AS piece_code, k.unit_price, k.currency, k.state, k.outcome, k.credit_amount, k.note, k.drafted_at, k.sent_at,
-    k.decided_at, k.photo_id, COALESCE(k.failed_point_names, ${namesOf("k.failed_points")}) AS failed_points`;
+    k.decided_at, k.photo_id, COALESCE(k.failed_point_names, ${heldPoints("k.failed_points", "name")}) AS failed_points`;
   const joins = `JOIN consumables c ON c.code = k.consumable_code JOIN receipt_lines l ON l.id = k.receipt_line_id
     JOIN receipts r ON r.id = l.receipt_id JOIN purchase_orders o ON o.id = r.po_id
     LEFT JOIN stock_units u ON u.id = k.unit_id`;

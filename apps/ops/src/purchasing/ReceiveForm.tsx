@@ -84,10 +84,10 @@ const boxesOf = (order: Order): string[] => [
 /** Words for the box the API refused, if it is this one. */
 type Refused = (box: string) => string | null;
 
-/** The checks a hair system's failed pieces failed, each ticked: those ops make, in their order. */
 /** A check ops make, as the order list names it. */
 type Check = Orders["receipt_checks"][number];
 
+/** The checks a hair system's failed pieces failed, each ticked: those ops make, in their order. */
 function FailedPoints(props: { checks: readonly Check[]; draft: LineDraft; onDraft: (draft: LineDraft) => void }) {
   const { draft, onDraft } = props;
   return (

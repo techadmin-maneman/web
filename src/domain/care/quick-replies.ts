@@ -49,7 +49,6 @@ export async function addQuickReply(
   return { id, title: change.title, text: change.text };
 }
 
-/** Takes an answer off the list; false for one not on it. */
 /** An answer still on the list, its title and words changed; null for one not on it. */
 export async function changeQuickReply(
   db: D1Database,
@@ -77,6 +76,7 @@ export async function changeQuickReply(
   return changed?.meta.changes === 1 ? { id: change.id, title: change.title, text: change.text } : null;
 }
 
+/** Takes an answer off the list; false for one not on it. */
 export async function retireQuickReply(db: D1Database, change: Change & { readonly id: string }): Promise<boolean> {
   const listed = await db
     .prepare("SELECT 1 FROM quick_replies WHERE id = ?1 AND retired_at IS NULL")

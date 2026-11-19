@@ -62,8 +62,8 @@ const changeRoute = opsRoute({
 });
 
 const deleteRoute = opsRoute({
-  method: "post",
-  path: "/api/qc-points/{id}/delete",
+  method: "delete",
+  path: "/api/qc-points/{id}",
   summary: "A point deleted, while no claim names it",
   request: { params: IdParam },
   responses: {

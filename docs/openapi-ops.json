@@ -17412,6 +17412,13 @@
               "type": "string"
             }
           },
+          "deletable_zones": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The zones nothing names, which may be deleted."
+          },
           "registrations": {
             "type": "array",
             "items": {
@@ -17498,6 +17505,7 @@
         "required": [
           "cities",
           "zones",
+          "deletable_zones",
           "registrations",
           "rules",
           "rule_names",
@@ -51835,8 +51843,8 @@
         }
       }
     },
-    "/api/pincodes/{pin}/delete": {
-      "post": {
+    "/api/pincodes/{pin}": {
+      "delete": {
         "summary": "A pincode deleted, while we do not go there and no client, visit, waitlist or launch names it",
         "parameters": [
           {
@@ -52413,10 +52421,8 @@
             }
           }
         }
-      }
-    },
-    "/api/cities/{name}/delete": {
-      "post": {
+      },
+      "delete": {
         "summary": "A city deleted, its own prices and rules with it, while nothing else names it",
         "parameters": [
           {
@@ -53751,10 +53757,8 @@
             }
           }
         }
-      }
-    },
-    "/api/zones/{name}/delete": {
-      "post": {
+      },
+      "delete": {
         "summary": "A zone deleted, while no city, stock place, technician or staff grant names it",
         "parameters": [
           {
@@ -53769,15 +53773,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "The zones as they now stand, in order",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Zones"
-                }
-              }
-            }
+          "204": {
+            "description": "Deleted"
           },
           "400": {
             "description": "invalid_request",
@@ -54487,10 +54484,8 @@
             }
           }
         }
-      }
-    },
-    "/api/qc-points/{id}/delete": {
-      "post": {
+      },
+      "delete": {
         "summary": "A point deleted, while no claim names it",
         "parameters": [
           {

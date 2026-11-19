@@ -238,7 +238,8 @@ export async function listCodes(db: D1Database, now: Date, find: string | null):
          (${PAID_ON_USE} WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS paid,
          (SELECT MAX(u.created_at) FROM discount_code_uses u
            WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS last_used,
-         NOT EXISTS (SELECT 1 FROM discount_code_uses u WHERE u.code_id = c.id) AS deletable
+         NOT EXISTS (SELECT 1 FROM discount_code_uses u WHERE u.code_id = c.id)
+           AND NOT EXISTS (SELECT 1 FROM referral_channels r WHERE r.discount_code_id = c.id) AS deletable
        FROM discount_codes c WHERE ?2 IS NULL OR (c.code >= ?2 AND c.code < ?4)
        ORDER BY c.created_at DESC, c.code LIMIT ?3`,
     )

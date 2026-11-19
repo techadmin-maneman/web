@@ -17475,7 +17475,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/pincodes/{pin}/delete": {
+    "/api/pincodes/{pin}": {
         parameters: {
             query?: never;
             header?: never;
@@ -17484,8 +17484,9 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        post?: never;
         /** A pincode deleted, while we do not go there and no client, visit, waitlist or launch names it */
-        post: {
+        delete: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -17577,7 +17578,6 @@ export interface paths {
                 };
             };
         };
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -17727,7 +17727,99 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** A city deleted, its own prices and rules with it, while nothing else names it */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    name: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such city */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description in_use: a client, visit, pincode, technician, stock or staff access names it */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "in_use";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         /** A city changed; a new name moves every row that names it, in one batch */
@@ -17831,114 +17923,6 @@ export interface paths {
                 };
             };
         };
-        trace?: never;
-    };
-    "/api/cities/{name}/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** A city deleted, its own prices and rules with it, while nothing else names it */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    name: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Deleted */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description invalid_request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "invalid_request";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "access_required" | "not_permitted";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description not_found: no such city */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "not_found";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description in_use: a client, visit, pincode, technician, stock or staff access names it */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "in_use";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/cities/{name}/rules/{rule}": {
@@ -18508,7 +18492,99 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** A zone deleted, while no city, stock place, technician or staff grant names it */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    name: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no zone goes by that name */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description in_use: a city, stock place, technician or staff grant names it */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "in_use";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         /** A zone renamed: its cities, stock places, technicians and the staff grants over it follow, in one batch */
@@ -18610,116 +18686,6 @@ export interface paths {
                 };
             };
         };
-        trace?: never;
-    };
-    "/api/zones/{name}/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** A zone deleted, while no city, stock place, technician or staff grant names it */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    name: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The zones as they now stand, in order */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Zones"];
-                    };
-                };
-                /** @description invalid_request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "invalid_request";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "access_required" | "not_permitted";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description not_found: no zone goes by that name */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "not_found";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description in_use: a city, stock place, technician or staff grant names it */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "in_use";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/zones": {
@@ -18962,7 +18928,99 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** A point deleted, while no claim names it */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description in_use: a claim names it; switch it off instead */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "in_use";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         /** A point renamed, or switched on or off; claims already drafted keep the name they read */
@@ -19064,114 +19122,6 @@ export interface paths {
                 };
             };
         };
-        trace?: never;
-    };
-    "/api/qc-points/{id}/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** A point deleted, while no claim names it */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Deleted */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description invalid_request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "invalid_request";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "access_required" | "not_permitted";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description not_found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "not_found";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-                /** @description in_use: a claim names it; switch it off instead */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"] & ({
-                            error: {
-                                /** @enum {string} */
-                                code: "in_use";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        } & {
-                            [key: string]: unknown;
-                        });
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/slot-times": {
@@ -31507,6 +31457,8 @@ export interface components {
         Cities: {
             cities: components["schemas"]["ListedCity"][];
             zones: string[];
+            /** @description The zones nothing names, which may be deleted. */
+            deletable_zones: string[];
             registrations: components["schemas"]["GstRegistration"][];
             rules: {
                 city: string;

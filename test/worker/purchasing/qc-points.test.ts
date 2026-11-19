@@ -56,10 +56,10 @@ describe("a check on a hair system that arrives", () => {
       expect.objectContaining({ subject_id: "label", detail: JSON.stringify({ checked: false }) }),
     ]);
 
-    expect((await send("POST", "/api/qc-points/label/delete")).status).toBe(204);
+    expect((await send("DELETE", "/api/qc-points/label")).status).toBe(204);
     expect(await env.DB.prepare("SELECT 1 FROM qc_points WHERE id = 'label'").first()).toBeNull();
     expect((await auditFor("qc_point.delete")).results).toEqual([expect.objectContaining({ subject_id: "label" })]);
-    expect((await send("POST", "/api/qc-points/label/delete")).status).toBe(404);
+    expect((await send("DELETE", "/api/qc-points/label")).status).toBe(404);
     expect((await send("PATCH", "/api/qc-points/label", { name: "Label", checked: true })).status).toBe(404);
   });
 });

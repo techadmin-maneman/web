@@ -15,6 +15,7 @@ CREATE TABLE qc_points (
 CREATE UNIQUE INDEX qc_points_by_name ON qc_points (lower(name));
 
 -- The five points the code held, each checked or not as Settings › Purchasing had it.
+-- backfill: five rows, each written to the table and its two indexes: 15 writes.
 INSERT INTO qc_points (id, name, sort, checked)
 SELECT
   p.column1,
@@ -30,9 +31,14 @@ FROM (
 -- A JSON array of the points' names as they read when the claim was drafted; null where failed_points is.
 ALTER TABLE supplier_claims ADD COLUMN failed_point_names TEXT;
 
--- backfill: each claim naming points takes their names as they read now, which are the code's own.
+-- backfill: each claim naming points takes their names as they read now, which are the code's own, in its order.
+-- Claims have named points only since migration 0224 (18 Nov 2026), so few exist anywhere, and none of supplier_claims'
+-- five indexes covers the column: one write a claim, well under 100.
 UPDATE supplier_claims
 SET failed_point_names = (
-  SELECT json_group_array(q.name) FROM json_each(supplier_claims.failed_points) j JOIN qc_points q ON q.id = j.value
+  SELECT json_group_array(h.name)
+  FROM (
+    SELECT q.name FROM json_each(supplier_claims.failed_points) j JOIN qc_points q ON q.id = j.value ORDER BY j.key
+  ) h
 )
 WHERE failed_points IS NOT NULL;

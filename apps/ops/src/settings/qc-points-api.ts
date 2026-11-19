@@ -10,5 +10,5 @@ export const qcPointsApi = {
   change: (id: string, change: { name: string; checked: boolean }) =>
     client.patch("/api/qc-points/{id}", { path: { id }, body: change }),
   /** A check no claim names, deleted. */
-  delete: (id: string) => client.post("/api/qc-points/{id}/delete", { path: { id } }),
+  delete: (id: string) => client.delete("/api/qc-points/{id}", { path: { id } }),
 };

@@ -415,7 +415,7 @@ export function auditStatementIfDeleted(
       }
     | { readonly table: "staff"; readonly column: "email"; readonly value: string }
     | { readonly table: "consumables"; readonly column: "code"; readonly value: string }
-    | { readonly table: "cities"; readonly column: "name"; readonly value: string }
+    | { readonly table: "cities" | "zones"; readonly column: "name"; readonly value: string }
     | { readonly table: "serviceable_pincodes"; readonly column: "pincode"; readonly value: string },
 ): D1PreparedStatement {
   return db

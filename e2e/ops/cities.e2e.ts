@@ -34,6 +34,7 @@ const BOOK = {
     { ...MUMBAI, technicians: 0, deletable: true },
   ],
   zones: ["NCR"],
+  deletable_zones: [],
   registrations: [],
   rules: [{ city: "Mumbai", rule: "checkin_radius_m", value: 400 }],
   rule_names: ["checkin_radius_m", "reminder_hour"],
@@ -185,9 +186,9 @@ test("lists each zone with its cities, and adds one as typed", async ({ page }) 
 // A zone could be added, never renamed or deleted.
 test("renames a zone from its record, and deletes one no city is in, but not one a city is in", async ({ page }) => {
   await open(page, {
-    "GET /api/cities": json({ ...BOOK, zones: ["NCR", "Deccan"] }),
+    "GET /api/cities": json({ ...BOOK, zones: ["NCR", "Deccan"], deletable_zones: ["Deccan"] }),
     "PATCH /api/zones/{name}": json({ zones: ["NCR", "Western"] }),
-    "POST /api/zones/{name}/delete": json({ zones: ["NCR"] }),
+    "DELETE /api/zones/{name}": empty(),
   });
   const zones = page.getByRole("region", { name: copy.zones.panel });
   await zones.getByRole("button", { name: "NCR", exact: true }).click();
@@ -210,7 +211,9 @@ test("renames a zone from its record, and deletes one no city is in, but not one
   await zones.getByRole("button", { name: "Deccan", exact: true }).click();
   const again = page.getByRole("dialog", { name: "Deccan" });
   await again.getByRole("button", { name: deleting.label("Deccan") }).click();
-  const deleted = page.waitForRequest((request) => request.url().endsWith("/api/zones/Deccan/delete"));
+  const deleted = page.waitForRequest(
+    (request) => request.method() === "DELETE" && request.url().endsWith("/api/zones/Deccan"),
+  );
   await again.getByRole("button", { name: deleting.confirm, exact: true }).click();
   await deleted;
   await expect(page.getByRole("status").filter({ hasText: copy.zones.deleted })).toBeVisible();
@@ -221,7 +224,7 @@ test("deletes a city nothing names from its record, and offers no delete on one 
   let deleted = false;
   const left = { ...BOOK, cities: BOOK.cities.filter((city) => city.name !== "Mumbai") };
   await open(page, {
-    "POST /api/cities/Mumbai/delete": (route) => {
+    "DELETE /api/cities/Mumbai": (route) => {
       deleted = true;
       return empty()(route);
     },

@@ -18,7 +18,7 @@
 // whoever waits there and asked to be told is told, once
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { deletablePincodes } from "./pincode-delete.ts";
+import { deletablePincodes, pincodeDeletable } from "./pincode-delete.ts";
 import { indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { isLaunchInFuture } from "../../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
@@ -423,7 +423,7 @@ export async function addPincode(
     waiting: waiting.waiting,
     to_alert: waiting.alerts,
     paused_until: null,
-    deletable: (await deletablePincodes(db)).has(pincode.pincode),
+    deletable: await pincodeDeletable(db, pincode.pincode),
   };
 }
 

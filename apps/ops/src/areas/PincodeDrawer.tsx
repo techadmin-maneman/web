@@ -34,7 +34,7 @@ export function PincodeDrawer({
   onClose: () => void;
 }) {
   const id = pincode.pincode;
-  const mayDelete = useAccess().mayCall("POST /api/pincodes/{pin}/delete");
+  const mayDelete = useAccess().mayCall("DELETE /api/pincodes/{pin}");
   const [next, setNext] = useState(row);
   const [refused, setRefused] = useState<string | null>(null);
   return (

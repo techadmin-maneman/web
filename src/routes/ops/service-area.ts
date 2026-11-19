@@ -65,8 +65,8 @@ const addPincodeRoute = opsRoute({
 });
 
 const deletePincodeRoute = opsRoute({
-  method: "post",
-  path: "/api/pincodes/{pin}/delete",
+  method: "delete",
+  path: "/api/pincodes/{pin}",
   summary: "A pincode deleted, while we do not go there and no client, visit, waitlist or launch names it",
   request: { params: z.object({ pin: z.string().regex(/^[1-8]\d{5}$/) }) },
   responses: {

@@ -3,6 +3,7 @@
 
 import { z } from "@hono/zod-openapi";
 import { addZone, deleteZone, renameZone, zoneNames } from "../../domain/cities/zones.ts";
+import { technicianZoneMoved } from "../../domain/dispatch/technician-roster.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -68,12 +69,12 @@ const renameZoneRoute = opsRoute({
 });
 
 const deleteZoneRoute = opsRoute({
-  method: "post",
-  path: "/api/zones/{name}/delete",
+  method: "delete",
+  path: "/api/zones/{name}",
   summary: "A zone deleted, while no city, stock place, technician or staff grant names it",
   request: { params: ZoneParams },
   responses: {
-    200: { description: "The zones as they now stand, in order", ...json(ZonesSchema) },
+    204: { description: "Deleted" },
     404: errorResponse("not_found: no zone goes by that name"),
     409: errorResponse("in_use: a city, stock place, technician or staff grant names it"),
   },
@@ -82,7 +83,8 @@ const deleteZoneRoute = opsRoute({
 export function registerOpsZones(app: App): void {
   app.openapi(renameZoneRoute, async (c) => {
     const audit = { surface: "ops", actor: actorOf(c), requestId: c.var.requestId } as const;
-    const change = { from: c.req.valid("param").name, to: c.req.valid("json").name };
+    const [from, to] = [c.req.valid("param").name, c.req.valid("json").name];
+    const change = { from, to, technicians: technicianZoneMoved(c.env.DB, from, to) };
     const renamed = await renameZone(c.env.DB, change, audit, c.var.deps.now());
     if (renamed === "not_found") return refuse(c, "not_found");
     if (renamed === "taken") return refuse(c, "taken", ["name"]);
@@ -93,7 +95,7 @@ export function registerOpsZones(app: App): void {
     const deleted = await deleteZone(c.env.DB, c.req.valid("param").name, audit, c.var.deps.now());
     if (deleted === "not_found") return refuse(c, "not_found");
     if (deleted === "in_use") return refuse(c, "in_use");
-    return c.json({ zones: await zoneNames(c.env.DB) }, 200);
+    return c.body(null, 204);
   });
   app.openapi(addZoneRoute, async (c) => {
     const { name } = c.req.valid("json");

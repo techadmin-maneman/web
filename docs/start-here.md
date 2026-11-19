@@ -117,7 +117,7 @@ this map, or when the map names something that no longer exists.
 
 ### Purchasing: suppliers, orders and the supply plan
 
-- **Database work** (`src/domain/purchasing/`): `suppliers`, `purchase-orders`, `letterhead`, `receipts`, `supplier-claims`,
+- **Database work** (`src/domain/purchasing/`): `suppliers`, `purchase-orders`, `letterhead`, `receipts`, `qc-points` (the checks on a hair system that arrives), `supplier-claims`,
   `supplier-scorecard`, `custom-orders`, `custom-order-po`, `forecast`, `forecast-layers`, `forecast-accuracy`,
   `supply-plan`, `supply-plan-lines`, `demand-events`, `stock-demand`
 - **Routes** (`src/routes/`): `ops/suppliers`, `ops/purchasing`, `ops/purchasing.receipts`, `ops/purchasing.claims`,
@@ -132,7 +132,7 @@ this map, or when the map names something that no longer exists.
   client is), `city-changes` (a city added, changed or renamed), `city-rules` (the rules a city sets for itself),
   `gst-registrations` (a state's registration, and what supplies a visit), `served-cities` (the cities and areas the
   public site says it comes to), `pincode-centres` (each pincode's centre, placed hourly), `zones` (the zones that
-  group cities, and one added)
+  group cities, one added, renamed or deleted), `city-delete` (a city nothing uses, deleted with its own settings)
 - **Rules** (`src/policy/`): `city-settings`
 - **Data** (`src/config/`): `gst`
 - **Routes** (`src/routes/`): `ops/cities`
@@ -175,7 +175,7 @@ this map, or when the map names something that no longer exists.
 ### Clients
 
 - **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-package` (the package a client is on), `worn-hair-system` (the hair system a client wears, and when its replacement opens), `client-notes`, `staff-notes` (staff's notes on a client), `client-alerts` (what every technician reads before they start), `app-alerts` (the client's own alerts in their app, and the pushes telling it), `handoff-notes` (the note left for the next technician),
-  `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`,
+  `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`, `pincode-delete` (a pincode added by mistake, deleted while nothing names it),
   `pincode-directory` (India Post's pincodes, which ops open a city from), `pincode-launches` (launches scheduled for
   a later day), `launch-runs` (those due, served by the cron on the day), `pincode-reach` (a city's
   technicians, their reach from home, and its pincodes with whoever reaches each), `pincode-demand` (lookups where we

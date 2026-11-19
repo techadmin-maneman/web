@@ -6,7 +6,8 @@ import { z } from "@hono/zod-openapi";
 import { GSTIN_FORMAT, STATE_CODE_FORMAT } from "../../config/gst.ts";
 import { addCity, changeCity, type CityFields } from "../../domain/cities/city-changes.ts";
 import { allCities, cityNamed, techniciansByCity } from "../../domain/cities/cities.ts";
-import { deletableCities, deleteCity } from "../../domain/cities/city-delete.ts";
+import { deletableCities } from "../../domain/cities/city-delete.ts";
+import { deletableZones } from "../../domain/cities/zones.ts";
 import { cityPrices, setCityPrice, withdrawCityPrice } from "../../domain/money/city-prices.ts";
 import { cityRules, setCityRule } from "../../domain/cities/city-rules.ts";
 import { removeRegistration, setRegistration, stateRegistrations } from "../../domain/cities/gst-registrations.ts";
@@ -97,6 +98,9 @@ const citiesRoute = opsRoute({
               }).openapi("ListedCity"),
             ),
             zones: z.array(z.string()),
+            deletable_zones: z
+              .array(z.string())
+              .openapi({ description: "The zones nothing names, which may be deleted." }),
             registrations: z.array(RegistrationSchema),
             rules: z.array(z.object({ city: z.string(), rule: z.enum(CITY_SETTING_NAMES), value: RuleValue }).strict()),
             rule_names: z.array(z.enum(CITY_SETTING_NAMES)).openapi({ description: "The rules a city may set." }),
@@ -143,18 +147,6 @@ const changeRoute = opsRoute({
     400: errorResponse("invalid_request: fields names what was refused, zone where it is none of ours"),
     404: errorResponse("not_found: no such city"),
     409: errorResponse("taken: another city has the new name"),
-  },
-});
-
-const deleteRoute = opsRoute({
-  method: "post",
-  path: "/api/cities/{name}/delete",
-  summary: "A city deleted, its own prices and rules with it, while nothing else names it",
-  request: { params: NameParam },
-  responses: {
-    204: { description: "Deleted" },
-    404: errorResponse("not_found: no such city"),
-    409: errorResponse("in_use: a client, visit, pincode, technician, stock or staff access names it"),
   },
 });
 
@@ -320,6 +312,7 @@ export function registerOpsCities(app: App): void {
           deletable: deletable.has(city.name),
         })),
         zones: zones.results.map((row) => row.name),
+        deletable_zones: await deletableZones(db),
         registrations,
         rules: ruleRows,
         rule_names: [...CITY_SETTING_NAMES],
@@ -359,11 +352,6 @@ function registerCityChanges(app: App): void {
     if (changed === "held") return refuse(c, "taken");
     if (changed === "not_found") return refuse(c, "not_found");
     return c.json({ city: changed }, 200);
-  });
-
-  app.openapi(deleteRoute, async (c) => {
-    const deleted = await deleteCity(c.env.DB, c.req.valid("param").name, auditOf(c), c.var.deps.now());
-    return deleted === "deleted" ? c.body(null, 204) : refuse(c, deleted);
   });
 }
 
