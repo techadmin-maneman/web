@@ -37,6 +37,9 @@ export const PROBLEM_PHOTOS_MAX = 3;
 /** How a report is shown: "MM-ISS-0032". */
 export const reportReference = (n: number): string => `MM-ISS-${String(n).padStart(4, "0")}`;
 
+/** reportReference in SQL, for a statement that writes the reference beside the number it takes: `number` its column. */
+export const reportReferenceSql = (number: string): string => `'MM-ISS-' || printf('%04d', ${number})`;
+
 /** A reference back to its number; null for anything else. */
 export function reportNumberOf(reference: string): number | null {
   const match = /^MM-ISS-(\d{4,})$/.exec(reference);

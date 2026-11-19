@@ -7,7 +7,8 @@ import { reportProblem } from "../../domain/care/app-reports.ts";
 import { takeOne } from "../../domain/sign-in/rate-limit.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
-import { errorResponse, refuse } from "../../http/errors.ts";
+import { errorResponse } from "../../http/errors.ts";
+import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../../http/idempotency.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientRoute } from "../../http/session-routes.ts";
@@ -34,7 +35,7 @@ const problemRoute = clientRoute({
   method: "post",
   path: "/api/me/problems",
   summary: "Tell Care something is wrong: answered with the report's reference for the issue log",
-  request: { body: { required: true, ...json(ProblemSchema) } },
+  request: { headers: IdempotencyKeyHeaderSchema, body: { required: true, ...json(ProblemSchema) } },
   responses: {
     201: {
       description: "Filed for Care, who answer in the app and on WhatsApp",
@@ -51,6 +52,8 @@ const problemRoute = clientRoute({
     400: errorResponse(`invalid_request: empty, or over ${String(PROBLEM_MAX_CHARS)} characters`),
     401: errorResponse("session_required"),
     404: errorResponse("not_found: no visit of this client's"),
+    409: errorResponse("idempotency_in_progress: the first report with this key is still being filed"),
+    422: errorResponse("idempotency_key_reused: the key came before with a different report"),
     429: errorResponse(`rate_limited: ${String(PROBLEMS_PER_DAY)} a day`),
   },
 });
@@ -61,24 +64,28 @@ export function registerClientProblems(app: App): void {
     const db = c.env.DB;
     const now = c.var.deps.now();
     const body = c.req.valid("json");
-    const mobile = await db
-      .prepare("SELECT mobile_e164 FROM people WHERE id = ?1 AND erased_at IS NULL")
-      .bind(subjectId)
-      .first<string>("mobile_e164");
-    if (mobile === null) return refuse(c, "not_found");
-    if (!(await takeOne(db, "problem:person", subjectId, { now, settings: c.var.config.settings }))) {
-      return refuse(c, "rate_limited");
-    }
-    const report = {
-      personId: subjectId,
-      mobileE164: mobile,
-      category: categoryOf(body.about),
-      text: body.text,
-      at: now,
+    // A report sent again whose answer never came is answered with the first, not filed twice; the key is the
+    // client's own, so another's report under it is refused as a different one.
+    const keyed = {
+      route: "POST /api/me/problems",
+      key: c.req.valid("header")["idempotency-key"],
+      request: { person: subjectId, ...body },
     };
-    const { guaranteeDays } = await opsInputs(c);
-    const reported = await reportProblem(db, { ...report, visitId: body.visit_id, guaranteeDays });
-    if (reported === null) return refuse(c, "not_found");
-    return c.json({ state: "sent" as const, reference: reportReference(reported.number) }, 201);
+    const run = await onceForKey(c, keyed, async () => {
+      const mobile = await db
+        .prepare("SELECT mobile_e164 FROM people WHERE id = ?1 AND erased_at IS NULL")
+        .bind(subjectId)
+        .first<string>("mobile_e164");
+      if (mobile === null) return { ok: false as const, code: "not_found" as const };
+      if (!(await takeOne(db, "problem:person", subjectId, { now, settings: c.var.config.settings }))) {
+        return { ok: false as const, code: "rate_limited" as const };
+      }
+      const report = { personId: subjectId, mobileE164: mobile, category: categoryOf(body.about), text: body.text };
+      const { guaranteeDays } = await opsInputs(c);
+      const reported = await reportProblem(db, { ...report, at: now, visitId: body.visit_id, guaranteeDays });
+      if (reported === null) return { ok: false as const, code: "not_found" as const };
+      return { ok: true as const, body: { state: "sent" as const, reference: reportReference(reported.number) } };
+    });
+    return answerKeyed(c, run);
   });
 }

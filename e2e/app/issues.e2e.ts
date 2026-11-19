@@ -65,6 +65,44 @@ test("raises an issue about a visit, then updates it and says it is sorted, each
 
 const PHOTO = { name: "front.jpg", mimeType: "image/jpeg", buffer: readFileSync("design/assets/ba-after.jpg") };
 
+// A report sent again because its answer never came was filed twice; after one was filed, the same words were not.
+test("sends a report again under its own key where its answer never came, and the next report under a new one", async ({
+  page,
+}) => {
+  await logIn(page, fittedClient().mobile);
+  await page.getByRole("navigation", { name: appCopy.shell.tabsLabel }).waitFor();
+  const keys: (string | null)[] = [];
+  await page.route("**/api/me/problems", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    keys.push(await route.request().headerValue("idempotency-key"));
+    // The first send's answer never comes; each after it is filed, as the API answers.
+    if (keys.length === 1) return route.abort("failed");
+    return route.fulfill({ status: 201, json: { state: "sent", reference: `MM-ISS-90${String(keys.length)}0` } });
+  });
+  const raise = async () => {
+    await page.evaluate(() => {
+      window.history.pushState(null, "", "/visits/issues/new");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await page.getByRole("radio", { name: appCopy.ISSUE_CATEGORIES.itching }).click();
+    await page.getByRole("textbox", { name: copy.raise.what }).fill("It itches along the hairline.");
+  };
+  await raise();
+  const send = page.getByRole("button", { name: copy.raise.send });
+  await send.click();
+  await expect(page.getByText(copy.raise.failed)).toBeVisible();
+  await send.click();
+  await expect(page).toHaveURL(/\/visits\/issues\/MM-ISS-9020$/);
+
+  // The same words again, in the same visit to the app: a report of their own.
+  await raise();
+  await page.getByRole("button", { name: copy.raise.send }).click();
+  await expect(page).toHaveURL(/\/visits\/issues\/MM-ISS-9030$/);
+  expect(keys[0]).toMatch(/^[0-9a-f-]{36}$/);
+  expect(keys[1]).toBe(keys[0]);
+  expect(keys[2]).not.toBe(keys[0]);
+});
+
 test("says on the issue's page that a photo didn't upload, until one is added there", async ({ page }) => {
   await logIn(page, fittedClient().mobile);
   await page.getByRole("navigation", { name: appCopy.shell.tabsLabel }).waitFor();

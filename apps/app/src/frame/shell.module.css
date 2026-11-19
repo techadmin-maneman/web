@@ -199,7 +199,11 @@
     border-left: var(--rule-strong) solid var(--tab-mark);
   }
 
-  .noTabs .header {
-    padding-inline: var(--sp-32);
+  /* A page with no tabs keeps the phone's column, centred, its head and its action with it, rather than running the
+     frame's width with its labels and values far apart. */
+  .noTabs :is(.header, .status, .page, .footer) {
+    width: 100%;
+    max-width: var(--app-column-max);
+    margin-inline: auto;
   }
 }

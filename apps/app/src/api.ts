@@ -197,8 +197,8 @@ export const api = {
   dispute: (visitId: string, reason: string) =>
     client.post("/api/visits/{id}/dispute", { path: { id: visitId }, body: { reason } }),
   /** Something wrong, told to Care: answered with the report's reference (docs/decisions/0259-the-issue-log.md). */
-  reportProblem: (body: { about: ProblemAbout; visit_id: string | null; text: string }) =>
-    client.post("/api/me/problems", { body }),
+  reportProblem: (body: { about: ProblemAbout; visit_id: string | null; text: string }, key: string) =>
+    client.post("/api/me/problems", { body, headers: { "Idempotency-Key": key } }),
   /** The client's ask for a hair system made to their size, which ops order (ADR 0253, decision 6). */
   askToOrder: (type: "first_fit" | "replacement", tier: string) =>
     client.post("/api/me/made-to-order", { body: { type, tier } }),

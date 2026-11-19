@@ -32,18 +32,19 @@
 }
 
 /* A screen on the ink frame (./frame.module.css) drawn in the new look: a job that did not load (./JobFailed.tsx), the
-   close-out (../steps/CloseOut.tsx). Its ground and words, and the rules of its head and foot. */
-.paperScreen {
+   close-out (../steps/CloseOut.tsx). Its ground and words, and the rules of its head and foot. Each is named twice, so
+   it is drawn over the frame's ink whichever stylesheet comes first: the app loads in parts, which set that order. */
+.paperScreen.paperScreen {
   background: var(--ui-ground);
   color: var(--ui-text);
 }
 
-.paperHead {
+.paperHead.paperHead {
   border-bottom-color: var(--ui-line);
   color: var(--ui-text);
 }
 
-.paperFoot {
+.paperFoot.paperFoot {
   border-top-color: var(--ui-line);
 }
 
