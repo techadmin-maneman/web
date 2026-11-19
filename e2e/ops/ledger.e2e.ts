@@ -85,6 +85,20 @@ test("lists the days' payments, finds one by client, exports them, and shows the
   expect(text.split("\n")).toHaveLength(3);
 });
 
+// On a phone a column's sort was a 24 px tap.
+test("gives each column's sort a thumb's tap on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await answer(page, { "GET /api/payments/ledger": json(LEDGER) });
+  await page.goto("/ledger");
+  const payments = page.getByRole("region", { name: copy.payments.title, exact: true });
+  await expect(payments.getByRole("rowheader")).toHaveCount(2);
+  const heights = await payments
+    .locator("thead button")
+    .evaluateAll((sorts) => sorts.map((sort) => sort.getBoundingClientRect().height));
+  expect(heights.length).toBeGreaterThan(0);
+  expect(heights.filter((height) => height < 44)).toEqual([]);
+});
+
 // Finance own refunds but reach a client's page only with Customer Care's access: the refund is on the ledger's row.
 test("refunds what is left of a payment from its ledger row, with why", async ({ page }) => {
   const paid = LEDGER.payments[1];

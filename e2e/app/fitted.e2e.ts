@@ -46,7 +46,16 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(visits).toHaveCount(1);
   await expect(visits.nth(0)).toContainText(appCopy.VISIT_TYPES.service);
   await expect(visits.nth(0)).toContainText(/day · 12–12:30\spm · Imran/);
-  await page.getByRole("radio", { name: appCopy.visits.past }).click();
+  // The switch is drawn inside its track, as the design draws it, and answers a tap the control's 44 px tall.
+  const past = page.getByRole("radio", { name: appCopy.visits.past });
+  const box = await past.boundingBox();
+  const middle = { x: (box?.x ?? 0) + (box?.width ?? 0) / 2, y: (box?.y ?? 0) + (box?.height ?? 0) / 2 };
+  const hit = await page.evaluate(
+    ({ x, y }) => [y - 21, y + 21].map((edge) => document.elementFromPoint(x, edge)?.getAttribute("role") ?? null),
+    middle,
+  );
+  expect(hit).toEqual(["radio", "radio"]);
+  await past.click();
   await expect(visits).toHaveCount(3);
   // Each by its full date, over what it was and who did it.
   await expect(visits.nth(0)).toContainText(`${fullDate(client.service.date)}Service visit · Imran`);

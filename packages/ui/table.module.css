@@ -176,7 +176,7 @@
     white-space: nowrap;
   }
 
-  /* A column head that sorts: its name, in the head's own look, and the arrow of its order, a target 24 px tall. */
+  /* A column head that sorts: its name, in the head's own look, and the arrow of its order, a target 24 px tall at a desk. */
   .sort {
     display: inline-flex;
     align-items: center;
@@ -235,6 +235,11 @@
  * screen's column widths, room and unbroken lines give way to the card's.
  */
 @media (max-width: 600px) {
+  /* On a phone a column's sort takes a thumb's tap, as the rest of the page's controls do. */
+  .sort {
+    min-height: var(--tap);
+  }
+
   .table[data-cards],
   .table[data-cards] thead,
   .table[data-cards] tbody,
