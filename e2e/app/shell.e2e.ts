@@ -127,6 +127,25 @@ test("keeps a large phone's column short of a laptop, and a laptop's frame beyon
   }
 });
 
+// On a laptop the sign-in's field ran the frame's 980 px and its button sat 500 px below it; a visit's rows ran edge to edge.
+test("keeps the sign-in and a page without tabs in the phone's column on a laptop, the action under the field", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  const field = await page.getByRole("textbox", { name: appCopy.login.mobile.label }).boundingBox();
+  const send = await page.getByRole("button", { name: appCopy.login.mobile.send }).boundingBox();
+  expect(field?.width ?? 0).toBeLessThanOrEqual(480);
+  expect((send?.y ?? 0) - ((field?.y ?? 0) + (field?.height ?? 0))).toBeLessThan(160);
+
+  await home(page);
+  await page.getByRole("link", { name: appCopy.titles.profile }).click();
+  await page.getByRole("link", { name: appCopy.profileMenu.privacy }).click();
+  const main = await page.getByRole("main").boundingBox();
+  expect(main?.width ?? 0).toBeLessThanOrEqual(480);
+  expect(Math.round((main?.x ?? 0) * 2 + (main?.width ?? 0))).toBe(1440);
+});
+
 test("puts the tabs in a rail down the left on a laptop, each named beside its icon", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await home(page);
