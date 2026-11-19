@@ -171,6 +171,10 @@ export const care = {
     insertNextVisit: "Insert their next visit",
     add: "Add",
     addOne: "Add a quick reply",
+    /** A quick reply's own form, its title and words as they stand. */
+    change: (title: string) => `Change ${title}`,
+    changeOne: "Change the quick reply",
+    save: "Save",
     retiring: {
       open: "Retire",
       label: (title: string) => `Retire the quick reply ${title}`,
@@ -178,7 +182,13 @@ export const care = {
       confirm: "Retire",
       sending: "Retiring…",
     },
-    errors: { not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: changed("That quick reply is gone."),
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
   },
   /** The client beside their chat (docs/decisions/0140-the-client-panel.md). */
   panel: {

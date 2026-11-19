@@ -54,6 +54,7 @@ export const AUDIT_ACTIONS = [
   "care_name.set",
   "quick_reply.add",
   "quick_reply.retire",
+  "quick_reply.change",
   "remedy.give",
   "remedy.ask",
   "remedy.approve",

@@ -7,7 +7,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { actorOf } from "../../http/audit.ts";
-import { addQuickReply, quickReplies, retireQuickReply } from "../../domain/care/quick-replies.ts";
+import { addQuickReply, changeQuickReply, quickReplies, retireQuickReply } from "../../domain/care/quick-replies.ts";
 
 const QuickReplySchema = z
   .object({
@@ -47,6 +47,28 @@ const addRoute = opsRoute({
   responses: { 200: { description: "Added", ...json(QuickReplySchema) } },
 });
 
+const changeRoute = opsRoute({
+  method: "patch",
+  path: "/api/quick-replies/{id}",
+  summary: "A saved answer on the list, its title and words changed",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({ title: z.string().trim().min(1).max(60), text: z.string().trim().min(1).max(1000) })
+          .strict()
+          .openapi("QuickReplyChange"),
+      ),
+    },
+  },
+  responses: {
+    200: { description: "Changed", ...json(QuickReplySchema) },
+    404: errorResponse("not_found: no such answer on the list"),
+  },
+});
+
 const retireRoute = opsRoute({
   method: "post",
   path: "/api/quick-replies/{id}/retire",
@@ -66,6 +88,12 @@ export function registerOpsQuickReplies(app: App): void {
   app.openapi(addRoute, async (c) => {
     const { title, text } = c.req.valid("json");
     return c.json(await addQuickReply(c.env.DB, { ...changeOf(c), title, text }), 200);
+  });
+
+  app.openapi(changeRoute, async (c) => {
+    const { title, text } = c.req.valid("json");
+    const changed = await changeQuickReply(c.env.DB, { ...changeOf(c), id: c.req.valid("param").id, title, text });
+    return changed === null ? refuse(c, "not_found") : c.json(changed, 200);
   });
 
   app.openapi(retireRoute, async (c) => {

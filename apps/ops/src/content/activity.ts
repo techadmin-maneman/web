@@ -40,6 +40,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "care_name.set": "Care name set",
   "quick_reply.add": "Quick reply added",
   "quick_reply.retire": "Quick reply retired",
+  "quick_reply.change": "Quick reply changed",
   "remedy.give": "Remedy given",
   "remedy.ask": "Remedy sent for approval",
   "remedy.approve": "Remedy approved",

@@ -232,6 +232,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/remedies/{id}/decline": need("customer_care", "manage"),
   "POST /api/quick-replies": need("customer_care", "manage"),
   "POST /api/quick-replies/{id}/retire": need("customer_care", "manage"),
+  "PATCH /api/quick-replies/{id}": need("customer_care", "manage"),
   // The site's words and the WhatsApp messages (docs/decisions/0126-the-words-page.md).
   "GET /api/spend": need("growth", "view"),
   "GET /api/growth/funnel": need("growth", "view"),
