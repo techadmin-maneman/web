@@ -142,7 +142,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
     });
   });
 
-  // A number we know that books nothing hears what a new number would, its code included.
+  // A number we know that books nothing is told why, and the code it sent is neither checked nor used.
   it("tells a number with its visit to come that nothing was booked, and uses none of a code sent with it", async () => {
     await make();
     expect((await book({})).status).toBe(201);

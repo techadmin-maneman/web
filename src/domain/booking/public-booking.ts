@@ -147,8 +147,8 @@ export async function applyInvite(
 
 /**
  * What a new number is told of the invite it came with: its credits apply, unless it was held on the waitlist of an
- * area that launched more than 12 months ago. A number we know that books nothing, or joins a waitlist, is told the
- * same, whatever stands for it, so the page never says that a number is known.
+ * area that launched more than 12 months ago. A number we know that joins a waitlist, which asks no code, is told the
+ * same, whatever stands for it, so the waitlist never says that a number is known.
  */
 export function inviteAsForANewNumber(
   invite: AnyInvite | null,
