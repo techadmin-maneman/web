@@ -14,6 +14,9 @@ export const SITE_WORKER_PAGES = [
   "/offer-terms",
   "/r",
   "/r/*",
+  // A campaign link: a society activation's, and an offer's (docs/tracking.md).
+  "/s/*",
+  "/o/*",
   "/stop",
   "/terms",
   "/try",

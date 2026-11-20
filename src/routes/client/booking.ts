@@ -14,6 +14,7 @@ import { spendableCredits } from "../../domain/money/credits.ts";
 import { codeToCarry } from "../../domain/money/discount-code-uses.ts";
 import { enterOnHold } from "../../domain/money/discount-code-holds.ts";
 import { partnerCodeFor } from "../../domain/referrals/channels.ts";
+import { linkCodeFor } from "../../domain/growth/campaign-links.ts";
 import { keepShownConsents, recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
 import { acceptTerms } from "../../domain/privacy/terms-acceptances.ts";
 import {
@@ -292,7 +293,9 @@ export function registerClientBooking(app: App): void {
     });
     if (hold === null) return refuse(c, "taken");
     c.var.log.info("slot_held", { hold_id: hold.id, type, tier: service.tier, date, window });
-    if (type === "first_fit" && move === null && !useCredit) await enterPartnerCode(c, hold.id, personId, now);
+    if (type === "first_fit" && move === null && !useCredit) {
+      await enterPartnerCode(c, { holdId: hold.id, personId, pincode: address.pincode }, now);
+    }
     const held = await clientHold(c.env.DB, hold.id, personId, now);
     if (held === null) return refuse(c, "taken");
     return c.json(held, 201);
@@ -310,10 +313,17 @@ export function registerClientBooking(app: App): void {
 
 /**
  * A friend a partner sent finds the partner's code already on their first fit, entered as the pay step enters one;
- * where it no longer applies, the hold keeps its price (docs/decisions/0125-partner-discount-codes.md).
+ * where it no longer applies, the hold keeps its price (docs/decisions/0125-partner-discount-codes.md). A client a
+ * campaign link brought finds its code there the same way, where no partner's comes first (ADR 0288); one they type
+ * at the pay step takes the place of either.
  */
-async function enterPartnerCode(c: Context<AppEnv>, holdId: string, personId: string, now: Date): Promise<void> {
-  const text = await partnerCodeFor(c.env.DB, personId);
+async function enterPartnerCode(
+  c: Context<AppEnv>,
+  hold: { readonly holdId: string; readonly personId: string; readonly pincode: string },
+  now: Date,
+): Promise<void> {
+  const { holdId, personId } = hold;
+  const text = (await partnerCodeFor(c.env.DB, personId)) ?? (await linkCodeFor(c.env.DB, personId, hold.pincode));
   if (text === null) return;
   const entered = await enterOnHold(c.env.DB, c.var.deps.payments, { holdId, personId, text }, now);
   c.var.log.info("partner_code_entered", { hold_id: holdId, outcome: entered.kind });

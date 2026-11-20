@@ -19,6 +19,7 @@ export interface CityFields {
 export const CITY_COLUMNS: readonly (readonly [table: string, column: string])[] = [
   ["addresses", "city"],
   ["appointments", "service_city"],
+  ["campaign_links", "city"],
   ["city_blackouts", "city"],
   ["city_matters", "city"],
   ["city_prices", "city"],

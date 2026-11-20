@@ -64,12 +64,27 @@ interface Clicks {
   readonly wbraid: string | null;
 }
 
-const dueOf = (platform: Platform) => `SELECT c.event_id, c.event, c.subject_id, c.person_id, c.occurred_at,
-    c.value_paise, c.source_url, c.${platform}_tries AS tries, p.mobile_e164, p.name, p.test_record, p.erased_at,
+/** Each platform's sends falling due, the oldest first. */
+const DUE_META = `SELECT c.event_id, c.event, c.subject_id, c.person_id, c.occurred_at,
+    c.value_paise, c.source_url, c.meta_tries AS tries, p.mobile_e164, p.name, p.test_record, p.erased_at,
     pa.sharing_stopped_at
   FROM conversions c JOIN people p ON p.id = c.person_id LEFT JOIN person_attribution pa ON pa.person_id = c.person_id
-  WHERE c.${platform}_state = 'pending' AND c.${platform}_next_at <= ?1
-  ORDER BY c.${platform}_next_at LIMIT ?2`;
+  WHERE c.meta_state = 'pending' AND c.meta_next_at <= ?1
+  ORDER BY c.meta_next_at LIMIT ?2`;
+const DUE_GOOGLE = `SELECT c.event_id, c.event, c.subject_id, c.person_id, c.occurred_at,
+    c.value_paise, c.source_url, c.google_tries AS tries, p.mobile_e164, p.name, p.test_record, p.erased_at,
+    pa.sharing_stopped_at
+  FROM conversions c JOIN people p ON p.id = c.person_id LEFT JOIN person_attribution pa ON pa.person_id = c.person_id
+  WHERE c.google_state = 'pending' AND c.google_next_at <= ?1
+  ORDER BY c.google_next_at LIMIT ?2`;
+
+/** A send's outcome on its platform's columns, while it is still waiting. */
+const WRITE_META = `UPDATE conversions SET meta_state = ?2, meta_tries = meta_tries + ?3,
+    meta_error = ?4, meta_next_at = ?5, meta_sent_at = ?6
+  WHERE event_id = ?1 AND meta_state = 'pending'`;
+const WRITE_GOOGLE = `UPDATE conversions SET google_state = ?2, google_tries = google_tries + ?3,
+    google_error = ?4, google_next_at = ?5, google_sent_at = ?6
+  WHERE event_id = ?1 AND google_state = 'pending'`;
 
 /**
  * The browser's cookies, address and agent: the lead's own touch for a lead, else the client's latest that had any,
@@ -156,13 +171,14 @@ function written(
   const { platform, due, now } = send;
   const at = now.toISOString();
   const set = (state: string, error: string | null, next: string | null, sentAt: string | null) =>
-    db
-      .prepare(
-        `UPDATE conversions SET ${platform}_state = ?2, ${platform}_tries = ${platform}_tries + ?3,
-           ${platform}_error = ?4, ${platform}_next_at = ?5, ${platform}_sent_at = ?6
-         WHERE event_id = ?1 AND ${platform}_state = 'pending'`,
-      )
-      .bind(due.event_id, state, outcome.kind === "skipped" ? 0 : 1, error, next, sentAt);
+    (platform === "meta" ? db.prepare(WRITE_META) : db.prepare(WRITE_GOOGLE)).bind(
+      due.event_id,
+      state,
+      outcome.kind === "skipped" ? 0 : 1,
+      error,
+      next,
+      sentAt,
+    );
   if (outcome.kind === "skipped") return set("skipped", outcome.why, null, null);
   if (outcome.kind === "sent") return set("sent", null, null, at);
   const wait = WAITS_MINUTES[due.tries];
@@ -176,7 +192,8 @@ async function sendFor(
   sender: ConversionPlatform,
   run: { readonly now: Date; readonly budget: CallBudget; readonly log: Logger },
 ): Promise<Record<string, number>> {
-  const { results } = await db.prepare(dueOf(platform)).bind(run.now.toISOString(), PER_RUN).all<Due>();
+  const dueNow = platform === "meta" ? db.prepare(DUE_META) : db.prepare(DUE_GOOGLE);
+  const { results } = await dueNow.bind(run.now.toISOString(), PER_RUN).all<Due>();
   const counted: Record<string, number> = {};
   for (const due of results) {
     const why = notFor(platform, due, run.now);

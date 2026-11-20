@@ -239,7 +239,8 @@ export async function listCodes(db: D1Database, now: Date, find: string | null):
          (SELECT MAX(u.created_at) FROM discount_code_uses u
            WHERE u.code_id = c.id AND ${standing("u", "?1")}) AS last_used,
          NOT EXISTS (SELECT 1 FROM discount_code_uses u WHERE u.code_id = c.id)
-           AND NOT EXISTS (SELECT 1 FROM referral_channels r WHERE r.discount_code_id = c.id) AS deletable
+           AND NOT EXISTS (SELECT 1 FROM referral_channels r WHERE r.discount_code_id = c.id)
+           AND NOT EXISTS (SELECT 1 FROM campaign_links l WHERE l.discount_code_id = c.id) AS deletable
        FROM discount_codes c WHERE ?2 IS NULL OR (c.code >= ?2 AND c.code < ?4)
        ORDER BY c.created_at DESC, c.code LIMIT ?3`,
     )
@@ -303,7 +304,8 @@ export async function deleteCode(
     db
       .prepare(
         `DELETE FROM discount_codes WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM discount_code_uses WHERE code_id = ?1)
-           AND NOT EXISTS (SELECT 1 FROM referral_channels WHERE discount_code_id = ?1)`,
+           AND NOT EXISTS (SELECT 1 FROM referral_channels WHERE discount_code_id = ?1)
+           AND NOT EXISTS (SELECT 1 FROM campaign_links WHERE discount_code_id = ?1)`,
       )
       .bind(id),
     auditStatementIfDeleted(db, entry, change.now, { table: "discount_codes", column: "id", value: id }),
@@ -312,10 +314,11 @@ export async function deleteCode(
   return kept === null ? "deleted" : "in_use";
 }
 
-/** No booking has taken the code, `id` the bound parameter for its ID, nor has a partner's channel named it. */
+/** No booking has taken the code, `id` the bound parameter for its ID, nor has a partner's channel or a campaign link named it. */
 const unused = (id: string): string =>
   `NOT EXISTS (SELECT 1 FROM discount_code_uses WHERE code_id = ${id})
-   AND NOT EXISTS (SELECT 1 FROM referral_channels WHERE discount_code_id = ${id})`;
+   AND NOT EXISTS (SELECT 1 FROM referral_channels WHERE discount_code_id = ${id})
+   AND NOT EXISTS (SELECT 1 FROM campaign_links WHERE discount_code_id = ${id})`;
 
 /** A code's terms changed, its text kept, while nothing has taken it; its audit entry is written only then. */
 export async function changeCode(

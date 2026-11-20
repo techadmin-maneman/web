@@ -137,6 +137,27 @@ const HISTORY = [
      '${AGO}' FROM n`,
   `INSERT INTO spend_entries (id, month, city, channel, amount, entered_by, entered_at)
    SELECT 'se-' || i, '2026-08', 'Gurgaon', 'partner', 2500000, 'growth@maneman.in', '${AGO}' FROM n`,
+  // Each client's browser and the touch that brought them, their attribution, and a payment Google and Meta were told
+  // of long ago (docs/decisions/0288-attribution-and-conversions.md); and a society's link.
+  `INSERT INTO campaign_links (id, kind, slug, code, name, utm_source, utm_medium, utm_campaign, city, pincode,
+     held_date, created_by, created_at)
+   SELECT 'cl-' || i, 'society', 'society-' || i, printf('SOC%04d', i), 'Society ' || i, 'society', 'offline',
+     'society-' || i || '-20260801', 'Gurgaon', '122002', '2026-08-01', 'growth@maneman.in', '${AGO}' FROM n
+   WHERE i <= 20`,
+  `INSERT INTO visitors (id, ref, person_id, created_at, seen_at)
+   SELECT 'vis-' || i, printf('R%04d', i), 'p-' || i, '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO touches (id, at, via, visitor_id, person_id, utm_source, utm_medium, utm_campaign, gclid, channel,
+     campaign_signal)
+   SELECT 'tch-' || i, '${AGO}', 'site', 'vis-' || i, 'p-' || i, 'google', 'cpc', 'gurgaon-search', 'g' || i,
+     'google_ads', 1 FROM n`,
+  "UPDATE leads SET touch_id = 'tch-' || substr(id, 3)",
+  `INSERT INTO person_attribution (person_id, first_touch_id, last_touch_id, attributed_channel, last_touch_channel,
+     settled_at, updated_at)
+   SELECT 'p-' || i, 'tch-' || i, 'tch-' || i, 'google_ads', 'google_ads', '${AGO}', '${AGO}' FROM n`,
+  `INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, value_paise, attributed_channel,
+     last_touch_channel, meta_state, meta_tries, meta_sent_at, google_state, google_tries, google_sent_at, created_at)
+   SELECT 'cv-' || i, 'service_paid', 'pay-' || i, 'p-' || i, '${AGO}', 169491, 'google_ads', 'google_ads', 'sent', 1,
+     '${AGO}', 'sent', 1, '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO credit_ledger (id, person_id, kind, visits, source_kind, source_id, expires_at, created_at)
    SELECT 'g-' || i, 'p-' || i, 'grant', 3, 'referral', 'ra-' || i, '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)

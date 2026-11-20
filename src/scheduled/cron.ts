@@ -537,7 +537,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   // What the retention periods let go of: dormant people who never became clients, old check-in coordinates, and the
   // waitlist of areas launched a year ago (src/policy/retention.ts).
   { name: "retention", needs: "nothing", every: 60, at: 53, run: retentionJob },
-  // Old leads given their touches, and touches' addresses and visitors never named let go (ADR 0288).
+  // Old leads given their touches, and touches' addresses and visitors never named let go.
   { name: "attribution_upkeep", needs: "nothing", every: 60, at: 16, run: attributionUpkeepJob },
   // Clients' Care threads closed and quiet a year, their messages moved to the backups bucket
   // (docs/decisions/0207-closed-chats-archived.md).

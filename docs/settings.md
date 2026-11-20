@@ -24,12 +24,15 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000001556003` | `4242595000001556003` |
 | `BOOKS_SAC` | — | — | — |
 | `CLIENT_SIGN_OFF` | `true` | `true` | `true` |
+| `CONVERSIONS_TEST_MODE` | `true` | `true` | `false` |
 | `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |
 | `ENVIRONMENT` | `local` | `staging` | `production` |
 | `GEOCODE_PROVIDER` | `stub` | `google` | `google` |
+| `GOOGLE_ADS_PROVIDER` | `stub` | `google` | `google` |
 | `IMAGE_PROVIDER` | `stub` | `youcam` | `youcam` |
 | `MESSAGING_ENABLED` | `true` | `true` | `false` |
 | `MESSAGING_PROVIDER` | `stub` | `msg91` | `evolution` |
+| `META_CAPI_PROVIDER` | `stub` | `meta` | `meta` |
 | `PAYMENTS_PROVIDER` | `stub` | `razorpay` | `none` |
 | `RAZORPAY_KEY_ID` | — | `rzp_test_Tz0U9jnWcW6ZYU` | — |
 | `REFERRER_NAME_ON_INVITE` | `true` | `true` | `true` |
@@ -60,11 +63,21 @@ Set with `wrangler secret put` in each environment (docs/provisioning.md); never
 - `EVOLUTION_API_URL`
 - `EVOLUTION_INSTANCE_NAME`
 - `EVOLUTION_WEBHOOK_TOKEN`
+- `GOOGLE_ADS_ACTION_CONSULT_BOOKED`
+- `GOOGLE_ADS_ACTION_CONSULT_DONE`
+- `GOOGLE_ADS_ACTION_FIRST_FIT_PAID`
+- `GOOGLE_ADS_ACTION_SERVICE_PAID`
+- `GOOGLE_ADS_CUSTOMER_ID`
+- `GOOGLE_ADS_LOGIN_CUSTOMER_ID`
 - `GOOGLE_MAPS_API_KEY`
+- `GOOGLE_SERVICE_ACCOUNT_KEY`
 - `HEARTBEAT_URL`
 - `IP_HASH_SALT`
 - `LEAD_WEBHOOK_URL`
 - `MESSAGING_ALLOWLIST`
+- `META_CAPI_TOKEN`
+- `META_DATASET_ID`
+- `META_TEST_EVENT_CODE`
 - `MSG91_AUTH_KEY`
 - `MSG91_INTEGRATED_NUMBER`
 - `MSG91_SMS_TEMPLATE_ID`

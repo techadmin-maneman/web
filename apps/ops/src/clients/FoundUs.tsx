@@ -38,7 +38,7 @@ const HEARD_CHOICES = [["", copy.notAsked], ...HEARD_FROM.map((each) => [each.co
 function Rows(props: { clientId: string; name: string; found: ClientAttribution; onChanged: () => void }) {
   const { found, clientId } = props;
   const access = useAccess();
-  const mayTell = access.mayCall("PUT /api/clients/{id}/heard-from");
+  const mayTell = access.mayCall("POST /api/clients/{id}/heard-from");
   const save = async (heardFrom: string, other: string | null) => {
     const code = HEARD_FROM.find((each) => each.code === heardFrom)?.code;
     if (code === undefined) return copy.errors.invalid_request;

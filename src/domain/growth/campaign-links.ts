@@ -289,3 +289,27 @@ export async function linkableCodes(
     .all<{ id: string; code: string; kind: string; value: number; expires_on: string | null }>();
   return results;
 }
+
+/**
+ * The discount code of the latest campaign link a client came through, for their first fit's hold, where it is still
+ * one to take: the link not retired, the code switched on and covering a first fit, and, for a society's, the visit at
+ * an address in its pincode. A partner's code and one the client types come before it (docs/decisions/0288).
+ */
+export async function linkCodeFor(db: D1Database, personId: string, pincode: string | null): Promise<string | null> {
+  const row = await db
+    .prepare(
+      `SELECT d.code FROM touches t JOIN campaign_links l ON l.id = t.link_id
+       JOIN discount_codes d ON d.id = l.discount_code_id AND d.switched_off_at IS NULL AND d.covers_first_fit = 1
+       WHERE t.person_id = ?1 AND l.retired_at IS NULL AND (l.kind = 'offer' OR l.pincode = ?2)
+       ORDER BY t.at DESC LIMIT 1`,
+    )
+    .bind(personId, pincode)
+    .first<{ code: string }>();
+  return row?.code ?? null;
+}
+
+/** The cities an offer link may be aimed at, in the console's order. */
+export async function cityNames(db: D1Database): Promise<string[]> {
+  const { results } = await db.prepare("SELECT name FROM cities ORDER BY sort").all<{ name: string }>();
+  return results.map((city) => city.name);
+}

@@ -11,6 +11,7 @@ import { CONSULTATION_NOTICES } from "../../config/notices.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
+import { touchForLead } from "../attribution/lead-touch.ts";
 import { hasAskedForAVisit } from "../referrals/referrals.ts";
 import { formPerson, personWithMobile } from "./form-person.ts";
 import { type FormRefusalCode, type FormRequest, type Refusal, recordLead } from "./public-booking.ts";
@@ -57,7 +58,17 @@ export async function leaveNameAndNumber(
   if (!checked.ok) return checked;
   const { db, now } = form;
   const knownId = await personWithMobile(db, checked.mobile);
-  if (!(await leadOwed(db, knownId, now))) return { ok: true, lead: null };
+  if (!(await leadOwed(db, knownId, now))) {
+    // No lead is written for a number followed up already, but where this visit came from is still theirs (ADR 0288).
+    if (knownId !== null) {
+      await touchForLead(
+        db,
+        { leadId: null, personId: knownId, visit: form.visit, attribution: request.attribution, now },
+        form.log,
+      );
+    }
+    return { ok: true, lead: null };
+  }
 
   const person = formPerson(db, {
     knownId,

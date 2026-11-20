@@ -27,6 +27,7 @@ import { PersonNameSchema } from "../../http/openapi.ts";
 import { visitorOf } from "../../http/visitor.ts";
 import { visitContextOf } from "../../http/visit-context.ts";
 import { touchForLead } from "../../domain/attribution/lead-touch.ts";
+import { personWithMobile } from "../../domain/booking/form-person.ts";
 import { mobileHashOf } from "../../domain/clients/number-codes.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
@@ -190,14 +191,11 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
     now,
   });
   log.info("tryon_claimed", { lead_id: leadId, job_id: job.id });
-  const person = await db
-    .prepare("SELECT id FROM people WHERE mobile_e164 = ?1")
-    .bind(mobileE164)
-    .first<{ id: string }>();
-  if (person !== null) {
+  const personId = await personWithMobile(db, mobileE164);
+  if (personId !== null) {
     await touchForLead(
       db,
-      { leadId, personId: person.id, visit: visitContextOf(c), attribution: request.attribution ?? {}, now },
+      { leadId, personId, visit: visitContextOf(c), attribution: request.attribution ?? {}, now },
       log,
     );
   }

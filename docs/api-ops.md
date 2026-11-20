@@ -13167,7 +13167,7 @@ How a client found us: their channel by the rule, their first and last touch, an
 }
 ```
 
-### PUT /api/clients/{id}/heard-from
+### POST /api/clients/{id}/heard-from
 
 What the client told ops of how they heard of us, kept apart from the channel the rule gives
 
@@ -13179,25 +13179,7 @@ Request body:
 }
 ```
 
-**200**: Kept
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "ok": {
-      "type": "boolean",
-      "enum": [
-        true
-      ]
-    }
-  },
-  "required": [
-    "ok"
-  ],
-  "additionalProperties": false
-}
-```
+**204**: Kept
 
 **400**: invalid_request
 
@@ -13312,25 +13294,7 @@ Request body:
 
 Send nothing more of the client's to Google or Meta, as they asked; whatever was waiting is let go
 
-**200**: Stopped
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "ok": {
-      "type": "boolean",
-      "enum": [
-        true
-      ]
-    }
-  },
-  "required": [
-    "ok"
-  ],
-  "additionalProperties": false
-}
-```
+**204**: Stopped
 
 **400**: invalid_request
 
@@ -13502,7 +13466,7 @@ Request body:
 }
 ```
 
-**200**: Made
+**201**: Made
 
 ```json
 {
@@ -13587,25 +13551,7 @@ Request body:
 
 Retire a link: it sends visitors to /book with nothing, and keeps what it brought
 
-**200**: Retired
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "ok": {
-      "type": "boolean",
-      "enum": [
-        true
-      ]
-    }
-  },
-  "required": [
-    "ok"
-  ],
-  "additionalProperties": false
-}
-```
+**204**: Retired
 
 **400**: invalid_request
 

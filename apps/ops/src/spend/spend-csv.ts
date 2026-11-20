@@ -1,8 +1,7 @@
-// An ad account's spend report, read in the browser (docs/decisions/0288-attribution-and-conversions.md): Google Ads'
-// campaign report with Day, Campaign and Cost, or Meta Ads Manager's with Day (or Reporting starts), Campaign name and
-// Amount spent (INR), each broken down by day. The title lines Google puts above the header and the totals below the
-// rows are passed over. A day is read only as written unmistakably: 2026-11-20, or Nov 20, 2026; never 20/11/2026,
-// whose month a spreadsheet may have swapped.
+// An ad account's daily spend report, read in the browser (docs/decisions/0288-attribution-and-conversions.md):
+// Google Ads' Day, Campaign and Cost, or Meta's Day (or Reporting starts), Campaign name and Amount spent (INR), its
+// title lines and totals passed over. A day is read only as written unmistakably, 2026-11-20 or Nov 20, 2026, never
+// 20/11/2026, whose month a spreadsheet may have swapped.
 
 export interface SpendRow {
   readonly day: string;

@@ -402,7 +402,7 @@ export async function bookConsultation(
   // The visit goes to the address on the account where there is one, which is served, or the person would have been
   // answered above; else to the address typed, in the pincode checked.
   const visitPincode = savedPincode ?? pincode;
-  const code = await oneVisitCode(form, request, knownId, oneVisit);
+  const code = await oneVisitCode(form, request, knownId, { oneVisit, pincode: visitPincode.pincode });
   if (code?.ok === false) return code;
   const { person, address, addressNotice, alongside } = await bookingPerson(form, {
     request,

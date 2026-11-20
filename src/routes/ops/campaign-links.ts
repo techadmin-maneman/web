@@ -8,11 +8,12 @@ import type { Context } from "hono";
 import {
   addCampaignLink,
   campaignLinks,
+  cityNames,
   linkableCodes,
   retireCampaignLink,
   shortLinkOf,
   type CampaignLink,
-} from "../../domain/attribution/campaign-links.ts";
+} from "../../domain/growth/campaign-links.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -123,7 +124,7 @@ const addRoute = opsRoute({
   summary: "Make a society activation's link, with its costs as spend, or an offer's",
   request: { body: { required: true, ...json(NewLinkSchema) } },
   responses: {
-    200: { description: "Made", ...json(LinkSchema) },
+    201: { description: "Made", ...json(LinkSchema) },
     400: errorResponse(
       "invalid_request: fields names pincode for one we cannot place, city for one we do not hold, or " +
         "discount_code_id for a code switched off or not for a first fit",
@@ -137,7 +138,7 @@ const retireRoute = opsRoute({
   summary: "Retire a link: it sends visitors to /book with nothing, and keeps what it brought",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
-    200: { description: "Retired", ...json(z.object({ ok: z.literal(true) }).strict()) },
+    204: { description: "Retired" },
     404: errorResponse("not_found: no such link, or retired already"),
   },
 });
@@ -156,7 +157,7 @@ export function registerOpsCampaignLinks(app: App): void {
     const [links, codes, cities] = await Promise.all([
       campaignLinks(c.env.DB),
       linkableCodes(c.env.DB),
-      c.env.DB.prepare("SELECT name FROM cities ORDER BY sort").all<{ name: string }>(),
+      cityNames(c.env.DB),
     ]);
     return c.json(
       {
@@ -166,7 +167,7 @@ export function registerOpsCampaignLinks(app: App): void {
         ),
         sources: [...OFFER_SOURCES],
         mediums: [...OFFER_MEDIUMS],
-        cities: cities.results.map((city) => city.name),
+        cities,
       },
       200,
     );
@@ -196,11 +197,11 @@ export function registerOpsCampaignLinks(app: App): void {
           };
     const made = await addCampaignLink(c.env.DB, { ...changeOf(c), link });
     if (typeof made === "string") return refuse(c, "invalid_request", [REFUSED_FIELD[made]]);
-    return c.json(shown(c, made), 200);
+    return c.json(shown(c, made), 201);
   });
 
   app.openapi(retireRoute, async (c) => {
     const retired = await retireCampaignLink(c.env.DB, { ...changeOf(c), id: c.req.valid("param").id });
-    return retired ? c.json({ ok: true as const }, 200) : refuse(c, "not_found");
+    return retired ? c.body(null, 204) : refuse(c, "not_found");
   });
 }

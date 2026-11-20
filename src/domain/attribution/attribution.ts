@@ -44,12 +44,12 @@ export async function refreshAttribution(db: D1Database, personId: string, now: 
     .first<Kept>();
   const first =
     kept?.first_touch_id === null || kept === null
-      ? await db.prepare(`${TOUCH} person_id = ?1 ORDER BY at, id LIMIT 1`).bind(personId).first<TouchRow>()
+      ? await db.prepare(`${TOUCH} person_id = ?1 ORDER BY at, rowid LIMIT 1`).bind(personId).first<TouchRow>()
       : await db.prepare(`${TOUCH} id = ?1`).bind(kept.first_touch_id).first<TouchRow>();
   if (first === null) return;
   const last =
     (await db
-      .prepare(`${TOUCH} person_id = ?1 AND campaign_signal = 1 ORDER BY at DESC, id DESC LIMIT 1`)
+      .prepare(`${TOUCH} person_id = ?1 AND campaign_signal = 1 ORDER BY at DESC, rowid DESC LIMIT 1`)
       .bind(personId)
       .first<TouchRow>()) ?? first;
   const settledAt = kept?.settled_at ?? null;
@@ -129,6 +129,14 @@ export async function setHeardFrom(
   ]);
 }
 
+/** Each platform's waiting sends of one client, let go. */
+const LET_GO_META = `UPDATE conversions SET meta_state = 'skipped', meta_error = 'sharing_stopped',
+    meta_next_at = NULL
+  WHERE person_id = ?1 AND meta_state = 'pending'`;
+const LET_GO_GOOGLE = `UPDATE conversions SET google_state = 'skipped', google_error = 'sharing_stopped',
+    google_next_at = NULL
+  WHERE person_id = ?1 AND google_state = 'pending'`;
+
 /**
  * Stops anything more of the client's going to Google or Meta, as they asked: recorded with who took the request, and
  * each conversion of theirs still waiting let go. Audited.
@@ -139,13 +147,7 @@ export async function stopSharing(
 ): Promise<void> {
   const at = change.now.toISOString();
   const letGo = (platform: "meta" | "google") =>
-    db
-      .prepare(
-        `UPDATE conversions SET ${platform}_state = 'skipped', ${platform}_error = 'sharing_stopped',
-           ${platform}_next_at = NULL
-         WHERE person_id = ?1 AND ${platform}_state = 'pending'`,
-      )
-      .bind(change.personId);
+    (platform === "meta" ? db.prepare(LET_GO_META) : db.prepare(LET_GO_GOOGLE)).bind(change.personId);
   await db.batch([
     db
       .prepare(

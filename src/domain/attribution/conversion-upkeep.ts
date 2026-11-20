@@ -6,6 +6,8 @@
 // one of a client who asked that nothing of theirs go to Google or Meta. A
 // payment for a hold waits until its visit is booked, so it is known to be a first fit's or not.
 
+import { PAYMENT_HELD, statusIn } from "../../config/statuses.ts";
+
 /** A fresh UUID (v4), as SQLite can make one. */
 const UUID = `lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-'
   || substr('89ab', 1 + (abs(random()) % 4), 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))`;
@@ -81,7 +83,7 @@ export function conversionUpkeep(db: D1Database, whose: string, list: string, at
            LEFT JOIN appointments a ON a.id = y.appointment_id
            LEFT JOIN person_attribution pa ON pa.person_id = y.person_id
          WHERE y.person_id IN (${whose}) AND y.captured_at IS NOT NULL
-           AND y.status IN ('captured', 'partially_refunded') AND y.amount > 0
+           AND ${statusIn("y.status", PAYMENT_HELD)} AND y.amount > 0
            AND (y.appointment_id IS NOT NULL
              OR NOT EXISTS (SELECT 1 FROM slot_holds h WHERE h.razorpay_order_id = y.razorpay_order_id))
          ON CONFLICT DO NOTHING`,

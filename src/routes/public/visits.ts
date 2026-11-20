@@ -7,7 +7,7 @@
 //   /s/<slug> and /o/<slug> there.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { landingOfLink } from "../../domain/attribution/campaign-links.ts";
+import { landingOfLink } from "../../domain/growth/campaign-links.ts";
 import { recordVisit } from "../../domain/attribution/page-visit.ts";
 import { takeOne } from "../../domain/sign-in/rate-limit.ts";
 import type { App } from "../../http/context.ts";

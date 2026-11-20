@@ -9766,8 +9766,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
         /** What the client told ops of how they heard of us, kept apart from the channel the rule gives */
-        put: {
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -9783,16 +9784,11 @@ export interface paths {
             };
             responses: {
                 /** @description Kept */
-                200: {
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": {
-                            /** @enum {boolean} */
-                            ok: true;
-                        };
-                    };
+                    content?: never;
                 };
                 /** @description invalid_request */
                 400: {
@@ -9850,7 +9846,6 @@ export interface paths {
                 };
             };
         };
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -9879,16 +9874,11 @@ export interface paths {
             requestBody?: never;
             responses: {
                 /** @description Stopped */
-                200: {
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": {
-                            /** @enum {boolean} */
-                            ok: true;
-                        };
-                    };
+                    content?: never;
                 };
                 /** @description invalid_request */
                 400: {
@@ -10014,7 +10004,7 @@ export interface paths {
             };
             responses: {
                 /** @description Made */
-                200: {
+                201: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -10088,16 +10078,11 @@ export interface paths {
             requestBody?: never;
             responses: {
                 /** @description Retired */
-                200: {
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": {
-                            /** @enum {boolean} */
-                            ok: true;
-                        };
-                    };
+                    content?: never;
                 };
                 /** @description invalid_request */
                 400: {

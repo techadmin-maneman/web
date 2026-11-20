@@ -1,6 +1,5 @@
 // The privacy policy, as counsel drafted it, with its blanks filled and its brackets settled (docs/open-points.md, item 188).
-// Version 1.01 adds "Measuring our advertising" (docs/decisions/0288-attribution-and-conversions.md), in the owner's
-// approved words, for counsel to review after.
+// Version 1.01 adds "Measuring our advertising" (docs/decisions/0288-attribution-and-conversions.md).
 
 import type { LegalPage } from "./legal.ts";
 
@@ -183,7 +182,7 @@ export const privacyPolicy: LegalPage = {
         },
         {
           lead: "What we share:",
-          text: "your phone number and first name, hashed, which turns them into a code that cannot be read back; the ad's click code in the link you came by, if there was one; what happened and when; and, for a payment, its amount. Unless you decline cookies on our cookie bar, we also share Google's and Meta's cookie codes, your device's IP address and your browser's type, which help them recognise you.",
+          text: "your phone number and first name, hashed, which turns them into a code that cannot be read back; the ad’s click code in the link you came by, if there was one; what happened and when; and, for a payment, its amount. Unless you decline cookies on our cookie bar, we also share Google’s and Meta’s cookie codes, your device’s IP address and your browser’s type, which help them recognise you.",
         },
         {
           lead: "Why:",

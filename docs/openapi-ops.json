@@ -40075,7 +40075,7 @@
       }
     },
     "/api/clients/{id}/heard-from": {
-      "put": {
+      "post": {
         "summary": "What the client told ops of how they heard of us, kept apart from the channel the rule gives",
         "parameters": [
           {
@@ -40099,27 +40099,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Kept",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ok": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    }
-                  },
-                  "required": [
-                    "ok"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
+          "204": {
+            "description": "Kept"
           },
           "400": {
             "description": "invalid_request",
@@ -40254,27 +40235,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Stopped",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ok": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    }
-                  },
-                  "required": [
-                    "ok"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
+          "204": {
+            "description": "Stopped"
           },
           "400": {
             "description": "invalid_request",
@@ -40462,7 +40424,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Made",
             "content": {
               "application/json": {
@@ -40567,27 +40529,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Retired",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ok": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    }
-                  },
-                  "required": [
-                    "ok"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
+          "204": {
+            "description": "Retired"
           },
           "400": {
             "description": "invalid_request",

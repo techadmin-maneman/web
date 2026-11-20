@@ -126,7 +126,7 @@ export function consentAnswer(): "granted" | "denied" | null {
   }
 }
 
-/** Whether the tags may run: until the visitor declines, they may (ADR 0288). */
+/** Whether the tags may run: until the visitor declines, they may. */
 const consented = (): boolean => consentAnswer() !== "denied";
 
 /**

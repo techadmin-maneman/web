@@ -216,7 +216,17 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).",
   slot_times: "Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).",
   spend_entries:
-    "A month's offline spend to win clients, for a city or national, by channel, as typed on the console's Spend page; one taken off kept, with who and when (ADR 0150).",
+    "Spend to win clients, by the day, for a city or national, by channel: typed on the console's Spend page, taken from an ad account's CSV, or a society activation's costs; one taken off kept, with who and when (ADR 0150, ADR 0288).",
+  visitors:
+    "Each browser the site's visitor cookie names, with the reference its WhatsApp messages end with, and the person once a number names them (ADR 0288).",
+  touches:
+    "Everything that reached us carrying where it came from, a page of the site, a WhatsApp chat or a call, with its channel by the rule; a person's once their number names it (ADR 0288).",
+  person_attribution:
+    "Each person's first and last touch and their channels, what they told ops of how they heard of us, and whether they asked us to stop sharing with Google and Meta (ADR 0288).",
+  conversions:
+    "Each lead, consultation booked and done, and payment, recorded once for Google and Meta, with the client's channels when it happened and each platform's send (ADR 0288).",
+  campaign_links:
+    "Growth's campaign links: a society activation's or an offer's short link, its tags, code and discount for the first fit, and when it was retired (ADR 0288).",
   standard_costs:
     "What each first fit and replacement product costs us, from its date, for the margin figures until stock lots carry what was paid; an old row stays for the visits under it (ADR 0152).",
   staff:

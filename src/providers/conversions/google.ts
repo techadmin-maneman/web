@@ -42,6 +42,9 @@ async function assertion(account: GoogleSettings["serviceAccount"], now: Date): 
   return `${unsigned}.${toBase64Url(new Uint8Array(signature))}`;
 }
 
+/** Where the event happened, as Meta is told it too: a booking our system's, a visit or a payment the home visit's. */
+const eventSourceOf = (event: GoogleEvent) => (event === "consult_booked" ? "OTHER" : "IN_STORE");
+
 /** The event, as events:ingest takes it, with its destination's conversion action. */
 export function googleRequest(
   settings: GoogleSettings,
@@ -65,6 +68,7 @@ export function googleRequest(
       {
         transactionId: conversion.eventId,
         eventTimestamp: conversion.occurredAt.toISOString(),
+        eventSource: eventSourceOf(conversion.event),
         ...(Object.keys(adIdentifiers).length === 0 ? {} : { adIdentifiers }),
         userData: { userIdentifiers: [{ phoneNumber: conversion.phone.google }] },
         ...(conversion.value === null ? {} : { conversionValue: conversion.value, currency: "INR" }),

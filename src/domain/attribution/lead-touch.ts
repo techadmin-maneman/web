@@ -5,6 +5,7 @@
 
 import type { Logger } from "../../log.ts";
 import { claimVisitor, NOTHING_CARRIED, recordTouch, resolveCodes, type Carried } from "./touches.ts";
+import { seeVisitor } from "./visitors.ts";
 
 /** What a page sends of where its visitor came from (src/routes/schemas/attribution.ts): each field optional. */
 export type PageTouch = Readonly<Partial<Record<keyof Carried | "ref" | "soc" | "offer", string | undefined>>> & {
@@ -35,22 +36,29 @@ export function carriedOf(body: PageTouch): Carried {
   ) as unknown as Carried;
 }
 
-/** Records the lead's touch, makes the visitor's touches the person's, and points the lead at its touch. */
-export async function touchForLead(
-  db: D1Database,
-  lead: {
-    readonly leadId: string;
-    readonly personId: string;
-    readonly visit: VisitContext;
-    readonly attribution: PageTouch;
-    readonly now: Date;
-  },
-  log: Logger,
-): Promise<void> {
+/** What a form says of its visitor's touch: whose it is, and the lead it made, where it made one. */
+interface FormTouch {
+  /** Null for a number already followed up, which writes no lead but whose touch is still theirs. */
+  readonly leadId: string | null;
+  readonly personId: string;
+  readonly visit: VisitContext;
+  readonly attribution: PageTouch;
+  readonly now: Date;
+}
+
+/**
+ * Records the form's touch, makes the visitor's touches the person's, and points the lead at its touch where there is
+ * one. A number we hold keeps its first touch: a new one is only ever added.
+ */
+export async function touchForLead(db: D1Database, lead: FormTouch, log: Logger): Promise<void> {
   try {
     const { attribution, visit } = lead;
     const resolved = await resolveCodes(db, codesOf(attribution));
-    if (visit.visitorId !== null) await claimVisitor(db, visit.visitorId, lead.personId, lead.now);
+    if (visit.visitorId !== null) {
+      // The page's own report of its landing may never have arrived: a blocker, or a cookie older than its row.
+      await seeVisitor(db, visit.visitorId, lead.now);
+      await claimVisitor(db, visit.visitorId, lead.personId, lead.now);
+    }
     const touch = await recordTouch(db, {
       at: lead.now,
       via: "site",
@@ -64,7 +72,9 @@ export async function touchForLead(
       userAgent: visit.userAgent,
       clientIp: visit.clientIp,
     });
-    await db.prepare("UPDATE leads SET touch_id = ?2 WHERE id = ?1").bind(lead.leadId, touch.id).run();
+    if (lead.leadId !== null) {
+      await db.prepare("UPDATE leads SET touch_id = ?2 WHERE id = ?1").bind(lead.leadId, touch.id).run();
+    }
   } catch (error) {
     log.warn("lead_touch_failed", { lead_id: lead.leadId, reason: error instanceof Error ? error.name : "unknown" });
   }

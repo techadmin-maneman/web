@@ -221,6 +221,14 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Adding the rows since `<T>`, and setting each unit where its latest line of history puts it",
   },
   {
+    what: "Where clients came from, and what Google and Meta were told",
+    tables: ["visitors", "touches", "person_attribution", "conversions"],
+    leftAtT:
+      "A visit, chat or call since is not put down to its channel, what a client told ops is gone, and a conversion recorded since is never sent",
+    putBackBy:
+      "Adding the touches and conversions since `<T>` from the copy, then bringing each person's attribution up to date from their touches",
+  },
+  {
     what: "Referrals and credits",
     tables: [
       "referral_codes",
@@ -231,9 +239,10 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "channel_attributions",
       "partner_payouts",
       "spend_entries",
+      "campaign_links",
     ],
     leftAtT:
-      "A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears",
+      "A credit, a grant, a partner, a partner's payment, an entry of spend, a campaign link or a place on a waitlist disappears",
     putBackBy: "The rows since `<T>`. `credit_ledger` is only ever added to",
   },
   {

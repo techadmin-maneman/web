@@ -255,14 +255,14 @@ this map, or when the map names something that no longer exists.
 
 ### Reports
 
-- **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `funnel` (the Funnel page), `rows`
+- **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `acquisition` (the Funnel page's figures), `rows`
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
   `care-cases` (grievances and tasks, opened and closed), `leads`, `spend` (offline spend, partner payments and
   invites' free visits), `client-months` (where each client stood each month), `stock` (the stock ledger, and each week's position),
   `credits` (free visits given, used and owed), `pieces` (each hair system fitted, and the areas), `targets`, `access` (who may read what, from the Staff list),
   `client-key` (a client as the copy knows them)
-- **Database work** (`src/domain/money/`): `spend` (offline spend, as typed on the Spend page), `standard-costs`
-  (what each hair system costs us)
+- **Database work** (`src/domain/money/`): `spend` (spend by the day, typed on the Spend page), `spend-import` (an ad
+  account's CSV), `standard-costs` (what each hair system costs us)
 - **Rules** (`src/policy/`): `channels` (how a lead found us, and a campaign's city), `client-standing` (active,
   lapsed or lost)
 - **Routes** (`src/routes/`): `ops/spend`, `ops/funnel`
@@ -271,6 +271,30 @@ this map, or when the map names something that no longer exists.
 - **Jobs:** `src/scheduled/analytics.ts`
 - **Schema:** `warehouse/migrations/`, applied by `scripts/ops/warehouse-migrate.ts`
 - **Tests:** `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-postgres.test.ts`
+
+### Attribution and conversions
+
+Where each client came from, and what Google and Meta are told (docs/decisions/0288-attribution-and-conversions.md,
+docs/tracking.md).
+
+- **Database work** (`src/domain/attribution/`): `visitors` (each browser the site's cookie names, and its WhatsApp
+  reference), `touches` (every landing, chat and call, its channel, and whose it is), `attribution` (each person's
+  first and last touch and channel, what they told ops, and stopping their sharing), `page-visit` (a page's landing),
+  `lead-touch` (a lead's touch), `chat-touch` (a chat's reference or ad), `call-lead` (a lead taken on a call),
+  `conversion-upkeep` (the conversions a visit's or a payment's write brings about), `conversions` (a lead's),
+  `conversion-sends` (each sent to Meta and Google, tried again on failure), `backfill` (old leads' touches, and what
+  retention lets go)
+- **Database work** (`src/domain/growth/`): `campaign-links` (society activations and offer links, their costs, and the
+  discount they carry)
+- **Rules** (`src/policy/`): `channels`, `heard-from` (what a client may say), `campaign-links` (the tags and the links)
+- **Data** (`src/config/`): `ref-tokens`, `visitor-cookie`, `conversions`, `conversion-settings`
+- **Vendor** (`src/providers/`): `conversions/` (Meta's Conversions API, Google's Data Manager API, or the stub)
+- **Routes** (`src/routes/`): `public/visits` (a landing, and a campaign link's landing), `public/lead`,
+  `ops/attribution`, `ops/campaign-links`
+- **Screens:** `apps/ops/src/campaign-links/`, `apps/ops/src/clients/FoundUs.tsx`, `apps/ops/src/clients/CallLead.tsx`,
+  `site/src/lib/visit.ts`, `site/src/lib/contact-clicks.ts`
+- **Jobs:** `src/scheduled/conversions.ts`
+- **Tests:** `test/node/policy/channels.test.ts`, `test/node/api/lib-ad-match.test.ts`, `test/worker/attribution/`
 
 ### The Words page
 

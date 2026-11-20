@@ -10,7 +10,7 @@ export const whatsapp = {
   display: WHATSAPP_DISPLAY,
   label: `WhatsApp · ${WHATSAPP_DISPLAY}`,
   /** The words a chat begun from the site opens with, ahead of the visitor's reference ("Ref M7K2Q"). */
-  greeting: "Hi, I'd like to know more.",
+  greeting: "Hi, I’d like to know more.",
 };
 
 /**

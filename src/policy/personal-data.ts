@@ -157,6 +157,23 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut: "Our key, and a one-way hash of the network address it was given from, which reads as nothing.",
     erasure: { why: "Kept, as the record of what was agreed; the erasure adds a withdrawal of each." },
   },
+  conversions: {
+    leftOut: [
+      "event_id",
+      "subject_id",
+      "person_id",
+      "meta_tries",
+      "meta_next_at",
+      "meta_error",
+      "google_tries",
+      "google_next_at",
+      "google_error",
+    ],
+    whyLeftOut: "Our keys, and how each send to Google and Meta went.",
+    erasure: {
+      why: "Kept, as the record of what Google and Meta were told, which named them only hashed; nothing more is sent of an erased client.",
+    },
+  },
   consultation_requests: {
     leftOut: ["id", "person_id"],
     whyLeftOut: OUR_KEYS,
@@ -225,6 +242,43 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut: "Our keys, and when ops closed the ask, which is theirs.",
     erasure: { why: "That a size was asked for stays, for the stock's demand; it holds no words (ADR 0253)." },
   },
+  person_attribution: {
+    leftOut: ["person_id", "first_touch_id", "last_touch_id", "heard_from_by", "sharing_stopped_by", "updated_at"],
+    whyLeftOut: "Our keys to their touches, which are given, and which member of staff wrote down what they said.",
+    erasure: {
+      blanks: ["heard_from_other"],
+      why: "Their own words of how they heard of us go; the channels stay, as a figure that names nobody.",
+    },
+  },
+  touches: {
+    leftOut: ["id", "person_id", "mobile_e164", "link_id", "campaign_signal"],
+    whyLeftOut: "Our keys, and a flag the channel rule reads.",
+    erasure: {
+      blanks: [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_content",
+        "utm_term",
+        "gclid",
+        "gbraid",
+        "wbraid",
+        "fbclid",
+        "fbc",
+        "fbp",
+        "ctwa_clid",
+        "ad_source_id",
+        "ad_source_url",
+        "referrer",
+        "landing_path",
+        "invite_code",
+        "user_agent",
+        "client_ip",
+        "visitor_id",
+      ],
+      why: "What each visit, chat and call carried goes, with the address and browser; that it was made, and its channel, stays.",
+    },
+  },
   visit_ratings: {
     leftOut: ["appointment_id", "person_id", "technician_id", "low"],
     whyLeftOut: "Our keys: the visit and its technician are in the export already; whether it reached Care is ours.",
@@ -288,6 +342,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     leftOut: [
       "id",
       "person_id",
+      "touch_id",
       "sync_state",
       "sync_attempts",
       "last_sync_error",
@@ -297,7 +352,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "fsm_queued_at",
       "fsm_request_tried_at",
     ],
-    whyLeftOut: "Our keys, and how each lead reached the CRM.",
+    whyLeftOut: "Our keys, the touch each lead was made by, which is given, and how each lead reached the CRM.",
     erasure: {
       blanks: [
         "loss_extent",
@@ -596,6 +651,14 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut:
       "Our and Razorpay's keys, which member of staff cancelled and their own note on it, and when our refund job was done with it.",
     erasure: { blanks: ["cancel_reason"], why: "Ops' reason for a cancel goes; the change stays, with what it cost." },
+  },
+  visitors: {
+    leftOut: ["id", "person_id"],
+    whyLeftOut: "Our key, their browser's cookie, which says nothing without our records.",
+    erasure: {
+      blanks: ["person_id"],
+      why: "Their browser is no longer theirs in our records, and goes once it has been unseen a year.",
+    },
   },
   waitlist_entries: {
     leftOut: ["id", "person_id"],

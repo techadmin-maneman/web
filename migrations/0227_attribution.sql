@@ -176,6 +176,8 @@ ALTER TABLE leads ADD COLUMN touch_id TEXT REFERENCES touches (id);
 ALTER TABLE leads ADD COLUMN ad_notice TEXT;
 
 CREATE INDEX leads_without_touch ON leads (created_at) WHERE touch_id IS NULL;
+-- So a touch let go is checked against the leads that name it without reading them all.
+CREATE INDEX leads_by_touch ON leads (touch_id) WHERE touch_id IS NOT NULL;
 
 DROP INDEX leads_fsm_unqueued;
 

@@ -4,6 +4,7 @@
 import { code, day, money, text, time, words, yesNo, type Part } from "./my-data-fields.ts";
 import { CONSENTS_PART, TERMS_PART } from "./my-data-agreements.ts";
 import { CUSTOM_ORDERS_PART, MADE_TO_ORDER_PART } from "./my-data-orders.ts";
+import { ATTRIBUTION_PARTS } from "./my-data-attribution.ts";
 import { REPORTS_PART } from "./my-data-reports.ts";
 import { RATINGS_PART, SIGN_OFFS_PART } from "./my-data-sign-offs.ts";
 import { CODE_WORDS, PURPOSE_WORDS } from "./my-data-words.ts";
@@ -305,26 +306,7 @@ export const MY_DATA = {
         created_at: time("Joined"),
       },
     },
-    leads: {
-      title: "How you reached us",
-      fields: {
-        source: words("Through"),
-        city: text("City"),
-        loss_extent: words("Hair loss"),
-        first_choice_window: words("Window you asked for"),
-        proposed_visit_date: day("Day you asked for"),
-        referrer: text("Page you came from"),
-        landing_path: text("Page you landed on"),
-        utm_source: text("Campaign source"),
-        utm_medium: text("Campaign medium"),
-        utm_campaign: text("Campaign"),
-        utm_content: text("Campaign content"),
-        gclid: text("Google ad click"),
-        fbclid: text("Facebook ad click"),
-        found_us: words("How you told us you found us"),
-        created_at: time("When"),
-      },
-    },
+    ...ATTRIBUTION_PARTS,
     try_ons: {
       title: "Your try-ons",
       fields: {

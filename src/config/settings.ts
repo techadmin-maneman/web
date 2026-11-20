@@ -292,7 +292,7 @@ const readSwitches = (read: Reader) => ({
   clientSignOff: read.flag("CLIENT_SIGN_OFF"),
 });
 
-/** What the Worker sends from the cron: the technicians' pushes, and conversions to the ad platforms (ADR 0288). */
+/** What the Worker sends from the cron: the technicians' pushes, and conversions to the ad platforms. */
 const readSenders = (read: Reader, providers: ProvidersRead, environment: EnvironmentName | undefined) => ({
   push: readPush(read),
   conversions: readConversions(read, providers, environment),

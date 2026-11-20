@@ -234,12 +234,12 @@ export function bookPublicConsultation(
   return post<Consultation | NotBooked>("/api/consultation", request, idempotencyKey);
 }
 
-/** /book's first step: the name and number, kept as a lead before the visit is chosen. */
 /** A landing, kept as the visitor's touch where it is their first or a campaign's; answers their WhatsApp reference. */
 export function reportVisit(touch: Attribution): Promise<Answer<VisitAnswer>> {
   return post<VisitAnswer>("/api/visits", touch);
 }
 
+/** /book's first step: the name and number, kept as a lead before the visit is chosen. */
 export function leaveLead(request: LeadRequest, idempotencyKey: string): Promise<Answer<LeadLeft>> {
   return post<LeadLeft>("/api/lead", request, idempotencyKey);
 }

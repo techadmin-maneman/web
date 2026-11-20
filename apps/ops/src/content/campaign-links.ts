@@ -48,7 +48,7 @@ export const campaignLinks = {
   /** "PROMO20 · 20% off" */
   discountWords: (code: string, kind: "percent" | "amount", value: string) =>
     `${code} · ${kind === "percent" ? `${value}% off` : `${value} off`}`,
-  societyDiscountNote: "Only for an address in the society's pincode.",
+  societyDiscountNote: "Only for an address in the society’s pincode.",
   make: "Make link",
   making: "Making…",
   columns: {

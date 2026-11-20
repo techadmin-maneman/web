@@ -2,7 +2,7 @@
 //
 // - POST /api/leads/call: a lead taken on a call, its channel picked (Customer Care · Act).
 // - GET /api/clients/{id}/attribution: how a client found us, and what they told ops (Customer Care · View).
-// - PUT /api/clients/{id}/heard-from: what they told ops, asked at the consultation (Customer Care · Act).
+// - POST /api/clients/{id}/heard-from: what they told ops, asked at the consultation (Customer Care · Act).
 // - POST /api/clients/{id}/stop-sharing: nothing more of theirs to Google or Meta, as they asked (Customer Care · Manage).
 
 import { opsRoute } from "../../http/session-routes.ts";
@@ -107,7 +107,7 @@ const readRoute = opsRoute({
 });
 
 const heardRoute = opsRoute({
-  method: "put",
+  method: "post",
   path: "/api/clients/{id}/heard-from",
   summary: "What the client told ops of how they heard of us, kept apart from the channel the rule gives",
   request: {
@@ -126,7 +126,7 @@ const heardRoute = opsRoute({
     },
   },
   responses: {
-    200: { description: "Kept", ...json(z.object({ ok: z.literal(true) }).strict()) },
+    204: { description: "Kept" },
     404: NotFound,
   },
 });
@@ -137,7 +137,7 @@ const stopRoute = opsRoute({
   summary: "Send nothing more of the client's to Google or Meta, as they asked; whatever was waiting is let go",
   request: { params: Id },
   responses: {
-    200: { description: "Stopped", ...json(z.object({ ok: z.literal(true) }).strict()) },
+    204: { description: "Stopped" },
     404: NotFound,
   },
 });
@@ -191,13 +191,13 @@ export function registerOpsAttribution(app: App): void {
       heardFrom: body.heard_from,
       other: body.heard_from_other ?? null,
     });
-    return c.json({ ok: true as const }, 200);
+    return c.body(null, 204);
   });
 
   app.openapi(stopRoute, async (c) => {
     const { id } = c.req.valid("param");
     if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
     await stopSharing(c.env.DB, { ...changeOf(c), personId: id });
-    return c.json({ ok: true as const }, 200);
+    return c.body(null, 204);
   });
 }
