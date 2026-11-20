@@ -4,6 +4,8 @@
 // docs/decisions/0003-environment-identity-guard.md. Each var is read through ./env-reader.ts, and each section of
 // the settings in ./settings-sections.ts.
 
+import { readConversions } from "./conversion-settings.ts";
+import type { ConversionSettings } from "./conversions.ts";
 import type { SigningKeys } from "../lib/signed-token.ts";
 import type { EvolutionSettings } from "./evolution.ts";
 import type { SentryDsn } from "../lib/sentry-dsn.ts";
@@ -265,6 +267,8 @@ export interface Settings {
   /** The key pair the technicians' pushes are signed with; null where none is set, and no push is sent. */
   readonly push: VapidKeys | null;
   readonly messaging: MessagingSettings;
+  /** Sending conversions to Meta and Google: each platform's secrets, and whether it runs in test mode (ADR 0288). */
+  readonly conversions: ConversionSettings;
   /**
    * DEV_ROUTES=on, locally only: the routes that stand in on a laptop for what a technician's phone does, such as
    * closing a job (src/routes/dev-visits.ts). The guard refuses it anywhere else, and no other environment's app has
@@ -286,6 +290,12 @@ function readServiceTokenActsAs(read: Reader, environment: EnvironmentName | und
 const readSwitches = (read: Reader) => ({
   referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
   clientSignOff: read.flag("CLIENT_SIGN_OFF"),
+});
+
+/** What the Worker sends from the cron: the technicians' pushes, and conversions to the ad platforms (ADR 0288). */
+const readSenders = (read: Reader, providers: ProvidersRead, environment: EnvironmentName | undefined) => ({
+  push: readPush(read),
+  conversions: readConversions(read, providers, environment),
 });
 
 export function readSettings(
@@ -325,7 +335,6 @@ export function readSettings(
     read.problems.push("URGENT_WEBHOOK_URL must be an https:// URL");
   }
   const watchers = readWatchers(read);
-
   const zohoClients = readZohoClients(read, providers);
   const razorpay = readRazorpay(read, providers, environment, selfServeBooking);
   const geocode = readGeocode(read, providers, isLocal);
@@ -369,8 +378,8 @@ export function readSettings(
     analytics: { clientKeySecret: readClientKeySecret(read, providers) },
     login,
     tryon: readTryon(read, providers, isLocal),
-    push: readPush(read),
     messaging,
+    ...readSenders(read, providers, environment),
     devRoutes: environment === "local" && devRoutes === "on",
   };
   return { settings, problems: read.problems };

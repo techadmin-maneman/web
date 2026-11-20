@@ -47441,22 +47441,25 @@ Request body:
       "minLength": 1,
       "maxLength": 80
     },
-    "found_us": {
+    "heard_from": {
       "type": "string",
       "enum": [
-        "google_ads",
-        "meta_ads",
-        "referral",
-        "organic_search",
-        "direct",
-        "partner",
+        "google",
+        "instagram_facebook",
+        "youtube",
+        "friend",
         "society",
-        "organic_social",
-        "referral_site",
+        "salon_partner",
         "whatsapp",
-        "phone"
+        "flyer",
+        "other"
       ],
-      "description": "How they told Care they found us; left out where they did not say."
+      "description": "How they told Care they heard of us; left out where they did not say."
+    },
+    "heard_from_other": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
     }
   },
   "required": [
@@ -47858,7 +47861,7 @@ Request body:
           },
           "amount": {
             "type": "integer",
-            "minimum": 100,
+            "minimum": 1,
             "maximum": 10000000000,
             "description": "Paise, before GST."
           }

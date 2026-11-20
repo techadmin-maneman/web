@@ -5,7 +5,10 @@
 
 import { personByMobile } from "../clients/people.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
-import type { ChannelCode } from "../../policy/channels.ts";
+import type { HeardFrom } from "../../policy/heard-from.ts";
+import { setHeardFrom } from "../attribution/attribution.ts";
+import { claimChat } from "../attribution/touches.ts";
+import { touchForChatLead } from "../attribution/chat-touch.ts";
 import { giveCarePerson } from "./care-people.ts";
 import { hasNumber } from "../../lib/mobile.ts";
 
@@ -59,16 +62,22 @@ export async function linkChat(
     audited(db, change, "chat.link", change.personId),
   ]);
   await giveCarePerson(db, change.personId, change.now);
+  await claimChat(db, chat.mobile, change.personId, change.now);
   return "linked";
 }
 
 /**
- * Saves a stranger as someone new: a person by the chat's number and the name they gave, their WhatsApp lead with how
- * they told Care they found us, and the chat theirs. A number one of our people already has is linked instead, never saved twice.
+ * Saves a stranger as someone new: a person by the chat's number and the name they gave, their WhatsApp lead and its
+ * touch, how they told Care they heard of us, and the chat theirs. A number one of our people already has is linked instead, never saved twice.
  */
 export async function saveStranger(
   db: D1Database,
-  change: Change & { readonly name: string; readonly testRecord: boolean; readonly foundUs: ChannelCode | null },
+  change: Change & {
+    readonly name: string;
+    readonly testRecord: boolean;
+    /** How they told Care they heard of us, where they said (docs/decisions/0288-attribution-and-conversions.md). */
+    readonly heard: { readonly heardFrom: HeardFrom; readonly other: string | null } | null;
+  },
 ): Promise<{ readonly personId: string; readonly leadId: string } | "not_found" | "known" | "has_number"> {
   const chat = await strangerChat(db, change.conversationId);
   if (typeof chat === "string") return chat;
@@ -87,10 +96,8 @@ export async function saveStranger(
       at,
     }),
     db
-      .prepare(
-        "INSERT INTO leads (id, person_id, created_at, source, request_id, found_us) VALUES (?1, ?2, ?3, 'whatsapp', ?4, ?5)",
-      )
-      .bind(leadId, personId, at, change.requestId, change.foundUs),
+      .prepare("INSERT INTO leads (id, person_id, created_at, source, request_id) VALUES (?1, ?2, ?3, 'whatsapp', ?4)")
+      .bind(leadId, personId, at, change.requestId),
     db
       .prepare(
         "INSERT INTO events (id, created_at, name, subject_id, payload_json) VALUES (?1, ?2, 'lead_created', ?3, ?4)",
@@ -102,5 +109,7 @@ export async function saveStranger(
     audited(db, change, "chat.save", personId),
   ]);
   await giveCarePerson(db, personId, change.now);
+  await touchForChatLead(db, { leadId, personId, mobileE164: chat.mobile, now: change.now });
+  if (change.heard !== null) await setHeardFrom(db, { ...change, personId, ...change.heard });
   return { personId, leadId };
 }

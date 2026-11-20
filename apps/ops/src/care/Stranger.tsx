@@ -9,7 +9,8 @@ import { useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { care } from "../content/care.ts";
 import { Refused } from "@maneman/ui/Refusal";
-import { careApi, type FoundUs } from "./care-api.ts";
+import { HEARD_FROM } from "@rules/policy/heard-from.ts";
+import { careApi, type HeardFrom } from "./care-api.ts";
 import form from "@maneman/ui/forms.module.css";
 import styles from "./care.module.css";
 
@@ -76,11 +77,15 @@ function FindAndLink(props: { conversationId: string; onDone: () => void }) {
 
 function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
   const [name, setName] = useState("");
-  const [foundUs, setFoundUs] = useState<FoundUs | "">("");
+  const [heardFrom, setHeardFrom] = useState<HeardFrom | "">("");
   const [failure, setFailure] = useState<Failure | null>(null);
   const save = async () => {
     setFailure(null);
-    const answer = await careApi.saveStranger(props.conversationId, name.trim(), foundUs === "" ? undefined : foundUs);
+    const answer = await careApi.saveStranger(
+      props.conversationId,
+      name.trim(),
+      heardFrom === "" ? undefined : heardFrom,
+    );
     if (answer.ok) props.onDone();
     else setFailure({ code: answer.code, fields: answer.fields });
   };
@@ -99,19 +104,20 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
             />
           )}
         </Field>
-        <Field label={copy.foundUs} error={boxError(copy.errors, failure, "found_us")}>
+        <Field label={copy.heardFrom} error={boxError(copy.errors, failure, "heard_from")}>
           {(control) => (
             <Select
               {...control}
               width="choice"
-              value={foundUs}
+              value={heardFrom}
               onChange={(event) => {
-                setFoundUs(event.target.value as FoundUs | "");
+                setHeardFrom(HEARD_FROM.find((each) => each.code === event.target.value)?.code ?? "");
               }}
             >
-              {Object.entries(copy.foundUsChoices).map(([code, words]) => (
-                <option key={code} value={code}>
-                  {words}
+              <option value="">{copy.didNotSay}</option>
+              {HEARD_FROM.map((each) => (
+                <option key={each.code} value={each.code}>
+                  {each.label}
                 </option>
               ))}
             </Select>
@@ -121,7 +127,7 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
           {copy.save}
         </Button>
       </div>
-      <Refused failed={failure} errors={copy.errors} boxes={["name", "found_us"]} />
+      <Refused failed={failure} errors={copy.errors} boxes={["name", "heard_from"]} />
     </div>
   );
 }

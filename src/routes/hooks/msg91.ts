@@ -42,6 +42,14 @@ const Sent = z.array(
     id: z.string().optional(),
     text: z.looseObject({ body: z.string().optional() }).optional(),
     button: Words.optional(),
+    // A chat begun from a click-to-WhatsApp ad: Meta's referral on its first message (ADR 0288).
+    referral: z
+      .looseObject({
+        ctwa_clid: z.string().max(500).optional(),
+        source_id: z.string().max(200).optional(),
+        source_url: z.string().max(500).optional(),
+      })
+      .optional(),
   }),
 );
 
@@ -86,7 +94,12 @@ function inboundOf(event: Msg91Event): Inbound[] {
   const mobileE164 = numberOf(event.customerNumber);
   if (text === undefined || mobileE164 === null) return [];
   const [first] = Sent.safeParse(parsedJson(event.messages)).data ?? [];
-  return [{ kind: "message", mobileE164, text, providerMessageId: event.uuid ?? first?.id ?? null }];
+  const ad = first?.referral;
+  const referral =
+    ad === undefined
+      ? null
+      : { ctwaClid: ad.ctwa_clid ?? null, sourceId: ad.source_id ?? null, sourceUrl: ad.source_url ?? null };
+  return [{ kind: "message", mobileE164, text, providerMessageId: event.uuid ?? first?.id ?? null, referral }];
 }
 
 const msg91HookRoute = createRoute({

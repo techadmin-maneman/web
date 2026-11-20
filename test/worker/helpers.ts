@@ -90,6 +90,7 @@ export const LOCAL_SETTINGS: Settings = {
   messaging: { enabled: true, allowlist: [], everyone: false, evolution: null, msg91: null },
   devRoutes: false,
   push: null,
+  conversions: { testMode: true, meta: null, google: null },
 };
 
 export const LOCAL_CONFIG: StaticConfig = {
@@ -105,6 +106,8 @@ export const LOCAL_CONFIG: StaticConfig = {
     GEOCODE_PROVIDER: "stub",
     ROUTES_PROVIDER: "stub",
     ANALYTICS_PROVIDER: "stub",
+    META_CAPI_PROVIDER: "stub",
+    GOOGLE_ADS_PROVIDER: "stub",
   },
   settings: LOCAL_SETTINGS,
 };

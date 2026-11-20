@@ -29623,10 +29623,11 @@ export interface components {
         ChatSave: {
             name: string;
             /**
-             * @description How they told Care they found us; left out where they did not say.
+             * @description How they told Care they heard of us; left out where they did not say.
              * @enum {string}
              */
-            found_us?: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+            heard_from?: "google" | "instagram_facebook" | "youtube" | "friend" | "society" | "salon_partner" | "whatsapp" | "flyer" | "other";
+            heard_from_other?: string;
         };
         QuickReply: {
             /** Format: uuid */

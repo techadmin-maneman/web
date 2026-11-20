@@ -137,6 +137,10 @@
     "PAYMENTS_PROVIDER": "stub",
     "GEOCODE_PROVIDER": "stub",
     "ANALYTICS_PROVIDER": "stub",
+    // The ad platforms, stubbed: a send is logged and taken (docs/decisions/0288-attribution-and-conversions.md).
+    "META_CAPI_PROVIDER": "stub",
+    "GOOGLE_ADS_PROVIDER": "stub",
+    "CONVERSIONS_TEST_MODE": "true",
     "ROUTES_PROVIDER": "stub",
     "SELF_SERVE_BOOKING": "true",
     "CLIENT_SIGN_OFF": "true",
@@ -291,6 +295,10 @@
         // The owner's key is in place (docs/provisioning.md, step 13); production waits for the release.
         "GEOCODE_PROVIDER": "google",
         "ANALYTICS_PROVIDER": "none",
+        // Each platform sends once its secrets are set, and only in test mode here (ADR 0288).
+        "META_CAPI_PROVIDER": "meta",
+        "GOOGLE_ADS_PROVIDER": "google",
+        "CONVERSIONS_TEST_MODE": "true",
         // The owner switched on the Routes and Maps Static APIs for the key (docs/provisioning.md, step 13a).
         "ROUTES_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "true",
@@ -441,6 +449,10 @@
         // The nightly copy for Zoho Analytics, off until launch so the copy Zoho reads stays as it is; its client-key
         // secret is set (docs/decisions/0146-the-nightly-analytics-copy.md; docs/go-live.md).
         "ANALYTICS_PROVIDER": "none",
+        // Each platform sends once its secrets are set (ADR 0288; docs/go-live.md).
+        "META_CAPI_PROVIDER": "meta",
+        "GOOGLE_ADS_PROVIDER": "google",
+        "CONVERSIONS_TEST_MODE": "false",
         "ROUTES_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "false",
         "CLIENT_SIGN_OFF": "true",
