@@ -4,7 +4,8 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, BOARD, HELD, json, REFERRERS, TASKS, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, BOARD, CLIENT, HAIR_PROFILE, HELD, json, REFERRERS, TASKS, TASKS_READ_ON } from "./fixtures.ts";
+import { READ_HAIR_PROFILE, openClient } from "./clients-fixtures.ts";
 import { open as openTechnicians } from "./technicians-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { tables } from "../../packages/ui/words.ts";
@@ -157,4 +158,22 @@ test("keeps a long choice and a long link inside the screen", async ({ page }) =
   const link = page.getByRole("dialog", { name: partner.name }).getByRole("link", { name: new RegExp(partner.code) });
   expect(await link.evaluate(right)).toBeLessThanOrEqual(PHONE.width);
   expect(await pageWidth(page)).toBeLessThanOrEqual(PHONE.width);
+});
+
+test("keeps each of a client's hair profile values whole, inside the profile", async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
+  const profile = page.getByRole("region", { name: opsCopy.clients.profile.title });
+  await expect(profile.getByRole("definition").first()).toBeVisible();
+  const edge = await profile.evaluate((region) => region.getBoundingClientRect().right);
+  const past = await profile
+    .getByRole("definition")
+    .evaluateAll(
+      (values, right) =>
+        values
+          .filter((value) => value.getBoundingClientRect().right > right || value.scrollWidth > value.clientWidth + 1)
+          .map((value) => value.textContent),
+      edge,
+    );
+  expect(past).toEqual([]);
 });

@@ -5,6 +5,7 @@
 import { typeLook } from "@maneman/ui/type";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
+import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -111,14 +112,7 @@ function rowsOf(profile: HairProfileView): { key: string; value: string }[] {
 
 function ProfileRows({ profile }: { profile: HairProfileView }) {
   return (
-    <dl className={styles.rows}>
-      {rowsOf(profile).map((row) => (
-        <div className={styles.row} key={row.key}>
-          <dt className={styles.rowKey}>{row.key}</dt>
-          <dd className={styles.rowValue}>{row.value}</dd>
-        </div>
-      ))}
-    </dl>
+    <DescriptionList layout="list" items={rowsOf(profile).map((row) => ({ term: row.key, details: row.value }))} />
   );
 }
 
