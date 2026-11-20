@@ -167,6 +167,37 @@ describe("a first fit's conversions", () => {
   });
 });
 
+describe("a client who declined the cookie bar", () => {
+  it("has none of Meta's cookies, address or browser sent, though an earlier touch kept them", async () => {
+    const id = await client("+919810000019");
+    const touch = (touchId: string, at: string, consent: "granted" | "denied", kept: boolean) =>
+      env.DB.prepare(
+        `INSERT INTO touches (id, at, via, person_id, channel, campaign_signal, ad_consent, fbc, client_ip, user_agent)
+         VALUES (?1, ?2, 'site', ?3, 'meta_ads', 1, ?4, ?5, ?6, ?7)`,
+      )
+        .bind(
+          touchId,
+          at,
+          id,
+          consent,
+          kept ? "fb.1.1790000000000.IwAR_test" : null,
+          kept ? "203.0.113.7" : null,
+          kept ? "Mozilla/5.0" : null,
+        )
+        .run();
+    await touch("landed", later(-9 * 24 * 60).toISOString(), "granted", true);
+    await touch("declined", later(-8 * 24 * 60).toISOString(), "denied", false);
+    await firstFitPaid(id);
+    await run(stubs());
+
+    const sent = STUB_SENT.filter((each) => each.platform === "meta").map((each) => each.conversion.browser);
+    expect(sent.length).toBeGreaterThan(0);
+    expect(sent.every((browser) => browser.fbc === null && browser.ip === null && browser.userAgent === null)).toBe(
+      true,
+    );
+  });
+});
+
 describe("a platform that is down", () => {
   it("is tried again after 1, 5, 30, 120 and 720 minutes, then given up, its words kept", async () => {
     await firstFitPaid(await client("+919810000016"));

@@ -88,7 +88,8 @@ const WRITE_GOOGLE = `UPDATE conversions SET google_state = ?2, google_tries = g
 
 /**
  * The browser's cookies, address and agent: the lead's own touch for a lead, else the client's latest that had any,
- * before the event and within the lookback.
+ * before the event and within the lookback, and after the last time before it they declined the cookie bar: a Decline
+ * keeps what came before it from being sent too.
  */
 async function browserOf(db: D1Database, due: Due, since: string): Promise<Browser | null> {
   const has = "(t.fbc IS NOT NULL OR t.fbp IS NOT NULL OR t.client_ip IS NOT NULL OR t.user_agent IS NOT NULL)";
@@ -104,7 +105,10 @@ async function browserOf(db: D1Database, due: Due, since: string): Promise<Brows
   return db
     .prepare(
       `SELECT t.fbc, t.fbp, t.client_ip, t.user_agent FROM touches t
-       WHERE t.person_id = ?1 AND t.at <= ?2 AND t.at >= ?3 AND ${has} ORDER BY t.at DESC LIMIT 1`,
+       WHERE t.person_id = ?1 AND t.at <= ?2 AND t.at >= ?3 AND ${has}
+         AND t.at > COALESCE((SELECT MAX(d.at) FROM touches d
+           WHERE d.person_id = ?1 AND d.ad_consent = 'denied' AND d.at <= ?2), '')
+       ORDER BY t.at DESC LIMIT 1`,
     )
     .bind(due.person_id, due.occurred_at, since)
     .first<Browser>();
