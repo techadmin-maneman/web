@@ -62,6 +62,7 @@ export const shell = {
     referrals: "Referrals",
     waitlist: "Waitlist",
     spend: "Spend",
+    "campaign-links": "Campaign links",
     "care-numbers": "Care numbers",
     activity: "Activity",
   },

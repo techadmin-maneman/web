@@ -155,7 +155,7 @@ export async function requeueLeads(context: SweepContext): Promise<string[]> {
       .prepare(
         `SELECT id FROM leads
        WHERE ((sync_state = 'pending' AND created_at < ?1) OR (sync_state = 'failed' AND sync_attempts < ?2))
-         AND (?4 = 1 OR source <> 'whatsapp')
+         AND (?4 = 1 OR source NOT IN ('whatsapp', 'phone'))
        ORDER BY created_at LIMIT ?3`,
       )
       .bind(before(PENDING_GRACE_MS), MAX_SYNC_ATTEMPTS, BATCH_LIMIT, CRM_ORG_HAS_CARE_FIELDS ? 1 : 0),

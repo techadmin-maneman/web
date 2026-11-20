@@ -77,6 +77,7 @@ export const AUDIT_ACTIONS = [
   "campaign_link.retire",
   "lead.call",
   "client.heard_from",
+  "client.sharing_stop",
   // Ops opening one of a client's photographs.
   "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).

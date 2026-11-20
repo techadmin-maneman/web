@@ -73,6 +73,8 @@ import { registerOpsSlotTimes } from "./slot-times.ts";
 import { registerOpsClientExport } from "./client-export.ts";
 import { registerOpsSpend } from "./spend.ts";
 import { registerOpsFunnel } from "./funnel.ts";
+import { registerOpsAttribution } from "./attribution.ts";
+import { registerOpsCampaignLinks } from "./campaign-links.ts";
 import { registerOpsStaff } from "./staff.ts";
 import { registerOpsStandardCosts } from "./standard-costs.ts";
 import { registerOpsForecast } from "./stock-forecast.ts";
@@ -163,6 +165,8 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsQuickReplies,
   registerOpsSpend,
   registerOpsFunnel,
+  registerOpsAttribution,
+  registerOpsCampaignLinks,
   registerOpsStandardCosts,
   registerOpsTargets,
   registerOpsVisitLostReason,

@@ -10,8 +10,12 @@ export const DELIVERY_ONLY: LeadStatus = "Try-on — delivery only";
 /** Someone who only wrote to us, whom Care saved from the chat: answered there, never chased (ADR 0138). */
 export const ANSWER_IN_CHAT: LeadStatus = "WhatsApp — answer in chat";
 
+/** Someone who called us, whom ops took as a lead on the call: answered there, never chased (ADR 0288). */
+export const ANSWER_ON_CALL: LeadStatus = "Phone — answer on the call";
+
 /** The status for a person's first CRM record. */
 export function statusForNewRecord(lead: CrmLead): LeadStatus {
+  if (!lead.contactable && lead.source === "phone") return ANSWER_ON_CALL;
   if (!lead.contactable) return lead.source === "whatsapp" ? ANSWER_IN_CHAT : DELIVERY_ONLY;
   return lead.source === "waitlist" ? "Waitlist" : "New";
 }

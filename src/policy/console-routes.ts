@@ -236,8 +236,17 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "PATCH /api/quick-replies/{id}": need("customer_care", "manage"),
   // The site's words and the WhatsApp messages (docs/decisions/0126-the-words-page.md).
   "GET /api/spend": need("growth", "view"),
-  "GET /api/growth/funnel": need("growth", "view"),
+  "GET /api/growth/acquisition": need("growth", "view"),
   "POST /api/spend": need("growth", "manage"),
+  "POST /api/spend/import": need("growth", "manage"),
+  // Campaign links and what clients tell ops of how they found us (docs/decisions/0288-attribution-and-conversions.md).
+  "GET /api/campaign-links": need("growth", "view"),
+  "POST /api/campaign-links": need("growth", "manage"),
+  "POST /api/campaign-links/{id}/retire": need("growth", "manage"),
+  "POST /api/leads/call": need("customer_care", "act"),
+  "GET /api/clients/{id}/attribution": inOwnPlaces("customer_care", "view"),
+  "PUT /api/clients/{id}/heard-from": inOwnPlaces("customer_care", "act"),
+  "POST /api/clients/{id}/stop-sharing": inOwnPlaces("customer_care", "manage"),
   "POST /api/spend/{id}/remove": need("growth", "manage"),
   "GET /api/words": need("growth", "view"),
   "GET /api/words/history": need("growth", "view"),

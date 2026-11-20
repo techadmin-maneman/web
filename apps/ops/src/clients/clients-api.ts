@@ -3,7 +3,7 @@
 // refund, and erasing the client. Each is the console's client's (../api.ts), one function a route, so a call is found,
 // and changed, in one place.
 
-import type { Sent } from "@maneman/web-kit/api";
+import type { Sent, Success } from "@maneman/web-kit/api";
 import {
   client,
   type ClientListQuery,
@@ -18,7 +18,16 @@ import {
 } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 
+export type ClientAttribution = Success<paths["/api/clients/{id}/attribution"]["get"]>;
+export type HeardFromAnswer = Sent<paths["/api/clients/{id}/heard-from"]["put"]>;
+export type CallLead = Sent<paths["/api/leads/call"]["post"]>;
+
 export const clientsApi = {
+  attribution: (id: string) => client.get("/api/clients/{id}/attribution", { path: { id } }),
+  setHeardFrom: (id: string, body: HeardFromAnswer) =>
+    client.put("/api/clients/{id}/heard-from", { path: { id }, body }),
+  stopSharing: (id: string) => client.post("/api/clients/{id}/stop-sharing", { path: { id } }),
+  leadFromCall: (body: CallLead) => client.post("/api/leads/call", { body }),
   customOrders: (id: string) => client.get("/api/clients/{id}/custom-orders", { path: { id } }),
   raiseCustomOrder: (id: string, body: Sent<paths["/api/clients/{id}/custom-orders"]["post"]>) =>
     client.post("/api/clients/{id}/custom-orders", { path: { id }, body }),

@@ -13,6 +13,8 @@ import { clients } from "../content.ts";
 import { keepSearch, keptSearch, recentClients, type KeptSearch } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
+import { PageActions } from "../frame/PageHead.tsx";
+import { CallLead } from "./CallLead.tsx";
 import { ClientList } from "./ClientList.tsx";
 import styles from "./clients.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
@@ -148,6 +150,9 @@ export function FindClientScreen() {
   );
   return (
     <>
+      <PageActions>
+        <CallLead />
+      </PageActions>
       {finding.step === "idle" && <Recent />}
       <ClientList
         search={box}

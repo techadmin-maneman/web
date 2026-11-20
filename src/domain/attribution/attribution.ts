@@ -2,7 +2,7 @@
 // moved; their last, the latest a campaign put something in; their channel, the first touch's unless a code of ours
 // reached us before their first consultation was booked; and, kept apart, what they told ops when asked.
 
-import { clientChannel, type ChannelCode, type TouchCode } from "../../policy/channels.ts";
+import { clientChannel, type ChannelCode, type TouchCode, type TouchVia } from "../../policy/channels.ts";
 import type { HeardFrom } from "../../policy/heard-from.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
@@ -127,4 +127,100 @@ export async function setHeardFrom(
       change.now,
     ),
   ]);
+}
+
+/**
+ * Stops anything more of the client's going to Google or Meta, as they asked: recorded with who took the request, and
+ * each conversion of theirs still waiting let go. Audited.
+ */
+export async function stopSharing(
+  db: D1Database,
+  change: { readonly personId: string; readonly actor: AuditActor; readonly requestId: string; readonly now: Date },
+): Promise<void> {
+  const at = change.now.toISOString();
+  const letGo = (platform: "meta" | "google") =>
+    db
+      .prepare(
+        `UPDATE conversions SET ${platform}_state = 'skipped', ${platform}_error = 'sharing_stopped',
+           ${platform}_next_at = NULL
+         WHERE person_id = ?1 AND ${platform}_state = 'pending'`,
+      )
+      .bind(change.personId);
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO person_attribution (person_id, sharing_stopped_at, sharing_stopped_by, updated_at)
+         VALUES (?1, ?2, ?3, ?2)
+         ON CONFLICT (person_id) DO UPDATE SET sharing_stopped_at = COALESCE(person_attribution.sharing_stopped_at,
+           excluded.sharing_stopped_at), sharing_stopped_by = COALESCE(person_attribution.sharing_stopped_by,
+           excluded.sharing_stopped_by), updated_at = excluded.updated_at`,
+      )
+      .bind(change.personId, at, change.actor.id),
+    letGo("meta"),
+    letGo("google"),
+    auditStatement(
+      db,
+      {
+        surface: "ops",
+        actor: change.actor,
+        action: "client.sharing_stop",
+        subject: { kind: "person", id: change.personId },
+        requestId: change.requestId,
+      },
+      change.now,
+    ),
+  ]);
+}
+
+/** A touch as the client's page shows it. */
+export interface TouchShown {
+  readonly at: string;
+  readonly via: TouchVia;
+  readonly channel: ChannelCode;
+  readonly utm_source: string | null;
+  readonly utm_medium: string | null;
+  readonly utm_campaign: string | null;
+  readonly landing_path: string | null;
+  readonly referrer: string | null;
+  readonly link_name: string | null;
+}
+
+export interface ClientAttribution {
+  readonly attributed_channel: ChannelCode | null;
+  readonly last_touch_channel: ChannelCode | null;
+  readonly first_touch: TouchShown | null;
+  readonly last_touch: TouchShown | null;
+  readonly touches: number;
+  readonly heard_from: HeardFrom | null;
+  readonly heard_from_other: string | null;
+  readonly heard_from_at: string | null;
+  readonly sharing_stopped_at: string | null;
+}
+
+const SHOWN = `SELECT t.at, t.via, t.channel, t.utm_source, t.utm_medium, t.utm_campaign, t.landing_path, t.referrer,
+    (SELECT l.name FROM campaign_links l WHERE l.id = t.link_id) AS link_name
+  FROM touches t WHERE t.id = ?1`;
+
+/** How the client found us, as their page shows it: null for a client we hold nothing of. */
+export async function clientAttribution(db: D1Database, personId: string): Promise<ClientAttribution | null> {
+  const row = await db
+    .prepare(
+      `SELECT first_touch_id, last_touch_id, attributed_channel, last_touch_channel, heard_from, heard_from_other,
+         heard_from_at, sharing_stopped_at,
+         (SELECT COUNT(*) FROM touches t WHERE t.person_id = ?1) AS touches
+       FROM person_attribution WHERE person_id = ?1`,
+    )
+    .bind(personId)
+    .first<
+      Omit<ClientAttribution, "first_touch" | "last_touch"> & {
+        first_touch_id: string | null;
+        last_touch_id: string | null;
+      }
+    >();
+  if (row === null) return null;
+  const touchOf = (id: string | null) =>
+    id === null ? Promise.resolve(null) : db.prepare(SHOWN).bind(id).first<TouchShown>();
+  const [first, last] = await Promise.all([touchOf(row.first_touch_id), touchOf(row.last_touch_id)]);
+  const { first_touch_id: _first, last_touch_id: _last, ...rest } = row;
+  return { ...rest, first_touch: first, last_touch: last };
 }

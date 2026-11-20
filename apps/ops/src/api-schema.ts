@@ -9511,18 +9511,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/growth/funnel": {
+    "/api/growth/acquisition": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** The growth funnel over the last 30 or 90 days: try-ons, then leads to consultations to fits, by channel */
+        /** Spend, leads, consultations, first fits and their revenue by channel, for a week or a month */
         get: {
             parameters: {
                 query?: {
-                    days?: "30" | "90";
+                    period?: "week" | "month";
+                    /** @description A day in the week or month wanted; this week or month where left out. */
+                    starting?: string;
+                    /** @description The client's channel, or their last touch's when each thing happened. */
+                    by?: "first" | "last";
+                    channel?: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
                 };
                 header?: never;
                 path?: never;
@@ -9530,13 +9535,13 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The funnel */
+                /** @description The figures */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["GrowthFunnel"];
+                        "application/json": components["schemas"]["Acquisition"];
                     };
                 };
                 /** @description invalid_request */
@@ -9579,6 +9584,577 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/leads/call": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take a lead on a call: a new number is a person and a phone lead, a known one a touch of theirs */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CallLead"];
+                };
+            };
+            responses: {
+                /** @description Taken */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CallLeadTaken"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/attribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How a client found us: their channel by the rule, their first and last touch, and what they told ops */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Their attribution; every field empty for a client we hold nothing of */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClientAttribution"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such client within the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/heard-from": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** What the client told ops of how they heard of us, kept apart from the channel the rule gives */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["HeardFrom"];
+                };
+            };
+            responses: {
+                /** @description Kept */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such client within the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{id}/stop-sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send nothing more of the client's to Google or Meta, as they asked; whatever was waiting is let go */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Stopped */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such client within the caller's cities */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaign-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every campaign link, the newest first, and the discount codes and tags a new one may take */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The links */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CampaignLinks"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Make a society activation's link, with its costs as spend, or an offer's */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CampaignLinkNew"];
+                };
+            };
+            responses: {
+                /** @description Made */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CampaignLink"];
+                    };
+                };
+                /** @description invalid_request: fields names pincode for one we cannot place, city for one we do not hold, or discount_code_id for a code switched off or not for a first fit */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaign-links/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire a link: it sends visitors to /book with nothing, and keeps what it brought */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Retired */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such link, or retired already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -11620,7 +12196,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "quick_reply.change" | "qc_point.add" | "qc_point.change" | "qc_point.delete" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "spend.import" | "campaign_link.add" | "campaign_link.retire" | "lead.call" | "client.heard_from" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.delete" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "zone.rename" | "zone.delete" | "city.rename" | "city.delete" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.change" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "quick_reply.change" | "qc_point.add" | "qc_point.change" | "qc_point.delete" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "spend.import" | "campaign_link.add" | "campaign_link.retire" | "lead.call" | "client.heard_from" | "client.sharing_stop" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.delete" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "zone.rename" | "zone.delete" | "city.rename" | "city.delete" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.change" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -29717,38 +30293,185 @@ export interface components {
                 amount: number;
             }[];
         };
-        GrowthFunnel: {
+        Acquisition: {
+            /** @enum {string} */
+            period: "week" | "month";
             /** Format: date */
             from: string;
             /**
              * Format: date
-             * @description The last day counted.
+             * @description The period's last day.
              */
             to: string;
-            /** @description First looks at the try-on, a second look of one photo not again. */
-            tryons: number;
-            steps: {
-                /** @description Clients whose first lead in the period came then. */
-                leads: number;
-                /** @description Of those, how many booked a consultation. */
-                booked: number;
-                /** @description Had one, or a first fit, which counts as one. */
-                consulted: number;
-                /** @description Were fitted. */
-                fitted: number;
-            };
-            channels: {
+            /** @enum {string} */
+            by: "first" | "last";
+            rows: {
                 /** @enum {string} */
-                channel: "Google Ads" | "Meta Ads" | "Referral" | "Organic search" | "Direct" | "Offline and partners" | "Society activations" | "Organic social" | "Other sites" | "WhatsApp" | "Phone";
-                /** @description Clients whose first lead in the period came then. */
+                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                /** @description Paise, before GST. */
+                spend: number;
+                /** @description Clients whose first lead came in the period. */
                 leads: number;
-                /** @description Of those, how many booked a consultation. */
-                booked: number;
-                /** @description Had one, or a first fit, which counts as one. */
-                consulted: number;
-                /** @description Were fitted. */
-                fitted: number;
+                consults_booked: number;
+                consults_done: number;
+                /** @description Clients whose first fit was paid in the period. */
+                first_fits: number;
+                /** @description Paise, before GST, less refunds. */
+                first_fit_revenue: number;
             }[];
+            totals: {
+                /** @description Paise, before GST. */
+                spend: number;
+                /** @description Clients whose first lead came in the period. */
+                leads: number;
+                consults_booked: number;
+                consults_done: number;
+                /** @description Clients whose first fit was paid in the period. */
+                first_fits: number;
+                /** @description Paise, before GST, less refunds. */
+                first_fit_revenue: number;
+            };
+            cohorts: {
+                /** @enum {string} */
+                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                clients: number;
+                d30: number;
+                d90: number;
+                d180: number;
+            }[];
+            cohort_complete: {
+                d30: boolean;
+                d90: boolean;
+                d180: boolean;
+            };
+            heard: {
+                /** @enum {string} */
+                heard_from: "google" | "instagram_facebook" | "youtube" | "friend" | "society" | "salon_partner" | "whatsapp" | "flyer" | "other" | "not_asked";
+                /** @enum {string} */
+                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                clients: number;
+            }[];
+            /** @description First looks at the try-on in the period. */
+            tryons: number;
+        };
+        CallLeadTaken: {
+            /** Format: uuid */
+            person_id: string;
+            /** @description The number is one of our people's; no lead was made. */
+            known: boolean;
+        };
+        CallLead: {
+            /** @description Letters, spaces, dots, apostrophes and hyphens, starting with a letter. */
+            name: string;
+            mobile: string;
+            /**
+             * @description Where the caller came from, as ops picked it.
+             * @enum {string}
+             */
+            channel: "google_ads" | "meta_ads" | "referral" | "partner" | "society" | "organic_search" | "organic_social" | "direct";
+        };
+        ClientAttribution: {
+            attributed_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
+            last_touch_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
+            first_touch: components["schemas"]["TouchShown"] | null;
+            last_touch: components["schemas"]["TouchShown"] | null;
+            touches: number;
+            heard_from: ("google" | "instagram_facebook" | "youtube" | "friend" | "society" | "salon_partner" | "whatsapp" | "flyer" | "other") | null;
+            heard_from_other: string | null;
+            heard_from_at: string | null;
+            sharing_stopped_at: string | null;
+        };
+        TouchShown: {
+            /** Format: date-time */
+            at: string;
+            /** @enum {string} */
+            via: "site" | "whatsapp" | "call";
+            /** @enum {string} */
+            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+            utm_source: string | null;
+            utm_medium: string | null;
+            utm_campaign: string | null;
+            landing_path: string | null;
+            referrer: string | null;
+            /** @description The campaign link it came through. */
+            link_name: string | null;
+        };
+        HeardFrom: {
+            /** @enum {string} */
+            heard_from: "google" | "instagram_facebook" | "youtube" | "friend" | "society" | "salon_partner" | "whatsapp" | "flyer" | "other";
+            heard_from_other?: string;
+        };
+        CampaignLinks: {
+            links: components["schemas"]["CampaignLink"][];
+            discount_codes: {
+                /** Format: uuid */
+                id: string;
+                code: string;
+                /** @enum {string} */
+                kind: "percent" | "amount";
+                value: number;
+                expires_on: string | null;
+            }[];
+            sources: ("google" | "meta" | "youtube" | "whatsapp" | "newsletter" | "partner")[];
+            mediums: ("cpc" | "paid_social" | "social" | "email" | "offline")[];
+            /** @description The cities an offer link may be aimed at. */
+            cities: string[];
+        };
+        CampaignLink: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "society" | "offer";
+            slug: string;
+            code: string;
+            name: string;
+            utm_source: string;
+            utm_medium: string;
+            utm_campaign: string;
+            city: string | null;
+            pincode: string | null;
+            held_date: string | null;
+            discount_code: string | null;
+            /** @description The link to print or share: /s/<slug> or /o/<slug> on our site. */
+            short_link: string;
+            created_by: string;
+            /** Format: date-time */
+            created_at: string;
+            retired_at: string | null;
+            /** @description Spend on it, in paise before GST. */
+            spent: number;
+            touches: number;
+            people: number;
+        };
+        CampaignLinkNew: {
+            /** @enum {string} */
+            kind: "society";
+            /** @description The society's name. */
+            name: string;
+            pincode: string;
+            /** Format: date */
+            held_date: string;
+            costs: {
+                /** @enum {string} */
+                line: "stall" | "staff" | "collateral" | "other";
+                /** @description Paise, before GST. */
+                amount: number;
+                note?: string;
+            }[];
+            /** Format: uuid */
+            discount_code_id?: string;
+        } | {
+            /** @enum {string} */
+            kind: "offer";
+            name: string;
+            /** @enum {string} */
+            utm_source: "google" | "meta" | "youtube" | "whatsapp" | "newsletter" | "partner";
+            /** @enum {string} */
+            utm_medium: "cpc" | "paid_social" | "social" | "email" | "offline";
+            utm_campaign: string;
+            city?: string;
+            /** Format: uuid */
+            discount_code_id?: string;
         };
         ProductCosts: {
             products: {
@@ -30060,7 +30783,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "quick_reply.change" | "qc_point.add" | "qc_point.change" | "qc_point.delete" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "spend.import" | "campaign_link.add" | "campaign_link.retire" | "lead.call" | "client.heard_from" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.delete" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "zone.rename" | "zone.delete" | "city.rename" | "city.delete" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.change" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "quick_reply.change" | "qc_point.add" | "qc_point.change" | "qc_point.delete" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "spend.import" | "campaign_link.add" | "campaign_link.retire" | "lead.call" | "client.heard_from" | "client.sharing_stop" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.delete" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "zone.rename" | "zone.delete" | "city.rename" | "city.delete" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.change" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;

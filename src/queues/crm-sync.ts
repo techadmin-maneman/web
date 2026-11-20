@@ -129,8 +129,9 @@ export async function syncLead(
     return { retrySoon: false };
   }
   if (row.sync_state === "synced") return { retrySoon: false }; // a duplicate message
-  // Zoho refuses the WhatsApp source and status until the org has them: the lead waits, pending, for the switch.
-  if (row.source === "whatsapp" && !CRM_ORG_HAS_CARE_FIELDS) return { retrySoon: false };
+  // Zoho refuses the WhatsApp and phone sources and statuses until the org has them: the lead waits, pending, for the
+  // switch.
+  if ((row.source === "whatsapp" || row.source === "phone") && !CRM_ORG_HAS_CARE_FIELDS) return { retrySoon: false };
   if (row.erased_at !== null) {
     // Sending it would put the person back in the CRM. Given up at once, so the sweeper leaves it alone.
     await db

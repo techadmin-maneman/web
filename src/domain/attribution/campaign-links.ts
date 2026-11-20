@@ -276,3 +276,16 @@ export async function landingOfLink(db: D1Database, kind: "s" | "o", slug: strin
 /** A link's short address on the site, as its QR code and the console show it. */
 export const shortLinkOf = (environment: EnvironmentName, link: { kind: LinkKind; slug: string }): string =>
   `${PUBLIC_ORIGIN[environment]}${LINK_PATH[link.kind]}${link.slug}`;
+
+/** The discount codes a link may carry: Finance's, switched on, covering a first fit, with what each takes off. */
+export async function linkableCodes(
+  db: D1Database,
+): Promise<{ id: string; code: string; kind: string; value: number; expires_on: string | null }[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT id, code, kind, value, expires_on FROM discount_codes
+       WHERE switched_off_at IS NULL AND covers_first_fit = 1 ORDER BY code`,
+    )
+    .all<{ id: string; code: string; kind: string; value: number; expires_on: string | null }>();
+  return results;
+}

@@ -3,6 +3,7 @@
 // right (./ClientAside.tsx). The record is read once for the page, so moving between tabs costs no request; an erased
 // client's page keeps only their visits and money (Erase.tsx).
 
+import { FoundUs } from "./FoundUs.tsx";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { GLYPHS, ICONS } from "@maneman/brand/icons";
@@ -157,14 +158,17 @@ function Tab(props: TabProps) {
     return <ClientChat clientId={clientId} mobile={record.mobile} none={<WhatsApp record={record} />} />;
   if (tab === "referrals")
     return (
-      <Invite
-        clientId={clientId}
-        invite={props.attached?.invite ?? record.invite}
-        news={props.attached?.news ?? null}
-        onInvite={(invite, news) => {
-          props.onAttached({ invite, news });
-        }}
-      />
+      <>
+        <FoundUs clientId={clientId} name={record.name} />
+        <Invite
+          clientId={clientId}
+          invite={props.attached?.invite ?? record.invite}
+          news={props.attached?.news ?? null}
+          onInvite={(invite, news) => {
+            props.onAttached({ invite, news });
+          }}
+        />
+      </>
     );
   if (tab === "consents") return <Consents clientId={clientId} name={record.name} onErased={props.onErased} />;
   if (tab === "history") return <History clientId={clientId} history={record.history} />;
