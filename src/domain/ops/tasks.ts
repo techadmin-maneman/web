@@ -28,7 +28,8 @@ import {
   type NextVisitDays,
 } from "../../policy/next-visit.ts";
 import { closedIfSentBy } from "../../policy/one-visit.ts";
-import { dueAt, type Slas, type TaskGroup } from "../../policy/tasks.ts";
+import { dueAt, TASK_LAPSE_DAYS, type Slas, type TaskGroup } from "../../policy/tasks.ts";
+import { DAY_MS } from "../../lib/durations.ts";
 import { CARE_HOURS, type CareHours } from "../../policy/care-hours.ts";
 import { overdueChats } from "../care/chat-tasks.ts";
 import { reachBinding } from "../clients/places.ts";
@@ -203,6 +204,8 @@ interface BoardScope {
   readonly lostAfter?: number;
   /** The arrival window's minutes after a visit's start, past which a visit not begun is a task. */
   readonly arrival?: number;
+  /** The days after which a task lapses off the board (src/policy/tasks.ts), which some queues read no further back than. */
+  readonly lapseDays?: number;
   /** Where the caller's grants reach for each group; everywhere when left out, as the nightly look reads. */
   readonly reach?: (group: TaskGroup) => PlacesReached;
   /** One client's tasks alone. */
@@ -255,7 +258,13 @@ function readAt(
     lostAfter,
     every,
     arrival,
-  }: { lostAfter: number; every: { readonly least: number; readonly most: number }; arrival: number },
+    lapseDays,
+  }: {
+    lostAfter: number;
+    every: { readonly least: number; readonly most: number };
+    arrival: number;
+    lapseDays: number;
+  },
 ): ReadAt {
   const today = indiaDate(now);
   // The first moment after each last day, as the instants the visits' starts are compared with.
@@ -272,6 +281,7 @@ function readAt(
     notLostFrom: after(lostIfDoneBy(today, standing)),
     toBookBefore: after(firstFitToBookIfConsultedBy(today, days)),
     linksClosedIfSentBy: closedIfSentBy(now).toISOString(),
+    lapsedBefore: new Date(now.getTime() - lapseDays * DAY_MS).toISOString(),
     arrival,
   };
 }
@@ -285,7 +295,8 @@ export async function outstandingTasks(
 ): Promise<Outstanding> {
   const { days = NEXT_VISIT_DAYS, hours = CARE_HOURS, lostAfter = LOST_AFTER_DAYS } = scope;
   const arrival = scope.arrival ?? BOOKING_RULES.arrival;
-  const at = readAt(now, days, { lostAfter, every: await cadenceRange(db), arrival });
+  const lapseDays = scope.lapseDays ?? TASK_LAPSE_DAYS;
+  const at = readAt(now, days, { lostAfter, every: await cadenceRange(db), arrival, lapseDays });
   const [answers, schedule] = await Promise.all([
     db.batch<Row>(QUEUES.map((queue) => statementOf(db, queue, { at, scope, read: withOwners }))),
     loadSlotSchedule(db),

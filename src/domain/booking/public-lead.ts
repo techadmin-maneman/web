@@ -27,6 +27,8 @@ interface LeadRequest {
   readonly mobile: string;
   readonly turnstileToken: string;
   readonly attribution: LeadAttribution;
+  /** The version of the notice on Google and Meta the step showed; null where it showed none we know. */
+  readonly adNotice: string | null;
 }
 
 /** Whether the person left their name and number here in the last day. */
@@ -63,7 +65,14 @@ export async function leaveNameAndNumber(
     if (knownId !== null) {
       await touchForLead(
         db,
-        { leadId: null, personId: knownId, visit: form.visit, attribution: request.attribution, now },
+        {
+          leadId: null,
+          personId: knownId,
+          visit: form.visit,
+          attribution: request.attribution,
+          adNotice: request.adNotice,
+          now,
+        },
         form.log,
       );
     }
@@ -90,6 +99,7 @@ export async function leaveNameAndNumber(
     lossExtent: null,
     date: null,
     attribution: request.attribution,
+    adNotice: request.adNotice,
     served: true,
     now,
   });

@@ -9,9 +9,15 @@ import type { CronContext } from "./cron.ts";
 
 export async function taskSpansJob({ env, deps, log, inputs, config }: CronContext): Promise<void> {
   const now = deps.now();
-  const { taskSlaHours, nextVisitDays, careHours, lostAfterDays, bookingRules } = await inputs();
+  const { taskSlaHours, nextVisitDays, careHours, lostAfterDays, bookingRules, taskLapseDays } = await inputs();
   const days = boardDays(nextVisitDays, selfServeKinds(config.settings).includes("first_fit"));
-  const scope = { days, hours: careHours, lostAfter: lostAfterDays, arrival: bookingRules.arrival };
+  const scope = {
+    days,
+    hours: careHours,
+    lostAfter: lostAfterDays,
+    arrival: bookingRules.arrival,
+    lapseDays: taskLapseDays,
+  };
   const board = await outstandingTasks(env.DB, now, taskSlaHours, scope);
   const { opened, closed } = await recordTaskSpans(env.DB, board, now);
   if (opened + closed > 0) log.info("task_spans_recorded", { opened, closed });

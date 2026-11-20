@@ -106,7 +106,7 @@ describe("/book's first step", () => {
     });
     expect(await rows("SELECT COUNT(*) AS n FROM touches WHERE person_id IS NULL")).toEqual([{ n: 0 }]);
     const [lead] = await rows(
-      `SELECT l.ad_notice, t.user_agent, t.client_ip, t.fbc FROM leads l JOIN touches t ON t.id = l.touch_id`,
+      `SELECT t.ad_notice, t.user_agent, t.client_ip, t.fbc FROM leads l JOIN touches t ON t.id = l.touch_id`,
     );
     expect(lead).toEqual({
       ad_notice: AD_NOTICE.version,
@@ -157,6 +157,21 @@ describe("/book's first step", () => {
       first_gclid: "Cj0KCQ_first",
       last_source: "meta",
     });
+  });
+});
+
+describe("the notice on Google and Meta", () => {
+  it("is kept with the touch of each first step that showed it, a number we hold included", async () => {
+    await leave({ attribution: { landing_path: "/book" }, ad_notice: AD_NOTICE.version });
+    await leave({ attribution: { landing_path: "/book" }, ad_notice: AD_NOTICE.version }, OTHER_VISITOR);
+    await leave({ attribution: { landing_path: "/book" }, ad_notice: "an-old-version" }, OTHER_VISITOR);
+
+    expect(await rows("SELECT COUNT(*) AS leads FROM leads")).toEqual([{ leads: 1 }]);
+    expect(await rows("SELECT ad_notice FROM touches ORDER BY rowid")).toEqual([
+      { ad_notice: AD_NOTICE.version },
+      { ad_notice: AD_NOTICE.version },
+      { ad_notice: null },
+    ]);
   });
 });
 

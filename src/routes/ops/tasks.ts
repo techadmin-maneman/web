@@ -284,6 +284,7 @@ async function readTheBoard(c: Context<AppEnv>, level: Level, person?: string, c
     hours: inputs.careHours,
     lostAfter: inputs.lostAfterDays,
     arrival: inputs.bookingRules.arrival,
+    lapseDays: inputs.taskLapseDays,
     reach: (group: TaskGroup) => narrowedTo(placesReached(access, TASK_DEPARTMENTS[group], level), city),
     person,
   });

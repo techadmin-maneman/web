@@ -777,7 +777,6 @@ export interface Rows {
     readonly fsm_request_tried_at: string | null;
     readonly found_us: string | null;
     readonly touch_id: string | null;
-    readonly ad_notice: string | null;
     readonly source: string | null;
   };
   readonly leave_requests: {
@@ -1921,6 +1920,7 @@ export interface Rows {
     readonly channel: string;
     readonly campaign_signal: number;
     readonly ad_consent: string | null;
+    readonly ad_notice: string | null;
     readonly user_agent: string | null;
     readonly client_ip: string | null;
   };

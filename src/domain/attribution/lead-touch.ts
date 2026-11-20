@@ -48,6 +48,8 @@ interface FormTouch {
   readonly personId: string;
   readonly visit: VisitContext;
   readonly attribution: PageTouch;
+  /** The version of the notice on Google and Meta the form showed, where it showed one. */
+  readonly adNotice?: string | null;
   readonly now: Date;
 }
 
@@ -69,6 +71,7 @@ export async function touchForLead(db: D1Database, lead: FormTouch, log: Logger)
       resolved,
       declared: null,
       adConsent: attribution.ad_consent ?? null,
+      adNotice: lead.adNotice ?? null,
       userAgent: visit.userAgent,
       clientIp: visit.clientIp,
     });

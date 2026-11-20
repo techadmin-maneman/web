@@ -1760,7 +1760,6 @@ Made by `0002_lead_path.sql`; changed by `0015_fsm_leads.sql`, `0031_optional_lo
 | `fsm_request_tried_at` | TEXT | yes |  |  | Set before a lead's Request is first asked of FSM, as for a work order above. |
 | `found_us` | TEXT | yes |  |  | How the client told Care they found us, for a lead Care saved from a chat (docs/decisions/0148-the-channel-rule.md): one of the channel codes in src/policy/channels.ts. NULL for a lead from the site, whose tags tell. |
 | `touch_id` | TEXT | yes |  | → `touches.id` | The touch a lead was made by; empty on a lead from before, which the cron gives one (src/domain/attribution/backfill.ts). |
-| `ad_notice` | TEXT | yes |  |  | The version of the line /book's first step shows on Google and Meta (src/config/notices.ts, AD_NOTICE), as the page that made the lead showed it; its time is the lead's own. |
 | `source` | TEXT | yes |  |  |  |
 
 Indexes:
@@ -4006,6 +4005,7 @@ Made by `0227_attribution.sql`.
 | `channel` | TEXT | no |  |  | The touch's channel by the rule (src/policy/channels.ts). |
 | `campaign_signal` | INTEGER | no |  |  | 1 where a campaign put something in it: only such a touch moves the last touch. |
 | `ad_consent` | TEXT | yes |  |  | The visitor's answer to the site's cookie bar: null while unanswered. Denied sends Meta neither cookie nor address. |
+| `ad_notice` | TEXT | yes |  |  | The version of the line /book's first step shows on Google and Meta (src/config/notices.ts, AD_NOTICE), where the touch is that step's; its time is the touch's own. |
 | `user_agent` | TEXT | yes |  |  | For Meta's match only, never shown; cleared 90 days on. |
 | `client_ip` | TEXT | yes |  |  |  |
 

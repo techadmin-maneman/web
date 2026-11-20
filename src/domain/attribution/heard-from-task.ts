@@ -3,14 +3,13 @@
 // waits from the consultation, and goes once ops keep an answer on the client's page. A consultation further back than
 // the board's lapse days is not asked about, and not read: what the board reads stays the consultations of those days.
 
-import { DAY_MS } from "../../lib/durations.ts";
 import type { SqlValue } from "../../lib/sql.ts";
-import { TASK_LAPSE_DAYS, type TaskGroup } from "../../policy/tasks.ts";
+import type { TaskGroup } from "../../policy/tasks.ts";
 
 export const HEARD_FROM_QUEUE: {
   readonly group: TaskGroup;
   readonly sql: string;
-  readonly binds: (at: { readonly now: string }) => readonly SqlValue[];
+  readonly binds: (at: { readonly lapsedBefore: string }) => readonly SqlValue[];
 } = {
   group: "heard_from_missing",
   sql: `SELECT 'heard_from_missing' AS "group", c.person_id AS id, c.person_id AS person_id, pe.name AS person_name,
@@ -21,5 +20,5 @@ export const HEARD_FROM_QUEUE: {
    WHERE c.event = 'consult_done' AND c.occurred_at >= ?1 AND pe.erased_at IS NULL AND pa.heard_from IS NULL
      AND c.occurred_at = (SELECT MIN(x.occurred_at) FROM conversions x
        WHERE x.person_id = c.person_id AND x.event = 'consult_done')`,
-  binds: (at) => [new Date(Date.parse(at.now) - TASK_LAPSE_DAYS * DAY_MS).toISOString()],
+  binds: (at) => [at.lapsedBefore],
 };

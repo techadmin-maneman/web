@@ -7,7 +7,16 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Settings } from "../../../src/config/settings.ts";
 import type { App } from "../../../src/http/context.ts";
-import { appFor, captureLogs, fakeDependencies, fakeQueue, LOCAL_SETTINGS, markDatabase, request } from "../helpers.ts";
+import {
+  appFor,
+  captureLogs,
+  fakeDependencies,
+  fakeQueue,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+} from "../helpers.ts";
 import { listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
 import { site } from "../site/consultations-fixtures.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
@@ -279,5 +288,24 @@ describe("the Tasks board", () => {
     ]);
     await post(care(), `/api/clients/${KNOWN}/heard-from`, { heard_from: "youtube" });
     expect(await heardTasks()).toEqual([]);
+  });
+
+  it("asks no further back than the days ops set tasks to lapse after", async () => {
+    await env.DB.prepare(
+      `INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, attributed_channel,
+         last_touch_channel, meta_state, google_state, created_at)
+       VALUES ('e3', 'consult_done', 'a1', ?1, '2026-07-13T05:00:00.000Z', 'direct', 'direct', 'pending', 'pending',
+         '2026-07-13T05:00:00.000Z')`,
+    )
+      .bind(KNOWN)
+      .run();
+    expect(await heardTasks()).toEqual([]);
+
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('task_lapse_days', '90', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    expect(await heardTasks()).toEqual([expect.objectContaining({ id: KNOWN })]);
   });
 });

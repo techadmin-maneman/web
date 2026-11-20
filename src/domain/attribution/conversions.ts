@@ -3,11 +3,6 @@
 // browser, so its server copy is not for Google. The others are recorded beside the writes that bring them about
 // (./conversion-upkeep.ts).
 
-/** The line /book's first step shows on Google and Meta, kept on the lead as the version the page showed. */
-export async function keepAdNotice(db: D1Database, leadId: string, version: string): Promise<void> {
-  await db.prepare("UPDATE leads SET ad_notice = ?2 WHERE id = ?1").bind(leadId, version).run();
-}
-
 /** Records the lead's conversion, once; a test record's is never sent. */
 export async function recordLeadConversion(
   db: D1Database,

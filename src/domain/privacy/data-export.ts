@@ -105,13 +105,13 @@ export const EXPORT_QUERIES = {
   waitlist: `SELECT pincode, referral_code, contact_consent_at, launch_alert, alerted_at, created_at FROM waitlist_entries
     WHERE person_id = ?1 ORDER BY created_at`,
   leads: `SELECT source, city, loss_extent, first_choice_window, proposed_visit_date, referrer, landing_path, utm_source,
-      utm_medium, utm_campaign, utm_content, gclid, fbclid, found_us, ad_notice, created_at
+      utm_medium, utm_campaign, utm_content, gclid, fbclid, found_us, created_at
     FROM leads WHERE person_id = ?1 ORDER BY created_at`,
   // How each visit, chat and call reached us, how they found us, and what Google and Meta were told
   // (docs/decisions/0288-attribution-and-conversions.md).
   touches: `SELECT at, via, channel, utm_source, utm_medium, utm_campaign, utm_content, utm_term, gclid, gbraid, wbraid,
       fbclid, fbc, fbp, ctwa_clid, ad_source_id, ad_source_url, referrer, landing_path, invite_code, code_kind,
-      declared_channel, declared_by, ad_consent, user_agent, client_ip, visitor_id
+      declared_channel, declared_by, ad_consent, ad_notice, user_agent, client_ip, visitor_id
     FROM touches WHERE person_id = ?1 ORDER BY at`,
   attribution: `SELECT attributed_channel, last_touch_channel, settled_at, heard_from, heard_from_other, heard_from_at,
       sharing_stopped_at

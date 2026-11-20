@@ -187,6 +187,8 @@ export async function recordLead(
     lossExtent: LossExtent | null;
     date: string | null;
     attribution: LeadAttribution;
+    /** The version of the notice on Google and Meta the form showed, where it showed one. */
+    adNotice?: string | null;
     served: boolean;
     now: Date;
   },
@@ -209,7 +211,14 @@ export async function recordLead(
   });
   await touchForLead(
     db,
-    { leadId, personId: input.personId, visit: form.visit, attribution: input.attribution, now: input.now },
+    {
+      leadId,
+      personId: input.personId,
+      visit: form.visit,
+      attribution: input.attribution,
+      adNotice: input.adNotice ?? null,
+      now: input.now,
+    },
     log,
   );
   await enqueue(form.queues.crm, { lead_id: leadId, request_id: requestId }, { log, ifLost: "sweeper" });

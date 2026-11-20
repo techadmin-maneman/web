@@ -88,6 +88,9 @@ CREATE TABLE touches (
   campaign_signal INTEGER NOT NULL CHECK (campaign_signal IN (0, 1)),
   -- The visitor's answer to the site's cookie bar: null while unanswered. Denied sends Meta neither cookie nor address.
   ad_consent TEXT CHECK (ad_consent IN ('granted', 'denied')),
+  -- The version of the line /book's first step shows on Google and Meta (src/config/notices.ts, AD_NOTICE), where the
+  -- touch is that step's; its time is the touch's own.
+  ad_notice TEXT,
   -- For Meta's match only, never shown; cleared 90 days on.
   user_agent TEXT,
   client_ip TEXT
@@ -171,9 +174,6 @@ CREATE INDEX spend_entries_by_link ON spend_entries (link_id) WHERE link_id IS N
 
 -- The touch a lead was made by; empty on a lead from before, which the cron gives one (src/domain/attribution/backfill.ts).
 ALTER TABLE leads ADD COLUMN touch_id TEXT REFERENCES touches (id);
--- The version of the line /book's first step shows on Google and Meta (src/config/notices.ts, AD_NOTICE), as the page
--- that made the lead showed it; its time is the lead's own.
-ALTER TABLE leads ADD COLUMN ad_notice TEXT;
 
 CREATE INDEX leads_without_touch ON leads (created_at) WHERE touch_id IS NULL;
 -- So a touch let go is checked against the leads that name it without reading them all.

@@ -20,7 +20,6 @@ const LEADS_PART: Part = {
     gclid: text("Google ad click"),
     fbclid: text("Facebook ad click"),
     found_us: words("How you told us you found us"),
-    ad_notice: text("What you were told of our ads"),
     created_at: time("When"),
   },
 };
@@ -52,6 +51,7 @@ const TOUCHES_PART: Part = {
     declared_channel: words("Where you said you came from, on a call"),
     declared_by: words("Noted by"),
     ad_consent: words("Your answer about cookies"),
+    ad_notice: text("What you were told of our ads"),
     user_agent: text("Your browser"),
     client_ip: text("Your network address"),
     visitor_id: text("Your browser's code"),

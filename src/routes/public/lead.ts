@@ -4,7 +4,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
-import { keepAdNotice, recordLeadConversion } from "../../domain/attribution/conversions.ts";
+import { recordLeadConversion } from "../../domain/attribution/conversions.ts";
 import { AD_NOTICE } from "../../config/notices.ts";
 import { leaveNameAndNumber } from "../../domain/booking/public-lead.ts";
 import { PUBLIC_ORIGIN } from "../../config/environments.ts";
@@ -67,11 +67,9 @@ export function registerLead(app: App): void {
         mobile: body.mobile,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
+        adNotice: body.ad_notice === AD_NOTICE.version ? body.ad_notice : null,
       });
       if (!left.ok) return left;
-      if (left.lead !== null && body.ad_notice === AD_NOTICE.version) {
-        await keepAdNotice(c.env.DB, left.lead.leadId, body.ad_notice);
-      }
       if (left.lead !== null && body.event_id !== undefined) {
         await recordLeadConversion(c.env.DB, {
           eventId: body.event_id,

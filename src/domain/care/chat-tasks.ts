@@ -38,7 +38,7 @@ const ERASURES_TO_FOLLOW_UP = `SELECT 'erasure_follow_up' AS "group", f.person_i
 export const CARE_QUEUES: readonly {
   readonly group: TaskGroup;
   readonly sql: string;
-  readonly binds?: (at: { readonly now: string }) => readonly SqlValue[];
+  readonly binds?: (at: { readonly lapsedBefore: string }) => readonly SqlValue[];
 }[] = [
   { group: "unanswered_chat", sql: CHATS_WAITING },
   { group: "message_undelivered", sql: MESSAGES_UNDELIVERED },

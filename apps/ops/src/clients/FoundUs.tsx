@@ -9,7 +9,7 @@ import { ChoiceRow, ReadRow, TextRow } from "@maneman/ui/RecordRows";
 import { PanelFailed, PanelLoading } from "@maneman/ui/States";
 import { useLoad } from "@maneman/ui/useLoad";
 import { apiNow } from "@maneman/web-kit/clock";
-import { listDate, yearInIndia } from "@maneman/web-kit/dates";
+import { indiaDate, listDate, yearInIndia } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
 import { channelNamed } from "@rules/policy/channels.ts";
 import { HEARD_FROM } from "@rules/policy/heard-from.ts";
@@ -21,7 +21,8 @@ import { clientsApi, type ClientAttribution } from "./clients-api.ts";
 
 type Touch = NonNullable<ClientAttribution["first_touch"]>;
 
-const dayOf = (instant: string) => listDate(instant.slice(0, 10), yearInIndia(apiNow()));
+/** An instant's day in India, as the console lists days. */
+const dayOf = (instant: string) => listDate(indiaDate(instant), yearInIndia(apiNow()));
 
 /** A touch in a line: its channel, its campaign or link, and its day. */
 const touchWords = (touch: Touch | null) =>

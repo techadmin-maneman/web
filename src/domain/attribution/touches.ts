@@ -113,6 +113,8 @@ export interface NewTouch {
   readonly adConsent: "granted" | "denied" | null;
   readonly userAgent: string | null;
   readonly clientIp: string | null;
+  /** The version of the notice on Google and Meta the touch's page showed, where it showed one. */
+  readonly adNotice?: string | null;
 }
 
 export interface RecordedTouch {
@@ -164,9 +166,9 @@ export function touchStatement(
       `INSERT INTO touches (id, at, via, visitor_id, person_id, mobile_e164, utm_source, utm_medium, utm_campaign,
          utm_content, utm_term, gclid, gbraid, wbraid, fbclid, fbc, fbp, ctwa_clid, ad_source_id, ad_source_url,
          referrer, landing_path, invite_code, code_kind, link_id, declared_channel, declared_by, channel,
-         campaign_signal, ad_consent, user_agent, client_ip)
+         campaign_signal, ad_consent, user_agent, client_ip, ad_notice)
        VALUES (?1, ?2, ?3, (SELECT id FROM visitors WHERE id = ?4), ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22,
-         ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32)`,
+         ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33)`,
     )
     .bind(
       recorded.id,
@@ -201,6 +203,7 @@ export function touchStatement(
       touch.adConsent,
       denied ? null : touch.userAgent,
       denied ? null : touch.clientIp,
+      touch.adNotice ?? null,
     );
   return { statement, recorded };
 }
