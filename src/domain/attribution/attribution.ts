@@ -12,48 +12,42 @@ interface TouchRow {
   readonly channel: ChannelCode;
 }
 
-interface Kept {
-  readonly first_touch_id: string | null;
-  readonly settled_at: string | null;
-}
-
-const TOUCH = "SELECT id, at, channel FROM touches WHERE";
-
-/** The codes that reached us for this person before `until`, or ever while it is null. */
-async function codesBefore(db: D1Database, personId: string, until: string | null): Promise<Set<TouchCode>> {
-  const by = until ?? "9999";
-  const rows = await db
-    .prepare(
-      `SELECT code_kind AS code FROM touches WHERE person_id = ?1 AND code_kind IS NOT NULL AND at <= ?2
-       UNION SELECT 'friend' FROM referral_attributions WHERE referred_person_id = ?1 AND first_touch_at <= ?2
-       UNION SELECT 'partner' FROM channel_attributions WHERE referred_person_id = ?1 AND first_touch_at <= ?2`,
-    )
-    .bind(personId, by)
-    .all<{ code: TouchCode }>();
-  return new Set(rows.results.map((row) => row.code));
-}
+/** The person's first touch: the one kept, else their earliest, ties going to the one written first. */
+const FIRST_TOUCH = `SELECT id, at, channel FROM touches WHERE id = COALESCE(
+    (SELECT first_touch_id FROM person_attribution WHERE person_id = ?1),
+    (SELECT id FROM touches WHERE person_id = ?1 ORDER BY at, rowid LIMIT 1))`;
+const LAST_TOUCH = `SELECT id, at, channel FROM touches WHERE person_id = ?1 AND campaign_signal = 1
+  ORDER BY at DESC, rowid DESC LIMIT 1`;
+/** The codes that reached us for the person before their first consultation was booked, or ever until it is. */
+const CODES_BEFORE = `SELECT code_kind AS code FROM touches WHERE person_id = ?1 AND code_kind IS NOT NULL
+    AND at <= COALESCE((SELECT settled_at FROM person_attribution WHERE person_id = ?1), '9999')
+  UNION SELECT 'friend' FROM referral_attributions WHERE referred_person_id = ?1
+    AND first_touch_at <= COALESCE((SELECT settled_at FROM person_attribution WHERE person_id = ?1), '9999')
+  UNION SELECT 'partner' FROM channel_attributions WHERE referred_person_id = ?1
+    AND first_touch_at <= COALESCE((SELECT settled_at FROM person_attribution WHERE person_id = ?1), '9999')`;
 
 /**
- * Brings a person's attribution up to date with their touches: made with their earliest touch as the first where they
- * have none, the last touch and the channels worked out again. A person with no touch has none.
+ * Runs `writes`, then brings the person's attribution up to date with their touches as the writes left them: made with
+ * their earliest touch as the first where they have none, the last touch and the channels worked out again. Two round
+ * trips: the writes with the reads after them in one batch, then the attribution. A person with no touch has none.
  */
-export async function refreshAttribution(db: D1Database, personId: string, now: Date): Promise<void> {
-  const kept = await db
-    .prepare("SELECT first_touch_id, settled_at FROM person_attribution WHERE person_id = ?1")
-    .bind(personId)
-    .first<Kept>();
-  const first =
-    kept?.first_touch_id === null || kept === null
-      ? await db.prepare(`${TOUCH} person_id = ?1 ORDER BY at, rowid LIMIT 1`).bind(personId).first<TouchRow>()
-      : await db.prepare(`${TOUCH} id = ?1`).bind(kept.first_touch_id).first<TouchRow>();
+export async function withAttribution(
+  db: D1Database,
+  personId: string,
+  writes: readonly D1PreparedStatement[],
+  now: Date,
+): Promise<void> {
+  const reads = await db.batch([
+    ...writes,
+    db.prepare(FIRST_TOUCH).bind(personId),
+    db.prepare(LAST_TOUCH).bind(personId),
+    db.prepare(CODES_BEFORE).bind(personId),
+  ]);
+  const [firstRead, lastRead, codesRead] = reads.slice(writes.length);
+  const first = (firstRead?.results[0] as TouchRow | undefined) ?? null;
   if (first === null) return;
-  const last =
-    (await db
-      .prepare(`${TOUCH} person_id = ?1 AND campaign_signal = 1 ORDER BY at DESC, rowid DESC LIMIT 1`)
-      .bind(personId)
-      .first<TouchRow>()) ?? first;
-  const settledAt = kept?.settled_at ?? null;
-  const channel = clientChannel(first.channel, await codesBefore(db, personId, settledAt));
+  const last = (lastRead?.results[0] as TouchRow | undefined) ?? first;
+  const codes = new Set((codesRead?.results ?? []).map((row) => (row as { code: TouchCode }).code));
   await db
     .prepare(
       `INSERT INTO person_attribution (person_id, first_touch_id, last_touch_id, attributed_channel,
@@ -64,9 +58,13 @@ export async function refreshAttribution(db: D1Database, personId: string, now: 
          last_touch_id = excluded.last_touch_id, attributed_channel = excluded.attributed_channel,
          last_touch_channel = excluded.last_touch_channel, updated_at = excluded.updated_at`,
     )
-    .bind(personId, first.id, last.id, channel, last.channel, now.toISOString())
+    .bind(personId, first.id, last.id, clientChannel(first.channel, codes), last.channel, now.toISOString())
     .run();
 }
+
+/** Brings a person's attribution up to date with their touches. */
+export const refreshAttribution = (db: D1Database, personId: string, now: Date): Promise<void> =>
+  withAttribution(db, personId, [], now);
 
 /** Fixes the channel from the person's first consultation's booking on: codes that come after it change nothing. */
 export async function settleAttribution(db: D1Database, personId: string, bookedAt: string, now: Date): Promise<void> {

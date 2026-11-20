@@ -549,18 +549,18 @@ describe("the Messages page", () => {
       body: { person_id: ARJUN.person?.id },
     });
     type(panel().querySelector<HTMLInputElement>('input[maxlength="80"]') ?? undefined, "Meera Iyer");
-    const foundUs = [...panel().querySelectorAll("select")].find((each) =>
-      each.querySelector('option[value="partner"]'),
+    const heardFrom = [...panel().querySelectorAll("select")].find((each) =>
+      each.querySelector('option[value="salon_partner"]'),
     );
     act(() => {
-      if (foundUs === undefined) return;
-      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(foundUs, "partner");
-      foundUs.dispatchEvent(new Event("change", { bubbles: true }));
+      if (heardFrom === undefined) return;
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(heardFrom, "salon_partner");
+      heardFrom.dispatchEvent(new Event("change", { bubbles: true }));
     });
     await click(named(copy.stranger.save));
     expect(posted.at(-1)).toEqual({
       path: `/api/conversations/${STRANGER.id}/save`,
-      body: { name: "Meera Iyer", found_us: "partner" },
+      body: { name: "Meera Iyer", heard_from: "salon_partner" },
     });
   });
 

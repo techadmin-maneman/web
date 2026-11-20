@@ -18,6 +18,9 @@ const CONSULTATION_TRIPS = 11;
 /** The round trips of the free booking written in the same request (src/http/book-hold.ts), which the form waits on. */
 const BOOKING_TRIPS = 8;
 
+/** The lead's touch: written with the visitor's, then the client's first and last touch (ADR 0288). */
+const TOUCH_TRIPS = 2;
+
 beforeEach(async () => {
   await markDatabase();
   await env.DB.prepare(
@@ -119,7 +122,7 @@ describe("POST /api/consultation", () => {
     vi.restoreAllMocks();
 
     expect(answer.status).toBe(201);
-    expect(line?.d1_trips).toBeLessThanOrEqual(CONSULTATION_TRIPS + BOOKING_TRIPS);
+    expect(line?.d1_trips).toBeLessThanOrEqual(CONSULTATION_TRIPS + BOOKING_TRIPS + TOUCH_TRIPS);
   });
 
   // The staging check and the load test book this way (scripts/staging/staging-lead.ts, scripts/staging/load-test-leads.ts).

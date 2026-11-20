@@ -4,8 +4,8 @@
 // (./backfill.ts).
 
 import type { Logger } from "../../log.ts";
-import { claimVisitor, NOTHING_CARRIED, recordTouch, resolveCodes, type Carried } from "./touches.ts";
-import { seeVisitor } from "./visitors.ts";
+import { withAttribution } from "./attribution.ts";
+import { claimStatements, NOTHING_CARRIED, resolveCodes, touchStatement, type Carried } from "./touches.ts";
 
 /** What a page sends of where its visitor came from (src/routes/schemas/attribution.ts): each field optional. */
 export type PageTouch = Readonly<Partial<Record<keyof Carried | "ref" | "soc" | "offer", string | undefined>>> & {
@@ -54,12 +54,7 @@ export async function touchForLead(db: D1Database, lead: FormTouch, log: Logger)
   try {
     const { attribution, visit } = lead;
     const resolved = await resolveCodes(db, codesOf(attribution));
-    if (visit.visitorId !== null) {
-      // The page's own report of its landing may never have arrived: a blocker, or a cookie older than its row.
-      await seeVisitor(db, visit.visitorId, lead.now);
-      await claimVisitor(db, visit.visitorId, lead.personId, lead.now);
-    }
-    const touch = await recordTouch(db, {
+    const { statement, recorded } = touchStatement(db, {
       at: lead.now,
       via: "site",
       visitorId: visit.visitorId,
@@ -72,9 +67,18 @@ export async function touchForLead(db: D1Database, lead: FormTouch, log: Logger)
       userAgent: visit.userAgent,
       clientIp: visit.clientIp,
     });
-    if (lead.leadId !== null) {
-      await db.prepare("UPDATE leads SET touch_id = ?2 WHERE id = ?1").bind(lead.leadId, touch.id).run();
-    }
+    await withAttribution(
+      db,
+      lead.personId,
+      [
+        statement,
+        ...(visit.visitorId === null ? [] : claimStatements(db, visit.visitorId, lead.personId)),
+        ...(lead.leadId === null
+          ? []
+          : [db.prepare("UPDATE leads SET touch_id = ?2 WHERE id = ?1").bind(lead.leadId, recorded.id)]),
+      ],
+      lead.now,
+    );
   } catch (error) {
     log.warn("lead_touch_failed", { lead_id: lead.leadId, reason: error instanceof Error ? error.name : "unknown" });
   }

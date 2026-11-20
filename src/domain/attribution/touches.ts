@@ -12,7 +12,7 @@ import {
   type TouchCode,
   type TouchVia,
 } from "../../policy/channels.ts";
-import { refreshAttribution } from "./attribution.ts";
+import { refreshAttribution, withAttribution } from "./attribution.ts";
 
 /** What a touch carried, as the site, the WhatsApp webhook or the console gives it: each field null where absent. */
 export interface Carried {
@@ -129,8 +129,14 @@ function fbcFor(touch: NewTouch): string | null {
   return touch.carried.fbclid === null ? null : fbcOf(touch.carried.fbclid, touch.at);
 }
 
-/** Records the touch, and, where its person is known, brings their first and last touch up to date. */
-export async function recordTouch(db: D1Database, touch: NewTouch): Promise<RecordedTouch> {
+/**
+ * The touch's row, for a caller to write in a batch of its own, and what it is recorded as. It names its visitor only
+ * where the visitor's row is there: a page's report of its landing may never have arrived.
+ */
+export function touchStatement(
+  db: D1Database,
+  touch: NewTouch,
+): { readonly statement: D1PreparedStatement; readonly recorded: RecordedTouch } {
   const { carried, resolved } = touch;
   const fields = {
     utmSource: carried.utm_source,
@@ -153,13 +159,13 @@ export async function recordTouch(db: D1Database, touch: NewTouch): Promise<Reco
   };
   const denied = touch.adConsent === "denied";
   const fbp = !denied && carried.fbp !== null && FBP_PATTERN.test(carried.fbp) ? carried.fbp : null;
-  await db
+  const statement = db
     .prepare(
       `INSERT INTO touches (id, at, via, visitor_id, person_id, mobile_e164, utm_source, utm_medium, utm_campaign,
          utm_content, utm_term, gclid, gbraid, wbraid, fbclid, fbc, fbp, ctwa_clid, ad_source_id, ad_source_url,
          referrer, landing_path, invite_code, code_kind, link_id, declared_channel, declared_by, channel,
          campaign_signal, ad_consent, user_agent, client_ip)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22,
+       VALUES (?1, ?2, ?3, (SELECT id FROM visitors WHERE id = ?4), ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22,
          ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32)`,
     )
     .bind(
@@ -195,21 +201,27 @@ export async function recordTouch(db: D1Database, touch: NewTouch): Promise<Reco
       touch.adConsent,
       denied ? null : touch.userAgent,
       denied ? null : touch.clientIp,
-    )
-    .run();
-  if (touch.personId !== null) await refreshAttribution(db, touch.personId, touch.at);
+    );
+  return { statement, recorded };
+}
+
+/** Records the touch, and, where its person is known, brings their first and last touch up to date. */
+export async function recordTouch(db: D1Database, touch: NewTouch): Promise<RecordedTouch> {
+  const { statement, recorded } = touchStatement(db, touch);
+  if (touch.personId === null) await statement.run();
+  else await withAttribution(db, touch.personId, [statement], touch.at);
   return recorded;
 }
 
+/** The writes that make a visitor's touches a person's, for a caller's batch. */
+export const claimStatements = (db: D1Database, visitorId: string, personId: string): D1PreparedStatement[] => [
+  db.prepare("UPDATE visitors SET person_id = ?2 WHERE id = ?1 AND person_id IS NULL").bind(visitorId, personId),
+  db.prepare("UPDATE touches SET person_id = ?2 WHERE visitor_id = ?1 AND person_id IS NULL").bind(visitorId, personId),
+];
+
 /** Makes a visitor's touches a person's, once a number they gave names them. */
 export async function claimVisitor(db: D1Database, visitorId: string, personId: string, now: Date): Promise<void> {
-  await db.batch([
-    db.prepare("UPDATE visitors SET person_id = ?2 WHERE id = ?1 AND person_id IS NULL").bind(visitorId, personId),
-    db
-      .prepare("UPDATE touches SET person_id = ?2 WHERE visitor_id = ?1 AND person_id IS NULL")
-      .bind(visitorId, personId),
-  ]);
-  await refreshAttribution(db, personId, now);
+  await withAttribution(db, personId, claimStatements(db, visitorId, personId), now);
 }
 
 /**

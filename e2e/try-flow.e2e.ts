@@ -206,7 +206,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
     "try_on_started",
     "try_on_gate_shown",
     "try_on_claimed",
-    "try_on_completed",
+    "tryon_complete",
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
 });

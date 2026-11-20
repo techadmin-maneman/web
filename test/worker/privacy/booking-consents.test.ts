@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { LEGAL_VERSIONS } from "../../../src/config/legal-versions.ts";
 import { HOLD_SECONDS, PAYMENT_GRACE_SECONDS } from "../../../src/config/scheduling.ts";
 import { grantCredits } from "../../../src/domain/money/credits.ts";
 import { saltedHash } from "../../../src/lib/hash.ts";
@@ -131,7 +132,12 @@ describe("a paid visit's consents", () => {
       "SELECT person_id, terms_version, privacy_version, source FROM terms_acceptances",
     ).all();
     expect(agreed.results).toEqual([
-      { person_id: PERSON, terms_version: "1.00", privacy_version: "1.00", source: "app_booking" },
+      {
+        person_id: PERSON,
+        terms_version: LEGAL_VERSIONS.terms,
+        privacy_version: LEGAL_VERSIONS.privacy,
+        source: "app_booking",
+      },
     ]);
     expect((await post("/api/bookings", { hold_id: await held() })).status).toBe(400);
   });

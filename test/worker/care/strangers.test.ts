@@ -73,11 +73,24 @@ describe("a stranger's chat", () => {
     expect(crmQueue.sent).toMatchObject([{ lead_id: lead?.id }]);
   });
 
-  it("keeps how the person told Care they found us, one of the channels", async () => {
-    await post(care(), `/api/conversations/${CHAT}/save`, { name: "Meera Iyer", found_us: "partner" });
-    expect(await env.DB.prepare("SELECT found_us FROM leads").first()).toEqual({ found_us: "partner" });
-    const refused = await post(care(), `/api/conversations/${CHAT}/save`, { name: "Meera Iyer", found_us: "a poster" });
+  it("keeps how the person told Care they heard of us, from the list, beside their channel", async () => {
+    const refused = await post(care(), `/api/conversations/${CHAT}/save`, {
+      name: "Meera Iyer",
+      heard_from: "a poster",
+    });
     expect(refused.status).toBe(400);
+    await post(care(), `/api/conversations/${CHAT}/save`, {
+      name: "Meera Iyer",
+      heard_from: "other",
+      heard_from_other: "A poster at the gym",
+    });
+    expect(
+      await env.DB.prepare("SELECT heard_from, heard_from_other, heard_from_by FROM person_attribution").first(),
+    ).toEqual({
+      heard_from: "other",
+      heard_from_other: "A poster at the gym",
+      heard_from_by: expect.any(String) as string,
+    });
   });
 
   it("is a client's once, and never saves a number one of our people has", async () => {
