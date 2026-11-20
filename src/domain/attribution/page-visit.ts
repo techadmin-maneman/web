@@ -1,0 +1,51 @@
+// A page's report of its visitor's landing (docs/decisions/0288-attribution-and-conversions.md): their first, and any
+// later one a campaign put something in, is a touch. A plain visit later records nothing, so a visitor who comes back
+// by typing the address never takes the last touch from the campaign that brought them.
+
+import { carriesCampaign } from "../../policy/channels.ts";
+import { carriedOf, codesOf, type PageTouch } from "./lead-touch.ts";
+import { recordTouch, resolveCodes } from "./touches.ts";
+import { seeVisitor } from "./visitors.ts";
+
+/** Records the landing as a touch where it is the visitor's first or a campaign's; the visitor's reference either way. */
+export async function recordVisit(
+  db: D1Database,
+  visit: { readonly visitorId: string; readonly page: PageTouch; readonly now: Date },
+): Promise<{ readonly ref: string }> {
+  const { ref, personId } = await seeVisitor(db, visit.visitorId, visit.now);
+  const carried = carriedOf(visit.page);
+  const resolved = await resolveCodes(db, codesOf(visit.page));
+  const campaign =
+    resolved.linkId !== null ||
+    carriesCampaign({
+      utmSource: carried.utm_source,
+      utmMedium: carried.utm_medium,
+      utmCampaign: carried.utm_campaign,
+      gclid: carried.gclid,
+      gbraid: carried.gbraid,
+      wbraid: carried.wbraid,
+      fbclid: carried.fbclid,
+      ctwaClid: null,
+      referrer: carried.referrer,
+      code: resolved.codeKind,
+      declared: null,
+      via: "site",
+    });
+  const touched = await db.prepare("SELECT 1 FROM touches WHERE visitor_id = ?1 LIMIT 1").bind(visit.visitorId).first();
+  if (touched !== null && !campaign) return { ref };
+  await recordTouch(db, {
+    at: visit.now,
+    via: "site",
+    visitorId: visit.visitorId,
+    personId,
+    mobileE164: null,
+    carried,
+    resolved,
+    declared: null,
+    adConsent: visit.page.ad_consent ?? null,
+    // A page's touch keeps no address or browser: only a lead's is sent to Meta.
+    userAgent: null,
+    clientIp: null,
+  });
+  return { ref };
+}

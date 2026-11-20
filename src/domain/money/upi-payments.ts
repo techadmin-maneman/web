@@ -7,6 +7,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { firstNameOf } from "../../lib/names.ts";
 import { type VisitType, VISIT_TYPE_NAMES } from "../../config/visit-types.ts";
 import { statusIn, PAYMENT_HELD } from "../../config/statuses.ts";
+import { conversionUpkeep } from "../attribution/conversion-upkeep.ts";
 import { auditStatement, opsEntry, type Written } from "../platform/audit.ts";
 import { referencePayment } from "./payments.ts";
 import { UPI_MARK } from "../../policy/upi.ts";
@@ -95,6 +96,7 @@ export async function recordUpiPayment(
       opsEntry(written, "payment.upi_record", { kind: "appointment", id: asked.visitId }, { payment_id: paymentId }),
       written.now,
     ),
+    ...conversionUpkeep(db, "SELECT value FROM json_each(?1)", JSON.stringify([due.personId]), at),
   ]);
   return { kind: "recorded", paymentId };
 }

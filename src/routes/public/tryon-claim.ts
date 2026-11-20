@@ -25,6 +25,8 @@ import { provedNumber } from "../../http/number-proof.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
 import { visitorOf } from "../../http/visitor.ts";
+import { visitContextOf } from "../../http/visit-context.ts";
+import { touchForLead } from "../../domain/attribution/lead-touch.ts";
 import { mobileHashOf } from "../../domain/clients/number-codes.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
@@ -32,20 +34,7 @@ import { undelivered } from "../../policy/tryon-delivery.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
 import { messageHeldBack } from "../../queues/messaging.ts";
 import { NumberCodeIdSchema } from "./number-codes.ts";
-
-const AttributionSchema = z
-  .object({
-    utm_source: z.string().max(200).optional(),
-    utm_medium: z.string().max(200).optional(),
-    utm_campaign: z.string().max(200).optional(),
-    utm_content: z.string().max(200).optional(),
-    gclid: z.string().max(200).optional(),
-    fbclid: z.string().max(200).optional(),
-    referrer: z.string().max(500).optional(),
-    landing_path: z.string().max(500).startsWith("/").optional(),
-  })
-  .strict()
-  .openapi("Attribution", { description: "Where the visitor came from, as the page saw it. All optional." });
+import { AttributionSchema } from "../schemas/attribution.ts";
 
 const ClaimRequestSchema = z
   .object({
@@ -68,7 +57,7 @@ const ClaimRequestSchema = z
           "The gate's notice the page showed: the current one, the only one a claim may record, when left out " +
           "(docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).",
       }),
-    attribution: AttributionSchema.optional(),
+    attribution: AttributionSchema,
   })
   .strict()
   .openapi("ClaimRequest");
@@ -201,6 +190,17 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
     now,
   });
   log.info("tryon_claimed", { lead_id: leadId, job_id: job.id });
+  const person = await db
+    .prepare("SELECT id FROM people WHERE mobile_e164 = ?1")
+    .bind(mobileE164)
+    .first<{ id: string }>();
+  if (person !== null) {
+    await touchForLead(
+      db,
+      { leadId, personId: person.id, visit: visitContextOf(c), attribution: request.attribution ?? {}, now },
+      log,
+    );
+  }
 
   await enqueue(c.env.CRM_QUEUE, { lead_id: leadId, request_id: requestId }, { log, ifLost: "sweeper" });
   return { ok: true, body: { lead_id: leadId } };

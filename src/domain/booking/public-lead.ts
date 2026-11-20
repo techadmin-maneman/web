@@ -15,6 +15,12 @@ import { hasAskedForAVisit } from "../referrals/referrals.ts";
 import { formPerson, personWithMobile } from "./form-person.ts";
 import { type FormRefusalCode, type FormRequest, type Refusal, recordLead } from "./public-booking.ts";
 
+/** The lead written, and whose it is: none for a number already followed up. */
+interface Left {
+  readonly leadId: string;
+  readonly personId: string;
+}
+
 interface LeadRequest {
   readonly name: string;
   readonly mobile: string;
@@ -46,12 +52,12 @@ async function leadOwed(db: D1Database, knownId: string | null, now: Date): Prom
 export async function leaveNameAndNumber(
   form: FormRequest,
   request: LeadRequest,
-): Promise<{ readonly ok: true } | Refusal<FormRefusalCode>> {
+): Promise<{ readonly ok: true; readonly lead: Left | null } | Refusal<FormRefusalCode>> {
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
   const { db, now } = form;
   const knownId = await personWithMobile(db, checked.mobile);
-  if (!(await leadOwed(db, knownId, now))) return { ok: true };
+  if (!(await leadOwed(db, knownId, now))) return { ok: true, lead: null };
 
   const person = formPerson(db, {
     knownId,
@@ -65,7 +71,7 @@ export async function leaveNameAndNumber(
     now,
   });
   await db.batch(person.statements);
-  await recordLead(form, {
+  const leadId = await recordLead(form, {
     personId: person.id,
     name: request.name,
     mobile: checked.mobile,
@@ -76,5 +82,5 @@ export async function leaveNameAndNumber(
     served: true,
     now,
   });
-  return { ok: true };
+  return { ok: true, lead: { leadId, personId: person.id } };
 }

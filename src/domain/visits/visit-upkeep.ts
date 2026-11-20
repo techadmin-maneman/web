@@ -1,8 +1,10 @@
 // What a write to a visit keeps up beside it, in the same batch: the dispatch board's version, whether a consultation
 // request is booked, whether a partial visit was followed up, the client's last visit, whether a piece's replacement
-// is booked, and when the person became a client (../clients/people.ts). Each is worked out again from the visits as
+// is booked, when the person became a client (../clients/people.ts), and the conversions their visits and payments
+// bring about (../attribution/conversion-upkeep.ts). Each is worked out again from the visits as
 // they now stand, after the write, so it is right however the visit changed, and worked out again it changes nothing.
 
+import { conversionUpkeep } from "../attribution/conversion-upkeep.ts";
 import { becameClients } from "../clients/people.ts";
 import { statusNotIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
 
@@ -72,5 +74,6 @@ export function visitUpkeep(db: D1Database, whose: Whose, at: string): D1Prepare
       )
       .bind(list),
     becameClients(db, people, list, at),
+    ...conversionUpkeep(db, people, list, at),
   ];
 }

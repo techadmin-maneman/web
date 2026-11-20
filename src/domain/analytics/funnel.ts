@@ -1,10 +1,10 @@
 // The growth funnel for the console's Funnel page: over a period, how many first try-ons were made, and of the clients
 // whose first lead in it came then, how many booked a consultation, had one and were fitted, all of them and by the
-// channel their lead came by (docs/decisions/0148-the-channel-rule.md). A first fit done counts as the consultation done
+// client's channel (docs/decisions/0288-attribution-and-conversions.md). A first fit done counts as the consultation done
 // too, since a fit can be booked as one visit with it. Records marked as tests are left out.
 
 import { statusNotIn, statusIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
-import { channelOf, CHANNELS, type Channel } from "../../policy/channels.ts";
+import { channelNamed, CHANNELS, type Channel } from "../../policy/channels.ts";
 
 interface FunnelSteps {
   readonly leads: number;
@@ -23,14 +23,7 @@ export interface Funnel {
 
 interface LeadRow {
   person_id: string;
-  utm_source: string | null;
-  utm_medium: string | null;
-  gclid: string | null;
-  fbclid: string | null;
-  referrer: string | null;
-  found_us: string | null;
-  referred_before: number;
-  partner_before: number;
+  channel: string | null;
   booked: number;
   consulted: number;
   fitted: number;
@@ -40,11 +33,8 @@ const visited = (types: string, done: boolean) =>
   `EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = l.person_id AND a.type IN (${types})
      AND a.deleted_at IS NULL AND ${done ? statusIn("a.status", ["completed"]) : statusNotIn("a.status", VISIT_CALLED_OFF)})`;
 
-const LEADS = `SELECT l.person_id, l.utm_source, l.utm_medium, l.gclid, l.fbclid, l.referrer, l.found_us,
-     EXISTS (SELECT 1 FROM referral_attributions r WHERE r.referred_person_id = l.person_id
-       AND r.first_touch_at <= l.created_at) AS referred_before,
-     EXISTS (SELECT 1 FROM channel_attributions c WHERE c.referred_person_id = l.person_id
-       AND c.first_touch_at <= l.created_at) AS partner_before,
+const LEADS = `SELECT l.person_id,
+     (SELECT a.attributed_channel FROM person_attribution a WHERE a.person_id = l.person_id) AS channel,
      ${visited("'consultation', 'first_fit'", false)} AS booked,
      ${visited("'consultation', 'first_fit'", true)} AS consulted,
      ${visited("'first_fit'", true)} AS fitted
@@ -78,16 +68,7 @@ export async function growthFunnel(db: D1Database, from: Date, to: Date): Promis
   let steps = NONE;
   const byChannel = new Map<Channel, FunnelSteps>();
   for (const row of first.values()) {
-    const channel = channelOf({
-      utmSource: row.utm_source,
-      utmMedium: row.utm_medium,
-      gclid: row.gclid,
-      fbclid: row.fbclid,
-      referrer: row.referrer,
-      referredBefore: row.referred_before === 1,
-      partnerBefore: row.partner_before === 1,
-      foundUs: row.found_us,
-    });
+    const channel = channelNamed(row.channel);
     steps = plus(steps, row);
     byChannel.set(channel, plus(byChannel.get(channel) ?? NONE, row));
   }

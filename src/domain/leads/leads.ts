@@ -5,18 +5,11 @@
 // afterwards, from the crm-sync queue.
 
 import type { LossExtent } from "../../config/booking.ts";
+import type { PageTouch } from "../attribution/lead-touch.ts";
 import { personByMobile } from "../clients/people.ts";
 
-export interface LeadAttribution {
-  readonly utm_source?: string | undefined;
-  readonly utm_medium?: string | undefined;
-  readonly utm_campaign?: string | undefined;
-  readonly utm_content?: string | undefined;
-  readonly gclid?: string | undefined;
-  readonly fbclid?: string | undefined;
-  readonly referrer?: string | undefined;
-  readonly landing_path?: string | undefined;
-}
+/** Where the visitor came from, as the page sent it: the lead keeps the tags the CRM reads, its touch the rest. */
+export type LeadAttribution = PageTouch;
 
 interface BookingLead {
   readonly leadId: string;

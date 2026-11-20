@@ -24,6 +24,10 @@ interface RateLimit {
 const SUGGESTIONS_PER_DAY = 120;
 
 export const RATE_LIMITS = {
+  // A page's report of its visitor's landing (docs/decisions/0288-attribution-and-conversions.md): a mobile network
+  // puts many people behind one address, so the hour allows many; past it the page is answered with nothing kept.
+  "visit:ip": { per: "hour", limit: 300 },
+
   // The site's booking and waitlist forms (docs/decisions/0011-lead-api.md).
   "booking:ip": { per: "day", limit: (settings) => settings.leadIpDailyLimit },
   "booking:mobile": { per: "day", limit: (settings) => settings.leadMobileDailyLimit },

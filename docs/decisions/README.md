@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0288. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0289. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -49,6 +49,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0281](0281-the-consoles-first-load-counts-today.md) The console's first load counts Today, and Today holds its room
 - [0284](0284-the-first-screen-and-the-precache.md) A phone app's budget counts its first screen, and its precache has a ceiling of its own
 - [0286](0286-the-icons-are-the-mark.md) The browser's and the home screen's icons are the mark
+- [0288](0288-attribution-and-conversions.md) Attribution and conversions
 
 ### Booking and visits
 
@@ -470,9 +471,9 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0145](0145-technician-presets.md) | A technician's word from the job card | 2026-10-12 | accepted |  |
 | [0146](0146-the-nightly-analytics-copy.md) | The nightly analytics copy | 2026-10-12 | accepted | [0196](0196-long-work-in-workflows.md) |
 | [0147](0147-task-spans.md) | Task spans | 2026-10-12 | accepted |  |
-| [0148](0148-the-channel-rule.md) | The channel rule | 2026-10-12 | accepted |  |
+| [0148](0148-the-channel-rule.md) | The channel rule | 2026-10-12 | accepted | [0288](0288-attribution-and-conversions.md) |
 | [0149](0149-lost-reasons.md) | Lost reasons | 2026-10-12 | accepted | [0268](0268-the-visits-design-check.md) |
-| [0150](0150-spend.md) | Spend | 2026-10-12 | accepted |  |
+| [0150](0150-spend.md) | Spend | 2026-10-12 | accepted | [0288](0288-attribution-and-conversions.md) |
 | [0151](0151-retention-figures.md) | Retention figures | 2026-10-12 | accepted |  |
 | [0152](0152-standard-costs.md) | Standard costs | 2026-10-12 | accepted |  |
 | [0153](0153-supply-and-credits-in-the-copy.md) | Supply and credits in the copy | 2026-10-12 | accepted |  |
@@ -610,3 +611,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0285](0285-every-site-booking-is-a-sign-in.md) | Every booking on the site asks the WhatsApp code, and signs the client in | 2026-11-19 | accepted, on the owner's rulings of 19 November 2026 |  |
 | [0286](0286-the-icons-are-the-mark.md) | The browser's and the home screen's icons are the mark | 2026-11-19 | accepted, on the owner's ruling of 19 November 2026 |  |
 | [0287](0287-a-start-googles-drive-refused-is-not-offered.md) | A start Google's drive leaves no room for is not offered again | 2026-11-19 | accepted, on the owner's go-ahead of 19 November 2026 |  |
+| [0288](0288-attribution-and-conversions.md) | Attribution and conversions | 2026-11-20 | accepted, on the owner's brief and rulings of 20 November 2026 |  |

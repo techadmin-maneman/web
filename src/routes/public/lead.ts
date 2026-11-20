@@ -4,7 +4,9 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
+import { recordLeadConversion } from "../../domain/attribution/conversions.ts";
 import { leaveNameAndNumber } from "../../domain/booking/public-lead.ts";
+import { PUBLIC_ORIGIN } from "../../config/environments.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
@@ -20,6 +22,10 @@ const LeadRequestSchema = z
     terms: TermsSchema,
     turnstile_token: z.string().min(1).max(2048),
     attribution: AttributionSchema,
+    event_id: z.uuid().optional().openapi({
+      description:
+        "The ID the page's own Meta Pixel event carried, so Meta counts the browser's and the server's once.",
+    }),
   })
   .strict();
 
@@ -58,7 +64,16 @@ export function registerLead(app: App): void {
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
       });
-      return left.ok ? { ok: true as const, body: {} } : left;
+      if (!left.ok) return left;
+      if (left.lead !== null && body.event_id !== undefined) {
+        await recordLeadConversion(c.env.DB, {
+          eventId: body.event_id,
+          ...left.lead,
+          sourceUrl: `${PUBLIC_ORIGIN[c.var.config.environment]}/book`,
+          now: c.var.deps.now(),
+        });
+      }
+      return { ok: true as const, body: {} };
     });
     return answerKeyed(c, run);
   });
