@@ -75,7 +75,12 @@ function googleRequest(
         eventTimestamp: conversion.occurredAt.toISOString(),
         eventSource: eventSourceOf(conversion),
         ...(Object.keys(adIdentifiers).length === 0 ? {} : { adIdentifiers }),
-        userData: { userIdentifiers: [{ phoneNumber: conversion.phone.google }] },
+        userData: {
+          userIdentifiers: [
+            { phoneNumber: conversion.phone.google },
+            ...(conversion.place.google === null ? [] : [{ address: conversion.place.google }]),
+          ],
+        },
         ...(conversion.value === null ? {} : { conversionValue: conversion.value, currency: "INR" }),
       },
     ],

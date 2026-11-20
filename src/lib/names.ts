@@ -5,6 +5,12 @@ import { withoutTestMark } from "./test-names.ts";
 /** "Rohit Malhotra" → "Rohit": how a message and a screen greet a person. "Staging test Asha" → "Asha". */
 export const firstNameOf = (name: string): string => withoutTestMark(name.trim()).split(/\s+/)[0] ?? "";
 
+/** "Rohit Kumar Malhotra" → "Malhotra": the last of two or more names; "" for one name alone. */
+export function lastNameOf(name: string): string {
+  const words = withoutTestMark(name.trim()).split(/\s+/);
+  return words.length > 1 ? (words.at(-1) ?? "") : "";
+}
+
 /** "Rohit Malhotra" → "RM"; one name gives one letter. */
 export function initialsOf(name: string): string {
   const words = name

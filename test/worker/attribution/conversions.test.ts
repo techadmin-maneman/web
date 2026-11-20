@@ -7,13 +7,14 @@ import { env } from "cloudflare:workers";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { conversionUpkeep } from "../../../src/domain/attribution/conversion-upkeep.ts";
 import { sendConversions } from "../../../src/domain/attribution/conversion-sends.ts";
+import { metaPlaceHash } from "../../../src/lib/ad-match.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createGoogleConversions } from "../../../src/providers/conversions/google.ts";
 import type { ConversionPlatform, ConversionToSend, SendOutcome } from "../../../src/providers/conversions/index.ts";
 import { createMetaConversions, metaEvent } from "../../../src/providers/conversions/meta.ts";
 import { STUB_ANSWER, STUB_SENT, createStubConversions } from "../../../src/providers/conversions/stub.ts";
-import { aHold, aPayment, aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
+import { aHold, anAddress, aPayment, aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
 import { NOW, deliverRazorpay, fakeFetch, json, markDatabase } from "../helpers.ts";
 
 const MINUTE = 60_000;
@@ -374,6 +375,39 @@ describe("a client who declined the cookie bar", () => {
   });
 });
 
+describe("a client's place", () => {
+  it("goes from their current address: hashed city, state and pincode to Meta, and a whole address to Google", async () => {
+    const personId = await client("+919811116666");
+    await env.DB.prepare("UPDATE people SET name = 'Rohit Malhotra' WHERE id = ?1").bind(personId).run();
+    await anAddress(personId, { city: "Gurgaon", pincode: "122002", replaced_at: later(-60).toISOString() });
+    await anAddress(personId, { city: "Gurgaon", pincode: "122018" });
+    await firstFitPaid(personId);
+    const meta = scripted();
+    const google = scripted();
+
+    await run({ meta: meta.platform, google: google.platform });
+
+    const [paidForMeta] = meta.sent.filter((sent) => sent.event === "first_fit_paid");
+    expect(paidForMeta?.place.meta).toEqual(
+      await metaPlaceHash({ city: "Gurgaon", state: "Haryana", pincode: "122018" }),
+    );
+    const [paidForGoogle] = google.sent.filter((sent) => sent.event === "first_fit_paid");
+    expect(paidForGoogle?.place.google).toMatchObject({ regionCode: "IN", postalCode: "122018" });
+  });
+
+  it("is the country alone, and no address for Google, for a client with none", async () => {
+    const personId = await client("+919811117777");
+    await firstFitPaid(personId);
+    const meta = scripted();
+    const google = scripted();
+
+    await run({ meta: meta.platform, google: google.platform });
+
+    expect(meta.sent[0]?.place.meta).toEqual(await metaPlaceHash({ city: null, state: null, pincode: null }));
+    expect(google.sent[0]?.place.google).toBeNull();
+  });
+});
+
 describe("a platform that is down", () => {
   it("is tried again after 1, 5, 30, 120 and 720 minutes, then given up, its words kept", async () => {
     await firstFitPaid(await client("+919810000016"));
@@ -498,6 +532,10 @@ const PAID: ConversionToSend = {
   bookedVia: null,
   phone: { meta: "a".repeat(64), google: "b".repeat(64) },
   firstName: "c".repeat(64),
+  place: {
+    meta: { ct: "e".repeat(64), st: "f".repeat(64), zp: "1".repeat(64), country: "2".repeat(64) },
+    google: { givenName: "3".repeat(64), familyName: "4".repeat(64), regionCode: "IN", postalCode: "122002" },
+  },
   externalId: "d".repeat(64),
   browser: { fbc: "fb.1.1790000000000.IwAR_test", fbp: null, ip: "203.0.113.7", userAgent: "Mozilla/5.0" },
   clicks: { gclid: "Cj0KCQ_test", gbraid: null, wbraid: null },
@@ -518,7 +556,15 @@ describe("Meta's request", () => {
       event_name: "Purchase",
       event_id: PAID.eventId,
       action_source: "physical_store",
-      user_data: { ph: [PAID.phone.meta], fbc: PAID.browser.fbc, client_ip_address: "203.0.113.7" },
+      user_data: {
+        ph: [PAID.phone.meta],
+        fbc: PAID.browser.fbc,
+        client_ip_address: "203.0.113.7",
+        ct: ["e".repeat(64)],
+        st: ["f".repeat(64)],
+        zp: ["1".repeat(64)],
+        country: ["2".repeat(64)],
+      },
       custom_data: { currency: "INR", value: 30_000 },
     });
   });
@@ -644,7 +690,9 @@ describe("Google's request", () => {
           eventTimestamp: NOW.toISOString(),
           eventSource: "IN_STORE",
           adIdentifiers: { gclid: "Cj0KCQ_test" },
-          userData: { userIdentifiers: [{ phoneNumber: PAID.phone.google }] },
+          userData: {
+            userIdentifiers: [{ phoneNumber: PAID.phone.google }, { address: PAID.place.google }],
+          },
           conversionValue: 30_000,
           currency: "INR",
         },

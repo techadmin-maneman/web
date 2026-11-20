@@ -35,6 +35,12 @@ function actionSourceOf(
   return "system_generated";
 }
 
+/** The client's place as Meta's user data takes it: each field known, hashed, in a list of one. */
+function placeData(place: ConversionToSend["place"]["meta"]): Record<string, string[]> {
+  const fields = { ct: place.ct, st: place.st, zp: place.zp, country: place.country };
+  return Object.fromEntries(Object.entries(fields).flatMap(([key, value]) => (value === null ? [] : [[key, [value]]])));
+}
+
 /** The event, as Meta's /events takes it. */
 export function metaEvent(conversion: ConversionToSend): Record<string, unknown> {
   const source = actionSourceOf(conversion);
@@ -43,6 +49,7 @@ export function metaEvent(conversion: ConversionToSend): Record<string, unknown>
     ph: [conversion.phone.meta],
     external_id: [conversion.externalId],
     ...(conversion.firstName === null ? {} : { fn: [conversion.firstName] }),
+    ...placeData(conversion.place.meta),
     ...(browser.fbc === null ? {} : { fbc: browser.fbc }),
     ...(browser.fbp === null ? {} : { fbp: browser.fbp }),
     ...(browser.ip === null ? {} : { client_ip_address: browser.ip }),
