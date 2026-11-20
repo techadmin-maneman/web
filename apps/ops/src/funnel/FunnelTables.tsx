@@ -7,7 +7,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { RowHead } from "@maneman/ui/RowHead";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { quantity } from "@maneman/web-kit/figures";
-import { rupees } from "@maneman/web-kit/money";
+import { roundRupees, rupees } from "@maneman/web-kit/money";
 import { channelNamed } from "@rules/policy/channels.ts";
 import { HEARD_FROM } from "@rules/policy/heard-from.ts";
 import { funnel as copy } from "../content/funnel.ts";
@@ -15,8 +15,8 @@ import type { Acquisition, ChannelCode } from "./funnel-api.ts";
 
 type Figures = Acquisition["totals"];
 
-/** What each of something cost: the spend over the count, or nothing where there was neither. */
-const costOf = (spend: number, count: number) => (count === 0 ? "" : rupees(Math.round(spend / count)));
+/** What each of something cost, to the rupee as a worked-out figure is: the spend over the count, or nothing. */
+const costOf = (spend: number, count: number) => (count === 0 ? "" : roundRupees(spend / count));
 
 function FigureCells({ row }: { row: Figures }) {
   return (

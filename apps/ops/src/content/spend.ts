@@ -16,6 +16,8 @@ export const spend = {
   addOne: "Add spend",
   adding: "Adding…",
   none: "No spend recorded yet.",
+  /** The Day column's list, which narrows to a month. */
+  allMonths: "All months",
   columns: {
     day: "Day",
     city: "City",

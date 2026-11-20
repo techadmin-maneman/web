@@ -39,6 +39,9 @@ import { consentBar as words } from "../content/site.ts";
     root.style.setProperty("--consent-reserve", `${String(bar.offsetHeight + 2 * above)}px`);
   });
 
+  /** The footer button that brought the bar back, given the focus again once the visitor answers. */
+  let opener: HTMLElement | null = null;
+
   function ask(): void {
     if (bar === null || !bar.hidden) return;
     bar.hidden = false;
@@ -58,6 +61,8 @@ import { consentBar as words } from "../content/site.ts";
         keepClear.disconnect();
         root.style.removeProperty("--consent-reserve");
         delete root.dataset.consentAsking;
+        opener?.focus();
+        opener = null;
       });
     }
     if (consentAnswer() === null) ask();
@@ -65,8 +70,13 @@ import { consentBar as words } from "../content/site.ts";
 
   // The footers' Cookie choices: the bar again, the answer kept holding until another is picked, so a visitor may
   // decline as easily as they agreed, and one who declined is never taken to agree by asking (Privacy Policy, 7).
+  // The bar opens over the footer's foot, so the focus moves into it, where a screen reader hears it, and comes back.
   for (const button of document.querySelectorAll<HTMLButtonElement>("[data-cookie-choices]")) {
-    button.addEventListener("click", ask);
+    button.addEventListener("click", () => {
+      ask();
+      opener = button;
+      bar?.querySelector<HTMLButtonElement>("[data-consent='granted']")?.focus();
+    });
   }
 </script>
 

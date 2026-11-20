@@ -205,7 +205,7 @@ const dayWords = (entry: SpendEntry) =>
   entry.spent_date === null ? fullMonth(entry.month) : fullDate(entry.spent_date);
 
 const COLUMNS: readonly Column<SpendEntry>[] = [
-  { label: copy.columns.day, sort: dayOf, choice: (entry) => fullMonth(entry.month) },
+  { label: copy.columns.day, sort: dayOf, choice: (entry) => fullMonth(entry.month), all: copy.allMonths },
   { label: copy.columns.city, sort: (entry) => entry.city ?? "", choice: (entry) => entry.city ?? copy.national },
   { label: copy.columns.channel, sort: channelWords, choice: (entry) => channelNamed(entry.channel) },
   { label: copy.columns.amount, sort: (entry) => entry.amount, figure: true },

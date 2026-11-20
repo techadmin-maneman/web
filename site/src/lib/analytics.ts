@@ -17,8 +17,9 @@
 // each event goes without it.
 //
 // The tags start with consent granted, and a visitor's Decline on the cookie bar
-// switches them off: Google's consent is updated to denied, and the Meta Pixel is
-// never loaded on a page after it (CONSENT_KEY; ADR 0288).
+// switches them off: Google's consent is updated to denied, a Meta Pixel already
+// running on the page has its consent revoked and is sent no more events, and the
+// Pixel is never loaded on a page after it (CONSENT_KEY; ADR 0288).
 
 import { scriptAddress } from "@maneman/web-kit/trusted-scripts";
 import type { BookingWindow } from "@rules/config/scheduling.ts";

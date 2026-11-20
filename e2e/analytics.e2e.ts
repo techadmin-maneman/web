@@ -58,10 +58,14 @@ test.describe("the cookie bar", () => {
     await bar.getByRole("button", { name: consentBar.accept }).click();
     await expect(bar).toBeHidden();
 
-    await page.getByRole("contentinfo").getByRole("button", { name: consentBar.change }).click();
+    const choices = page.getByRole("contentinfo").getByRole("button", { name: consentBar.change });
+    await choices.click();
     await expect(bar).toBeVisible();
+    // The bar opens over the footer: the focus goes into it, and back to the button once answered.
+    await expect(bar.getByRole("button", { name: consentBar.accept })).toBeFocused();
     await bar.getByRole("button", { name: consentBar.decline }).click();
     await expect(bar).toBeHidden();
+    await expect(choices).toBeFocused();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "update", DENIED]);
     await page.reload();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);
