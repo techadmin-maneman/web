@@ -60,22 +60,30 @@ const withConsent = (touch: Attribution): Attribution => {
   return answer === null ? touch : { ...touch, ad_consent: answer };
 };
 
+/** Reports a landing to the API, and keeps the reference it answers with. */
+async function report(touch: Attribution): Promise<void> {
+  const answer = await reportVisit(withConsent(touch));
+  if (answer.ok && answer.body.ref !== null) keep(REF, answer.body.ref);
+}
+
 /**
  * Runs on every page, before the analytics tags tidy the address: keeps this landing as the first or the last touch
- * where it is one, and reports it, or asks once for the visitor's reference where none is kept.
+ * where it is one, and reports it. While no reference is kept, the first report never arrived, so the first landing
+ * is reported again before anything else, which keeps the visitor's first touch their first on the API too.
  */
 export function captureAttribution(): void {
   const touch = attributionFrom(new URL(location.href), document.referrer, document.cookie);
   if (touch.ref !== undefined && CODE_PATTERN.test(touch.ref)) rememberInvite(touch.ref);
   const now = JSON.stringify({ touch, at: new Date().toISOString() } satisfies Kept);
-  const first = kept(FIRST) === null;
+  const keptFirst = kept(FIRST);
   const campaign = carriesCampaign(touch);
-  if (first) keep(FIRST, now);
-  if (first || campaign) keep(LAST, now);
-  if (!first && !campaign && visitorRef() !== null) return;
-  void reportVisit(withConsent(touch)).then((answer) => {
-    if (answer.ok && answer.body.ref !== null) keep(REF, answer.body.ref);
-  });
+  if (keptFirst === null) keep(FIRST, now);
+  if (keptFirst === null || campaign) keep(LAST, now);
+  const unreported = keptFirst !== null && visitorRef() === null ? keptFirst.touch : null;
+  void (async () => {
+    if (unreported !== null) await report(unreported);
+    if (keptFirst === null || campaign) await report(touch);
+  })();
 }
 
 /** Where this visit came from, as a form sends it: the latest campaign's landing, else the first. */

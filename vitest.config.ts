@@ -17,8 +17,8 @@ export const NODE_PROJECT = {
 
 /** The apps' components and packages/ui's, on the one React 19 the repository installs. */
 export const DOM_PROJECT = {
-  // The apps' code under test is built for the local environment, as the browser tests' builds are.
-  define: { "import.meta.env.MM_ENV": JSON.stringify("local") },
+  // The apps' and the site's code under test is built for the local environment, as the browser tests' builds are.
+  define: { "import.meta.env.MM_ENV": JSON.stringify("local"), __MM_ENV__: JSON.stringify("local") },
   resolve: {
     alias: {
       ...RULES_ALIAS,
