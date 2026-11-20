@@ -34,8 +34,9 @@ const tasks = async (): Promise<Body> => {
 };
 
 // A visit these fixtures leave with no technician, or open from a day past, is on the board too; each has its own test
-// (test/worker/ops/tasks-open-visits.test.ts).
-const UNLOOKED_AFTER = new Set(["unassigned_visit", "visit_left_open"]);
+// (test/worker/ops/tasks-open-visits.test.ts). So is a client consulted and not asked how they heard of us
+// (test/worker/attribution/chats-calls-links.test.ts).
+const UNLOOKED_AFTER = new Set(["unassigned_visit", "visit_left_open", "heard_from_missing"]);
 const groupNames = (body: Body) => body.groups.map((each) => each.group).filter((group) => !UNLOOKED_AFTER.has(group));
 
 const tasksIn = (body: Body, group: string) => body.groups.find((each) => each.group === group)?.tasks ?? [];
@@ -188,7 +189,7 @@ describe("GET /api/tasks, the next visit", () => {
     expect(groupNames(await tasks())).toEqual([]);
     await env.DB.prepare("UPDATE appointments SET status = 'completed'").run();
     expect(groupNames(await tasks())).toEqual(["first_fit_to_book"]);
-    expect((await opsSet({ first_fit_to_book: 14 })).groups).toEqual([]);
+    expect(groupNames(await opsSet({ first_fit_to_book: 14 }))).toEqual([]);
   });
 
   // A client who said yes at the consultation waited a week for anyone to book their fit, though only ops could.

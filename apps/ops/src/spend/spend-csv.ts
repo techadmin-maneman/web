@@ -51,9 +51,9 @@ function dayOf(written: string): string | null {
   return `${spelt[3] ?? ""}-${String(month + 1).padStart(2, "0")}-${(spelt[2] ?? "").padStart(2, "0")}`;
 }
 
-/** Rupees as the report writes them, "1,234.56" or "₹1,234.56", in paise; null for no figure. */
+/** Rupees as the report writes them, "1,234.56" or with the rupee sign before them, in paise; null for no figure. */
 function paiseOf(written: string): number | null {
-  const figure = written.replace(/[₹,\s]|INR|Rs\.?/g, "");
+  const figure = written.replace(/[\u20B9,\s]|INR|Rs\.?/g, "");
   if (!/^\d+(\.\d+)?$/.test(figure)) return null;
   return Math.round(Number(figure) * 100);
 }

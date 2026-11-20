@@ -109,7 +109,7 @@ export const EXPORT_QUERIES = {
     FROM leads WHERE person_id = ?1 ORDER BY created_at`,
   // How each visit, chat and call reached us, how they found us, and what Google and Meta were told
   // (docs/decisions/0288-attribution-and-conversions.md).
-  touches: `SELECT at, via, channel, utm_source, utm_medium, utm_campaign, utm_content, utm_term, gclid, gbraid, wbraid,
+  touches: `SELECT at, via, channel, mobile_e164, utm_source, utm_medium, utm_campaign, utm_content, utm_term, gclid, gbraid, wbraid,
       fbclid, fbc, fbp, ctwa_clid, ad_source_id, ad_source_url, referrer, landing_path, invite_code, code_kind,
       declared_channel, declared_by, ad_consent, ad_notice, user_agent, client_ip, visitor_id
     FROM touches WHERE person_id = ?1 ORDER BY at`,

@@ -30,6 +30,7 @@ const TOUCHES_PART: Part = {
     at: time("When"),
     via: words("Through"),
     channel: words("Channel"),
+    mobile_e164: text("The number it came from"),
     utm_source: text("Campaign source"),
     utm_medium: text("Campaign medium"),
     utm_campaign: text("Campaign"),
