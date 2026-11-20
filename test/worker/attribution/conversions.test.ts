@@ -13,6 +13,7 @@ import { createGoogleConversions } from "../../../src/providers/conversions/goog
 import type { ConversionPlatform, ConversionToSend, SendOutcome } from "../../../src/providers/conversions/index.ts";
 import { createMetaConversions } from "../../../src/providers/conversions/meta.ts";
 import { STUB_ANSWER, STUB_SENT, createStubConversions } from "../../../src/providers/conversions/stub.ts";
+import { aPayment, aPerson, aVisit } from "../fixtures/index.ts";
 import { NOW, deliverRazorpay, fakeFetch, json, markDatabase } from "../helpers.ts";
 
 const MINUTE = 60_000;
@@ -32,13 +33,8 @@ const rows = async (sql: string, ...values: string[]) =>
   ).results;
 
 async function client(mobile: string, extra: { testRecord?: boolean } = {}) {
-  const id = crypto.randomUUID();
-  await env.DB.prepare(
-    "INSERT INTO people (id, created_at, mobile_e164, name, test_record) VALUES (?1, ?2, ?3, 'Rohit Malhotra', ?4)",
-  )
-    .bind(id, NOW.toISOString(), mobile, extra.testRecord === true ? 1 : 0)
-    .run();
-  return id;
+  const { id } = await aPerson({ mobile_e164: mobile, test_record: extra.testRecord === true ? 1 : 0 });
+  return id ?? "";
 }
 
 const upkeep = (personId: string) =>
@@ -48,21 +44,22 @@ const upkeep = (personId: string) =>
 
 /** A first fit booked a week before NOW, done two days before, and paid: Rs. 35,400, Rs. 30,000 before GST. */
 async function firstFitPaid(personId: string) {
-  const visit = crypto.randomUUID();
   const booked = later(-7 * 24 * 60).toISOString();
   const start = later(-2 * 24 * 60).toISOString();
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
-         fsm_modified_at, synced_at, first_seen_at)
-       VALUES (?1, ?2, ?3, 'first_fit', ?4, ?4, 'completed', 'Completed', ?5, ?5, ?5)`,
-    ).bind(visit, `fsm-${visit}`, personId, start, booked),
-    env.DB.prepare(
-      `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, amount_ex_gst,
-         currency, method, status, captured_at, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, 3540000, 3000000, 'INR', 'upi', 'captured', ?6, ?6, ?6)`,
-    ).bind(crypto.randomUUID(), `MM-TEST-${visit.slice(0, 4)}`, personId, visit, `pay_${visit}`, start),
-  ]);
+  const { id: visit = "" } = await aVisit({
+    person_id: personId,
+    type: "first_fit",
+    status: "completed",
+    window_start: start,
+    first_seen_at: booked,
+  });
+  await aPayment({
+    person_id: personId,
+    appointment_id: visit,
+    amount: 3_540_000,
+    amount_ex_gst: 3_000_000,
+    captured_at: start,
+  });
   await upkeep(personId);
   return visit;
 }

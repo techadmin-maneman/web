@@ -7,6 +7,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { AD_NOTICE } from "../../../src/config/notices.ts";
 import { addCampaignLink } from "../../../src/domain/growth/campaign-links.ts";
+import { aPerson } from "../fixtures/index.ts";
 import { fakeQueue, markDatabase, request } from "../helpers.ts";
 import { site } from "../site/consultations-fixtures.ts";
 
@@ -206,9 +207,7 @@ describe("our codes", () => {
   });
 
   it("read a friend's invite in ?ref as a referral, over the ad that brought them", async () => {
-    await env.DB.prepare(
-      "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('friend', '2026-09-01T00:00:00Z', '+919810000099', 'Asha Rao')",
-    ).run();
+    await aPerson({ id: "friend", mobile_e164: "+919810000099", name: "Asha Rao" });
     await env.DB.prepare(
       "INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES ('ASHA42', 'friend', '2026-09-01T00:00:00Z', '2026-09-01T00:00:00Z')",
     ).run();

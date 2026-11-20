@@ -7,6 +7,7 @@ import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { funnel as copy } from "../../apps/ops/src/content/funnel.ts";
 import { rupees } from "../../packages/web-kit/money.ts";
+import { channelNamed } from "../../src/policy/channels.ts";
 
 const NONE = { spend: 0, leads: 0, consults_booked: 0, consults_done: 0, first_fits: 0, first_fit_revenue: 0 };
 
@@ -69,12 +70,12 @@ test("shows try-on to fit, each channel's spend and what it brought, cohorts, wh
   ]);
   const channels = page.getByRole("region", { name: copy.channels.title });
   await expect(channels.getByRole("rowheader")).toHaveText([
-    "Google Ads",
-    "Referral",
-    "Society activations",
+    ...FIGURES.rows.map((row) => channelNamed(row.channel)),
     copy.channels.total,
   ]);
-  await expect(channels.getByRole("row", { name: /^Google Ads/ })).toContainText(copy.roas(6_000_000, 5_000_000));
+  await expect(channels.getByRole("row", { name: new RegExp(`^${channelNamed("google_ads")}`) })).toContainText(
+    copy.roas(6_000_000, 5_000_000),
+  );
   await expect(page.getByRole("region", { name: copy.cohorts.title })).toContainText(
     copy.cohorts.soFar(rupees(6_000_000)),
   );

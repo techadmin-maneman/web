@@ -39,7 +39,8 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
    consultation was booked: then the code's. Four channels join the seven: Society activations, Other sites, WhatsApp,
    Phone. The inputs are kept, so a channel can be worked out again.
 4. **What a client says is kept apart.** Ops record how the client heard of us (a fixed list, with words of their own
-   for "other") on the client's page, asked at the consultation, where the Tasks board shows it missing. It never
+   for "other") on the client's page, asked at the consultation, where the Tasks board shows it missing (How they
+   heard of us, Customer Care's, for a client whose first consultation was done within the board's lapse days). It never
    enters the channel. Care's "How they found us", which did, is now this answer.
 5. **A call.** A lead ops take from a call needs a channel picked before it is saved. The pick is the call's own touch
    (`declared_by` ops); a tracking number per channel will one day put it there instead (`declared_by` number). It
@@ -58,15 +59,17 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
 8. **Conversions.** Five events are recorded once each, in `conversions`, with the client's channels at that moment:
    a lead left on /book's first step (`lead_submit`), a consultation booked (`consult_booked`), one done
    (`consult_done`), a first fit paid (`first_fit_paid`) and any other payment (`service_paid`), the last two worth
-   what was paid before GST. A cron pass finds the last four in our own tables each minute, so no payment, booking or
+   what was paid before GST. The last four are recorded by the statements that follow every write to a client's visits
+   and every payment captured, in our own tables, and the cron sends them every five minutes, so no payment, booking or
    visit path calls a platform, and Razorpay's webhook, which only queues (0202), is never held by one.
-9. **Sending them.** Each conversion waits in its row for each platform, tried again later after a failure and given
-   up after its tries, by its event ID, so it is sent once. Meta is sent through the Conversions API: a lead from the
+9. **Sending them.** Each conversion waits in its row for each platform, tried again 1, 5, 30, 120 and 720 minutes
+   after a failure and then given up, by its event ID, so it is sent once. Meta is sent through the Conversions API: a lead from the
    website, with the event ID the browser's Pixel used, so Meta counts the two once; a booking as Schedule; a
    consultation done, a first fit (Purchase) and a service paid from a physical store. Each carries the hashed number
    and first name, and, where the visitor did not decline the cookie bar, Meta's cookies, the address and the browser.
    Google is sent through the **Data Manager API**, which carries Google's offline conversions and enhanced
-   conversions for leads since 2026, under a service account: the click ID where there is one, the hashed number always.
+   conversions for leads since 2026, under a service account: the click ID where there is one, the hashed number always,
+   and where it happened (a booking as other, a visit or a payment as in store). A lead reaches Google from GA4 instead.
    Neither platform hears of a test record, and an event too old for it (7 days for Meta's website events, 62 for its
    store events, 90 for Google) is let go.
 10. **Test mode.** A setting runs the sends off, in test mode (Meta's Test Events code, Google's `validateOnly`), or
@@ -95,4 +98,6 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
   after it. An erasure blanks a person's touches and attribution.
 - Society activations' figures come from the touches their codes made, and from the spend on their links.
 - What a platform hears of a refund is not sent: our own figures take refunds off; the platforms' do not.
-- Tests: `test/node/policy/channels.test.ts`, `test/node/api/lib-ad-match.test.ts`.
+- Tests: `test/node/policy/channels.test.ts`, `test/node/api/lib-ad-match.test.ts`, `test/worker/attribution/`,
+  `test/worker/platform/guard-conversions.test.ts`, `test/worker/ops/growth-acquisition.test.ts`,
+  `test/dom/ops-attribution.test.ts`.

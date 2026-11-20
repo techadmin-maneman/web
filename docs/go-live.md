@@ -35,6 +35,25 @@ Nothing here needs a release. The first two have dates.
 - [ ] **Staff sign in with Google Workspace** (provisioning, step 3, "Staff sign in with their maneman.in Google accounts"): create the OAuth client in Google Cloud, enforce 2-Step Verification in the Google Admin console, and send the client ID and secret to whoever sets up Access.
 - [ ] **Counsel and the CA:** send each their brief (counsel: items 22, 23, 40, 41, 44, 55, 63, 69, 146, 148 and 149; the CA: items 2, 3, 9, 14, 16 and 17).
 
+**Attribution and conversions** ([ADR 0288](decisions/0288-attribution-and-conversions.md),
+[tracking](tracking.md))
+
+- [x] **Google Ads' conversion actions** for a consultation booked, one done, a first fit paid and a service paid, and
+      the service account `mm-conversions@mane-man-maps.iam.gserviceaccount.com` added to the Ads account (owner, 20
+      November 2026). Google took a validate-only upload of each the same day.
+- [ ] **Staging's Google secrets,** each piped in, never typed on the command line: `GOOGLE_ADS_CUSTOMER_ID`, the four
+      `GOOGLE_ADS_ACTION_*` IDs, and the key file itself with
+      `W secret put GOOGLE_SERVICE_ACCOUNT_KEY --env staging < .env.google-conversions.json`. Staging stays in test mode
+      (`CONVERSIONS_TEST_MODE`, `wrangler.jsonc`): Google checks each event and counts none.
+- [ ] **GA4:** mark `generate_lead` as a key event in staging's and production's properties, and import production's
+      into Google Ads (Goals, Conversions, Import, Google Analytics 4). The site carries no Ads tag of its own.
+- [ ] **Meta,** parked by the owner on 20 November 2026: when it resumes, a dataset for staging and production's Pixel
+      `2231091544495701`, a Conversions API token for each, and the Test Events code for staging, as `META_DATASET_ID`,
+      `META_CAPI_TOKEN` and `META_TEST_EVENT_CODE`. Until then Meta's conversions wait in their rows.
+- [ ] **Production's secrets** as staging's, at launch, with `CONVERSIONS_TEST_MODE` `"false"`.
+- [ ] **Spend:** Google's and Meta's from their CSVs on the Spend page; never Zoho Analytics' ad connectors, or spend
+      counts twice.
+
 **Ops, or a developer with the Cloudflare account**
 
 - [ ] **Production's resources** (item 86; provisioning, step 1):
