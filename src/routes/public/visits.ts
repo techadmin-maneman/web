@@ -95,7 +95,7 @@ export function registerVisits(app: App): void {
     if (!(await takeOne(db, "visit:ip", ipHash, { now, settings: c.var.config.settings }))) {
       return refuse(c, "rate_limited");
     }
-    await declineVisitor(db, visitorId);
+    await declineVisitor(db, visitorId, now);
     return c.body(null, 204);
   });
 

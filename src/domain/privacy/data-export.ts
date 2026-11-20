@@ -119,7 +119,7 @@ export const EXPORT_QUERIES = {
   ad_sends: `SELECT event, occurred_at, value_paise, attributed_channel, last_touch_channel, source_url, meta_state,
       meta_sent_at, google_state, google_sent_at, created_at
     FROM conversions WHERE person_id = ?1 ORDER BY occurred_at`,
-  browsers: "SELECT ref, created_at, seen_at FROM visitors WHERE person_id = ?1 ORDER BY created_at",
+  browsers: "SELECT ref, created_at, seen_at, declined_at FROM visitors WHERE person_id = ?1 ORDER BY created_at",
   try_ons: `SELECT stage, preset, hair_color, state, photo_consent_version, photo_consent_at, kept_at, upload_deleted_at,
       look_shown_at, created_at
     FROM tryon_jobs WHERE person_id = ?1 ORDER BY created_at`,

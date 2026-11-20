@@ -83,6 +83,18 @@ describe("a page's landing", () => {
     ]);
   });
 
+  it("records the same campaign landing reported again once, as a refreshed ad link would be", async () => {
+    const landing = { landing_path: "/book", utm_source: "meta", utm_medium: "paid_social", fbclid: "IwAR_test" };
+    await visit(landing);
+    await visit(landing);
+    await visit({ ...landing, fbclid: "IwAR_other" });
+
+    expect(await rows("SELECT fbclid FROM touches ORDER BY rowid")).toEqual([
+      { fbclid: "IwAR_test" },
+      { fbclid: "IwAR_other" },
+    ]);
+  });
+
   it("keeps nothing for a browser the site gave no visitor cookie", async () => {
     expect(await (await visit({ landing_path: "/", gclid: "x" }, null)).json()).toEqual({ ref: null });
     expect(await rows("SELECT id FROM touches")).toEqual([]);
@@ -103,6 +115,25 @@ describe("a Decline on the cookie bar", () => {
     const refused = await decline();
     expect(refused.status).toBe(429);
     expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
+  });
+
+  it("is kept for a landing that reaches the API after it, as one sent before the Decline would", async () => {
+    expect((await decline()).status).toBe(204);
+    await visit({ landing_path: "/", fbclid: "IwAR_test", fbp: "fb.1.1790000000000.123456789" });
+
+    expect(await rows("SELECT fbc, fbp, ad_consent FROM touches")).toEqual([
+      { fbc: null, fbp: null, ad_consent: "denied" },
+    ]);
+    expect(await rows("SELECT declined_at IS NOT NULL AS declined FROM visitors")).toEqual([{ declined: 1 }]);
+  });
+
+  it("gives way to a later landing that says the visitor has since accepted", async () => {
+    await decline();
+    await visit({ landing_path: "/", fbclid: "IwAR_test", ad_consent: "granted" });
+
+    expect(await rows("SELECT ad_consent, fbc IS NOT NULL AS fbc FROM touches")).toEqual([
+      { ad_consent: "granted", fbc: 1 },
+    ]);
   });
 
   it("reaches /book's own touch on a page whose landing report never arrived", async () => {

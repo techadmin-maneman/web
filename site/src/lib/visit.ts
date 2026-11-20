@@ -2,9 +2,8 @@
 // as the site's visitor cookie lasts: their first landing, and their latest that a campaign put something in, which a
 // plain visit later never replaces. Each such landing is reported to the API, which keeps it as the visitor's touch
 // and answers the reference their WhatsApp message ends with: once the page has loaded, so no report holds up its
-// first paint; kept as unsent until the API has it, sent as the page goes if the visitor leaves first, and again from
-// the next page if it was lost. A friend's or a partner's code in ?ref is remembered as
-// the invite /book carries (./remembered-invite.ts). Storage a browser refuses keeps nothing, and every page works
+// first paint, or as the page goes where the visitor leaves first. A friend's or a partner's code in ?ref is
+// remembered as the invite /book carries (./remembered-invite.ts). Storage a browser refuses keeps nothing, and every page works
 // without it.
 
 import { CODE_PATTERN } from "@rules/config/invite-codes.ts";
@@ -20,10 +19,6 @@ const REF = "mm_ref";
 /** A Decline on the cookie bar the API has not yet heard of. */
 const DECLINE_UNSENT = "mm_decline_unsent";
 
-/** Landings the API has not yet had, oldest first. */
-const UNSENT = "mm_landings_unsent";
-/** At most so many wait unsent: a browser offline for long keeps its latest. */
-const UNSENT_MAX = 5;
 /** The longest the reports wait for the page's load, which a slow ad tag can hold up. */
 const LOAD_WAIT_MS = 3000;
 
@@ -35,27 +30,15 @@ interface Kept {
   readonly at: string;
 }
 
-function isKept(stored: unknown): stored is Kept {
-  if (typeof stored !== "object" || stored === null || !("touch" in stored) || !("at" in stored)) return false;
-  const { at } = stored as { at: unknown };
-  return typeof at === "string" && Date.now() - Date.parse(at) <= KEPT_MS;
-}
-
 function kept(key: string): Kept | null {
   try {
     const stored: unknown = JSON.parse(localStorage.getItem(key) ?? "null");
-    return isKept(stored) ? stored : null;
+    if (typeof stored !== "object" || stored === null || !("touch" in stored) || !("at" in stored)) return null;
+    const { at } = stored as { at: unknown };
+    if (typeof at !== "string" || Date.now() - Date.parse(at) > KEPT_MS) return null;
+    return stored as Kept;
   } catch {
     return null;
-  }
-}
-
-function unsent(): Kept[] {
-  try {
-    const stored: unknown = JSON.parse(localStorage.getItem(UNSENT) ?? "[]");
-    return Array.isArray(stored) ? stored.filter(isKept) : [];
-  } catch {
-    return [];
   }
 }
 
@@ -66,10 +49,6 @@ function keep(key: string, value: string): void {
     // Kept nowhere: the API's own record of the touch stands.
   }
 }
-
-const keepUnsent = (list: readonly Kept[]): void => {
-  keep(UNSENT, JSON.stringify(list.slice(-UNSENT_MAX)));
-};
 
 function forget(key: string): void {
   try {
@@ -87,17 +66,13 @@ function declineUnsent(): boolean {
   }
 }
 
-/** The landing reports going now: a Decline waits for them, so the API blanks what they keep as well. */
-let reporting: Promise<void> = Promise.resolve();
-
 /**
- * Tells the API the visitor declined the cookie bar, so nothing their browser's touches kept for Meta is sent: after
- * any landing report going now, so that one is blanked too. Kept in the browser until the API has heard it, and sent
- * again first from the next page: a Decline lost offline is never lost.
+ * Tells the API the visitor declined the cookie bar, so nothing their browser's touches kept for Meta is sent, nor
+ * anything a landing reported later keeps: at once, outliving the page. Kept in the browser until the API has heard
+ * it, and sent again from the next page: a Decline lost offline is never lost.
  */
 export async function reportDeclined(): Promise<void> {
   keep(DECLINE_UNSENT, "1");
-  await reporting;
   const answer = await reportDecline();
   if (answer.ok) forget(DECLINE_UNSENT);
 }
@@ -118,62 +93,75 @@ const withConsent = (touch: Attribution): Attribution => {
   return answer === null ? touch : { ...touch, ad_consent: answer };
 };
 
-/** Reports a landing to the API and keeps the reference it answers with; whether the API had it. */
-async function report(touch: Attribution, keepalive = false): Promise<boolean> {
-  const answer = await reportVisit(withConsent(touch), keepalive);
+/**
+ * Reports a landing to the API, outliving the page where it is `leaving`, and keeps its reference; whether the API kept
+ * the touch. Only a page's last word is kept alive: a request so sent counts against the page's first paint.
+ */
+async function report(touch: Attribution, leaving = false): Promise<boolean> {
+  const answer = await reportVisit(withConsent(touch), leaving);
   if (answer.ok && answer.body.ref !== null) keep(REF, answer.body.ref);
-  return answer.ok;
-}
-
-/** Reports each landing kept unsent, oldest first, letting go of each once the API has it. */
-async function reportUnsent(): Promise<void> {
-  for (const each of unsent()) {
-    if (await report(each.touch)) keepUnsent(unsent().filter((other) => other.at !== each.at));
-  }
+  return answer.ok && answer.body.ref !== null;
 }
 
 /**
  * Runs on every page, before the analytics tags tidy the address: keeps this landing as the first or the last touch
- * where it is one, unsent, and reports what is unsent once the page has loaded, oldest first, so the visitor's first
- * touch stays their first on the API too. A Decline an earlier page could not send goes at once, ahead of any report
- * and of a chat link's reference. What the visitor leaves before it is sent goes as the page does.
+ * where it is one, and reports it after the page has loaded, and as it goes what was not yet answered. While no reference is kept, the
+ * first report never arrived or the API kept nothing, so the first landing goes again before anything else, which
+ * keeps the visitor's first touch their first on the API too. A Decline an earlier page could not send goes at once.
+ * `stop` lets a test take its listeners away.
  */
-export function captureAttribution(): void {
+export function captureAttribution(stop?: AbortSignal): void {
   const touch = attributionFrom(new URL(location.href), document.referrer, document.cookie);
   if (touch.ref !== undefined && CODE_PATTERN.test(touch.ref)) rememberInvite(touch.ref);
-  const landed: Kept = { touch, at: new Date().toISOString() };
+  const now = JSON.stringify({ touch, at: new Date().toISOString() } satisfies Kept);
   const keptFirst = kept(FIRST);
-  if (keptFirst === null) keep(FIRST, JSON.stringify(landed));
-  if (keptFirst === null || carriesCampaign(touch)) {
-    keep(LAST, JSON.stringify(landed));
-    keepUnsent([...unsent(), landed]);
-  }
-  const declined = declineUnsent() ? reportDeclined() : Promise.resolve();
+  const campaign = carriesCampaign(touch);
+  if (keptFirst === null) keep(FIRST, now);
+  if (keptFirst === null || campaign) keep(LAST, now);
+  if (declineUnsent()) void reportDeclined();
+  const due = [
+    ...(keptFirst !== null && visitorRef() === null ? [keptFirst.touch] : []),
+    ...(keptFirst === null || campaign ? [touch] : []),
+  ];
+  if (due.length === 0) return;
+  let started = false;
+  /** How many of what is due the API has kept, oldest first. */
+  let done = 0;
   afterLoad(() => {
-    reporting = (async () => {
-      await declined;
-      await reportUnsent();
+    if (started) return;
+    started = true;
+    // Oldest first, each once the one before was kept.
+    void (async () => {
+      for (const each of due) {
+        if (!(await report(each))) return;
+        done += 1;
+      }
     })();
-  });
+  }, stop);
   addEventListener(
     "pagehide",
     () => {
-      for (const each of unsent()) void report(each.touch, true);
-      keepUnsent([]);
+      started = true;
+      // What the API has not answered yet goes as the page does; one it had already is kept once.
+      for (const each of due.slice(done)) void report(each, true);
     },
-    { once: true },
+    once(stop),
   );
 }
+
+/** A listener heard once, and taken away early where `stop` says. */
+const once = (stop?: AbortSignal): AddEventListenerOptions =>
+  stop === undefined ? { once: true } : { once: true, signal: stop };
 
 /**
  * Runs once the page has loaded, or after LOAD_WAIT_MS where an ad tag holds its load up, and then when the browser is
  * free, three seconds later at most: so a report never holds up the page's first paint. A shorter wait than three
  * seconds put the invite landing's first paint back over Lighthouse's budget.
  */
-function afterLoad(run: () => void): void {
+function afterLoad(run: () => void, stop?: AbortSignal): void {
   let started = false;
   const start = () => {
-    if (started) return;
+    if (started || stop?.aborted === true) return;
     started = true;
     if (typeof requestIdleCallback === "function") requestIdleCallback(run, { timeout: 3000 });
     else setTimeout(run, 0);
@@ -182,8 +170,11 @@ function afterLoad(run: () => void): void {
     start();
     return;
   }
-  addEventListener("load", start, { once: true });
-  setTimeout(start, LOAD_WAIT_MS);
+  addEventListener("load", start, once(stop));
+  const wait = setTimeout(start, LOAD_WAIT_MS);
+  stop?.addEventListener("abort", () => {
+    clearTimeout(wait);
+  });
 }
 
 /** Where this visit came from, as a form sends it: the latest campaign's landing, else the first. */

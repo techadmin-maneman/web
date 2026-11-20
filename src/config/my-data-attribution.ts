@@ -95,6 +95,7 @@ const BROWSERS_PART: Part = {
     ref: text("Reference in your WhatsApp messages"),
     created_at: time("First seen"),
     seen_at: time("Last seen"),
+    declined_at: time("Declined our cookies"),
   },
 };
 

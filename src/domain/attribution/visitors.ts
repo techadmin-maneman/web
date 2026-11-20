@@ -13,12 +13,12 @@ function newRef(): string {
 /** How many fresh references are tried before giving up on one already taken. */
 const REF_TRIES = 4;
 
-/** The visitor's reference and person, the row made if new and its last sight moved on. */
+/** The visitor's reference, person and Decline, the row made if new and its last sight moved on. */
 export async function seeVisitor(
   db: D1Database,
   visitorId: string,
   now: Date,
-): Promise<{ readonly ref: string; readonly personId: string | null }> {
+): Promise<{ readonly ref: string; readonly personId: string | null; readonly declined: boolean }> {
   const at = now.toISOString();
   for (let tried = 0; tried < REF_TRIES; tried += 1) {
     try {
@@ -26,11 +26,11 @@ export async function seeVisitor(
         .prepare(
           `INSERT INTO visitors (id, ref, created_at, seen_at) VALUES (?1, ?2, ?3, ?3)
            ON CONFLICT (id) DO UPDATE SET seen_at = excluded.seen_at
-           RETURNING ref, person_id`,
+           RETURNING ref, person_id, declined_at`,
         )
         .bind(visitorId, newRef(), at)
-        .first<{ ref: string; person_id: string | null }>();
-      if (row !== null) return { ref: row.ref, personId: row.person_id };
+        .first<{ ref: string; person_id: string | null; declined_at: string | null }>();
+      if (row !== null) return { ref: row.ref, personId: row.person_id, declined: row.declined_at !== null };
     } catch (error) {
       // Another visitor holds the reference just drawn: draw again.
       if (!failedUniqueOn(error, "visitors")) throw error;
@@ -47,6 +47,20 @@ export async function seeVisitor(
 export const visitorStatement = (db: D1Database, visitorId: string, now: Date): D1PreparedStatement =>
   db
     .prepare("INSERT INTO visitors (id, ref, created_at, seen_at) VALUES (?1, ?2, ?3, ?3) ON CONFLICT DO NOTHING")
+    .bind(visitorId, newRef(), now.toISOString());
+
+/**
+ * The statement that marks the visitor's browser as having declined the cookie bar, its row made where no landing has
+ * reached the API yet: so a landing that arrives after the Decline is declined too. A reference already taken, in a
+ * draw one in 850 billion, leaves a new row unmade.
+ */
+export const declinedVisitorStatement = (db: D1Database, visitorId: string, now: Date): D1PreparedStatement =>
+  db
+    .prepare(
+      `INSERT INTO visitors (id, ref, created_at, seen_at, declined_at) VALUES (?1, ?2, ?3, ?3, ?3)
+       ON CONFLICT (id) DO UPDATE SET declined_at = COALESCE(visitors.declined_at, excluded.declined_at)
+       ON CONFLICT DO NOTHING`,
+    )
     .bind(visitorId, newRef(), now.toISOString());
 
 /** The visitor a WhatsApp reference names, or null. */

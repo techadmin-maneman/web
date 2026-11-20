@@ -2057,6 +2057,7 @@ export interface Rows {
     readonly person_id: string | null;
     readonly created_at: string;
     readonly seen_at: string;
+    readonly declined_at: string | null;
   };
   readonly waitlist_entries: {
     readonly id: string;

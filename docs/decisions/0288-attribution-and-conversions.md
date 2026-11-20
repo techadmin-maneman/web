@@ -22,7 +22,9 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
 1. **A visitor, and their touches.** The site's Worker gives each browser a first-party visitor cookie, set by the
    server so Safari keeps it, for 13 months, on `.maneman.in` so the client app's requests carry it, named for its
    environment. The page sends what each landing carried to `POST /api/landings` once for the visitor's first page and
-   again for any landing a campaign put something in; crawlers, which run no script, write nothing. Each is a **touch**:
+   again for any landing a campaign put something in, after the page has loaded (so it never holds up the page's first
+   paint) or as it goes, outliving it; the first landing goes again until the API has answered it; the same campaign
+   landing reported again records nothing more; crawlers, which run no script, write nothing. Each is a **touch**:
    the campaign tags, Google's three click IDs, Meta's click ID and cookies (its click cookie built from the click ID
    where the browser had none), the page before, the landing page, any code of ours, and the visitor's answer to the
    cookie bar. A WhatsApp chat that opens with the visitor's reference ("Ref M7K2Q9XP"), or from a click-to-WhatsApp ad,
@@ -96,9 +98,10 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
     client and shared, hashed, with Google and Meta to measure our ads, with the privacy policy linked; that step's
     touch keeps the notice's version, a number we already hold's included, and the touch's time is when it was shown.
     The privacy policy has a section on it. The cookie bar's consent now starts granted (owner, 20 November 2026);
-    Decline switches the browser's tags off, and the browser tells the API, which blanks Meta's cookies, the address
-    and the browser on every touch that browser made and marks them declined, so nothing kept before the Decline is
-    sent either.
+    Decline switches the browser's tags off, and the browser tells the API at once, which blanks Meta's cookies, the
+    address and the browser on every touch that browser made and marks them declined, so nothing kept before the
+    Decline is sent either; it marks the browser too, so a landing reported before the Decline that reaches the API
+    after it, unless it says the visitor has since accepted, is declined as well.
 14. **What the browser sends.** GA4 records `generate_lead` when /book's first step is sent, with the event ID, and the
     hashed number for Google's enhanced conversions; Google Ads imports it from GA4, so the site carries no Ads tag of
     its own. `tryon_complete`, `whatsapp_click` and `call_click` go to GA4, the last two to the Pixel as Contact. A

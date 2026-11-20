@@ -4264,6 +4264,7 @@ Made by `0227_attribution.sql`.
 | `person_id` | TEXT | yes |  | → `people.id` | Once a number they gave, or a chat their reference opened, names them. |
 | `created_at` | TEXT | no |  |  |  |
 | `seen_at` | TEXT | no |  |  | Their latest touch: a visitor never named is deleted 13 months after it. |
+| `declined_at` | TEXT | yes |  |  | When their browser declined the cookie bar: a landing reported after, unless it says they accepted, is declined. |
 
 Indexes:
 

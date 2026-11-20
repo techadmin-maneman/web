@@ -239,13 +239,13 @@ export function bookPublicConsultation(
 }
 
 /** A landing, kept as the visitor's touch where it is their first or a campaign's; answers their WhatsApp reference. */
-export function reportVisit(touch: Attribution, keepalive = false): Promise<Answer<VisitAnswer>> {
+export function reportVisit(touch: Attribution, keepalive: boolean): Promise<Answer<VisitAnswer>> {
   return post<VisitAnswer>("/api/landings", touch, undefined, keepalive);
 }
 
 /** The visitor declined the cookie bar: what their browser's touches kept for Meta goes (ADR 0288). */
 export function reportDecline(): Promise<Answer<null>> {
-  return post<null>("/api/landings/declined", {});
+  return post<null>("/api/landings/declined", {}, undefined, true);
 }
 
 /** /book's first step: the name and number, kept as a lead before the visit is chosen. */

@@ -13,7 +13,9 @@ CREATE TABLE visitors (
   person_id TEXT REFERENCES people (id),
   created_at TEXT NOT NULL,
   -- Their latest touch: a visitor never named is deleted 13 months after it.
-  seen_at TEXT NOT NULL
+  seen_at TEXT NOT NULL,
+  -- When their browser declined the cookie bar: a landing reported after, unless it says they accepted, is declined.
+  declined_at TEXT
 );
 
 CREATE INDEX visitors_by_person ON visitors (person_id) WHERE person_id IS NOT NULL;

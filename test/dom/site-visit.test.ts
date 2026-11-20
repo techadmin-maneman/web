@@ -1,7 +1,9 @@
 // Where a visitor came from, kept in the browser and reported to the API (site/src/lib/visit.ts; ADR 0288): the first
 // landing reported, and again before anything else while the API has given no reference, so a report that never
 // arrived cannot make a later plain page the visitor's first touch; once a reference is kept, only a landing a campaign
-// put something in is reported. A Decline on the cookie bar is kept until the API has heard it, and sent again first.
+// put something in is reported. Each page reports after it has loaded, and as it goes, outliving it, what the API has
+// not answered. A Decline on the cookie bar goes at once, is kept until the API has heard it, and is sent again from
+// the next page.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureAttribution, readAttribution, reportDeclined, visitorRef } from "../../site/src/lib/visit.ts";
@@ -13,11 +15,19 @@ let reported: Record<string, unknown>[];
 let keptAlive: boolean[];
 let answer: () => Response | Promise<Response>;
 let declines: number;
+let declinesKeptAlive: boolean[];
 let declineAnswer: () => Response;
+/** Takes each test's page listeners away after it, so none reaches the next. */
+let pages: AbortController;
+
+/** A page's capture, its listeners taken away after the test. */
+const capture = () => {
+  captureAttribution(pages.signal);
+};
 
 async function land(path: string) {
   history.replaceState(null, "", path);
-  captureAttribution();
+  capture();
   await answered();
   await answered();
 }
@@ -27,9 +37,11 @@ beforeEach(() => {
   const { jsdom } = globalThis as unknown as { jsdom?: { window: Window } };
   if (jsdom !== undefined) vi.stubGlobal("localStorage", jsdom.window.localStorage);
   localStorage.clear();
+  pages = new AbortController();
   reported = [];
   keptAlive = [];
   declines = 0;
+  declinesKeptAlive = [];
   answer = () => Response.json({ ref: "7KQ3M9XP" });
   declineAnswer = () => new Response(null, { status: 204 });
   vi.stubGlobal(
@@ -37,6 +49,7 @@ beforeEach(() => {
     contractChecked("public", (url: string, init?: { body?: unknown; keepalive?: boolean }) => {
       if (new URL(url, location.origin).pathname === "/api/landings/declined") {
         declines += 1;
+        declinesKeptAlive.push(init?.keepalive === true);
         return declineAnswer();
       }
       if (new URL(url, location.origin).pathname === "/api/landings") {
@@ -49,6 +62,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  pages.abort();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   vi.useRealTimers();
@@ -77,7 +91,7 @@ describe("a visitor's landings", () => {
   it("are kept at once but reported only once the page has loaded, so no report holds up its first paint", async () => {
     const readyState = loading();
     history.replaceState(null, "", "/r/PREVIEW1?utm_source=whatsapp");
-    captureAttribution();
+    capture();
     await answered();
 
     expect(readAttribution()).toMatchObject({ utm_source: "whatsapp" });
@@ -96,7 +110,7 @@ describe("a visitor's landings", () => {
     });
     vi.stubGlobal("requestIdleCallback", idle);
     history.replaceState(null, "", "/try?utm_source=google&utm_medium=cpc");
-    captureAttribution();
+    capture();
     await answered();
 
     expect(idle).toHaveBeenCalledTimes(1);
@@ -110,7 +124,7 @@ describe("a visitor's landings", () => {
     vi.useFakeTimers({ toFake: ["setTimeout"] });
     loading();
     history.replaceState(null, "", "/try?utm_source=google&utm_medium=cpc");
-    captureAttribution();
+    capture();
     await vi.advanceTimersByTimeAsync(2999);
     expect(reported).toEqual([]);
 
@@ -118,28 +132,35 @@ describe("a visitor's landings", () => {
     expect(reported.map((touch) => touch.utm_source)).toEqual(["google"]);
   });
 
-  it("go as the page does, outliving it, where the visitor leaves before it has loaded", async () => {
-    loading();
+  it("go once, as the page does, where the visitor leaves before it has loaded", async () => {
+    const readyState = loading();
     history.replaceState(null, "", "/book?utm_source=meta&utm_medium=paid_social");
-    captureAttribution();
+    capture();
     window.dispatchEvent(new Event("pagehide"));
     await answered();
+    await loaded(readyState);
 
     expect(reported.map((touch) => touch.utm_source)).toEqual(["meta"]);
     expect(keptAlive).toEqual([true]);
   });
 
-  it("send a returning visitor's campaign landing lost on one page from the next", async () => {
-    await land("/");
-    answer = () => {
-      throw new TypeError("Failed to fetch");
-    };
-    await land("/book?utm_source=meta&utm_medium=paid_social&fbclid=IwAR_test");
-    answer = () => Response.json({ ref: "7KQ3M9XP" });
-    await land("/guides");
-    await land("/try");
+  it("go once the page has loaded, as a plain request, and not again as it goes once answered", async () => {
+    await land("/book?utm_source=meta&utm_medium=paid_social");
+    window.dispatchEvent(new Event("pagehide"));
+    await answered();
 
-    expect(reported.map((touch) => touch.utm_source ?? touch.landing_path)).toEqual(["/", "meta", "meta"]);
+    expect(reported.map((touch) => touch.utm_source)).toEqual(["meta"]);
+    expect(keptAlive).toEqual([false]);
+  });
+
+  it("go again, outliving the page, where it goes before the API has answered", async () => {
+    answer = () => new Promise<Response>(() => undefined);
+    await land("/book?utm_source=meta&utm_medium=paid_social");
+    window.dispatchEvent(new Event("pagehide"));
+    await answered();
+
+    expect(reported.map((touch) => touch.utm_source)).toEqual(["meta", "meta"]);
+    expect(keptAlive).toEqual([false, true]);
   });
 
   it("report the first landing again, not the plain page, while its report never arrived", async () => {
@@ -158,6 +179,16 @@ describe("a visitor's landings", () => {
     expect(visitorRef()).toBe("7KQ3M9XP");
   });
 
+  it("report the first landing again while the API kept nothing for it, as when an address's hour is spent", async () => {
+    answer = () => Response.json({ ref: null });
+    await land("/try?gclid=Cj0_test");
+    answer = () => Response.json({ ref: "7KQ3M9XP" });
+    await land("/guides");
+
+    expect(reported.map((touch) => touch.landing_path)).toEqual(["/try", "/try"]);
+    expect(visitorRef()).toBe("7KQ3M9XP");
+  });
+
   it("report a campaign's landing later, the latest kept as the last touch", async () => {
     await land("/");
     await land("/book?utm_source=meta&utm_medium=paid_social&fbclid=IwAR_test");
@@ -165,8 +196,16 @@ describe("a visitor's landings", () => {
     expect(reported).toHaveLength(2);
     expect(readAttribution()).toMatchObject({ utm_source: "meta", fbclid: "IwAR_test" });
   });
+});
 
-  it("send a Decline the API never heard again first, from the next page, and once it has, no more", async () => {
+describe("a Decline on the cookie bar", () => {
+  it("goes at once, outliving the page", async () => {
+    await reportDeclined();
+
+    expect(declinesKeptAlive).toEqual([true]);
+  });
+
+  it("is sent again from the next page while the API never heard it, and once it has, no more", async () => {
     await land("/");
     declineAnswer = () => {
       throw new TypeError("Failed to fetch");
@@ -179,38 +218,17 @@ describe("a visitor's landings", () => {
     expect(declines).toBe(2);
   });
 
-  it("send a Decline left from an earlier page at once, before the page has loaded and its reports go", async () => {
+  it("left from an earlier page goes at once, before the page has loaded and its report goes", async () => {
     localStorage.setItem("mm_decline_unsent", "1");
     const readyState = loading();
     history.replaceState(null, "", "/?utm_source=google&utm_medium=cpc");
-    captureAttribution();
+    capture();
     await answered();
 
     expect(declines).toBe(1);
     expect(reported).toEqual([]);
     await loaded(readyState);
     expect(reported).toHaveLength(1);
-    expect(declines).toBe(1);
-  });
-
-  it("wait for a landing report going now, so the API blanks what it keeps too", async () => {
-    let arrive: (() => void) | undefined;
-    answer = () =>
-      new Promise<Response>((resolve) => {
-        arrive = () => {
-          resolve(Response.json({ ref: "7KQ3M9XP" }));
-        };
-      });
-    history.replaceState(null, "", "/?fbclid=IwAR_test");
-    captureAttribution();
-    await answered();
-    expect(reported).toHaveLength(1);
-
-    const declining = reportDeclined();
-    await answered();
-    expect(declines).toBe(0);
-    arrive?.();
-    await declining;
     expect(declines).toBe(1);
   });
 });
