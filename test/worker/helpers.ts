@@ -90,7 +90,7 @@ export const LOCAL_SETTINGS: Settings = {
   messaging: { enabled: true, allowlist: [], everyone: false, evolution: null, msg91: null },
   devRoutes: false,
   push: null,
-  conversions: { testMode: true, meta: null, google: null },
+  conversions: { testMode: true, meta: null, google: null, sendsFrom: null },
 };
 
 export const LOCAL_CONFIG: StaticConfig = {

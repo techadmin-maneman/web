@@ -8,6 +8,9 @@ import { problemsOf, production, stagingBase } from "./guard-fixtures.ts";
 
 const ON = { META_CAPI_PROVIDER: "meta", GOOGLE_ADS_PROVIDER: "google" };
 
+/** The day sending began, which a platform that sends needs. */
+const FROM = { CONVERSIONS_FROM: "2026-11-21" };
+
 const META = { META_DATASET_ID: "2231091544495701", META_CAPI_TOKEN: "meta-test-token" };
 
 const GOOGLE = {
@@ -26,12 +29,18 @@ const conversionsOf = (env: Record<string, unknown>) => validateStaticConfig(env
 
 describe("validateStaticConfig: conversions", () => {
   it("leaves each platform off while none of its secrets is set", () => {
-    expect(conversionsOf({ ...production, ...ON })).toEqual({ testMode: false, meta: null, google: null });
+    expect(conversionsOf({ ...production, ...ON })).toEqual({
+      testMode: false,
+      meta: null,
+      google: null,
+      sendsFrom: null,
+    });
   });
 
   it("reads each platform whose secrets are all set, an Ads account as its ten digits", () => {
-    expect(conversionsOf({ ...production, ...ON, ...META, ...GOOGLE })).toEqual({
+    expect(conversionsOf({ ...production, ...ON, ...META, ...GOOGLE, ...FROM })).toEqual({
       testMode: false,
+      sendsFrom: "2026-11-21",
       meta: { datasetId: "2231091544495701", token: "meta-test-token", testEventCode: null },
       google: {
         customerId: "7828921498",
@@ -53,7 +62,7 @@ describe("validateStaticConfig: conversions", () => {
 
   it("refuses some of a platform's secrets without the rest, and one that cannot be what it names", () => {
     const { META_CAPI_TOKEN: _token, ...datasetAlone } = META;
-    expect(problemsOf({ ...production, ...ON, ...datasetAlone })).toEqual([
+    expect(problemsOf({ ...production, ...ON, ...datasetAlone, ...FROM })).toEqual([
       "META_CAPI_TOKEN not set, beside the others it goes with",
     ]);
     expect(
@@ -62,6 +71,7 @@ describe("validateStaticConfig: conversions", () => {
         ...ON,
         ...META,
         ...GOOGLE,
+        ...FROM,
         META_DATASET_ID: "pixel",
         GOOGLE_ADS_CUSTOMER_ID: "78289",
         GOOGLE_ADS_ACTION_SERVICE_PAID: "paid",
@@ -75,15 +85,31 @@ describe("validateStaticConfig: conversions", () => {
     ]);
   });
 
+  it("needs the day sending began wherever a platform sends, written as a day", () => {
+    expect(problemsOf({ ...production, ...ON, ...GOOGLE })).toEqual([
+      "CONVERSIONS_FROM is not set: the day sending began, before which nothing is sent",
+    ]);
+    expect(problemsOf({ ...production, ...ON, ...GOOGLE, CONVERSIONS_FROM: "21 Nov" })).toEqual([
+      "CONVERSIONS_FROM must be a day, 2026-11-21",
+    ]);
+  });
+
   it("lets staging send only in test mode, and Meta's then only with its test events code", () => {
-    expect(problemsOf({ ...stagingBase, ...ON, ...GOOGLE })).toEqual([
+    expect(problemsOf({ ...stagingBase, ...ON, ...GOOGLE, ...FROM })).toEqual([
       'CONVERSIONS_TEST_MODE must be "true" on staging: its leads and payments are not real',
     ]);
-    expect(problemsOf({ ...stagingBase, ...ON, ...META, CONVERSIONS_TEST_MODE: "true" })).toEqual([
+    expect(problemsOf({ ...stagingBase, ...ON, ...META, ...FROM, CONVERSIONS_TEST_MODE: "true" })).toEqual([
       "META_TEST_EVENT_CODE is not set: in test mode Meta's events go to its Test Events alone",
     ]);
     expect(
-      conversionsOf({ ...stagingBase, ...ON, ...META, CONVERSIONS_TEST_MODE: "true", META_TEST_EVENT_CODE: "TEST123" }),
+      conversionsOf({
+        ...stagingBase,
+        ...ON,
+        ...META,
+        ...FROM,
+        CONVERSIONS_TEST_MODE: "true",
+        META_TEST_EVENT_CODE: "TEST123",
+      }),
     ).toMatchObject({ testMode: true, meta: { testEventCode: "TEST123" } });
   });
 });

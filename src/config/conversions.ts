@@ -26,6 +26,11 @@ export interface GoogleSettings {
 
 export interface ConversionSettings {
   readonly testMode: boolean;
+  /**
+   * India's day sending to Google and Meta began, CONVERSIONS_FROM: what happened before it is history its clients were
+   * never told would be shared, and is never sent. Null where no platform sends.
+   */
+  readonly sendsFrom: string | null;
   readonly meta: MetaSettings | null;
   readonly google: GoogleSettings | null;
 }

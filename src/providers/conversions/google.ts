@@ -116,9 +116,17 @@ export function createGoogleConversions(
       },
     );
     if (answer instanceof VendorUnreachable) return { kind: "retry", error: answer.message };
-    const body = (await answer.json().catch(() => null)) as { access_token?: unknown; expires_in?: unknown } | null;
+    const body = (await answer.json().catch(() => null)) as {
+      access_token?: unknown;
+      expires_in?: unknown;
+      error?: unknown;
+    } | null;
     if (!answer.ok || typeof body?.access_token !== "string") {
-      return { kind: "retry", error: `token ${String(answer.status)}` };
+      const said = `token ${String(answer.status)} ${typeof body?.error === "string" ? body.error : ""}`.trim();
+      // Google down, or asked too often, passes; a key deleted or disabled, or an account removed, will not.
+      return answer.status >= 500 || answer.status === 429
+        ? { kind: "retry", error: said }
+        : { kind: "held", error: said };
     }
     const seconds = typeof body.expires_in === "number" ? body.expires_in : 3600;
     token = { value: body.access_token, until: now.getTime() + (seconds - 300) * 1000 };

@@ -24,6 +24,7 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000001556003` | `4242595000001556003` |
 | `BOOKS_SAC` | — | — | — |
 | `CLIENT_SIGN_OFF` | `true` | `true` | `true` |
+| `CONVERSIONS_FROM` | — | `2026-11-21` | — |
 | `CONVERSIONS_TEST_MODE` | `true` | `true` | `false` |
 | `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |
 | `ENVIRONMENT` | `local` | `staging` | `production` |

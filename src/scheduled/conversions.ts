@@ -4,10 +4,12 @@
 import { letAttributionGo, touchOldLeads } from "../domain/attribution/backfill.ts";
 import { sendConversions } from "../domain/attribution/conversion-sends.ts";
 import { PUBLIC_ORIGIN } from "../config/environments.ts";
+import { indiaInstant } from "../lib/india-time.ts";
 import { createConversionPlatforms } from "../providers/conversions/index.ts";
 import type { CronContext } from "./cron.ts";
 
 export async function conversionsJob({ env, deps, config, log, budget }: CronContext): Promise<void> {
+  const { sendsFrom } = config.settings.conversions;
   const platforms = createConversionPlatforms(config.providers, config.settings.conversions, {
     fetch: deps.fetch,
     log,
@@ -20,6 +22,7 @@ export async function conversionsJob({ env, deps, config, log, budget }: CronCon
     alerts: { alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert },
     // The app's own bookings are told as made on the site's booking page: Meta knows the site, not the app.
     bookingPage: `${PUBLIC_ORIGIN[config.environment]}/book`,
+    sendsFrom: sendsFrom === null ? null : indiaInstant(sendsFrom, "00:00").toISOString(),
   });
 }
 

@@ -53,7 +53,9 @@ Nothing here needs a release. The first two have dates.
       dataset. `maneman.in` is verified for it.
 - [ ] **Staging's Meta secrets,** piped in: `META_DATASET_ID`, `META_CAPI_TOKEN`, and the **Offline** view's test code as
       `META_TEST_EVENT_CODE` (four of the five events are offline ones).
-- [ ] **Production's secrets** as staging's, at launch, with `CONVERSIONS_TEST_MODE` `"false"`.
+- [ ] **Production's secrets** as staging's, at launch, with `CONVERSIONS_TEST_MODE` `"false"`, and
+      `CONVERSIONS_FROM` in `wrangler.jsonc`'s production vars set to the launch day: nothing that happened before it
+      is sent, and production will not start with a platform on and no day set.
 - [ ] **Spend:** Google's and Meta's from their CSVs on the Spend page; never Zoho Analytics' ad connectors, or spend
       counts twice.
 

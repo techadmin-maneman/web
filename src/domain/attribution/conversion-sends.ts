@@ -99,6 +99,11 @@ const DUE_GOOGLE = `SELECT c.event_id, c.event, c.subject_id, c.person_id, c.occ
   WHERE c.google_state = 'pending' AND c.google_next_at <= ?1
   ORDER BY c.google_next_at LIMIT ?2`;
 
+/** Every conversion of a platform that is due by ?2, put off until ?1: the platform refuses our account. */
+const HOLD_META = "UPDATE conversions SET meta_next_at = ?1 WHERE meta_state = 'pending' AND meta_next_at <= ?2";
+const HOLD_GOOGLE =
+  "UPDATE conversions SET google_next_at = ?1 WHERE google_state = 'pending' AND google_next_at <= ?2";
+
 /** A send's outcome on its platform's columns, while it is still waiting. */
 const WRITE_META = `UPDATE conversions SET meta_state = ?2, meta_tries = meta_tries + ?3,
     meta_error = ?4, meta_next_at = ?5, meta_sent_at = ?6
@@ -201,10 +206,11 @@ async function toSend(db: D1Database, due: Due, bookingPage: string): Promise<Co
 }
 
 /** Why a waiting conversion is not for the platform after all, or null where it is. */
-function notFor(platform: Platform, due: Due, now: Date): string | null {
+function notFor(platform: Platform, due: Due, now: Date, sendsFrom: string | null): string | null {
   if (due.test_record === 1) return "test_record";
   if (due.erased_at !== null) return "erased";
   if (due.sharing_stopped_at !== null) return "sharing_stopped";
+  if (sendsFrom !== null && due.occurred_at < sendsFrom) return "before_release";
   if (Date.parse(due.created_at) - Date.parse(due.occurred_at) > RECORDED_LATE_DAYS * DAY_MS) return "recorded_late";
   const days = TAKEN_FOR_DAYS[platform][due.event];
   return now.getTime() - Date.parse(due.occurred_at) > days * DAY_MS ? "too_old" : null;
@@ -245,6 +251,8 @@ interface Run {
   readonly alerts: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert };
   /** The site's booking page, which a booking made on the site or the app is told as made on. */
   readonly bookingPage: string;
+  /** The first instant sending began; what happened before it is never sent. Null for none. */
+  readonly sendsFrom: string | null;
 }
 
 async function sendFor(
@@ -257,7 +265,7 @@ async function sendFor(
   const { results } = await dueNow.bind(run.now.toISOString(), PER_RUN).all<Due>();
   const counted: Record<string, number> = {};
   for (const due of results) {
-    const why = notFor(platform, due, run.now);
+    const why = notFor(platform, due, run.now, run.sendsFrom);
     let outcome: SendOutcome | { kind: "skipped"; why: string };
     if (why !== null) outcome = { kind: "skipped", why };
     else {
@@ -270,6 +278,10 @@ async function sendFor(
       run.log.warn("conversion_refused", { platform, event: due.event, error: outcome.error });
     if (outcome.kind === "held") {
       // Every send would be refused the same way: the rest wait with it, and ops are told once.
+      const until = new Date(run.now.getTime() + HELD_MINUTES * MINUTE_MS).toISOString();
+      await (platform === "meta" ? db.prepare(HOLD_META) : db.prepare(HOLD_GOOGLE))
+        .bind(until, run.now.toISOString())
+        .run();
       run.log.warn("conversions_held", { platform, error: outcome.error });
       await run.alerts.alertOnce({
         key: `conversions_held:${platform}`,

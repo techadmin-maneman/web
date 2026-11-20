@@ -25,12 +25,17 @@ const stubs = () => ({ meta: createStubConversions("meta", log), google: createS
 /** The alerts a run raised and let go, by key. */
 let alerts: { raised: string[]; resolved: string[] };
 
-const run = (platforms: { meta: ConversionPlatform | null; google: ConversionPlatform | null }, now = NOW) =>
+const run = (
+  platforms: { meta: ConversionPlatform | null; google: ConversionPlatform | null },
+  now = NOW,
+  sendsFrom: string | null = null,
+) =>
   sendConversions(env.DB, platforms, {
     now,
     budget: createCallBudget(100),
     log,
     bookingPage: "https://maneman.test/book",
+    sendsFrom,
     alerts: {
       alertOnce: (raised) => {
         alerts.raised.push(raised.key);
@@ -237,6 +242,20 @@ describe("a payment's conversion", () => {
     expect(STUB_SENT.find((each) => each.conversion.event === "first_fit_paid")?.conversion.value).toBe(30_000);
   });
 
+  it("is not sent when it happened before sending began, however soon after it was recorded", async () => {
+    await firstFitPaid(await client("+919810000026"));
+    await run(stubs(), NOW, later(-24 * 60).toISOString());
+
+    expect(STUB_SENT.map((each) => each.conversion.event)).not.toContain("consult_booked");
+    expect(await rows("SELECT event, meta_error FROM conversions WHERE meta_state = 'skipped' ORDER BY event")).toEqual(
+      [
+        { event: "consult_booked", meta_error: "before_release" },
+        { event: "consult_done", meta_error: "before_release" },
+        { event: "first_fit_paid", meta_error: "before_release" },
+      ],
+    );
+  });
+
   it("is not sent when it was recorded long after it happened, as history a release finds", async () => {
     await firstFitPaid(await client("+919810000022"));
     await env.DB.prepare("UPDATE conversions SET created_at = ?1")
@@ -363,6 +382,18 @@ describe("a platform that is down", () => {
     expect(alerts.resolved).toEqual(["conversions_held:google"]);
   });
 
+  it("refusing our account puts off every conversion of that platform due, so none is tried before the hour", async () => {
+    await firstFitPaid(await client("+919810000027"));
+    const refusing = scripted({ kind: "held", error: "403 PERMISSION_DENIED" });
+    await run({ meta: null, google: refusing.platform });
+    await run({ meta: null, google: refusing.platform }, later(5));
+
+    expect(refusing.sent).toHaveLength(1);
+    expect(await rows("SELECT DISTINCT google_next_at FROM conversions")).toEqual([
+      { google_next_at: later(60).toISOString() },
+    ]);
+  });
+
   it("is not tried again before its wait is over", async () => {
     await firstFitPaid(await client("+919810000017"));
     const down = scripted(
@@ -460,6 +491,16 @@ describe("Meta's request", () => {
       user_data: { ph: [PAID.phone.meta], fbc: PAID.browser.fbc, client_ip_address: "203.0.113.7" },
       custom_data: { currency: "INR", value: 30_000 },
     });
+  });
+
+  it("never keeps a token Meta quotes back in its refusal", async () => {
+    const quoting = fakeFetch({
+      "https://graph.facebook.com/": () =>
+        json({ error: { message: "Malformed access token meta-test-token and EAAGm0PX4ZCpsBAtest", code: 190 } }, 400),
+    });
+    const said = await createMetaConversions(settings, false, { fetch: quoting.fetch, log }).send(PAID);
+
+    expect(said).toEqual({ kind: "held", error: "400 190 Malformed access token [token] and [token]" });
   });
 
   it("is held when Meta refuses our account: a lapsed token, or a dataset it cannot find", async () => {
@@ -597,6 +638,24 @@ describe("Google's request", () => {
       error: "403 PERMISSION_DENIED The caller does not have permission",
     });
     expect((await google.send(PAID)).kind).toBe("retry");
+  });
+
+  it("is held when Google refuses our sign-in, a key deleted or an account removed", async () => {
+    const { fetch } = fakeFetch({
+      "https://oauth2.googleapis.com/token": () => json({ error: "invalid_grant" }, 400),
+    });
+    const google = createGoogleConversions(
+      {
+        customerId: "1234567890",
+        loginCustomerId: null,
+        actions: ACTIONS,
+        serviceAccount: { clientEmail: "conversions@test.iam.gserviceaccount.com", privateKey: await throwawayKey() },
+      },
+      true,
+      { fetch, log, now: () => NOW },
+    );
+
+    expect(await google.send(PAID)).toEqual({ kind: "held", error: "token 400 invalid_grant" });
   });
 
   it("refuses a lead without a call, as a lead reaches Google from GA4", async () => {

@@ -58,18 +58,25 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
    latest link's. Neither /book nor the invite's page asks for a code: codes come only by link.
 8. **Conversions.** Five events are recorded once each, in `conversions`, with the client's channels at that moment:
    a lead left on /book's first step (`lead_submit`), a consultation booked (`consult_booked`), one done
-   (`consult_done`), a first fit paid (`first_fit_paid`) and any other payment (`service_paid`), the last two worth
-   what was paid before GST. The last four are recorded by the statements that follow every write to a client's visits
+   (`consult_done`), a first fit paid (`first_fit_paid`, the earliest visit payment on the client's first first fit
+   still standing, one a client) and any other visit's payment (`service_paid`; a late fee is none), the last two worth
+   what was paid before GST, read when sent. The last four are recorded by the statements that follow every write to a client's visits
    and every payment captured, in our own tables, and the cron sends them every five minutes, so no payment, booking or
    visit path calls a platform, and Razorpay's webhook, which only queues (0202), is never held by one.
 9. **Sending them.** Each conversion waits in its row for each platform, tried again 1, 5, 30, 120 and 720 minutes
-   after a failure and then given up, by its event ID, so it is sent once. Meta is sent through the Conversions API: a lead from the
-   website, with the event ID the browser's Pixel used, so Meta counts the two once; a booking as Schedule; a
-   consultation done, a first fit (Purchase) and a service paid from a physical store. Each carries the hashed number
+   after a failure and then given up, by its event ID, so it is sent once. A refusal of our account rather than the
+   event (a token lapsed or deleted, access gone, an ID the platform does not know) holds every conversion of that
+   platform due an hour, no try spent, and tells ops once, until a send goes through. Nothing that happened before the
+   day sending began (`CONVERSIONS_FROM`), nor anything recorded more than 7 days after it happened, is sent: it is
+   history its clients were never told would be shared. Meta is sent through the Conversions API: a lead from the
+   website, with the event ID the browser's Pixel used, so Meta counts the two once; a booking as Schedule, told as
+   made on the website, in a chat, on a call or by our system, as it was (owner, 20 November 2026); a consultation
+   done, a first fit (Purchase) and a service paid from a physical store. Each carries the hashed number
    and first name, and, where the visitor did not decline the cookie bar, Meta's cookies, the address and the browser.
    Google is sent through the **Data Manager API**, which carries Google's offline conversions and enhanced
    conversions for leads since 2026, under a service account: the click ID where there is one, the hashed number always,
-   and where it happened (a booking as other, a visit or a payment as in store). A lead reaches Google from GA4 instead.
+   and where it happened (a booking as WEB, MESSAGE, PHONE or OTHER as it was made, a visit or a payment as in
+   store). A lead reaches Google from GA4 instead.
    Neither platform hears of a test record, and an event too old for it (7 days for Meta's website events, 62 for its
    store events, 90 for Google) is let go.
 10. **Test mode.** A setting runs the sends off, in test mode (Meta's Test Events code, Google's `validateOnly`), or
@@ -82,10 +89,12 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
     and 180 days from their first fit, by the client's channel or their last touch's, and what clients said beside the
     channel we found, by week or month. The nightly copy carries the same channels to Zoho.
 13. **What the visitor is told.** /book's first step says, under its button, that the details are used to contact the
-    client and shared, hashed, with Google and Meta to measure our ads, with the privacy policy linked; each lead keeps
-    that notice's version as a consent row. The privacy policy has a section on it. The cookie bar's consent now starts
-    granted (owner, 20 November 2026), and Decline switches the browser's tags off and keeps Meta's cookies and the
-    address out of what the server sends.
+    client and shared, hashed, with Google and Meta to measure our ads, with the privacy policy linked; that step's
+    touch keeps the notice's version, a number we already hold's included, and the touch's time is when it was shown.
+    The privacy policy has a section on it. The cookie bar's consent now starts granted (owner, 20 November 2026);
+    Decline switches the browser's tags off, and the browser tells the API, which blanks Meta's cookies, the address
+    and the browser on every touch that browser made and marks them declined, so nothing kept before the Decline is
+    sent either.
 14. **What the browser sends.** GA4 records `generate_lead` when /book's first step is sent, with the event ID, and the
     hashed number for Google's enhanced conversions; Google Ads imports it from GA4, so the site carries no Ads tag of
     its own. `tryon_complete`, `whatsapp_click` and `call_click` go to GA4, the last two to the Pixel as Contact. A
@@ -98,6 +107,12 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
   after it. An erasure blanks a person's touches and attribution.
 - Society activations' figures come from the touches their codes made, and from the spend on their links.
 - What a platform hears of a refund is not sent: our own figures take refunds off; the platforms' do not.
+- A first fit paid at booking, then cancelled with a refund and booked again, keeps `first_fit_paid` on the refunded
+  payment, and the new one is `service_paid`: the report then counts that client's first-fit revenue near nothing.
+  It is rare, and Meta and Google have heard of the first payment already; it is left as it is.
+- /book does not prove the number, so a visitor can put their own browser's touches on another person's number: Meta
+  may then hear that browser with that person's hashed number, and that person's data export shows it. Nothing comes
+  back to the visitor; proving the number at /book's first step would end it.
 - Tests: `test/node/policy/channels.test.ts`, `test/node/api/lib-ad-match.test.ts`, `test/worker/attribution/`,
   `test/worker/platform/guard-conversions.test.ts`, `test/worker/ops/growth-acquisition.test.ts`,
   `test/dom/ops-attribution.test.ts`.

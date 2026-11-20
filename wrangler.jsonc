@@ -141,6 +141,8 @@
     "META_CAPI_PROVIDER": "stub",
     "GOOGLE_ADS_PROVIDER": "stub",
     "CONVERSIONS_TEST_MODE": "true",
+    // No day locally: the stubs send whatever is due.
+    "CONVERSIONS_FROM": "",
     "ROUTES_PROVIDER": "stub",
     "SELF_SERVE_BOOKING": "true",
     "CLIENT_SIGN_OFF": "true",
@@ -299,6 +301,8 @@
         "META_CAPI_PROVIDER": "meta",
         "GOOGLE_ADS_PROVIDER": "google",
         "CONVERSIONS_TEST_MODE": "true",
+        // The day sending began here: nothing that happened before it is sent.
+        "CONVERSIONS_FROM": "2026-11-21",
         // The owner switched on the Routes and Maps Static APIs for the key (docs/provisioning.md, step 13a).
         "ROUTES_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "true",
@@ -453,6 +457,8 @@
         "META_CAPI_PROVIDER": "meta",
         "GOOGLE_ADS_PROVIDER": "google",
         "CONVERSIONS_TEST_MODE": "false",
+        // The launch day, set at launch with the secrets (docs/go-live.md); no platform sends without it.
+        "CONVERSIONS_FROM": "",
         "ROUTES_PROVIDER": "google",
         "SELF_SERVE_BOOKING": "false",
         "CLIENT_SIGN_OFF": "true",

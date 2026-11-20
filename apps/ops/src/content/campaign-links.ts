@@ -52,7 +52,7 @@ export const campaignLinks = {
   /** What Make link waits for, said beneath it. */
   missing: {
     name: "Type a name.",
-    pincode: "Type the society's six-digit pincode.",
+    pincode: "Type the society’s six-digit pincode.",
     campaign: "Type the campaign in small letters and hyphens.",
   },
   /** "PROMO20 · 20% off" */

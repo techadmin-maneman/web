@@ -94,5 +94,12 @@ export function readConversions(
   if (environment === "staging" && !testMode && (meta !== null || google !== null)) {
     read.problems.push('CONVERSIONS_TEST_MODE must be "true" on staging: its leads and payments are not real');
   }
-  return { testMode, meta, google };
+  const sendsFrom = read.optionalText("CONVERSIONS_FROM");
+  if (sendsFrom !== null && !/^\d{4}-\d{2}-\d{2}$/.test(sendsFrom)) {
+    read.problems.push("CONVERSIONS_FROM must be a day, 2026-11-21");
+  }
+  if (sendsFrom === null && (meta !== null || google !== null)) {
+    read.problems.push("CONVERSIONS_FROM is not set: the day sending began, before which nothing is sent");
+  }
+  return { testMode, meta, google, sendsFrom };
 }

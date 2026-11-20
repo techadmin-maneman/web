@@ -5,17 +5,17 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureAttribution, readAttribution, visitorRef } from "../../site/src/lib/visit.ts";
+import { contractChecked } from "./contract-fetch.ts";
+import { answered } from "./render-hook.ts";
 
 let reported: Record<string, unknown>[];
 let answer: () => Response;
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
-
 async function land(path: string) {
   history.replaceState(null, "", path);
   captureAttribution();
-  await settle();
-  await settle();
+  await answered();
+  await answered();
 }
 
 beforeEach(() => {
@@ -25,12 +25,15 @@ beforeEach(() => {
   localStorage.clear();
   reported = [];
   answer = () => Response.json({ ref: "7KQ3M9XP" });
-  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-    if (new URL(url, location.origin).pathname === "/api/landings") {
-      reported.push(JSON.parse(typeof init?.body === "string" ? init.body : "{}") as Record<string, unknown>);
-    }
-    return Promise.resolve(answer());
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("public", (url: string, init?: { body?: unknown }) => {
+      if (new URL(url, location.origin).pathname === "/api/landings") {
+        reported.push(JSON.parse(typeof init?.body === "string" ? init.body : "{}") as Record<string, unknown>);
+      }
+      return answer();
+    }),
+  );
 });
 
 afterEach(() => {
@@ -48,7 +51,10 @@ describe("a visitor's landings", () => {
   });
 
   it("report the first landing again, not the plain page, while its report never arrived", async () => {
-    answer = () => new Response(null, { status: 503 });
+    // The report never arrives: the browser is offline.
+    answer = () => {
+      throw new TypeError("Failed to fetch");
+    };
     await land("/try?gclid=Cj0_test");
     answer = () => Response.json({ ref: "7KQ3M9XP" });
     await land("/guides");
