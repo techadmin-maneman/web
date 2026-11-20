@@ -191,6 +191,32 @@ describe("a first fit's conversions", () => {
   });
 });
 
+describe("a consultation done that kept no start", () => {
+  it("is booked but never done, and the write it follows goes through", async () => {
+    // Kept from before migration 0169 required a start: the trigger set aside to make one, and put back.
+    const trigger = await env.DB.prepare("SELECT sql FROM sqlite_master WHERE name = 'appointments_whole'").first<{
+      sql: string;
+    }>();
+    await env.DB.prepare("DROP TRIGGER appointments_whole").run();
+    const personId = await client("+919811115555");
+    await aVisit({
+      person_id: personId,
+      type: "consultation",
+      status: "completed",
+      window_start: null,
+      window_end: null,
+      first_seen_at: later(-3 * 24 * 60).toISOString(),
+    });
+    await env.DB.prepare(trigger?.sql ?? "").run();
+
+    await upkeep(personId);
+
+    expect(await rows("SELECT event FROM conversions WHERE person_id = ?1", personId)).toEqual([
+      { event: "consult_booked" },
+    ]);
+  });
+});
+
 describe("a payment's conversion", () => {
   it("is never a late fee's, and a cancelled first fit leaves first_fit_paid to the one rebooked", async () => {
     const id = await client("+919810000020");
