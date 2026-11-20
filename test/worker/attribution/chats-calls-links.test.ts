@@ -129,6 +129,13 @@ describe("a WhatsApp message", () => {
     ]);
   });
 
+  it("with a referral that will not parse is still filed, its words read, the referral let go", async () => {
+    await whatsApp("919810000001", "STOP", { ctwa_clid: "x".repeat(600) });
+
+    expect(await rows("SELECT id FROM touches")).toEqual([]);
+    expect(await rows("SELECT text FROM chat_messages")).toEqual([{ text: "STOP" }]);
+  });
+
   it("with neither records nothing", async () => {
     await whatsApp("919810000001", "Can my visit move to the evening?");
     expect(await rows("SELECT id FROM touches")).toEqual([]);

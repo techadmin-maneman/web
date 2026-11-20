@@ -25,7 +25,7 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
    again for any landing a campaign put something in; crawlers, which run no script, write nothing. Each is a **touch**:
    the campaign tags, Google's three click IDs, Meta's click ID and cookies (its click cookie built from the click ID
    where the browser had none), the page before, the landing page, any code of ours, and the visitor's answer to the
-   cookie bar. A WhatsApp chat that opens with the visitor's reference ("Ref M7K2Q"), or from a click-to-WhatsApp ad,
+   cookie bar. A WhatsApp chat that opens with the visitor's reference ("Ref M7K2Q9XP"), or from a click-to-WhatsApp ad,
    and a call ops take, are touches too.
 2. **The record is the person's, by their number.** `people` already holds one row per number; `person_attribution`
    holds, beside it, the first touch, the last touch, the client's channel and their last touch's channel. The first

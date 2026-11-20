@@ -6,6 +6,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { AD_NOTICE } from "../../../src/config/notices.ts";
+import { REF_PATTERN } from "../../../src/config/ref-tokens.ts";
 import { addCampaignLink } from "../../../src/domain/growth/campaign-links.ts";
 import { aPerson } from "../fixtures/index.ts";
 import { fakeQueue, markDatabase, request } from "../helpers.ts";
@@ -53,7 +54,7 @@ describe("a page's landing", () => {
 
     expect(answer.status).toBe(200);
     const { ref } = await answer.json<{ ref: string }>();
-    expect(ref).toMatch(/^[2-9A-HJ-NP-Z]{5}$/);
+    expect(ref).toMatch(REF_PATTERN);
     expect(
       await rows("SELECT via, channel, campaign_signal, gclid, person_id, user_agent, client_ip FROM touches"),
     ).toEqual([

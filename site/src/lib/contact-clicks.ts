@@ -1,6 +1,6 @@
 // A chat or a call begun from any link on a page (docs/decisions/0288-attribution-and-conversions.md): each is
 // reported to the analytics tags, and a chat with our number opens with the visitor's reference at the end of its
-// words, "Hi, I'd like to know more. Ref M7K2Q", so the chat that reaches Care carries where the visit came from. One
+// words, "Hi, I'd like to know more. Ref M7K2Q9XP", so the chat that reaches Care carries where the visit came from. One
 // listener for the page, so every link, the footer's and the forms' alike, is read the same way.
 
 import { whatsappChat } from "@maneman/web-kit/whatsapp";

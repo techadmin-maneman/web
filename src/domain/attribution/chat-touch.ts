@@ -1,5 +1,5 @@
 // A WhatsApp chat as a touch (docs/decisions/0288-attribution-and-conversions.md). A message that ends with a site
-// visitor's reference ("Ref M7K2Q") ties the chat to that visitor's touches; one that opens a chat from a
+// visitor's reference ("Ref M7K2Q9XP") ties the chat to that visitor's touches; one that opens a chat from a
 // click-to-WhatsApp ad carries the ad's click ID, ad and post. Either is a touch on the chat's number at once: the
 // person's where we know the number, else kept by the number until Care save or link the chat, or the number books.
 // Nobody is made from a message alone (docs/decisions/0138-strangers-in-the-inbox.md).

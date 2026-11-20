@@ -24,7 +24,7 @@ beforeEach(() => {
   if (jsdom !== undefined) vi.stubGlobal("localStorage", jsdom.window.localStorage);
   localStorage.clear();
   reported = [];
-  answer = () => Response.json({ ref: "7KQ3M" });
+  answer = () => Response.json({ ref: "7KQ3M9XP" });
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     if (new URL(url, location.origin).pathname === "/api/landings") {
       reported.push(JSON.parse(typeof init?.body === "string" ? init.body : "{}") as Record<string, unknown>);
@@ -43,21 +43,21 @@ describe("a visitor's landings", () => {
     await land("/guides");
 
     expect(reported.map((touch) => touch.gclid ?? touch.landing_path)).toEqual(["Cj0_test"]);
-    expect(visitorRef()).toBe("7KQ3M");
+    expect(visitorRef()).toBe("7KQ3M9XP");
     expect(readAttribution()).toMatchObject({ gclid: "Cj0_test" });
   });
 
   it("report the first landing again, not the plain page, while its report never arrived", async () => {
     answer = () => new Response(null, { status: 503 });
     await land("/try?gclid=Cj0_test");
-    answer = () => Response.json({ ref: "7KQ3M" });
+    answer = () => Response.json({ ref: "7KQ3M9XP" });
     await land("/guides");
 
     expect(reported.map((touch) => [touch.landing_path, touch.gclid])).toEqual([
       ["/try", "Cj0_test"],
       ["/try", "Cj0_test"],
     ]);
-    expect(visitorRef()).toBe("7KQ3M");
+    expect(visitorRef()).toBe("7KQ3M9XP");
   });
 
   it("report a campaign's landing later, the latest kept as the last touch", async () => {

@@ -62,15 +62,15 @@ describe("Meta's click cookie", () => {
 
 describe("the WhatsApp reference", () => {
   it("is read back from the message, in either case, wherever the line is", () => {
-    expect(refIn(`Hi, I'd like to know more. ${refLine("M7K2Q")}`)).toBe("M7K2Q");
-    expect(refIn("hello ref m7k2q thanks")).toBe("M7K2Q");
-    expect(refIn("Ref: M7K2Q")).toBe("M7K2Q");
+    expect(refIn(`Hi, I'd like to know more. ${refLine("M7K2Q9XP")}`)).toBe("M7K2Q9XP");
+    expect(refIn("hello ref m7k2q9xp thanks")).toBe("M7K2Q9XP");
+    expect(refIn("Ref: M7K2Q9XP")).toBe("M7K2Q9XP");
   });
 
   it("is none where the message carries none, or a code with letters we never use", () => {
     expect(refIn("Hi, I'd like to know more.")).toBeNull();
-    expect(refIn("Ref M0K1Q")).toBeNull();
-    expect(REF_PATTERN.test("M7K2Q")).toBe(true);
-    expect(REF_PATTERN.test("M7K2")).toBe(false);
+    expect(refIn("Ref M0K1Q9XP")).toBeNull();
+    expect(REF_PATTERN.test("M7K2Q9XP")).toBe(true);
+    expect(REF_PATTERN.test("M7K2Q")).toBe(false);
   });
 });

@@ -182,7 +182,7 @@ export const privacyPolicy: LegalPage = {
         },
         {
           lead: "What we share:",
-          text: "your phone number and first name, hashed, which turns them into a code that cannot be read back; the ad’s click code in the link you came by, if there was one; what happened and when; and, for a payment, its amount. Unless you decline cookies on our cookie bar, we also share Google’s and Meta’s cookie codes, your device’s IP address and your browser’s type, which help them recognise you.",
+          text: "your phone number and first name, hashed: turned by a one-way formula into codes Google and Meta compare with their own records, so they are not sent as they are; the ad’s click code in the link you came by, if there was one; what happened and when; and, for a payment, its amount. Unless you decline cookies on our cookie bar, we also share Google’s and Meta’s cookie codes, your device’s IP address and your browser’s type, which help them recognise you.",
         },
         {
           lead: "Why:",

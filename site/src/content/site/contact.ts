@@ -9,7 +9,7 @@ export const whatsapp = {
   number: WHATSAPP_NUMBER,
   display: WHATSAPP_DISPLAY,
   label: `WhatsApp · ${WHATSAPP_DISPLAY}`,
-  /** The words a chat begun from the site opens with, ahead of the visitor's reference ("Ref M7K2Q"). */
+  /** The words a chat begun from the site opens with, ahead of the visitor's reference ("Ref M7K2Q9XP"). */
   greeting: "Hi, I’d like to know more.",
 };
 

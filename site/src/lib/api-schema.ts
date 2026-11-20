@@ -3578,8 +3578,8 @@ export interface components {
         LeadLeft: Record<string, never>;
         VisitAnswer: {
             /**
-             * @description What the visitor's WhatsApp message ends with, "Ref M7K2Q"; null where nothing was kept.
-             * @example M7K2Q
+             * @description What the visitor's WhatsApp message ends with, "Ref M7K2Q9XP"; null where nothing was kept.
+             * @example M7K2Q9XP
              */
             ref: string | null;
         };

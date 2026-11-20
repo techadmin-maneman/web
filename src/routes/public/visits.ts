@@ -19,8 +19,8 @@ import { TouchSchema } from "../schemas/attribution.ts";
 const VisitAnswerSchema = z
   .object({
     ref: z.union([z.string(), z.null()]).openapi({
-      example: "M7K2Q",
-      description: 'What the visitor\'s WhatsApp message ends with, "Ref M7K2Q"; null where nothing was kept.',
+      example: "M7K2Q9XP",
+      description: 'What the visitor\'s WhatsApp message ends with, "Ref M7K2Q9XP"; null where nothing was kept.',
     }),
   })
   .strict()
