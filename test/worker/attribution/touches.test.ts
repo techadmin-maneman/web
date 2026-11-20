@@ -89,6 +89,23 @@ describe("a page's landing", () => {
   });
 });
 
+describe("a Decline on the cookie bar", () => {
+  const decline = () => request(site(), "/api/landings/declined", { method: "POST", headers: headers(VISITOR) });
+
+  it("blanks what the browser's touches kept for Meta, and is refused, to be sent again, past the hour's reports", async () => {
+    await visit({ landing_path: "/", fbclid: "IwAR_test", fbp: "fb.1.1790000000000.123456789" });
+    expect((await decline()).status).toBe(204);
+    expect(await rows("SELECT fbc, fbp, ad_consent FROM touches")).toEqual([
+      { fbc: null, fbp: null, ad_consent: "denied" },
+    ]);
+
+    await env.DB.prepare("UPDATE counters SET count = 300 WHERE scope = 'visit:ip'").run();
+    const refused = await decline();
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
+  });
+});
+
 describe("/book's first step", () => {
   it("makes the visitor's touches the person's, the first their channel, the lead's own the last", async () => {
     await visit({ landing_path: "/try", gclid: "Cj0KCQ_test", utm_source: "google", utm_medium: "cpc" });

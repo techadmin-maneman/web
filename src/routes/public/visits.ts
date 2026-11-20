@@ -43,7 +43,10 @@ const declinedRoute = createRoute({
   method: "post",
   path: "/api/landings/declined",
   summary: "The visitor declined the cookie bar: their browser's touches keep nothing for Meta",
-  responses: { 204: { description: "Done, or nothing kept for this browser" } },
+  responses: {
+    204: { description: "Done, or nothing kept for this browser" },
+    429: errorResponse("rate_limited: the address's reports for the hour are spent; the page sends it again later"),
+  },
 });
 
 const linkRoute = createRoute({
@@ -89,9 +92,10 @@ export function registerVisits(app: App): void {
     const db = c.env.DB;
     const { ipHash } = await visitorOf(c);
     const now = c.var.deps.now();
-    if (await takeOne(db, "visit:ip", ipHash, { now, settings: c.var.config.settings })) {
-      await declineVisitor(db, visitorId);
+    if (!(await takeOne(db, "visit:ip", ipHash, { now, settings: c.var.config.settings }))) {
+      return refuse(c, "rate_limited");
     }
+    await declineVisitor(db, visitorId);
     return c.body(null, 204);
   });
 

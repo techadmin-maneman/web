@@ -40,7 +40,8 @@ describe("validateStaticConfig: conversions", () => {
   it("reads each platform whose secrets are all set, an Ads account as its ten digits", () => {
     expect(conversionsOf({ ...production, ...ON, ...META, ...GOOGLE, ...FROM })).toEqual({
       testMode: false,
-      sendsFrom: "2026-11-21",
+      // India's midnight, 21 November.
+      sendsFrom: "2026-11-20T18:30:00.000Z",
       meta: { datasetId: "2231091544495701", token: "meta-test-token", testEventCode: null },
       google: {
         customerId: "7828921498",
@@ -89,9 +90,11 @@ describe("validateStaticConfig: conversions", () => {
     expect(problemsOf({ ...production, ...ON, ...GOOGLE })).toEqual([
       "CONVERSIONS_FROM is not set: the day sending began, before which nothing is sent",
     ]);
-    expect(problemsOf({ ...production, ...ON, ...GOOGLE, CONVERSIONS_FROM: "21 Nov" })).toEqual([
-      "CONVERSIONS_FROM must be a day, 2026-11-21",
-    ]);
+    for (const day of ["21 Nov", "2026-13-01", "2026-00-21", "2026-11-31"]) {
+      expect(problemsOf({ ...production, ...ON, ...GOOGLE, CONVERSIONS_FROM: day }), day).toEqual([
+        "CONVERSIONS_FROM must be a day, 2026-11-21",
+      ]);
+    }
   });
 
   it("lets staging send only in test mode, and Meta's then only with its test events code", () => {

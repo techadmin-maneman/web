@@ -1715,6 +1715,42 @@ The visitor declined the cookie bar: their browser's touches keep nothing for Me
 
 **204**: Done, or nothing kept for this browser
 
+**429**: rate_limited: the address's reports for the hour are spent; the page sends it again later
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "rate_limited"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/links/{kind}/{slug}
 
 Where a campaign link sends the visitor: /book with its tags and its code

@@ -1,15 +1,17 @@
 // Where a visitor came from, kept in the browser and reported to the API (site/src/lib/visit.ts; ADR 0288): the first
 // landing reported, and again before anything else while the API has given no reference, so a report that never
 // arrived cannot make a later plain page the visitor's first touch; once a reference is kept, only a landing a campaign
-// put something in is reported.
+// put something in is reported. A Decline on the cookie bar is kept until the API has heard it, and sent again first.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { captureAttribution, readAttribution, visitorRef } from "../../site/src/lib/visit.ts";
+import { captureAttribution, readAttribution, reportDeclined, visitorRef } from "../../site/src/lib/visit.ts";
 import { contractChecked } from "./contract-fetch.ts";
 import { answered } from "./render-hook.ts";
 
 let reported: Record<string, unknown>[];
 let answer: () => Response;
+let declines: number;
+let declineAnswer: () => Response;
 
 async function land(path: string) {
   history.replaceState(null, "", path);
@@ -24,10 +26,16 @@ beforeEach(() => {
   if (jsdom !== undefined) vi.stubGlobal("localStorage", jsdom.window.localStorage);
   localStorage.clear();
   reported = [];
+  declines = 0;
   answer = () => Response.json({ ref: "7KQ3M9XP" });
+  declineAnswer = () => new Response(null, { status: 204 });
   vi.stubGlobal(
     "fetch",
     contractChecked("public", (url: string, init?: { body?: unknown }) => {
+      if (new URL(url, location.origin).pathname === "/api/landings/declined") {
+        declines += 1;
+        return declineAnswer();
+      }
       if (new URL(url, location.origin).pathname === "/api/landings") {
         reported.push(JSON.parse(typeof init?.body === "string" ? init.body : "{}") as Record<string, unknown>);
       }
@@ -72,5 +80,18 @@ describe("a visitor's landings", () => {
 
     expect(reported).toHaveLength(2);
     expect(readAttribution()).toMatchObject({ utm_source: "meta", fbclid: "IwAR_test" });
+  });
+
+  it("send a Decline the API never heard again first, from the next page, and once it has, no more", async () => {
+    await land("/");
+    declineAnswer = () => {
+      throw new TypeError("Failed to fetch");
+    };
+    await reportDeclined();
+    declineAnswer = () => new Response(null, { status: 204 });
+    await land("/guides");
+    await land("/try");
+
+    expect(declines).toBe(2);
   });
 });

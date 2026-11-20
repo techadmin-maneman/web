@@ -8,13 +8,15 @@
 import { CODE_PATTERN } from "@rules/config/invite-codes.ts";
 import { REF_PATTERN } from "@rules/config/ref-tokens.ts";
 import { consentAnswer } from "./analytics.ts";
-import { reportVisit, type Attribution } from "./api.ts";
+import { reportDecline, reportVisit, type Attribution } from "./api.ts";
 import { attributionFrom, carriesCampaign } from "./attribution.ts";
 import { rememberInvite } from "./remembered-invite.ts";
 
 const FIRST = "mm_first_touch";
 const LAST = "mm_last_touch";
 const REF = "mm_ref";
+/** A Decline on the cookie bar the API has not yet heard of. */
+const DECLINE_UNSENT = "mm_decline_unsent";
 
 /** 13 months, as the visitor cookie lasts. */
 const KEPT_MS = 396 * 86_400_000;
@@ -42,6 +44,32 @@ function keep(key: string, value: string): void {
   } catch {
     // Kept nowhere: the API's own record of the touch stands.
   }
+}
+
+function forget(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Nothing was kept to forget.
+  }
+}
+
+function declineUnsent(): boolean {
+  try {
+    return localStorage.getItem(DECLINE_UNSENT) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Tells the API the visitor declined the cookie bar, so nothing their browser's touches kept for Meta is sent. Kept in
+ * the browser until the API has heard it, and sent again from the next page: a Decline lost offline is never lost.
+ */
+export async function reportDeclined(): Promise<void> {
+  keep(DECLINE_UNSENT, "1");
+  const answer = await reportDecline();
+  if (answer.ok) forget(DECLINE_UNSENT);
 }
 
 /** The reference this visitor's WhatsApp message ends with, once the API has given one. */
@@ -81,6 +109,7 @@ export function captureAttribution(): void {
   if (keptFirst === null || campaign) keep(LAST, now);
   const unreported = keptFirst !== null && visitorRef() === null ? keptFirst.touch : null;
   void (async () => {
+    if (declineUnsent()) await reportDeclined();
     if (unreported !== null) await report(unreported);
     if (keptFirst === null || campaign) await report(touch);
   })();

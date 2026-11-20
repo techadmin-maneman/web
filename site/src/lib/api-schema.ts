@@ -1261,6 +1261,24 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description rate_limited: the address's reports for the hour are spent; the page sends it again later */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
             };
         };
         delete?: never;

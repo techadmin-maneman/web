@@ -10,6 +10,7 @@ import {
   type MetaSettings,
 } from "./conversions.ts";
 import type { EnvironmentName } from "./environments.ts";
+import { indiaInstant } from "../lib/india-time.ts";
 import type { Reader } from "./env-reader.ts";
 import type { ProvidersRead } from "./settings-sections.ts";
 
@@ -83,6 +84,16 @@ function readGoogle(read: Reader): GoogleSettings | null {
   };
 }
 
+/** India's midnight at the start of the day, as an instant; the epoch, with a problem, for a day that cannot be. */
+function startOfDay(read: Reader, day: string): string {
+  const real = /^\d{4}-\d{2}-\d{2}$/.test(day) && !Number.isNaN(Date.parse(`${day}T00:00:00Z`));
+  if (!real || new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) !== day) {
+    read.problems.push("CONVERSIONS_FROM must be a day, 2026-11-21");
+    return new Date(0).toISOString();
+  }
+  return indiaInstant(day, "00:00").toISOString();
+}
+
 export function readConversions(
   read: Reader,
   providers: ProvidersRead,
@@ -94,12 +105,9 @@ export function readConversions(
   if (environment === "staging" && !testMode && (meta !== null || google !== null)) {
     read.problems.push('CONVERSIONS_TEST_MODE must be "true" on staging: its leads and payments are not real');
   }
-  const sendsFrom = read.optionalText("CONVERSIONS_FROM");
-  if (sendsFrom !== null && !/^\d{4}-\d{2}-\d{2}$/.test(sendsFrom)) {
-    read.problems.push("CONVERSIONS_FROM must be a day, 2026-11-21");
-  }
-  if (sendsFrom === null && (meta !== null || google !== null)) {
+  const day = read.optionalText("CONVERSIONS_FROM");
+  if (day === null && (meta !== null || google !== null)) {
     read.problems.push("CONVERSIONS_FROM is not set: the day sending began, before which nothing is sent");
   }
-  return { testMode, meta, google, sendsFrom };
+  return { testMode, meta, google, sendsFrom: day === null ? null : startOfDay(read, day) };
 }

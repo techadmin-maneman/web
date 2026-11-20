@@ -27,7 +27,12 @@ test.describe("the cookie bar", () => {
     const bar = page.getByRole("region", { name: consentBar.label });
     await expect(bar).toContainText(consentBar.text);
     expect(await axeViolations(page, (axe) => axe.include("[data-consent-bar]"))).toEqual([]);
+    // The API hears of it, so nothing the browser's touches kept for Meta is sent (ADR 0288).
+    const declined = page.waitForRequest(
+      (request) => request.method() === "POST" && new URL(request.url()).pathname === "/api/landings/declined",
+    );
     await bar.getByRole("button", { name: consentBar.decline }).click();
+    await declined;
     await expect(bar).toBeHidden();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "update", DENIED]);
 
