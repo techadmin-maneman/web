@@ -41,6 +41,14 @@
     border-bottom: var(--hairline) solid var(--ui-line);
   }
 
+  /* Short of a desk the name stands above its value, as a setting's does (./setting-row.module.css). */
+  @media (max-width: 760px) {
+    .list .item {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: var(--sp-4);
+    }
+  }
+
   /* Each name at the start of a ruled row and its value at the end, one size for both: the technician app's facts. */
   .ends .item {
     display: flex;

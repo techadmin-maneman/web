@@ -33,31 +33,6 @@
   color: var(--ui-text-muted);
 }
 
-.rows {
-  margin: 0;
-  border-top: var(--hairline) solid var(--ui-line);
-}
-
-.row {
-  display: grid;
-  grid-template-columns: var(--setting-label-width) 1fr;
-  gap: var(--sp-16);
-  padding: var(--sp-8) 0;
-  border-bottom: var(--hairline) solid var(--ui-line);
-}
-
-.rowKey {
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
-}
-
-.rowValue {
-  margin: 0;
-  font-size: var(--fs-14);
-  font-variant-numeric: tabular-nums;
-  color: var(--ui-text);
-}
-
 .versions {
   display: flex;
   flex-direction: column;
