@@ -216,7 +216,32 @@ export async function recordTouch(db: D1Database, touch: NewTouch): Promise<Reco
 /** The writes that make a visitor's touches a person's, for a caller's batch. */
 export const claimStatements = (db: D1Database, visitorId: string, personId: string): D1PreparedStatement[] => [
   db.prepare("UPDATE visitors SET person_id = ?2 WHERE id = ?1 AND person_id IS NULL").bind(visitorId, personId),
-  db.prepare("UPDATE touches SET person_id = ?2 WHERE visitor_id = ?1 AND person_id IS NULL").bind(visitorId, personId),
+  db
+    .prepare("UPDATE touches SET person_id = ?2, mobile_e164 = NULL WHERE visitor_id = ?1 AND person_id IS NULL")
+    .bind(visitorId, personId),
+];
+
+/** The number's touches no one held: the chats it sent before its person was known. */
+const UNCLAIMED_OF_NUMBER = "person_id IS NULL AND mobile_e164 = (SELECT mobile_e164 FROM people WHERE id = ?1)";
+
+/**
+ * The writes that make a person's own the touches their number made before we knew them, a chat's, and the visitors
+ * those chats named by their reference with those visitors' touches: for a caller's batch.
+ */
+export const numberClaimStatements = (db: D1Database, personId: string): D1PreparedStatement[] => [
+  db
+    .prepare(
+      `UPDATE visitors SET person_id = ?1 WHERE person_id IS NULL AND id IN
+         (SELECT visitor_id FROM touches WHERE visitor_id IS NOT NULL AND ${UNCLAIMED_OF_NUMBER})`,
+    )
+    .bind(personId),
+  db
+    .prepare(
+      `UPDATE touches SET person_id = ?1, mobile_e164 = NULL
+       WHERE person_id IS NULL AND visitor_id IN (SELECT id FROM visitors WHERE person_id = ?1)`,
+    )
+    .bind(personId),
+  db.prepare(`UPDATE touches SET person_id = ?1, mobile_e164 = NULL WHERE ${UNCLAIMED_OF_NUMBER}`).bind(personId),
 ];
 
 /** Makes a visitor's touches a person's, once a number they gave names them. */

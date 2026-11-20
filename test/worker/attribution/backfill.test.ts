@@ -48,7 +48,7 @@ describe("an old lead", () => {
 });
 
 describe("retention", () => {
-  it("lets a touch's address and browser go after 90 days, and an unnamed visitor after 13 months", async () => {
+  it("lets a touch's address and browser go after 90 days, an unnamed visitor after 13 months, a stranger's chat after 12", async () => {
     const { id } = await aPerson();
     await writeRow(
       "visitors",
@@ -76,12 +76,37 @@ describe("retention", () => {
     await touch("old-named", "named", daysAgo(100), id ?? null);
     await touch("old-unnamed", "unnamed", daysAgo(400), null);
     await touch("fresh", "recent", daysAgo(30), null);
+    await writeRow(
+      "touches",
+      {},
+      {
+        id: "old-chat",
+        at: daysAgo(370),
+        via: "whatsapp",
+        mobile_e164: "+919811112222",
+        channel: "whatsapp",
+        campaign_signal: 0,
+      },
+    );
+    await writeRow(
+      "touches",
+      {},
+      {
+        id: "new-chat",
+        at: daysAgo(30),
+        via: "whatsapp",
+        mobile_e164: "+919811113333",
+        channel: "whatsapp",
+        campaign_signal: 0,
+      },
+    );
 
     await letAttributionGo(env.DB, NOW);
 
     expect(await rows("SELECT id FROM visitors ORDER BY id")).toEqual([{ id: "named" }, { id: "recent" }]);
     expect(await rows("SELECT id, user_agent, client_ip FROM touches ORDER BY id")).toEqual([
       { id: "fresh", user_agent: "Mozilla/5.0", client_ip: "203.0.113.7" },
+      { id: "new-chat", user_agent: null, client_ip: null },
       { id: "old-named", user_agent: null, client_ip: null },
     ]);
   });

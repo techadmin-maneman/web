@@ -124,6 +124,24 @@ describe("a WhatsApp message", () => {
     await whatsApp("919810000001", "Can my visit move to the evening?");
     expect(await rows("SELECT id FROM touches")).toEqual([]);
   });
+  it("from an ad becomes the person's, its number gone, once that number leaves a lead on /book", async () => {
+    await whatsApp("919811112222", "Hello", { ctwa_clid: "ARAkLkA_test", source_id: "120200000000000" });
+    await post(site(), "/api/lead", {
+      name: "Meera Iyer",
+      mobile: "9811112222",
+      consent: true,
+      terms: true,
+      turnstile_token: "token",
+    });
+
+    expect(await rows("SELECT via, person_id IS NOT NULL AS theirs, mobile_e164 FROM touches ORDER BY rowid")).toEqual([
+      { via: "whatsapp", theirs: 1, mobile_e164: null },
+      { via: "site", theirs: 1, mobile_e164: null },
+    ]);
+    expect(await rows("SELECT attributed_channel FROM person_attribution")).toEqual([
+      { attributed_channel: "meta_ads" },
+    ]);
+  });
 });
 
 describe("a lead taken on a call", () => {

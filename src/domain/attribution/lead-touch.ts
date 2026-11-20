@@ -5,7 +5,14 @@
 
 import type { Logger } from "../../log.ts";
 import { withAttribution } from "./attribution.ts";
-import { claimStatements, NOTHING_CARRIED, resolveCodes, touchStatement, type Carried } from "./touches.ts";
+import {
+  claimStatements,
+  NOTHING_CARRIED,
+  numberClaimStatements,
+  resolveCodes,
+  touchStatement,
+  type Carried,
+} from "./touches.ts";
 
 /** What a page sends of where its visitor came from (src/routes/schemas/attribution.ts): each field optional. */
 export type PageTouch = Readonly<Partial<Record<keyof Carried | "ref" | "soc" | "offer", string | undefined>>> & {
@@ -71,6 +78,7 @@ export async function touchForLead(db: D1Database, lead: FormTouch, log: Logger)
       [
         statement,
         ...(visit.visitorId === null ? [] : claimStatements(db, visit.visitorId, lead.personId)),
+        ...numberClaimStatements(db, lead.personId),
         ...(lead.leadId === null
           ? []
           : [db.prepare("UPDATE leads SET touch_id = ?2 WHERE id = ?1").bind(lead.leadId, recorded.id)]),

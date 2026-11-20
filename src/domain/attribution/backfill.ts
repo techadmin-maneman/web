@@ -5,16 +5,16 @@
 // touches, 13 months after their last.
 
 import { DAY_MS } from "../../lib/durations.ts";
+import {
+  monthsBefore,
+  STRANGER_CHAT_MONTHS,
+  TOUCH_ADDRESS_DAYS,
+  UNNAMED_VISITOR_DAYS,
+} from "../../policy/retention.ts";
 import { NOTHING_CARRIED, NO_CODES, recordTouch, resolveCodes } from "./touches.ts";
 
 /** How many old leads one run gives a touch. */
 const BATCH = 100;
-
-/** How long a touch keeps the address and browser Meta matches by. */
-const ADDRESS_KEPT_DAYS = 90;
-
-/** How long a visitor no number named is kept after their last touch: the cookie's own life. */
-const UNNAMED_KEPT_DAYS = 396;
 
 /** What Care's "How they found us", a channel code, says as an answer to how they heard of us. */
 const HEARD_OF_FOUND: Readonly<Record<string, string>> = {
@@ -83,8 +83,9 @@ export async function touchOldLeads(db: D1Database): Promise<number> {
 
 /** Lets go of what the retention periods allow: touches' addresses and browsers, and visitors never named. */
 export async function letAttributionGo(db: D1Database, now: Date): Promise<void> {
-  const addressesBefore = new Date(now.getTime() - ADDRESS_KEPT_DAYS * DAY_MS).toISOString();
-  const unnamedBefore = new Date(now.getTime() - UNNAMED_KEPT_DAYS * DAY_MS).toISOString();
+  const addressesBefore = new Date(now.getTime() - TOUCH_ADDRESS_DAYS * DAY_MS).toISOString();
+  const unnamedBefore = new Date(now.getTime() - UNNAMED_VISITOR_DAYS * DAY_MS).toISOString();
+  const strangersBefore = monthsBefore(now, STRANGER_CHAT_MONTHS);
   const unnamed = "SELECT id FROM visitors WHERE person_id IS NULL AND seen_at < ?1";
   await db.batch([
     db
@@ -95,5 +96,9 @@ export async function letAttributionGo(db: D1Database, now: Date): Promise<void>
       .bind(addressesBefore),
     db.prepare(`DELETE FROM touches WHERE person_id IS NULL AND visitor_id IN (${unnamed})`).bind(unnamedBefore),
     db.prepare(`DELETE FROM visitors WHERE id IN (${unnamed})`).bind(unnamedBefore),
+    // A chat's touch from a number no one we know holds goes when the chat itself would.
+    db
+      .prepare("DELETE FROM touches WHERE person_id IS NULL AND mobile_e164 IS NOT NULL AND at < ?1")
+      .bind(strangersBefore),
   ]);
 }

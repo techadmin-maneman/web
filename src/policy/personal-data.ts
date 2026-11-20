@@ -251,10 +251,11 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     },
   },
   touches: {
-    leftOut: ["id", "person_id", "mobile_e164", "link_id", "campaign_signal"],
+    leftOut: ["id", "person_id", "link_id", "campaign_signal"],
     whyLeftOut: "Our keys, and a flag the channel rule reads.",
     erasure: {
       blanks: [
+        "mobile_e164",
         "utm_source",
         "utm_medium",
         "utm_campaign",
