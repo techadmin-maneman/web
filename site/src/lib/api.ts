@@ -93,15 +93,19 @@ async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
   return { ok: false, code, fields };
 }
 
-function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<Answer<T>> {
+/** Posts the body; `keepalive` lets it finish after the page has gone. */
+function post<T>(path: string, body: unknown, idempotencyKey?: string, keepalive = false): Promise<Answer<T>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (idempotencyKey !== undefined) headers["Idempotency-Key"] = idempotencyKey;
-  return call<T>(path, {
+  // Browsers know keepalive; the Workers' own RequestInit, which this file is also checked against, does not.
+  const init: RequestInit & { keepalive?: boolean } = {
     method: "POST",
     headers,
     body: JSON.stringify(body),
     signal: within(POST_TIMEOUT_MS),
-  });
+    keepalive,
+  };
+  return call<T>(path, init);
 }
 
 // The WhatsApp code that proves the number typed, before a booking on the site or
@@ -235,8 +239,8 @@ export function bookPublicConsultation(
 }
 
 /** A landing, kept as the visitor's touch where it is their first or a campaign's; answers their WhatsApp reference. */
-export function reportVisit(touch: Attribution): Promise<Answer<VisitAnswer>> {
-  return post<VisitAnswer>("/api/landings", touch);
+export function reportVisit(touch: Attribution, keepalive = false): Promise<Answer<VisitAnswer>> {
+  return post<VisitAnswer>("/api/landings", touch, undefined, keepalive);
 }
 
 /** The visitor declined the cookie bar: what their browser's touches kept for Meta goes (ADR 0288). */
