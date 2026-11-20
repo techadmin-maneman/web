@@ -41,6 +41,7 @@ type PublicConsultationRequest = Body<"/api/consultation">;
 type PublicWaitlistRequest = Body<"/api/waitlist">;
 type LeadRequest = Body<"/api/lead">;
 type LeadLeft = Schemas["LeadLeft"];
+type VisitAnswer = Schemas["VisitAnswer"];
 type ConsultationRequest = Body<"/api/r/{code}/consultation">;
 type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
 
@@ -234,6 +235,11 @@ export function bookPublicConsultation(
 }
 
 /** /book's first step: the name and number, kept as a lead before the visit is chosen. */
+/** A landing, kept as the visitor's touch where it is their first or a campaign's; answers their WhatsApp reference. */
+export function reportVisit(touch: Attribution): Promise<Answer<VisitAnswer>> {
+  return post<VisitAnswer>("/api/visits", touch);
+}
+
 export function leaveLead(request: LeadRequest, idempotencyKey: string): Promise<Answer<LeadLeft>> {
   return post<LeadLeft>("/api/lead", request, idempotencyKey);
 }

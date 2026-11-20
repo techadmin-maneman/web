@@ -3,6 +3,11 @@
 // browser, so its server copy is not for Google. The others are recorded beside the writes that bring them about
 // (./conversion-upkeep.ts).
 
+/** The line /book's first step shows on Google and Meta, kept on the lead as the version the page showed. */
+export async function keepAdNotice(db: D1Database, leadId: string, version: string): Promise<void> {
+  await db.prepare("UPDATE leads SET ad_notice = ?2 WHERE id = ?1").bind(leadId, version).run();
+}
+
 /** Records the lead's conversion, once; a test record's is never sent. */
 export async function recordLeadConversion(
   db: D1Database,
@@ -22,8 +27,9 @@ export async function recordLeadConversion(
          last_touch_channel, source_url, meta_state, meta_error, meta_next_at, google_state, google_error, created_at)
        SELECT ?1, 'lead_submit', ?2, p.id, ?4, COALESCE(pa.attributed_channel, 'direct'),
          COALESCE(pa.last_touch_channel, 'direct'), ?5,
-         CASE WHEN p.test_record = 1 THEN 'skipped' ELSE 'pending' END,
-         CASE WHEN p.test_record = 1 THEN 'test_record' END, ?4, 'skipped', 'browser_only', ?4
+         CASE WHEN p.test_record = 1 OR pa.sharing_stopped_at IS NOT NULL THEN 'skipped' ELSE 'pending' END,
+         CASE WHEN p.test_record = 1 THEN 'test_record' WHEN pa.sharing_stopped_at IS NOT NULL THEN 'sharing_stopped' END,
+         ?4, 'skipped', 'browser_only', ?4
        FROM people p LEFT JOIN person_attribution pa ON pa.person_id = p.id WHERE p.id = ?3
        ON CONFLICT DO NOTHING`,
     )

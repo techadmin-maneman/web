@@ -8,9 +8,11 @@ export type SpendList = Success<paths["/api/spend"]["get"]>;
 export type SpendEntry = SpendList["entries"][number];
 export type SpendNew = Sent<paths["/api/spend"]["post"]>;
 export type SpendChannel = SpendEntry["channel"];
+export type SpendImport = Sent<paths["/api/spend/import"]["post"]>;
 
 export const spendApi = {
   list: () => client.get("/api/spend"),
   add: (entry: SpendNew) => client.post("/api/spend", { body: entry }),
   remove: (id: string) => client.post("/api/spend/{id}/remove", { path: { id } }),
+  import: (file: SpendImport) => client.post("/api/spend/import", { body: file }),
 };

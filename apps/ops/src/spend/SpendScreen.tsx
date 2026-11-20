@@ -1,12 +1,13 @@
-// Growth · Spend (docs/decisions/0150-spend.md): a month's offline spend, for a city or national, by channel, which the
-// nightly reporting copy counts beside the ad accounts' own. An entry is added whole, and taken off rather than changed.
+// Growth · Spend (docs/decisions/0150-spend.md, amended by 0288): a day's spend, for a city or national, by channel,
+// Google's and Meta's included, typed or imported from an ad account's CSV; a society activation's costs come with it
+// from Campaign links. The figures read only these rows. An entry is added whole, and taken off rather than changed.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
-import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { ACTIONS, FIGURE, Table } from "@maneman/ui/Table";
@@ -16,7 +17,8 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { NoValue } from "@maneman/ui/NoValue";
 import { RowHead } from "@maneman/ui/RowHead";
 import { useLoad } from "@maneman/ui/useLoad";
-import { fullMonth } from "@maneman/web-kit/dates";
+import { fullDate, fullMonth } from "@maneman/web-kit/dates";
+import { channelNamed } from "@rules/policy/channels.ts";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -25,23 +27,13 @@ import { useAccess } from "../lib/access.ts";
 import { Refused } from "@maneman/ui/Refusal";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { spendApi, type SpendChannel, type SpendEntry, type SpendList } from "./spend-api.ts";
+import { SpendImport } from "./SpendImport.tsx";
 import form from "@maneman/ui/forms.module.css";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { PageActions } from "../frame/PageHead.tsx";
 
-/** Each month from the first the page takes to this one, the latest first. */
-function monthsOf(list: SpendList): string[] {
-  const months: string[] = [];
-  for (let month = list.this_month; month >= list.first_month;) {
-    months.push(month);
-    const [year = 0, number = 1] = month.split("-").map(Number);
-    month = number === 1 ? `${String(year - 1)}-12` : `${String(year)}-${String(number - 1).padStart(2, "0")}`;
-  }
-  return months;
-}
-
 /** The boxes of an entry, by the names the API refuses them by. */
-const SPEND_BOXES = ["month", "city", "channel", "campaign", "amount", "note"];
+const SPEND_BOXES = ["day", "city", "channel", "campaign", "amount", "note"];
 
 /** Whole rupees, one or more, as typed. */
 const isRupees = (typed: string): boolean => /^\d+$/.test(typed.trim()) && Number(typed) >= 1;
@@ -103,7 +95,7 @@ function Typed(props: {
 
 /** What a spend line holds as it is typed. */
 interface Draft {
-  readonly month: string;
+  readonly day: string;
   readonly city: string;
   readonly channel: SpendChannel;
   readonly campaign: string;
@@ -121,15 +113,19 @@ function SpendFields(props: {
   const { list, draft, onDraft, refused } = props;
   return (
     <div className={form.fields}>
-      <SpendChoice
-        label={copy.month}
-        error={refused("month")}
-        value={draft.month}
-        options={monthsOf(list).map((each) => [each, fullMonth(each)])}
-        onChange={(month) => {
-          onDraft({ month });
-        }}
-      />
+      <Field label={copy.day} className={form.field} error={refused("day")}>
+        {(control) => (
+          <DateInput
+            {...control}
+            min={list.first_day}
+            max={list.today}
+            value={draft.day}
+            onChange={(event) => {
+              onDraft({ day: event.target.value });
+            }}
+          />
+        )}
+      </Field>
       <SpendChoice
         label={copy.city}
         error={refused("city")}
@@ -143,7 +139,7 @@ function SpendFields(props: {
         label={copy.channel}
         error={refused("channel")}
         value={draft.channel}
-        options={list.channels.map((each) => [each, copy.channels[each]])}
+        options={list.channels.map((each) => [each, channelNamed(each)])}
         onChange={(value) => {
           onDraft({ channel: list.channels.find((each) => each === value) ?? draft.channel });
         }}
@@ -191,9 +187,9 @@ function SpendForm({
   onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<Draft>({
-    month: list.this_month,
+    day: list.today,
     city: "",
-    channel: list.channels[0] ?? "partner",
+    channel: list.channels[0] ?? "google_ads",
     campaign: "",
     amount: "",
     note: "",
@@ -203,9 +199,9 @@ function SpendForm({
   const add = () =>
     once(async () => {
       setFailure(null);
-      const { month, city, channel, campaign, amount, note } = draft;
+      const { day, city, channel, campaign, amount, note } = draft;
       const answer = await spendApi.add({
-        month,
+        day,
         city: city === "" ? null : city,
         channel,
         amount: paiseFromRupees(amount),
@@ -246,13 +242,21 @@ function SpendForm({
 }
 
 const channelWords = (entry: SpendEntry) =>
-  entry.campaign === null ? copy.channels[entry.channel] : `${copy.channels[entry.channel]} · ${entry.campaign}`;
+  entry.campaign === null ? channelNamed(entry.channel) : `${channelNamed(entry.channel)} · ${entry.campaign}`;
+
+/** The entry's day, for sorting: the first of its month for one made for a whole month. */
+const dayOf = (entry: SpendEntry) => entry.spent_date ?? `${entry.month}-01`;
+
+/** The entry's day, or its month for one made for a whole month before entries had a day. */
+const dayWords = (entry: SpendEntry) =>
+  entry.spent_date === null ? fullMonth(entry.month) : fullDate(entry.spent_date);
 
 const COLUMNS: readonly Column<SpendEntry>[] = [
-  { label: copy.columns.month, sort: (entry) => entry.month, choice: (entry) => fullMonth(entry.month) },
+  { label: copy.columns.day, sort: dayOf, choice: dayWords },
   { label: copy.columns.city, sort: (entry) => entry.city ?? "", choice: (entry) => entry.city ?? copy.national },
-  { label: copy.columns.channel, sort: channelWords, choice: (entry) => copy.channels[entry.channel] },
+  { label: copy.columns.channel, sort: channelWords, choice: (entry) => channelNamed(entry.channel) },
   { label: copy.columns.amount, sort: (entry) => entry.amount, figure: true },
+  { label: copy.columns.from, sort: (entry) => copy.from[entry.source], choice: (entry) => copy.from[entry.source] },
   { label: copy.columns.note, sort: (entry) => entry.note ?? "" },
   { label: copy.columns.by, sort: (entry) => whoWords(entry.entered_by) },
 ];
@@ -279,20 +283,17 @@ function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean;
         <tbody>
           {view.shown.map((entry) => (
             <tr key={entry.id}>
-              <RowHead>{fullMonth(entry.month)}</RowHead>
+              <RowHead>{dayWords(entry)}</RowHead>
               <td>{entry.city ?? copy.national}</td>
               <td>{channelWords(entry)}</td>
               <td className={FIGURE}>{rupees(entry.amount)}</td>
+              <td>{copy.from[entry.source]}</td>
               <td>{entry.note ?? <NoValue />}</td>
               <td>{whoWords(entry.entered_by)}</td>
               {props.mayRemove && (
                 <td className={ACTIONS}>
                   <RowButton
-                    aria-label={copy.removeLabel(
-                      fullMonth(entry.month),
-                      entry.city ?? copy.national,
-                      rupees(entry.amount),
-                    )}
+                    aria-label={copy.removeLabel(dayWords(entry), entry.city ?? copy.national, rupees(entry.amount))}
                     onClick={() => {
                       props.onRemove(entry.id);
                     }}
@@ -333,13 +334,27 @@ function Spend() {
               <SpendForm
                 list={loaded.value}
                 onAdded={(entry) => {
-                  setEntries([entry, ...shown].sort((one, other) => other.month.localeCompare(one.month)));
+                  setEntries([entry, ...shown].sort((one, other) => dayOf(other).localeCompare(dayOf(one))));
                   close();
                 }}
                 onCancel={close}
               />
             )}
           </DrawerButton>
+          {access.mayCall("POST /api/spend/import") && (
+            <DrawerButton label={copy.importOne}>
+              {(close) => (
+                <SpendImport
+                  onImported={() => {
+                    close();
+                    setEntries(null);
+                    retry();
+                  }}
+                  onCancel={close}
+                />
+              )}
+            </DrawerButton>
+          )}
         </PageActions>
       )}
       <Refused failed={failure} errors={copy.errors} />

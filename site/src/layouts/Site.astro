@@ -113,16 +113,19 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
       // Every script error and promise nobody caught reported, as the apps' are
       // (packages/web-kit/client-errors.ts). Where this visit came from, kept
       // for the booking or the try-on to send, read before the analytics tags
-      // tidy the address; and an invite this browser has remembered for more
-      // than thirty days, taken away.
+      // tidy the address; an invite this browser has remembered for more than
+      // thirty days, taken away; and each chat or call begun from a link, told
+      // to the tags (docs/decisions/0288-attribution-and-conversions.md).
       import { reportUncaughtErrors } from "@maneman/web-kit/client-errors";
       import { startAnalytics } from "../lib/analytics.ts";
+      import { watchContactLinks } from "../lib/contact-clicks.ts";
       import { forgetStaleInvite } from "../lib/remembered-invite.ts";
       import { captureAttribution } from "../lib/visit.ts";
       reportUncaughtErrors();
-      captureAttribution();
       forgetStaleInvite();
+      captureAttribution();
       startAnalytics();
+      watchContactLinks();
     </script>
   </body>
 </html>

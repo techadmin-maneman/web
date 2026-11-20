@@ -60,7 +60,7 @@ export function Waitlist(props: FormProps & { person: PersonFields | null; onLis
           ? joinWaitlist(codeInPath(), { ...onInvite, turnstile_token: token }, keyFor(onInvite))
           : joinPublicWaitlist({ ...onBook, turnstile_token: token }, keyFor(onBook)),
       (listed) => {
-        const page = leadSent(door, { served: false, area: props.answer.area, window: null });
+        const page = leadSent(door);
         track({ name: "waitlist_submitted", page, area: listed.area });
         props.onListed({ ...listed, pincode: props.answer.pincode, alerted: alert });
       },

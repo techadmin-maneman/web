@@ -12466,7 +12466,7 @@ Take a saved answer off the list
 
 ### GET /api/spend
 
-The last thirteen months' offline spend, the latest month first
+The last thirteen months' spend, the latest day first
 
 **200**: The entries, and the cities and channels an entry may name
 
@@ -12515,7 +12515,7 @@ The last thirteen months' offline spend, the latest month first
 
 ### POST /api/spend
 
-Add a month's offline spend
+Add a day's spend
 
 Request body:
 
@@ -12533,7 +12533,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names month for one outside the list's months, or city for one we do not hold
+**400**: invalid_request: fields names day for one outside the list's days, or city for one we do not hold
 
 ```json
 {
@@ -12588,6 +12588,135 @@ Request body:
               "enum": [
                 "access_required",
                 "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/spend/import
+
+Add a Google Ads or Meta Ads CSV's daily spend by campaign, each campaign's city by its name
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SpendImport"
+}
+```
+
+**200**: Added
+
+```json
+{
+  "$ref": "#/components/schemas/SpendImported"
+}
+```
+
+**400**: invalid_request: fields names rows for a day outside the list's days
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: already_imported: these rows were imported before and are still on the figures
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "already_imported"
               ]
             }
           },
@@ -37362,6 +37491,7 @@ Request body:
             "already_rated",
             "visit_not_done",
             "rating_closed",
+            "already_imported",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -41695,6 +41825,7 @@ Request body:
             "already_rated",
             "visit_not_done",
             "rating_closed",
+            "already_imported",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -47319,7 +47450,11 @@ Request body:
         "organic_search",
         "direct",
         "partner",
-        "organic_social"
+        "society",
+        "organic_social",
+        "referral_site",
+        "whatsapp",
+        "phone"
       ],
       "description": "How they told Care they found us; left out where they did not say."
     }
@@ -47431,29 +47566,37 @@ Request body:
       "items": {
         "type": "string",
         "enum": [
-          "partner",
+          "google_ads",
+          "meta_ads",
           "referral",
-          "organic_social",
           "organic_search",
-          "direct"
+          "direct",
+          "partner",
+          "society",
+          "organic_social",
+          "referral_site",
+          "whatsapp",
+          "phone"
         ]
       }
     },
-    "first_month": {
+    "first_day": {
       "type": "string",
-      "description": "The earliest month an entry may be put in, YYYY-MM."
+      "format": "date",
+      "description": "The earliest day an entry may be put on."
     },
-    "this_month": {
+    "today": {
       "type": "string",
-      "description": "India's month now, the latest an entry may be put in."
+      "format": "date",
+      "description": "India's day now, the latest an entry may be put on."
     }
   },
   "required": [
     "entries",
     "cities",
     "channels",
-    "first_month",
-    "this_month"
+    "first_day",
+    "today"
   ],
   "additionalProperties": false
 }
@@ -47473,6 +47616,19 @@ Request body:
       "type": "string",
       "description": "YYYY-MM."
     },
+    "spent_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD, India's day."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for an entry made for its whole month, before entries had a day."
+    },
     "city": {
       "anyOf": [
         {
@@ -47487,11 +47643,17 @@ Request body:
     "channel": {
       "type": "string",
       "enum": [
-        "partner",
+        "google_ads",
+        "meta_ads",
         "referral",
-        "organic_social",
         "organic_search",
-        "direct"
+        "direct",
+        "partner",
+        "society",
+        "organic_social",
+        "referral_site",
+        "whatsapp",
+        "phone"
       ]
     },
     "campaign": {
@@ -47518,6 +47680,43 @@ Request body:
         }
       ]
     },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "csv",
+        "link",
+        "api"
+      ],
+      "description": "Typed here, taken from an ad account's CSV, a society activation's cost, or an API."
+    },
+    "link_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "cost_line": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "stall",
+            "staff",
+            "collateral",
+            "other"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "entered_by": {
       "type": "string"
     },
@@ -47529,11 +47728,15 @@ Request body:
   "required": [
     "id",
     "month",
+    "spent_date",
     "city",
     "channel",
     "campaign",
     "amount",
     "note",
+    "source",
+    "link_id",
+    "cost_line",
     "entered_by",
     "entered_at"
   ],
@@ -47547,9 +47750,10 @@ Request body:
 {
   "type": "object",
   "properties": {
-    "month": {
+    "day": {
       "type": "string",
-      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+      "format": "date",
+      "description": "YYYY-MM-DD, India's day."
     },
     "city": {
       "anyOf": [
@@ -47566,11 +47770,17 @@ Request body:
     "channel": {
       "type": "string",
       "enum": [
-        "partner",
+        "google_ads",
+        "meta_ads",
         "referral",
-        "organic_social",
         "organic_search",
-        "direct"
+        "direct",
+        "partner",
+        "society",
+        "organic_social",
+        "referral_site",
+        "whatsapp",
+        "phone"
       ]
     },
     "campaign": {
@@ -47592,10 +47802,81 @@ Request body:
     }
   },
   "required": [
-    "month",
+    "day",
     "city",
     "channel",
     "amount"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SpendImported
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "added": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "added"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SpendImport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "platform": {
+      "type": "string",
+      "enum": [
+        "google",
+        "meta"
+      ]
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "YYYY-MM-DD, India's day."
+          },
+          "campaign": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 10000000000,
+            "description": "Paise, before GST."
+          }
+        },
+        "required": [
+          "day",
+          "campaign",
+          "amount"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 900
+    }
+  },
+  "required": [
+    "platform",
+    "rows"
   ],
   "additionalProperties": false
 }
@@ -47662,7 +47943,11 @@ Request body:
               "Organic search",
               "Direct",
               "Offline and partners",
-              "Organic social"
+              "Society activations",
+              "Organic social",
+              "Other sites",
+              "WhatsApp",
+              "Phone"
             ]
           },
           "leads": {
@@ -49256,6 +49541,11 @@ Request body:
         "partner_payout.delete",
         "spend.add",
         "spend.remove",
+        "spend.import",
+        "campaign_link.add",
+        "campaign_link.retire",
+        "lead.call",
+        "client.heard_from",
         "photo.view",
         "pincode.launch",
         "data.export",

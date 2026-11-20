@@ -113,7 +113,13 @@ const importRoute = opsRoute({
             platform: z.enum(["google", "meta"]),
             rows: z
               .array(
-                z.object({ day: DaySchema, campaign: z.string().trim().min(1).max(120), amount: PaiseSchema }).strict(),
+                z
+                  .object({
+                    day: DaySchema,
+                    campaign: z.string().trim().min(1).max(120),
+                    amount: z.number().int().min(1).max(10_000_000_000).openapi({ description: "Paise, before GST." }),
+                  })
+                  .strict(),
               )
               .min(1)
               .max(IMPORT_ROWS_MAX),

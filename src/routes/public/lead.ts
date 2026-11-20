@@ -4,7 +4,8 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
-import { recordLeadConversion } from "../../domain/attribution/conversions.ts";
+import { keepAdNotice, recordLeadConversion } from "../../domain/attribution/conversions.ts";
+import { AD_NOTICE } from "../../config/notices.ts";
 import { leaveNameAndNumber } from "../../domain/booking/public-lead.ts";
 import { PUBLIC_ORIGIN } from "../../config/environments.ts";
 import { errorResponse } from "../../http/errors.ts";
@@ -22,6 +23,9 @@ const LeadRequestSchema = z
     terms: TermsSchema,
     turnstile_token: z.string().min(1).max(2048),
     attribution: AttributionSchema,
+    ad_notice: z.string().max(40).optional().openapi({
+      description: "The version of the line under the button that says the details are shared with Google and Meta.",
+    }),
     event_id: z.uuid().optional().openapi({
       description:
         "The ID the page's own Meta Pixel event carried, so Meta counts the browser's and the server's once.",
@@ -65,6 +69,9 @@ export function registerLead(app: App): void {
         attribution: body.attribution ?? {},
       });
       if (!left.ok) return left;
+      if (left.lead !== null && body.ad_notice === AD_NOTICE.version) {
+        await keepAdNotice(c.env.DB, left.lead.leadId, body.ad_notice);
+      }
       if (left.lead !== null && body.event_id !== undefined) {
         await recordLeadConversion(c.env.DB, {
           eventId: body.event_id,

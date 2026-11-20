@@ -6844,6 +6844,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "already_rated",
             "visit_not_done",
             "rating_closed",
+            "already_imported",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",

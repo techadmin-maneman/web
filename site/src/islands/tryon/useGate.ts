@@ -134,7 +134,7 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
     if (render.ok) {
       jobId.current = render.value;
       send({ type: "sent" });
-      track({ name: "try_on_completed" });
+      track({ name: "tryon_complete" });
       return;
     }
     if (render.code === "network") setFailure(tryOn.gate.errors.other);

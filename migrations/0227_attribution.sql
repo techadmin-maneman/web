@@ -114,6 +114,9 @@ CREATE TABLE person_attribution (
   heard_from_other TEXT,
   heard_from_by TEXT,
   heard_from_at TEXT,
+  -- The client asked that nothing more of theirs go to Google or Meta: when, and the member of staff who recorded it.
+  sharing_stopped_at TEXT,
+  sharing_stopped_by TEXT,
   updated_at TEXT NOT NULL
 );
 
@@ -168,6 +171,9 @@ CREATE INDEX spend_entries_by_link ON spend_entries (link_id) WHERE link_id IS N
 
 -- The touch a lead was made by; empty on a lead from before, which the cron gives one (src/domain/attribution/backfill.ts).
 ALTER TABLE leads ADD COLUMN touch_id TEXT REFERENCES touches (id);
+-- The version of the line /book's first step shows on Google and Meta (src/config/notices.ts, AD_NOTICE), as the page
+-- that made the lead showed it; its time is the lead's own.
+ALTER TABLE leads ADD COLUMN ad_notice TEXT;
 
 CREATE INDEX leads_without_touch ON leads (created_at) WHERE touch_id IS NULL;
 

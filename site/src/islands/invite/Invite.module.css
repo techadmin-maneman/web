@@ -275,6 +275,13 @@
   margin-top: var(--sp-20);
 }
 
+/* What the first step's details are used for, under its button, with the privacy policy linked (ADR 0288). */
+.adNotice {
+  font-size: var(--fs-13);
+  line-height: var(--lh-145);
+  color: var(--site-text-muted);
+}
+
 /* An empty live region or Turnstile box keeps its place in the page and takes no space. */
 .form > :empty {
   margin-top: 0;
