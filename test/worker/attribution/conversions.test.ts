@@ -193,20 +193,24 @@ describe("a first fit's conversions", () => {
 
 describe("a consultation done that kept no start", () => {
   it("is booked but never done, and the write it follows goes through", async () => {
-    // Kept from before migration 0169 required a start: the trigger set aside to make one, and put back.
-    const trigger = await env.DB.prepare("SELECT sql FROM sqlite_master WHERE name = 'appointments_whole'").first<{
-      sql: string;
-    }>();
-    await env.DB.prepare("DROP TRIGGER appointments_whole").run();
     const personId = await client("+919811115555");
-    await aVisit({
+    const { id: visit = "" } = await aVisit({
       person_id: personId,
       type: "consultation",
-      status: "completed",
-      window_start: null,
-      window_end: null,
-      first_seen_at: later(-3 * 24 * 60).toISOString(),
+      status: "scheduled",
+      window_start: later(-3 * 24 * 60).toISOString(),
+      first_seen_at: later(-4 * 24 * 60).toISOString(),
     });
+    // Done and kept without a start, as before migration 0169 required one: its trigger set aside, and put back.
+    const trigger = await env.DB.prepare("SELECT sql FROM sqlite_master WHERE name = 'appointments_kept_whole'").first<{
+      sql: string;
+    }>();
+    await env.DB.prepare("DROP TRIGGER appointments_kept_whole").run();
+    await env.DB.prepare(
+      "UPDATE appointments SET status = 'completed', window_start = NULL, window_end = NULL WHERE id = ?1",
+    )
+      .bind(visit)
+      .run();
     await env.DB.prepare(trigger?.sql ?? "").run();
 
     await upkeep(personId);
