@@ -9,6 +9,8 @@ import { createGoogleConversions } from "./google.ts";
 import { createMetaConversions } from "./meta.ts";
 import { createStubConversions } from "./stub.ts";
 
+export type BookedVia = "website" | "chat" | "phone_call" | "system";
+
 /** What each platform is told of a conversion, hashed already where it is a person's. */
 export interface ConversionToSend {
   readonly eventId: string;
@@ -16,8 +18,13 @@ export interface ConversionToSend {
   readonly occurredAt: Date;
   /** Rupees before GST, for a payment. */
   readonly value: number | null;
-  /** The page a lead was left on. */
+  /** The page a lead was left on, or a booking made on the site or app. */
   readonly sourceUrl: string | null;
+  /**
+   * How a booking was made: on the site or the app, in a WhatsApp chat, on a call, or by ops with neither before it;
+   * null for every other event.
+   */
+  readonly bookedVia: BookedVia | null;
   /** The number, hashed in each platform's own form (src/lib/ad-match.ts). */
   readonly phone: { readonly meta: string; readonly google: string };
   readonly firstName: string | null;

@@ -47,9 +47,12 @@ Nothing here needs a release. The first two have dates.
       (`CONVERSIONS_TEST_MODE`, `wrangler.jsonc`): Google checks each event and counts none.
 - [ ] **GA4:** mark `generate_lead` as a key event in staging's and production's properties, and import production's
       into Google Ads (Goals, Conversions, Import, Google Analytics 4). The site carries no Ads tag of its own.
-- [ ] **Meta,** parked by the owner on 20 November 2026: when it resumes, a dataset for staging and production's Pixel
-      `2231091544495701`, a Conversions API token for each, and the Test Events code for staging, as `META_DATASET_ID`,
-      `META_CAPI_TOKEN` and `META_TEST_EVENT_CODE`. Until then Meta's conversions wait in their rows.
+- [x] **Meta's dataset** `4633949850213113` ("Mane Man", the Mane Man portfolio's), its Conversions API token and the
+      Test Events codes, in the git-ignored `.env.meta-conversions`; a Lead, a Purchase and a ConsultationDone sent
+      through our own code showed in Test Events (owner, 20 November 2026). The site's production Pixel is the same
+      dataset. `maneman.in` is verified for it.
+- [ ] **Staging's Meta secrets,** piped in: `META_DATASET_ID`, `META_CAPI_TOKEN`, and the **Offline** view's test code as
+      `META_TEST_EVENT_CODE` (four of the five events are offline ones).
 - [ ] **Production's secrets** as staging's, at launch, with `CONVERSIONS_TEST_MODE` `"false"`.
 - [ ] **Spend:** Google's and Meta's from their CSVs on the Spend page; never Zoho Analytics' ad connectors, or spend
       counts twice.

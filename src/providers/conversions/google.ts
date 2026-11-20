@@ -42,8 +42,12 @@ async function assertion(account: GoogleSettings["serviceAccount"], now: Date): 
   return `${unsigned}.${toBase64Url(new Uint8Array(signature))}`;
 }
 
-/** Where the event happened, as Meta is told it too: a booking our system's, a visit or a payment the home visit's. */
-const eventSourceOf = (event: GoogleEvent) => (event === "consult_booked" ? "OTHER" : "IN_STORE");
+/** Where the event happened, as Meta is told it too: a booking where it was made, a visit or a payment at home. */
+function eventSourceOf(conversion: ConversionToSend): "WEB" | "MESSAGE" | "PHONE" | "OTHER" | "IN_STORE" {
+  if (conversion.event !== "consult_booked") return "IN_STORE";
+  const sources = { website: "WEB", chat: "MESSAGE", phone_call: "PHONE", system: "OTHER" } as const;
+  return sources[conversion.bookedVia ?? "system"];
+}
 
 /** The event, as events:ingest takes it, with its destination's conversion action. */
 function googleRequest(
@@ -68,7 +72,7 @@ function googleRequest(
       {
         transactionId: conversion.eventId,
         eventTimestamp: conversion.occurredAt.toISOString(),
-        eventSource: eventSourceOf(conversion.event),
+        eventSource: eventSourceOf(conversion),
         ...(Object.keys(adIdentifiers).length === 0 ? {} : { adIdentifiers }),
         userData: { userIdentifiers: [{ phoneNumber: conversion.phone.google }] },
         ...(conversion.value === null ? {} : { conversionValue: conversion.value, currency: "INR" }),

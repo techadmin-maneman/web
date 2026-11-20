@@ -14,6 +14,7 @@ import { DAY_MS, MINUTE_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import type {
+  BookedVia,
   ConversionPlatform,
   ConversionPlatforms,
   ConversionToSend,
@@ -146,24 +147,46 @@ const clicksOf = (db: D1Database, due: Due, since: string): Promise<Clicks | nul
     .bind(due.person_id, due.occurred_at, since)
     .first<Clicks>();
 
+/**
+ * How a booking was made: on the site or the app, as its hold says; else in the chat or the call the client's latest
+ * touch before it was; else by ops alone. Null for any other event.
+ */
+async function bookedViaOf(db: D1Database, due: Due): Promise<BookedVia | null> {
+  if (due.event !== "consult_booked") return null;
+  const row = await db
+    .prepare(
+      `SELECT (SELECT h.booked_from FROM slot_holds h WHERE h.appointment_id = ?1 ORDER BY h.created_at LIMIT 1)
+           AS booked_from,
+         (SELECT t.via FROM touches t WHERE t.person_id = ?2 AND t.at <= ?3 ORDER BY t.at DESC, t.rowid DESC LIMIT 1)
+           AS last_via`,
+    )
+    .bind(due.subject_id, due.person_id, due.occurred_at)
+    .first<{ booked_from: string | null; last_via: string | null }>();
+  if (row?.booked_from === "site" || row?.booked_from === "app") return "website";
+  if (row?.last_via === "whatsapp") return "chat";
+  return row?.last_via === "call" ? "phone_call" : "system";
+}
+
 /** What the platform is told of the conversion, built from our rows now. */
-async function toSend(db: D1Database, due: Due): Promise<ConversionToSend> {
+async function toSend(db: D1Database, due: Due, bookingPage: string): Promise<ConversionToSend> {
   const occurredAt = new Date(due.occurred_at);
   const since = new Date(occurredAt.getTime() - LOOKBACK_DAYS * DAY_MS).toISOString();
-  const [browser, clicks, metaPhone, googlePhone, firstName, externalId] = await Promise.all([
+  const [browser, clicks, metaPhone, googlePhone, firstName, externalId, bookedVia] = await Promise.all([
     browserOf(db, due, since),
     clicksOf(db, due, since),
     metaPhoneHash(due.mobile_e164),
     googlePhoneHash(due.mobile_e164),
     metaFirstNameHash(due.name),
     sha256Hex(due.person_id),
+    bookedViaOf(db, due),
   ]);
   return {
     eventId: due.event_id,
     event: due.event,
     occurredAt,
     value: due.value_paise === null ? null : due.value_paise / 100,
-    sourceUrl: due.source_url,
+    sourceUrl: bookedVia === "website" ? bookingPage : due.source_url,
+    bookedVia,
     phone: { meta: metaPhone, google: googlePhone },
     firstName,
     externalId,
@@ -220,6 +243,8 @@ interface Run {
   readonly budget: CallBudget;
   readonly log: Logger;
   readonly alerts: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert };
+  /** The site's booking page, which a booking made on the site or the app is told as made on. */
+  readonly bookingPage: string;
 }
 
 async function sendFor(
@@ -237,7 +262,7 @@ async function sendFor(
     if (why !== null) outcome = { kind: "skipped", why };
     else {
       if (!run.budget.spend(platform === "google" ? 2 : 1)) break;
-      outcome = await sender.send(await toSend(db, due));
+      outcome = await sender.send(await toSend(db, due, run.bookingPage));
     }
     await written(db, { platform, due, now: run.now }, outcome).run();
     counted[outcome.kind] = (counted[outcome.kind] ?? 0) + 1;

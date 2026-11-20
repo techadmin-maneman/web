@@ -23,11 +23,16 @@ const EVENT_NAME: Readonly<Record<ConversionToSend["event"], string>> = {
 };
 
 /** Where it happened, as Meta asks: a lead on the site with its browser, at the client's home, or by our own system. */
-function actionSourceOf(conversion: ConversionToSend): "website" | "physical_store" | "system_generated" {
-  if (conversion.event === "lead_submit") {
-    return conversion.browser.userAgent !== null && conversion.sourceUrl !== null ? "website" : "system_generated";
-  }
-  return conversion.event === "consult_booked" ? "system_generated" : "physical_store";
+function actionSourceOf(
+  conversion: ConversionToSend,
+): "website" | "chat" | "phone_call" | "physical_store" | "system_generated" {
+  // A website's event needs the page and the browser; without them it is told as our system's.
+  const fromSite = conversion.browser.userAgent !== null && conversion.sourceUrl !== null;
+  if (conversion.event === "lead_submit") return fromSite ? "website" : "system_generated";
+  if (conversion.event !== "consult_booked") return "physical_store";
+  if (conversion.bookedVia === "website") return fromSite ? "website" : "system_generated";
+  if (conversion.bookedVia === "chat" || conversion.bookedVia === "phone_call") return conversion.bookedVia;
+  return "system_generated";
 }
 
 /** The event, as Meta's /events takes it. */

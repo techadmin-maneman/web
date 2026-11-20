@@ -11,9 +11,9 @@ import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { createGoogleConversions } from "../../../src/providers/conversions/google.ts";
 import type { ConversionPlatform, ConversionToSend, SendOutcome } from "../../../src/providers/conversions/index.ts";
-import { createMetaConversions } from "../../../src/providers/conversions/meta.ts";
+import { createMetaConversions, metaEvent } from "../../../src/providers/conversions/meta.ts";
 import { STUB_ANSWER, STUB_SENT, createStubConversions } from "../../../src/providers/conversions/stub.ts";
-import { aPayment, aPerson, aVisit } from "../fixtures/index.ts";
+import { aHold, aPayment, aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
 import { NOW, deliverRazorpay, fakeFetch, json, markDatabase } from "../helpers.ts";
 
 const MINUTE = 60_000;
@@ -30,6 +30,7 @@ const run = (platforms: { meta: ConversionPlatform | null; google: ConversionPla
     now,
     budget: createCallBudget(100),
     log,
+    bookingPage: "https://maneman.test/book",
     alerts: {
       alertOnce: (raised) => {
         alerts.raised.push(raised.key);
@@ -250,6 +251,49 @@ describe("a payment's conversion", () => {
   });
 });
 
+describe("a booking", () => {
+  /** A consultation booked a day before NOW, its conversion sent to the stubs, and how it was told it was made. */
+  async function bookedAndSent(id: string, held: "site" | "ops" | null) {
+    const { id: visit = "" } = await aVisit({
+      person_id: id,
+      type: "consultation",
+      first_seen_at: later(-24 * 60).toISOString(),
+      window_start: later(2 * 24 * 60).toISOString(),
+    });
+    if (held !== null) {
+      await aTechnician({ id: "t-booking" });
+      await aHold({
+        person_id: id,
+        technician_id: "t-booking",
+        appointment_id: visit,
+        booked_from: held,
+        state: "booked",
+      });
+    }
+    await upkeep(id);
+    await run(stubs());
+    const sent = STUB_SENT.find((each) => each.platform === "meta" && each.conversion.event === "consult_booked");
+    return { bookedVia: sent?.conversion.bookedVia, sourceUrl: sent?.conversion.sourceUrl };
+  }
+
+  it("made on the site is told as the website's, on its booking page", async () => {
+    expect(await bookedAndSent(await client("+919810000024"), "site")).toEqual({
+      bookedVia: "website",
+      sourceUrl: "https://maneman.test/book",
+    });
+  });
+
+  it("made by ops after a WhatsApp chat is told as the chat's", async () => {
+    const id = await client("+919810000025");
+    await env.DB.prepare(
+      `INSERT INTO touches (id, at, via, person_id, channel, campaign_signal) VALUES ('chat', ?1, 'whatsapp', ?2, 'whatsapp', 0)`,
+    )
+      .bind(later(-2 * 24 * 60).toISOString(), id)
+      .run();
+    expect(await bookedAndSent(id, "ops")).toEqual({ bookedVia: "chat", sourceUrl: null });
+  });
+});
+
 describe("a client who declined the cookie bar", () => {
   it("has none of Meta's cookies, address or browser sent, though an earlier touch kept them", async () => {
     const id = await client("+919810000019");
@@ -390,6 +434,7 @@ const PAID: ConversionToSend = {
   occurredAt: NOW,
   value: 30_000,
   sourceUrl: null,
+  bookedVia: null,
   phone: { meta: "a".repeat(64), google: "b".repeat(64) },
   firstName: "c".repeat(64),
   externalId: "d".repeat(64),
@@ -428,6 +473,27 @@ describe("Meta's request", () => {
 
     expect((await createMetaConversions(settings, false, { fetch: lapsed.fetch, log }).send(PAID)).kind).toBe("held");
     expect((await createMetaConversions(settings, false, { fetch: unknown.fetch, log }).send(PAID)).kind).toBe("held");
+  });
+
+  it("tells a booking by how it was made, a website's only with its page and browser", () => {
+    const booked = { ...PAID, event: "consult_booked" as const, value: null };
+    const sources = [
+      { ...booked, bookedVia: "website" as const, sourceUrl: "https://maneman.in/book" },
+      {
+        ...booked,
+        bookedVia: "website" as const,
+        sourceUrl: "https://maneman.in/book",
+        browser: { ...PAID.browser, userAgent: null },
+      },
+      { ...booked, bookedVia: "chat" as const },
+      { ...booked, bookedVia: "phone_call" as const },
+      { ...booked, bookedVia: "system" as const },
+    ].map((conversion) => metaEvent(conversion).action_source);
+
+    expect(sources).toEqual(["website", "system_generated", "chat", "phone_call", "system_generated"]);
+    expect(metaEvent({ ...booked, bookedVia: "website", sourceUrl: "https://maneman.in/book" })).toMatchObject({
+      event_source_url: "https://maneman.in/book",
+    });
   });
 
   it("is tried again when Meta is down, and failed when Meta refuses the event", async () => {
@@ -502,6 +568,8 @@ describe("Google's request", () => {
       destinations: [{ productDestinationId: "11" }],
       events: [{ eventSource: "OTHER" }],
     });
+    await google.send({ ...PAID, event: "consult_booked", value: null, bookedVia: "chat" });
+    expect(JSON.parse(calls.at(-1)?.body ?? "{}")).toMatchObject({ events: [{ eventSource: "MESSAGE" }] });
   });
 
   it("is held when Google refuses our account, and tried again when Google is down", async () => {

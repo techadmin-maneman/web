@@ -3,6 +3,7 @@
 
 import { letAttributionGo, touchOldLeads } from "../domain/attribution/backfill.ts";
 import { sendConversions } from "../domain/attribution/conversion-sends.ts";
+import { PUBLIC_ORIGIN } from "../config/environments.ts";
 import { createConversionPlatforms } from "../providers/conversions/index.ts";
 import type { CronContext } from "./cron.ts";
 
@@ -17,6 +18,8 @@ export async function conversionsJob({ env, deps, config, log, budget }: CronCon
     budget,
     log,
     alerts: { alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert },
+    // The app's own bookings are told as made on the site's booking page: Meta knows the site, not the app.
+    bookingPage: `${PUBLIC_ORIGIN[config.environment]}/book`,
   });
 }
 
