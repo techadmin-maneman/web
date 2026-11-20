@@ -3,7 +3,7 @@
 // title lines and totals passed over. A day is read only as written unmistakably, 2026-11-20 or Nov 20, 2026, never
 // 20/11/2026, whose month a spreadsheet may have swapped.
 
-export interface SpendRow {
+interface SpendRow {
   readonly day: string;
   readonly campaign: string;
   /** Paise. */

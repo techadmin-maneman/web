@@ -66,27 +66,6 @@ export async function withAttribution(
 export const refreshAttribution = (db: D1Database, personId: string, now: Date): Promise<void> =>
   withAttribution(db, personId, [], now);
 
-/** Fixes the channel from the person's first consultation's booking on: codes that come after it change nothing. */
-export async function settleAttribution(db: D1Database, personId: string, bookedAt: string, now: Date): Promise<void> {
-  await db
-    .prepare("UPDATE person_attribution SET settled_at = ?2 WHERE person_id = ?1 AND settled_at IS NULL")
-    .bind(personId, bookedAt)
-    .run();
-  await refreshAttribution(db, personId, now);
-}
-
-/** The person's channels as they stand: Direct for a person no touch names. */
-export async function channelsOf(
-  db: D1Database,
-  personId: string,
-): Promise<{ readonly attributed: ChannelCode; readonly lastTouch: ChannelCode }> {
-  const row = await db
-    .prepare("SELECT attributed_channel, last_touch_channel FROM person_attribution WHERE person_id = ?1")
-    .bind(personId)
-    .first<{ attributed_channel: ChannelCode; last_touch_channel: ChannelCode }>();
-  return { attributed: row?.attributed_channel ?? "direct", lastTouch: row?.last_touch_channel ?? "direct" };
-}
-
 /** Records what the client told ops of how they heard of us, audited, beside their channel or before they have one. */
 export async function setHeardFrom(
   db: D1Database,
@@ -173,7 +152,7 @@ export async function stopSharing(
 }
 
 /** A touch as the client's page shows it. */
-export interface TouchShown {
+interface TouchShown {
   readonly at: string;
   readonly via: TouchVia;
   readonly channel: ChannelCode;

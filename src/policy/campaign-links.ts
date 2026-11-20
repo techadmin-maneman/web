@@ -3,18 +3,13 @@
 // visitor to /book with its campaign tags, so the touch they make carries them, and with its code. The tags follow one
 // vocabulary: small letters and hyphens, a source and a medium from the lists below.
 
-export const LINK_KINDS = ["society", "offer"] as const;
-
-export type LinkKind = (typeof LINK_KINDS)[number];
+export type LinkKind = "society" | "offer";
 
 /** Where an offer link is put. */
 export const OFFER_SOURCES = ["google", "meta", "youtube", "whatsapp", "newsletter", "partner"] as const;
 
 /** How it is put there: a paid ad, an unpaid post, an e-mail, or print. */
 export const OFFER_MEDIUMS = ["cpc", "paid_social", "social", "email", "offline"] as const;
-
-export type OfferSource = (typeof OFFER_SOURCES)[number];
-export type OfferMedium = (typeof OFFER_MEDIUMS)[number];
 
 /** A society's tags are fixed. */
 export const SOCIETY_SOURCE = "society";
@@ -23,7 +18,7 @@ export const SOCIETY_MEDIUM = "offline";
 /** A slug or a campaign: small letters and digits, words joined by single hyphens. */
 export const TAG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export const SLUG_MAX = 40;
+const SLUG_MAX = 40;
 export const CAMPAIGN_MAX = 80;
 
 /** Each link's path prefix on the site. */

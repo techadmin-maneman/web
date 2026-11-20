@@ -7,7 +7,7 @@ import type { SpendChannel } from "../../policy/channels.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 /** Where an entry came from. */
-export type SpendSource = "manual" | "csv" | "link" | "api";
+type SpendSource = "manual" | "csv" | "link" | "api";
 
 /** What a society activation's cost was for. */
 export type CostLine = "stall" | "staff" | "collateral" | "other";

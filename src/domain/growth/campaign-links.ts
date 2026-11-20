@@ -48,7 +48,7 @@ interface Change {
   readonly now: Date;
 }
 
-export interface SocietyCost {
+interface SocietyCost {
   readonly line: CostLine;
   /** Paise, before GST. */
   readonly amount: number;

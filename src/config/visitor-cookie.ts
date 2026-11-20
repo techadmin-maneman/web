@@ -4,13 +4,13 @@
 // hosts are under maneman.in as well.
 
 /** 13 months, in seconds. */
-export const VISITOR_COOKIE_SECONDS = 396 * 24 * 60 * 60;
+const VISITOR_COOKIE_SECONDS = 396 * 24 * 60 * 60;
 
 /** A visitor's ID, as the Worker writes it: a UUID. */
-export const VISITOR_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const VISITOR_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** The cookie's name, and the domain it is set on, for a request's host: none on localhost. */
-export function visitorCookieOf(host: string): { readonly name: string; readonly domain: string | null } {
+function visitorCookieOf(host: string): { readonly name: string; readonly domain: string | null } {
   const hostname = host.split(":")[0]?.toLowerCase() ?? "";
   if (hostname !== "maneman.in" && !hostname.endsWith(".maneman.in")) return { name: "mm_vid_local", domain: null };
   return { name: hostname.includes("staging") ? "mm_vid_staging" : "mm_vid", domain: "maneman.in" };

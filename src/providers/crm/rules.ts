@@ -11,7 +11,7 @@ export const DELIVERY_ONLY: LeadStatus = "Try-on — delivery only";
 export const ANSWER_IN_CHAT: LeadStatus = "WhatsApp — answer in chat";
 
 /** Someone who called us, whom ops took as a lead on the call: answered there, never chased (ADR 0288). */
-export const ANSWER_ON_CALL: LeadStatus = "Phone — answer on the call";
+const ANSWER_ON_CALL: LeadStatus = "Phone — answer on the call";
 
 /** The status for a person's first CRM record. */
 export function statusForNewRecord(lead: CrmLead): LeadStatus {

@@ -46,7 +46,7 @@ async function assertion(account: GoogleSettings["serviceAccount"], now: Date): 
 const eventSourceOf = (event: GoogleEvent) => (event === "consult_booked" ? "OTHER" : "IN_STORE");
 
 /** The event, as events:ingest takes it, with its destination's conversion action. */
-export function googleRequest(
+function googleRequest(
   settings: GoogleSettings,
   conversion: ConversionToSend & { readonly event: GoogleEvent },
   testMode: boolean,

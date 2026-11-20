@@ -34,6 +34,4 @@ export const TouchSchema = z
   .strict()
   .openapi("Attribution");
 
-export type TouchBody = z.infer<typeof TouchSchema>;
-
 export const AttributionSchema = TouchSchema.optional();

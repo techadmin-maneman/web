@@ -5,7 +5,7 @@ import { REF_ALPHABET, REF_LENGTH } from "../../config/ref-tokens.ts";
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
 
 /** A fresh reference: five of the letters no one misreads, about 28 million in all. */
-export function newRef(): string {
+function newRef(): string {
   const picks = crypto.getRandomValues(new Uint8Array(REF_LENGTH));
   return [...picks].map((pick) => REF_ALPHABET[pick % REF_ALPHABET.length] ?? "").join("");
 }

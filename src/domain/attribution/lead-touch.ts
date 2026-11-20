@@ -19,8 +19,6 @@ export interface VisitContext {
   readonly clientIp: string | null;
 }
 
-export const NO_VISIT: VisitContext = { visitorId: null, userAgent: null, clientIp: null };
-
 const given = (value: string | undefined): string | null => {
   const trimmed = value?.trim() ?? "";
   return trimmed === "" ? null : trimmed;
