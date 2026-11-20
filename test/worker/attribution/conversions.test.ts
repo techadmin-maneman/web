@@ -167,6 +167,71 @@ describe("a first fit's conversions", () => {
   });
 });
 
+describe("a payment's conversion", () => {
+  it("is never a late fee's, and a cancelled first fit leaves first_fit_paid to the one rebooked", async () => {
+    const id = await client("+919810000020");
+    const start = later(-3 * 24 * 60).toISOString();
+    const { id: cancelled = "" } = await aVisit({
+      person_id: id,
+      type: "first_fit",
+      status: "cancelled",
+      window_start: start,
+    });
+    await aPayment({ person_id: id, appointment_id: cancelled, kind: "late_fee", amount: 50_000, captured_at: start });
+    const { id: rebooked = "" } = await aVisit({
+      person_id: id,
+      type: "first_fit",
+      status: "completed",
+      window_start: later(-1 * 24 * 60).toISOString(),
+    });
+    const { id: paid = "" } = await aPayment({
+      person_id: id,
+      appointment_id: rebooked,
+      amount: 3_540_000,
+      amount_ex_gst: 3_000_000,
+    });
+    await upkeep(id);
+
+    expect(
+      await rows("SELECT event, subject_id FROM conversions WHERE event IN ('first_fit_paid', 'service_paid')"),
+    ).toEqual([{ event: "first_fit_paid", subject_id: paid }]);
+  });
+
+  it("is sent with the payment's value before GST as it stands when sent", async () => {
+    const id = await client("+919810000021");
+    const { id: visit = "" } = await aVisit({
+      person_id: id,
+      type: "first_fit",
+      status: "completed",
+      window_start: NOW.toISOString(),
+    });
+    const { id: paid = "" } = await aPayment({
+      person_id: id,
+      appointment_id: visit,
+      amount: 3_540_000,
+      captured_at: NOW.toISOString(),
+    });
+    await upkeep(id);
+    await env.DB.prepare("UPDATE payments SET amount_ex_gst = 3000000 WHERE id = ?1").bind(paid).run();
+    await run(stubs());
+
+    expect(STUB_SENT.find((each) => each.conversion.event === "first_fit_paid")?.conversion.value).toBe(30_000);
+  });
+
+  it("is not sent when it was recorded long after it happened, as history a release finds", async () => {
+    await firstFitPaid(await client("+919810000022"));
+    await env.DB.prepare("UPDATE conversions SET created_at = ?1")
+      .bind(later(30 * 24 * 60).toISOString())
+      .run();
+    await run(stubs(), later(30 * 24 * 60 + 1));
+
+    expect(STUB_SENT).toEqual([]);
+    expect(await rows("SELECT DISTINCT meta_state, meta_error FROM conversions")).toEqual([
+      { meta_state: "skipped", meta_error: "recorded_late" },
+    ]);
+  });
+});
+
 describe("a client who declined the cookie bar", () => {
   it("has none of Meta's cookies, address or browser sent, though an earlier touch kept them", async () => {
     const id = await client("+919810000019");

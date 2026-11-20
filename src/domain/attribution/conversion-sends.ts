@@ -32,6 +32,12 @@ const WAITS_MINUTES = [1, 5, 30, 120, 720] as const;
 /** How many of each platform's sends one run makes at most. */
 const PER_RUN = 25;
 
+/**
+ * How long after an event it may be recorded and still be sent: one recorded later than this is history the release
+ * found (a visit written again for the first time since), which those clients were never told would be shared.
+ */
+const RECORDED_LATE_DAYS = 7;
+
 /** How far back a click ID or a browser's cookies still say something of a conversion: Google's click window. */
 const LOOKBACK_DAYS = 90;
 
@@ -41,8 +47,10 @@ interface Due {
   readonly subject_id: string;
   readonly person_id: string;
   readonly occurred_at: string;
+  /** A payment's value as it stands when sent, before GST: a payment link's is filled in just after it is recorded. */
   readonly value_paise: number | null;
   readonly source_url: string | null;
+  readonly created_at: string;
   readonly tries: number;
   readonly mobile_e164: string;
   readonly name: string;
@@ -66,13 +74,17 @@ interface Clicks {
 
 /** Each platform's sends falling due, the oldest first. */
 const DUE_META = `SELECT c.event_id, c.event, c.subject_id, c.person_id, c.occurred_at,
-    c.value_paise, c.source_url, c.meta_tries AS tries, p.mobile_e164, p.name, p.test_record, p.erased_at,
+    CASE WHEN c.event IN ('first_fit_paid', 'service_paid')
+      THEN (SELECT COALESCE(y.amount_ex_gst, y.amount) FROM payments y WHERE y.id = c.subject_id) ELSE c.value_paise END
+      AS value_paise, c.source_url, c.created_at, c.meta_tries AS tries, p.mobile_e164, p.name, p.test_record, p.erased_at,
     pa.sharing_stopped_at
   FROM conversions c JOIN people p ON p.id = c.person_id LEFT JOIN person_attribution pa ON pa.person_id = c.person_id
   WHERE c.meta_state = 'pending' AND c.meta_next_at <= ?1
   ORDER BY c.meta_next_at LIMIT ?2`;
 const DUE_GOOGLE = `SELECT c.event_id, c.event, c.subject_id, c.person_id, c.occurred_at,
-    c.value_paise, c.source_url, c.google_tries AS tries, p.mobile_e164, p.name, p.test_record, p.erased_at,
+    CASE WHEN c.event IN ('first_fit_paid', 'service_paid')
+      THEN (SELECT COALESCE(y.amount_ex_gst, y.amount) FROM payments y WHERE y.id = c.subject_id) ELSE c.value_paise END
+      AS value_paise, c.source_url, c.created_at, c.google_tries AS tries, p.mobile_e164, p.name, p.test_record, p.erased_at,
     pa.sharing_stopped_at
   FROM conversions c JOIN people p ON p.id = c.person_id LEFT JOIN person_attribution pa ON pa.person_id = c.person_id
   WHERE c.google_state = 'pending' AND c.google_next_at <= ?1
@@ -162,6 +174,7 @@ function notFor(platform: Platform, due: Due, now: Date): string | null {
   if (due.test_record === 1) return "test_record";
   if (due.erased_at !== null) return "erased";
   if (due.sharing_stopped_at !== null) return "sharing_stopped";
+  if (Date.parse(due.created_at) - Date.parse(due.occurred_at) > RECORDED_LATE_DAYS * DAY_MS) return "recorded_late";
   const days = TAKEN_FOR_DAYS[platform][due.event];
   return now.getTime() - Date.parse(due.occurred_at) > days * DAY_MS ? "too_old" : null;
 }
