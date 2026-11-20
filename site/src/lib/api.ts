@@ -239,6 +239,11 @@ export function reportVisit(touch: Attribution): Promise<Answer<VisitAnswer>> {
   return post<VisitAnswer>("/api/landings", touch);
 }
 
+/** The visitor declined the cookie bar: what their browser's touches kept for Meta goes (ADR 0288). */
+export function reportDecline(): Promise<Answer<null>> {
+  return post<null>("/api/landings/declined", {});
+}
+
 /** /book's first step: the name and number, kept as a lead before the visit is chosen. */
 export function leaveLead(request: LeadRequest, idempotencyKey: string): Promise<Answer<LeadLeft>> {
   return post<LeadLeft>("/api/lead", request, idempotencyKey);

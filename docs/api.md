@@ -1709,6 +1709,12 @@ Request body:
 }
 ```
 
+### POST /api/landings/declined
+
+The visitor declined the cookie bar: their browser's touches keep nothing for Meta
+
+**204**: Done, or nothing kept for this browser
+
 ### GET /api/links/{kind}/{slug}
 
 Where a campaign link sends the visitor: /book with its tags and its code

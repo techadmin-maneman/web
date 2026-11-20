@@ -3869,6 +3869,16 @@
         }
       }
     },
+    "/api/landings/declined": {
+      "post": {
+        "summary": "The visitor declined the cookie bar: their browser's touches keep nothing for Meta",
+        "responses": {
+          "204": {
+            "description": "Done, or nothing kept for this browser"
+          }
+        }
+      }
+    },
     "/api/links/{kind}/{slug}": {
       "get": {
         "summary": "Where a campaign link sends the visitor: /book with its tags and its code",

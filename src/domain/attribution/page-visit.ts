@@ -7,6 +7,20 @@ import { carriedOf, codesOf, type PageTouch } from "./lead-touch.ts";
 import { recordTouch, resolveCodes } from "./touches.ts";
 import { seeVisitor } from "./visitors.ts";
 
+/**
+ * A Decline on the cookie bar, from the visitor's own browser: every touch it made keeps none of Meta's cookies, its
+ * address or its browser, and is marked declined, so what came before the Decline is never sent either.
+ */
+export async function declineVisitor(db: D1Database, visitorId: string): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE touches SET fbc = NULL, fbp = NULL, client_ip = NULL, user_agent = NULL, ad_consent = 'denied'
+       WHERE visitor_id = ?1`,
+    )
+    .bind(visitorId)
+    .run();
+}
+
 /** Records the landing as a touch where it is the visitor's first or a campaign's; the visitor's reference either way. */
 export async function recordVisit(
   db: D1Database,

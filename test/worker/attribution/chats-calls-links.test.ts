@@ -10,6 +10,7 @@ import type { App } from "../../../src/http/context.ts";
 import {
   appFor,
   captureLogs,
+  eraseByMobile,
   fakeDependencies,
   fakeQueue,
   LOCAL_SETTINGS,
@@ -111,6 +112,24 @@ describe("a WhatsApp message", () => {
     ).toEqual({ attributed_channel: "google_ads", heard_from: "instagram_facebook" });
   });
 
+  it("after the visitor declined the cookie bar brings none of what their landing kept for Meta to the person", async () => {
+    const cookie = { "Content-Type": "application/json", Cookie: `mm_vid_local=${VISITOR}` };
+    const landed = await request(site(), "/api/landings", {
+      method: "POST",
+      headers: cookie,
+      body: JSON.stringify({ landing_path: "/", fbclid: "IwAR_test", fbp: "fb.1.1790000000000.123456789" }),
+    });
+    const { ref } = await landed.json<{ ref: string }>();
+    expect((await request(site(), "/api/landings/declined", { method: "POST", headers: cookie })).status).toBe(204);
+    await whatsApp("919811112222", `Hi. Ref ${ref}`);
+    const chat = await env.DB.prepare("SELECT id FROM conversations").first<{ id: string }>();
+    await post(care(), `/api/conversations/${chat?.id ?? ""}/save`, { name: "Meera Iyer" });
+
+    expect(
+      await rows("SELECT via, fbc, fbp, client_ip, user_agent, ad_consent FROM touches WHERE via = 'site'"),
+    ).toEqual([{ via: "site", fbc: null, fbp: null, client_ip: null, user_agent: null, ad_consent: "denied" }]);
+  });
+
   it("from Meta's click-to-WhatsApp ad is a Meta ads touch of the client who sent it", async () => {
     await whatsApp("919810000001", "Hello", {
       ctwa_clid: "ARAkLkA_test",
@@ -156,6 +175,20 @@ describe("a WhatsApp message", () => {
     ]);
     expect(await rows("SELECT attributed_channel FROM person_attribution")).toEqual([
       { attributed_channel: "meta_ads" },
+    ]);
+  });
+});
+
+describe("erasure", () => {
+  it("makes a chat the number sent before we knew them theirs, and leaves nothing of the number in it", async () => {
+    await whatsApp("919811112222", "Hello", { ctwa_clid: "ARAkLkA_test" });
+    await insertPerson("22222222-2222-4222-8222-222222222222", "+919811112222", "Meera Iyer");
+    expect(await rows("SELECT person_id FROM touches")).toEqual([{ person_id: null }]);
+
+    await eraseByMobile("+919811112222");
+
+    expect(await rows("SELECT person_id, mobile_e164, ctwa_clid, channel FROM touches")).toEqual([
+      { person_id: "22222222-2222-4222-8222-222222222222", mobile_e164: null, ctwa_clid: null, channel: "meta_ads" },
     ]);
   });
 });

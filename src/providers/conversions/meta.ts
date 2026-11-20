@@ -103,7 +103,10 @@ export function createMetaConversions(
       if (answer instanceof VendorUnreachable) return { kind: "retry", error: answer.message };
       if (answer.ok) return { kind: "sent" };
       const refusal: unknown = await answer.json().catch(() => null);
-      const said = refusalOf(refusal, answer.status);
+      // Meta may quote a token it could not read back: never kept, logged or raised as an alert.
+      const said = refusalOf(refusal, answer.status)
+        .replaceAll(settings.token, "[token]")
+        .replace(/EAA[A-Za-z0-9]{8,}/g, "[token]");
       if (accountRefused(refusal, answer.status)) return { kind: "held", error: said };
       // Meta's own trouble, or too many at once, passes; anything else it said of the event will not.
       return answer.status >= 500 || answer.status === 429

@@ -1235,6 +1235,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/landings/declined": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The visitor declined the cookie bar: their browser's touches keep nothing for Meta */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done, or nothing kept for this browser */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/links/{kind}/{slug}": {
         parameters: {
             query?: never;

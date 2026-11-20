@@ -26,6 +26,7 @@ import { consentBar as words } from "../content/site.ts";
 
 <script>
   import { answerConsent, consentAnswer } from "../lib/analytics.ts";
+  import { reportDecline } from "../lib/api.ts";
 
   const bar = document.querySelector<HTMLElement>("[data-consent-bar]");
   if (bar !== null && consentAnswer() === null) {
@@ -43,7 +44,10 @@ import { consentBar as words } from "../content/site.ts";
     keepClear.observe(bar);
     for (const button of bar.querySelectorAll<HTMLButtonElement>("[data-consent]")) {
       button.addEventListener("click", () => {
-        answerConsent(button.dataset.consent === "granted" ? "granted" : "denied");
+        const answer = button.dataset.consent === "granted" ? "granted" : "denied";
+        answerConsent(answer);
+        // The API keeps nothing of this browser's for Meta once it is declined, what came before included.
+        if (answer === "denied") void reportDecline();
         bar.hidden = true;
         keepClear.disconnect();
         root.style.removeProperty("--consent-reserve");
