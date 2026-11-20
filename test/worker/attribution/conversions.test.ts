@@ -22,8 +22,25 @@ const later = (minutes: number) => new Date(NOW.getTime() + minutes * MINUTE);
 
 const stubs = () => ({ meta: createStubConversions("meta", log), google: createStubConversions("google", log) });
 
+/** The alerts a run raised and let go, by key. */
+let alerts: { raised: string[]; resolved: string[] };
+
 const run = (platforms: { meta: ConversionPlatform | null; google: ConversionPlatform | null }, now = NOW) =>
-  sendConversions(env.DB, platforms, { now, budget: createCallBudget(100), log });
+  sendConversions(env.DB, platforms, {
+    now,
+    budget: createCallBudget(100),
+    log,
+    alerts: {
+      alertOnce: (raised) => {
+        alerts.raised.push(raised.key);
+        return Promise.resolve();
+      },
+      resolveAlert: (key) => {
+        alerts.resolved.push(key);
+        return Promise.resolve();
+      },
+    },
+  });
 
 const rows = async (sql: string, ...values: string[]) =>
   (
@@ -77,6 +94,7 @@ function scripted(...answers: SendOutcome[]) {
 }
 
 beforeEach(async () => {
+  alerts = { raised: [], resolved: [] };
   await markDatabase();
 });
 
@@ -285,6 +303,22 @@ describe("a platform that is down", () => {
     ]);
   });
 
+  it("refusing our account holds every conversion an hour, a try not spent, and tells ops once until one goes", async () => {
+    await firstFitPaid(await client("+919810000023"));
+    const refusing = scripted({ kind: "held", error: "403 PERMISSION_DENIED" });
+    await run({ meta: null, google: refusing.platform });
+
+    expect(refusing.sent).toHaveLength(1);
+    expect(alerts.raised).toEqual(["conversions_held:google"]);
+    expect(await rows("SELECT DISTINCT google_state, google_tries FROM conversions")).toEqual([
+      { google_state: "pending", google_tries: 0 },
+    ]);
+
+    await run({ meta: null, google: scripted().platform }, later(61));
+    expect(await rows("SELECT DISTINCT google_state FROM conversions")).toEqual([{ google_state: "sent" }]);
+    expect(alerts.resolved).toEqual(["conversions_held:google"]);
+  });
+
   it("is not tried again before its wait is over", async () => {
     await firstFitPaid(await client("+919810000017"));
     const down = scripted(
@@ -383,6 +417,19 @@ describe("Meta's request", () => {
     });
   });
 
+  it("is held when Meta refuses our account: a lapsed token, or a dataset it cannot find", async () => {
+    const lapsed = fakeFetch({
+      "https://graph.facebook.com/": () => json({ error: { message: "Session has expired", code: 190 } }, 400),
+    });
+    const unknown = fakeFetch({
+      "https://graph.facebook.com/": () =>
+        json({ error: { message: "Unsupported post request", code: 100, error_subcode: 33 } }, 400),
+    });
+
+    expect((await createMetaConversions(settings, false, { fetch: lapsed.fetch, log }).send(PAID)).kind).toBe("held");
+    expect((await createMetaConversions(settings, false, { fetch: unknown.fetch, log }).send(PAID)).kind).toBe("held");
+  });
+
   it("is tried again when Meta is down, and failed when Meta refuses the event", async () => {
     const down = fakeFetch({ "https://graph.facebook.com/": () => json({ error: { message: "down" } }, 503) });
     const refuses = fakeFetch({
@@ -455,6 +502,33 @@ describe("Google's request", () => {
       destinations: [{ productDestinationId: "11" }],
       events: [{ eventSource: "OTHER" }],
     });
+  });
+
+  it("is held when Google refuses our account, and tried again when Google is down", async () => {
+    const answers = [
+      json({ error: { message: "The caller does not have permission", status: "PERMISSION_DENIED" } }, 403),
+      json({}, 503),
+    ];
+    const { fetch } = fakeFetch({
+      "https://oauth2.googleapis.com/token": () => json({ access_token: "token-1", expires_in: 3600 }),
+      "https://datamanager.googleapis.com/": () => answers.shift() ?? json({}, 500),
+    });
+    const google = createGoogleConversions(
+      {
+        customerId: "1234567890",
+        loginCustomerId: null,
+        actions: ACTIONS,
+        serviceAccount: { clientEmail: "conversions@test.iam.gserviceaccount.com", privateKey: await throwawayKey() },
+      },
+      true,
+      { fetch, log, now: () => NOW },
+    );
+
+    expect(await google.send(PAID)).toEqual({
+      kind: "held",
+      error: "403 PERMISSION_DENIED The caller does not have permission",
+    });
+    expect((await google.send(PAID)).kind).toBe("retry");
   });
 
   it("refuses a lead without a call, as a lead reaches Google from GA4", async () => {

@@ -140,6 +140,8 @@ export function createGoogleConversions(
       if (answer.ok) return { kind: "sent" };
       if (answer.status === 401) token = null;
       const said = refusalOf(await answer.json().catch(() => null), answer.status);
+      // No access to the account, or an account or conversion action Google does not know: every send would fail.
+      if (answer.status === 403 || answer.status === 404) return { kind: "held", error: said };
       return retried(answer.status) ? { kind: "retry", error: said } : { kind: "refused", error: said };
     },
   };

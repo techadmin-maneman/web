@@ -7,6 +7,8 @@
 // them, and Google's click ID from the latest touch that carried one.
 
 import { sha256Hex } from "../../lib/hash.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
+import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
 import { googlePhoneHash, metaFirstNameHash, metaPhoneHash } from "../../lib/ad-match.ts";
 import { DAY_MS, MINUTE_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";
@@ -28,6 +30,12 @@ const TAKEN_FOR_DAYS: Readonly<Record<Platform, Readonly<Record<ConversionToSend
 
 /** How long each try after a failure waits, in minutes: the last given up after. */
 const WAITS_MINUTES = [1, 5, 30, 120, 720] as const;
+
+/** How long a platform that refuses our account is left before its conversions are tried again. */
+const HELD_MINUTES = 60;
+
+/** Each platform's name in the alert its refusal raises. */
+const PLATFORM_NAMES: Readonly<Record<Platform, string>> = { meta: "Meta", google: "Google Ads" };
 
 /** How many of each platform's sends one run makes at most. */
 const PER_RUN = 25;
@@ -191,23 +199,34 @@ function written(
     (platform === "meta" ? db.prepare(WRITE_META) : db.prepare(WRITE_GOOGLE)).bind(
       due.event_id,
       state,
-      outcome.kind === "skipped" ? 0 : 1,
+      outcome.kind === "skipped" || outcome.kind === "held" ? 0 : 1,
       error,
       next,
       sentAt,
     );
   if (outcome.kind === "skipped") return set("skipped", outcome.why, null, null);
   if (outcome.kind === "sent") return set("sent", null, null, at);
+  if (outcome.kind === "held") {
+    return set("pending", outcome.error, new Date(now.getTime() + HELD_MINUTES * MINUTE_MS).toISOString(), null);
+  }
   const wait = WAITS_MINUTES[due.tries];
   if (outcome.kind === "refused" || wait === undefined) return set("failed", outcome.error, null, null);
   return set("pending", outcome.error, new Date(now.getTime() + wait * MINUTE_MS).toISOString(), null);
+}
+
+/** What a run needs: its time, its budget of outside calls, its log, and ops' alerts. */
+interface Run {
+  readonly now: Date;
+  readonly budget: CallBudget;
+  readonly log: Logger;
+  readonly alerts: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert };
 }
 
 async function sendFor(
   db: D1Database,
   platform: Platform,
   sender: ConversionPlatform,
-  run: { readonly now: Date; readonly budget: CallBudget; readonly log: Logger },
+  run: Run,
 ): Promise<Record<string, number>> {
   const dueNow = platform === "meta" ? db.prepare(DUE_META) : db.prepare(DUE_GOOGLE);
   const { results } = await dueNow.bind(run.now.toISOString(), PER_RUN).all<Due>();
@@ -224,16 +243,22 @@ async function sendFor(
     counted[outcome.kind] = (counted[outcome.kind] ?? 0) + 1;
     if (outcome.kind === "refused")
       run.log.warn("conversion_refused", { platform, event: due.event, error: outcome.error });
+    if (outcome.kind === "held") {
+      // Every send would be refused the same way: the rest wait with it, and ops are told once.
+      run.log.warn("conversions_held", { platform, error: outcome.error });
+      await run.alerts.alertOnce({
+        key: `conversions_held:${platform}`,
+        message: ALERT_WORDS.conversions_held({ platform: PLATFORM_NAMES[platform], error: outcome.error }),
+      });
+      break;
+    }
   }
+  if ((counted.sent ?? 0) > 0) await run.alerts.resolveAlert(`conversions_held:${platform}`);
   return counted;
 }
 
 /** One run's sends, to each platform that is on; a platform that is off keeps its conversions waiting. */
-export async function sendConversions(
-  db: D1Database,
-  platforms: ConversionPlatforms,
-  run: { readonly now: Date; readonly budget: CallBudget; readonly log: Logger },
-): Promise<void> {
+export async function sendConversions(db: D1Database, platforms: ConversionPlatforms, run: Run): Promise<void> {
   for (const platform of ["meta", "google"] as const) {
     const sender = platforms[platform];
     if (sender === null) continue;

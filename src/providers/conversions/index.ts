@@ -34,11 +34,16 @@ export interface ConversionToSend {
   readonly clicks: { readonly gclid: string | null; readonly gbraid: string | null; readonly wbraid: string | null };
 }
 
-/** What became of one send: taken; to try again later; or refused for good, with the platform's words. */
+/**
+ * What became of one send: taken; to try again later; refused for good, with the platform's words; or held, the
+ * account refused, until someone puts it right.
+ */
 export type SendOutcome =
   | { readonly kind: "sent" }
   | { readonly kind: "retry"; readonly error: string }
-  | { readonly kind: "refused"; readonly error: string };
+  | { readonly kind: "refused"; readonly error: string }
+  /** The platform refuses our account, not the event: its token, its access or its IDs. Every send would fail. */
+  | { readonly kind: "held"; readonly error: string };
 
 export interface ConversionPlatform {
   /** Sends one conversion; in test mode, to Meta's Test Events or as Google's validateOnly, so nothing counts. */

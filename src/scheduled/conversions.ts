@@ -12,7 +12,12 @@ export async function conversionsJob({ env, deps, config, log, budget }: CronCon
     log,
     now: deps.now,
   });
-  await sendConversions(env.DB, platforms, { now: deps.now(), budget, log });
+  await sendConversions(env.DB, platforms, {
+    now: deps.now(),
+    budget,
+    log,
+    alerts: { alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert },
+  });
 }
 
 export async function attributionUpkeepJob({ env, deps, log }: CronContext): Promise<void> {

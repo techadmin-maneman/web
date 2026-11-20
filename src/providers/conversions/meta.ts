@@ -61,6 +61,22 @@ function refusalOf(body: unknown, status: number): string {
   return `${String(status)} ${typeof error?.code === "number" ? String(error.code) : ""} ${words}`.slice(0, 300);
 }
 
+/**
+ * Whether Meta refused our account rather than the event: no access (401, 403), the token lapsed or revoked (190), a
+ * permission missing (10, 200), or a dataset it cannot find (100, sub-code 33).
+ */
+function accountRefused(body: unknown, status: number): boolean {
+  const error = (body as { error?: { code?: unknown; error_subcode?: unknown } } | null)?.error;
+  return (
+    status === 401 ||
+    status === 403 ||
+    error?.code === 190 ||
+    error?.code === 10 ||
+    error?.code === 200 ||
+    (error?.code === 100 && error.error_subcode === 33)
+  );
+}
+
 export function createMetaConversions(
   settings: MetaSettings,
   testMode: boolean,
@@ -81,7 +97,9 @@ export function createMetaConversions(
       );
       if (answer instanceof VendorUnreachable) return { kind: "retry", error: answer.message };
       if (answer.ok) return { kind: "sent" };
-      const said = refusalOf(await answer.json().catch(() => null), answer.status);
+      const refusal: unknown = await answer.json().catch(() => null);
+      const said = refusalOf(refusal, answer.status);
+      if (accountRefused(refusal, answer.status)) return { kind: "held", error: said };
       // Meta's own trouble, or too many at once, passes; anything else it said of the event will not.
       return answer.status >= 500 || answer.status === 429
         ? { kind: "retry", error: said }
