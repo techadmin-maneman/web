@@ -22,10 +22,10 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
 1. **A visitor, and their touches.** The site's Worker gives each browser a first-party visitor cookie, set by the
    server so Safari keeps it, for 13 months, on `.maneman.in` so the client app's requests carry it, named for its
    environment. The page sends what each landing carried to `POST /api/landings` once for the visitor's first page and
-   again for any landing a campaign put something in, after the page has loaded (so it never holds up the page's first
-   paint) or as it goes, outliving it; the first landing goes again until the API has answered it; the same campaign
-   landing sent again, under the page's own key for it, records nothing more; crawlers, which run no script, write
-   nothing. Each is a **touch**:
+   again for any landing a campaign put something in, a second after the page has loaded or at the visitor's first tap
+   (so it never counts against the page's first paint), and as it goes, outliving it; the first landing and the latest
+   campaign landing go again from later pages until the API has answered them; a landing sent again, under the page's
+   own key for it, records nothing more; crawlers, which run no script, write nothing. Each is a **touch**:
    the campaign tags, Google's three click IDs, Meta's click ID and cookies (its click cookie built from the click ID
    where the browser had none), the page before, the landing page, any code of ours, and the visitor's answer to the
    cookie bar. A WhatsApp chat that opens with the visitor's reference ("Ref M7K2Q9XP"), or from a click-to-WhatsApp ad,

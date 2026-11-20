@@ -9,6 +9,15 @@ type Landing = components["schemas"]["Landing"];
 /** As long as ./api.ts waits for a write. */
 const POST_TIMEOUT_MS = 20_000;
 
+/** Gives up after `ms`, as ./api.ts's own does: AbortSignal.timeout is missing before Safari 16. */
+function within(ms: number): AbortSignal {
+  const giveUp = new AbortController();
+  setTimeout(() => {
+    giveUp.abort();
+  }, ms);
+  return giveUp.signal;
+}
+
 async function post(path: string, body: unknown, keepalive: boolean): Promise<Response | null> {
   try {
     return await fetch(path, {
@@ -16,7 +25,7 @@ async function post(path: string, body: unknown, keepalive: boolean): Promise<Re
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       keepalive,
-      signal: AbortSignal.timeout(POST_TIMEOUT_MS),
+      signal: within(POST_TIMEOUT_MS),
     });
   } catch {
     // Offline, timed out, or the page gone before an answer: the caller sends it again later.

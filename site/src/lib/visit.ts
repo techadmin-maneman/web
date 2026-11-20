@@ -197,7 +197,8 @@ const once = (stop?: AbortSignal): AddEventListenerOptions =>
 
 /**
  * Runs once the page has loaded, or after LOAD_WAIT_MS where an ad tag holds its load up, has settled, and the browser
- * is free, three seconds later at most: so a report never counts against the page's first paint.
+ * is free, three seconds later at most, or at the visitor's first tap or key: so a report never counts against the
+ * page's first paint.
  */
 function afterLoad(run: () => void, { stop, settleMs = SETTLE_MS }: Capture): void {
   let started = false;
@@ -216,6 +217,14 @@ function afterLoad(run: () => void, { stop, settleMs = SETTLE_MS }: Capture): vo
     return;
   }
   addEventListener("load", start, once(stop));
+  // A visitor's first tap or key comes after the page has painted: the reports need wait no longer.
+  const now = () => {
+    if (started || stop?.aborted === true) return;
+    started = true;
+    whenFree();
+  };
+  addEventListener("pointerdown", now, once(stop));
+  addEventListener("keydown", now, once(stop));
   const wait = setTimeout(start, LOAD_WAIT_MS);
   stop?.addEventListener("abort", () => {
     clearTimeout(wait);

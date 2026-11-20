@@ -248,6 +248,54 @@ describe("a visitor's landings", () => {
     expect(new Set(meta.map((touch) => touch.landing_key)).size).toBe(1);
   });
 
+  it("send an earlier unheard campaign landing before this page's newer one, and neither again once answered", async () => {
+    await land("/");
+    answer = () => {
+      throw new TypeError("Failed to fetch");
+    };
+    await land("/book?utm_source=meta&utm_medium=paid_social");
+    window.dispatchEvent(new Event("pagehide"));
+    await answered();
+    answer = () => Response.json({ ref: "7KQ3M9XP" });
+    await land("/try?utm_source=google&utm_medium=cpc");
+    await land("/guides");
+
+    expect(reported.map((touch) => touch.utm_source ?? touch.landing_path)).toEqual([
+      "/",
+      "meta",
+      "meta",
+      "meta",
+      "google",
+    ]);
+  });
+
+  it("go at the visitor's first tap, which comes after the page has painted", async () => {
+    loading();
+    history.replaceState(null, "", "/try?utm_source=google&utm_medium=cpc");
+    capture();
+    await answered();
+    expect(reported).toEqual([]);
+
+    window.dispatchEvent(new Event("pointerdown"));
+    await answered();
+    await answered();
+    expect(reported.map((touch) => touch.utm_source)).toEqual(["google"]);
+  });
+
+  it("go on a browser that has no AbortSignal.timeout, as Safari before 16", async () => {
+    const timeout = Object.getOwnPropertyDescriptor(AbortSignal, "timeout");
+    Object.defineProperty(AbortSignal, "timeout", { value: undefined, configurable: true });
+    try {
+      await land("/try?utm_source=google&utm_medium=cpc");
+      await reportDeclined();
+    } finally {
+      if (timeout !== undefined) Object.defineProperty(AbortSignal, "timeout", timeout);
+    }
+
+    expect(reported.map((touch) => touch.utm_source)).toEqual(["google"]);
+    expect(declines).toBe(1);
+  });
+
   it("report a campaign's landing later, the latest kept as the last touch", async () => {
     await land("/");
     await land("/book?utm_source=meta&utm_medium=paid_social&fbclid=IwAR_test");
