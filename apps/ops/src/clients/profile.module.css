@@ -1,7 +1,7 @@
 /*
  * The client's hair profile on their Pieces tab (HairProfile.tsx). No board draws it: it stands above the pieces
  * on the panel the credits and the invite stand on, with the address form's fields (address.module.css), and its
- * rows are the client page's quiet key beside the value (docs/decisions/0106-a-clients-hair-profile.md).
+ * rows are the shared description list's, each name beside its value (docs/decisions/0106-a-clients-hair-profile.md).
  */
 
 /* Raised and full width, as every record on the page is; its rows read as the package's do above it. */
@@ -12,6 +12,14 @@
   border: var(--hairline) solid var(--ui-line);
   padding: var(--sp-20);
   background: var(--ui-raised);
+}
+
+/* On a phone the console's 280 px name column would leave a value a few pixels: the name takes its share of the
+   panel instead, as a drawer's does (packages/ui/drawer.module.css). */
+@media (max-width: 600px) {
+  .profile {
+    --setting-label-width: 40%;
+  }
 }
 
 .title {
