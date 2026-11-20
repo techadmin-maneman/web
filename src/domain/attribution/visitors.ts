@@ -13,12 +13,12 @@ function newRef(): string {
 /** How many fresh references are tried before giving up on one already taken. */
 const REF_TRIES = 4;
 
-/** The visitor's reference, person and Decline, the row made if new and its last sight moved on. */
+/** The visitor's reference and person, the row made if new and its last sight moved on. */
 export async function seeVisitor(
   db: D1Database,
   visitorId: string,
   now: Date,
-): Promise<{ readonly ref: string; readonly personId: string | null; readonly declined: boolean }> {
+): Promise<{ readonly ref: string; readonly personId: string | null }> {
   const at = now.toISOString();
   for (let tried = 0; tried < REF_TRIES; tried += 1) {
     try {
@@ -26,11 +26,11 @@ export async function seeVisitor(
         .prepare(
           `INSERT INTO visitors (id, ref, created_at, seen_at) VALUES (?1, ?2, ?3, ?3)
            ON CONFLICT (id) DO UPDATE SET seen_at = excluded.seen_at
-           RETURNING ref, person_id, declined_at`,
+           RETURNING ref, person_id`,
         )
         .bind(visitorId, newRef(), at)
-        .first<{ ref: string; person_id: string | null; declined_at: string | null }>();
-      if (row !== null) return { ref: row.ref, personId: row.person_id, declined: row.declined_at !== null };
+        .first<{ ref: string; person_id: string | null }>();
+      if (row !== null) return { ref: row.ref, personId: row.person_id };
     } catch (error) {
       // Another visitor holds the reference just drawn: draw again.
       if (!failedUniqueOn(error, "visitors")) throw error;

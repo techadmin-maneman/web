@@ -73,9 +73,15 @@ function declineUnsent(): boolean {
  */
 export async function reportDeclined(): Promise<void> {
   keep(DECLINE_UNSENT, "1");
+  const going = [...reporting];
   const answer = await reportDecline();
-  if (answer.ok) forget(DECLINE_UNSENT);
+  // A landing report going as the visitor declined can reach the API after the Decline: it goes again once they have.
+  const again = going.length === 0 ? answer : (await Promise.all(going), await reportDecline());
+  if (answer.ok && again.ok) forget(DECLINE_UNSENT);
 }
+
+/** The landing reports going now: a Decline is sent again once they have answered. */
+const reporting = new Set<Promise<unknown>>();
 
 /** The reference this visitor's WhatsApp message ends with, once the API has given one. */
 export function visitorRef(): string | null {
@@ -97,8 +103,11 @@ const withConsent = (touch: Attribution): Attribution => {
  * Reports a landing to the API, outliving the page where it is `leaving`, and keeps its reference; whether the API kept
  * the touch. Only a page's last word is kept alive: a request so sent counts against the page's first paint.
  */
-async function report(touch: Attribution, leaving = false): Promise<boolean> {
-  const answer = await reportVisit(withConsent(touch), leaving);
+async function report(landed: Kept, leaving = false): Promise<boolean> {
+  const sending = reportVisit({ ...withConsent(landed.touch), landing_key: landed.at }, leaving);
+  reporting.add(sending);
+  const answer = await sending;
+  reporting.delete(sending);
   if (answer.ok && answer.body.ref !== null) keep(REF, answer.body.ref);
   return answer.ok && answer.body.ref !== null;
 }
@@ -113,22 +122,22 @@ async function report(touch: Attribution, leaving = false): Promise<boolean> {
 export function captureAttribution(stop?: AbortSignal): void {
   const touch = attributionFrom(new URL(location.href), document.referrer, document.cookie);
   if (touch.ref !== undefined && CODE_PATTERN.test(touch.ref)) rememberInvite(touch.ref);
-  const now = JSON.stringify({ touch, at: new Date().toISOString() } satisfies Kept);
+  const landed: Kept = { touch, at: new Date().toISOString() };
   const keptFirst = kept(FIRST);
   const campaign = carriesCampaign(touch);
-  if (keptFirst === null) keep(FIRST, now);
-  if (keptFirst === null || campaign) keep(LAST, now);
+  if (keptFirst === null) keep(FIRST, JSON.stringify(landed));
+  if (keptFirst === null || campaign) keep(LAST, JSON.stringify(landed));
   if (declineUnsent()) void reportDeclined();
   const due = [
-    ...(keptFirst !== null && visitorRef() === null ? [keptFirst.touch] : []),
-    ...(keptFirst === null || campaign ? [touch] : []),
+    ...(keptFirst !== null && visitorRef() === null ? [keptFirst] : []),
+    ...(keptFirst === null || campaign ? [landed] : []),
   ];
   if (due.length === 0) return;
   let started = false;
   /** How many of what is due the API has kept, oldest first. */
   let done = 0;
   afterLoad(() => {
-    if (started) return;
+    if (started || stop?.aborted === true) return;
     started = true;
     // Oldest first, each once the one before was kept.
     void (async () => {

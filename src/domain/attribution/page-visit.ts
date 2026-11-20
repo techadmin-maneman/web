@@ -1,8 +1,8 @@
 // A page's report of its visitor's landing (docs/decisions/0288-attribution-and-conversions.md): their first, and any
 // later one a campaign put something in, is a touch. A plain visit later records nothing, so a visitor who comes back
-// by typing the address never takes the last touch from the campaign that brought them; nor does the same campaign
-// landing reported again. A browser that declined the cookie bar keeps its landings declined, in whatever order the
-// two reach the API.
+// by typing the address never takes the last touch from the campaign that brought them; a landing sent again, by its
+// own key, records nothing more. A browser that declined the cookie bar keeps its touches declined, in whatever order
+// the two reach the API (./touches.ts).
 
 import { carriesCampaign } from "../../policy/channels.ts";
 import { carriedOf, codesOf, type PageTouch } from "./lead-touch.ts";
@@ -26,18 +26,18 @@ export async function declineVisitor(db: D1Database, visitorId: string, now: Dat
   ]);
 }
 
-/** Whether the visitor has a touch yet, and one from this same campaign landing. */
-const TOUCHED = `SELECT EXISTS (SELECT 1 FROM touches WHERE visitor_id = ?1) AS touched,
-  EXISTS (SELECT 1 FROM touches WHERE visitor_id = ?1 AND via = 'site' AND landing_path IS ?2 AND utm_source IS ?3
-    AND utm_medium IS ?4 AND utm_campaign IS ?5 AND gclid IS ?6 AND gbraid IS ?7 AND wbraid IS ?8 AND fbclid IS ?9
-    AND link_id IS ?10) AS same`;
-
 /** Records the landing as a touch where it is the visitor's first or a campaign's; the visitor's reference either way. */
 export async function recordVisit(
   db: D1Database,
-  visit: { readonly visitorId: string; readonly page: PageTouch; readonly now: Date },
+  visit: {
+    readonly visitorId: string;
+    readonly page: PageTouch;
+    /** The page's own mark for this landing, where it sent one. */
+    readonly landingKey: string | null;
+    readonly now: Date;
+  },
 ): Promise<{ readonly ref: string }> {
-  const { ref, personId, declined } = await seeVisitor(db, visit.visitorId, visit.now);
+  const { ref, personId } = await seeVisitor(db, visit.visitorId, visit.now);
   const carried = carriedOf(visit.page);
   const resolved = await resolveCodes(db, codesOf(visit.page));
   const campaign =
@@ -56,24 +56,8 @@ export async function recordVisit(
       declared: null,
       via: "site",
     });
-  const seen = await db
-    .prepare(TOUCHED)
-    .bind(
-      visit.visitorId,
-      carried.landing_path,
-      carried.utm_source,
-      carried.utm_medium,
-      carried.utm_campaign,
-      carried.gclid,
-      carried.gbraid,
-      carried.wbraid,
-      carried.fbclid,
-      resolved.linkId,
-    )
-    .first<{ touched: number; same: number }>();
-  if ((seen?.touched === 1 && !campaign) || seen?.same === 1) return { ref };
-  // A browser that declined keeps its landings declined, unless this one says it has since accepted.
-  const said = visit.page.ad_consent ?? null;
+  const touched = await db.prepare("SELECT 1 FROM touches WHERE visitor_id = ?1 LIMIT 1").bind(visit.visitorId).first();
+  if (touched !== null && !campaign) return { ref };
   await recordTouch(db, {
     at: visit.now,
     via: "site",
@@ -83,7 +67,8 @@ export async function recordVisit(
     carried,
     resolved,
     declared: null,
-    adConsent: said !== "granted" && declined ? "denied" : said,
+    adConsent: visit.page.ad_consent ?? null,
+    landingKey: visit.landingKey,
     // A page's touch keeps no address or browser: only a lead's is sent to Meta.
     userAgent: null,
     clientIp: null,

@@ -16,7 +16,7 @@ import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { visitContextOf } from "../../http/visit-context.ts";
 import { visitorOf } from "../../http/visitor.ts";
-import { TouchSchema } from "../schemas/attribution.ts";
+import { LandingSchema } from "../schemas/attribution.ts";
 
 const VisitAnswerSchema = z
   .object({
@@ -32,7 +32,7 @@ const visitRoute = createRoute({
   method: "post",
   path: "/api/landings",
   summary: "A page's report of its visitor's landing, kept where it is their first or a campaign's",
-  request: { body: { required: true, content: { "application/json": { schema: TouchSchema } } } },
+  request: { body: { required: true, content: { "application/json": { schema: LandingSchema } } } },
   responses: {
     200: { description: "Seen", content: { "application/json": { schema: VisitAnswerSchema } } },
     400: errorResponse("invalid_request"),
@@ -82,7 +82,8 @@ export function registerVisits(app: App): void {
     if (!(await takeOne(db, "visit:ip", ipHash, { now, settings: c.var.config.settings }))) {
       return c.json({ ref: null }, 200);
     }
-    const { ref } = await recordVisit(db, { visitorId, page: c.req.valid("json"), now });
+    const { landing_key: landingKey, ...page } = c.req.valid("json");
+    const { ref } = await recordVisit(db, { visitorId, page, landingKey: landingKey ?? null, now });
     return c.json({ ref }, 200);
   });
 

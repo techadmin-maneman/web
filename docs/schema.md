@@ -4008,12 +4008,14 @@ Made by `0227_attribution.sql`.
 | `ad_notice` | TEXT | yes |  |  | The version of the line /book's first step shows on Google and Meta (src/config/notices.ts, AD_NOTICE), where the touch is that step's; its time is the touch's own. |
 | `user_agent` | TEXT | yes |  |  | For Meta's match only, never shown; cleared 90 days on. |
 | `client_ip` | TEXT | yes |  |  |  |
+| `landing_key` | TEXT | yes |  |  | A page's own mark for its landing, the moment the browser kept it: a landing sent again is one touch. |
 
 Indexes:
 
 - `touches_by_link`: on (`link_id`), where `link_id IS NOT NULL`
 - `touches_by_person`: on (`person_id`, `at`), where `person_id IS NOT NULL`
 - `touches_by_visitor`: on (`visitor_id`, `at`), where `visitor_id IS NOT NULL`
+- `touches_one_per_landing`: unique on (`visitor_id`, `landing_key`), where `landing_key IS NOT NULL`
 - `touches_unclaimed_by_mobile`: on (`mobile_e164`), where `person_id IS NULL AND mobile_e164 IS NOT NULL`
 - `touches_with_address`: on (`at`), where `client_ip IS NOT NULL OR user_agent IS NOT NULL`
 

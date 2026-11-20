@@ -26,6 +26,9 @@ const capture = () => {
 };
 
 async function land(path: string) {
+  // The page before is gone, its listeners with it.
+  pages.abort();
+  pages = new AbortController();
   history.replaceState(null, "", path);
   capture();
   await answered();
@@ -154,13 +157,21 @@ describe("a visitor's landings", () => {
   });
 
   it("go again, outliving the page, where it goes before the API has answered", async () => {
-    answer = () => new Promise<Response>(() => undefined);
+    const answers: (() => void)[] = [];
+    answer = () =>
+      new Promise<Response>((resolve) => {
+        answers.push(() => {
+          resolve(Response.json({ ref: "7KQ3M9XP" }));
+        });
+      });
     await land("/book?utm_source=meta&utm_medium=paid_social");
     window.dispatchEvent(new Event("pagehide"));
     await answered();
 
     expect(reported.map((touch) => touch.utm_source)).toEqual(["meta", "meta"]);
     expect(keptAlive).toEqual([false, true]);
+    for (const arrive of answers) arrive();
+    await answered();
   });
 
   it("report the first landing again, not the plain page, while its report never arrived", async () => {
@@ -176,7 +187,24 @@ describe("a visitor's landings", () => {
       ["/try", "Cj0_test"],
       ["/try", "Cj0_test"],
     ]);
+    // Under its own key both times, so the API keeps it once.
+    expect(typeof reported[0]?.landing_key).toBe("string");
+    expect(reported[1]?.landing_key).toBe(reported[0]?.landing_key);
     expect(visitorRef()).toBe("7KQ3M9XP");
+  });
+
+  it("send the first landing before this page's campaign one, stop where it fails, and send the rest as the page goes", async () => {
+    answer = () => {
+      throw new TypeError("Failed to fetch");
+    };
+    await land("/try?gclid=Cj0_test");
+    await land("/book?utm_source=meta&utm_medium=paid_social");
+    expect(reported.map((touch) => touch.landing_path)).toEqual(["/try", "/try"]);
+
+    window.dispatchEvent(new Event("pagehide"));
+    await answered();
+    expect(reported.map((touch) => touch.landing_path)).toEqual(["/try", "/try", "/try", "/book"]);
+    expect(keptAlive).toEqual([false, false, true, true]);
   });
 
   it("report the first landing again while the API kept nothing for it, as when an address's hour is spent", async () => {
@@ -216,6 +244,26 @@ describe("a Decline on the cookie bar", () => {
     await land("/try");
 
     expect(declines).toBe(2);
+  });
+
+  it("goes again once a landing report going as the visitor declined has answered", async () => {
+    let arrive: (() => void) | undefined;
+    answer = () =>
+      new Promise<Response>((resolve) => {
+        arrive = () => {
+          resolve(Response.json({ ref: "7KQ3M9XP" }));
+        };
+      });
+    await land("/?fbclid=IwAR_test");
+    expect(reported).toHaveLength(1);
+
+    const declining = reportDeclined();
+    await answered();
+    expect(declines).toBe(1);
+    arrive?.();
+    await declining;
+    expect(declines).toBe(2);
+    expect(localStorage.getItem("mm_decline_unsent")).toBeNull();
   });
 
   it("left from an earlier page goes at once, before the page has loaded and its report goes", async () => {

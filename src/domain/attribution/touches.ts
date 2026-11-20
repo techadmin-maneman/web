@@ -115,7 +115,16 @@ export interface NewTouch {
   readonly clientIp: string | null;
   /** The version of the notice on Google and Meta the touch's page showed, where it showed one. */
   readonly adNotice?: string | null;
+  /** A page's own mark for its landing: one sent again records nothing more. */
+  readonly landingKey?: string | null;
 }
+
+/**
+ * The touch's browser declined the cookie bar, and the touch does not say it has since accepted: read in the insert
+ * itself, so a Decline the API hears in the same moment is never missed (docs/decisions/0288).
+ */
+const DECLINED = `(?30 IS NOT 'granted' AND EXISTS (SELECT 1 FROM visitors WHERE id = ?4 AND declined_at IS NOT NULL))`;
+const UNLESS_DECLINED = (value: string) => `CASE WHEN ${DECLINED} THEN NULL ELSE ${value} END`;
 
 export interface RecordedTouch {
   readonly id: string;
@@ -166,9 +175,11 @@ export function touchStatement(
       `INSERT INTO touches (id, at, via, visitor_id, person_id, mobile_e164, utm_source, utm_medium, utm_campaign,
          utm_content, utm_term, gclid, gbraid, wbraid, fbclid, fbc, fbp, ctwa_clid, ad_source_id, ad_source_url,
          referrer, landing_path, invite_code, code_kind, link_id, declared_channel, declared_by, channel,
-         campaign_signal, ad_consent, user_agent, client_ip, ad_notice)
-       VALUES (?1, ?2, ?3, (SELECT id FROM visitors WHERE id = ?4), ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22,
-         ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33)`,
+         campaign_signal, ad_consent, user_agent, client_ip, ad_notice, landing_key)
+       VALUES (?1, ?2, ?3, (SELECT id FROM visitors WHERE id = ?4), ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15,
+         ${UNLESS_DECLINED("?16")}, ${UNLESS_DECLINED("?17")}, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29,
+         CASE WHEN ${DECLINED} THEN 'denied' ELSE ?30 END, ${UNLESS_DECLINED("?31")}, ${UNLESS_DECLINED("?32")}, ?33, ?34)
+       ON CONFLICT (visitor_id, landing_key) WHERE landing_key IS NOT NULL DO NOTHING`,
     )
     .bind(
       recorded.id,
@@ -204,6 +215,7 @@ export function touchStatement(
       denied ? null : touch.userAgent,
       denied ? null : touch.clientIp,
       touch.adNotice ?? null,
+      touch.landingKey ?? null,
     );
   return { statement, recorded };
 }

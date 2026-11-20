@@ -1923,6 +1923,7 @@ export interface Rows {
     readonly ad_notice: string | null;
     readonly user_agent: string | null;
     readonly client_ip: string | null;
+    readonly landing_key: string | null;
   };
   readonly tryon_jobs: {
     readonly id: string;

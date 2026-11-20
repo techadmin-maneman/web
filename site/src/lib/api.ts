@@ -11,6 +11,7 @@ type Body<P extends keyof paths> = paths[P]["post"] extends {
   ? B
   : never;
 export type Attribution = Schemas["Attribution"];
+export type Landing = Schemas["Landing"];
 type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
 type UploadUrlRequest = Schemas["UploadUrlRequest"];
 type UploadUrlResponse = Schemas["UploadUrlResponse"];
@@ -239,8 +240,8 @@ export function bookPublicConsultation(
 }
 
 /** A landing, kept as the visitor's touch where it is their first or a campaign's; answers their WhatsApp reference. */
-export function reportVisit(touch: Attribution, keepalive: boolean): Promise<Answer<VisitAnswer>> {
-  return post<VisitAnswer>("/api/landings", touch, undefined, keepalive);
+export function reportVisit(landing: Landing, keepalive: boolean): Promise<Answer<VisitAnswer>> {
+  return post<VisitAnswer>("/api/landings", landing, undefined, keepalive);
 }
 
 /** The visitor declined the cookie bar: what their browser's touches kept for Meta goes (ADR 0288). */
