@@ -58,6 +58,23 @@ describe("a visitor's landings", () => {
     expect(readAttribution()).toMatchObject({ gclid: "Cj0_test" });
   });
 
+  it("are kept at once but reported only once the page has loaded, so no report holds up its first paint", async () => {
+    const readyState = vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+    history.replaceState(null, "", "/r/PREVIEW1?utm_source=whatsapp");
+    captureAttribution();
+    await answered();
+
+    expect(readAttribution()).toMatchObject({ utm_source: "whatsapp" });
+    expect(reported).toEqual([]);
+
+    readyState.mockReturnValue("complete");
+    window.dispatchEvent(new Event("load"));
+    await answered();
+    await answered();
+    expect(reported.map((touch) => touch.utm_source)).toEqual(["whatsapp"]);
+    readyState.mockRestore();
+  });
+
   it("report the first landing again, not the plain page, while its report never arrived", async () => {
     // The report never arrives: the browser is offline.
     answer = () => {

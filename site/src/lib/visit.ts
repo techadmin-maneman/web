@@ -108,11 +108,26 @@ export function captureAttribution(): void {
   if (keptFirst === null) keep(FIRST, now);
   if (keptFirst === null || campaign) keep(LAST, now);
   const unreported = keptFirst !== null && visitorRef() === null ? keptFirst.touch : null;
-  void (async () => {
-    if (declineUnsent()) await reportDeclined();
-    if (unreported !== null) await report(unreported);
-    if (keptFirst === null || campaign) await report(touch);
-  })();
+  afterPaint(() => {
+    void (async () => {
+      if (declineUnsent()) await reportDeclined();
+      if (unreported !== null) await report(unreported);
+      if (keptFirst === null || campaign) await report(touch);
+    })();
+  });
+}
+
+/**
+ * Runs once the page has loaded and the browser is free, so what it reports never holds up the page's first paint. A
+ * visitor gone before then loses nothing: what was kept above is reported from the next page.
+ */
+function afterPaint(run: () => void): void {
+  const whenFree = () => {
+    if (typeof requestIdleCallback === "function") requestIdleCallback(run, { timeout: 3000 });
+    else setTimeout(run, 0);
+  };
+  if (document.readyState === "complete") whenFree();
+  else addEventListener("load", whenFree, { once: true });
 }
 
 /** Where this visit came from, as a form sends it: the latest campaign's landing, else the first. */
