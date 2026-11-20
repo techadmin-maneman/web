@@ -17,6 +17,7 @@ import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { NoValue } from "@maneman/ui/NoValue";
 import { RowHead } from "@maneman/ui/RowHead";
+import { Toast } from "@maneman/ui/Toast";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, fullMonth } from "@maneman/web-kit/dates";
 import { channelNamed } from "@rules/policy/channels.ts";
@@ -203,7 +204,7 @@ const dayWords = (entry: SpendEntry) =>
   entry.spent_date === null ? fullMonth(entry.month) : fullDate(entry.spent_date);
 
 const COLUMNS: readonly Column<SpendEntry>[] = [
-  { label: copy.columns.day, sort: dayOf, choice: dayWords },
+  { label: copy.columns.day, sort: dayOf, choice: (entry) => fullMonth(entry.month) },
   { label: copy.columns.city, sort: (entry) => entry.city ?? "", choice: (entry) => entry.city ?? copy.national },
   { label: copy.columns.channel, sort: channelWords, choice: (entry) => channelNamed(entry.channel) },
   { label: copy.columns.amount, sort: (entry) => entry.amount, figure: true },
@@ -262,7 +263,7 @@ function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean;
   );
 }
 
-function Spend() {
+function Spend(props: { onImported: (rows: number) => void }) {
   const [loaded, retry] = useLoad(spendApi.list);
   const [entries, setEntries] = useState<SpendEntry[] | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
@@ -296,8 +297,9 @@ function Spend() {
             <DrawerButton label={copy.importOne}>
               {(close) => (
                 <SpendImport
-                  onImported={() => {
+                  onImported={(rows) => {
                     close();
+                    props.onImported(rows);
                     setEntries(null);
                     retry();
                   }}
@@ -319,11 +321,18 @@ function Spend() {
 }
 
 export function SpendScreen() {
+  // Held here, since the list reloads after an import: each import says how many rows it took.
+  const [imported, setImported] = useState<{ readonly count: number; readonly rows: number } | null>(null);
   return (
     <div className={form.screen}>
       <Panel titleId="spend" title={copy.title}>
-        <Spend />
+        <Spend
+          onImported={(rows) => {
+            setImported((last) => ({ count: (last?.count ?? 0) + 1, rows }));
+          }}
+        />
       </Panel>
+      {imported !== null && <Toast key={imported.count}>{copy.import.done(imported.rows)}</Toast>}
     </div>
   );
 }

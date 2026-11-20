@@ -104,6 +104,16 @@ describe("a Decline on the cookie bar", () => {
     expect(refused.status).toBe(429);
     expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
   });
+
+  it("reaches /book's own touch on a page whose landing report never arrived", async () => {
+    await leave({ attribution: { landing_path: "/book", fbclid: "IwAR_test" } });
+    expect(await rows("SELECT visitor_id FROM touches")).toEqual([{ visitor_id: VISITOR }]);
+
+    expect((await decline()).status).toBe(204);
+    expect(await rows("SELECT fbc, user_agent, client_ip, ad_consent FROM touches")).toEqual([
+      { fbc: null, user_agent: null, client_ip: null, ad_consent: "denied" },
+    ]);
+  });
 });
 
 describe("/book's first step", () => {

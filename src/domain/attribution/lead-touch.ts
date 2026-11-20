@@ -5,6 +5,7 @@
 
 import type { Logger } from "../../log.ts";
 import { withAttribution } from "./attribution.ts";
+import { visitorStatement } from "./visitors.ts";
 import {
   claimStatements,
   NOTHING_CARRIED,
@@ -79,6 +80,7 @@ export async function touchForLead(db: D1Database, lead: FormTouch, log: Logger)
       db,
       lead.personId,
       [
+        ...(visit.visitorId === null ? [] : [visitorStatement(db, visit.visitorId, lead.now)]),
         statement,
         ...(visit.visitorId === null ? [] : claimStatements(db, visit.visitorId, lead.personId)),
         ...numberClaimStatements(db, lead.personId),

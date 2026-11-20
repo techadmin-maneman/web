@@ -34,19 +34,19 @@ function Steps({ figures }: { figures: Acquisition }) {
       key: "booked",
       label: copy.steps.booked,
       value: totals.consults_booked,
-      shown: copy.share(totals.consults_booked, totals.leads),
+      shown: quantity(totals.consults_booked),
     },
     {
       key: "consulted",
       label: copy.steps.consulted,
       value: totals.consults_done,
-      shown: copy.share(totals.consults_done, totals.leads),
+      shown: quantity(totals.consults_done),
     },
     {
       key: "fitted",
       label: copy.steps.fitted,
       value: totals.first_fits,
-      shown: copy.share(totals.first_fits, totals.leads),
+      shown: quantity(totals.first_fits),
     },
   ];
   return (

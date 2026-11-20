@@ -59,13 +59,12 @@ export function ChannelFigures({ figures }: { figures: Acquisition }) {
                   <FigureCells row={row} />
                 </tr>
               ))}
-            </tbody>
-            <tfoot>
+              {/* The total as a row of its own, so a phone draws it as a card with each figure named, as the rest. */}
               <tr>
                 <RowHead>{copy.channels.total}</RowHead>
                 <FigureCells row={figures.totals} />
               </tr>
-            </tfoot>
+            </tbody>
           </Table>
         </TableScroll>
       )}

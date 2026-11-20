@@ -550,6 +550,19 @@ describe("Meta's request", () => {
     });
     expect(refuses.calls[0]?.body).not.toContain("TEST123");
   });
+
+  it("is tried again when Meta says it is busy or the trouble will pass, whatever the status", async () => {
+    const errors = [
+      { message: "Application request limit reached", code: 4 },
+      { message: "User request limit reached", code: 17 },
+      { message: "Calls to this api have exceeded the rate limit", code: 613 },
+      { message: "An unexpected error has occurred", code: 100, is_transient: true },
+    ];
+    for (const error of errors) {
+      const busy = fakeFetch({ "https://graph.facebook.com/": () => json({ error }, 400) });
+      expect((await createMetaConversions(settings, false, { fetch: busy.fetch, log }).send(PAID)).kind).toBe("retry");
+    }
+  });
 });
 
 describe("Google's request", () => {
@@ -611,6 +624,17 @@ describe("Google's request", () => {
     });
     await google.send({ ...PAID, event: "consult_booked", value: null, bookedVia: "chat" });
     expect(JSON.parse(calls.at(-1)?.body ?? "{}")).toMatchObject({ events: [{ eventSource: "MESSAGE" }] });
+    // One click ID an event, gclid first.
+    const sentClicks = async (clicks: typeof PAID.clicks) => {
+      await google.send({ ...PAID, clicks });
+      const body = JSON.parse(calls.at(-1)?.body ?? "{}") as { events: { adIdentifiers?: unknown }[] };
+      return body.events[0]?.adIdentifiers;
+    };
+    expect(await sentClicks({ gclid: "Cj0KCQ_test", gbraid: "0AAAAA_g", wbraid: null })).toEqual({
+      gclid: "Cj0KCQ_test",
+    });
+    expect(await sentClicks({ gclid: null, gbraid: "0AAAAA_g", wbraid: "Cl0KCQ_w" })).toEqual({ gbraid: "0AAAAA_g" });
+    expect(await sentClicks({ gclid: null, gbraid: null, wbraid: null })).toBeUndefined();
   });
 
   it("is held when Google refuses our account, and tried again when Google is down", async () => {

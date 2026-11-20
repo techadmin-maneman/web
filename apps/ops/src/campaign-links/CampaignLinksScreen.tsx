@@ -12,6 +12,7 @@ import { RowHead } from "@maneman/ui/RowHead";
 import { PanelFailed, PanelLoading } from "@maneman/ui/States";
 import { ACTIONS, FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Toast } from "@maneman/ui/Toast";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
@@ -50,14 +51,26 @@ const COLUMNS: readonly Column<CampaignLink>[] = [
   { label: copy.columns.made, sort: (link) => link.created_at },
 ];
 
-function LinkActions(props: { link: CampaignLink; mayRetire: boolean; onRetired: () => void; onCopied: () => void }) {
+function LinkActions(props: {
+  link: CampaignLink;
+  mayRetire: boolean;
+  onRetired: () => void;
+  onCopied: (done: boolean) => void;
+}) {
   const { link } = props;
   return (
     <td className={ACTIONS}>
       <RowButton
         aria-label={copy.copyLabel(link.name)}
         onClick={() => {
-          void navigator.clipboard.writeText(link.short_link).then(props.onCopied);
+          navigator.clipboard.writeText(link.short_link).then(
+            () => {
+              props.onCopied(true);
+            },
+            () => {
+              props.onCopied(false);
+            },
+          );
         }}
       >
         {copy.copy}
@@ -95,14 +108,16 @@ function LinkActions(props: { link: CampaignLink; mayRetire: boolean; onRetired:
 }
 
 function LinksTable(props: { links: readonly CampaignLink[]; mayRetire: boolean; onChanged: () => void }) {
-  const [copied, setCopied] = useState(false);
+  // Each copy says so afresh; a page the browser keeps from the clipboard says where the link is instead.
+  const [copied, setCopied] = useState<{ readonly count: number; readonly done: boolean } | null>(null);
   const view = useTableView(props.links, COLUMNS, {
     search: (link) => `${link.name} ${link.code} ${link.utm_campaign}`,
   });
   if (props.links.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <>
-      {copied && <Toast>{copy.copied}</Toast>}
+      {copied?.done === true && <Toast key={copied.count}>{copy.copied}</Toast>}
+      {copied?.done === false && <InlineMessage tone="error">{copy.notCopied}</InlineMessage>}
       <Narrowing view={view} label={copy.find} />
       <TableScroll labelledBy="campaign-links">
         <Table>
@@ -128,8 +143,8 @@ function LinksTable(props: { links: readonly CampaignLink[]; mayRetire: boolean;
                   link={link}
                   mayRetire={props.mayRetire}
                   onRetired={props.onChanged}
-                  onCopied={() => {
-                    setCopied(true);
+                  onCopied={(done) => {
+                    setCopied((last) => ({ count: (last?.count ?? 0) + 1, done }));
                   }}
                 />
               </tr>

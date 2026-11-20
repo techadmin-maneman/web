@@ -4,7 +4,7 @@
 import { REF_ALPHABET, REF_LENGTH } from "../../config/ref-tokens.ts";
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
 
-/** A fresh reference: five of the letters no one misreads, about 28 million in all. */
+/** A fresh reference: eight of the letters no one misreads, about 850 billion in all. */
 function newRef(): string {
   const picks = crypto.getRandomValues(new Uint8Array(REF_LENGTH));
   return [...picks].map((pick) => REF_ALPHABET[pick % REF_ALPHABET.length] ?? "").join("");
@@ -38,6 +38,16 @@ export async function seeVisitor(
   }
   throw new Error("visitor_ref_exhausted");
 }
+
+/**
+ * The visitor's row, made where the page's own report never was, for a caller's batch: so a touch the browser made
+ * names it, and a Decline from that browser reaches the touch. A reference already taken, in a draw one in 850
+ * billion, leaves the row unmade.
+ */
+export const visitorStatement = (db: D1Database, visitorId: string, now: Date): D1PreparedStatement =>
+  db
+    .prepare("INSERT INTO visitors (id, ref, created_at, seen_at) VALUES (?1, ?2, ?3, ?3) ON CONFLICT DO NOTHING")
+    .bind(visitorId, newRef(), now.toISOString());
 
 /** The visitor a WhatsApp reference names, or null. */
 export async function visitorOfRef(db: D1Database, ref: string): Promise<string | null> {

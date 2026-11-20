@@ -1,8 +1,6 @@
 // The Funnel page's words (docs/decisions/0288-attribution-and-conversions.md). No design draws it; every word here is
 // ours.
 
-import { quantity } from "@maneman/web-kit/figures";
-
 /** The Zoho Analytics dashboards, built on the nightly reporting copy, each opened in a tab of its own. */
 const DASHBOARDS = "https://analytics.zoho.in/workspace/568020000000002006/view/";
 
@@ -25,9 +23,6 @@ export const funnel = {
     consulted: "Had a consultation",
     fitted: "First fits paid",
   },
-  /** A step as a share of the new clients: "12 · 40%". */
-  share: (count: number, of: number) =>
-    of === 0 ? quantity(count) : `${quantity(count)} · ${String(Math.round((count / of) * 100))}%`,
   channels: {
     title: "By channel",
     columns: [

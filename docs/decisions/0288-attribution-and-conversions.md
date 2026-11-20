@@ -29,8 +29,12 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
    and a call ops take, are touches too.
 2. **The record is the person's, by their number.** `people` already holds one row per number; `person_attribution`
    holds, beside it, the first touch, the last touch, the client's channel and their last touch's channel. The first
-   touch is set once and never moved. The last touch moves only for a touch a campaign put something in. A number we
+   touch is set once and never moved, but by history: the hourly job gives each lead from before touches one, from what
+   it was saved with, and a touch so given that came before the kept first is the first, with the channels of what the
+   client did since corrected to it. The last touch moves only for a touch a campaign put something in. A number we
    hold that comes again is a new touch, nothing more. `leads` keeps a row per lead, as before, now with its touch.
+   Migration 0227 records what clients did before conversions were (their first consultation booked and done, each
+   visit's payment) as conversions never sent, so the report counts it.
 3. **The channel rule.** A touch's channel is the first of: a friend's or a partner's code, a society's code, a Google
    click ID (gclid, gbraid, wbraid), a click-to-WhatsApp ad, the campaign tags (a paid medium from Google or Meta, an
    offline medium, a search or social source), Meta's click ID alone (organic social: Meta adds it to unpaid links),

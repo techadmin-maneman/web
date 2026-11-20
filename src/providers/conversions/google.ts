@@ -55,8 +55,9 @@ function googleRequest(
   conversion: ConversionToSend & { readonly event: GoogleEvent },
   testMode: boolean,
 ): Record<string, unknown> {
-  const { clicks } = conversion;
-  const adIdentifiers = Object.fromEntries(Object.entries(clicks).filter(([, value]) => value !== null));
+  // One click ID an event: Google takes gclid, gbraid and wbraid as alternatives, the first a touch carries winning.
+  const click = (["gclid", "gbraid", "wbraid"] as const).find((kind) => conversion.clicks[kind] !== null);
+  const adIdentifiers = click === undefined ? {} : { [click]: conversion.clicks[click] };
   return {
     destinations: [
       {

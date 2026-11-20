@@ -227,7 +227,14 @@ describe("How they found us", () => {
 describe("A lead from a call", () => {
   it("is saved under the channel Care picked", async () => {
     answers.set("POST /api/leads/call", () => Response.json({ person_id: PERSON, known: false }));
-    await show(createElement(CallLead));
+    const taken: unknown[] = [];
+    await show(
+      createElement(CallLead, {
+        onTaken: (done) => {
+          taken.push(done);
+        },
+      }),
+    );
 
     await click(copy.call.open);
     fill(copy.call.name, "Vikram Rao");
@@ -238,5 +245,6 @@ describe("A lead from a call", () => {
     expect(sent).toEqual([
       { path: "/api/leads/call", body: { name: "Vikram Rao", mobile: "9811113333", channel: "society" } },
     ]);
+    expect(taken).toEqual([{ personId: PERSON, known: false }]);
   });
 });

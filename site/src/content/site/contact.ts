@@ -36,6 +36,8 @@ export const consentBar = {
   privacy: "Privacy Policy",
   accept: "Accept",
   decline: "Decline",
+  /** In each footer: the bar back, to answer again. */
+  change: "Cookie choices",
 };
 
 /** The booking form or the try-on, when it failed to draw: the way to us instead. */

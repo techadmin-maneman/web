@@ -110,4 +110,84 @@ describe("retention", () => {
       { id: "old-named", user_agent: null, client_ip: null },
     ]);
   });
+
+  it("keeps a client's touch from a browser another's erasure left unnamed, without the browser, and runs on", async () => {
+    const { id } = await aPerson();
+    await writeRow("visitors", {}, { id: "shared", ref: "DDDDDDDD", created_at: daysAgo(500), seen_at: daysAgo(400) });
+    await writeRow(
+      "touches",
+      {},
+      {
+        id: "theirs",
+        at: daysAgo(400),
+        via: "site",
+        visitor_id: "shared",
+        person_id: id ?? null,
+        channel: "direct",
+        campaign_signal: 0,
+        user_agent: "Mozilla/5.0",
+        client_ip: "203.0.113.7",
+      },
+    );
+
+    await letAttributionGo(env.DB, NOW);
+
+    expect(await rows("SELECT id FROM visitors")).toEqual([]);
+    expect(await rows("SELECT id, visitor_id, user_agent, client_ip FROM touches")).toEqual([
+      { id: "theirs", visitor_id: null, user_agent: null, client_ip: null },
+    ]);
+  });
+});
+
+describe("an old lead given its touch after the client's newer one", () => {
+  it("becomes the first touch, and what the client did since takes the channel it gives", async () => {
+    const { id } = await aPerson();
+    const personId = id ?? "";
+    await writeRow(
+      "touches",
+      {},
+      { id: "since", at: NOW.toISOString(), via: "site", person_id: personId, channel: "direct", campaign_signal: 0 },
+    );
+    await writeRow(
+      "person_attribution",
+      {},
+      {
+        person_id: personId,
+        first_touch_id: "since",
+        last_touch_id: "since",
+        attributed_channel: "direct",
+        last_touch_channel: "direct",
+        updated_at: NOW.toISOString(),
+      },
+    );
+    await writeRow(
+      "conversions",
+      {},
+      {
+        event_id: "booked-since",
+        event: "consult_booked",
+        subject_id: "a-visit",
+        person_id: personId,
+        occurred_at: NOW.toISOString(),
+        attributed_channel: "direct",
+        last_touch_channel: "direct",
+        meta_state: "pending",
+        google_state: "pending",
+        created_at: NOW.toISOString(),
+      },
+    );
+    await writeRow(
+      "leads",
+      { id: "old-lead", request_id: "r" },
+      { person_id: personId, created_at: daysAgo(30), utm_source: "google", utm_medium: "cpc", gclid: "Cj0KCQ_old" },
+    );
+
+    expect(await touchOldLeads(env.DB)).toBe(1);
+    expect(
+      await rows(
+        `SELECT t.at, pa.attributed_channel FROM person_attribution pa JOIN touches t ON t.id = pa.first_touch_id`,
+      ),
+    ).toEqual([{ at: daysAgo(30), attributed_channel: "google_ads" }]);
+    expect(await rows("SELECT attributed_channel FROM conversions")).toEqual([{ attributed_channel: "google_ads" }]);
+  });
 });

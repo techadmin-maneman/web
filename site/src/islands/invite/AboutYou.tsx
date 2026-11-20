@@ -84,7 +84,7 @@ export function AboutYou(props: {
       />
       <p class={styles.adNotice}>
         {AD_NOTICE.says}{" "}
-        <TextLink inline href="/privacy#measuring-our-advertising">
+        <TextLink inline newTab href="/privacy#measuring-our-advertising">
           {AD_NOTICE.link}
         </TextLink>
       </p>

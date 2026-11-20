@@ -4,7 +4,8 @@
 // details links both. The flows, /book, the referral landing and /try, draw none, each ending in itself (ADR 0265;
 // layouts/Site.astro); their consent lines link the notices and the terms.
 import { textLinkLook } from "@maneman/ui/TextLink";
-import { business, footer } from "../content/site.ts";
+import { business, consentBar, footer } from "../content/site.ts";
+import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import { MORE_PAGES } from "../lib/more-pages.ts";
 import Lockup from "./Lockup.astro";
 import Social from "./Social.astro";
@@ -34,6 +35,15 @@ const year = new Date().getFullYear();
           {link.label}
         </a>
       ))}
+      {CONSENT_BAR_SHOWN && (
+        <button
+          type="button"
+          class={textLinkLook({ tone: "ink", quiet: true, className: "item small" })}
+          data-cookie-choices
+        >
+          {consentBar.change}
+        </button>
+      )}
       <Social />
     </div>
   </div>

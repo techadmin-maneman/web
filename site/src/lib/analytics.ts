@@ -126,6 +126,15 @@ export function consentAnswer(): "granted" | "denied" | null {
   }
 }
 
+/** The visitor's answer forgotten, so the cookie bar asks again on the page drawn next. */
+export function forgetConsent(): void {
+  try {
+    localStorage.removeItem(CONSENT_KEY);
+  } catch {
+    // Nothing was kept to forget.
+  }
+}
+
 /** Whether the tags may run: until the visitor declines, they may. */
 const consented = (): boolean => consentAnswer() !== "denied";
 

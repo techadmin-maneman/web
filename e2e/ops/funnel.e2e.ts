@@ -64,9 +64,9 @@ test("shows try-on to fit, each channel's spend and what it brought, cohorts, wh
   await expect(steps.getByRole("listitem")).toHaveText([
     `${copy.steps.tryons}40`,
     `${copy.steps.leads}10`,
-    `${copy.steps.booked}${copy.share(6, 10)}`,
-    `${copy.steps.consulted}${copy.share(4, 10)}`,
-    `${copy.steps.fitted}${copy.share(2, 10)}`,
+    `${copy.steps.booked}6`,
+    `${copy.steps.consulted}4`,
+    `${copy.steps.fitted}2`,
   ]);
   const channels = page.getByRole("region", { name: copy.channels.title });
   await expect(channels.getByRole("rowheader")).toHaveText([

@@ -37,8 +37,8 @@ export function SelectField(props: RowProps & { readonly choices: readonly Choic
   );
 }
 
-/** Words to type, labelled, no longer than `maxLength`. */
-export function TextField(props: RowProps & { readonly maxLength: number }) {
+/** Words to type, labelled, no longer than `maxLength`; digits alone, a pincode or whole rupees, with `numeric`. */
+export function TextField(props: RowProps & { readonly maxLength: number; readonly numeric?: boolean }) {
   return (
     <Field label={props.label} className={props.className} hint={props.hint} error={props.error ?? null}>
       {(control) => (
@@ -46,6 +46,7 @@ export function TextField(props: RowProps & { readonly maxLength: number }) {
           {...control}
           width={props.width}
           maxLength={props.maxLength}
+          inputMode={props.numeric === true ? "numeric" : undefined}
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);

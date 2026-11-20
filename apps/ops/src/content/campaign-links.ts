@@ -45,10 +45,8 @@ export const campaignLinks = {
   },
   discount: "Discount on the first fit",
   noDiscount: "None",
-  /** "Rs. 500", an amount off in whole rupees. */
-  rupees: (amount: number) => `Rs. ${String(amount)}`,
-  /** "3 h × Rs. 500", what staff on the day cost. */
-  staffNote: (hours: number, rate: number) => `${String(hours)} h × Rs. ${String(rate)}`,
+  /** "3 h × Rs. 1,500", what staff on the day cost, the rate as the money formatter writes it. */
+  staffNote: (hours: number, rate: string) => `${String(hours)} h × ${rate}`,
   /** What Make link waits for, said beneath it. */
   missing: {
     name: "Type a name.",
@@ -79,6 +77,7 @@ export const campaignLinks = {
   /** "Copy the link for Green Valley Towers" */
   copyLabel: (name: string) => `Copy the link for ${name}`,
   copied: "Link copied.",
+  notCopied: "Not copied. Select the link in its row.",
   qrSvg: "QR (SVG)",
   qrPng: "QR (PNG)",
   qrLabel: (name: string, kind: string) => `Save the QR code for ${name} as ${kind}`,

@@ -18,13 +18,17 @@ const FIRST_TOUCH = `SELECT id, at, channel FROM touches WHERE id = COALESCE(
     (SELECT id FROM touches WHERE person_id = ?1 ORDER BY at, rowid LIMIT 1))`;
 const LAST_TOUCH = `SELECT id, at, channel FROM touches WHERE person_id = ?1 AND campaign_signal = 1
   ORDER BY at DESC, rowid DESC LIMIT 1`;
+/**
+ * When the person's first consultation was booked: kept once their attribution has a row, else as recorded, for one
+ * booked before it had; never yet, until it is.
+ */
+const SETTLED = `COALESCE((SELECT settled_at FROM person_attribution WHERE person_id = ?1),
+    (SELECT MIN(occurred_at) FROM conversions WHERE person_id = ?1 AND event = 'consult_booked'), '9999')`;
 /** The codes that reached us for the person before their first consultation was booked, or ever until it is. */
 const CODES_BEFORE = `SELECT code_kind AS code FROM touches WHERE person_id = ?1 AND code_kind IS NOT NULL
-    AND at <= COALESCE((SELECT settled_at FROM person_attribution WHERE person_id = ?1), '9999')
-  UNION SELECT 'friend' FROM referral_attributions WHERE referred_person_id = ?1
-    AND first_touch_at <= COALESCE((SELECT settled_at FROM person_attribution WHERE person_id = ?1), '9999')
-  UNION SELECT 'partner' FROM channel_attributions WHERE referred_person_id = ?1
-    AND first_touch_at <= COALESCE((SELECT settled_at FROM person_attribution WHERE person_id = ?1), '9999')`;
+    AND at <= ${SETTLED}
+  UNION SELECT 'friend' FROM referral_attributions WHERE referred_person_id = ?1 AND first_touch_at <= ${SETTLED}
+  UNION SELECT 'partner' FROM channel_attributions WHERE referred_person_id = ?1 AND first_touch_at <= ${SETTLED}`;
 
 /**
  * Runs `writes`, then brings the person's attribution up to date with their touches as the writes left them: made with

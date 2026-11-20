@@ -34,7 +34,10 @@ const touchWords = (touch: Touch | null) =>
         dayOf(touch.at),
       );
 
-const HEARD_CHOICES = [["", copy.notAsked], ...HEARD_FROM.map((each) => [each.code, each.label] as const)] as const;
+const HEARD = HEARD_FROM.map((each) => [each.code, each.label] as const);
+
+/** The answers to pick from: "Not asked yet" only while none is kept, since an answer is changed, never taken back. */
+const heardChoices = (kept: string | null) => (kept === null ? [["", copy.notAsked] as const, ...HEARD] : HEARD);
 
 function Rows(props: { clientId: string; name: string; found: ClientAttribution; onChanged: () => void }) {
   const { found, clientId } = props;
@@ -68,7 +71,7 @@ function Rows(props: { clientId: string; name: string; found: ClientAttribution;
           label={copy.rows.heardFrom}
           mayChange={mayTell}
           value={found.heard_from ?? ""}
-          choices={HEARD_CHOICES}
+          choices={heardChoices(found.heard_from)}
           save={(chosen) => save(chosen, chosen === "other" ? found.heard_from_other : null)}
         />
         {found.heard_from === "other" && (

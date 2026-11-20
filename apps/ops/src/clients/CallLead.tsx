@@ -12,7 +12,7 @@ import { describedBy, Missing } from "@maneman/ui/Missing";
 import { FormActions } from "@maneman/ui/FormActions";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { Refused } from "@maneman/ui/Refusal";
-import { Toast } from "@maneman/ui/Toast";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { DECLARED_CHANNELS, type DeclaredChannel } from "@rules/policy/channels.ts";
 import { useState } from "react";
@@ -112,29 +112,36 @@ function CallForm(props: { onTaken: (taken: { personId: string; known: boolean }
   );
 }
 
-/** The Clients page's action, for those who may take one, and what it last took. */
-export function CallLead() {
-  const [taken, setTaken] = useState<{ personId: string; known: boolean } | null>(null);
+/** A lead a call just gave: whose, and whether they were a client already. */
+export interface CallTaken {
+  readonly personId: string;
+  readonly known: boolean;
+}
+
+/** The Clients page's action, for those who may take one. */
+export function CallLead(props: { onTaken: (taken: CallTaken) => void }) {
   if (!useAccess().mayCall("POST /api/leads/call")) return null;
   return (
-    <>
-      <DrawerButton label={copy.open}>
-        {(close) => (
-          <CallForm
-            onTaken={(done) => {
-              setTaken(done);
-              close();
-            }}
-            onCancel={close}
-          />
-        )}
-      </DrawerButton>
-      {taken !== null && (
-        <Toast>
-          {taken.known ? copy.known : copy.saved}{" "}
-          <OpsLink to={clientPath(taken.personId, "referrals")}>{copy.open_client}</OpsLink>
-        </Toast>
+    <DrawerButton label={copy.open}>
+      {(close) => (
+        <CallForm
+          onTaken={(done) => {
+            props.onTaken(done);
+            close();
+          }}
+          onCancel={close}
+        />
       )}
-    </>
+    </DrawerButton>
+  );
+}
+
+/** What the call last took, on the page until the next, with the way to their record. */
+export function CallTakenLine(props: { taken: CallTaken; className?: string }) {
+  return (
+    <InlineMessage tone="saved" className={props.className}>
+      {props.taken.known ? copy.known : copy.saved}{" "}
+      <OpsLink to={clientPath(props.taken.personId, "referrals")}>{copy.open_client}</OpsLink>
+    </InlineMessage>
   );
 }

@@ -190,7 +190,7 @@ export const privacyPolicy: LegalPage = {
         },
         {
           lead: "To stop:",
-          text: "decline cookies on our cookie bar to keep their cookies off this site. To stop us sharing your details for this altogether, write to grievance@maneman.in and we will stop within seven days.",
+          text: "decline cookies on our cookie bar to keep their cookies off this site; Cookie choices, in our pages’ footer, brings the bar back to change your answer. To stop us sharing your details for this altogether, write to grievance@maneman.in and we will stop within seven days.",
         },
       ],
     },

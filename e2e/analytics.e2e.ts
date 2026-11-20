@@ -51,6 +51,19 @@ test.describe("the cookie bar", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "default", GRANTED]);
   });
+
+  test("comes back from Cookie choices in the footer, so an accept can become a decline", async ({ page }) => {
+    await page.goto("/guides");
+    const bar = page.getByRole("region", { name: consentBar.label });
+    await bar.getByRole("button", { name: consentBar.accept }).click();
+    await expect(bar).toBeHidden();
+
+    await page.getByRole("contentinfo").getByRole("button", { name: consentBar.change }).click();
+    await expect(bar).toBeVisible();
+    await bar.getByRole("button", { name: consentBar.decline }).click();
+    await page.reload();
+    expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);
+  });
 });
 
 test("starts every tag with consent denied, and gives none an address’s fragment", async ({ page }) => {

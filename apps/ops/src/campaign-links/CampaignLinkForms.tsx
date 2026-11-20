@@ -10,7 +10,7 @@ import { FormActions } from "@maneman/ui/FormActions";
 import { DateInput, Field } from "@maneman/ui/Field";
 import { describedBy, Missing } from "@maneman/ui/Missing";
 import { Refused } from "@maneman/ui/Refusal";
-import { paiseFromRupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { apiNow } from "@maneman/web-kit/clock";
 import { todayInIndia } from "@maneman/web-kit/dates";
@@ -32,11 +32,7 @@ const discountOptions = (list: CampaignLinks) =>
       (code) =>
         [
           code.id,
-          copy.discountWords(
-            code.code,
-            code.kind,
-            code.kind === "percent" ? String(code.value) : copy.rupees(code.value / 100),
-          ),
+          copy.discountWords(code.code, code.kind, code.kind === "percent" ? String(code.value) : rupees(code.value)),
         ] as const,
     ),
   ] as const;
@@ -117,7 +113,7 @@ function societyCosts(draft: SocietyDraft) {
     {
       line: "staff" as const,
       rupees: hours === null || rate === null ? null : hours * rate,
-      note: hours === null || rate === null ? null : copy.staffNote(hours, rate),
+      note: hours === null || rate === null ? null : copy.staffNote(hours, rupees(rate * 100)),
     },
     { line: "collateral" as const, rupees: rupeesOrNone(draft.collateral), note: null },
     { line: "other" as const, rupees: rupeesOrNone(draft.other), note: draft.otherNote.trim() || null },
@@ -169,6 +165,7 @@ function SocietyFields(props: {
         value={draft.pincode}
         maxLength={6}
         width="amount"
+        numeric
         error={refused("pincode")}
         onChange={(pincode) => {
           set({ pincode: pincode.replace(/\D/g, "") });
@@ -193,6 +190,7 @@ function SocietyFields(props: {
           value={draft[figure.key]}
           maxLength={figure.maxLength}
           width="amount"
+          numeric
           onChange={(value) => {
             set({ [figure.key]: value });
           }}

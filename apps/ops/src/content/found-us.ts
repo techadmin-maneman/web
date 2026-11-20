@@ -10,7 +10,7 @@ export const foundUs = {
     lastTouch: "Last touch",
     firstTouch: "First touch",
     touches: "Visits, chats and calls",
-    heardFrom: "They told us",
+    heardFrom: "How they heard of us",
     sharing: "Google and Meta",
   },
   /** "Google Ads · gurgaon-search · 12 Nov" */
@@ -24,8 +24,8 @@ export const foundUs = {
   stopped: (day: string) => `Stopped ${day}`,
   stopping: {
     open: "Stop sharing",
-    label: (name: string) => `Stop sharing ${name}'s details with Google and Meta`,
-    warning: (name: string) => `Stop sharing ${name}'s details with Google and Meta? This cannot be undone.`,
+    label: (name: string) => `Stop sharing ${name}’s details with Google and Meta`,
+    warning: (name: string) => `Stop sharing ${name}’s details with Google and Meta? This cannot be undone.`,
     confirm: "Stop sharing",
     sending: "Stopping…",
   },

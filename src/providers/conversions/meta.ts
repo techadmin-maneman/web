@@ -82,6 +82,15 @@ function accountRefused(body: unknown, status: number): boolean {
   );
 }
 
+/** Meta's codes for its own passing trouble and for too many calls at once: tried again, never given up at once. */
+const PASSING_CODES: ReadonlySet<unknown> = new Set([1, 2, 4, 17, 32, 341, 613]);
+
+/** Whether what Meta refused will pass by itself: its trouble, too many at once, or an error it calls transient. */
+function passing(body: unknown, status: number): boolean {
+  const error = (body as { error?: { code?: unknown; is_transient?: unknown } } | null)?.error;
+  return status >= 500 || status === 429 || error?.is_transient === true || PASSING_CODES.has(error?.code);
+}
+
 export function createMetaConversions(
   settings: MetaSettings,
   testMode: boolean,
@@ -109,9 +118,7 @@ export function createMetaConversions(
         .replace(/EAA[A-Za-z0-9]{8,}/g, "[token]");
       if (accountRefused(refusal, answer.status)) return { kind: "held", error: said };
       // Meta's own trouble, or too many at once, passes; anything else it said of the event will not.
-      return answer.status >= 500 || answer.status === 429
-        ? { kind: "retry", error: said }
-        : { kind: "refused", error: said };
+      return passing(refusal, answer.status) ? { kind: "retry", error: said } : { kind: "refused", error: said };
     },
   };
 }

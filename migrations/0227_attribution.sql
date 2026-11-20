@@ -192,3 +192,44 @@ ALTER TABLE leads RENAME COLUMN source_next TO source;
 
 CREATE INDEX leads_fsm_unqueued ON leads (created_at)
   WHERE fsm_queued_at IS NULL AND fsm_request_id IS NULL AND source = 'form' AND first_choice_window IS NOT NULL;
+
+-- What clients did before conversions were recorded, so Growth › Funnel counts it: each client's first consultation
+-- booked and first done, and each visit's payment, by src/domain/attribution/conversion-upkeep.ts's rules. History, so
+-- never sent; their channels follow once the cron gives the client's old leads their touches.
+-- backfill: under 2,000 visits and payments on either database, a row and its five indexes each: about 12,000 writes.
+INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, value_paise, attributed_channel,
+    last_touch_channel, meta_state, meta_error, google_state, google_error, created_at)
+  SELECT lower(hex(randomblob(16))), 'consult_booked', a.id, a.person_id, COALESCE(a.first_seen_at, a.synced_at), NULL,
+    'direct', 'direct', 'skipped', 'before_release', 'skipped', 'before_release', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+  FROM appointments a
+  WHERE a.id = (SELECT x.id FROM appointments x WHERE x.person_id = a.person_id
+    AND x.type IN ('consultation', 'first_fit') AND x.deleted_at IS NULL
+    ORDER BY COALESCE(x.first_seen_at, x.synced_at), x.id LIMIT 1);
+
+INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, value_paise, attributed_channel,
+    last_touch_channel, meta_state, meta_error, google_state, google_error, created_at)
+  SELECT lower(hex(randomblob(16))), 'consult_done', a.id, a.person_id, a.window_start, NULL,
+    'direct', 'direct', 'skipped', 'before_release', 'skipped', 'before_release', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+  FROM appointments a
+  WHERE a.id = (SELECT x.id FROM appointments x WHERE x.person_id = a.person_id
+    AND x.type IN ('consultation', 'first_fit') AND x.deleted_at IS NULL AND x.status = 'completed'
+    ORDER BY x.window_start, x.id LIMIT 1);
+
+-- A first fit's payment is the earliest on the client's first first fit still standing; any other is a service's.
+INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, value_paise, attributed_channel,
+    last_touch_channel, meta_state, meta_error, google_state, google_error, created_at)
+  SELECT lower(hex(randomblob(16))),
+    CASE WHEN a.type = 'first_fit'
+        AND a.id = (SELECT x.id FROM appointments x WHERE x.person_id = a.person_id AND x.type = 'first_fit'
+          AND x.deleted_at IS NULL AND x.status NOT IN ('cancelled', 'terminated') ORDER BY x.window_start, x.id LIMIT 1)
+        AND y.id = (SELECT z.id FROM payments z WHERE z.appointment_id = y.appointment_id AND z.kind = 'visit'
+          AND z.captured_at IS NOT NULL AND z.status IN ('captured', 'partially_refunded')
+          ORDER BY z.captured_at, z.id LIMIT 1)
+      THEN 'first_fit_paid' ELSE 'service_paid' END,
+    y.id, y.person_id, y.captured_at, COALESCE(y.amount_ex_gst, y.amount),
+    'direct', 'direct', 'skipped', 'before_release', 'skipped', 'before_release', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+  FROM payments y LEFT JOIN appointments a ON a.id = y.appointment_id
+  WHERE y.captured_at IS NOT NULL AND y.kind = 'visit' AND y.status IN ('captured', 'partially_refunded')
+    AND y.amount > 0
+    AND (y.appointment_id IS NOT NULL
+      OR NOT EXISTS (SELECT 1 FROM slot_holds h WHERE h.razorpay_order_id = y.razorpay_order_id));
