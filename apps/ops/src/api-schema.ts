@@ -9790,7 +9790,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: fields names heard_from for an answer not on the list */
                 400: {
                     headers: {
                         [name: string]: unknown;

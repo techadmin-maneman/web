@@ -13181,7 +13181,7 @@ Request body:
 
 **204**: Kept
 
-**400**: invalid_request
+**400**: invalid_request: fields names heard_from for an answer not on the list
 
 ```json
 {

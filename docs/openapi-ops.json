@@ -40103,7 +40103,7 @@
             "description": "Kept"
           },
           "400": {
-            "description": "invalid_request",
+            "description": "invalid_request: fields names heard_from for an answer not on the list",
             "content": {
               "application/json": {
                 "schema": {

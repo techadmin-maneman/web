@@ -127,6 +127,7 @@ const heardRoute = opsRoute({
   },
   responses: {
     204: { description: "Kept" },
+    400: errorResponse("invalid_request: fields names heard_from for an answer not on the list"),
     404: NotFound,
   },
 });
