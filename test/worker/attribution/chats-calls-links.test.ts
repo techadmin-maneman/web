@@ -232,3 +232,34 @@ describe("a campaign link", () => {
     expect(await refused.json()).toMatchObject({ error: { fields: ["pincode"] } });
   });
 });
+
+describe("the Tasks board", () => {
+  const heardTasks = async () => {
+    const board = await (
+      await request(care(), "/api/tasks")
+    ).json<{
+      groups: { group: string; tasks: { id: string; facts: unknown }[] }[];
+    }>();
+    return board.groups.find((each) => each.group === "heard_from_missing")?.tasks ?? [];
+  };
+
+  it("asks how a client heard of us once their first consultation is done, until ops keep the answer", async () => {
+    await env.DB.prepare(
+      `INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, attributed_channel,
+         last_touch_channel, meta_state, google_state, created_at)
+       VALUES ('e2', 'consult_done', 'a1', ?1, '2026-09-20T05:00:00.000Z', 'direct', 'direct', 'pending', 'pending',
+         '2026-09-20T05:00:00.000Z')`,
+    )
+      .bind(KNOWN)
+      .run();
+
+    expect(await heardTasks()).toEqual([
+      expect.objectContaining({
+        id: KNOWN,
+        facts: { group: "heard_from_missing", consulted_at: "2026-09-20T05:00:00.000Z" },
+      }),
+    ]);
+    await post(care(), `/api/clients/${KNOWN}/heard-from`, { heard_from: "youtube" });
+    expect(await heardTasks()).toEqual([]);
+  });
+});

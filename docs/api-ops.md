@@ -54156,6 +54156,7 @@ Request body:
               "address_to_confirm",
               "consultation_request",
               "first_fit_to_book",
+              "heard_from_missing",
               "replacement_order",
               "made_to_order_ask",
               "stock_at_risk",
@@ -54907,6 +54908,26 @@ Request body:
       "required": [
         "group",
         "starts_at"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "heard_from_missing"
+          ]
+        },
+        "consulted_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "group",
+        "consulted_at"
       ],
       "additionalProperties": false
     },

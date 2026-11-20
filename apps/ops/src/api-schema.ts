@@ -15047,7 +15047,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -31455,7 +31455,7 @@ export interface components {
             lapsed: number;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -31635,6 +31635,11 @@ export interface components {
             group: "address_to_confirm";
             /** Format: date-time */
             starts_at: string;
+        } | {
+            /** @enum {string} */
+            group: "heard_from_missing";
+            /** Format: date-time */
+            consulted_at: string;
         } | {
             /** @enum {string} */
             group: "reschedule_request";

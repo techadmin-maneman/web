@@ -3,6 +3,7 @@
 
 import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import type { TaskGroup } from "../../policy/tasks.ts";
+import { HEARD_FROM_QUEUE } from "../attribution/heard-from-task.ts";
 import { CITY_MATTERS_OPEN } from "./city-matters.ts";
 import { REMEDIES_AWAITING } from "./remedies.ts";
 import { MESSAGES_UNDELIVERED } from "./undelivered-messages.ts";
@@ -30,7 +31,8 @@ const ERASURES_TO_FOLLOW_UP = `SELECT 'erasure_follow_up' AS "group", f.person_i
 /**
  * The board's queues from Customer Care's work: a chat waiting on us, kept once its reply-by time passes; a message
  * WhatsApp refused, until Care have told the client another way (./undelivered-messages.ts); a matter sent to a
- * city (./city-matters.ts); and a remedy awaiting a manager (./remedies.ts); and an erasure Care finish in the CRM.
+ * city (./city-matters.ts); and a remedy awaiting a manager (./remedies.ts); and an erasure Care finish in the CRM;
+ * and a client consulted whom nobody has asked how they heard of us (../attribution/heard-from-task.ts).
  */
 export const CARE_QUEUES: readonly { readonly group: TaskGroup; readonly sql: string }[] = [
   { group: "unanswered_chat", sql: CHATS_WAITING },
@@ -38,6 +40,7 @@ export const CARE_QUEUES: readonly { readonly group: TaskGroup; readonly sql: st
   { group: "city_matter", sql: CITY_MATTERS_OPEN },
   { group: "remedy_approval", sql: REMEDIES_AWAITING },
   { group: "erasure_follow_up", sql: ERASURES_TO_FOLLOW_UP },
+  HEARD_FROM_QUEUE,
 ];
 
 interface BoardRow {

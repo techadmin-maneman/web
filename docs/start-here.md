@@ -283,7 +283,7 @@ docs/tracking.md).
   `lead-touch` (a lead's touch), `chat-touch` (a chat's reference or ad), `call-lead` (a lead taken on a call),
   `conversion-upkeep` (the conversions a visit's or a payment's write brings about), `conversions` (a lead's),
   `conversion-sends` (each sent to Meta and Google, tried again on failure), `backfill` (old leads' touches, and what
-  retention lets go)
+  retention lets go), `heard-from-task` (the Tasks board's How they heard of us)
 - **Database work** (`src/domain/growth/`): `campaign-links` (society activations and offer links, their costs, and the
   discount they carry)
 - **Rules** (`src/policy/`): `channels`, `heard-from` (what a client may say), `campaign-links` (the tags and the links)
