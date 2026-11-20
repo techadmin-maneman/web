@@ -38,6 +38,8 @@ const FIRST_OF = (types: string, where: string, order: string) =>
 const CONSULTATIONS = "'consultation', 'first_fit'";
 /** A visit still standing: neither cancelled nor ended early. */
 const STANDING = `AND ${statusNotIn("x.status", VISIT_CALLED_OFF)}`;
+/** A visit done, with the time it was done at: one kept without a start, from before starts were required, is not. */
+const DONE = "AND x.status = 'completed' AND x.window_start IS NOT NULL";
 const BOOKED_AT = (alias: string) => `COALESCE(${alias}.first_seen_at, ${alias}.synced_at)`;
 
 /**
@@ -68,7 +70,7 @@ export function conversionUpkeep(db: D1Database, whose: string, list: string, at
         `${INSERT}
          SELECT ${UUID}, 'consult_done', a.id, a.person_id, a.window_start, NULL, ${REST}
          FROM appointments a ${FROM_CLIENT}
-         WHERE a.person_id IN (${whose}) AND ${FIRST_OF(CONSULTATIONS, "AND x.status = 'completed'", "x.window_start")}
+         WHERE a.person_id IN (${whose}) AND ${FIRST_OF(CONSULTATIONS, DONE, "x.window_start")}
          ON CONFLICT DO NOTHING`,
       )
       .bind(list, at),

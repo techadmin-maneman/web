@@ -36,6 +36,11 @@ function withHistory(): DatabaseSync {
     // Kabir: a consultation deleted, another booked and not yet done.
     visit("c2", "p2", "consultation", "2026-10-02T04:30:00.000Z", "scheduled", `'${AT}'`),
     visit("c3", "p2", "consultation", "2026-10-25T04:30:00.000Z", "scheduled"),
+    // A visit done that kept no start, from before migration 0169 required one: no time to count it at.
+    `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p3', '${AT}', '+919810000003', 'Vikram Rao')`,
+    "DROP TRIGGER appointments_whole",
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, synced_at)
+       VALUES ('c4', 'fsm-c4', 'p3', 'consultation', 'completed', '${AT}')`,
     // A payment whose notes named no one and whose contact matched no client: counted for no one.
     `INSERT INTO payments (id, razorpay_payment_id, amount, currency, status, kind, captured_at, created_at, updated_at)
        VALUES ('y4', 'pay_y4', 300000, 'INR', 'captured', 'visit', '${AT}', '${AT}', '${AT}')`,
@@ -98,6 +103,16 @@ describe("migration 0227", () => {
         subject_id: "c3",
         person_id: "p2",
         occurred_at: "2026-10-25T04:30:00.000Z",
+        value_paise: null,
+        attributed_channel: "direct",
+        last_touch_channel: "direct",
+      },
+      // Booked, so counted as booked; done with no start, so not counted as done.
+      {
+        event: "consult_booked",
+        subject_id: "c4",
+        person_id: "p3",
+        occurred_at: AT,
         value_paise: null,
         attributed_channel: "direct",
         last_touch_channel: "direct",

@@ -2928,6 +2928,14 @@
     "reviewed": true
   },
   {
+    "key": "site:contact/consentBar.change",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "Cookie choices",
+    "reviewed": false
+  },
+  {
     "key": "site:contact/islandFailed.message",
     "surface": "site",
     "group": "Contact",

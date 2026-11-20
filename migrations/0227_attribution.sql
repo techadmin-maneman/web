@@ -213,6 +213,7 @@ INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, va
   FROM appointments a JOIN people p ON p.id = a.person_id
   WHERE a.id = (SELECT x.id FROM appointments x WHERE x.person_id = a.person_id
     AND x.type IN ('consultation', 'first_fit') AND x.deleted_at IS NULL AND x.status = 'completed'
+    AND x.window_start IS NOT NULL
     ORDER BY x.window_start, x.id LIMIT 1);
 
 -- A first fit's payment is the earliest on the client's first first fit still standing; any other is a service's. A
