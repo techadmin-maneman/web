@@ -15,7 +15,7 @@ import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { Toast } from "@maneman/ui/Toast";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
-import { listDate, yearInIndia } from "@maneman/web-kit/dates";
+import { indiaDate, listDate, yearInIndia } from "@maneman/web-kit/dates";
 import { apiNow } from "@maneman/web-kit/clock";
 import { quantity } from "@maneman/web-kit/figures";
 import { rupees } from "@maneman/web-kit/money";
@@ -36,7 +36,7 @@ const qrOf = (link: CampaignLink) => renderSVG(link.short_link, { ecc: "M", bord
 /** The PNG's side, large enough for a standee. */
 const PNG_SIZE = 1200;
 
-const madeOn = (link: CampaignLink) => listDate(link.created_at.slice(0, 10), yearInIndia(apiNow()));
+const madeOn = (link: CampaignLink) => listDate(indiaDate(link.created_at), yearInIndia(apiNow()));
 
 const COLUMNS: readonly Column<CampaignLink>[] = [
   { label: copy.columns.name, sort: (link) => link.name },

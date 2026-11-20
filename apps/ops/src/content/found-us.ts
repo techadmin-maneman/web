@@ -16,16 +16,10 @@ export const foundUs = {
   /** "Google Ads · gurgaon-search · 12 Nov" */
   touch: (channel: string, campaign: string | null, day: string) =>
     campaign === null ? `${channel} · ${day}` : `${channel} · ${campaign} · ${day}`,
-  via: { site: "the site", whatsapp: "WhatsApp", call: "a call" },
   /** "Society activation: Green Valley Towers" */
   link: (name: string) => `Link: ${name}`,
   notAsked: "Not asked yet",
-  ask: "Record",
-  change: "Change",
-  heardFrom: "What they said",
   other: "In their words",
-  save: "Save",
-  saving: "Saving…",
   sharing: "Shared, hashed",
   stopped: (day: string) => `Stopped ${day}`,
   stopping: {
@@ -54,6 +48,12 @@ export const foundUs = {
       organic_search: "Searched online",
       organic_social: "Social media",
       direct: "Already knew us",
+    },
+    /** What Save lead waits for, said beneath it. */
+    missing: {
+      name: "Type their name.",
+      mobile: "Type their ten-digit mobile.",
+      channel: "Pick where they came from.",
     },
     saved: "Lead saved.",
     known: "They are a client already: the call is on their record.",

@@ -45,6 +45,16 @@ export const campaignLinks = {
   },
   discount: "Discount on the first fit",
   noDiscount: "None",
+  /** "Rs. 500", an amount off in whole rupees. */
+  rupees: (amount: number) => `Rs. ${String(amount)}`,
+  /** "3 h × Rs. 500", what staff on the day cost. */
+  staffNote: (hours: number, rate: number) => `${String(hours)} h × Rs. ${String(rate)}`,
+  /** What Make link waits for, said beneath it. */
+  missing: {
+    name: "Type a name.",
+    pincode: "Type the society's six-digit pincode.",
+    campaign: "Type the campaign in small letters and hyphens.",
+  },
   /** "PROMO20 · 20% off" */
   discountWords: (code: string, kind: "percent" | "amount", value: string) =>
     `${code} · ${kind === "percent" ? `${value}% off` : `${value} off`}`,
@@ -76,7 +86,7 @@ export const campaignLinks = {
   retiring: {
     open: "Retire",
     label: (name: string) => `Retire the link for ${name}`,
-    warning: (name: string) => `Retire the link for ${name}? It then opens the booking page with no offer.`,
+    warning: (name: string) => `Retire the link for ${name}?`,
     confirm: "Retire",
     sending: "Retiring…",
   },

@@ -2,11 +2,13 @@
 // society, pincode, day, costs and any discount for the first fit; or an offer link, with its name, where and how it
 // goes, its campaign, city and any discount. One field to a row; the link, its code and its QR come once it is made.
 
+import { SelectField, TextField } from "@maneman/ui/FieldRows";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
-import { DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
+import { DateInput, Field } from "@maneman/ui/Field";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { Refused } from "@maneman/ui/Refusal";
 import { paiseFromRupees } from "@maneman/web-kit/money";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
@@ -22,62 +24,6 @@ const BOXES = ["name", "pincode", "held_date", "costs", "utm_campaign", "city", 
 /** Whole rupees, or nothing typed. */
 const rupeesOrNone = (typed: string): number | null => (/^\d+$/.test(typed.trim()) ? Number(typed.trim()) : null);
 
-function Typed(props: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  error?: string | null;
-  hint?: string;
-  maxLength: number;
-  width?: "amount";
-}) {
-  return (
-    <Field label={props.label} className={form.field} hint={props.hint} error={props.error ?? null}>
-      {(control) => (
-        <TextInput
-          {...control}
-          width={props.width}
-          maxLength={props.maxLength}
-          value={props.value}
-          onChange={(event) => {
-            props.onChange(event.target.value);
-          }}
-        />
-      )}
-    </Field>
-  );
-}
-
-function Choice(props: {
-  label: string;
-  value: string;
-  options: readonly (readonly [string, string])[];
-  onChange: (value: string) => void;
-  error?: string | null;
-  hint?: string;
-}) {
-  return (
-    <Field label={props.label} className={form.field} hint={props.hint} error={props.error ?? null}>
-      {(control) => (
-        <Select
-          {...control}
-          width="choice"
-          value={props.value}
-          onChange={(event) => {
-            props.onChange(event.target.value);
-          }}
-        >
-          {props.options.map(([value, words]) => (
-            <option key={value} value={value}>
-              {words}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
-  );
-}
-
 /** The discount codes a link may carry, and none. */
 const discountOptions = (list: CampaignLinks) =>
   [
@@ -89,7 +35,7 @@ const discountOptions = (list: CampaignLinks) =>
           copy.discountWords(
             code.code,
             code.kind,
-            code.kind === "percent" ? String(code.value) : `Rs. ${String(code.value / 100)}`,
+            code.kind === "percent" ? String(code.value) : copy.rupees(code.value / 100),
           ),
         ] as const,
     ),
@@ -112,7 +58,8 @@ function useSend(onMade: (link: CampaignLink) => void) {
 function Sending(props: {
   busy: boolean;
   failure: Failure | null;
-  disabled: boolean;
+  /** What Make link waits for, said beneath it; null once it can make one. */
+  missing: string | null;
   onCancel: () => void;
   onSend: () => void;
   children: ReactNode;
@@ -127,14 +74,26 @@ function Sending(props: {
       <div className={form.fields}>{props.children}</div>
       <Refused failed={props.failure} errors={copy.errors} boxes={BOXES} />
       <FormActions>
-        <Button variant="primary" size="small" type="submit" busy={props.busy} disabled={props.disabled}>
+        <Button
+          variant="primary"
+          size="small"
+          type="submit"
+          busy={props.busy}
+          disabled={props.missing !== null}
+          aria-describedby={describedBy("link-missing", props.missing !== null)}
+        >
           {props.busy ? copy.making : copy.make}
         </Button>
         <CancelButton disabled={props.busy} onClick={props.onCancel} />
       </FormActions>
+      <Missing id="link-missing" what={props.missing} />
     </form>
   );
 }
+
+/** What Make link waits for: the name first, then what else the form lacks. */
+const missingOf = (name: string, otherwise: string | null): string | null =>
+  name.trim() === "" ? copy.missing.name : otherwise;
 
 interface SocietyDraft {
   readonly name: string;
@@ -158,7 +117,7 @@ function societyCosts(draft: SocietyDraft) {
     {
       line: "staff" as const,
       rupees: hours === null || rate === null ? null : hours * rate,
-      note: `${String(hours)} h × Rs. ${String(rate)}`,
+      note: hours === null || rate === null ? null : copy.staffNote(hours, rate),
     },
     { line: "collateral" as const, rupees: rupeesOrNone(draft.collateral), note: null },
     { line: "other" as const, rupees: rupeesOrNone(draft.other), note: draft.otherNote.trim() || null },
@@ -194,7 +153,8 @@ function SocietyFields(props: {
   const { draft, set, refused } = props;
   return (
     <>
-      <Typed
+      <TextField
+        className={form.field}
         label={copy.society.name}
         value={draft.name}
         maxLength={80}
@@ -203,7 +163,8 @@ function SocietyFields(props: {
           set({ name });
         }}
       />
-      <Typed
+      <TextField
+        className={form.field}
         label={copy.society.pincode}
         value={draft.pincode}
         maxLength={6}
@@ -225,7 +186,8 @@ function SocietyFields(props: {
         )}
       </Field>
       {SOCIETY_FIGURES.map((figure) => (
-        <Typed
+        <TextField
+          className={form.field}
           key={figure.key}
           label={figure.label}
           value={draft[figure.key]}
@@ -236,7 +198,8 @@ function SocietyFields(props: {
           }}
         />
       ))}
-      <Typed
+      <TextField
+        className={form.field}
         label={copy.society.otherNote}
         value={draft.otherNote}
         maxLength={200}
@@ -244,11 +207,12 @@ function SocietyFields(props: {
           set({ otherNote });
         }}
       />
-      <Choice
+      <SelectField
+        className={form.field}
         label={copy.discount}
         hint={copy.societyDiscountNote}
         value={draft.discount}
-        options={discountOptions(props.list)}
+        choices={discountOptions(props.list)}
         error={refused("discount_code_id")}
         onChange={(discount) => {
           set({ discount });
@@ -280,7 +244,7 @@ export function SocietyForm(props: {
     <Sending
       busy={busy}
       failure={failure}
-      disabled={draft.name.trim() === "" || !/^\d{6}$/.test(draft.pincode)}
+      missing={missingOf(draft.name, /^\d{6}$/.test(draft.pincode) ? null : copy.missing.pincode)}
       onCancel={props.onCancel}
       onSend={() => {
         void send({
@@ -323,7 +287,8 @@ function OfferFields(props: {
   const { list, draft, set, refused } = props;
   return (
     <>
-      <Typed
+      <TextField
+        className={form.field}
         label={copy.offer.name}
         value={draft.name}
         maxLength={80}
@@ -332,23 +297,26 @@ function OfferFields(props: {
           set({ name });
         }}
       />
-      <Choice
+      <SelectField
+        className={form.field}
         label={copy.offer.source}
         value={draft.source}
-        options={list.sources.map((each) => [each, copy.sources[each]] as const)}
+        choices={list.sources.map((each) => [each, copy.sources[each]] as const)}
         onChange={(value) => {
           set({ source: list.sources.find((each) => each === value) ?? draft.source });
         }}
       />
-      <Choice
+      <SelectField
+        className={form.field}
         label={copy.offer.medium}
         value={draft.medium}
-        options={list.mediums.map((each) => [each, copy.mediums[each]] as const)}
+        choices={list.mediums.map((each) => [each, copy.mediums[each]] as const)}
         onChange={(value) => {
           set({ medium: list.mediums.find((each) => each === value) ?? draft.medium });
         }}
       />
-      <Typed
+      <TextField
+        className={form.field}
         label={copy.offer.campaign}
         hint={copy.offer.campaignHint}
         value={draft.campaign}
@@ -358,19 +326,21 @@ function OfferFields(props: {
           set({ campaign: campaign.toLowerCase() });
         }}
       />
-      <Choice
+      <SelectField
+        className={form.field}
         label={copy.offer.city}
         value={draft.city}
-        options={[["", copy.offer.national], ...list.cities.map((city) => [city, city] as const)]}
+        choices={[["", copy.offer.national], ...list.cities.map((city) => [city, city] as const)]}
         error={refused("city")}
         onChange={(city) => {
           set({ city });
         }}
       />
-      <Choice
+      <SelectField
+        className={form.field}
         label={copy.discount}
         value={draft.discount}
-        options={discountOptions(list)}
+        choices={discountOptions(list)}
         error={refused("discount_code_id")}
         onChange={(discount) => {
           set({ discount });
@@ -395,7 +365,7 @@ export function OfferForm(props: { list: CampaignLinks; onMade: (link: CampaignL
     <Sending
       busy={busy}
       failure={failure}
-      disabled={draft.name.trim() === "" || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(draft.campaign)}
+      missing={missingOf(draft.name, /^[a-z0-9]+(-[a-z0-9]+)*$/.test(draft.campaign) ? null : copy.missing.campaign)}
       onCancel={props.onCancel}
       onSend={() => {
         void send({

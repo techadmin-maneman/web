@@ -2,12 +2,13 @@
 // Google's and Meta's included, typed or imported from an ad account's CSV; a society activation's costs come with it
 // from Campaign links. The figures read only these rows. An entry is added whole, and taken off rather than changed.
 
+import { SelectField, TextField } from "@maneman/ui/FieldRows";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
-import { DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
+import { DateInput, Field } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { ACTIONS, FIGURE, Table } from "@maneman/ui/Table";
@@ -37,61 +38,6 @@ const SPEND_BOXES = ["day", "city", "channel", "campaign", "amount", "note"];
 
 /** Whole rupees, one or more, as typed. */
 const isRupees = (typed: string): boolean => /^\d+$/.test(typed.trim()) && Number(typed) >= 1;
-
-function SpendChoice(props: {
-  label: string;
-  value: string;
-  options: readonly (readonly [string, string])[];
-  onChange: (value: string) => void;
-  error: string | null;
-}) {
-  return (
-    <Field label={props.label} className={form.field} error={props.error}>
-      {(control) => (
-        <Select
-          {...control}
-          width="choice"
-          value={props.value}
-          onChange={(event) => {
-            props.onChange(event.target.value);
-          }}
-        >
-          {props.options.map(([value, words]) => (
-            <option key={value} value={value}>
-              {words}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
-  );
-}
-
-function Typed(props: {
-  label: string;
-  value: string;
-  maxLength: number;
-  onChange: (value: string) => void;
-  error: string | null;
-  hint?: string;
-  width?: "amount";
-}) {
-  return (
-    <Field label={props.label} className={form.field} hint={props.hint} error={props.error}>
-      {(control) => (
-        <TextInput
-          {...control}
-          width={props.width}
-          maxLength={props.maxLength}
-          value={props.value}
-          onChange={(event) => {
-            props.onChange(event.target.value);
-          }}
-        />
-      )}
-    </Field>
-  );
-}
 
 /** What a spend line holds as it is typed. */
 interface Draft {
@@ -126,25 +72,28 @@ function SpendFields(props: {
           />
         )}
       </Field>
-      <SpendChoice
+      <SelectField
+        className={form.field}
         label={copy.city}
         error={refused("city")}
         value={draft.city}
-        options={[["", copy.national], ...list.cities.map((each) => [each, each] as const)]}
+        choices={[["", copy.national], ...list.cities.map((each) => [each, each] as const)]}
         onChange={(city) => {
           onDraft({ city });
         }}
       />
-      <SpendChoice
+      <SelectField
+        className={form.field}
         label={copy.channel}
         error={refused("channel")}
         value={draft.channel}
-        options={list.channels.map((each) => [each, channelNamed(each)])}
+        choices={list.channels.map((each) => [each, channelNamed(each)])}
         onChange={(value) => {
           onDraft({ channel: list.channels.find((each) => each === value) ?? draft.channel });
         }}
       />
-      <Typed
+      <TextField
+        className={form.field}
         label={copy.campaign}
         hint={copy.campaignNote}
         error={refused("campaign")}
@@ -154,7 +103,8 @@ function SpendFields(props: {
           onDraft({ campaign });
         }}
       />
-      <Typed
+      <TextField
+        className={form.field}
         label={copy.amount}
         width="amount"
         error={refused("amount")}
@@ -164,7 +114,8 @@ function SpendFields(props: {
           onDraft({ amount });
         }}
       />
-      <Typed
+      <TextField
+        className={form.field}
         label={copy.note}
         error={refused("note")}
         value={draft.note}

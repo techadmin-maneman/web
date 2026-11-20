@@ -39,6 +39,8 @@ export const spend = {
     /** "31 rows · Rs. 48,210" */
     read: (rows: number, amount: string) => `${String(rows)} ${rows === 1 ? "row" : "rows"} · ${amount}`,
     submit: "Import",
+    /** What Import waits for, said beneath it. */
+    missing: "Choose the report's file.",
     importing: "Importing…",
     /** "31 rows imported." */
     done: (rows: number) => `${String(rows)} ${rows === 1 ? "row" : "rows"} imported.`,

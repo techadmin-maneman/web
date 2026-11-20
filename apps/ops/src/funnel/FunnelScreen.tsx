@@ -8,13 +8,14 @@ import { quantity } from "@maneman/web-kit/figures";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { todayInIndia } from "@maneman/web-kit/dates";
 import { apiNow } from "@maneman/web-kit/clock";
-import { DateInput, Field, Select } from "@maneman/ui/Field";
+import { DateInput, Field } from "@maneman/ui/Field";
+import { SelectField } from "@maneman/ui/FieldRows";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
-import { CHANNELS } from "@rules/policy/channels.ts";
+import { CHANNEL_CODES, CHANNELS } from "@rules/policy/channels.ts";
 import { useCallback, useState } from "react";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import form from "@maneman/ui/forms.module.css";
@@ -84,47 +85,23 @@ interface Asked {
   readonly channel: ChannelCode | null;
 }
 
-function Choice<T extends string>(props: {
-  label: string;
-  value: T;
-  options: readonly (readonly [T, string])[];
-  onChange: (value: T) => void;
-}) {
-  return (
-    <Field label={props.label}>
-      {(control) => (
-        <Select
-          {...control}
-          width="choice"
-          value={props.value}
-          onChange={(event) => {
-            const chosen = props.options.find(([value]) => value === event.target.value);
-            if (chosen !== undefined) props.onChange(chosen[0]);
-          }}
-        >
-          {props.options.map(([value, words]) => (
-            <option key={value} value={value}>
-              {words}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
-  );
-}
+/** The value chosen, where it is one of `values`. */
+const oneOf = <T extends string>(values: readonly T[], chosen: string): T | undefined =>
+  values.find((value) => value === chosen);
 
 function Asking({ asked, onAsk }: { asked: Asked; onAsk: (asked: Asked) => void }) {
   return (
     <Toolbar label={copy.period}>
-      <Choice
+      <SelectField
         label={copy.period}
         value={asked.period}
-        options={[
+        choices={[
           ["week", copy.periods.week],
           ["month", copy.periods.month],
         ]}
-        onChange={(period) => {
-          onAsk({ ...asked, period });
+        onChange={(chosen) => {
+          const period = oneOf(["week", "month"] as const, chosen);
+          if (period !== undefined) onAsk({ ...asked, period });
         }}
       />
       <Field label={copy.starting}>
@@ -138,23 +115,24 @@ function Asking({ asked, onAsk }: { asked: Asked; onAsk: (asked: Asked) => void 
           />
         )}
       </Field>
-      <Choice
+      <SelectField
         label={copy.by}
         value={asked.by}
-        options={[
+        choices={[
           ["first", copy.bys.first],
           ["last", copy.bys.last],
         ]}
-        onChange={(by) => {
-          onAsk({ ...asked, by });
+        onChange={(chosen) => {
+          const by = oneOf(["first", "last"] as const, chosen);
+          if (by !== undefined) onAsk({ ...asked, by });
         }}
       />
-      <Choice
+      <SelectField
         label={copy.channel}
         value={asked.channel ?? "all"}
-        options={[["all", copy.allChannels], ...CHANNELS.map((each) => [each.code, each.channel] as const)]}
-        onChange={(channel) => {
-          onAsk({ ...asked, channel: channel === "all" ? null : channel });
+        choices={[["all", copy.allChannels], ...CHANNELS.map((each) => [each.code, each.channel] as const)]}
+        onChange={(chosen) => {
+          onAsk({ ...asked, channel: oneOf(CHANNEL_CODES, chosen) ?? null });
         }}
       />
     </Toolbar>

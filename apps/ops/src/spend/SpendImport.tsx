@@ -7,6 +7,8 @@ import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
 import { Field, FileInput, Select } from "@maneman/ui/Field";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { Note } from "@maneman/ui/Note";
 import { Refused } from "@maneman/ui/Refusal";
 import { rupees } from "@maneman/web-kit/money";
 import { type Failure } from "@maneman/web-kit/refusal";
@@ -83,15 +85,23 @@ export function SpendImport(props: { onImported: (rows: number) => void; onCance
             />
           )}
         </Field>
-        {read?.ok === true && <p className={form.note}>{readWords(read)}</p>}
+        {read?.ok === true && <Note>{readWords(read)}</Note>}
       </div>
       <Refused failed={failure} errors={copy.errors} boxes={["rows"]} />
       <FormActions>
-        <Button variant="primary" size="small" type="submit" busy={busy} disabled={read?.ok !== true}>
+        <Button
+          variant="primary"
+          size="small"
+          type="submit"
+          busy={busy}
+          disabled={read?.ok !== true}
+          aria-describedby={describedBy("import-missing", read === null)}
+        >
           {busy ? copy.import.importing : copy.import.submit}
         </Button>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
+      <Missing id="import-missing" what={read === null ? copy.import.missing : null} />
     </form>
   );
 }

@@ -6,7 +6,9 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
-import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Field } from "@maneman/ui/Field";
+import { SelectField, TextField } from "@maneman/ui/FieldRows";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { FormActions } from "@maneman/ui/FormActions";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { Refused } from "@maneman/ui/Refusal";
@@ -26,26 +28,23 @@ const copy = foundUs.call;
 /** Where the caller came from: nothing chosen until ops pick, so a call is never saved under a guess. */
 function ChannelPick(props: { value: DeclaredChannel | ""; onChange: (channel: DeclaredChannel | "") => void }) {
   return (
-    <Field label={copy.channel} className={form.field}>
-      {(control) => (
-        <Select
-          {...control}
-          width="choice"
-          value={props.value}
-          onChange={(event) => {
-            props.onChange(DECLARED_CHANNELS.find((each) => each === event.target.value) ?? "");
-          }}
-        >
-          <option value="">{copy.choose}</option>
-          {DECLARED_CHANNELS.map((each) => (
-            <option key={each} value={each}>
-              {copy.channels[each]}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
+    <SelectField
+      label={copy.channel}
+      className={form.field}
+      value={props.value}
+      choices={[["", copy.choose], ...DECLARED_CHANNELS.map((each) => [each, copy.channels[each]] as const)]}
+      onChange={(chosen) => {
+        props.onChange(DECLARED_CHANNELS.find((each) => each === chosen) ?? "");
+      }}
+    />
   );
+}
+
+/** What Save lead waits for, the first thing missing; null once it can save. */
+function missingOf(name: string, mobile: string, channel: DeclaredChannel | ""): string | null {
+  if (name.trim() === "") return copy.missing.name;
+  if (mobile.replace(/\D/g, "").length < 10) return copy.missing.mobile;
+  return channel === "" ? copy.missing.channel : null;
 }
 
 function CallForm(props: { onTaken: (taken: { personId: string; known: boolean }) => void; onCancel: () => void }) {
@@ -63,6 +62,7 @@ function CallForm(props: { onTaken: (taken: { personId: string; known: boolean }
       else setFailure({ code: answer.code, fields: answer.fields });
     });
   const refused = (box: string) => boxError(foundUs.errors, failure, box);
+  const missing = missingOf(name, mobile, channel);
   return (
     <form
       onSubmit={(event) => {
@@ -71,18 +71,14 @@ function CallForm(props: { onTaken: (taken: { personId: string; known: boolean }
       }}
     >
       <div className={form.fields}>
-        <Field label={copy.name} className={form.field} error={refused("name")}>
-          {(control) => (
-            <TextInput
-              {...control}
-              maxLength={80}
-              value={name}
-              onChange={(event) => {
-                setName(event.target.value);
-              }}
-            />
-          )}
-        </Field>
+        <TextField
+          label={copy.name}
+          className={form.field}
+          error={refused("name")}
+          maxLength={80}
+          value={name}
+          onChange={setName}
+        />
         <Field label={copy.mobile} className={form.field} error={refused("mobile")}>
           {(control) => (
             <MobileInput
@@ -104,12 +100,14 @@ function CallForm(props: { onTaken: (taken: { personId: string; known: boolean }
           size="small"
           type="submit"
           busy={busy}
-          disabled={name.trim() === "" || mobile.replace(/\D/g, "").length < 10 || channel === ""}
+          disabled={missing !== null}
+          aria-describedby={describedBy("call-lead-missing", missing !== null)}
         >
           {busy ? copy.saving : copy.save}
         </Button>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
+      <Missing id="call-lead-missing" what={missing} />
     </form>
   );
 }
