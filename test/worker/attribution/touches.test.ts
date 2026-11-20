@@ -166,6 +166,25 @@ describe("a Decline on the cookie bar", () => {
     ).toEqual([{ ad_consent: "denied", fbc: null, user_agent: null, client_ip: null }]);
   });
 
+  it("is never taken by a chat's touch, which keeps no browser", async () => {
+    await decline();
+    await recordTouch(env.DB, {
+      at: new Date(),
+      via: "whatsapp",
+      visitorId: VISITOR,
+      personId: null,
+      mobileE164: "+919811112222",
+      carried: NOTHING_CARRIED,
+      resolved: await resolveCodes(env.DB, NO_CODES),
+      declared: null,
+      adConsent: null,
+      userAgent: null,
+      clientIp: null,
+    });
+
+    expect(await rows("SELECT via, ad_consent FROM touches")).toEqual([{ via: "whatsapp", ad_consent: null }]);
+  });
+
   it("gives way to a later landing that says the visitor has since accepted", async () => {
     await decline();
     await visit({ landing_path: "/", fbclid: "IwAR_test", ad_consent: "granted" });

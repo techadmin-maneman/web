@@ -11,7 +11,6 @@ type Body<P extends keyof paths> = paths[P]["post"] extends {
   ? B
   : never;
 export type Attribution = Schemas["Attribution"];
-export type Landing = Schemas["Landing"];
 type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
 type UploadUrlRequest = Schemas["UploadUrlRequest"];
 type UploadUrlResponse = Schemas["UploadUrlResponse"];
@@ -42,7 +41,6 @@ type PublicConsultationRequest = Body<"/api/consultation">;
 type PublicWaitlistRequest = Body<"/api/waitlist">;
 type LeadRequest = Body<"/api/lead">;
 type LeadLeft = Schemas["LeadLeft"];
-type VisitAnswer = Schemas["VisitAnswer"];
 type ConsultationRequest = Body<"/api/r/{code}/consultation">;
 type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
 
@@ -94,19 +92,15 @@ async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
   return { ok: false, code, fields };
 }
 
-/** Posts the body; `keepalive` lets it finish after the page has gone. */
-function post<T>(path: string, body: unknown, idempotencyKey?: string, keepalive = false): Promise<Answer<T>> {
+function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<Answer<T>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (idempotencyKey !== undefined) headers["Idempotency-Key"] = idempotencyKey;
-  // Browsers know keepalive; the Workers' own RequestInit, which this file is also checked against, does not.
-  const init: RequestInit & { keepalive?: boolean } = {
+  return call<T>(path, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
     signal: within(POST_TIMEOUT_MS),
-    keepalive,
-  };
-  return call<T>(path, init);
+  });
 }
 
 // The WhatsApp code that proves the number typed, before a booking on the site or
@@ -237,16 +231,6 @@ export function bookPublicConsultation(
   idempotencyKey: string,
 ): Promise<Answer<Consultation | NotBooked>> {
   return post<Consultation | NotBooked>("/api/consultation", request, idempotencyKey);
-}
-
-/** A landing, kept as the visitor's touch where it is their first or a campaign's; answers their WhatsApp reference. */
-export function reportVisit(landing: Landing, keepalive: boolean): Promise<Answer<VisitAnswer>> {
-  return post<VisitAnswer>("/api/landings", landing, undefined, keepalive);
-}
-
-/** The visitor declined the cookie bar: what their browser's touches kept for Meta goes (ADR 0288). */
-export function reportDecline(): Promise<Answer<null>> {
-  return post<null>("/api/landings/declined", {}, undefined, true);
 }
 
 /** /book's first step: the name and number, kept as a lead before the visit is chosen. */

@@ -120,10 +120,12 @@ export interface NewTouch {
 }
 
 /**
- * The touch's browser declined the cookie bar, and the touch does not say it has since accepted: read in the insert
+ * The site's touch comes from a browser that declined the cookie bar, and does not say it has since accepted (a chat's
+ * keeps no browser, so never takes it): read in the insert
  * itself, so a Decline the API hears in the same moment is never missed (docs/decisions/0288).
  */
-const DECLINED = `(?30 IS NOT 'granted' AND EXISTS (SELECT 1 FROM visitors WHERE id = ?4 AND declined_at IS NOT NULL))`;
+const DECLINED = `(?3 = 'site' AND ?30 IS NOT 'granted'
+  AND EXISTS (SELECT 1 FROM visitors WHERE id = ?4 AND declined_at IS NOT NULL))`;
 const UNLESS_DECLINED = (value: string) => `CASE WHEN ${DECLINED} THEN NULL ELSE ${value} END`;
 
 export interface RecordedTouch {

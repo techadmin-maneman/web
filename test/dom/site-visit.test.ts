@@ -5,7 +5,7 @@
 // not answered. A Decline on the cookie bar goes at once, is kept until the API has heard it, and is sent again from
 // the next page.
 
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureAttribution, readAttribution, reportDeclined, visitorRef } from "../../site/src/lib/visit.ts";
 import { contractChecked } from "./contract-fetch.ts";
 import { answered } from "./render-hook.ts";
@@ -22,7 +22,7 @@ let pages: AbortController;
 
 /** A page's capture, its listeners taken away after the test. */
 const capture = () => {
-  captureAttribution(pages.signal);
+  captureAttribution({ stop: pages.signal, settleMs: 0 });
 };
 
 async function land(path: string) {
@@ -34,11 +34,6 @@ async function land(path: string) {
   await answered();
   await answered();
 }
-
-// The page loads the API's client only once it has painted: loaded here once, as a browser's cache would hold it.
-beforeAll(async () => {
-  await import("../../site/src/lib/api.ts");
-});
 
 beforeEach(() => {
   // jsdom's storage: a Node with a localStorage of its own (25 on) hides it. CI's Node (.nvmrc) has none.
@@ -128,6 +123,18 @@ describe("a visitor's landings", () => {
     expect(reported.map((touch) => touch.utm_source)).toEqual(["google"]);
   });
 
+  it("settle a second once the page has loaded, so the report starts after its first paint", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    history.replaceState(null, "", "/try?utm_source=google&utm_medium=cpc");
+    captureAttribution({ stop: pages.signal });
+    await vi.advanceTimersByTimeAsync(999);
+    expect(reported).toEqual([]);
+
+    await vi.advanceTimersByTimeAsync(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(reported.map((touch) => touch.utm_source)).toEqual(["google"]);
+  });
+
   it("go after three seconds where an ad tag holds the page's load up", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout"] });
     loading();
@@ -136,7 +143,9 @@ describe("a visitor's landings", () => {
     await vi.advanceTimersByTimeAsync(2999);
     expect(reported).toEqual([]);
 
+    // The load waited out, then the page's settling (none here) and a free moment.
     await vi.advanceTimersByTimeAsync(2);
+    await vi.advanceTimersByTimeAsync(1);
     expect(reported.map((touch) => touch.utm_source)).toEqual(["google"]);
   });
 
@@ -220,6 +229,23 @@ describe("a visitor's landings", () => {
 
     expect(reported.map((touch) => touch.landing_path)).toEqual(["/try", "/try"]);
     expect(visitorRef()).toBe("7KQ3M9XP");
+  });
+
+  it("send a returning visitor's campaign landing no send got through again from a later page, under its own key", async () => {
+    await land("/");
+    answer = () => {
+      throw new TypeError("Failed to fetch");
+    };
+    await land("/book?utm_source=meta&utm_medium=paid_social");
+    window.dispatchEvent(new Event("pagehide"));
+    await answered();
+    answer = () => Response.json({ ref: "7KQ3M9XP" });
+    await land("/guides");
+    await land("/try");
+
+    const meta = reported.filter((touch) => touch.utm_source === "meta");
+    expect(meta).toHaveLength(3);
+    expect(new Set(meta.map((touch) => touch.landing_key)).size).toBe(1);
   });
 
   it("report a campaign's landing later, the latest kept as the last touch", async () => {

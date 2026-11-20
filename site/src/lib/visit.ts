@@ -10,24 +10,31 @@ import { CODE_PATTERN } from "@rules/config/invite-codes.ts";
 import { REF_PATTERN } from "@rules/config/ref-tokens.ts";
 import { consentAnswer } from "./analytics.ts";
 import type { Attribution } from "./api.ts";
+import { sendDecline, sendLanding } from "./landing-api.ts";
 import { attributionFrom, carriesCampaign } from "./attribution.ts";
 import { rememberInvite } from "./remembered-invite.ts";
-
-/**
- * The API's client, loaded only once the page has painted: a module every page imports at once would hold up the
- * page's first paint (Lighthouse's invite landing). Kept once loaded, so the page's last word as it goes needs no wait.
- */
-let client: typeof import("./api.ts") | null = null;
-const apiClient = async (): Promise<typeof import("./api.ts")> => (client ??= await import("./api.ts"));
 
 const FIRST = "mm_first_touch";
 const LAST = "mm_last_touch";
 const REF = "mm_ref";
+/** The latest campaign landing's moment, while the API has not answered it: sent again from a later page. */
+const LAST_UNHEARD = "mm_last_unheard";
 /** A Decline on the cookie bar the API has not yet heard of. */
 const DECLINE_UNSENT = "mm_decline_unsent";
 
 /** The longest the reports wait for the page's load, which a slow ad tag can hold up. */
 const LOAD_WAIT_MS = 3000;
+/**
+ * How long a page settles once loaded before it reports: so the report starts after the page's first paint however
+ * fast it drew. Lighthouse counts every request started before that paint; one second clears it with room.
+ */
+const SETTLE_MS = 1000;
+
+/** What a test may set: the page's listeners taken away after it, and no settling to wait out. */
+interface Capture {
+  readonly stop?: AbortSignal | undefined;
+  readonly settleMs?: number;
+}
 
 /** 13 months, as the visitor cookie lasts. */
 const KEPT_MS = 396 * 86_400_000;
@@ -81,11 +88,10 @@ function declineUnsent(): boolean {
 export async function reportDeclined(): Promise<void> {
   keep(DECLINE_UNSENT, "1");
   const going = [...reporting];
-  const { reportDecline } = await apiClient();
-  const answer = await reportDecline();
+  const heard = await sendDecline();
   // A landing report going as the visitor declined can reach the API after the Decline: it goes again once they have.
-  const again = going.length === 0 ? answer : (await Promise.all(going), await reportDecline());
-  if (answer.ok && again.ok) forget(DECLINE_UNSENT);
+  const again = going.length === 0 ? heard : (await Promise.all(going), await sendDecline());
+  if (heard && again) forget(DECLINE_UNSENT);
 }
 
 /** The landing reports going now: a Decline is sent again once they have answered. */
@@ -112,54 +118,68 @@ const withConsent = (touch: Attribution): Attribution => {
  * the touch. Only a page's last word is kept alive: a request so sent counts against the page's first paint.
  */
 async function report(landed: Kept, leaving = false): Promise<boolean> {
-  const landing = { ...withConsent(landed.touch), landing_key: landed.at };
-  // Loaded by now but where the visitor leaves before the page has: then the first landing goes again next page.
-  const sending =
-    client === null
-      ? apiClient().then((loaded) => loaded.reportVisit(landing, leaving))
-      : client.reportVisit(landing, leaving);
+  const sending = sendLanding({ ...withConsent(landed.touch), landing_key: landed.at }, leaving);
   reporting.add(sending);
-  const answer = await sending;
+  const ref = await sending;
   reporting.delete(sending);
-  if (answer.ok && answer.body.ref !== null) keep(REF, answer.body.ref);
-  return answer.ok && answer.body.ref !== null;
+  if (ref === null) return false;
+  keep(REF, ref);
+  if (unheardAt() === landed.at) forget(LAST_UNHEARD);
+  return true;
+}
+
+function unheardAt(): string | null {
+  try {
+    return localStorage.getItem(LAST_UNHEARD);
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Runs on every page, before the analytics tags tidy the address: keeps this landing as the first or the last touch
- * where it is one, and reports it after the page has loaded, and as it goes what was not yet answered. While no reference is kept, the
- * first report never arrived or the API kept nothing, so the first landing goes again before anything else, which
+ * where it is one, and reports it after the page has loaded and settled, and as it goes what was not yet answered.
+ * While no reference is kept, the first report never arrived or the API kept nothing, so the first landing goes again before anything else, which
  * keeps the visitor's first touch their first on the API too. A Decline an earlier page could not send goes at once.
- * `stop` lets a test take its listeners away.
  */
-export function captureAttribution(stop?: AbortSignal): void {
+export function captureAttribution({ stop, settleMs = SETTLE_MS }: Capture = {}): void {
   const touch = attributionFrom(new URL(location.href), document.referrer, document.cookie);
   if (touch.ref !== undefined && CODE_PATTERN.test(touch.ref)) rememberInvite(touch.ref);
   const landed: Kept = { touch, at: new Date().toISOString() };
   const keptFirst = kept(FIRST);
+  const keptLast = kept(LAST);
   const campaign = carriesCampaign(touch);
+  // An earlier page's campaign landing the API never answered goes again, under its own key, so it is kept once.
+  const unheard = keptLast !== null && keptLast.at === unheardAt() && keptLast.at !== keptFirst?.at ? keptLast : null;
   if (keptFirst === null) keep(FIRST, JSON.stringify(landed));
-  if (keptFirst === null || campaign) keep(LAST, JSON.stringify(landed));
+  if (keptFirst === null || campaign) {
+    keep(LAST, JSON.stringify(landed));
+    keep(LAST_UNHEARD, landed.at);
+  }
   if (declineUnsent()) void reportDeclined();
   const due = [
     ...(keptFirst !== null && visitorRef() === null ? [keptFirst] : []),
+    ...(unheard === null ? [] : [unheard]),
     ...(keptFirst === null || campaign ? [landed] : []),
   ];
   if (due.length === 0) return;
   let started = false;
   /** How many of what is due the API has kept, oldest first. */
   let done = 0;
-  afterLoad(() => {
-    if (started || stop?.aborted === true) return;
-    started = true;
-    // Oldest first, each once the one before was kept.
-    void (async () => {
-      for (const each of due) {
-        if (!(await report(each))) return;
-        done += 1;
-      }
-    })();
-  }, stop);
+  afterLoad(
+    () => {
+      if (started || stop?.aborted === true) return;
+      started = true;
+      // Oldest first, each once the one before was kept.
+      void (async () => {
+        for (const each of due) {
+          if (!(await report(each))) return;
+          done += 1;
+        }
+      })();
+    },
+    { stop, settleMs },
+  );
   addEventListener(
     "pagehide",
     () => {
@@ -176,17 +196,20 @@ const once = (stop?: AbortSignal): AddEventListenerOptions =>
   stop === undefined ? { once: true } : { once: true, signal: stop };
 
 /**
- * Runs once the page has loaded, or after LOAD_WAIT_MS where an ad tag holds its load up, and then when the browser is
- * free, three seconds later at most: so a report never holds up the page's first paint. A shorter wait than three
- * seconds put the invite landing's first paint back over Lighthouse's budget.
+ * Runs once the page has loaded, or after LOAD_WAIT_MS where an ad tag holds its load up, has settled, and the browser
+ * is free, three seconds later at most: so a report never counts against the page's first paint.
  */
-function afterLoad(run: () => void, stop?: AbortSignal): void {
+function afterLoad(run: () => void, { stop, settleMs = SETTLE_MS }: Capture): void {
   let started = false;
+  const whenFree = () => {
+    if (stop?.aborted === true) return;
+    if (typeof requestIdleCallback === "function") requestIdleCallback(run, { timeout: 3000 });
+    else setTimeout(run, 0);
+  };
   const start = () => {
     if (started || stop?.aborted === true) return;
     started = true;
-    if (typeof requestIdleCallback === "function") requestIdleCallback(run, { timeout: 3000 });
-    else setTimeout(run, 0);
+    setTimeout(whenFree, settleMs);
   };
   if (document.readyState === "complete") {
     start();
