@@ -429,15 +429,16 @@ export async function bookConsultation(
   if (knownId !== null && address === "saved") await form.syncContact(person.id);
   if (addressNotice !== null) await queueMessage(form, addressNotice.id);
   const invited = await consultationInvite(form, request, { personId: person.id, pincode: visitPincode });
-  // Booked once the invite is on record, so the invite names the consultation it produced.
-  if (holdId !== null) await form.bookHold(holdId);
-
+  // The lead, with its touch, before the booking: the booking records its conversion under the channel the client has
+  // by then, an invite's included (docs/decisions/0288-attribution-and-conversions.md).
   const leadId = await consultationLead(form, {
     request,
     personId: person.id,
     mobile: checked.mobile,
     pincode: visitPincode,
   });
+  // Booked once the invite is on record, so the invite names the consultation it produced.
+  if (holdId !== null) await form.bookHold(holdId);
   const state = holdId === null ? ("requested" as const) : ("booked" as const);
   log.info("consultation_booked", {
     state,

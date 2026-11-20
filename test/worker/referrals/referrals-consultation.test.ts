@@ -41,6 +41,10 @@ describe("POST /api/r/:code/consultation", () => {
       ),
     );
     expect(answer.status).toBe(201);
+    // The booking's conversion is the invite's: Referral, never Direct (ADR 0288).
+    expect(
+      await env.DB.prepare("SELECT event, attributed_channel FROM conversions WHERE event = 'consult_booked'").all(),
+    ).toMatchObject({ results: [{ event: "consult_booked", attributed_channel: "referral" }] });
     const agreed = await env.DB.prepare("SELECT terms_version, privacy_version, source FROM terms_acceptances").all();
     expect(agreed.results).toEqual([
       { terms_version: LEGAL_VERSIONS.terms, privacy_version: LEGAL_VERSIONS.privacy, source: "referral_landing" },
