@@ -9,9 +9,16 @@
 import { CODE_PATTERN } from "@rules/config/invite-codes.ts";
 import { REF_PATTERN } from "@rules/config/ref-tokens.ts";
 import { consentAnswer } from "./analytics.ts";
-import { reportDecline, reportVisit, type Attribution } from "./api.ts";
+import type { Attribution } from "./api.ts";
 import { attributionFrom, carriesCampaign } from "./attribution.ts";
 import { rememberInvite } from "./remembered-invite.ts";
+
+/**
+ * The API's client, loaded only once the page has painted: a module every page imports at once would hold up the
+ * page's first paint (Lighthouse's invite landing). Kept once loaded, so the page's last word as it goes needs no wait.
+ */
+let client: typeof import("./api.ts") | null = null;
+const apiClient = async (): Promise<typeof import("./api.ts")> => (client ??= await import("./api.ts"));
 
 const FIRST = "mm_first_touch";
 const LAST = "mm_last_touch";
@@ -74,6 +81,7 @@ function declineUnsent(): boolean {
 export async function reportDeclined(): Promise<void> {
   keep(DECLINE_UNSENT, "1");
   const going = [...reporting];
+  const { reportDecline } = await apiClient();
   const answer = await reportDecline();
   // A landing report going as the visitor declined can reach the API after the Decline: it goes again once they have.
   const again = going.length === 0 ? answer : (await Promise.all(going), await reportDecline());
@@ -104,7 +112,12 @@ const withConsent = (touch: Attribution): Attribution => {
  * the touch. Only a page's last word is kept alive: a request so sent counts against the page's first paint.
  */
 async function report(landed: Kept, leaving = false): Promise<boolean> {
-  const sending = reportVisit({ ...withConsent(landed.touch), landing_key: landed.at }, leaving);
+  const landing = { ...withConsent(landed.touch), landing_key: landed.at };
+  // Loaded by now but where the visitor leaves before the page has: then the first landing goes again next page.
+  const sending =
+    client === null
+      ? apiClient().then((loaded) => loaded.reportVisit(landing, leaving))
+      : client.reportVisit(landing, leaving);
   reporting.add(sending);
   const answer = await sending;
   reporting.delete(sending);

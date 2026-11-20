@@ -5,7 +5,7 @@
 // not answered. A Decline on the cookie bar goes at once, is kept until the API has heard it, and is sent again from
 // the next page.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureAttribution, readAttribution, reportDeclined, visitorRef } from "../../site/src/lib/visit.ts";
 import { contractChecked } from "./contract-fetch.ts";
 import { answered } from "./render-hook.ts";
@@ -34,6 +34,11 @@ async function land(path: string) {
   await answered();
   await answered();
 }
+
+// The page loads the API's client only once it has painted: loaded here once, as a browser's cache would hold it.
+beforeAll(async () => {
+  await import("../../site/src/lib/api.ts");
+});
 
 beforeEach(() => {
   // jsdom's storage: a Node with a localStorage of its own (25 on) hides it. CI's Node (.nvmrc) has none.
