@@ -117,6 +117,24 @@ describe("an ad account's CSV", () => {
     expect(await audited()).toEqual(["spend.import"]);
   });
 
+  it("replaces, from a later export, the days and campaigns an earlier one brought", async () => {
+    const growth = opsAs(person(GROWTH));
+    await post(growth, "/api/spend/import", { platform: "google", rows: ROWS });
+    await post(growth, "/api/spend/import", {
+      platform: "google",
+      rows: [
+        { day: "2026-09-20", campaign: "national-brand-search", amount: 350_000 },
+        { day: "2026-09-21", campaign: "national-brand-search", amount: 200_000 },
+      ],
+    });
+
+    expect((await listed(growth)).entries.map((entry) => [entry.spent_date, entry.campaign, entry.amount])).toEqual([
+      ["2026-09-21", "national-brand-search", 200_000],
+      ["2026-09-20", "national-brand-search", 350_000],
+      ["2026-09-19", "gurgaon-search-hair-systems", 1_250_000],
+    ]);
+  });
+
   it("refuses rows for a day outside the list, and keeps none of them", async () => {
     const growth = opsAs(person(GROWTH));
     const answer = await post(growth, "/api/spend/import", {

@@ -4,6 +4,7 @@
 // first try-ons. A test record counts for nothing. NOW is Monday 21 September 2026, 12 noon in India; the week asked
 // for is the one before, Monday 14 to Sunday 20 September.
 
+import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
 import { aPerson } from "../fixtures/index.ts";
@@ -164,6 +165,26 @@ describe("the acquisition figures", () => {
       heard: [{ heard_from: "google", channel: "google_ads", clients: 1 }],
       tryons: 1,
     });
+  });
+
+  it("count a month's payouts to partners as their channel's spend, on the month's first day", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO referral_channels (id, name, code, friend_visits, valid_days, commission, created_by, created_at)
+         VALUES ('rc1', 'Looks Salon', 'LSK7P2QX', 2, 180, 150000, 'growth@maneman.in', '2026-09-01T00:00:00.000Z')`,
+      ),
+      env.DB.prepare(
+        `INSERT INTO partner_payouts (id, channel_id, month, amount, paid_on, reference, recorded_by, recorded_at)
+         VALUES ('pp1', 'rc1', '2026-09', 150000, '2026-09-05', 'UTR0905', 'finance@maneman.in', '2026-09-05T00:00:00.000Z')`,
+      ),
+    ]);
+    const answer = await request(
+      appFor("local", fakeDependencies(), {}, "ops"),
+      "/api/growth/acquisition?period=month&starting=2026-09-01",
+    );
+    const { rows } = await answer.json<{ rows: { channel: string; spend: number }[] }>();
+
+    expect(rows.find((row) => row.channel === "partner")?.spend).toBe(150_000);
   });
 
   it("put the same clients under their last touch's channel when asked", async () => {

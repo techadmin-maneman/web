@@ -59,8 +59,17 @@ export async function importSpend(
         by,
       ).statement,
   );
-  // One batch, so a file is on the figures whole or not at all.
+  // An earlier file's rows for the same days and campaigns are this one's to replace: exports overlap, and the latest
+  // has the platform's final figures. One batch, so a file is on the figures whole or not at all.
+  const replaced = [...new Set(sorted.map((row) => `${row.day}|${row.campaign}`))];
   await db.batch([
+    db
+      .prepare(
+        `UPDATE spend_entries SET removed_by = ?1, removed_at = ?2
+         WHERE source = 'csv' AND channel = ?3 AND removed_at IS NULL
+           AND spent_date || '|' || campaign IN (SELECT value FROM json_each(?4))`,
+      )
+      .bind(change.actor.id, change.now.toISOString(), CHANNEL[change.platform], JSON.stringify(replaced)),
     ...statements,
     auditStatement(
       db,

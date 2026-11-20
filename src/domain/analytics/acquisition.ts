@@ -7,6 +7,7 @@
 // rule gives. Records marked as tests are left out.
 
 import { CHANNELS, type ChannelCode } from "../../policy/channels.ts";
+import { CREDITS_USED } from "./spend.ts";
 
 export type ChannelBy = "first" | "last";
 
@@ -92,18 +93,37 @@ async function milestonesIn(db: D1Database, range: Range, by: ChannelBy) {
   return results;
 }
 
-/** Spend in the range, by channel: an entry made for a whole month counts on its first day. */
+/**
+ * Spend in the range, by channel, as ADR 0150 counts it: the entries, an entry made for a whole month on its first
+ * day; what was paid to partners, on its month's first day; and each free visit an invite or a partner's code gave,
+ * at its service's price, on the day it was used.
+ */
 async function spendIn(db: D1Database, range: Range) {
-  const { results } = await db
-    .prepare(
-      `SELECT channel, SUM(amount) AS spend FROM spend_entries
-       WHERE removed_at IS NULL AND COALESCE(spent_date, month || '-01') >= ?1
-         AND COALESCE(spent_date, month || '-01') < ?2
-       GROUP BY channel`,
-    )
-    .bind(range.fromDate, range.toDate)
-    .all<{ channel: string; spend: number }>();
-  return results;
+  const [entries, credits] = await Promise.all([
+    db
+      .prepare(
+        `SELECT channel, SUM(amount) AS spend FROM spend_entries
+         WHERE removed_at IS NULL AND COALESCE(spent_date, month || '-01') >= ?1
+           AND COALESCE(spent_date, month || '-01') < ?2
+         GROUP BY channel
+         UNION ALL
+         SELECT 'partner', SUM(amount) FROM partner_payouts
+         WHERE amount > 0 AND month || '-01' >= ?1 AND month || '-01' < ?2`,
+      )
+      .bind(range.fromDate, range.toDate)
+      .all<{ channel: string; spend: number | null }>(),
+    db
+      .prepare(`${CREDITS_USED} AND a.window_start >= ?1 AND a.window_start < ?2`)
+      .bind(range.from, range.to)
+      .all<{ from_partner: number; visits: number; price: number | null }>(),
+  ]);
+  return [
+    ...entries.results.map((row) => ({ channel: row.channel, spend: row.spend ?? 0 })),
+    ...credits.results.map((row) => ({
+      channel: row.from_partner === 1 ? "partner" : "referral",
+      spend: (row.price ?? 0) * Math.abs(row.visits),
+    })),
+  ];
 }
 
 const SPANS = [30, 90, 180] as const;
