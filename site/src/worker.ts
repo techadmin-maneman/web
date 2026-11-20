@@ -148,11 +148,16 @@ const isLanding = (body: unknown): body is { readonly landing: string } =>
 
 /**
  * Where a campaign link sends the visitor: /book with its tags and code, or plain /book for a link that is retired, is
- * not ours, or that mm-api cannot say of. Never kept: a link retired takes effect at once.
+ * not ours, or that mm-api cannot say of; with whatever else the link was opened with, an ad's click IDs above all,
+ * the link's own tags and code winning where both name one. Never kept: a link retired takes effect at once.
  */
-async function campaignLanding(env: SiteEnv, origin: string, kind: string, slug: string): Promise<string> {
-  const found = await fetchJson(env, new Request(`${origin}/api/links/${kind}/${slug}`), "link", isLanding);
-  return `${origin}${found?.landing ?? "/book"}`;
+async function campaignLanding(env: SiteEnv, opened: URL, kind: string, slug: string): Promise<string> {
+  const found = await fetchJson(env, new Request(`${opened.origin}/api/links/${kind}/${slug}`), "link", isLanding);
+  const landing = new URL(found?.landing ?? "/book", opened.origin);
+  for (const [key, value] of opened.searchParams) {
+    if (!landing.searchParams.has(key)) landing.searchParams.append(key, value);
+  }
+  return landing.toString();
 }
 
 /** A page given its visitor cookie where the browser has none: a page, not a redirect, a film or a file. */
@@ -406,7 +411,7 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
     const link = CAMPAIGN_LINK.exec(url.pathname);
     if (link !== null) {
       const [, kind = "", slug = ""] = link;
-      return Response.redirect(await campaignLanding(env, url.origin, kind, slug), 302);
+      return Response.redirect(await campaignLanding(env, url, kind, slug), 302);
     }
     if (url.pathname === TERMS_PAGE && request.method === "GET") {
       // The terms as built say the days the guarantee began with; while mm-api cannot say, they stand. Either way the
