@@ -6,10 +6,12 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CampaignLinksScreen } from "../../apps/ops/src/campaign-links/CampaignLinksScreen.tsx";
-import { CallLead } from "../../apps/ops/src/clients/CallLead.tsx";
+import { CallLead, CallTakenLine } from "../../apps/ops/src/clients/CallLead.tsx";
 import { FoundUs } from "../../apps/ops/src/clients/FoundUs.tsx";
 import { campaignLinks as linksCopy } from "../../apps/ops/src/content/campaign-links.ts";
 import { foundUs as copy } from "../../apps/ops/src/content/found-us.ts";
+import { spend as spendCopy } from "../../apps/ops/src/content/spend.ts";
+import { SpendScreen } from "../../apps/ops/src/spend/SpendScreen.tsx";
 import { PageHead } from "../../apps/ops/src/frame/PageHead.tsx";
 import { openDialogsAsJsdomCan } from "./dialogs.ts";
 import { answered } from "./render-hook.ts";
@@ -202,6 +204,51 @@ describe("Campaign links", () => {
   });
 });
 
+describe("A society's costs", () => {
+  it("keep Make link waiting, the box named, while one holds more than whole digits or staff is half typed", async () => {
+    answers.set("GET /api/campaign-links", () => Response.json(LINKS));
+    await show(createElement(CampaignLinksScreen));
+    await click(linksCopy.newSociety);
+    fill(linksCopy.society.name, "Palm Grove");
+    fill(linksCopy.society.pincode, "122002");
+    const make = () => button(linksCopy.make);
+
+    fill(linksCopy.society.stall, "2,000");
+    expect(make()?.disabled).toBe(true);
+    expect(document.body.textContent).toContain(linksCopy.missing.figures.stall);
+
+    fill(linksCopy.society.stall, "2000");
+    fill(linksCopy.society.staffHours, "3");
+    expect(make()?.disabled).toBe(true);
+    expect(document.body.textContent).toContain(linksCopy.missing.staff);
+
+    fill(linksCopy.society.staffRate, "500");
+    expect(make()?.disabled).toBe(false);
+  });
+});
+
+describe("Copying a campaign link", () => {
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, "clipboard");
+  });
+
+  it("says so each time, and where the link is when the browser keeps the clipboard", async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    answers.set("GET /api/campaign-links", () => Response.json(LINKS));
+    await show(createElement(CampaignLinksScreen));
+
+    await click(linksCopy.copyLabel("Green Valley Towers"));
+    expect(writeText).toHaveBeenCalledWith(GREEN_VALLEY.short_link);
+    expect(document.body.textContent).toContain(linksCopy.copied);
+    expect(page.textContent).not.toContain(linksCopy.notCopied);
+
+    writeText.mockRejectedValue(new DOMException("Refused", "NotAllowedError"));
+    await click(linksCopy.copyLabel("Green Valley Towers"));
+    expect(page.textContent).toContain(linksCopy.notCopied);
+  });
+});
+
 describe("How they found us", () => {
   it("shows the channel and touches, keeps what they told ops, and stops their sharing", async () => {
     answers.set(`GET /api/clients/${PERSON}/attribution`, () => Response.json(FOUND));
@@ -221,6 +268,25 @@ describe("How they found us", () => {
     await click(copy.stopping.label("Rohit Malhotra"));
     await click(copy.stopping.confirm);
     expect(sent.at(-1)).toEqual({ path: `/api/clients/${PERSON}/stop-sharing`, body: null });
+  });
+
+  it("offers Not asked yet only while no answer is kept", async () => {
+    const choices = () => [...(box(copy.rows.heardFrom) as HTMLSelectElement).options].map((each) => each.text);
+    answers.set(`GET /api/clients/${PERSON}/attribution`, () => Response.json(FOUND));
+    await show(createElement(FoundUs, { clientId: PERSON, name: "Rohit Malhotra" }));
+    await click(`Change ${copy.rows.heardFrom}`);
+    expect(choices()).toContain(copy.notAsked);
+
+    act(() => {
+      root.unmount();
+    });
+    root = createRoot(page);
+    answers.set(`GET /api/clients/${PERSON}/attribution`, () =>
+      Response.json({ ...FOUND, heard_from: "google", heard_from_at: "2026-09-21T06:30:00.000Z" }),
+    );
+    await show(createElement(FoundUs, { clientId: PERSON, name: "Rohit Malhotra" }));
+    await click(`Change ${copy.rows.heardFrom}`);
+    expect(choices()).not.toContain(copy.notAsked);
   });
 });
 
@@ -246,5 +312,47 @@ describe("A lead from a call", () => {
       { path: "/api/leads/call", body: { name: "Vikram Rao", mobile: "9811113333", channel: "society" } },
     ]);
     expect(taken).toEqual([{ personId: PERSON, known: false }]);
+  });
+
+  it("says on the page what it took, with the way to their record, until the next", async () => {
+    await show(createElement(CallTakenLine, { taken: { personId: PERSON, known: true } }));
+
+    expect(page.textContent).toContain(copy.call.known);
+    const record = [...page.querySelectorAll("a")].find((each) => each.textContent === copy.call.open_client);
+    expect(record?.getAttribute("href")).toBe(`/clients/${PERSON}/referrals`);
+  });
+});
+
+describe("A spend import", () => {
+  it("says how many rows it took once the list is read again", async () => {
+    answers.set("GET /api/spend", () =>
+      Response.json({
+        entries: [],
+        cities: ["Gurgaon"],
+        channels: ["google_ads", "meta_ads"],
+        first_day: "2025-09-01",
+        today: "2026-09-21",
+      }),
+    );
+    answers.set("POST /api/spend/import", () => Response.json({ added: 2 }));
+    await show(createElement(SpendScreen));
+    await click(spendCopy.importOne);
+
+    const file = box(spendCopy.import.file) as HTMLInputElement;
+    const csv = [
+      "Campaign report",
+      "Day,Campaign,Cost",
+      "2026-09-19,gurgaon-search,1250.00",
+      "2026-09-20,brand,300.00",
+    ];
+    Object.defineProperty(file, "files", { value: [new File([csv.join(String.fromCharCode(10))], "campaigns.csv")] });
+    await act(async () => {
+      file.dispatchEvent(new Event("change", { bubbles: true }));
+      await answered();
+    });
+    await click(spendCopy.import.submit);
+
+    expect(sent.at(-1)?.path).toBe("/api/spend/import");
+    expect(document.body.textContent).toContain(spendCopy.import.done(2));
   });
 });

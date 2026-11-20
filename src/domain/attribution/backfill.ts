@@ -95,13 +95,18 @@ export async function touchOldLeads(db: D1Database): Promise<number> {
            WHERE person_id = ?1 AND heard_from IS NULL AND ?2 IS NOT NULL`,
         )
         .bind(lead.person_id, heard ?? null, lead.created_at),
-      // What they did before their history was known takes their channels as they now stand.
+      // What they did before their history was known takes their channel as it now stands, and, each, the last touch
+      // a campaign put something in by then, else their first.
       db
         .prepare(
           `UPDATE conversions SET
              attributed_channel = COALESCE((SELECT attributed_channel FROM person_attribution WHERE person_id = ?1),
                attributed_channel),
-             last_touch_channel = COALESCE((SELECT last_touch_channel FROM person_attribution WHERE person_id = ?1),
+             last_touch_channel = COALESCE(
+               (SELECT t.channel FROM touches t WHERE t.person_id = ?1 AND t.campaign_signal = 1
+                  AND t.at <= conversions.occurred_at ORDER BY t.at DESC, t.rowid DESC LIMIT 1),
+               (SELECT t.channel FROM person_attribution pa JOIN touches t ON t.id = pa.first_touch_id
+                  WHERE pa.person_id = ?1),
                last_touch_channel)
            WHERE person_id = ?1`,
         )

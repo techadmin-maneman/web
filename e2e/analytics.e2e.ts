@@ -61,7 +61,23 @@ test.describe("the cookie bar", () => {
     await page.getByRole("contentinfo").getByRole("button", { name: consentBar.change }).click();
     await expect(bar).toBeVisible();
     await bar.getByRole("button", { name: consentBar.decline }).click();
+    await expect(bar).toBeHidden();
+    expect(await analyticsCommands(page)).toContainEqual(["consent", "update", DENIED]);
     await page.reload();
+    expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);
+  });
+
+  test("keeps a decline while Cookie choices asks again, until another answer is picked", async ({ page }) => {
+    await page.goto("/guides");
+    const bar = page.getByRole("region", { name: consentBar.label });
+    await bar.getByRole("button", { name: consentBar.decline }).click();
+    await page.reload();
+
+    await page.getByRole("contentinfo").getByRole("button", { name: consentBar.change }).click();
+    await expect(bar).toBeVisible();
+    expect(await analyticsCommands(page)).not.toContainEqual(["consent", "update", GRANTED]);
+    await page.reload();
+    await expect(bar).toBeHidden();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);
   });
 });

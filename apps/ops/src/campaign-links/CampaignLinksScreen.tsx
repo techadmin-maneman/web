@@ -30,6 +30,7 @@ import { useAccess } from "../lib/access.ts";
 import { saveFile, saveSvgAsPng } from "../lib/save-file.ts";
 import { campaignLinksApi, type CampaignLink, type CampaignLinks } from "./campaign-links-api.ts";
 import { OfferForm, SocietyForm } from "./CampaignLinkForms.tsx";
+import styles from "./campaign-links.module.css";
 
 /** A link's QR code: black on white with the quiet border the standard asks for, readable through a scuffed print. */
 const qrOf = (link: CampaignLink) => renderSVG(link.short_link, { ecc: "M", border: 4 });
@@ -117,7 +118,11 @@ function LinksTable(props: { links: readonly CampaignLink[]; mayRetire: boolean;
   return (
     <>
       {copied?.done === true && <Toast key={copied.count}>{copy.copied}</Toast>}
-      {copied?.done === false && <InlineMessage tone="error">{copy.notCopied}</InlineMessage>}
+      {copied?.done === false && (
+        <InlineMessage tone="error" className={styles.notCopied}>
+          {copy.notCopied}
+        </InlineMessage>
+      )}
       <Narrowing view={view} label={copy.find} />
       <TableScroll labelledBy="campaign-links">
         <Table>
@@ -138,7 +143,7 @@ function LinksTable(props: { links: readonly CampaignLink[]; mayRetire: boolean;
                 <td className={FIGURE}>{rupees(link.spent)}</td>
                 <td className={FIGURE}>{quantity(link.touches)}</td>
                 <td className={FIGURE}>{quantity(link.people)}</td>
-                <td>{madeOn(link)}</td>
+                <td className={styles.day}>{madeOn(link)}</td>
                 <LinkActions
                   link={link}
                   mayRetire={props.mayRetire}

@@ -36,6 +36,9 @@ function withHistory(): DatabaseSync {
     // Kabir: a consultation deleted, another booked and not yet done.
     visit("c2", "p2", "consultation", "2026-10-02T04:30:00.000Z", "scheduled", `'${AT}'`),
     visit("c3", "p2", "consultation", "2026-10-25T04:30:00.000Z", "scheduled"),
+    // A payment whose notes named no one and whose contact matched no client: counted for no one.
+    `INSERT INTO payments (id, razorpay_payment_id, amount, currency, status, kind, captured_at, created_at, updated_at)
+       VALUES ('y4', 'pay_y4', 300000, 'INR', 'captured', 'visit', '${AT}', '${AT}', '${AT}')`,
   ]) {
     db.exec(sql);
   }

@@ -1,0 +1,10 @@
+/* What ./CampaignLinksScreen.tsx alone draws: a refused copy, set in from the panel's edges as its note is, and the
+   day a link was made, kept on one line. */
+
+.notCopied {
+  margin: var(--sp-12) var(--note-inset) 0;
+}
+
+.day {
+  white-space: nowrap;
+}

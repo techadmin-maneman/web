@@ -201,7 +201,7 @@ INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, va
     last_touch_channel, meta_state, meta_error, google_state, google_error, created_at)
   SELECT lower(hex(randomblob(16))), 'consult_booked', a.id, a.person_id, COALESCE(a.first_seen_at, a.synced_at), NULL,
     'direct', 'direct', 'skipped', 'before_release', 'skipped', 'before_release', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-  FROM appointments a
+  FROM appointments a JOIN people p ON p.id = a.person_id
   WHERE a.id = (SELECT x.id FROM appointments x WHERE x.person_id = a.person_id
     AND x.type IN ('consultation', 'first_fit') AND x.deleted_at IS NULL
     ORDER BY COALESCE(x.first_seen_at, x.synced_at), x.id LIMIT 1);
@@ -210,12 +210,13 @@ INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, va
     last_touch_channel, meta_state, meta_error, google_state, google_error, created_at)
   SELECT lower(hex(randomblob(16))), 'consult_done', a.id, a.person_id, a.window_start, NULL,
     'direct', 'direct', 'skipped', 'before_release', 'skipped', 'before_release', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-  FROM appointments a
+  FROM appointments a JOIN people p ON p.id = a.person_id
   WHERE a.id = (SELECT x.id FROM appointments x WHERE x.person_id = a.person_id
     AND x.type IN ('consultation', 'first_fit') AND x.deleted_at IS NULL AND x.status = 'completed'
     ORDER BY x.window_start, x.id LIMIT 1);
 
--- A first fit's payment is the earliest on the client's first first fit still standing; any other is a service's.
+-- A first fit's payment is the earliest on the client's first first fit still standing; any other is a service's. A
+-- payment that names no one has no client to count it for.
 INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, value_paise, attributed_channel,
     last_touch_channel, meta_state, meta_error, google_state, google_error, created_at)
   SELECT lower(hex(randomblob(16))),
@@ -228,7 +229,7 @@ INSERT INTO conversions (event_id, event, subject_id, person_id, occurred_at, va
       THEN 'first_fit_paid' ELSE 'service_paid' END,
     y.id, y.person_id, y.captured_at, COALESCE(y.amount_ex_gst, y.amount),
     'direct', 'direct', 'skipped', 'before_release', 'skipped', 'before_release', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-  FROM payments y LEFT JOIN appointments a ON a.id = y.appointment_id
+  FROM payments y JOIN people p ON p.id = y.person_id LEFT JOIN appointments a ON a.id = y.appointment_id
   WHERE y.captured_at IS NOT NULL AND y.kind = 'visit' AND y.status IN ('captured', 'partially_refunded')
     AND y.amount > 0
     AND (y.appointment_id IS NOT NULL

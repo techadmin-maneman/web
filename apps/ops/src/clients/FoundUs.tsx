@@ -6,6 +6,7 @@
 import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { Panel } from "@maneman/ui/Panel";
 import { ChoiceRow, ReadRow, TextRow } from "@maneman/ui/RecordRows";
+import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { PanelFailed, PanelLoading } from "@maneman/ui/States";
 import { useLoad } from "@maneman/ui/useLoad";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -56,7 +57,7 @@ function Rows(props: { clientId: string; name: string; found: ClientAttribution;
   };
   return (
     <>
-      <div className={form.record}>
+      <SettingPairs>
         <ReadRow
           label={copy.rows.channel}
           value={found.attributed_channel === null ? copy.none : channelNamed(found.attributed_channel)}
@@ -89,7 +90,7 @@ function Rows(props: { clientId: string; name: string; found: ClientAttribution;
           label={copy.rows.sharing}
           value={found.sharing_stopped_at === null ? copy.sharing : copy.stopped(dayOf(found.sharing_stopped_at))}
         />
-      </div>
+      </SettingPairs>
       {found.sharing_stopped_at === null && access.mayCall("POST /api/clients/{id}/stop-sharing") && (
         <div className={form.recordFoot}>
           <DeleteAction

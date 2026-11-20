@@ -558,9 +558,12 @@ describe("Meta's request", () => {
       { message: "Calls to this api have exceeded the rate limit", code: 613 },
       { message: "An unexpected error has occurred", code: 100, is_transient: true },
     ];
-    for (const error of errors) {
-      const busy = fakeFetch({ "https://graph.facebook.com/": () => json({ error }, 400) });
-      expect((await createMetaConversions(settings, false, { fetch: busy.fetch, log }).send(PAID)).kind).toBe("retry");
+    for (const status of [400, 403]) {
+      for (const error of errors) {
+        const busy = fakeFetch({ "https://graph.facebook.com/": () => json({ error }, status) });
+        const said = await createMetaConversions(settings, false, { fetch: busy.fetch, log }).send(PAID);
+        expect(said.kind, `${String(status)} ${String(error.code)}`).toBe("retry");
+      }
     }
   });
 });

@@ -282,6 +282,11 @@
   color: var(--site-text-muted);
 }
 
+/* The notice's link, its two words kept together. */
+.adNoticeLink {
+  white-space: nowrap;
+}
+
 /* An empty live region or Turnstile box keeps its place in the page and takes no space. */
 .form > :empty {
   margin-top: 0;

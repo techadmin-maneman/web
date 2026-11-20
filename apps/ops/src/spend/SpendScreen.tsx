@@ -108,6 +108,7 @@ function SpendFields(props: {
         className={form.field}
         label={copy.amount}
         width="amount"
+        numeric
         error={refused("amount")}
         value={draft.amount}
         maxLength={12}

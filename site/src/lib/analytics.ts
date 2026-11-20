@@ -126,21 +126,13 @@ export function consentAnswer(): "granted" | "denied" | null {
   }
 }
 
-/** The visitor's answer forgotten, so the cookie bar asks again on the page drawn next. */
-export function forgetConsent(): void {
-  try {
-    localStorage.removeItem(CONSENT_KEY);
-  } catch {
-    // Nothing was kept to forget.
-  }
-}
-
 /** Whether the tags may run: until the visitor declines, they may. */
 const consented = (): boolean => consentAnswer() !== "denied";
 
 /**
- * The visitor's answer, kept, and the tags told: Google's consent updated, and the Meta Pixel started once they agree.
- * Nothing is kept where storage is refused, and the bar asks again on the next page.
+ * The visitor's answer, kept, and the tags told: Google's consent updated, and the Meta Pixel started, or let go on, once
+ * they agree and stopped once they decline. Nothing is kept where storage is refused, and the bar asks again on the
+ * next page.
  */
 export function answerConsent(answer: "granted" | "denied"): void {
   try {
@@ -156,9 +148,9 @@ export function answerConsent(answer: "granted" | "denied"): void {
   });
   const ids = ANALYTICS_IDS[ENVIRONMENT];
   const onInvite = INVITE_PATH_IN_URL.test(location.pathname);
-  if (answer === "granted" && ids.metaPixel !== null && !onInvite && window.fbq === undefined) {
-    startMetaPixel(ids.metaPixel);
-  }
+  // A Pixel already running on the page stops at a Decline and goes on at an Accept; else an Accept starts it.
+  if (window.fbq !== undefined) window.fbq("consent", answer === "granted" ? "grant" : "revoke");
+  else if (answer === "granted" && ids.metaPixel !== null && !onInvite) startMetaPixel(ids.metaPixel);
 }
 
 /** The page whose address carries the token that stops a person's messages. */
@@ -230,7 +222,8 @@ export function track(event: AnalyticsEvent): void {
   if (ads !== null && event.name === "try_on_claimed")
     gtag("event", "conversion", { send_to: `${ads.id}/${ads.tryOnLabel}` });
 
-  if (window.fbq === undefined) return;
+  // Nothing more reaches Meta from a page whose visitor declined, the Pixel already running included.
+  if (window.fbq === undefined || !consented()) return;
   const standard = META_EVENT[name];
   if (standard === undefined) window.fbq("trackCustom", name, parameters);
   else if (event.name === "generate_lead") window.fbq("track", standard, {}, { eventID: event.event_id });

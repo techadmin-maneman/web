@@ -116,9 +116,10 @@ export function createMetaConversions(
       const said = refusalOf(refusal, answer.status)
         .replaceAll(settings.token, "[token]")
         .replace(/EAA[A-Za-z0-9]{8,}/g, "[token]");
-      if (accountRefused(refusal, answer.status)) return { kind: "held", error: said };
-      // Meta's own trouble, or too many at once, passes; anything else it said of the event will not.
-      return passing(refusal, answer.status) ? { kind: "retry", error: said } : { kind: "refused", error: said };
+      // Meta's own trouble, or too many at once, passes, whatever the status it came with; a refusal of our account
+      // holds everything; anything else it said of the event will not pass.
+      if (passing(refusal, answer.status)) return { kind: "retry", error: said };
+      return accountRefused(refusal, answer.status) ? { kind: "held", error: said } : { kind: "refused", error: said };
     },
   };
 }

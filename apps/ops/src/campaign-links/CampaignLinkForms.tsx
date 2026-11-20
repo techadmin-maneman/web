@@ -131,6 +131,15 @@ function societyCosts(draft: SocietyDraft) {
   );
 }
 
+/** What a society's costs lack before Make link: a box holding more than whole digits, else one staff box alone. */
+function costsMissing(draft: SocietyDraft): string | null {
+  const bad = SOCIETY_FIGURES.find(
+    (figure) => draft[figure.key].trim() !== "" && rupeesOrNone(draft[figure.key]) === null,
+  );
+  if (bad !== undefined) return copy.missing.figures[bad.key];
+  return (draft.hours.trim() === "") === (draft.rate.trim() === "") ? null : copy.missing.staff;
+}
+
 /** The society's figures, each a box of whole rupees or hours, one to a row. */
 const SOCIETY_FIGURES = [
   { key: "stall", label: copy.society.stall, maxLength: 9 },
@@ -242,7 +251,7 @@ export function SocietyForm(props: {
     <Sending
       busy={busy}
       failure={failure}
-      missing={missingOf(draft.name, /^\d{6}$/.test(draft.pincode) ? null : copy.missing.pincode)}
+      missing={missingOf(draft.name, /^\d{6}$/.test(draft.pincode) ? costsMissing(draft) : copy.missing.pincode)}
       onCancel={props.onCancel}
       onSend={() => {
         void send({

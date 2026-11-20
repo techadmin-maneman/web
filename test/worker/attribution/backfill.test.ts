@@ -148,6 +148,12 @@ describe("an old lead given its touch after the client's newer one", () => {
       {},
       { id: "since", at: NOW.toISOString(), via: "site", person_id: personId, channel: "direct", campaign_signal: 0 },
     );
+    // A Meta ad clicked after the booking: not the booking's last touch.
+    await writeRow(
+      "touches",
+      {},
+      { id: "later", at: daysAgo(-1), via: "site", person_id: personId, channel: "meta_ads", campaign_signal: 1 },
+    );
     await writeRow(
       "person_attribution",
       {},
@@ -188,6 +194,8 @@ describe("an old lead given its touch after the client's newer one", () => {
         `SELECT t.at, pa.attributed_channel FROM person_attribution pa JOIN touches t ON t.id = pa.first_touch_id`,
       ),
     ).toEqual([{ at: daysAgo(30), attributed_channel: "google_ads" }]);
-    expect(await rows("SELECT attributed_channel FROM conversions")).toEqual([{ attributed_channel: "google_ads" }]);
+    expect(await rows("SELECT attributed_channel, last_touch_channel FROM conversions")).toEqual([
+      { attributed_channel: "google_ads", last_touch_channel: "google_ads" },
+    ]);
   });
 });

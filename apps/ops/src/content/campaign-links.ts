@@ -52,6 +52,15 @@ export const campaignLinks = {
     name: "Type a name.",
     pincode: "Type the society’s six-digit pincode.",
     campaign: "Type the campaign in small letters and hyphens.",
+    /** A cost typed as anything but whole digits, named by its box. */
+    figures: {
+      stall: "Type the stall fee in whole rupees.",
+      hours: "Type staff hours as a whole number.",
+      rate: "Type the rate an hour in whole rupees.",
+      collateral: "Type collateral in whole rupees.",
+      other: "Type other costs in whole rupees.",
+    },
+    staff: "Type both staff hours and the rate an hour.",
   },
   /** "PROMO20 · 20% off" */
   discountWords: (code: string, kind: "percent" | "amount", value: string) =>
