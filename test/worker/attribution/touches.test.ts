@@ -22,7 +22,7 @@ const headers = (visitor: string | null) => ({
 });
 
 const visit = (touch: object, visitor: string | null = VISITOR) =>
-  request(site(), "/api/visits", { method: "POST", headers: headers(visitor), body: JSON.stringify(touch) });
+  request(site(), "/api/landings", { method: "POST", headers: headers(visitor), body: JSON.stringify(touch) });
 
 const LEAD = { name: "Karan Bhatia", mobile: "9810000002", consent: true, terms: true, turnstile_token: "token" };
 

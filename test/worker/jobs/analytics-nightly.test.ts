@@ -3,8 +3,10 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { touchOldLeads } from "../../../src/domain/attribution/backfill.ts";
 import { clientKeys } from "../../../src/domain/analytics/client-key.ts";
 import { copyTonight } from "../../../src/domain/analytics/nightly.ts";
+import { CHANNELS } from "../../../src/policy/channels.ts";
 import { createStubWarehouse } from "../../../src/providers/warehouse/stub.ts";
 import { client, IMRAN, technician } from "../clients.ts";
 import { NOW } from "../helpers.ts";
@@ -223,6 +225,8 @@ describe("the copy's channels", () => {
          VALUES ('l-later', 'p-rohit', '2026-09-03T05:00:00.000Z', 'form', 'https://www.google.com/', 'crown', 'r2')`,
       ),
     ]);
+    // Leads from before touches, given theirs as the hourly job gives them (ADR 0288).
+    await touchOldLeads(env.DB);
     const warehouse = createStubWarehouse();
 
     await copyTonight(env.DB, warehouse, night);
@@ -236,7 +240,7 @@ describe("the copy's channels", () => {
     });
     const [rohit] = (await clientKeys(SECRET, ["p-rohit"])).values();
     expect(warehouse.tables.get("dim_client")?.get(rohit ?? "")).toMatchObject({ channel: "Google Ads" });
-    expect(warehouse.tables.get("dim_channel")?.size).toBe(7);
+    expect(warehouse.tables.get("dim_channel")?.size).toBe(CHANNELS.length);
   });
 });
 

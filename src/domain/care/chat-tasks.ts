@@ -2,6 +2,7 @@
 // board's other queues (src/domain/ops/tasks.ts), and kept once the reply clock has run out.
 
 import { replyBy, type CareHours } from "../../policy/care-hours.ts";
+import type { SqlValue } from "../../lib/sql.ts";
 import type { TaskGroup } from "../../policy/tasks.ts";
 import { HEARD_FROM_QUEUE } from "../attribution/heard-from-task.ts";
 import { CITY_MATTERS_OPEN } from "./city-matters.ts";
@@ -34,7 +35,11 @@ const ERASURES_TO_FOLLOW_UP = `SELECT 'erasure_follow_up' AS "group", f.person_i
  * city (./city-matters.ts); and a remedy awaiting a manager (./remedies.ts); and an erasure Care finish in the CRM;
  * and a client consulted whom nobody has asked how they heard of us (../attribution/heard-from-task.ts).
  */
-export const CARE_QUEUES: readonly { readonly group: TaskGroup; readonly sql: string }[] = [
+export const CARE_QUEUES: readonly {
+  readonly group: TaskGroup;
+  readonly sql: string;
+  readonly binds?: (at: { readonly now: string }) => readonly SqlValue[];
+}[] = [
   { group: "unanswered_chat", sql: CHATS_WAITING },
   { group: "message_undelivered", sql: MESSAGES_UNDELIVERED },
   { group: "city_matter", sql: CITY_MATTERS_OPEN },

@@ -236,7 +236,7 @@ export function bookPublicConsultation(
 
 /** A landing, kept as the visitor's touch where it is their first or a campaign's; answers their WhatsApp reference. */
 export function reportVisit(touch: Attribution): Promise<Answer<VisitAnswer>> {
-  return post<VisitAnswer>("/api/visits", touch);
+  return post<VisitAnswer>("/api/landings", touch);
 }
 
 /** /book's first step: the name and number, kept as a lead before the visit is chosen. */

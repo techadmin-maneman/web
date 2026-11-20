@@ -1,6 +1,6 @@
 // What the site's pages report of their visitor (docs/decisions/0288-attribution-and-conversions.md):
 //
-// - POST /api/visits: a landing, from the page's own script, kept as a touch where it is the visitor's first or a
+// - POST /api/landings: a landing, from the page's own script, kept as a touch where it is the visitor's first or a
 //   campaign's; it answers the reference the visitor's WhatsApp message ends with. A browser the site's Worker gave no
 //   visitor cookie, or an address past its hour's reports, is answered with nothing kept.
 // - GET /api/links/{kind}/{slug}: where a campaign link sends the visitor, for the site's Worker, which redirects
@@ -28,7 +28,7 @@ const VisitAnswerSchema = z
 
 const visitRoute = createRoute({
   method: "post",
-  path: "/api/visits",
+  path: "/api/landings",
   summary: "A page's report of its visitor's landing, kept where it is their first or a campaign's",
   request: { body: { required: true, content: { "application/json": { schema: TouchSchema } } } },
   responses: {

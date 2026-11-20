@@ -1177,7 +1177,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/visits": {
+    "/api/landings": {
         parameters: {
             query?: never;
             header?: never;

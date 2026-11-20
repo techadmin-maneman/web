@@ -21,7 +21,7 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
 
 1. **A visitor, and their touches.** The site's Worker gives each browser a first-party visitor cookie, set by the
    server so Safari keeps it, for 13 months, on `.maneman.in` so the client app's requests carry it, named for its
-   environment. The page sends what each landing carried to `POST /api/visits` once for the visitor's first page and
+   environment. The page sends what each landing carried to `POST /api/landings` once for the visitor's first page and
    again for any landing a campaign put something in; crawlers, which run no script, write nothing. Each is a **touch**:
    the campaign tags, Google's three click IDs, Meta's click ID and cookies (its click cookie built from the click ID
    where the browser had none), the page before, the landing page, any code of ours, and the visitor's answer to the

@@ -1653,7 +1653,7 @@ Request body:
 }
 ```
 
-### POST /api/visits
+### POST /api/landings
 
 A page's report of its visitor's landing, kept where it is their first or a campaign's
 

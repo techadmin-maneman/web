@@ -74,7 +74,7 @@ beforeEach(async () => {
 
 describe("a WhatsApp message", () => {
   it("with a visitor's reference makes the visitor's touches the number's, and the person's once Care save them", async () => {
-    const landed = await request(site(), "/api/visits", {
+    const landed = await request(site(), "/api/landings", {
       method: "POST",
       headers: { "Content-Type": "application/json", Cookie: `mm_vid_local=${VISITOR}` },
       body: JSON.stringify({ landing_path: "/", gclid: "Cj0KCQ_test" }),
