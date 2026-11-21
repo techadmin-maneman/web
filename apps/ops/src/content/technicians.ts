@@ -96,6 +96,7 @@ export const technicians = {
      */
     reach: "Takes visits within",
     reachValue: (km: number) => `${String(km)} km of home`,
+    reachUnit: "km",
     everyonesReach: (km: number) => `${String(km)} km of home, the setting for everyone`,
     /** Everyone's, before the roster that says how far it is has been read. */
     businessReach: "The setting for everyone",

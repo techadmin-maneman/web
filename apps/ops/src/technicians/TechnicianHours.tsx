@@ -194,6 +194,7 @@ function ReachRow(props: {
       words={EDITING}
       mayChange={props.mayChange}
       value={value}
+      unit={copy.reachUnit}
       start={() => (technician.radius_km === null ? "" : String(technician.radius_km))}
       save={async (typed) => {
         const km = typed.trim() === "" ? null : Number(typed);
