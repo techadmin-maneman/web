@@ -91,11 +91,12 @@ interface Clicks {
   readonly wbraid: string | null;
 }
 
-/** Each platform's sends falling due, the oldest first. */
 /** The client's current address, and its city's row for the state. */
 const CURRENT_ADDRESS = `LEFT JOIN addresses a ON a.id = (SELECT x.id FROM addresses x
       WHERE x.person_id = c.person_id AND x.replaced_at IS NULL ORDER BY x.created_at DESC, x.id LIMIT 1)
     LEFT JOIN cities ci ON ci.name = a.city`;
+
+/** Each platform's sends falling due, the oldest first. */
 const DUE_META = `SELECT c.event_id, c.event, c.subject_id, c.person_id, c.occurred_at,
     CASE WHEN c.event IN ('first_fit_paid', 'service_paid')
       THEN (SELECT COALESCE(y.amount_ex_gst, y.amount) FROM payments y WHERE y.id = c.subject_id) ELSE c.value_paise END
