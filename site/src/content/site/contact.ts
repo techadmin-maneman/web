@@ -38,6 +38,8 @@ export const consentBar = {
   decline: "Decline",
   /** In each footer: the bar back, to answer again. */
   change: "Cookie choices",
+  /** The answer in force, said on the bar Cookie choices brought back. */
+  chosen: { granted: "You’ve accepted them.", denied: "You’ve declined them." },
 };
 
 /** The booking form or the try-on, when it failed to draw: the way to us instead. */

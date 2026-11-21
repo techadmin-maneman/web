@@ -2936,6 +2936,22 @@
     "reviewed": false
   },
   {
+    "key": "site:contact/consentBar.chosen.granted",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "You’ve accepted them.",
+    "reviewed": false
+  },
+  {
+    "key": "site:contact/consentBar.chosen.denied",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "You’ve declined them.",
+    "reviewed": false
+  },
+  {
     "key": "site:contact/islandFailed.message",
     "surface": "site",
     "group": "Contact",

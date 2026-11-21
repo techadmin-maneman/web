@@ -1,7 +1,7 @@
 // The site's tags (site/src/lib/analytics.ts): each starts with every consent denied, none is given an address's
 // fragment, and none starts on /stop, whose address carries the token that stops a person's messages.
 
-import { consentBar } from "../site/src/content/site.ts";
+import { consentBar, stickyBar } from "../site/src/content/site.ts";
 import { axeViolations } from "./a11y.ts";
 import { expect, test, analyticsCommands } from "./support.ts";
 
@@ -26,6 +26,9 @@ test.describe("the cookie bar", () => {
     await page.goto("/");
     const bar = page.getByRole("region", { name: consentBar.label });
     await expect(bar).toContainText(consentBar.text);
+    // No answer is kept yet, so none is said.
+    await expect(bar.getByText(consentBar.chosen.granted)).toBeHidden();
+    await expect(bar.getByText(consentBar.chosen.denied)).toBeHidden();
     expect(await axeViolations(page, (axe) => axe.include("[data-consent-bar]"))).toEqual([]);
     // The API hears of it, so nothing the browser's touches kept for Meta is sent (ADR 0288).
     const declined = page.waitForRequest(
@@ -61,8 +64,10 @@ test.describe("the cookie bar", () => {
     const choices = page.getByRole("contentinfo").getByRole("button", { name: consentBar.change });
     await choices.click();
     await expect(bar).toBeVisible();
-    // The bar opens over the footer: the focus goes into it, and back to the button once answered.
-    await expect(bar.getByRole("button", { name: consentBar.accept })).toBeFocused();
+    // The bar opens over the footer: the focus goes to the bar, neither answer, and back to the button once answered.
+    await expect(bar).toBeFocused();
+    await expect(bar.getByText(consentBar.chosen.granted)).toBeVisible();
+    await expect(bar.getByText(consentBar.chosen.denied)).toBeHidden();
     await bar.getByRole("button", { name: consentBar.decline }).click();
     await expect(bar).toBeHidden();
     await expect(choices).toBeFocused();
@@ -71,15 +76,44 @@ test.describe("the cookie bar", () => {
     expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);
   });
 
+  // It stood a foot bar's height above the window's foot while the home page's bar was still down beneath the hero.
+  test("stands at the window's foot until a phone's home bar is up, then above it", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "390", "only a phone's home page has the foot bar");
+    await page.goto("/");
+    const bar = page.getByRole("region", { name: consentBar.label });
+    const foot = page.getByRole("navigation", { name: stickyBar.label });
+    const bottom = async () => {
+      const box = await bar.boundingBox();
+      return (box?.y ?? 0) + (box?.height ?? 0);
+    };
+    await expect(foot).toBeHidden();
+    expect(page.viewportSize()?.height ?? 0).toBeCloseTo((await bottom()) + 16, 0);
+
+    await page.locator('[data-section="range"]').evaluate((section) => {
+      section.scrollIntoView();
+    });
+    await expect(foot).toBeVisible();
+    // Within a pixel of the 16 px gap, once the foot bar has slid up.
+    const gap = async () => ((await foot.boundingBox())?.y ?? 0) - (await bottom());
+    await expect.poll(async () => Math.abs((await gap()) - 16)).toBeLessThanOrEqual(1);
+  });
+
   test("keeps a decline while Cookie choices asks again, until another answer is picked", async ({ page }) => {
     await page.goto("/guides");
     const bar = page.getByRole("region", { name: consentBar.label });
     await bar.getByRole("button", { name: consentBar.decline }).click();
     await page.reload();
 
-    await page.getByRole("contentinfo").getByRole("button", { name: consentBar.change }).click();
+    const choices = page.getByRole("contentinfo").getByRole("button", { name: consentBar.change });
+    await choices.click();
     await expect(bar).toBeVisible();
+    await expect(bar.getByText(consentBar.chosen.denied)).toBeVisible();
+    await expect(bar.getByText(consentBar.chosen.granted)).toBeHidden();
     expect(await analyticsCommands(page)).not.toContainEqual(["consent", "update", GRANTED]);
+    // The footer keeps the bar's room beneath its last line: Cookie choices scrolls clear above the bar.
+    await page.mouse.wheel(0, 10_000);
+    const [above, under] = [await choices.boundingBox(), await bar.boundingBox()];
+    expect((above?.y ?? 0) + (above?.height ?? 0)).toBeLessThanOrEqual(under?.y ?? 0);
     await page.reload();
     await expect(bar).toBeHidden();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);

@@ -56,7 +56,8 @@ import { iconButtonLook } from "@maneman/ui/IconButton";
     :global(html) {
       scroll-padding-bottom: var(--bar-h);
     }
-    :global(body) {
+    /* Only while it is up: hidden while the hero shows, it leaves the cookie bar at the window's foot. */
+    :global(body:has([data-sticky-bar]:not([data-waiting]))) {
       --foot-bar-h: var(--bar-h);
     }
   }

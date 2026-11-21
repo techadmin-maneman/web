@@ -2,14 +2,17 @@
 // The bar that asks for consent to the ad and measurement tags (site/src/lib/analytics.ts), at the foot of every page
 // until the visitor answers, and again when they pick Cookie choices in a footer. Switched on and off by
 // CONSENT_BAR_SHOWN; hidden until the page's script finds no answer kept, so a visitor who answered never sees it flash.
+// Brought back, it says the answer in force, and takes the focus itself, so neither answer is the one a key presses.
 import { buttonLook } from "@maneman/ui/Button";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { consentBar as words } from "../content/site.ts";
 ---
 
-<div class="bar on-ink" data-consent-bar role="region" aria-label={words.label} hidden>
+<div class="bar on-ink" data-consent-bar role="region" aria-label={words.label} tabindex="-1" hidden>
   <p class="text">
-    {words.text}{" "}
+    {words.text}
+    <span data-consent-now="granted" hidden>{` ${words.chosen.granted}`}</span>
+    <span data-consent-now="denied" hidden>{` ${words.chosen.denied}`}</span>{" "}
     <a class={textLinkLook({ tone: "ink", inline: true })} href="/privacy">
       {words.privacy}
     </a>
@@ -30,13 +33,13 @@ import { consentBar as words } from "../content/site.ts";
 
   const bar = document.querySelector<HTMLElement>("[data-consent-bar]");
   const root = document.documentElement;
-  // While it asks, the page keeps the bar's height clear at its foot, so a page that ends in a form can still bring
-  // the form's last button above it (--consent-reserve, site/src/styles/tokens-site.css).
+  // While it asks, the page keeps the bar's height clear at its foot, so a page that ends in a form or a footer can
+  // still bring its last line above it (--consent-reserve, site/src/styles/tokens-site.css).
   const keepClear = new ResizeObserver(() => {
     if (bar === null) return;
-    // The bar, what holds it above the page's foot, and as much again above it.
-    const above = parseFloat(getComputedStyle(bar).bottom);
-    root.style.setProperty("--consent-reserve", `${String(bar.offsetHeight + 2 * above)}px`);
+    // The bar, its gap beneath, and as much again above it; a foot bar beneath it keeps its own room.
+    const gap = parseFloat(getComputedStyle(bar).getPropertyValue("--consent-gap"));
+    root.style.setProperty("--consent-reserve", `${String(bar.offsetHeight + 2 * gap)}px`);
   });
 
   /** The footer button that brought the bar back, given the focus again once the visitor answers. */
@@ -44,6 +47,10 @@ import { consentBar as words } from "../content/site.ts";
 
   function ask(): void {
     if (bar === null || !bar.hidden) return;
+    const kept = consentAnswer();
+    for (const line of bar.querySelectorAll<HTMLElement>("[data-consent-now]")) {
+      line.hidden = line.dataset.consentNow !== kept;
+    }
     bar.hidden = false;
     // Said on the page too, so a button pinned at a phone's foot can wait in its place instead (islands/invite).
     root.dataset.consentAsking = "";
@@ -70,21 +77,22 @@ import { consentBar as words } from "../content/site.ts";
 
   // The footers' Cookie choices: the bar again, the answer kept holding until another is picked, so a visitor may
   // decline as easily as they agreed, and one who declined is never taken to agree by asking (Privacy Policy, 7).
-  // The bar opens over the footer's foot, so the focus moves into it, where a screen reader hears it, and comes back.
+  // The bar opens over the footer's foot, so the focus moves to it, where a screen reader hears it, and comes back.
   for (const button of document.querySelectorAll<HTMLButtonElement>("[data-cookie-choices]")) {
     button.addEventListener("click", () => {
       ask();
       opener = button;
-      bar?.querySelector<HTMLButtonElement>("[data-consent='granted']")?.focus();
+      bar?.focus();
     });
   }
 </script>
 
 <style>
   .bar {
+    --consent-gap: var(--sp-16);
     position: fixed;
     /* Above the home page's foot bar on a phone, which would cover its buttons. */
-    inset: auto var(--gutter) calc(var(--foot-bar-h) + var(--sp-16));
+    inset: auto var(--gutter) calc(var(--foot-bar-h) + var(--consent-gap));
     z-index: var(--z-consent);
     display: flex;
     flex-wrap: wrap;
@@ -99,6 +107,10 @@ import { consentBar as words } from "../content/site.ts";
   }
   .bar[hidden] {
     display: none;
+  }
+  /* Focused to be heard, not pressed: a place, as the main is, draws no ring (styles/global.css). */
+  .bar:focus {
+    outline: none;
   }
   .text {
     flex: 1 1 auto;
