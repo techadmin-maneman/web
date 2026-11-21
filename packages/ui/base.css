@@ -66,7 +66,7 @@
        app larger. */
     --message-size: var(--fs-15);
     /* Inside a table row, which keeps the row at the console's row height. */
-    /* How far above the window's foot a full-width toast sits (./Toast.tsx): an app with a bar there sets it higher. */
+    /* How far above the window's foot a toast sits (./Toast.tsx): an app with a bar there sets it higher. */
     --toast-lift: var(--sp-24);
     --compact-height: var(--sp-28);
     --compact-text: var(--fs-13);

@@ -3,9 +3,10 @@
 @layer base, ui;
 
 @layer ui {
+  /* The console's: centred, above the page's bars (--toast-lift). */
   .region {
     position: fixed;
-    bottom: var(--sp-24);
+    bottom: var(--toast-lift);
     left: 50%;
     z-index: var(--z-bar);
     display: flex;

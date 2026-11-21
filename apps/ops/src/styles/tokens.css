@@ -47,3 +47,11 @@
   /* A panel on white over the paper page, so a panel reads as raised (the dark theme sets its own). */
   --ui-raised: var(--white);
 }
+
+@media (max-width: 600px) {
+  :root {
+    --ops-tab-bar: 57px; /* the phone's tab bar (frame/PhoneTabs.tsx): its icon, its name and their room */
+    /* A toast stands as far above the tab bar as it stands above the window's foot at a desk. */
+    --toast-lift: calc(var(--ops-tab-bar) + var(--sp-24) + env(safe-area-inset-bottom));
+  }
+}
