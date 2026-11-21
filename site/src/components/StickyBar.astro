@@ -28,11 +28,17 @@ import { iconButtonLook } from "@maneman/ui/IconButton";
 </nav>
 <script is:inline>
   // Up once the hero has scrolled away, and down while a section's own filled button is on the screen, so one filled
-  // button shows at a time (ADR 0266). Where scripts do not run, it is there from the start.
+  // button shows at a time (ADR 0266). Where scripts do not run, it is there from the start. The page is marked while
+  // it is up, so the cookie bar stands above it then, and at the window's foot otherwise (--foot-bar-h).
   (() => {
     const bar = document.currentScript.previousElementSibling;
     const hero = document.querySelector('[data-section="hero"]');
-    if (bar === null || hero === null || !("IntersectionObserver" in window)) return;
+    const root = document.documentElement;
+    if (bar === null) return;
+    if (hero === null || !("IntersectionObserver" in window)) {
+      root.dataset.footBar = "";
+      return;
+    }
     const filled = new Set();
     let heroGone = false;
     bar.dataset.waiting = "";
@@ -42,8 +48,13 @@ import { iconButtonLook } from "@maneman/ui/IconButton";
         else if (entry.isIntersecting) filled.add(entry.target);
         else filled.delete(entry.target);
       }
-      if (heroGone && filled.size === 0) delete bar.dataset.waiting;
-      else bar.dataset.waiting = "";
+      if (heroGone && filled.size === 0) {
+        delete bar.dataset.waiting;
+        root.dataset.footBar = "";
+      } else {
+        bar.dataset.waiting = "";
+        delete root.dataset.footBar;
+      }
     });
     watch.observe(hero);
     for (const button of document.querySelectorAll("main [data-filled]")) watch.observe(button);
@@ -56,8 +67,8 @@ import { iconButtonLook } from "@maneman/ui/IconButton";
     :global(html) {
       scroll-padding-bottom: var(--bar-h);
     }
-    /* Only while it is up: hidden while the hero shows, it leaves the cookie bar at the window's foot. */
-    :global(body:has([data-sticky-bar]:not([data-waiting]))) {
+    /* Only while it is up, as its script marks the page: every page's stylesheet holds this rule, not the home's alone. */
+    :global(html[data-foot-bar]) {
       --foot-bar-h: var(--bar-h);
     }
   }

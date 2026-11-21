@@ -1,6 +1,7 @@
 // The site's tags (site/src/lib/analytics.ts): each starts with every consent denied, none is given an address's
 // fragment, and none starts on /stop, whose address carries the token that stops a person's messages.
 
+import type { Locator, Page } from "@playwright/test";
 import { consentBar, stickyBar } from "../site/src/content/site.ts";
 import { axeViolations } from "./a11y.ts";
 import { expect, test, analyticsCommands } from "./support.ts";
@@ -18,6 +19,18 @@ const GRANTED = {
   ad_personalization: "granted",
   analytics_storage: "granted",
 };
+
+/** The page scrolled to its end at once, not over the smooth scroll's time. */
+const toTheEnd = (page: Page) =>
+  page.evaluate(() => {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
+  });
+
+/** How far a footer's line stands above the cookie bar: below zero, the bar covers it. */
+async function clearance(line: Locator, bar: Locator): Promise<number> {
+  const [above, under] = [await line.boundingBox(), await bar.boundingBox()];
+  return (under?.y ?? 0) - ((above?.y ?? 0) + (above?.height ?? 0));
+}
 
 test.describe("the cookie bar", () => {
   test.use({ consentBarAsks: true });
@@ -76,6 +89,42 @@ test.describe("the cookie bar", () => {
     expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);
   });
 
+  // The home page's footer kept no room for the bar, which covered its last line.
+  test("keeps the bar's room beneath the home page's footer", async ({ page }) => {
+    await page.goto("/");
+    const bar = page.getByRole("region", { name: consentBar.label });
+    await expect(bar).toBeVisible();
+    await toTheEnd(page);
+    // Its last line: the social links, beneath Cookie choices on a phone.
+    const last = page.getByRole("contentinfo").getByRole("link").last();
+    await expect.poll(() => clearance(last, bar)).toBeGreaterThanOrEqual(0);
+  });
+
+  // The bar's room on a phone's flow lost the foot bar's height it had counted: /try's buttons still clear it.
+  test("leaves the try-on's buttons above it", async ({ page }) => {
+    await page.goto("/try");
+    const bar = page.getByRole("region", { name: consentBar.label });
+    await expect(bar).toBeVisible();
+    await toTheEnd(page);
+    const last = page.getByRole("main").getByRole("button").last();
+    await expect(last).toBeVisible();
+    await expect.poll(() => clearance(last, bar)).toBeGreaterThanOrEqual(0);
+  });
+
+  // A browser that refused storage said no answer when the bar came back, though one was given on the page.
+  test("says the answer given on the page, where storage refuses to keep it", async ({ page }) => {
+    await page.addInitScript(() => {
+      Storage.prototype.setItem = () => {
+        throw new DOMException("Refused", "SecurityError");
+      };
+    });
+    await page.goto("/guides");
+    const bar = page.getByRole("region", { name: consentBar.label });
+    await bar.getByRole("button", { name: consentBar.accept }).click();
+    await page.getByRole("contentinfo").getByRole("button", { name: consentBar.change }).click();
+    await expect(bar.getByText(consentBar.chosen.granted)).toBeVisible();
+  });
+
   // It stood a foot bar's height above the window's foot while the home page's bar was still down beneath the hero.
   test("stands at the window's foot until a phone's home bar is up, then above it", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "390", "only a phone's home page has the foot bar");
@@ -111,9 +160,8 @@ test.describe("the cookie bar", () => {
     await expect(bar.getByText(consentBar.chosen.granted)).toBeHidden();
     expect(await analyticsCommands(page)).not.toContainEqual(["consent", "update", GRANTED]);
     // The footer keeps the bar's room beneath its last line: Cookie choices scrolls clear above the bar.
-    await page.mouse.wheel(0, 10_000);
-    const [above, under] = [await choices.boundingBox(), await bar.boundingBox()];
-    expect((above?.y ?? 0) + (above?.height ?? 0)).toBeLessThanOrEqual(under?.y ?? 0);
+    await toTheEnd(page);
+    await expect.poll(() => clearance(choices, bar)).toBeGreaterThanOrEqual(0);
     await page.reload();
     await expect(bar).toBeHidden();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);

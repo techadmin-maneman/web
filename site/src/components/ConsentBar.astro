@@ -8,8 +8,16 @@ import { textLinkLook } from "@maneman/ui/TextLink";
 import { consentBar as words } from "../content/site.ts";
 ---
 
-<div class="bar on-ink" data-consent-bar role="region" aria-label={words.label} tabindex="-1" hidden>
-  <p class="text">
+<div
+  class="bar on-ink"
+  data-consent-bar
+  role="region"
+  aria-label={words.label}
+  aria-describedby="consent-text"
+  tabindex="-1"
+  hidden
+>
+  <p class="text" id="consent-text">
     {words.text}
     <span data-consent-now="granted" hidden>{` ${words.chosen.granted}`}</span>
     <span data-consent-now="denied" hidden>{` ${words.chosen.denied}`}</span>{" "}
@@ -44,10 +52,12 @@ import { consentBar as words } from "../content/site.ts";
 
   /** The footer button that brought the bar back, given the focus again once the visitor answers. */
   let opener: HTMLElement | null = null;
+  /** The answer given on this page, said again where storage refused to keep it. */
+  let given: "granted" | "denied" | null = null;
 
   function ask(): void {
     if (bar === null || !bar.hidden) return;
-    const kept = consentAnswer();
+    const kept = consentAnswer() ?? given;
     for (const line of bar.querySelectorAll<HTMLElement>("[data-consent-now]")) {
       line.hidden = line.dataset.consentNow !== kept;
     }
@@ -61,6 +71,7 @@ import { consentBar as words } from "../content/site.ts";
     for (const button of bar.querySelectorAll<HTMLButtonElement>("[data-consent]")) {
       button.addEventListener("click", () => {
         const answer = button.dataset.consent === "granted" ? "granted" : "denied";
+        given = answer;
         answerConsent(answer);
         // The API keeps nothing of this browser's for Meta once it is declined, what came before included.
         if (answer === "denied") void reportDeclined();
@@ -93,6 +104,8 @@ import { consentBar as words } from "../content/site.ts";
     position: fixed;
     /* Above the home page's foot bar on a phone, which would cover its buttons. */
     inset: auto var(--gutter) calc(var(--foot-bar-h) + var(--consent-gap));
+    /* Up and down with the foot bar, which slides as long, so it never passes over the buttons. */
+    transition: bottom var(--duration-quick) var(--ease-house);
     z-index: var(--z-consent);
     display: flex;
     flex-wrap: wrap;
@@ -107,10 +120,6 @@ import { consentBar as words } from "../content/site.ts";
   }
   .bar[hidden] {
     display: none;
-  }
-  /* Focused to be heard, not pressed: a place, as the main is, draws no ring (styles/global.css). */
-  .bar:focus {
-    outline: none;
   }
   .text {
     flex: 1 1 auto;
