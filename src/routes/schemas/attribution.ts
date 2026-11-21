@@ -8,7 +8,7 @@ import { z } from "@hono/zod-openapi";
 const tag = z.string().max(200).optional();
 const clickId = z.string().max(500).optional();
 
-export const TouchSchema = z
+const TouchSchema = z
   .object({
     utm_source: tag,
     utm_medium: tag,
@@ -35,3 +35,13 @@ export const TouchSchema = z
   .openapi("Attribution");
 
 export const AttributionSchema = TouchSchema.optional();
+
+/** A page's landing: where it came from, and the page's own mark for it, so a landing sent again is one touch. */
+export const LandingSchema = TouchSchema.extend({
+  landing_key: z
+    .string()
+    .min(10)
+    .max(40)
+    .optional()
+    .openapi({ description: "The moment the page kept this landing, the same each time it is sent." }),
+}).openapi("Landing");

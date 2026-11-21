@@ -11,7 +11,7 @@ import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import Header from "../components/Header.astro";
 import Sprite from "../components/Sprite.astro";
 import StickyBar from "../components/StickyBar.astro";
-import { business, header } from "../content/site.ts";
+import { business, header, whatsapp } from "../content/site.ts";
 import { skipLinkLook } from "@maneman/ui/SkipLink";
 import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
 import { FAVICON_SIZES, OG_IMAGE, token } from "../lib/brand-images.ts";
@@ -97,7 +97,10 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     ))}
     <slot name="head" />
   </head>
-  <body class:list={[isFlowPage(path) && "in-flow", isFlowPage(path) && "app-look"]}>
+  <body
+    class:list={[isFlowPage(path) && "in-flow", isFlowPage(path) && "app-look"]}
+    data-chat-greeting={whatsapp.greeting}
+  >
     <a class={skipLinkLook()} href="#content">
       {header.skip}
     </a>

@@ -13,7 +13,9 @@ CREATE TABLE visitors (
   person_id TEXT REFERENCES people (id),
   created_at TEXT NOT NULL,
   -- Their latest touch: a visitor never named is deleted 13 months after it.
-  seen_at TEXT NOT NULL
+  seen_at TEXT NOT NULL,
+  -- When their browser declined the cookie bar: a landing reported after, unless it says they accepted, is declined.
+  declined_at TEXT
 );
 
 CREATE INDEX visitors_by_person ON visitors (person_id) WHERE person_id IS NOT NULL;
@@ -93,11 +95,14 @@ CREATE TABLE touches (
   ad_notice TEXT,
   -- For Meta's match only, never shown; cleared 90 days on.
   user_agent TEXT,
-  client_ip TEXT
+  client_ip TEXT,
+  -- A page's own mark for its landing, the moment the browser kept it: a landing sent again is one touch.
+  landing_key TEXT
 );
 
 CREATE INDEX touches_by_person ON touches (person_id, at) WHERE person_id IS NOT NULL;
 CREATE INDEX touches_by_visitor ON touches (visitor_id, at) WHERE visitor_id IS NOT NULL;
+CREATE UNIQUE INDEX touches_one_per_landing ON touches (visitor_id, landing_key) WHERE landing_key IS NOT NULL;
 CREATE INDEX touches_unclaimed_by_mobile ON touches (mobile_e164) WHERE person_id IS NULL AND mobile_e164 IS NOT NULL;
 CREATE INDEX touches_by_link ON touches (link_id) WHERE link_id IS NOT NULL;
 CREATE INDEX touches_with_address ON touches (at) WHERE client_ip IS NOT NULL OR user_agent IS NOT NULL;

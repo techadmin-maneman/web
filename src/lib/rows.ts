@@ -1923,6 +1923,7 @@ export interface Rows {
     readonly ad_notice: string | null;
     readonly user_agent: string | null;
     readonly client_ip: string | null;
+    readonly landing_key: string | null;
   };
   readonly tryon_jobs: {
     readonly id: string;
@@ -2057,6 +2058,7 @@ export interface Rows {
     readonly person_id: string | null;
     readonly created_at: string;
     readonly seen_at: string;
+    readonly declined_at: string | null;
   };
   readonly waitlist_entries: {
     readonly id: string;

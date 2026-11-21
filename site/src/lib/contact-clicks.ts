@@ -1,11 +1,10 @@
 // A chat or a call begun from any link on a page (docs/decisions/0288-attribution-and-conversions.md): each is
 // reported to the analytics tags, and a chat with our number opens with the visitor's reference at the end of its
 // words, "Hi, I'd like to know more. Ref M7K2Q9XP", so the chat that reaches Care carries where the visit came from. One
-// listener for the page, so every link, the footer's and the forms' alike, is read the same way.
+// listener for the page, so every link, the footer's and the forms' alike, is read the same way. The greeting comes
+// from the page (layouts/Site.astro), so the site's copy stays out of the script every page loads before it paints.
 
-import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { refLine } from "@rules/config/ref-tokens.ts";
-import { whatsapp } from "../content/site/contact.ts";
 import { track } from "./analytics.ts";
 import { INVITE_PATH_IN_URL } from "./invite.ts";
 import { visitorRef } from "./visit.ts";
@@ -13,12 +12,12 @@ import { visitorRef } from "./visit.ts";
 /** A chat with a number, as wa.me writes it: a share link to whoever the sender picks is not one. */
 const CHAT = /^https:\/\/wa\.me\/\d+/;
 
-/** The link's words with the reference at their end, or the greeting with it where there are none. */
+/** The link's words with the reference at their end, or the page's greeting with it where there are none. */
 function withRef(link: HTMLAnchorElement, ref: string): void {
   const url = new URL(link.href);
-  const words = url.searchParams.get("text");
-  if (words?.includes(refLine(ref)) === true) return;
-  link.href = whatsappChat(url.pathname, `${words ?? whatsapp.greeting} ${refLine(ref)}`);
+  const words = url.searchParams.get("text") ?? document.body.dataset.chatGreeting ?? "";
+  if (words.includes(refLine(ref))) return;
+  link.href = `${url.origin}${url.pathname}?text=${encodeURIComponent(`${words} ${refLine(ref)}`.trim())}`;
 }
 
 /** The page's path as the tags are told it: an invite's code left out. */

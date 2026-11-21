@@ -1661,7 +1661,7 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/Attribution"
+  "$ref": "#/components/schemas/Landing"
 }
 ```
 
@@ -5726,6 +5726,101 @@ Razorpay's webhook: payments and refunds
   "required": [
     "ref"
   ],
+  "additionalProperties": false
+}
+```
+
+### Landing
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "utm_source": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_medium": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_campaign": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_content": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_term": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "gclid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "gbraid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "wbraid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "fbclid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "fbc": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Meta's _fbc cookie, as the browser had it."
+    },
+    "fbp": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Meta's _fbp cookie, as the browser had it."
+    },
+    "referrer": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "landing_path": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "ref": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "A friend's or a partner's code, from ?ref."
+    },
+    "soc": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "A society activation's code, from its link."
+    },
+    "offer": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "An offer link's code."
+    },
+    "ad_consent": {
+      "type": "string",
+      "enum": [
+        "granted",
+        "denied"
+      ],
+      "description": "The visitor's answer to the cookie bar; none while they have not answered."
+    },
+    "landing_key": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 40,
+      "description": "The moment the page kept this landing, the same each time it is sent."
+    }
+  },
+  "required": [],
   "additionalProperties": false
 }
 ```

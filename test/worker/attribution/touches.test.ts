@@ -7,6 +7,9 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { AD_NOTICE } from "../../../src/config/notices.ts";
 import { REF_PATTERN } from "../../../src/config/ref-tokens.ts";
+import { declineVisitor } from "../../../src/domain/attribution/page-visit.ts";
+import { NO_CODES, NOTHING_CARRIED, recordTouch, resolveCodes } from "../../../src/domain/attribution/touches.ts";
+import { seeVisitor } from "../../../src/domain/attribution/visitors.ts";
 import { addCampaignLink } from "../../../src/domain/growth/campaign-links.ts";
 import { aPerson } from "../fixtures/index.ts";
 import { fakeQueue, markDatabase, request } from "../helpers.ts";
@@ -83,6 +86,20 @@ describe("a page's landing", () => {
     ]);
   });
 
+  it("records a landing sent again under its own key once, and the same link come back to as a new touch", async () => {
+    const society = { landing_path: "/book", utm_source: "society", utm_medium: "offline", utm_campaign: "palm-grove" };
+    await visit({ ...society, landing_key: "2026-09-21T06:00:00.000Z" });
+    await visit({ ...society, landing_key: "2026-09-21T06:00:00.000Z" });
+    await visit({ landing_path: "/", gclid: "Cj0KCQ_test", landing_key: "2026-09-21T07:00:00.000Z" });
+    await visit({ ...society, landing_key: "2026-09-21T08:00:00.000Z" });
+
+    expect(await rows("SELECT channel FROM touches ORDER BY rowid")).toEqual([
+      { channel: "society" },
+      { channel: "google_ads" },
+      { channel: "society" },
+    ]);
+  });
+
   it("keeps nothing for a browser the site gave no visitor cookie", async () => {
     expect(await (await visit({ landing_path: "/", gclid: "x" }, null)).json()).toEqual({ ref: null });
     expect(await rows("SELECT id FROM touches")).toEqual([]);
@@ -103,6 +120,78 @@ describe("a Decline on the cookie bar", () => {
     const refused = await decline();
     expect(refused.status).toBe(429);
     expect(await refused.json()).toMatchObject({ error: { code: "rate_limited" } });
+  });
+
+  it("is kept for a landing that reaches the API after it, as one sent before the Decline would", async () => {
+    expect((await decline()).status).toBe(204);
+    await visit({ landing_path: "/", fbclid: "IwAR_test", fbp: "fb.1.1790000000000.123456789" });
+
+    expect(await rows("SELECT fbc, fbp, ad_consent FROM touches")).toEqual([
+      { fbc: null, fbp: null, ad_consent: "denied" },
+    ]);
+    expect(await rows("SELECT declined_at IS NOT NULL AS declined FROM visitors")).toEqual([{ declined: 1 }]);
+  });
+
+  it("is kept for a landing the API was recording as the Decline arrived, read in the touch's own insert", async () => {
+    // The landing's request has seen its visitor; the Decline arrives before its touch is written.
+    await seeVisitor(env.DB, VISITOR, new Date());
+    await declineVisitor(env.DB, VISITOR, new Date());
+    await recordTouch(env.DB, {
+      at: new Date(),
+      via: "site",
+      visitorId: VISITOR,
+      personId: null,
+      mobileE164: null,
+      carried: { ...NOTHING_CARRIED, landing_path: "/", fbclid: "IwAR_test", fbp: "fb.1.1790000000000.123456789" },
+      resolved: await resolveCodes(env.DB, NO_CODES),
+      declared: null,
+      adConsent: null,
+      userAgent: null,
+      clientIp: null,
+    });
+
+    expect(await rows("SELECT fbc, fbp, ad_consent FROM touches")).toEqual([
+      { fbc: null, fbp: null, ad_consent: "denied" },
+    ]);
+  });
+
+  it("is kept for /book's touch from that browser, with no address or browser kept", async () => {
+    await decline();
+    await leave({ attribution: { landing_path: "/book", fbclid: "IwAR_test" } });
+
+    expect(
+      await rows(
+        "SELECT t.ad_consent, t.fbc, t.user_agent, t.client_ip FROM leads l JOIN touches t ON t.id = l.touch_id",
+      ),
+    ).toEqual([{ ad_consent: "denied", fbc: null, user_agent: null, client_ip: null }]);
+  });
+
+  it("is never taken by a chat's touch, which keeps no browser", async () => {
+    await decline();
+    await recordTouch(env.DB, {
+      at: new Date(),
+      via: "whatsapp",
+      visitorId: VISITOR,
+      personId: null,
+      mobileE164: "+919811112222",
+      carried: NOTHING_CARRIED,
+      resolved: await resolveCodes(env.DB, NO_CODES),
+      declared: null,
+      adConsent: null,
+      userAgent: null,
+      clientIp: null,
+    });
+
+    expect(await rows("SELECT via, ad_consent FROM touches")).toEqual([{ via: "whatsapp", ad_consent: null }]);
+  });
+
+  it("gives way to a later landing that says the visitor has since accepted", async () => {
+    await decline();
+    await visit({ landing_path: "/", fbclid: "IwAR_test", ad_consent: "granted" });
+
+    expect(await rows("SELECT ad_consent, fbc IS NOT NULL AS fbc FROM touches")).toEqual([
+      { ad_consent: "granted", fbc: 1 },
+    ]);
   });
 
   it("reaches /book's own touch on a page whose landing report never arrived", async () => {

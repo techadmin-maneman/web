@@ -41,7 +41,6 @@ type PublicConsultationRequest = Body<"/api/consultation">;
 type PublicWaitlistRequest = Body<"/api/waitlist">;
 type LeadRequest = Body<"/api/lead">;
 type LeadLeft = Schemas["LeadLeft"];
-type VisitAnswer = Schemas["VisitAnswer"];
 type ConsultationRequest = Body<"/api/r/{code}/consultation">;
 type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
 
@@ -232,16 +231,6 @@ export function bookPublicConsultation(
   idempotencyKey: string,
 ): Promise<Answer<Consultation | NotBooked>> {
   return post<Consultation | NotBooked>("/api/consultation", request, idempotencyKey);
-}
-
-/** A landing, kept as the visitor's touch where it is their first or a campaign's; answers their WhatsApp reference. */
-export function reportVisit(touch: Attribution): Promise<Answer<VisitAnswer>> {
-  return post<VisitAnswer>("/api/landings", touch);
-}
-
-/** The visitor declined the cookie bar: what their browser's touches kept for Meta goes (ADR 0288). */
-export function reportDecline(): Promise<Answer<null>> {
-  return post<null>("/api/landings/declined", {});
 }
 
 /** /book's first step: the name and number, kept as a lead before the visit is chosen. */

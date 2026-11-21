@@ -49,6 +49,20 @@ export const visitorStatement = (db: D1Database, visitorId: string, now: Date): 
     .prepare("INSERT INTO visitors (id, ref, created_at, seen_at) VALUES (?1, ?2, ?3, ?3) ON CONFLICT DO NOTHING")
     .bind(visitorId, newRef(), now.toISOString());
 
+/**
+ * The statement that marks the visitor's browser as having declined the cookie bar, its row made where no landing has
+ * reached the API yet: so a landing that arrives after the Decline is declined too. A reference already taken, in a
+ * draw one in 850 billion, leaves a new row unmade.
+ */
+export const declinedVisitorStatement = (db: D1Database, visitorId: string, now: Date): D1PreparedStatement =>
+  db
+    .prepare(
+      `INSERT INTO visitors (id, ref, created_at, seen_at, declined_at) VALUES (?1, ?2, ?3, ?3, ?3)
+       ON CONFLICT (id) DO UPDATE SET declined_at = COALESCE(visitors.declined_at, excluded.declined_at)
+       ON CONFLICT DO NOTHING`,
+    )
+    .bind(visitorId, newRef(), now.toISOString());
+
 /** The visitor a WhatsApp reference names, or null. */
 export async function visitorOfRef(db: D1Database, ref: string): Promise<string | null> {
   const row = await db.prepare("SELECT id FROM visitors WHERE ref = ?1").bind(ref).first<{ id: string }>();

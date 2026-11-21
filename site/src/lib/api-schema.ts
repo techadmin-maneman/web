@@ -1196,7 +1196,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["Attribution"];
+                    "application/json": components["schemas"]["Landing"];
                 };
             };
             responses: {
@@ -3634,6 +3634,36 @@ export interface components {
              * @example M7K2Q9XP
              */
             ref: string | null;
+        };
+        Landing: {
+            utm_source?: string;
+            utm_medium?: string;
+            utm_campaign?: string;
+            utm_content?: string;
+            utm_term?: string;
+            gclid?: string;
+            gbraid?: string;
+            wbraid?: string;
+            fbclid?: string;
+            /** @description Meta's _fbc cookie, as the browser had it. */
+            fbc?: string;
+            /** @description Meta's _fbp cookie, as the browser had it. */
+            fbp?: string;
+            referrer?: string;
+            landing_path?: string;
+            /** @description A friend's or a partner's code, from ?ref. */
+            ref?: string;
+            /** @description A society activation's code, from its link. */
+            soc?: string;
+            /** @description An offer link's code. */
+            offer?: string;
+            /**
+             * @description The visitor's answer to the cookie bar; none while they have not answered.
+             * @enum {string}
+             */
+            ad_consent?: "granted" | "denied";
+            /** @description The moment the page kept this landing, the same each time it is sent. */
+            landing_key?: string;
         };
         LinkLanding: {
             landing: string;
