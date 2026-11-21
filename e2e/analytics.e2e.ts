@@ -26,10 +26,20 @@ const toTheEnd = (page: Page) =>
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
   });
 
-/** How far a footer's line stands above the cookie bar: below zero, the bar covers it. */
+/**
+ * How far a line stands above the cookie bar, once the bar has stopped moving with a phone's foot bar: below zero, the
+ * bar covers it.
+ */
 async function clearance(line: Locator, bar: Locator): Promise<number> {
+  await expect(line).toBeVisible();
+  // Two frames for the foot bar's watcher to mark the page, then the bar's slide to its end.
+  await bar.evaluate(async (shown) => {
+    await new Promise((frame) => requestAnimationFrame(() => requestAnimationFrame(frame)));
+    await Promise.all(shown.getAnimations().map((moving) => moving.finished));
+  });
   const [above, under] = [await line.boundingBox(), await bar.boundingBox()];
-  return (under?.y ?? 0) - ((above?.y ?? 0) + (above?.height ?? 0));
+  if (above === null || under === null) throw new Error("the line or the bar is not drawn");
+  return under.y - (above.y + above.height);
 }
 
 test.describe("the cookie bar", () => {
@@ -95,9 +105,9 @@ test.describe("the cookie bar", () => {
     const bar = page.getByRole("region", { name: consentBar.label });
     await expect(bar).toBeVisible();
     await toTheEnd(page);
-    // Its last line: the social links, beneath Cookie choices on a phone.
-    const last = page.getByRole("contentinfo").getByRole("link").last();
-    await expect.poll(() => clearance(last, bar)).toBeGreaterThanOrEqual(0);
+    // Its last line, beneath Cookie choices on a phone: the social row where it is drawn, else the area served.
+    const last = page.getByRole("contentinfo").locator(".bottom > *").last();
+    expect(await clearance(last, bar)).toBeGreaterThanOrEqual(0);
   });
 
   // The bar's room on a phone's flow lost the foot bar's height it had counted: /try's buttons still clear it.
@@ -108,7 +118,7 @@ test.describe("the cookie bar", () => {
     await toTheEnd(page);
     const last = page.getByRole("main").getByRole("button").last();
     await expect(last).toBeVisible();
-    await expect.poll(() => clearance(last, bar)).toBeGreaterThanOrEqual(0);
+    expect(await clearance(last, bar)).toBeGreaterThanOrEqual(0);
   });
 
   // A browser that refused storage said no answer when the bar came back, though one was given on the page.
@@ -153,15 +163,16 @@ test.describe("the cookie bar", () => {
     await bar.getByRole("button", { name: consentBar.decline }).click();
     await page.reload();
 
+    // Tapped at the page's foot, where the bar opens over it: its line moves up, clear of the bar, into the room the
+    // footer keeps for it.
+    await toTheEnd(page);
     const choices = page.getByRole("contentinfo").getByRole("button", { name: consentBar.change });
     await choices.click();
     await expect(bar).toBeVisible();
     await expect(bar.getByText(consentBar.chosen.denied)).toBeVisible();
     await expect(bar.getByText(consentBar.chosen.granted)).toBeHidden();
     expect(await analyticsCommands(page)).not.toContainEqual(["consent", "update", GRANTED]);
-    // The footer keeps the bar's room beneath its last line: Cookie choices scrolls clear above the bar.
-    await toTheEnd(page);
-    await expect.poll(() => clearance(choices, bar)).toBeGreaterThanOrEqual(0);
+    expect(await clearance(choices, bar)).toBeGreaterThanOrEqual(0);
     await page.reload();
     await expect(bar).toBeHidden();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);

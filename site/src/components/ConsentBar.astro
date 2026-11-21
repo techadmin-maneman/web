@@ -41,14 +41,17 @@ import { consentBar as words } from "../content/site.ts";
 
   const bar = document.querySelector<HTMLElement>("[data-consent-bar]");
   const root = document.documentElement;
+  /** The bar's gap from what it stands on, in pixels. */
+  const gapOf = (shown: HTMLElement) => parseFloat(getComputedStyle(shown).getPropertyValue("--consent-gap"));
+
   // While it asks, the page keeps the bar's height clear at its foot, so a page that ends in a form or a footer can
-  // still bring its last line above it (--consent-reserve, site/src/styles/tokens-site.css).
-  const keepClear = new ResizeObserver(() => {
+  // still bring its last line above it (--consent-reserve, site/src/styles/tokens-site.css): the bar, its gap beneath,
+  // and as much again above it; a foot bar beneath it keeps its own room.
+  function keepRoom(): void {
     if (bar === null) return;
-    // The bar, its gap beneath, and as much again above it; a foot bar beneath it keeps its own room.
-    const gap = parseFloat(getComputedStyle(bar).getPropertyValue("--consent-gap"));
-    root.style.setProperty("--consent-reserve", `${String(bar.offsetHeight + 2 * gap)}px`);
-  });
+    root.style.setProperty("--consent-reserve", `${String(bar.offsetHeight + 2 * gapOf(bar))}px`);
+  }
+  const keepClear = new ResizeObserver(keepRoom);
 
   /** The footer button that brought the bar back, given the focus again once the visitor answers. */
   let opener: HTMLElement | null = null;
@@ -62,6 +65,7 @@ import { consentBar as words } from "../content/site.ts";
       line.hidden = line.dataset.consentNow !== kept;
     }
     bar.hidden = false;
+    keepRoom();
     // Said on the page too, so a button pinned at a phone's foot can wait in its place instead (islands/invite).
     root.dataset.consentAsking = "";
     keepClear.observe(bar);
@@ -93,7 +97,11 @@ import { consentBar as words } from "../content/site.ts";
     button.addEventListener("click", () => {
       ask();
       opener = button;
-      bar?.focus();
+      if (bar === null) return;
+      bar.focus({ preventScroll: true });
+      // Tapped at the page's foot, its line would lie under the bar: the page moves it up, into the footer's new room.
+      const covered = button.getBoundingClientRect().bottom - bar.getBoundingClientRect().top + gapOf(bar);
+      if (covered > 0) window.scrollBy({ top: covered, behavior: "instant" });
     });
   }
 </script>
