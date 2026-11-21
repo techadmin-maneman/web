@@ -36,7 +36,7 @@
   --settings-menu-width: var(--ops-settings-menu);
 }
 
-/* On a phone, Today's tiles two to a row, and every box and button a finger's height. */
+/* On a phone, Today's tiles two to a row, every box and button a finger's height, and a toast above the tab bar. */
 @media (max-width: 600px) {
   :root {
     --columns-tile: var(--ops-tile-phone);
@@ -44,6 +44,8 @@
     --control-height: var(--tap);
     --small-height: var(--tap);
     --field-height: var(--tap);
+    /* A toast stands as far above the tab bar as it stands above the window's foot at a desk. */
+    --toast-lift: calc(var(--ops-tab-bar) + var(--sp-24) + env(safe-area-inset-bottom));
   }
 }
 

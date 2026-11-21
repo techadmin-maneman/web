@@ -93,8 +93,8 @@ interface Clicks {
 }
 
 /**
- * The client's current address, and its city as we name it, with the state: the city its pincode is served from
- * where we serve it, since the client types their own ("Gurugram"), else as they typed it.
+ * The client's current address, and its city as we name it, with the state: the city its pincode is listed under
+ * where the pincode is one of ours, served yet or not, since the client types their own ("Gurugram"); else as typed.
  */
 const CURRENT_ADDRESS = `LEFT JOIN addresses a ON a.id = (SELECT x.id FROM addresses x
       WHERE x.person_id = c.person_id AND x.replaced_at IS NULL ORDER BY x.created_at DESC, x.id LIMIT 1)

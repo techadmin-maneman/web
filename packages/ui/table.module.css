@@ -228,6 +228,13 @@
   background: var(--ui-ground);
 }
 
+/* A row pointed at is lit to its last cell. */
+@media (hover: hover) {
+  .scroll .table:has(td:last-child :is(button, a)) tbody tr:hover > :last-child {
+    background: var(--ui-ground);
+  }
+}
+
 /*
  * On a phone a row is a card: its first cell its title, every other value on a line of its own beside its column's
  * name (Table's data-label), and the heads a line of their own above where they tick every row; other heads are read
@@ -303,6 +310,13 @@
     overflow-wrap: anywhere;
     white-space: normal;
     text-align: right;
+  }
+
+  /* The buttons' column a desk keeps in view is, on a card, one of its lines: no edge, and the row's ground. */
+  .scroll .table[data-cards]:has(td:last-child :is(button, a)) :is(th, td):last-child {
+    position: static;
+    box-shadow: none;
+    background: revert-layer;
   }
 
   .table[data-cards] tbody :is(th, td)::before {

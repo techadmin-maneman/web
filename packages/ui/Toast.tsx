@@ -3,8 +3,8 @@
 // act on or copy, as a payment link or a code just made, stays beside its form (./InlineMessage.tsx).
 //
 // The phone apps draw it the screen's width less 12 px each side, above the tab bar or the action bar, with an icon
-// before the words, for 2.6 seconds (`fullWidth`; docs/prompts/client-redesign.md, W10). How far above the foot it
-// sits is the page's --toast-lift, which the app sets for its bars.
+// before the words, for 2.6 seconds (`fullWidth`; docs/prompts/client-redesign.md, W10). How far above the foot
+// either sits is the page's --toast-lift, which an app sets for its bars.
 
 import { ICONS } from "@maneman/brand/icons";
 import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";

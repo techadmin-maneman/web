@@ -320,8 +320,9 @@ test.describe("the service area", () => {
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110024", served: false, launch_on: "2026-11-01" }],
     });
-    await expect(row(page, "110024")).toContainText("1 Nov");
+    // The file's own table stays until the save is answered: the list's row is read once it has gone.
     await expect(page.getByRole("button", { name: opsCopy.areas.served.upload.apply })).toHaveCount(0);
+    await expect(row(page, "110024")).toContainText("1 Nov");
   });
 
   // A pincode served from a later day was served at once.
