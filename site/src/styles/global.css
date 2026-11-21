@@ -82,10 +82,10 @@
 
   /*
    * A heading or a step's line focused by the page, to say where a step has moved to, is not a control and draws no
-   * ring, nor is the main the skip link lands in; anything else that takes focus keeps its ring, as in the apps
-   * (packages/ui/base.css).
+   * ring, nor is the main the skip link lands in, nor the cookie bar Cookie choices brings back; anything else that
+   * takes focus keeps its ring, as in the apps (packages/ui/base.css).
    */
-  :is(h1, h2, h3, h4, h5, h6, main, [data-says-where])[tabindex="-1"]:focus {
+  :is(h1, h2, h3, h4, h5, h6, main, [data-says-where], [data-consent-bar])[tabindex="-1"]:focus {
     outline: none;
   }
 }

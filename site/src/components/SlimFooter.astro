@@ -58,7 +58,7 @@ const year = new Date().getFullYear();
   .inner {
     max-width: var(--page-max);
     margin: 0 auto;
-    padding: var(--sp-36) var(--gutter);
+    padding: var(--sp-36) var(--gutter) calc(var(--sp-36) + var(--consent-reserve));
     display: flex;
     flex-direction: column;
     gap: var(--sp-12);
@@ -104,7 +104,7 @@ const year = new Date().getFullYear();
 
   @media (min-width: 761px) {
     .inner {
-      padding: var(--sp-48) var(--gutter) var(--sp-40);
+      padding: var(--sp-48) var(--gutter) calc(var(--sp-40) + var(--consent-reserve));
       gap: var(--sp-20);
     }
     .top {

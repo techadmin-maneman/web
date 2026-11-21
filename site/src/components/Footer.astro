@@ -92,7 +92,7 @@ const year = new Date().getFullYear();
   .inner {
     max-width: var(--page-max);
     margin: 0 auto;
-    padding: var(--sp-40) var(--gutter) calc(var(--bar-h) + var(--sp-40));
+    padding: var(--sp-40) var(--gutter) calc(var(--bar-h) + var(--sp-40) + var(--consent-reserve));
   }
   .top {
     display: grid;
@@ -168,7 +168,7 @@ const year = new Date().getFullYear();
 
   @media (min-width: 761px) {
     .inner {
-      padding: var(--sp-64) var(--gutter) var(--sp-48);
+      padding: var(--sp-64) var(--gutter) calc(var(--sp-48) + var(--consent-reserve));
     }
     .top {
       grid-template-columns: minmax(0, 2fr) minmax(0, 2fr);

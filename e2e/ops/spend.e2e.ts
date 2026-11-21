@@ -78,6 +78,14 @@ test("adds a day’s spend for a city, today unless another day is chosen, in wh
   await expect(page.getByRole("row")).toHaveCount(3);
 });
 
+test("offers the entries by month, all of them to start with", async ({ page }) => {
+  await open(page);
+  const months = page.getByRole("combobox", { name: copy.columns.day });
+  await expect(months).toHaveValue("");
+  await expect(months.locator("option").first()).toHaveText(copy.allMonths);
+  await expect(months.locator("option").nth(1)).toHaveText("August 2026");
+});
+
 test("takes an entry off the figures", async ({ page }) => {
   await open(page, { "POST /api/spend/{id}/remove": json({ ok: true }) });
   await page.getByRole("button", { name: copy.removeLabel(fullDate("2026-08-14"), "Gurgaon", "Rs. 25,000") }).click();

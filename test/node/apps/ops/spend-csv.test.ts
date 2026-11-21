@@ -31,6 +31,20 @@ describe("an ad account's spend report", () => {
     });
   });
 
+  it("keeps every paisa a binary figure would lose, rounding rather than cutting", () => {
+    // 19.99 × 100 is 1998.999… in a binary figure, and 0.29 × 100 is 28.999…
+    const report = ["Day,Campaign,Cost", "2026-11-20,national-brand,19.99", "2026-11-20,gurgaon-search,0.29"].join(
+      "\n",
+    );
+    expect(readSpendCsv(report)).toEqual({
+      ok: true,
+      rows: [
+        { day: "2026-11-20", campaign: "national-brand", amount: 1999 },
+        { day: "2026-11-20", campaign: "gurgaon-search", amount: 29 },
+      ],
+    });
+  });
+
   it("reads Meta's column names and its spelt days, a quoted campaign's commas kept", () => {
     expect(readSpendCsv(META)).toEqual({
       ok: true,
