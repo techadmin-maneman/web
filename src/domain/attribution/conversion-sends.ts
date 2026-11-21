@@ -3,13 +3,20 @@
 // longer each time, and given up after its tries; one the platform refused is given up at once, with its words. None
 // is sent of a test record, of a client erased or who asked that nothing of theirs go to Google or Meta, or once it is
 // older than the platform takes. What each platform is told is built from our own rows at the moment it is sent:
-// the number and first name hashed, Meta's cookies and the address and browser of the client's latest touch that had
-// them, and Google's click ID from the latest touch that carried one.
+// the number and first name hashed; the city, state and pincode of the client's address, hashed for Meta, and for
+// Google both names hashed with the pincode as it is; Meta's cookies and the IP address and browser of the client's
+// latest touch that had them; and Google's click ID from the latest touch that carried one.
 
 import { sha256Hex } from "../../lib/hash.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
-import { googlePhoneHash, metaFirstNameHash, metaPhoneHash } from "../../lib/ad-match.ts";
+import {
+  googleAddressOf,
+  googlePhoneHash,
+  metaFirstNameHash,
+  metaPhoneHash,
+  metaPlaceHash,
+} from "../../lib/ad-match.ts";
 import { DAY_MS, MINUTE_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
@@ -63,6 +70,10 @@ interface Due {
   readonly tries: number;
   readonly mobile_e164: string;
   readonly name: string;
+  /** The client's current address: its city, the city's state and its pincode. */
+  readonly city: string | null;
+  readonly state: string | null;
+  readonly pincode: string | null;
   readonly test_record: number;
   readonly erased_at: string | null;
   readonly sharing_stopped_at: string | null;
@@ -81,21 +92,32 @@ interface Clicks {
   readonly wbraid: string | null;
 }
 
+/**
+ * The client's current address, and its city as we name it, with the state: the city its pincode is served from
+ * where we serve it, since the client types their own ("Gurugram"), else as they typed it.
+ */
+const CURRENT_ADDRESS = `LEFT JOIN addresses a ON a.id = (SELECT x.id FROM addresses x
+      WHERE x.person_id = c.person_id AND x.replaced_at IS NULL ORDER BY x.created_at DESC, x.id LIMIT 1)
+    LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.pincode
+    LEFT JOIN cities ci ON ci.name = COALESCE(sp.city, a.city)`;
+
 /** Each platform's sends falling due, the oldest first. */
 const DUE_META = `SELECT c.event_id, c.event, c.subject_id, c.person_id, c.occurred_at,
     CASE WHEN c.event IN ('first_fit_paid', 'service_paid')
       THEN (SELECT COALESCE(y.amount_ex_gst, y.amount) FROM payments y WHERE y.id = c.subject_id) ELSE c.value_paise END
       AS value_paise, c.source_url, c.created_at, c.meta_tries AS tries, p.mobile_e164, p.name, p.test_record, p.erased_at,
-    pa.sharing_stopped_at
+    pa.sharing_stopped_at, COALESCE(sp.city, a.city) AS city, ci.state, a.pincode
   FROM conversions c JOIN people p ON p.id = c.person_id LEFT JOIN person_attribution pa ON pa.person_id = c.person_id
+    ${CURRENT_ADDRESS}
   WHERE c.meta_state = 'pending' AND c.meta_next_at <= ?1
   ORDER BY c.meta_next_at LIMIT ?2`;
 const DUE_GOOGLE = `SELECT c.event_id, c.event, c.subject_id, c.person_id, c.occurred_at,
     CASE WHEN c.event IN ('first_fit_paid', 'service_paid')
       THEN (SELECT COALESCE(y.amount_ex_gst, y.amount) FROM payments y WHERE y.id = c.subject_id) ELSE c.value_paise END
       AS value_paise, c.source_url, c.created_at, c.google_tries AS tries, p.mobile_e164, p.name, p.test_record, p.erased_at,
-    pa.sharing_stopped_at
+    pa.sharing_stopped_at, COALESCE(sp.city, a.city) AS city, ci.state, a.pincode
   FROM conversions c JOIN people p ON p.id = c.person_id LEFT JOIN person_attribution pa ON pa.person_id = c.person_id
+    ${CURRENT_ADDRESS}
   WHERE c.google_state = 'pending' AND c.google_next_at <= ?1
   ORDER BY c.google_next_at LIMIT ?2`;
 
@@ -176,15 +198,19 @@ async function bookedViaOf(db: D1Database, due: Due): Promise<BookedVia | null> 
 async function toSend(db: D1Database, due: Due, bookingPage: string): Promise<ConversionToSend> {
   const occurredAt = new Date(due.occurred_at);
   const since = new Date(occurredAt.getTime() - LOOKBACK_DAYS * DAY_MS).toISOString();
-  const [browser, clicks, metaPhone, googlePhone, firstName, externalId, bookedVia] = await Promise.all([
-    browserOf(db, due, since),
-    clicksOf(db, due, since),
-    metaPhoneHash(due.mobile_e164),
-    googlePhoneHash(due.mobile_e164),
-    metaFirstNameHash(due.name),
-    sha256Hex(due.person_id),
-    bookedViaOf(db, due),
-  ]);
+  const place = { city: due.city, state: due.state, pincode: due.pincode };
+  const [browser, clicks, metaPhone, googlePhone, firstName, externalId, bookedVia, metaPlace, googleAddress] =
+    await Promise.all([
+      browserOf(db, due, since),
+      clicksOf(db, due, since),
+      metaPhoneHash(due.mobile_e164),
+      googlePhoneHash(due.mobile_e164),
+      metaFirstNameHash(due.name),
+      sha256Hex(due.person_id),
+      bookedViaOf(db, due),
+      metaPlaceHash(place),
+      googleAddressOf(due.name, place),
+    ]);
   return {
     eventId: due.event_id,
     event: due.event,
@@ -194,6 +220,7 @@ async function toSend(db: D1Database, due: Due, bookingPage: string): Promise<Co
     bookedVia,
     phone: { meta: metaPhone, google: googlePhone },
     firstName,
+    place: { meta: metaPlace, google: googleAddress },
     externalId,
     browser: {
       fbc: browser?.fbc ?? null,

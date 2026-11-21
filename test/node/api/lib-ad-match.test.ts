@@ -1,6 +1,7 @@
 // What Meta and Google are given to match a conversion (ADR 0288): a number read however it was typed, then hashed in
-// each platform's own form; a first name hashed as Meta asks; Meta's click cookie built from its click ID; and the
-// WhatsApp reference read back from a message.
+// each platform's own form; a first name hashed as Meta asks; the place of the client's address, for Meta hashed and
+// for Google whole or not at all; Meta's click cookie built from its click ID; and the WhatsApp reference read back
+// from a message.
 
 import { describe, expect, it } from "vitest";
 import { refIn, refLine, REF_PATTERN } from "../../../src/config/ref-tokens.ts";
@@ -8,9 +9,11 @@ import {
   FBC_PATTERN,
   fbcOf,
   FBP_PATTERN,
+  googleAddressOf,
   googlePhoneHash,
   metaFirstNameHash,
   metaPhoneHash,
+  metaPlaceHash,
 } from "../../../src/lib/ad-match.ts";
 import { toE164 } from "../../../src/lib/mobile.ts";
 
@@ -43,6 +46,52 @@ describe("a first name for Meta", () => {
   it("keeps a letter's accent, and gives nothing where no letter is left", async () => {
     expect(await metaFirstNameHash("Ásha")).toBe("9bee09261c561dfecc653ea3cef98b7ff274eb08065d91916b28d5dc53d5fb4e");
     expect(await metaFirstNameHash("--")).toBeNull();
+  });
+});
+
+const HASH = {
+  gurgaon: "b4c0372af033c406857a420644e46c806280a0bab8246bd0c62c7807f66f794f",
+  haryana: "92db9c574d420b2437b29d898d55604f61df6c17f5163e53337f2169dd70d38d",
+  uttarPradesh: "611af639d0f5ad5fcdd1e2bb62611671cfeb5fc8442a8b7bdd3f26947336df41",
+  pincode: "387e82b2998124aed1133174bca0f661a47f2176b57313f2abe295d424e5e1cd",
+  india: "582967534d0f909d196b97f9e6921342777aea87b46fa52df165389db1fb8ccf",
+  rohit: "4320472dca0d474b698d34e00ea152eae7c4fe91290b6745c78ed67b4b0551b4",
+  malhotra: "da896ede8a19765b835a4670d376542f1fd526990832910f2beda5981ff30128",
+};
+
+describe("a client's place for Meta", () => {
+  it("is the city, the state and the pincode hashed, the state's words run together, and India always", async () => {
+    expect(await metaPlaceHash({ city: "Gurgaon", state: "Haryana", pincode: "122002" })).toEqual({
+      ct: HASH.gurgaon,
+      st: HASH.haryana,
+      zp: HASH.pincode,
+      country: HASH.india,
+    });
+    expect((await metaPlaceHash({ city: null, state: "Uttar Pradesh", pincode: null })).st).toBe(HASH.uttarPradesh);
+  });
+
+  it("is the country alone where no address is known, and leaves out a pincode that is not six digits", async () => {
+    expect(await metaPlaceHash({ city: null, state: null, pincode: null })).toEqual({
+      ct: null,
+      st: null,
+      zp: null,
+      country: HASH.india,
+    });
+    expect((await metaPlaceHash({ city: null, state: null, pincode: "12200" })).zp).toBeNull();
+  });
+});
+
+describe("a client's address for Google", () => {
+  it("is both names hashed, with India and the pincode as they are", async () => {
+    expect(
+      await googleAddressOf("Rohit Kumar Malhotra", { city: "Gurgaon", state: "Haryana", pincode: "122002" }),
+    ).toEqual({ givenName: HASH.rohit, familyName: HASH.malhotra, regionCode: "IN", postalCode: "122002" });
+  });
+
+  it("is nothing without a last name or a pincode, since Google matches it only whole", async () => {
+    const place = { city: "Gurgaon", state: "Haryana", pincode: "122002" };
+    expect(await googleAddressOf("Rohit", place)).toBeNull();
+    expect(await googleAddressOf("Rohit Malhotra", { ...place, pincode: null })).toBeNull();
   });
 });
 
