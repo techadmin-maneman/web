@@ -69,6 +69,8 @@ export interface ReadAt {
   readonly toBookBefore: string;
   /** The latest a payment link with no close of its own can have been sent and be closed now. */
   readonly linksClosedIfSentBy: string;
+  /** The first moment a task that started then has not yet lapsed off the board. */
+  readonly lapsedBefore: string;
   /** The arrival window's minutes after a visit's start (src/policy/start-times.ts). */
   readonly arrival: number;
 }

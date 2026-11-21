@@ -1,5 +1,6 @@
 // The site's content file and the publish gate that guards production.
 
+import { LEGAL_VERSIONS } from "../../../src/config/legal-versions.ts";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
@@ -316,6 +317,10 @@ describe("the second copy round", () => {
 
 describe("the legal pages", () => {
   const pages = [site.legalPages.privacy, site.legalPages.terms];
+  const versions = new Map([
+    [site.legalPages.privacy, LEGAL_VERSIONS.privacy],
+    [site.legalPages.terms, LEGAL_VERSIONS.terms],
+  ]);
 
   // Counsel's documents, each blank filled: the company is Mane Man Private Limited, and the try-on is YouCam's.
   it("name the company and its services, with no blank or bracket of the draft left", () => {
@@ -325,7 +330,7 @@ describe("the legal pages", () => {
       for (const section of page.sections) expect(section.heading, page.title).not.toBe("");
       expect(text, page.title).toContain("Mane Man Private Limited");
       expect(text, page.title).not.toMatch(/Grooming Services|AlLabTools|AILabTools|\[●\]|\[|\]/);
-      expect(page.version, page.title).toEqual({ number: "1.00", date: expect.any(String) as string });
+      expect(page.version, page.title).toEqual({ number: versions.get(page), date: expect.any(String) as string });
     }
     expect(textOf(site.legalPages.privacy)).toContain("YouCam (Perfect Corp), for the virtual try-on");
   });

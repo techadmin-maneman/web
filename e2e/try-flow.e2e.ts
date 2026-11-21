@@ -180,7 +180,8 @@ test("the whole try-on: uploaded during the choices, the number given before the
     mobile: "9810000000",
     number_code_id: CODE_ID,
     notice_version: "gate-v7",
-    attribution: { landing_path: "/try" },
+    // The browser tests decline the cookie bar (e2e/support.ts), and the server is told so (ADR 0288).
+    attribution: { landing_path: "/try", ad_consent: "denied" },
   });
   expect(await claim?.headerValue("idempotency-key")).toMatch(/^[0-9a-f-]{36}$/);
   // The look is asked for only once the claim is saved, and the claim only once the code proved the number.
@@ -206,7 +207,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
     "try_on_started",
     "try_on_gate_shown",
     "try_on_claimed",
-    "try_on_completed",
+    "tryon_complete",
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "98100", "9810000000"]);
 });

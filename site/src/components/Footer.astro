@@ -4,7 +4,8 @@
 // closing band above it is the last call.
 import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
-import { business, footer, whatsapp } from "../content/site.ts";
+import { business, consentBar, footer, whatsapp } from "../content/site.ts";
+import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import { isShown } from "../lib/build.ts";
 import { MORE_PAGES } from "../lib/more-pages.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
@@ -66,6 +67,15 @@ const year = new Date().getFullYear();
             {link.label}
           </a>
         ))}
+        {CONSENT_BAR_SHOWN && (
+          <button
+            type="button"
+            class={textLinkLook({ tone: "ink", quiet: true, className: "item small" })}
+            data-cookie-choices
+          >
+            {consentBar.change}
+          </button>
+        )}
       </nav>
       <span class="quiet area">{footer.area}</span>
       <Social />

@@ -6,6 +6,7 @@
 // No card data is kept. A UPI handle is kept only as a keyed hash, which the
 // fraud rules compare; it is never shown.
 
+import { conversionUpkeep } from "../attribution/conversion-upkeep.ts";
 import { saltedHash } from "../../lib/hash.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { paymentReference } from "../../lib/references.ts";
@@ -55,12 +56,19 @@ export async function recordPayment({
   hashSalt: string;
   now: Date;
 }): Promise<void> {
-  await writePayment({ db, payment, status, hashSalt, now });
+  const personId = await writePayment({ db, payment, status, hashSalt, now });
   if (status !== "captured") return;
   await giveReference(db, payment.id, holdIdOf(payment), now);
   // The hold it paid for keeps its time from here until it is booked or refunded (src/domain/booking/bookings.ts).
   const madeAt = new Date(payment.created_at * 1000).toISOString();
   if (typeof payment.order_id === "string") await confirmPaidHold(db, payment.order_id, madeAt, now).run();
+  // What the payment was for, to tell Google and Meta (docs/decisions/0288-attribution-and-conversions.md); a hold's
+  // waits for its visit's booking, which records it then.
+  if (personId !== null) {
+    await db.batch(
+      conversionUpkeep(db, "SELECT value FROM json_each(?1)", JSON.stringify([personId]), now.toISOString()),
+    );
+  }
 }
 
 /**

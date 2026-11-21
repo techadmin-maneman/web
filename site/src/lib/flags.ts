@@ -1,8 +1,9 @@
 // The site's switches.
 
 /**
- * Whether the site asks for consent to its ad and measurement tags (site/src/components/ConsentBar.astro). While off,
- * no visitor can agree, so Google's tags stay denied and the Meta Pixel unloaded.
+ * Whether the site asks for consent to its ad and measurement tags (site/src/components/ConsentBar.astro), with the
+ * footers' Cookie choices. Consent starts granted (ADR 0288), so while off every visitor's tags run and none can
+ * decline: switching it off needs the privacy policy's section 7 changed with it.
  */
 export const CONSENT_BAR_SHOWN = true as boolean;
 

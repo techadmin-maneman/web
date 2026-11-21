@@ -37,6 +37,7 @@
     "./ErrorBoundary": "./ErrorBoundary.tsx",
     "./ErrorRef": "./ErrorRef.tsx",
     "./Field": "./Field.tsx",
+    "./FieldRows": "./FieldRows.tsx",
     "./FigureGrid": "./FigureGrid.tsx",
     "./HoldButton": "./HoldButton.tsx",
     "./Icon": "./Icon.tsx",

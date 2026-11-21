@@ -83,6 +83,7 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
       facts.note,
     ),
   address_to_confirm: (facts) => copy.address_to_confirm(dayAndTime(facts.starts_at)),
+  heard_from_missing: (facts) => copy.heard_from_missing(shortDate(indiaDate(facts.consulted_at))),
   // The technician's reason in the job sheet's words, and the day they closed the visit.
   partial_visit: (facts, task) => {
     const notFitted = facts.not_fitted === null ? copy.noPiece : copy.notFitted(facts.not_fitted);

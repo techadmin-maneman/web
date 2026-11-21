@@ -1,13 +1,15 @@
 // A row per lead in the reporting copy (docs/decisions/0146-the-nightly-analytics-copy.md): the day it came, its city,
 // its channel and campaign (docs/decisions/0148-the-channel-rule.md), how it came (the site's form, the waitlist, the
 // try-on or WhatsApp) and the page it landed on, and the days its client first booked a consultation, had one, paid for
-// a first fit and was fitted. A first fit done counts as the consultation done too, since a fit can be booked as one
+// a first fit and was fitted. A lead's channel is its touch's, and a client's is the one their attribution gives
+// (docs/decisions/0288-attribution-and-conversions.md); a lead from before touches is Direct until the cron gives it one.
+// A first fit done counts as the consultation done too, since a fit can be booked as one
 // visit with it. A client not yet fitted carries why they did not go ahead, from their latest consultation
 // (docs/decisions/0149-lost-reasons.md). Records marked as tests are left out.
 
 import { statusNotIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { campaignCity, channelOf, CHANNELS, type Channel } from "../../policy/channels.ts";
+import { campaignCity, channelNamed, CHANNELS, type Channel } from "../../policy/channels.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
 import { areaKeyOf } from "./pieces.ts";
 import { jobSheet } from "../field/job-sheet-settings.ts";
@@ -23,12 +25,10 @@ interface LeadRow {
   readonly utm_source: string | null;
   readonly utm_medium: string | null;
   readonly utm_campaign: string | null;
-  readonly gclid: string | null;
-  readonly fbclid: string | null;
-  readonly referrer: string | null;
-  readonly found_us: string | null;
-  readonly referred_before: number;
-  readonly partner_before: number;
+  /** The lead's touch's channel, and the client's own with the campaign of their first touch. */
+  readonly touch_channel: string | null;
+  readonly client_channel: string | null;
+  readonly client_campaign: string | null;
   readonly consultation_booked: string | null;
   readonly consultation_done: string | null;
   readonly fit_paid: string | null;
@@ -59,11 +59,10 @@ const campaignKeyOf = (campaign: string | null) => {
 
 /** Every lead, the oldest first, with what the channel rule reads and the days its client moved on. */
 const LEADS = `SELECT l.id, l.person_id, p.erased_at IS NOT NULL AS erased, l.created_at, l.city, l.source, l.landing_path,
-     l.utm_source, l.utm_medium, l.utm_campaign, l.gclid, l.fbclid, l.referrer, l.found_us,
-     EXISTS (SELECT 1 FROM referral_attributions r WHERE r.referred_person_id = l.person_id
-       AND r.first_touch_at <= l.created_at) AS referred_before,
-     EXISTS (SELECT 1 FROM channel_attributions c WHERE c.referred_person_id = l.person_id
-       AND c.first_touch_at <= l.created_at) AS partner_before,
+     l.utm_source, l.utm_medium, l.utm_campaign,
+     (SELECT t.channel FROM touches t WHERE t.id = l.touch_id) AS touch_channel,
+     pa.attributed_channel AS client_channel,
+     (SELECT t.utm_campaign FROM touches t WHERE t.id = pa.first_touch_id) AS client_campaign,
      ${firstVisit("'consultation', 'first_fit'", false)} AS consultation_booked,
      ${firstVisit("'consultation', 'first_fit'", true)} AS consultation_done,
      (SELECT MIN(y.captured_at) FROM payments y JOIN appointments a ON a.id = y.appointment_id
@@ -75,7 +74,8 @@ const LEADS = `SELECT l.id, l.person_id, p.erased_at IS NOT NULL AS erased, l.cr
      sp.city AS area_city, sp.area
    FROM leads l
    LEFT JOIN addresses d ON d.person_id = l.person_id AND d.replaced_at IS NULL
-   LEFT JOIN serviceable_pincodes sp ON sp.pincode = d.pincode JOIN people p ON p.id = l.person_id WHERE p.test_record = 0
+   LEFT JOIN serviceable_pincodes sp ON sp.pincode = d.pincode JOIN people p ON p.id = l.person_id
+   LEFT JOIN person_attribution pa ON pa.person_id = l.person_id WHERE p.test_record = 0
    ORDER BY l.created_at`;
 
 /**
@@ -95,16 +95,7 @@ export async function leadTables(
   const campaigns = new Map<string, Row>();
   const firstTouch = new Map<string, FirstTouch>();
   for (const row of results) {
-    const channel = channelOf({
-      utmSource: row.utm_source,
-      utmMedium: row.utm_medium,
-      gclid: row.gclid,
-      fbclid: row.fbclid,
-      referrer: row.referrer,
-      referredBefore: row.referred_before === 1,
-      partnerBefore: row.partner_before === 1,
-      foundUs: row.found_us,
-    });
+    const channel = channelNamed(row.touch_channel ?? row.client_channel);
     const campaign = campaignKeyOf(row.utm_campaign);
     if (campaign !== null && !campaigns.has(campaign)) {
       campaigns.set(campaign, {
@@ -117,7 +108,12 @@ export async function leadTables(
       });
     }
     const client = row.erased === 1 ? null : (keys.get(row.person_id) ?? null);
-    if (client !== null && !firstTouch.has(client)) firstTouch.set(client, { channel, campaign_key: campaign });
+    if (client !== null && !firstTouch.has(client)) {
+      firstTouch.set(client, {
+        channel: channelNamed(row.client_channel ?? row.touch_channel),
+        campaign_key: campaignKeyOf(row.client_campaign) ?? campaign,
+      });
+    }
     leads.push({
       lead_key: row.id,
       lead_date: indiaDate(new Date(row.created_at)),

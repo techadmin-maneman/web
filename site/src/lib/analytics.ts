@@ -3,7 +3,10 @@
 //
 // Every event goes onto GA's dataLayer queue whether or not a tag is loaded,
 // so the browser tests can read exactly what would be sent. No event carries a
-// name, a number or an image: the types below allow nothing else.
+// name, a number or an image: the types below allow nothing else. The one
+// exception is a lead's number, hashed with SHA-256 in the browser, which Google's
+// enhanced conversions match the lead by; it is never sent once the visitor has
+// declined (docs/decisions/0288-attribution-and-conversions.md).
 //
 // The referral landing's address holds a person's invite code, so no tag reads
 // it: Google's tags are given the address without the code, and the Meta Pixel,
@@ -13,8 +16,10 @@
 // What a booking says of the person, the area they live in, reaches no tag:
 // each event goes without it.
 //
-// Google's tags start with every kind of consent denied, so they set no cookie,
-// and the Meta Pixel loads only once the visitor has agreed (CONSENT_KEY).
+// The tags start with consent granted, and a visitor's Decline on the cookie bar
+// switches them off: Google's consent is updated to denied, a Meta Pixel already
+// running on the page has its consent revoked and is sent no more events, and the
+// Pixel is never loaded on a page after it (CONSENT_KEY; ADR 0288).
 
 import { scriptAddress } from "@maneman/web-kit/trusted-scripts";
 import type { BookingWindow } from "@rules/config/scheduling.ts";
@@ -26,16 +31,16 @@ import { INVITE_PATH_IN_URL } from "./invite.ts";
 type BookingPage = "book" | "invite";
 
 type AnalyticsEvent =
-  | { readonly name: "try_on_started" | "try_on_gate_shown" | "try_on_claimed" | "try_on_completed" }
+  | { readonly name: "try_on_started" | "try_on_gate_shown" | "try_on_claimed" | "tryon_complete" }
   | { readonly name: "try_on_failed"; readonly failure_code: string }
   | {
-      readonly name: "lead_submitted";
+      /** A lead: /book's first step sent, or a booking on an invite's page, which has no first step of its own. */
+      readonly name: "generate_lead";
       readonly page: BookingPage;
-      readonly served: boolean;
-      /** The pincode's area, "Sector 65"; null until ops have named it, and for a pincode we do not know. */
-      readonly area: string | null;
-      /** Null on the waitlist, which asks for no window. */
-      readonly window: BookingWindow | null;
+      /** The ID the server's copy for Meta carries, so Meta counts the two once. */
+      readonly event_id: string;
+      /** The number, hashed in the browser for Google's enhanced conversions; null where there is none. */
+      readonly phone_hash: string | null;
     }
   | {
       readonly name: "booking_confirmed";
@@ -45,7 +50,9 @@ type AnalyticsEvent =
       /** "requested" while self-serve booking is off and ops fix the hour. */
       readonly state: "booked" | "requested";
     }
-  | { readonly name: "waitlist_submitted"; readonly page: BookingPage; readonly area: string | null };
+  | { readonly name: "waitlist_submitted"; readonly page: BookingPage; readonly area: string | null }
+  /** A WhatsApp chat or a call begun from a link on the page. */
+  | { readonly name: "whatsapp_click" | "call_click"; readonly page_path: string };
 
 type Command = (...args: unknown[]) => void;
 
@@ -65,7 +72,7 @@ declare global {
 }
 
 /** Query parameters a page address may keep: the campaign tags, and outside production the preview switches. */
-const CAMPAIGN_TAGS = /^(utm_[a-z]+|gclid|fbclid)$/;
+const CAMPAIGN_TAGS = /^(utm_[a-z]+|gclid|gbraid|wbraid|fbclid)$/;
 const PREVIEW_SWITCHES = new Set(["state", "kind"]);
 const kept = (key: string) => CAMPAIGN_TAGS.test(key) || (ENVIRONMENT !== "production" && PREVIEW_SWITCHES.has(key));
 
@@ -120,11 +127,13 @@ export function consentAnswer(): "granted" | "denied" | null {
   }
 }
 
-const consented = (): boolean => consentAnswer() === "granted";
+/** Whether the tags may run: until the visitor declines, they may. */
+const consented = (): boolean => consentAnswer() !== "denied";
 
 /**
- * The visitor's answer, kept, and the tags told: Google's consent updated, and the Meta Pixel started once they agree.
- * Nothing is kept where storage is refused, and the bar asks again on the next page.
+ * The visitor's answer, kept, and the tags told: Google's consent updated, and the Meta Pixel started, or let go on, once
+ * they agree and stopped once they decline. Nothing is kept where storage is refused, and the bar asks again on the
+ * next page.
  */
 export function answerConsent(answer: "granted" | "denied"): void {
   try {
@@ -140,16 +149,16 @@ export function answerConsent(answer: "granted" | "denied"): void {
   });
   const ids = ANALYTICS_IDS[ENVIRONMENT];
   const onInvite = INVITE_PATH_IN_URL.test(location.pathname);
-  if (answer === "granted" && ids.metaPixel !== null && !onInvite && window.fbq === undefined) {
-    startMetaPixel(ids.metaPixel);
-  }
+  // A Pixel already running on the page stops at a Decline and goes on at an Accept; else an Accept starts it.
+  if (window.fbq !== undefined) window.fbq("consent", answer === "granted" ? "grant" : "revoke");
+  else if (answer === "granted" && ids.metaPixel !== null && !onInvite) startMetaPixel(ids.metaPixel);
 }
 
 /** The page whose address carries the token that stops a person's messages. */
 const STOP_PATH = "/stop";
 
-/** What a booking event says of the person, which no tag is given. */
-const PERSONAL_PARAMETERS = new Set(["area"]);
+/** What an event says of the person, which no tag is given as a parameter: the area, and the hashed number. */
+const PERSONAL_PARAMETERS = new Set(["area", "phone_hash"]);
 
 const withoutPersonal = (parameters: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(parameters).filter(([key]) => !PERSONAL_PARAMETERS.has(key)));
@@ -191,20 +200,40 @@ export function startAnalytics(): void {
   if (ids.metaPixel !== null && !onInvite && agreed === "granted") startMetaPixel(ids.metaPixel);
 }
 
+/** Meta's standard event for each of ours that is one; the rest go to it as custom events. */
+const META_EVENT: Partial<Record<AnalyticsEvent["name"], string>> = {
+  generate_lead: "Lead",
+  whatsapp_click: "Contact",
+  call_click: "Contact",
+};
+
 export function track(event: AnalyticsEvent): void {
   const { name, ...all } = event;
   const parameters = withoutPersonal(all);
+  if (event.name === "generate_lead" && event.phone_hash !== null && consented()) {
+    gtag("set", "user_data", { sha256_phone_number: event.phone_hash });
+  }
   gtag("event", name, parameters);
 
-  // A booking or a try-on claim is a lead: the conversion the ads are bought for.
-  const lead = name === "lead_submitted" || name === "try_on_claimed";
+  // A lead and a try-on claim are the conversions the Google Ads tag counts, a lead by its event ID.
   const ads = ANALYTICS_IDS[ENVIRONMENT].googleAds;
-  if (lead && ads !== null) {
-    const label = name === "try_on_claimed" ? ads.tryOnLabel : ads.bookingLabel;
-    gtag("event", "conversion", { send_to: `${ads.id}/${label}` });
+  if (ads !== null && event.name === "generate_lead") {
+    gtag("event", "conversion", { send_to: `${ads.id}/${ads.bookingLabel}`, transaction_id: event.event_id });
   }
-  if (window.fbq !== undefined) {
-    if (lead) window.fbq("track", "Lead", { content_name: name });
-    window.fbq("trackCustom", name, parameters);
-  }
+  if (ads !== null && event.name === "try_on_claimed")
+    gtag("event", "conversion", { send_to: `${ads.id}/${ads.tryOnLabel}` });
+
+  // Nothing more reaches Meta from a page whose visitor declined, the Pixel already running included.
+  if (window.fbq === undefined || !consented()) return;
+  const standard = META_EVENT[name];
+  if (standard === undefined) window.fbq("trackCustom", name, parameters);
+  else if (event.name === "generate_lead") window.fbq("track", standard, {}, { eventID: event.event_id });
+  else window.fbq("track", standard);
+}
+
+/** A number as Google's enhanced conversions take it: its E.164 form, "+91" and the ten digits, hashed with SHA-256. */
+export async function phoneHash(tenDigits: string): Promise<string | null> {
+  if (!/^[6-9]\d{9}$/.test(tenDigits) || !("subtle" in crypto)) return null;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`+91${tenDigits}`));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }

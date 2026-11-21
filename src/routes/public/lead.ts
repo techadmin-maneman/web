@@ -4,7 +4,10 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
+import { recordLeadConversion } from "../../domain/attribution/conversions.ts";
+import { AD_NOTICE } from "../../config/notices.ts";
 import { leaveNameAndNumber } from "../../domain/booking/public-lead.ts";
+import { PUBLIC_ORIGIN } from "../../config/environments.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../../http/idempotency.ts";
 import { PersonNameSchema } from "../../http/openapi.ts";
@@ -20,6 +23,13 @@ const LeadRequestSchema = z
     terms: TermsSchema,
     turnstile_token: z.string().min(1).max(2048),
     attribution: AttributionSchema,
+    ad_notice: z.string().max(40).optional().openapi({
+      description: "The version of the line under the button that says the details are shared with Google and Meta.",
+    }),
+    event_id: z.uuid().optional().openapi({
+      description:
+        "The ID the page's own Meta Pixel event carried, so Meta counts the browser's and the server's once.",
+    }),
   })
   .strict();
 
@@ -57,8 +67,18 @@ export function registerLead(app: App): void {
         mobile: body.mobile,
         turnstileToken: body.turnstile_token,
         attribution: body.attribution ?? {},
+        adNotice: body.ad_notice === AD_NOTICE.version ? body.ad_notice : null,
       });
-      return left.ok ? { ok: true as const, body: {} } : left;
+      if (!left.ok) return left;
+      if (left.lead !== null && body.event_id !== undefined) {
+        await recordLeadConversion(c.env.DB, {
+          eventId: body.event_id,
+          ...left.lead,
+          sourceUrl: `${PUBLIC_ORIGIN[c.var.config.environment]}/book`,
+          now: c.var.deps.now(),
+        });
+      }
+      return { ok: true as const, body: {} };
     });
     return answerKeyed(c, run);
   });

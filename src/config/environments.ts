@@ -148,6 +148,10 @@ export const PROVIDER_VARS = {
   // whose binding is declared where it is switched on. "none" until then, and in production until counsel has ruled on
   // the copy's pseudonymous rows.
   ANALYTICS_PROVIDER: ["supabase", "stub", "none"],
+  // The ad platforms our conversions are sent to (docs/decisions/0288-attribution-and-conversions.md). The real one
+  // sends once its secrets are set, and holds its conversions while none is (src/config/conversion-settings.ts).
+  META_CAPI_PROVIDER: ["meta", "stub", "none"],
+  GOOGLE_ADS_PROVIDER: ["google", "stub", "none"],
 } as const;
 export type ProviderVar = keyof typeof PROVIDER_VARS;
 

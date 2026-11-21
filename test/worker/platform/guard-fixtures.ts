@@ -14,6 +14,8 @@ export const REAL = {
   GEOCODE_PROVIDER: "none",
   ROUTES_PROVIDER: "none",
   ANALYTICS_PROVIDER: "none",
+  META_CAPI_PROVIDER: "none",
+  GOOGLE_ADS_PROVIDER: "none",
 };
 
 export const STUBS = {
@@ -27,6 +29,8 @@ export const STUBS = {
   GEOCODE_PROVIDER: "stub",
   ROUTES_PROVIDER: "stub",
   ANALYTICS_PROVIDER: "stub",
+  META_CAPI_PROVIDER: "stub",
+  GOOGLE_ADS_PROVIDER: "stub",
 };
 
 /** Vars and secrets every environment needs, with valid values. */

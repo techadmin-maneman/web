@@ -654,42 +654,7 @@ Request body:
       "maxLength": 2048
     },
     "attribution": {
-      "type": "object",
-      "properties": {
-        "utm_source": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "utm_medium": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "utm_campaign": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "utm_content": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "gclid": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "fbclid": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "referrer": {
-          "type": "string",
-          "maxLength": 500
-        },
-        "landing_path": {
-          "type": "string",
-          "maxLength": 500
-        }
-      },
-      "additionalProperties": false
+      "$ref": "#/components/schemas/Attribution"
     },
     "invite_code": {
       "type": "string",
@@ -1044,42 +1009,7 @@ Request body:
       "maxLength": 2048
     },
     "attribution": {
-      "type": "object",
-      "properties": {
-        "utm_source": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "utm_medium": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "utm_campaign": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "utm_content": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "gclid": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "fbclid": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "referrer": {
-          "type": "string",
-          "maxLength": 500
-        },
-        "landing_path": {
-          "type": "string",
-          "maxLength": 500
-        }
-      },
-      "additionalProperties": false
+      "$ref": "#/components/schemas/Attribution"
     },
     "invite_code": {
       "type": "string",
@@ -1475,42 +1405,17 @@ Request body:
       "maxLength": 2048
     },
     "attribution": {
-      "type": "object",
-      "properties": {
-        "utm_source": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "utm_medium": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "utm_campaign": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "utm_content": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "gclid": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "fbclid": {
-          "type": "string",
-          "maxLength": 200
-        },
-        "referrer": {
-          "type": "string",
-          "maxLength": 500
-        },
-        "landing_path": {
-          "type": "string",
-          "maxLength": 500
-        }
-      },
-      "additionalProperties": false
+      "$ref": "#/components/schemas/Attribution"
+    },
+    "ad_notice": {
+      "type": "string",
+      "maxLength": 40,
+      "description": "The version of the line under the button that says the details are shared with Google and Meta."
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The ID the page's own Meta Pixel event carried, so Meta counts the browser's and the server's once."
     }
   },
   "required": [
@@ -1730,6 +1635,188 @@ Request body:
               "type": "string",
               "enum": [
                 "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/landings
+
+A page's report of its visitor's landing, kept where it is their first or a campaign's
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/Landing"
+}
+```
+
+**200**: Seen
+
+```json
+{
+  "$ref": "#/components/schemas/VisitAnswer"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/landings/declined
+
+The visitor declined the cookie bar: their browser's touches keep nothing for Meta
+
+**204**: Done, or nothing kept for this browser
+
+**429**: rate_limited: the address's reports for the hour are spent; the page sends it again later
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "rate_limited"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/links/{kind}/{slug}
+
+Where a campaign link sends the visitor: /book with its tags and its code
+
+**200**: The link's landing
+
+```json
+{
+  "$ref": "#/components/schemas/LinkLanding"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no live link has that slug
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
               ]
             }
           },
@@ -4367,6 +4454,7 @@ Razorpay's webhook: payments and refunds
             "already_rated",
             "visit_not_done",
             "rating_closed",
+            "already_imported",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -5299,6 +5387,94 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
+### Attribution
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "utm_source": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_medium": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_campaign": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_content": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_term": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "gclid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "gbraid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "wbraid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "fbclid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "fbc": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Meta's _fbc cookie, as the browser had it."
+    },
+    "fbp": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Meta's _fbp cookie, as the browser had it."
+    },
+    "referrer": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "landing_path": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "ref": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "A friend's or a partner's code, from ?ref."
+    },
+    "soc": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "A society activation's code, from its link."
+    },
+    "offer": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "An offer link's code."
+    },
+    "ad_consent": {
+      "type": "string",
+      "enum": [
+        "granted",
+        "denied"
+      ],
+      "description": "The visitor's answer to the cookie bar; none while they have not answered."
+    }
+  },
+  "additionalProperties": false
+}
+```
+
 ### TypedAddress
 
 ```json
@@ -5524,6 +5700,144 @@ Razorpay's webhook: payments and refunds
 {
   "type": "object",
   "properties": {},
+  "additionalProperties": false
+}
+```
+
+### VisitAnswer
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "example": "M7K2Q9XP",
+      "description": "What the visitor's WhatsApp message ends with, \"Ref M7K2Q9XP\"; null where nothing was kept."
+    }
+  },
+  "required": [
+    "ref"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Landing
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "utm_source": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_medium": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_campaign": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_content": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utm_term": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "gclid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "gbraid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "wbraid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "fbclid": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "fbc": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Meta's _fbc cookie, as the browser had it."
+    },
+    "fbp": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Meta's _fbp cookie, as the browser had it."
+    },
+    "referrer": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "landing_path": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "ref": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "A friend's or a partner's code, from ?ref."
+    },
+    "soc": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "A society activation's code, from its link."
+    },
+    "offer": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "An offer link's code."
+    },
+    "ad_consent": {
+      "type": "string",
+      "enum": [
+        "granted",
+        "denied"
+      ],
+      "description": "The visitor's answer to the cookie bar; none while they have not answered."
+    },
+    "landing_key": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 40,
+      "description": "The moment the page kept this landing, the same each time it is sent."
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+}
+```
+
+### LinkLanding
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "landing": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "landing"
+  ],
   "additionalProperties": false
 }
 ```
@@ -6107,50 +6421,6 @@ Razorpay's webhook: payments and refunds
     "number_code_id"
   ],
   "additionalProperties": false
-}
-```
-
-### Attribution
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "utm_source": {
-      "type": "string",
-      "maxLength": 200
-    },
-    "utm_medium": {
-      "type": "string",
-      "maxLength": 200
-    },
-    "utm_campaign": {
-      "type": "string",
-      "maxLength": 200
-    },
-    "utm_content": {
-      "type": "string",
-      "maxLength": 200
-    },
-    "gclid": {
-      "type": "string",
-      "maxLength": 200
-    },
-    "fbclid": {
-      "type": "string",
-      "maxLength": 200
-    },
-    "referrer": {
-      "type": "string",
-      "maxLength": 500
-    },
-    "landing_path": {
-      "type": "string",
-      "maxLength": 500
-    }
-  },
-  "additionalProperties": false,
-  "description": "Where the visitor came from, as the page saw it. All optional."
 }
 ```
 

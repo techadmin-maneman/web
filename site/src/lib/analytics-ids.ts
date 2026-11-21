@@ -18,6 +18,8 @@ const NONE: AnalyticsIds = { ga4: null, googleAds: null, metaPixel: null };
 
 export const ANALYTICS_IDS: Readonly<Record<SiteEnvironment, AnalyticsIds>> = {
   local: NONE,
-  staging: NONE,
-  production: { ga4: "G-SYKFYCBTQE", googleAds: null, metaPixel: null },
+  // Staging's own GA4 stream; no Pixel, so staging's browsing never reaches the dataset production's ads learn from.
+  staging: { ga4: "G-4FDVTM1EHH", googleAds: null, metaPixel: null },
+  // The Pixel is the Mane Man dataset the Conversions API sends to, so Meta counts a lead sent by both once.
+  production: { ga4: "G-SYKFYCBTQE", googleAds: null, metaPixel: "4633949850213113" },
 };

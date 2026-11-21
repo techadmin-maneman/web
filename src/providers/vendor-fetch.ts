@@ -15,6 +15,9 @@ const VENDOR_NAMES = {
   msg91: "MSG91",
   youcam: "YouCam",
   google: "Google",
+  // Conversions for the ad platforms (docs/decisions/0288-attribution-and-conversions.md).
+  meta: "Meta Conversions API",
+  "google-data-manager": "Google Data Manager",
   turnstile: "Turnstile",
   "cloudflare-access": "Cloudflare Access",
   "cloudflare-analytics": "Cloudflare analytics",

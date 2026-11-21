@@ -144,7 +144,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await bookWithCode(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
-    ["lead_submitted", { page: "book", served: true, window: "morning" }],
+    ["generate_lead", { page: "book", event_id: expect.any(String) }],
     ["booking_confirmed", { page: "book", window: "morning", state: "booked" }],
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000", "Flat 402", "Palm Grove Society"]);
@@ -154,7 +154,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
-    ["lead_submitted", { page: "book", served: false, window: null }],
+    ["generate_lead", { page: "book", event_id: expect.any(String) }],
     ["waitlist_submitted", { page: "book" }],
   ]);
   await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000"]);

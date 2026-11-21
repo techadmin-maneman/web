@@ -54,6 +54,17 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO terms_acceptances (id, person_id, terms_version, privacy_version, source, created_at)
      VALUES ('ta1', 'p1', '1.00', '1.00', 'site_booking', '${AT}')`,
   `INSERT INTO erasure_follow_ups (person_id, erased_at) VALUES ('p2', '${AT}')`,
+  // A society activation's link, a visitor it brought, and their touch and attribution (ADR 0288).
+  `INSERT INTO campaign_links (id, kind, slug, code, name, utm_source, utm_medium, utm_campaign, pincode, held_date,
+       created_by, created_at)
+     VALUES ('cl1', 'society', 'green-valley', 'GV2345', 'Green Valley', 'society', 'offline',
+       'green-valley-20260926', '122002', '2026-09-26', 'growth@maneman.in', '${AT}')`,
+  `INSERT INTO visitors (id, ref, person_id, created_at, seen_at) VALUES ('v1', 'AAAAA', 'p1', '${AT}', '${AT}')`,
+  `INSERT INTO touches (id, at, via, visitor_id, person_id, link_id, code_kind, channel, campaign_signal)
+     VALUES ('to1', '${AT}', 'site', 'v1', 'p1', 'cl1', 'society', 'society', 1)`,
+  `INSERT INTO person_attribution (person_id, first_touch_id, last_touch_id, attributed_channel, last_touch_channel,
+       updated_at)
+     VALUES ('p1', 'to1', 'to1', 'society', 'society', '${AT}')`,
   `INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at)
      VALUES ('t1', 't1', 'A Technician', 'AT', 1, '${AT}')`,
   `INSERT INTO fsm_items (fsm_id, name, type, updated_at) VALUES ('i1', 'Bond strip', 'Part', '${AT}')`,

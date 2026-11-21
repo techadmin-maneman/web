@@ -1,95 +1,57 @@
-// Growth · Funnel: over the last 30 or 90 days, the first try-ons, then the clients whose first lead came in those days
-// by how far they went (a consultation booked, had, a fit), a bar each with its share of the new clients; the same by
-// channel; and the Zoho Analytics dashboards beyond it (src/domain/analytics/funnel.ts).
+// Growth · Funnel (docs/decisions/0288-attribution-and-conversions.md): for a week or a month, from our own rows alone,
+// the try-ons and how far the new clients went, then by channel what was spent and what it brought, the cohorts'
+// revenue after their first fit, and what clients told ops; by the client's channel or their last touch's, for every
+// channel or one. The Zoho Analytics dashboards beyond it (src/domain/analytics/acquisition.ts).
 
 import { BarChart } from "@maneman/ui/BarChart";
 import { quantity } from "@maneman/web-kit/figures";
 import { plainDate } from "@maneman/web-kit/plain-date";
-import { Field, Select } from "@maneman/ui/Field";
-import { EmptyState } from "@maneman/ui/EmptyState";
+import { todayInIndia } from "@maneman/web-kit/dates";
+import { apiNow } from "@maneman/web-kit/clock";
+import { DateInput, Field } from "@maneman/ui/Field";
+import { SelectField } from "@maneman/ui/FieldRows";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
-import { SortHeads } from "@maneman/ui/TableTools";
-import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
+import { CHANNEL_CODES, CHANNELS } from "@rules/policy/channels.ts";
 import { useCallback, useState } from "react";
 import { useHeaderSub } from "../frame/PageHead.tsx";
-import { RowHead } from "@maneman/ui/RowHead";
 import form from "@maneman/ui/forms.module.css";
 import styles from "./funnel.module.css";
 import { funnel as copy } from "../content/funnel.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
-import { funnelApi, type Funnel, type FunnelDays } from "./funnel-api.ts";
+import { ChannelFigures, Cohorts, Heard } from "./FunnelTables.tsx";
+import { funnelApi, type Acquisition, type ChannelBy, type ChannelCode, type Period } from "./funnel-api.ts";
 
-const PERIODS: readonly FunnelDays[] = ["30", "90"];
-
-function Steps({ funnel }: { funnel: Funnel }) {
-  const { steps } = funnel;
+function Steps({ figures }: { figures: Acquisition }) {
+  const { totals } = figures;
   const bars = [
-    { key: "tryons", label: copy.steps.tryons, value: funnel.tryons, shown: quantity(funnel.tryons) },
-    { key: "leads", label: copy.steps.leads, value: steps.leads, shown: quantity(steps.leads) },
-    { key: "booked", label: copy.steps.booked, value: steps.booked, shown: copy.share(steps.booked, steps.leads) },
+    { key: "tryons", label: copy.steps.tryons, value: figures.tryons, shown: quantity(figures.tryons) },
+    { key: "leads", label: copy.steps.leads, value: totals.leads, shown: quantity(totals.leads) },
+    {
+      key: "booked",
+      label: copy.steps.booked,
+      value: totals.consults_booked,
+      shown: quantity(totals.consults_booked),
+    },
     {
       key: "consulted",
       label: copy.steps.consulted,
-      value: steps.consulted,
-      shown: copy.share(steps.consulted, steps.leads),
+      value: totals.consults_done,
+      shown: quantity(totals.consults_done),
     },
-    { key: "fitted", label: copy.steps.fitted, value: steps.fitted, shown: copy.share(steps.fitted, steps.leads) },
+    {
+      key: "fitted",
+      label: copy.steps.fitted,
+      value: totals.first_fits,
+      shown: quantity(totals.first_fits),
+    },
   ];
   return (
     <Panel titleId="funnel-steps" title={copy.steps.title}>
       <BarChart label={copy.steps.title} bars={bars} />
-    </Panel>
-  );
-}
-
-type Channel = Funnel["channels"][number];
-
-const [channelHead, leadsHead, bookedHead, consultedHead, fittedHead] = copy.channels.columns;
-
-const CHANNEL_COLUMNS: readonly Column<Channel>[] = [
-  { label: channelHead, sort: (row) => row.channel },
-  { label: leadsHead, sort: (row) => row.leads, figure: true },
-  { label: bookedHead, sort: (row) => row.booked, figure: true },
-  { label: consultedHead, sort: (row) => row.consulted, figure: true },
-  { label: fittedHead, sort: (row) => row.fitted, figure: true },
-];
-
-function ChannelTable({ shown }: { shown: readonly Channel[] }) {
-  const view = useTableView(shown, CHANNEL_COLUMNS);
-  return (
-    <TableScroll labelledBy="funnel-channels">
-      <Table>
-        <thead>
-          <tr>
-            <SortHeads view={view} />
-          </tr>
-        </thead>
-        <tbody>
-          {view.shown.map((each) => (
-            <tr key={each.channel}>
-              <RowHead>{each.channel}</RowHead>
-              <td className={FIGURE}>{quantity(each.leads)}</td>
-              <td className={FIGURE}>{copy.share(each.booked, each.leads)}</td>
-              <td className={FIGURE}>{copy.share(each.consulted, each.leads)}</td>
-              <td className={FIGURE}>{copy.share(each.fitted, each.leads)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </TableScroll>
-  );
-}
-
-function Channels({ funnel }: { funnel: Funnel }) {
-  const shown = funnel.channels.filter((each) => each.leads > 0);
-  return (
-    <Panel titleId="funnel-channels" title={copy.channels.title}>
-      {shown.length === 0 ? <EmptyState look="panel" line={copy.channels.none} /> : <ChannelTable shown={shown} />}
     </Panel>
   );
 }
@@ -111,45 +73,93 @@ function Dashboards() {
   );
 }
 
-function Counted({ funnel }: { funnel: Funnel }) {
-  useHeaderSub(copy.counted(plainDate(funnel.from), plainDate(funnel.to)));
+function Counted({ figures }: { figures: Acquisition }) {
+  useHeaderSub(copy.counted(plainDate(figures.from), plainDate(figures.to)));
   return null;
 }
 
+interface Asked {
+  readonly period: Period;
+  readonly starting: string;
+  readonly by: ChannelBy;
+  readonly channel: ChannelCode | null;
+}
+
+/** The value chosen, where it is one of `values`. */
+const oneOf = <T extends string>(values: readonly T[], chosen: string): T | undefined =>
+  values.find((value) => value === chosen);
+
+function Asking({ asked, onAsk }: { asked: Asked; onAsk: (asked: Asked) => void }) {
+  return (
+    <Toolbar label={copy.period}>
+      <SelectField
+        label={copy.period}
+        value={asked.period}
+        choices={[
+          ["week", copy.periods.week],
+          ["month", copy.periods.month],
+        ]}
+        onChange={(chosen) => {
+          const period = oneOf(["week", "month"] as const, chosen);
+          if (period !== undefined) onAsk({ ...asked, period });
+        }}
+      />
+      <Field label={copy.starting}>
+        {(control) => (
+          <DateInput
+            {...control}
+            value={asked.starting}
+            onChange={(event) => {
+              if (event.target.value !== "") onAsk({ ...asked, starting: event.target.value });
+            }}
+          />
+        )}
+      </Field>
+      <SelectField
+        label={copy.by}
+        value={asked.by}
+        choices={[
+          ["first", copy.bys.first],
+          ["last", copy.bys.last],
+        ]}
+        onChange={(chosen) => {
+          const by = oneOf(["first", "last"] as const, chosen);
+          if (by !== undefined) onAsk({ ...asked, by });
+        }}
+      />
+      <SelectField
+        label={copy.channel}
+        value={asked.channel ?? "all"}
+        choices={[["all", copy.allChannels], ...CHANNELS.map((each) => [each.code, each.channel] as const)]}
+        onChange={(chosen) => {
+          onAsk({ ...asked, channel: oneOf(CHANNEL_CODES, chosen) ?? null });
+        }}
+      />
+    </Toolbar>
+  );
+}
+
 export function FunnelScreen() {
-  const [days, setDays] = useState<FunnelDays>("30");
-  const read = useCallback(() => funnelApi.funnel(days), [days]);
+  const [asked, setAsked] = useState<Asked>({
+    period: "week",
+    starting: todayInIndia(apiNow()),
+    by: "first",
+    channel: null,
+  });
+  const read = useCallback(() => funnelApi.acquisition(asked), [asked]);
   const [loaded, retry] = useLoad(read);
   return (
     <div className={form.screen}>
-      <Toolbar label={copy.period}>
-        <Field label={copy.period} labelHidden>
-          {(control) => (
-            <Select
-              {...control}
-              width="choice"
-              value={days}
-              onChange={(event) => {
-                const chosen = PERIODS.find((each) => each === event.target.value);
-                if (chosen !== undefined) setDays(chosen);
-              }}
-            >
-              {PERIODS.map((each) => (
-                <option key={each} value={each}>
-                  {copy.periods[each]}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-      </Toolbar>
+      <Asking asked={asked} onAsk={setAsked} />
       {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <>
-          <Counted funnel={loaded.value} />
-          <Steps funnel={loaded.value} />
-          <Channels funnel={loaded.value} />
+          <Counted figures={loaded.value} />
+          <Steps figures={loaded.value} />
+          <ChannelFigures figures={loaded.value} />
+          <Cohorts figures={loaded.value} />
+          <Heard figures={loaded.value} />
         </>
       )}
       <Dashboards />

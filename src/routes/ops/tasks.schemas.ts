@@ -59,6 +59,7 @@ export const TaskFactsSchema = z
       note: z.union([z.string(), z.null()]),
     }),
     facts("address_to_confirm", { starts_at: instant }),
+    facts("heard_from_missing", { consulted_at: instant }),
     facts("reschedule_request", {
       kind,
       starts_at: instant,

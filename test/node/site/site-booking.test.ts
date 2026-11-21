@@ -11,7 +11,7 @@ import {
 } from "../../../site/src/lib/address.ts";
 import { clientAppOrigin, signInLink } from "../../../site/src/lib/app-link.ts";
 import { ENABLED_SURFACES } from "../../../src/config/environments.ts";
-import { attributionFrom } from "../../../site/src/lib/attribution.ts";
+import { attributionFrom, carriesCampaign } from "../../../site/src/lib/attribution.ts";
 import { dayStrip, stripMonths } from "../../../site/src/lib/dates.ts";
 import { keyPerRequest } from "../../../site/src/lib/idempotency.ts";
 import { anyOpen, chosenSlot, dayOpen, isOpen, type OpenDays } from "../../../site/src/lib/open-windows.ts";
@@ -32,7 +32,7 @@ describe("idempotency keys", () => {
 describe("attribution", () => {
   it("keeps the campaign tags, the landing path and another site as the referrer", () => {
     const url = new URL("https://maneman.in/book?utm_source=google&utm_medium=cpc&gclid=abc&name=Arjun&x=1");
-    expect(attributionFrom(url, "https://www.google.com/search?q=hair+system")).toEqual({
+    expect(attributionFrom(url, "https://www.google.com/search?q=hair+system", "")).toEqual({
       landing_path: "/book",
       utm_source: "google",
       utm_medium: "cpc",
@@ -41,14 +41,35 @@ describe("attribution", () => {
     });
   });
 
+  it("keeps Google's iOS click IDs, our codes, and Meta's cookies as the browser holds them", () => {
+    const url = new URL("https://maneman.in/book?gbraid=g1&wbraid=w1&utm_term=hair&soc=K7M2QP&ref=ASHA42&offer=$$");
+    const cookies = "_ga=GA1.1; _fbp=fb.1.1795156200000.123456789; _fbc=fb.1.1795156200000.IwAR2x";
+    expect(attributionFrom(url, "", cookies)).toEqual({
+      landing_path: "/book",
+      gbraid: "g1",
+      wbraid: "w1",
+      utm_term: "hair",
+      soc: "K7M2QP",
+      ref: "ASHA42",
+      fbp: "fb.1.1795156200000.123456789",
+      fbc: "fb.1.1795156200000.IwAR2x",
+    });
+  });
+
   it("drops the site’s own pages as referrers, and anything not a campaign tag", () => {
     const url = new URL("https://maneman.in/?mobile=9810000000");
-    expect(attributionFrom(url, "https://maneman.in/try")).toEqual({ landing_path: "/" });
+    expect(attributionFrom(url, "https://maneman.in/try", "")).toEqual({ landing_path: "/" });
   });
 
   it("caps each value at the API’s limits", () => {
     const url = new URL(`https://maneman.in/?utm_source=${"a".repeat(300)}`);
-    expect(attributionFrom(url, "").utm_source).toHaveLength(200);
+    expect(attributionFrom(url, "", "").utm_source).toHaveLength(200);
+  });
+
+  it("says a landing with a tag, a click ID or a code is a campaign's, and a plain one is not", () => {
+    expect(carriesCampaign({ landing_path: "/", referrer: "https://www.google.com/" })).toBe(false);
+    expect(carriesCampaign({ landing_path: "/", wbraid: "w1" })).toBe(true);
+    expect(carriesCampaign({ landing_path: "/book", soc: "K7M2QP" })).toBe(true);
   });
 });
 

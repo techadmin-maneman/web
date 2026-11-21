@@ -30,6 +30,7 @@
 // visitor is given the page as built where the assets can still give it. A throw while a page streams through its
 // rewriter comes after the answer, and is not caught.
 
+import { visitorCookieHeader, visitorIn } from "@rules/config/visitor-cookie.ts";
 import { legalDays } from "./lib/legal-days.ts";
 import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, ReferralReward } from "./lib/api.ts";
@@ -59,6 +60,9 @@ const CITY_PAGE = /^\/areas\/[a-z0-9-]+$/;
 /** The page besides the landing that says what a referral earns. */
 const REWARD_PAGE = "/book";
 
+/** A campaign link: a society activation's, /s/<slug>, or an offer's, /o/<slug> (docs/tracking.md). */
+const CAMPAIGN_LINK = /^\/(s|o)\/([a-z0-9-]{1,40})\/?$/;
+
 /** The terms, which state the fit guarantee in the days ops set (docs/decisions/0256-fit-guarantee-setting.md). */
 const TERMS_PAGE = "/terms";
 
@@ -69,7 +73,7 @@ const KEPT_MS = 60_000;
 const FAILURE_KEPT_MS = 10_000;
 
 /** What the Worker asks mm-api for, as its log line names it. */
-type Asked = "invite" | "reward" | "cities" | "guarantee";
+type Asked = "invite" | "reward" | "cities" | "guarantee" | "link";
 
 /** A page's policy with a nonce of this request's own for its scripts; anything but a page is passed on as it is. */
 export function withNonce(answer: Response): Response {
@@ -134,6 +138,37 @@ const isFitGuarantee = (body: unknown): body is { readonly days: number } =>
 /** How long the fit guarantee runs, or null when mm-api could not say. */
 const askForGuarantee = (env: SiteEnv, origin: string): Promise<{ readonly days: number } | null> =>
   fetchJson(env, new Request(`${origin}/api/fit-guarantee`), "guarantee", isFitGuarantee);
+
+const isLanding = (body: unknown): body is { readonly landing: string } =>
+  typeof body === "object" &&
+  body !== null &&
+  "landing" in body &&
+  typeof body.landing === "string" &&
+  body.landing.startsWith("/book?");
+
+/**
+ * Where a campaign link sends the visitor: /book with its tags and code, or plain /book for a link that is retired, is
+ * not ours, or that mm-api cannot say of; with whatever else the link was opened with, an ad's click IDs above all,
+ * the link's own tags and code winning where both name one. Never kept: a link retired takes effect at once.
+ */
+async function campaignLanding(env: SiteEnv, opened: URL, kind: string, slug: string): Promise<string> {
+  const found = await fetchJson(env, new Request(`${opened.origin}/api/links/${kind}/${slug}`), "link", isLanding);
+  const landing = new URL(found?.landing ?? "/book", opened.origin);
+  for (const [key, value] of opened.searchParams) {
+    if (!landing.searchParams.has(key)) landing.searchParams.append(key, value);
+  }
+  return landing.toString();
+}
+
+/** A page given its visitor cookie where the browser has none: a page, not a redirect, a film or a file. */
+function withVisitor(request: Request, page: Response): Response {
+  const host = new URL(request.url).host;
+  const html = (page.headers.get("Content-Type") ?? "").startsWith("text/html");
+  if (!html || visitorIn(host, request.headers.get("Cookie")) !== null) return page;
+  const given = new Response(page.body, page);
+  given.headers.append("Set-Cookie", visitorCookieHeader(host, crypto.randomUUID()));
+  return given;
+}
 
 /** The words an element holds, put in place of the ones it was built with. */
 class Filled {
@@ -373,6 +408,11 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
     const url = new URL(request.url);
     if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
     if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
+    const link = CAMPAIGN_LINK.exec(url.pathname);
+    if (link !== null) {
+      const [, kind = "", slug = ""] = link;
+      return Response.redirect(await campaignLanding(env, url, kind, slug), 302);
+    }
     if (url.pathname === TERMS_PAGE && request.method === "GET") {
       // The terms as built say the days the guarantee began with; while mm-api cannot say, they stand. Either way the
       // page goes without its validators, so a browser never keeps a figure ops have changed since.
@@ -426,10 +466,10 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
   return {
     async fetch(request: Request, env: SiteEnv, ctx?: ExecutionContext): Promise<Response> {
       try {
-        return await answer(request, env);
+        return withVisitor(request, await answer(request, env));
       } catch (thrown) {
         reportFailure(request, env, ctx, thrown);
-        return withNonce(await asBuilt(request, env));
+        return withVisitor(request, withNonce(await asBuilt(request, env)));
       }
     },
   } satisfies ExportedHandler<SiteEnv>;

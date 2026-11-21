@@ -24,12 +24,16 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000001556003` | `4242595000001556003` |
 | `BOOKS_SAC` | — | — | — |
 | `CLIENT_SIGN_OFF` | `true` | `true` | `true` |
+| `CONVERSIONS_FROM` | — | `2026-11-21` | — |
+| `CONVERSIONS_TEST_MODE` | `true` | `true` | `false` |
 | `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |
 | `ENVIRONMENT` | `local` | `staging` | `production` |
 | `GEOCODE_PROVIDER` | `stub` | `google` | `google` |
+| `GOOGLE_ADS_PROVIDER` | `stub` | `google` | `google` |
 | `IMAGE_PROVIDER` | `stub` | `youcam` | `youcam` |
 | `MESSAGING_ENABLED` | `true` | `true` | `false` |
 | `MESSAGING_PROVIDER` | `stub` | `msg91` | `evolution` |
+| `META_CAPI_PROVIDER` | `stub` | `meta` | `meta` |
 | `PAYMENTS_PROVIDER` | `stub` | `razorpay` | `none` |
 | `RAZORPAY_KEY_ID` | — | `rzp_test_Tz0U9jnWcW6ZYU` | — |
 | `REFERRER_NAME_ON_INVITE` | `true` | `true` | `true` |
@@ -60,11 +64,21 @@ Set with `wrangler secret put` in each environment (docs/provisioning.md); never
 - `EVOLUTION_API_URL`
 - `EVOLUTION_INSTANCE_NAME`
 - `EVOLUTION_WEBHOOK_TOKEN`
+- `GOOGLE_ADS_ACTION_CONSULT_BOOKED`
+- `GOOGLE_ADS_ACTION_CONSULT_DONE`
+- `GOOGLE_ADS_ACTION_FIRST_FIT_PAID`
+- `GOOGLE_ADS_ACTION_SERVICE_PAID`
+- `GOOGLE_ADS_CUSTOMER_ID`
+- `GOOGLE_ADS_LOGIN_CUSTOMER_ID`
 - `GOOGLE_MAPS_API_KEY`
+- `GOOGLE_SERVICE_ACCOUNT_KEY`
 - `HEARTBEAT_URL`
 - `IP_HASH_SALT`
 - `LEAD_WEBHOOK_URL`
 - `MESSAGING_ALLOWLIST`
+- `META_CAPI_TOKEN`
+- `META_DATASET_ID`
+- `META_TEST_EVENT_CODE`
 - `MSG91_AUTH_KEY`
 - `MSG91_INTEGRATED_NUMBER`
 - `MSG91_SMS_TEMPLATE_ID`
@@ -146,7 +160,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `address_unlock_hour` | Address unlock | hour of the day, in India | `18` |
 | `reminder_hour` | Reminder time | hour of the day, in India | `18` |
 | `phone_clock` | Phone clock limits | minutes | `{"before_start":60,"held_offline":24}` |
-| `task_sla_hours` | Task deadlines | hours | `{"untold_move":4,"move_unanswered":4,"reschedule_request":4,"visit_not_begun":1,"visit_left_open":24,"unassigned_visit":24,"recall_call":24,"unanswered_chat":24,"message_undelivered":24,"city_matter":24,"remedy_approval":24,"leave_request":24,"leave_conflict":48,"address_to_confirm":48,"consultation_request":48,"first_fit_to_book":48,"replacement_order":48,"made_to_order_ask":24,"stock_at_risk":48,"at_risk_client":48,"partial_visit":48,"consumables_short":48,"fit_unsigned":48,"fit_guarantee_claim":48,"low_rating":48,"erasure_follow_up":8,"kit_request":24,"referral_review":48,"no_show_decision":48,"no_show_dispute":48,"number_change":48,"erasure_request":720,"grievance":720,"draft_invoice":48,"payment_owed":48,"upi_due":12,"payment_to_refund":24}` |
+| `task_sla_hours` | Task deadlines | hours | `{"untold_move":4,"move_unanswered":4,"reschedule_request":4,"visit_not_begun":1,"visit_left_open":24,"unassigned_visit":24,"recall_call":24,"unanswered_chat":24,"message_undelivered":24,"city_matter":24,"remedy_approval":24,"leave_request":24,"leave_conflict":48,"address_to_confirm":48,"consultation_request":48,"first_fit_to_book":48,"heard_from_missing":48,"replacement_order":48,"made_to_order_ask":24,"stock_at_risk":48,"at_risk_client":48,"partial_visit":48,"consumables_short":48,"fit_unsigned":48,"fit_guarantee_claim":48,"low_rating":48,"erasure_follow_up":8,"kit_request":24,"referral_review":48,"no_show_decision":48,"no_show_dispute":48,"number_change":48,"erasure_request":720,"grievance":720,"draft_invoice":48,"payment_owed":48,"upi_due":12,"payment_to_refund":24}` |
 | `task_lapse_days` | Tasks lapse after | days | `60` |
 | `payment_hold` | Payment hold | minutes | `{"countdown":10,"grace":2}` |
 | `dispute_window_days` | Dispute window | days | `30` |

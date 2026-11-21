@@ -12466,7 +12466,7 @@ Take a saved answer off the list
 
 ### GET /api/spend
 
-The last thirteen months' offline spend, the latest month first
+The last thirteen months' spend, the latest day first
 
 **200**: The entries, and the cities and channels an entry may name
 
@@ -12515,7 +12515,7 @@ The last thirteen months' offline spend, the latest month first
 
 ### POST /api/spend
 
-Add a month's offline spend
+Add a day's spend
 
 Request body:
 
@@ -12533,7 +12533,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names month for one outside the list's months, or city for one we do not hold
+**400**: invalid_request: fields names day for one outside the list's days, or city for one we do not hold
 
 ```json
 {
@@ -12588,6 +12588,135 @@ Request body:
               "enum": [
                 "access_required",
                 "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/spend/import
+
+Add a Google Ads or Meta Ads CSV's daily spend by campaign, each campaign's city by its name
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/SpendImport"
+}
+```
+
+**200**: Added
+
+```json
+{
+  "$ref": "#/components/schemas/SpendImported"
+}
+```
+
+**400**: invalid_request: fields names rows for a day outside the list's days
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: already_imported: these rows were imported before and are still on the figures
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "already_imported"
               ]
             }
           },
@@ -12739,15 +12868,15 @@ Take an entry off the figures
 }
 ```
 
-### GET /api/growth/funnel
+### GET /api/growth/acquisition
 
-The growth funnel over the last 30 or 90 days: try-ons, then leads to consultations to fits, by channel
+Spend, leads, consultations, first fits and their revenue by channel, for a week or a month
 
-**200**: The funnel
+**200**: The figures
 
 ```json
 {
-  "$ref": "#/components/schemas/GrowthFunnel"
+  "$ref": "#/components/schemas/Acquisition"
 }
 ```
 
@@ -12806,6 +12935,715 @@ The growth funnel over the last 30 or 90 days: try-ons, then leads to consultati
               "enum": [
                 "access_required",
                 "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/leads/call
+
+Take a lead on a call: a new number is a person and a phone lead, a known one a touch of theirs
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CallLead"
+}
+```
+
+**200**: Taken
+
+```json
+{
+  "$ref": "#/components/schemas/CallLeadTaken"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/clients/{id}/attribution
+
+How a client found us: their channel by the rule, their first and last touch, and what they told ops
+
+**200**: Their attribution; every field empty for a client we hold nothing of
+
+```json
+{
+  "$ref": "#/components/schemas/ClientAttribution"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client within the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/heard-from
+
+What the client told ops of how they heard of us, kept apart from the channel the rule gives
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/HeardFrom"
+}
+```
+
+**204**: Kept
+
+**400**: invalid_request: fields names heard_from for an answer not on the list
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client within the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/stop-sharing
+
+Send nothing more of the client's to Google or Meta, as they asked; whatever was waiting is let go
+
+**204**: Stopped
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client within the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### GET /api/campaign-links
+
+Every campaign link, the newest first, and the discount codes and tags a new one may take
+
+**200**: The links
+
+```json
+{
+  "$ref": "#/components/schemas/CampaignLinks"
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/campaign-links
+
+Make a society activation's link, with its costs as spend, or an offer's
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/CampaignLinkNew"
+}
+```
+
+**201**: Made
+
+```json
+{
+  "$ref": "#/components/schemas/CampaignLink"
+}
+```
+
+**400**: invalid_request: fields names pincode for one we cannot place, city for one we do not hold, or discount_code_id for a code switched off or not for a first fit
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/campaign-links/{id}/retire
+
+Retire a link: it sends visitors to /book with nothing, and keeps what it brought
+
+**204**: Retired
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such link, or retired already
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
               ]
             }
           },
@@ -37362,6 +38200,7 @@ Request body:
             "already_rated",
             "visit_not_done",
             "rating_closed",
+            "already_imported",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -41695,6 +42534,7 @@ Request body:
             "already_rated",
             "visit_not_done",
             "rating_closed",
+            "already_imported",
             "move_gone",
             "ask_the_client",
             "code_not_applicable",
@@ -47310,18 +48150,25 @@ Request body:
       "minLength": 1,
       "maxLength": 80
     },
-    "found_us": {
+    "heard_from": {
       "type": "string",
       "enum": [
-        "google_ads",
-        "meta_ads",
-        "referral",
-        "organic_search",
-        "direct",
-        "partner",
-        "organic_social"
+        "google",
+        "instagram_facebook",
+        "youtube",
+        "friend",
+        "society",
+        "salon_partner",
+        "whatsapp",
+        "flyer",
+        "other"
       ],
-      "description": "How they told Care they found us; left out where they did not say."
+      "description": "How they told Care they heard of us; left out where they did not say."
+    },
+    "heard_from_other": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
     }
   },
   "required": [
@@ -47431,29 +48278,37 @@ Request body:
       "items": {
         "type": "string",
         "enum": [
-          "partner",
+          "google_ads",
+          "meta_ads",
           "referral",
-          "organic_social",
           "organic_search",
-          "direct"
+          "direct",
+          "partner",
+          "society",
+          "organic_social",
+          "referral_site",
+          "whatsapp",
+          "phone"
         ]
       }
     },
-    "first_month": {
+    "first_day": {
       "type": "string",
-      "description": "The earliest month an entry may be put in, YYYY-MM."
+      "format": "date",
+      "description": "The earliest day an entry may be put on."
     },
-    "this_month": {
+    "today": {
       "type": "string",
-      "description": "India's month now, the latest an entry may be put in."
+      "format": "date",
+      "description": "India's day now, the latest an entry may be put on."
     }
   },
   "required": [
     "entries",
     "cities",
     "channels",
-    "first_month",
-    "this_month"
+    "first_day",
+    "today"
   ],
   "additionalProperties": false
 }
@@ -47473,6 +48328,19 @@ Request body:
       "type": "string",
       "description": "YYYY-MM."
     },
+    "spent_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD, India's day."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null for an entry made for its whole month, before entries had a day."
+    },
     "city": {
       "anyOf": [
         {
@@ -47487,11 +48355,17 @@ Request body:
     "channel": {
       "type": "string",
       "enum": [
-        "partner",
+        "google_ads",
+        "meta_ads",
         "referral",
-        "organic_social",
         "organic_search",
-        "direct"
+        "direct",
+        "partner",
+        "society",
+        "organic_social",
+        "referral_site",
+        "whatsapp",
+        "phone"
       ]
     },
     "campaign": {
@@ -47518,6 +48392,43 @@ Request body:
         }
       ]
     },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "csv",
+        "link",
+        "api"
+      ],
+      "description": "Typed here, taken from an ad account's CSV, a society activation's cost, or an API."
+    },
+    "link_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "cost_line": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "stall",
+            "staff",
+            "collateral",
+            "other"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "entered_by": {
       "type": "string"
     },
@@ -47529,11 +48440,15 @@ Request body:
   "required": [
     "id",
     "month",
+    "spent_date",
     "city",
     "channel",
     "campaign",
     "amount",
     "note",
+    "source",
+    "link_id",
+    "cost_line",
     "entered_by",
     "entered_at"
   ],
@@ -47547,9 +48462,10 @@ Request body:
 {
   "type": "object",
   "properties": {
-    "month": {
+    "day": {
       "type": "string",
-      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+      "format": "date",
+      "description": "YYYY-MM-DD, India's day."
     },
     "city": {
       "anyOf": [
@@ -47566,11 +48482,17 @@ Request body:
     "channel": {
       "type": "string",
       "enum": [
-        "partner",
+        "google_ads",
+        "meta_ads",
         "referral",
-        "organic_social",
         "organic_search",
-        "direct"
+        "direct",
+        "partner",
+        "society",
+        "organic_social",
+        "referral_site",
+        "whatsapp",
+        "phone"
       ]
     },
     "campaign": {
@@ -47592,7 +48514,7 @@ Request body:
     }
   },
   "required": [
-    "month",
+    "day",
     "city",
     "channel",
     "amount"
@@ -47601,12 +48523,90 @@ Request body:
 }
 ```
 
-### GrowthFunnel
+### SpendImported
 
 ```json
 {
   "type": "object",
   "properties": {
+    "added": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "added"
+  ],
+  "additionalProperties": false
+}
+```
+
+### SpendImport
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "platform": {
+      "type": "string",
+      "enum": [
+        "google",
+        "meta"
+      ]
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "YYYY-MM-DD, India's day."
+          },
+          "campaign": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000000,
+            "description": "Paise, before GST."
+          }
+        },
+        "required": [
+          "day",
+          "campaign",
+          "amount"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 900
+    }
+  },
+  "required": [
+    "platform",
+    "rows"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Acquisition
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "period": {
+      "type": "string",
+      "enum": [
+        "week",
+        "month"
+      ]
+    },
     "from": {
       "type": "string",
       "format": "date"
@@ -47614,41 +48614,16 @@ Request body:
     "to": {
       "type": "string",
       "format": "date",
-      "description": "The last day counted."
+      "description": "The period's last day."
     },
-    "tryons": {
-      "type": "integer",
-      "description": "First looks at the try-on, a second look of one photo not again."
+    "by": {
+      "type": "string",
+      "enum": [
+        "first",
+        "last"
+      ]
     },
-    "steps": {
-      "type": "object",
-      "properties": {
-        "leads": {
-          "type": "integer",
-          "description": "Clients whose first lead in the period came then."
-        },
-        "booked": {
-          "type": "integer",
-          "description": "Of those, how many booked a consultation."
-        },
-        "consulted": {
-          "type": "integer",
-          "description": "Had one, or a first fit, which counts as one."
-        },
-        "fitted": {
-          "type": "integer",
-          "description": "Were fitted."
-        }
-      },
-      "required": [
-        "leads",
-        "booked",
-        "consulted",
-        "fitted"
-      ],
-      "additionalProperties": false
-    },
-    "channels": {
+    "rows": {
       "type": "array",
       "items": {
         "type": "object",
@@ -47656,51 +48631,946 @@ Request body:
           "channel": {
             "type": "string",
             "enum": [
-              "Google Ads",
-              "Meta Ads",
-              "Referral",
-              "Organic search",
-              "Direct",
-              "Offline and partners",
-              "Organic social"
+              "google_ads",
+              "meta_ads",
+              "referral",
+              "organic_search",
+              "direct",
+              "partner",
+              "society",
+              "organic_social",
+              "referral_site",
+              "whatsapp",
+              "phone"
             ]
+          },
+          "spend": {
+            "type": "integer",
+            "description": "Paise, before GST."
           },
           "leads": {
             "type": "integer",
-            "description": "Clients whose first lead in the period came then."
+            "description": "Clients whose first lead came in the period."
           },
-          "booked": {
-            "type": "integer",
-            "description": "Of those, how many booked a consultation."
+          "consults_booked": {
+            "type": "integer"
           },
-          "consulted": {
-            "type": "integer",
-            "description": "Had one, or a first fit, which counts as one."
+          "consults_done": {
+            "type": "integer"
           },
-          "fitted": {
+          "first_fits": {
             "type": "integer",
-            "description": "Were fitted."
+            "description": "Clients whose first fit was paid in the period."
+          },
+          "first_fit_revenue": {
+            "type": "integer",
+            "description": "Paise, before GST, less refunds."
           }
         },
         "required": [
           "channel",
+          "spend",
           "leads",
-          "booked",
-          "consulted",
-          "fitted"
+          "consults_booked",
+          "consults_done",
+          "first_fits",
+          "first_fit_revenue"
         ],
         "additionalProperties": false
       }
+    },
+    "totals": {
+      "type": "object",
+      "properties": {
+        "spend": {
+          "type": "integer",
+          "description": "Paise, before GST."
+        },
+        "leads": {
+          "type": "integer",
+          "description": "Clients whose first lead came in the period."
+        },
+        "consults_booked": {
+          "type": "integer"
+        },
+        "consults_done": {
+          "type": "integer"
+        },
+        "first_fits": {
+          "type": "integer",
+          "description": "Clients whose first fit was paid in the period."
+        },
+        "first_fit_revenue": {
+          "type": "integer",
+          "description": "Paise, before GST, less refunds."
+        }
+      },
+      "required": [
+        "spend",
+        "leads",
+        "consults_booked",
+        "consults_done",
+        "first_fits",
+        "first_fit_revenue"
+      ],
+      "additionalProperties": false
+    },
+    "cohorts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "google_ads",
+              "meta_ads",
+              "referral",
+              "organic_search",
+              "direct",
+              "partner",
+              "society",
+              "organic_social",
+              "referral_site",
+              "whatsapp",
+              "phone"
+            ]
+          },
+          "clients": {
+            "type": "integer"
+          },
+          "d30": {
+            "type": "integer"
+          },
+          "d90": {
+            "type": "integer"
+          },
+          "d180": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "channel",
+          "clients",
+          "d30",
+          "d90",
+          "d180"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "cohort_complete": {
+      "type": "object",
+      "properties": {
+        "d30": {
+          "type": "boolean"
+        },
+        "d90": {
+          "type": "boolean"
+        },
+        "d180": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "d30",
+        "d90",
+        "d180"
+      ],
+      "additionalProperties": false
+    },
+    "heard": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "heard_from": {
+            "type": "string",
+            "enum": [
+              "google",
+              "instagram_facebook",
+              "youtube",
+              "friend",
+              "society",
+              "salon_partner",
+              "whatsapp",
+              "flyer",
+              "other",
+              "not_asked"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "google_ads",
+              "meta_ads",
+              "referral",
+              "organic_search",
+              "direct",
+              "partner",
+              "society",
+              "organic_social",
+              "referral_site",
+              "whatsapp",
+              "phone"
+            ]
+          },
+          "clients": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "heard_from",
+          "channel",
+          "clients"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "tryons": {
+      "type": "integer",
+      "description": "First looks at the try-on in the period."
     }
   },
   "required": [
+    "period",
     "from",
     "to",
-    "tryons",
-    "steps",
-    "channels"
+    "by",
+    "rows",
+    "totals",
+    "cohorts",
+    "cohort_complete",
+    "heard",
+    "tryons"
   ],
   "additionalProperties": false
+}
+```
+
+### CallLeadTaken
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "person_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "known": {
+      "type": "boolean",
+      "description": "The number is one of our people's; no lead was made."
+    }
+  },
+  "required": [
+    "person_id",
+    "known"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CallLead
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "Letters, spaces, dots, apostrophes and hyphens, starting with a letter."
+    },
+    "mobile": {
+      "type": "string",
+      "pattern": "^(?:(?:\\+|00?)?91|0)?[\\s-]*[6-9](?:[\\s-]*\\d){9}$"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "google_ads",
+        "meta_ads",
+        "referral",
+        "partner",
+        "society",
+        "organic_search",
+        "organic_social",
+        "direct"
+      ],
+      "description": "Where the caller came from, as ops picked it."
+    }
+  },
+  "required": [
+    "name",
+    "mobile",
+    "channel"
+  ],
+  "additionalProperties": false
+}
+```
+
+### ClientAttribution
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "attributed_channel": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "google_ads",
+            "meta_ads",
+            "referral",
+            "organic_search",
+            "direct",
+            "partner",
+            "society",
+            "organic_social",
+            "referral_site",
+            "whatsapp",
+            "phone"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_touch_channel": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "google_ads",
+            "meta_ads",
+            "referral",
+            "organic_search",
+            "direct",
+            "partner",
+            "society",
+            "organic_social",
+            "referral_site",
+            "whatsapp",
+            "phone"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "first_touch": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/TouchShown"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_touch": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/TouchShown"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "touches": {
+      "type": "integer"
+    },
+    "heard_from": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "google",
+            "instagram_facebook",
+            "youtube",
+            "friend",
+            "society",
+            "salon_partner",
+            "whatsapp",
+            "flyer",
+            "other"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "heard_from_other": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "heard_from_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sharing_stopped_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "attributed_channel",
+    "last_touch_channel",
+    "first_touch",
+    "last_touch",
+    "touches",
+    "heard_from",
+    "heard_from_other",
+    "heard_from_at",
+    "sharing_stopped_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TouchShown
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "via": {
+      "type": "string",
+      "enum": [
+        "site",
+        "whatsapp",
+        "call"
+      ]
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "google_ads",
+        "meta_ads",
+        "referral",
+        "organic_search",
+        "direct",
+        "partner",
+        "society",
+        "organic_social",
+        "referral_site",
+        "whatsapp",
+        "phone"
+      ]
+    },
+    "utm_source": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "utm_medium": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "utm_campaign": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "landing_path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "referrer": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "link_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The campaign link it came through."
+    }
+  },
+  "required": [
+    "at",
+    "via",
+    "channel",
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "landing_path",
+    "referrer",
+    "link_name"
+  ],
+  "additionalProperties": false
+}
+```
+
+### HeardFrom
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "heard_from": {
+      "type": "string",
+      "enum": [
+        "google",
+        "instagram_facebook",
+        "youtube",
+        "friend",
+        "society",
+        "salon_partner",
+        "whatsapp",
+        "flyer",
+        "other"
+      ]
+    },
+    "heard_from_other": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    }
+  },
+  "required": [
+    "heard_from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CampaignLinks
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/CampaignLink"
+      }
+    },
+    "discount_codes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "percent",
+              "amount"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          },
+          "expires_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "kind",
+          "value",
+          "expires_on"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "google",
+          "meta",
+          "youtube",
+          "whatsapp",
+          "newsletter",
+          "partner"
+        ]
+      }
+    },
+    "mediums": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "cpc",
+          "paid_social",
+          "social",
+          "email",
+          "offline"
+        ]
+      }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The cities an offer link may be aimed at."
+    }
+  },
+  "required": [
+    "links",
+    "discount_codes",
+    "sources",
+    "mediums",
+    "cities"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CampaignLink
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "society",
+        "offer"
+      ]
+    },
+    "slug": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "utm_source": {
+      "type": "string"
+    },
+    "utm_medium": {
+      "type": "string"
+    },
+    "utm_campaign": {
+      "type": "string"
+    },
+    "city": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pincode": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "held_date": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "discount_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "short_link": {
+      "type": "string",
+      "description": "The link to print or share: /s/<slug> or /o/<slug> on our site."
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "retired_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "spent": {
+      "type": "integer",
+      "description": "Spend on it, in paise before GST."
+    },
+    "touches": {
+      "type": "integer"
+    },
+    "people": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "slug",
+    "code",
+    "name",
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "city",
+    "pincode",
+    "held_date",
+    "discount_code",
+    "short_link",
+    "created_by",
+    "created_at",
+    "retired_at",
+    "spent",
+    "touches",
+    "people"
+  ],
+  "additionalProperties": false
+}
+```
+
+### CampaignLinkNew
+
+```json
+{
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "society"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "The society's name."
+        },
+        "pincode": {
+          "type": "string",
+          "pattern": "^\\d{6}$"
+        },
+        "held_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "costs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "line": {
+                "type": "string",
+                "enum": [
+                  "stall",
+                  "staff",
+                  "collateral",
+                  "other"
+                ]
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 10000000000,
+                "description": "Paise, before GST."
+              },
+              "note": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "line",
+              "amount"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 10
+        },
+        "discount_code_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "pincode",
+        "held_date",
+        "costs"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "offer"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "utm_source": {
+          "type": "string",
+          "enum": [
+            "google",
+            "meta",
+            "youtube",
+            "whatsapp",
+            "newsletter",
+            "partner"
+          ]
+        },
+        "utm_medium": {
+          "type": "string",
+          "enum": [
+            "cpc",
+            "paid_social",
+            "social",
+            "email",
+            "offline"
+          ]
+        },
+        "utm_campaign": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "city": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "discount_code_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "utm_source",
+        "utm_medium",
+        "utm_campaign"
+      ],
+      "additionalProperties": false
+    }
+  ]
 }
 ```
 
@@ -49256,6 +51126,12 @@ Request body:
         "partner_payout.delete",
         "spend.add",
         "spend.remove",
+        "spend.import",
+        "campaign_link.add",
+        "campaign_link.retire",
+        "lead.call",
+        "client.heard_from",
+        "client.sharing_stop",
         "photo.view",
         "pincode.launch",
         "data.export",
@@ -52280,6 +54156,7 @@ Request body:
               "address_to_confirm",
               "consultation_request",
               "first_fit_to_book",
+              "heard_from_missing",
               "replacement_order",
               "made_to_order_ask",
               "stock_at_risk",
@@ -53031,6 +54908,26 @@ Request body:
       "required": [
         "group",
         "starts_at"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "heard_from_missing"
+          ]
+        },
+        "consulted_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "group",
+        "consulted_at"
       ],
       "additionalProperties": false
     },

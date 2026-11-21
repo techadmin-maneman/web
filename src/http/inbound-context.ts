@@ -20,5 +20,6 @@ export function inboundContext(c: Context<AppEnv>): InboundContext {
     messagingSettings: c.var.config.settings.messaging,
     careHours: async () => (await opsInputs(c)).careHours,
     queue: (messageId) => queueMessage(c, messageId),
+    log: c.var.log,
   };
 }

@@ -35,6 +35,30 @@ Nothing here needs a release. The first two have dates.
 - [ ] **Staff sign in with Google Workspace** (provisioning, step 3, "Staff sign in with their maneman.in Google accounts"): create the OAuth client in Google Cloud, enforce 2-Step Verification in the Google Admin console, and send the client ID and secret to whoever sets up Access.
 - [ ] **Counsel and the CA:** send each their brief (counsel: items 22, 23, 40, 41, 44, 55, 63, 69, 146, 148 and 149; the CA: items 2, 3, 9, 14, 16 and 17).
 
+**Attribution and conversions** ([ADR 0288](decisions/0288-attribution-and-conversions.md),
+[tracking](tracking.md))
+
+- [x] **Google Ads' conversion actions** for a consultation booked, one done, a first fit paid and a service paid, and
+      the service account `mm-conversions@mane-man-maps.iam.gserviceaccount.com` added to the Ads account (owner, 20
+      November 2026). Google took a validate-only upload of each the same day.
+- [ ] **Staging's Google secrets,** each piped in, never typed on the command line: `GOOGLE_ADS_CUSTOMER_ID`, the four
+      `GOOGLE_ADS_ACTION_*` IDs, and the key file itself with
+      `W secret put GOOGLE_SERVICE_ACCOUNT_KEY --env staging < .env.google-conversions.json`. Staging stays in test mode
+      (`CONVERSIONS_TEST_MODE`, `wrangler.jsonc`): Google checks each event and counts none.
+- [ ] **GA4:** mark `generate_lead` as a key event in staging's and production's properties, and import production's
+      into Google Ads (Goals, Conversions, Import, Google Analytics 4). The site carries no Ads tag of its own.
+- [x] **Meta's dataset** `4633949850213113` ("Mane Man", the Mane Man portfolio's), its Conversions API token and the
+      Test Events codes, in the git-ignored `.env.meta-conversions`; a Lead, a Purchase and a ConsultationDone sent
+      through our own code showed in Test Events (owner, 20 November 2026). The site's production Pixel is the same
+      dataset. `maneman.in` is verified for it.
+- [ ] **Staging's Meta secrets,** piped in: `META_DATASET_ID`, `META_CAPI_TOKEN`, and the **Offline** view's test code as
+      `META_TEST_EVENT_CODE` (four of the five events are offline ones).
+- [ ] **Production's secrets** as staging's, at launch, with `CONVERSIONS_TEST_MODE` `"false"`, and
+      `CONVERSIONS_FROM` in `wrangler.jsonc`'s production vars set to the launch day: nothing that happened before it
+      is sent, and production will not start with a platform on and no day set.
+- [ ] **Spend:** Google's and Meta's from their CSVs on the Spend page; never Zoho Analytics' ad connectors, or spend
+      counts twice.
+
 **Ops, or a developer with the Cloudflare account**
 
 - [ ] **Production's resources** (item 86; provisioning, step 1):

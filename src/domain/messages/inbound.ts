@@ -7,6 +7,7 @@
 // these (src/routes/hooks/), so receipts, replies and STOP work the same whichever sends.
 
 import type { MessagingSettings } from "../../config/settings.ts";
+import type { Logger } from "../../log.ts";
 import type { CareHours } from "../../policy/care-hours.ts";
 import { refusalError } from "../../policy/message-refusals.ts";
 import { isStopReply } from "../../policy/consents.ts";
@@ -14,6 +15,7 @@ import type { MessagingProvider } from "../../providers/messaging/index.ts";
 import { answerAfterHours } from "../care/after-hours.ts";
 import { fileInbound } from "../care/inbox.ts";
 import { stopByReply } from "./stop-messages.ts";
+import { touchFromChat, type AdReferral } from "../attribution/chat-touch.ts";
 
 export type Inbound =
   | {
@@ -35,6 +37,8 @@ export type Inbound =
       readonly mobileE164: string;
       readonly text: string;
       readonly providerMessageId: string | null;
+      /** A click-to-WhatsApp ad's referral, on the first message of a chat begun from one. */
+      readonly referral?: AdReferral | null;
     };
 
 /** What taking them needs: the database, the time, and the ways to answer. */
@@ -47,10 +51,23 @@ export interface InboundContext {
   readonly careHours: () => Promise<CareHours>;
   /** Puts a message written to the outbox on the queue that sends it. */
   readonly queue: (messageId: string) => Promise<void>;
+  readonly log?: Logger;
 }
 
 /** A request carrying more than this many receipts or messages has the rest ignored. */
 const MOST_INBOUND = 50;
+
+/**
+ * The chat's touch, where the message carries a site visitor's reference or an ad's referral
+ * (docs/decisions/0288-attribution-and-conversions.md). It never stops the message being filed and answered.
+ */
+async function chatTouch(context: InboundContext, event: Extract<Inbound, { kind: "message" }>): Promise<void> {
+  try {
+    await touchFromChat(context.db, { ...event, referral: event.referral ?? null, now: context.now });
+  } catch (error) {
+    context.log?.warn("chat_touch_failed", { reason: error instanceof Error ? error.name : "unknown" });
+  }
+}
 
 /** Takes what a provider reported; how many receipts and refusals were new, messages filed and senders stopped. */
 export async function takeInbound(context: InboundContext, events: readonly Inbound[]) {
@@ -70,6 +87,7 @@ export async function takeInbound(context: InboundContext, events: readonly Inbo
     // A message reported again, or a captured request replayed, files nothing and answers or stops nothing again.
     if (!(await fileInbound(context.db, { ...event, at: context.now }))) continue;
     filed += 1;
+    await chatTouch(context, event);
     if (!isStopReply(event.text)) {
       await answerAfterHours(context.db, context.messaging, context.messagingSettings, {
         mobileE164: event.mobileE164,

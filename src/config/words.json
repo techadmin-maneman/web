@@ -2864,6 +2864,14 @@
     "reviewed": false
   },
   {
+    "key": "site:contact/whatsapp.greeting",
+    "surface": "site",
+    "group": "Contact",
+    "where": "whatsapp",
+    "text": "Hi, I’d like to know more.",
+    "reviewed": false
+  },
+  {
     "key": "site:contact/socialLinks.links.0.label",
     "surface": "site",
     "group": "Contact",
@@ -2918,6 +2926,14 @@
     "where": "consentBar",
     "text": "Decline",
     "reviewed": true
+  },
+  {
+    "key": "site:contact/consentBar.change",
+    "surface": "site",
+    "group": "Contact",
+    "where": "consentBar",
+    "text": "Cookie choices",
+    "reviewed": false
   },
   {
     "key": "site:contact/islandFailed.message",

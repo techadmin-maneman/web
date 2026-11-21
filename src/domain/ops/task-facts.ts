@@ -58,6 +58,7 @@ export type TaskFacts =
       readonly note: string | null;
     }
   | { readonly group: "address_to_confirm"; readonly starts_at: Instant }
+  | { readonly group: "heard_from_missing"; readonly consulted_at: Instant }
   | {
       readonly group: "reschedule_request";
       readonly kind: VisitType;

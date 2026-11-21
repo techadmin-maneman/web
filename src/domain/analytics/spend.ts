@@ -12,6 +12,8 @@ import { read, readAll } from "../../lib/read-all.ts";
 interface EntryRow {
   readonly key: string;
   readonly month: string;
+  /** The entry's own day; null for one made for its whole month, and for a partner's payout. */
+  readonly spent_date: string | null;
   readonly city: string | null;
   readonly channel: string;
   readonly campaign: string | null;
@@ -31,7 +33,7 @@ const rupees = (paise: number) => Math.round(paise) / 100;
 const channelNamed = (code: string): Channel => CHANNELS.find((each) => each.code === code)?.channel ?? "Direct";
 
 /** Each free visit a referral grant paid for, not given back, with its service's price on its day. */
-const CREDITS_USED = `SELECT r.id, a.window_start, a.service_city AS city, r.visits,
+export const CREDITS_USED = `SELECT r.id, a.window_start, a.service_city AS city, r.visits,
     EXISTS (SELECT 1 FROM channel_attributions c WHERE c.id = g.source_id) AS from_partner,
     (SELECT b.amount_ex_gst FROM price_book b WHERE b.item = a.type AND b.tier = ${tierOf("a.tier")}
        AND b.valid_from <= ${indiaDateSql("a.window_start")} ORDER BY b.valid_from DESC LIMIT 1) AS price
@@ -45,9 +47,10 @@ export async function spendRows(db: D1Database): Promise<TableRows> {
   const { entries, credits } = await readAll(db, {
     entries: read<EntryRow>(
       db.prepare(
-        `SELECT 'e:' || id AS key, month, city, channel, campaign, amount FROM spend_entries WHERE removed_at IS NULL
+        `SELECT 'e:' || id AS key, month, spent_date, city, channel, campaign, amount FROM spend_entries
+       WHERE removed_at IS NULL
        UNION ALL
-       SELECT 'p:' || id, month, NULL, 'partner', NULL, amount FROM partner_payouts WHERE amount > 0`,
+       SELECT 'p:' || id, month, NULL, NULL, 'partner', NULL, amount FROM partner_payouts WHERE amount > 0`,
       ),
     ),
     credits: read<CreditRow>(db.prepare(CREDITS_USED)),
@@ -55,7 +58,7 @@ export async function spendRows(db: D1Database): Promise<TableRows> {
   const rows: Row[] = [
     ...entries.map((row) => ({
       spend_key: row.key,
-      day: `${row.month}-01`,
+      day: row.spent_date ?? `${row.month}-01`,
       city: row.city,
       channel: channelNamed(row.channel),
       campaign_key: row.campaign === null ? null : row.campaign.trim().toLowerCase(),
@@ -65,7 +68,7 @@ export async function spendRows(db: D1Database): Promise<TableRows> {
       spend_key: `c:${row.id}`,
       day: indiaDate(new Date(row.window_start)),
       city: row.city,
-      channel: row.from_partner === 1 ? "Offline and partners" : "Referral",
+      channel: channelNamed(row.from_partner === 1 ? "partner" : "referral"),
       campaign_key: null,
       amount: rupees((row.price ?? 0) * Math.abs(row.visits)),
     })),

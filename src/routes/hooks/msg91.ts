@@ -45,6 +45,16 @@ const Sent = z.array(
   }),
 );
 
+/**
+ * A chat begun from a click-to-WhatsApp ad: Meta's referral on its first message (ADR 0288), read apart from the
+ * message, so one that will not parse is dropped and never the words, a STOP among them.
+ */
+const Referral = z.looseObject({
+  ctwa_clid: z.string().max(500).optional(),
+  source_id: z.string().max(200).optional(),
+  source_url: z.string().max(500).optional(),
+});
+
 /** A field MSG91 sends as JSON in a string, parsed; undefined when it is not there or not JSON. */
 function parsedJson(text: string | null | undefined): unknown {
   if (text === null || text === undefined || text === "") return undefined;
@@ -86,7 +96,12 @@ function inboundOf(event: Msg91Event): Inbound[] {
   const mobileE164 = numberOf(event.customerNumber);
   if (text === undefined || mobileE164 === null) return [];
   const [first] = Sent.safeParse(parsedJson(event.messages)).data ?? [];
-  return [{ kind: "message", mobileE164, text, providerMessageId: event.uuid ?? first?.id ?? null }];
+  const ad = Referral.safeParse(first?.referral).data;
+  const referral =
+    ad === undefined
+      ? null
+      : { ctwaClid: ad.ctwa_clid ?? null, sourceId: ad.source_id ?? null, sourceUrl: ad.source_url ?? null };
+  return [{ kind: "message", mobileE164, text, providerMessageId: event.uuid ?? first?.id ?? null, referral }];
 }
 
 const msg91HookRoute = createRoute({

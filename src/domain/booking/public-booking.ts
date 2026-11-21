@@ -63,6 +63,7 @@ import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import type { EnvironmentName } from "../../config/environments.ts";
 import { attribute, type InviteState, type Via } from "../referrals/referrals.ts";
 import { attributeToPartner, isPartnerInvite, type AnyInvite } from "../referrals/channels.ts";
+import { touchForLead, type VisitContext } from "../attribution/lead-touch.ts";
 import { saveBookingLead, type LeadAttribution } from "../leads/leads.ts";
 import { type Pincode } from "../clients/service-area.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
@@ -118,6 +119,8 @@ export interface FormRequest {
   readonly bookHold: (holdId: string) => Promise<void>;
   /** Google, to check the drives either side of the start before it is held; null where the routes provider is off. */
   readonly drives: DriveCheck | null;
+  /** The visitor the site's cookie names, and their address and browser, for the lead's touch (ADR 0288). */
+  readonly visit: VisitContext;
 }
 
 /** Attributes the person to the invite they came with, a client's or a partner's, after what the form booked stands. */
@@ -184,6 +187,8 @@ export async function recordLead(
     lossExtent: LossExtent | null;
     date: string | null;
     attribution: LeadAttribution;
+    /** The version of the notice on Google and Meta the form showed, where it showed one. */
+    adNotice?: string | null;
     served: boolean;
     now: Date;
   },
@@ -204,6 +209,18 @@ export async function recordLead(
     requestId,
     now: input.now,
   });
+  await touchForLead(
+    db,
+    {
+      leadId,
+      personId: input.personId,
+      visit: form.visit,
+      attribution: input.attribution,
+      adNotice: input.adNotice ?? null,
+      now: input.now,
+    },
+    log,
+  );
   await enqueue(form.queues.crm, { lead_id: leadId, request_id: requestId }, { log, ifLost: "sweeper" });
   return leadId;
 }

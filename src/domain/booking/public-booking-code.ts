@@ -1,8 +1,10 @@
 // The discount code a site booking was given (docs/decisions/0108-discount-codes.md): typed on /book, or a partner's
-// own, which its invite carries, checked as only a consultation and fit in one visit takes one.
+// own, which its invite carries, or the one a campaign link the client came through carries (ADR 0288), checked as
+// only a consultation and fit in one visit takes one.
 
 import { checkForOneVisit, type OneVisitCode } from "../money/discount-code-holds.ts";
 import { isPartnerInvite, type AnyInvite } from "../referrals/channels.ts";
+import { linkCodeFor } from "../growth/campaign-links.ts";
 import type { FormRequest, Refusal } from "./public-booking.ts";
 
 /** What a booking asked for of a code: the one typed, and the invite it came with. */
@@ -29,9 +31,12 @@ export async function oneVisitCode(
   form: FormRequest,
   request: AskedFor,
   knownId: string | null,
-  oneVisit: boolean,
+  visit: { readonly oneVisit: boolean; readonly pincode: string | null },
 ): Promise<OneVisitCode | Refusal | null> {
-  const asked = askedCode(request);
+  const { oneVisit } = visit;
+  const linked = knownId === null ? null : await linkCodeFor(form.db, knownId, visit.pincode);
+  // A link's code is its offer, never typed: as a partner's, it never refuses the booking.
+  const asked = askedCode(request) ?? (linked === null ? null : { text: linked, fromInvite: true });
   if (asked === null) return null;
   const notApplicable = asked.fromInvite
     ? null

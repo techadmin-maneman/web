@@ -36,7 +36,10 @@ test("the booking form asks the visitor to agree to the terms and the privacy po
 }) => {
   await page.goto("/book");
   const form = page.locator("form").first();
-  await expect(form.getByRole("checkbox", { name: Object.values(referral.form.agree).join("") })).not.toBeChecked();
-  await expect(form.getByRole("link", { name: referral.form.agree.terms })).toHaveAttribute("href", "/terms");
-  await expect(form.getByRole("link", { name: referral.form.agree.privacy })).toHaveAttribute("href", "/privacy");
+  const named = { name: Object.values(referral.form.agree).join("") };
+  await expect(form.getByRole("checkbox", named)).not.toBeChecked();
+  // The tick's own links: the ad notice under the button links the privacy policy's section on it too.
+  const agreement = form.locator("label").filter({ has: page.getByRole("checkbox", named) });
+  await expect(agreement.getByRole("link", { name: referral.form.agree.terms })).toHaveAttribute("href", "/terms");
+  await expect(agreement.getByRole("link", { name: referral.form.agree.privacy })).toHaveAttribute("href", "/privacy");
 });

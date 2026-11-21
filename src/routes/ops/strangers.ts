@@ -9,7 +9,7 @@ import { json } from "../../http/openapi.ts";
 import { actorOf } from "../../http/audit.ts";
 import { linkChat, saveStranger } from "../../domain/care/strangers.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
-import { CHANNEL_CODES } from "../../policy/channels.ts";
+import { HEARD_FROM_CODES, HEARD_FROM_OTHER_MAX } from "../../policy/heard-from.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
 
 const Id = z.object({ id: z.uuid() });
@@ -42,10 +42,11 @@ const saveRoute = opsRoute({
         z
           .object({
             name: z.string().trim().min(1).max(80),
-            found_us: z
-              .enum(CHANNEL_CODES)
+            heard_from: z
+              .enum(HEARD_FROM_CODES)
               .optional()
-              .openapi({ description: "How they told Care they found us; left out where they did not say." }),
+              .openapi({ description: "How they told Care they heard of us; left out where they did not say." }),
+            heard_from_other: z.string().trim().min(1).max(HEARD_FROM_OTHER_MAX).optional(),
           })
           .strict()
           .openapi("ChatSave"),
@@ -73,12 +74,12 @@ export function registerOpsStrangers(app: App): void {
   });
 
   app.openapi(saveRoute, async (c) => {
-    const { name, found_us: foundUs } = c.req.valid("json");
+    const { name, heard_from: heardFrom, heard_from_other: other } = c.req.valid("json");
     const saved = await saveStranger(c.env.DB, {
       ...changeOf(c),
       conversationId: c.req.valid("param").id,
       name,
-      foundUs: foundUs ?? null,
+      heard: heardFrom === undefined ? null : { heardFrom, other: other ?? null },
       testRecord: testRecordAtCreation(c.var.config.environment, name),
     });
     if (saved === "not_found") return refuse(c, "not_found");

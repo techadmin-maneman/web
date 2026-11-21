@@ -1,38 +1,60 @@
-// Growth · Funnel: Spend said "Nothing yet", Referrals counted per referrer, and nothing showed try-on to consultation
-// to fit, nor how each channel did, nor where the Zoho Analytics dashboards were.
+// Growth · Funnel (ADR 0288): for a week or a month, try-on to fit, each channel's spend and what it brought with what
+// each step cost, the cohorts' revenue after their first fit, what clients told ops, and the dashboards beyond it.
 
 import type { Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { funnel as copy } from "../../apps/ops/src/content/funnel.ts";
+import { rupees } from "../../packages/web-kit/money.ts";
+import { channelNamed } from "../../src/policy/channels.ts";
 
-const NONE = { leads: 0, booked: 0, consulted: 0, fitted: 0 };
+const NONE = { spend: 0, leads: 0, consults_booked: 0, consults_done: 0, first_fits: 0, first_fit_revenue: 0 };
 
-const FUNNEL = {
-  from: "2026-08-23",
-  to: "2026-09-21",
-  tryons: 40,
-  steps: { leads: 10, booked: 6, consulted: 4, fitted: 2 },
-  channels: [
-    { channel: "Google Ads", leads: 6, booked: 4, consulted: 3, fitted: 2 },
-    { channel: "Meta Ads", ...NONE },
-    { channel: "Referral", leads: 4, booked: 2, consulted: 1, fitted: 0 },
-    { channel: "Organic search", ...NONE },
-    { channel: "Direct", ...NONE },
-    { channel: "Offline and partners", ...NONE },
-    { channel: "Organic social", ...NONE },
+const FIGURES = {
+  period: "week",
+  from: "2026-09-14",
+  to: "2026-09-20",
+  by: "first",
+  rows: [
+    {
+      channel: "google_ads",
+      spend: 5_000_000,
+      leads: 6,
+      consults_booked: 4,
+      consults_done: 3,
+      first_fits: 2,
+      first_fit_revenue: 6_000_000,
+    },
+    { channel: "referral", ...NONE, leads: 4, consults_booked: 2, consults_done: 1 },
+    { channel: "society", ...NONE, spend: 1_200_000 },
   ],
-} satisfies OpsReply<"/api/growth/funnel">;
+  totals: {
+    spend: 6_200_000,
+    leads: 10,
+    consults_booked: 6,
+    consults_done: 4,
+    first_fits: 2,
+    first_fit_revenue: 6_000_000,
+  },
+  cohorts: [{ channel: "google_ads", clients: 2, d30: 6_000_000, d90: 6_000_000, d180: 6_000_000 }],
+  cohort_complete: { d30: false, d90: false, d180: false },
+  heard: [
+    { heard_from: "google", channel: "google_ads", clients: 2 },
+    { heard_from: "not_asked", channel: "referral", clients: 1 },
+  ],
+  tryons: 40,
+} satisfies OpsReply<"/api/growth/acquisition">;
 
-test("shows try-on to fit with each step's share, each channel that brought someone, and the dashboards", async ({
+test("shows try-on to fit, each channel's spend and what it brought, cohorts, what clients said, and the dashboards", async ({
   page,
 }) => {
   const asked: string[] = [];
   await answer(page, {
-    "GET /api/growth/funnel": (route: Route) => {
-      asked.push(new URL(route.request().url()).searchParams.get("days") ?? "");
-      return json(FUNNEL)(route);
+    "GET /api/growth/acquisition": (route: Route) => {
+      const query = new URL(route.request().url()).searchParams;
+      asked.push(`${query.get("period") ?? ""} ${query.get("by") ?? ""}`);
+      return json(FIGURES)(route);
     },
   });
   await page.goto("/funnel");
@@ -42,14 +64,22 @@ test("shows try-on to fit with each step's share, each channel that brought some
   await expect(steps.getByRole("listitem")).toHaveText([
     `${copy.steps.tryons}40`,
     `${copy.steps.leads}10`,
-    `${copy.steps.booked}${copy.share(6, 10)}`,
-    `${copy.steps.consulted}${copy.share(4, 10)}`,
-    `${copy.steps.fitted}${copy.share(2, 10)}`,
+    `${copy.steps.booked}6`,
+    `${copy.steps.consulted}4`,
+    `${copy.steps.fitted}2`,
   ]);
   const channels = page.getByRole("region", { name: copy.channels.title });
-  // Only the channels that brought someone are listed.
-  const brought = FUNNEL.channels.filter((each) => each.leads > 0).map((each) => each.channel);
-  await expect(channels.getByRole("rowheader")).toHaveText(brought);
+  await expect(channels.getByRole("rowheader")).toHaveText([
+    ...FIGURES.rows.map((row) => channelNamed(row.channel)),
+    copy.channels.total,
+  ]);
+  await expect(channels.getByRole("row", { name: new RegExp(`^${channelNamed("google_ads")}`) })).toContainText(
+    copy.roas(6_000_000, 5_000_000),
+  );
+  await expect(page.getByRole("region", { name: copy.cohorts.title })).toContainText(
+    copy.cohorts.soFar(rupees(6_000_000)),
+  );
+  await expect(page.getByRole("region", { name: copy.heard.title })).toContainText(copy.heard.notAsked);
   const dashboards = page.getByRole("region", { name: copy.dashboards.title });
   await expect(dashboards.getByRole("link", { name: copy.dashboards.links[0]?.name ?? "" })).toHaveAttribute(
     "href",
@@ -57,6 +87,7 @@ test("shows try-on to fit with each step's share, each channel that brought some
   );
   expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("combobox", { name: copy.period }).selectOption({ label: copy.periods["90"] });
-  await expect.poll(() => asked).toEqual(["30", "90"]);
+  await page.getByRole("combobox", { name: copy.period }).selectOption({ label: copy.periods.month });
+  await page.getByRole("combobox", { name: copy.by }).selectOption({ label: copy.bys.last });
+  await expect.poll(() => asked).toEqual(["week first", "month first", "month last"]);
 });

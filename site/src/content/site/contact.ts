@@ -9,6 +9,8 @@ export const whatsapp = {
   number: WHATSAPP_NUMBER,
   display: WHATSAPP_DISPLAY,
   label: `WhatsApp · ${WHATSAPP_DISPLAY}`,
+  /** The words a chat begun from the site opens with, ahead of the visitor's reference ("Ref M7K2Q9XP"). */
+  greeting: "Hi, I’d like to know more.",
 };
 
 /**
@@ -34,6 +36,8 @@ export const consentBar = {
   privacy: "Privacy Policy",
   accept: "Accept",
   decline: "Decline",
+  /** In each footer: the bar back, to answer again. */
+  change: "Cookie choices",
 };
 
 /** The booking form or the try-on, when it failed to draw: the way to us instead. */

@@ -70,6 +70,14 @@ export const AUDIT_ACTIONS = [
   // A month's offline spend added, or taken off the figures (docs/decisions/0150-spend.md).
   "spend.add",
   "spend.remove",
+  // Attribution (docs/decisions/0288-attribution-and-conversions.md): spend taken from an ad account's CSV, a campaign
+  // link made or retired, a lead taken on a call, and what a client told ops of how they heard of us.
+  "spend.import",
+  "campaign_link.add",
+  "campaign_link.retire",
+  "lead.call",
+  "client.heard_from",
+  "client.sharing_stop",
   // Ops opening one of a client's photographs.
   "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).

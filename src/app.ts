@@ -56,6 +56,7 @@ import { registerClientRefer } from "./routes/client/refer.ts";
 import { registerConsultations } from "./routes/public/consultations.ts";
 import { registerBuildingSuggestions } from "./routes/public/building-suggestions.ts";
 import { registerLead } from "./routes/public/lead.ts";
+import { registerVisits } from "./routes/public/visits.ts";
 import { registerNumberCodes } from "./routes/public/number-codes.ts";
 import { registerReferralLanding } from "./routes/public/referral-landing.ts";
 import { registerClientPayments } from "./routes/client/payments.ts";
@@ -104,6 +105,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerConsultations,
     registerBuildingSuggestions,
     registerLead,
+    // A page's landing kept as its visitor's touch, and where a campaign link sends them (ADR 0288).
+    registerVisits,
     registerReferralLanding,
     // What a referral earns, for the invite's page and /book (docs/decisions/0107-referral-rewards-in-the-console.md).
     registerReferralReward,

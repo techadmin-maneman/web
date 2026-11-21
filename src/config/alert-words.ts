@@ -281,6 +281,9 @@ export const ALERT_WORDS = {
   vendor_down: (a: { readonly vendor: string; readonly since: string; readonly failures: number }) =>
     `Check ${a.vendor}'s status: it has failed ${String(a.failures)} times in a row since ${a.since}. Its work waits, ` +
     "and goes on by itself once it answers.",
+  conversions_held: (a: { readonly platform: string; readonly error: string }) =>
+    `Check ${a.platform}'s conversion secrets and our access to its account (go-live, "Attribution and conversions"): ` +
+    `it refuses them (${a.error}). They wait, and go on by themselves once it takes them.`,
   dead_letter: (a: { readonly what: string; readonly todo: string }) =>
     `${a.todo} (runbook, "A queue gave up"): ${a.what} was given up on after every try.`,
   login_codes_failing: (a: { readonly failed: number; readonly detail: string }) =>

@@ -4,6 +4,7 @@
 import { aGenericFirstFit } from "../fixtures/index.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { LEGAL_VERSIONS } from "../../../src/config/legal-versions.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { captureLogs, fakeQueue, markDatabase, NOW, provedNumberCode, request, withProof } from "../helpers.ts";
 import { REFERRER, person, pincode, client, site, codeOf, post, FRIEND, ADDRESS } from "./referrals-fixtures.ts";
@@ -40,8 +41,14 @@ describe("POST /api/r/:code/consultation", () => {
       ),
     );
     expect(answer.status).toBe(201);
+    // The booking's conversion is the invite's: Referral, never Direct (ADR 0288).
+    expect(
+      await env.DB.prepare("SELECT event, attributed_channel FROM conversions WHERE event = 'consult_booked'").all(),
+    ).toMatchObject({ results: [{ event: "consult_booked", attributed_channel: "referral" }] });
     const agreed = await env.DB.prepare("SELECT terms_version, privacy_version, source FROM terms_acceptances").all();
-    expect(agreed.results).toEqual([{ terms_version: "1.00", privacy_version: "1.00", source: "referral_landing" }]);
+    expect(agreed.results).toEqual([
+      { terms_version: LEGAL_VERSIONS.terms, privacy_version: LEGAL_VERSIONS.privacy, source: "referral_landing" },
+    ]);
     expect(await answer.json()).toEqual({
       state: "booked",
       date: "2026-09-23",

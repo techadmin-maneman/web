@@ -13,6 +13,8 @@ import { clients } from "../content.ts";
 import { keepSearch, keptSearch, recentClients, type KeptSearch } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
+import { PageActions } from "../frame/PageHead.tsx";
+import { CallLead, CallTakenLine, type CallTaken } from "./CallLead.tsx";
 import { ClientList } from "./ClientList.tsx";
 import styles from "./clients.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
@@ -100,6 +102,7 @@ export function FindClientScreen() {
   const [kept] = useState(keptSearch);
   const [text, setText] = useState(kept?.text ?? "");
   const [finding, setFinding] = useState<Finding>(() => findingOf(kept));
+  const [taken, setTaken] = useState<CallTaken | null>(null);
 
   // The last search asked, so an answer to an earlier one, arriving late, is dropped.
   const asked = useRef(kept?.text ?? "");
@@ -148,6 +151,10 @@ export function FindClientScreen() {
   );
   return (
     <>
+      <PageActions>
+        <CallLead onTaken={setTaken} />
+      </PageActions>
+      {taken !== null && <CallTakenLine taken={taken} className={styles.taken} />}
       {finding.step === "idle" && <Recent />}
       <ClientList
         search={box}

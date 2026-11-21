@@ -332,7 +332,7 @@ export function Consultation(props: ConsultationProps) {
         return answer;
       },
       (booked) => {
-        const page = leadSent(door, { served: true, area: props.answer.area, window: slot.window });
+        const page = leadSent(door);
         trackBooked(booked, page);
         props.onBooked({ result: booked, mobile: fields.mobile, code: sentCode });
       },

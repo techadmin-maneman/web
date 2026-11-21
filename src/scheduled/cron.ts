@@ -54,6 +54,7 @@ import type { MeteredDatabase } from "../lib/d1-meter.ts";
 import type { Logger } from "../log.ts";
 import { enqueueBatch, notifyMessage } from "../domain/platform/enqueue.ts";
 import { analyticsJob } from "./analytics.ts";
+import { attributionUpkeepJob, conversionsJob } from "./conversions.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
 import { chatArchiveJob, retentionJob } from "./retention.ts";
@@ -461,6 +462,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // A technician's time to leave and running over, the day ahead in the hour ops set, and a push for each (ADR 0250).
   { name: "tech_alerts", needs: "nothing", every: 5, at: 0, run: techAlertsJob },
   { name: "client_alerts", needs: "nothing", every: 5, at: 0, run: clientAlertsJob },
+  // The conversions waiting for Meta and Google, to each that is on (docs/decisions/0288-attribution-and-conversions.md).
+  { name: "conversions", needs: "nothing", every: 5, at: 1, run: conversionsJob },
 
   // Every fifteen minutes.
   { name: "visit_reminders", needs: "messaging", every: 15, at: 1, run: remindersJob },
@@ -534,6 +537,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   // What the retention periods let go of: dormant people who never became clients, old check-in coordinates, and the
   // waitlist of areas launched a year ago (src/policy/retention.ts).
   { name: "retention", needs: "nothing", every: 60, at: 53, run: retentionJob },
+  // Old leads given their touches, and touches' addresses and visitors never named let go.
+  { name: "attribution_upkeep", needs: "nothing", every: 60, at: 16, run: attributionUpkeepJob },
   // Clients' Care threads closed and quiet a year, their messages moved to the backups bucket
   // (docs/decisions/0207-closed-chats-archived.md).
   { name: "chat_archive", needs: "nothing", every: 60, at: 37, run: chatArchiveJob },

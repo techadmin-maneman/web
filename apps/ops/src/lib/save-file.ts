@@ -12,3 +12,30 @@ export function saveFile(name: string, text: string, type: "text/csv" | "image/s
     URL.revokeObjectURL(link.href);
   }, 0);
 }
+
+/** Hands an SVG to the browser to save as a PNG `size` pixels square, drawn from it on a canvas. */
+export async function saveSvgAsPng(name: string, svg: string, size: number): Promise<void> {
+  const source = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  try {
+    const image = new Image(size, size);
+    image.src = source;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    canvas.getContext("2d")?.drawImage(image, 0, 0, size, size);
+    const png = await new Promise<Blob | null>((done) => {
+      canvas.toBlob(done, "image/png");
+    });
+    if (png === null) return;
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(png);
+    link.download = name;
+    link.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(link.href);
+    }, 0);
+  } finally {
+    URL.revokeObjectURL(source);
+  }
+}

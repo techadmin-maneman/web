@@ -41,6 +41,8 @@ export const LEAD_SOURCE_NAMES: Readonly<Record<LeadSource, string>> = {
   tryon: "Try-on",
   // A stranger Care saved from a chat (docs/decisions/0138-strangers-in-the-inbox.md).
   whatsapp: "WhatsApp",
+  // A caller ops took on the phone (docs/decisions/0288-attribution-and-conversions.md).
+  phone: "Phone call",
 };
 
 type ZohoDependencies = ZohoRequesterDependencies;

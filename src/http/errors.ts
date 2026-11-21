@@ -169,6 +169,8 @@ export const ERROR_CODES = [
   "already_rated",
   "visit_not_done",
   "rating_closed",
+  // An ad account's CSV whose rows are on the figures already (docs/decisions/0288-attribution-and-conversions.md).
+  "already_imported",
   // A move to another day the client tried to accept, whose time was taken since or whose visit cannot move now
   // (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
   "move_gone",
@@ -273,6 +275,7 @@ export const ERROR_STATUS = {
   photo_invalid_file: 422,
   photos_full: 409,
   upload_already_received: 409,
+  already_imported: 409,
   upload_missing: 409,
   session_required: 401,
   job_not_claimable: 409,

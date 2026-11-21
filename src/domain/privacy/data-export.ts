@@ -107,6 +107,19 @@ export const EXPORT_QUERIES = {
   leads: `SELECT source, city, loss_extent, first_choice_window, proposed_visit_date, referrer, landing_path, utm_source,
       utm_medium, utm_campaign, utm_content, gclid, fbclid, found_us, created_at
     FROM leads WHERE person_id = ?1 ORDER BY created_at`,
+  // How each visit, chat and call reached us, how they found us, and what Google and Meta were told
+  // (docs/decisions/0288-attribution-and-conversions.md).
+  touches: `SELECT at, via, channel, mobile_e164, utm_source, utm_medium, utm_campaign, utm_content, utm_term, gclid, gbraid, wbraid,
+      fbclid, fbc, fbp, ctwa_clid, ad_source_id, ad_source_url, referrer, landing_path, invite_code, code_kind,
+      declared_channel, declared_by, ad_consent, ad_notice, user_agent, client_ip, visitor_id
+    FROM touches WHERE person_id = ?1 ORDER BY at`,
+  attribution: `SELECT attributed_channel, last_touch_channel, settled_at, heard_from, heard_from_other, heard_from_at,
+      sharing_stopped_at
+    FROM person_attribution WHERE person_id = ?1`,
+  ad_sends: `SELECT event, occurred_at, value_paise, attributed_channel, last_touch_channel, source_url, meta_state,
+      meta_sent_at, google_state, google_sent_at, created_at
+    FROM conversions WHERE person_id = ?1 ORDER BY occurred_at`,
+  browsers: "SELECT ref, created_at, seen_at, declined_at FROM visitors WHERE person_id = ?1 ORDER BY created_at",
   try_ons: `SELECT stage, preset, hair_color, state, photo_consent_version, photo_consent_at, kept_at, upload_deleted_at,
       look_shown_at, created_at
     FROM tryon_jobs WHERE person_id = ?1 ORDER BY created_at`,
@@ -127,7 +140,7 @@ export const EXPORT_QUERIES = {
 type ExportQuery = keyof typeof EXPORT_QUERIES;
 
 /** The parts that are one row, or nothing; every other query's part is a list. */
-const ONE_ROW: readonly ExportQuery[] = ["person", "referral"];
+const ONE_ROW: readonly ExportQuery[] = ["person", "referral", "attribution"];
 
 export async function readPersonData(
   db: D1Database,

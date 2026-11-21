@@ -14,6 +14,13 @@ interface Props {
 }
 
 const { pageTitle, description, page } = Astro.props;
+
+/** A section's anchor, from its heading's words: "Measuring our advertising" is #measuring-our-advertising. */
+const anchorOf = (heading: string): string =>
+  heading
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 ---
 
 <TextPage pageTitle={pageTitle} description={description} title={page.title} publish={page.publish}>
@@ -36,7 +43,7 @@ const { pageTitle, description, page } = Astro.props;
   ))}
   {page.sections.map((section, index) => (
     <section>
-      <h2>{`${String(index + 1)}. ${section.heading}`}</h2>
+      <h2 id={anchorOf(section.heading)}>{`${String(index + 1)}. ${section.heading}`}</h2>
       <LegalBlocks blocks={section.blocks} depth={1} section={index + 1} />
     </section>
   ))}

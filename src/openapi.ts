@@ -21,6 +21,8 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     GEOCODE_PROVIDER: "stub",
     ROUTES_PROVIDER: "stub",
     ANALYTICS_PROVIDER: "stub",
+    META_CAPI_PROVIDER: "stub",
+    GOOGLE_ADS_PROVIDER: "stub",
   },
   settings: {
     leadMobileDailyLimit: 15,
@@ -74,6 +76,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     messaging: { enabled: false, allowlist: [], everyone: false, evolution: null, msg91: null },
     devRoutes: false,
     push: null,
+    conversions: { testMode: true, meta: null, google: null, sendsFrom: null },
   },
 };
 

@@ -92,6 +92,24 @@ export interface Rows {
     readonly id: number;
     readonly version: number;
   };
+  readonly campaign_links: {
+    readonly id: string;
+    readonly kind: string;
+    readonly slug: string;
+    readonly code: string;
+    readonly name: string;
+    readonly utm_source: string;
+    readonly utm_medium: string;
+    readonly utm_campaign: string;
+    readonly city: string | null;
+    readonly pincode: string | null;
+    readonly held_date: string | null;
+    readonly discount_code_id: string | null;
+    readonly created_by: string;
+    readonly created_at: string;
+    readonly retired_by: string | null;
+    readonly retired_at: string | null;
+  };
   readonly care_leave: {
     readonly id: string;
     readonly email: string;
@@ -346,6 +364,28 @@ export interface Rows {
     readonly archive_key: string | null;
     readonly archived_messages: number;
     readonly archived_through: string | null;
+  };
+  readonly conversions: {
+    readonly event_id: string;
+    readonly event: string;
+    readonly subject_id: string;
+    readonly person_id: string;
+    readonly occurred_at: string;
+    readonly value_paise: number | null;
+    readonly attributed_channel: string;
+    readonly last_touch_channel: string;
+    readonly source_url: string | null;
+    readonly meta_state: string;
+    readonly meta_tries: number;
+    readonly meta_next_at: string | null;
+    readonly meta_error: string | null;
+    readonly meta_sent_at: string | null;
+    readonly google_state: string;
+    readonly google_tries: number;
+    readonly google_next_at: string | null;
+    readonly google_error: string | null;
+    readonly google_sent_at: string | null;
+    readonly created_at: string;
   };
   readonly count_lines: {
     readonly task_id: string;
@@ -735,8 +775,9 @@ export interface Rows {
     readonly loss_extent: string | null;
     readonly fsm_queued_at: string | null;
     readonly fsm_request_tried_at: string | null;
-    readonly source: string | null;
     readonly found_us: string | null;
+    readonly touch_id: string | null;
+    readonly source: string | null;
   };
   readonly leave_requests: {
     readonly id: string;
@@ -1019,6 +1060,21 @@ export interface Rows {
     readonly crm_contact_erased_at: string | null;
     readonly crm_contact_erasure_attempts: number;
     readonly package: string | null;
+  };
+  readonly person_attribution: {
+    readonly person_id: string;
+    readonly first_touch_id: string | null;
+    readonly last_touch_id: string | null;
+    readonly attributed_channel: string | null;
+    readonly last_touch_channel: string | null;
+    readonly settled_at: string | null;
+    readonly heard_from: string | null;
+    readonly heard_from_other: string | null;
+    readonly heard_from_by: string | null;
+    readonly heard_from_at: string | null;
+    readonly sharing_stopped_at: string | null;
+    readonly sharing_stopped_by: string | null;
+    readonly updated_at: string;
   };
   readonly photo_sets: {
     readonly id: string;
@@ -1472,6 +1528,11 @@ export interface Rows {
     readonly entered_at: string;
     readonly removed_by: string | null;
     readonly removed_at: string | null;
+    readonly spent_date: string | null;
+    readonly source: string;
+    readonly link_id: string | null;
+    readonly cost_line: string | null;
+    readonly import_id: string | null;
   };
   readonly staff: {
     readonly email: string;
@@ -1828,6 +1889,42 @@ export interface Rows {
     readonly ip_hash: string | null;
     readonly created_at: string;
   };
+  readonly touches: {
+    readonly id: string;
+    readonly at: string;
+    readonly via: string;
+    readonly visitor_id: string | null;
+    readonly person_id: string | null;
+    readonly mobile_e164: string | null;
+    readonly utm_source: string | null;
+    readonly utm_medium: string | null;
+    readonly utm_campaign: string | null;
+    readonly utm_content: string | null;
+    readonly utm_term: string | null;
+    readonly gclid: string | null;
+    readonly gbraid: string | null;
+    readonly wbraid: string | null;
+    readonly fbclid: string | null;
+    readonly fbc: string | null;
+    readonly fbp: string | null;
+    readonly ctwa_clid: string | null;
+    readonly ad_source_id: string | null;
+    readonly ad_source_url: string | null;
+    readonly referrer: string | null;
+    readonly landing_path: string | null;
+    readonly invite_code: string | null;
+    readonly code_kind: string | null;
+    readonly link_id: string | null;
+    readonly declared_channel: string | null;
+    readonly declared_by: string | null;
+    readonly channel: string;
+    readonly campaign_signal: number;
+    readonly ad_consent: string | null;
+    readonly ad_notice: string | null;
+    readonly user_agent: string | null;
+    readonly client_ip: string | null;
+    readonly landing_key: string | null;
+  };
   readonly tryon_jobs: {
     readonly id: string;
     readonly created_at: string;
@@ -1954,6 +2051,14 @@ export interface Rows {
     readonly stars: number;
     readonly low: number;
     readonly created_at: string;
+  };
+  readonly visitors: {
+    readonly id: string;
+    readonly ref: string;
+    readonly person_id: string | null;
+    readonly created_at: string;
+    readonly seen_at: string;
+    readonly declined_at: string | null;
   };
   readonly waitlist_entries: {
     readonly id: string;

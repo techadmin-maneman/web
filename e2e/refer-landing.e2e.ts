@@ -153,7 +153,7 @@ test("a booking through the invite is counted, with nothing personal and no code
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
 
   expect(await analyticsEvents(page)).toEqual([
-    ["lead_submitted", { page: "invite", served: true, window: "afternoon" }],
+    ["generate_lead", { page: "invite", event_id: expect.any(String) }],
     ["booking_confirmed", { page: "invite", window: "morning", state: "booked" }],
   ]);
   const commands = await analyticsCommands(page);

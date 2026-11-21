@@ -51,6 +51,15 @@ const HANDLED: Readonly<Record<string, string>> = {
   "city_blackouts.city -> cities": OWN,
   "visit_pay_rates.city -> cities": OWN,
   "spend_entries.city -> cities": RENAMED,
+  "campaign_links.city -> cities": RENAMED,
+  // Touches and visitors (docs/decisions/0288-attribution-and-conversions.md): retention deletes only a visitor no
+  // number ever named, with the touches no person has, the touches first.
+  "touches.visitor_id -> visitors": "deleted first, in the same batch",
+  "leads.touch_id -> touches": "kept: retention deletes only touches no person has, and a lead's is its person's",
+  "person_attribution.first_touch_id -> touches":
+    "kept: retention deletes only touches no person has, and an attribution's are its person's",
+  "person_attribution.last_touch_id -> touches":
+    "kept: retention deletes only touches no person has, and an attribution's are its person's",
   "targets.city -> cities": RENAMED,
   "stock_places.city -> cities": RENAMED,
   "city_prices.city -> cities": OWN,
@@ -161,6 +170,8 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/money/discount-codes.ts refuses to delete a code a use names",
   "referral_channels.discount_code_id -> discount_codes":
     "src/domain/money/discount-codes.ts refuses to delete a code a partner names",
+  "campaign_links.discount_code_id -> discount_codes":
+    "src/domain/money/discount-codes.ts refuses to delete a code a campaign link names",
   // A member of staff taken off the list.
   "staff_grants.email -> staff": "src/domain/ops/staff.ts deletes their grants first",
 };

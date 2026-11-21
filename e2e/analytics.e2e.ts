@@ -27,7 +27,12 @@ test.describe("the cookie bar", () => {
     const bar = page.getByRole("region", { name: consentBar.label });
     await expect(bar).toContainText(consentBar.text);
     expect(await axeViolations(page, (axe) => axe.include("[data-consent-bar]"))).toEqual([]);
+    // The API hears of it, so nothing the browser's touches kept for Meta is sent (ADR 0288).
+    const declined = page.waitForRequest(
+      (request) => request.method() === "POST" && new URL(request.url()).pathname === "/api/landings/declined",
+    );
     await bar.getByRole("button", { name: consentBar.decline }).click();
+    await declined;
     await expect(bar).toBeHidden();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "update", DENIED]);
 
@@ -45,6 +50,39 @@ test.describe("the cookie bar", () => {
     await page.goto("/guides");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     expect(await analyticsCommands(page)).toContainEqual(["consent", "default", GRANTED]);
+  });
+
+  test("comes back from Cookie choices in the footer, so an accept can become a decline", async ({ page }) => {
+    await page.goto("/guides");
+    const bar = page.getByRole("region", { name: consentBar.label });
+    await bar.getByRole("button", { name: consentBar.accept }).click();
+    await expect(bar).toBeHidden();
+
+    const choices = page.getByRole("contentinfo").getByRole("button", { name: consentBar.change });
+    await choices.click();
+    await expect(bar).toBeVisible();
+    // The bar opens over the footer: the focus goes into it, and back to the button once answered.
+    await expect(bar.getByRole("button", { name: consentBar.accept })).toBeFocused();
+    await bar.getByRole("button", { name: consentBar.decline }).click();
+    await expect(bar).toBeHidden();
+    await expect(choices).toBeFocused();
+    expect(await analyticsCommands(page)).toContainEqual(["consent", "update", DENIED]);
+    await page.reload();
+    expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);
+  });
+
+  test("keeps a decline while Cookie choices asks again, until another answer is picked", async ({ page }) => {
+    await page.goto("/guides");
+    const bar = page.getByRole("region", { name: consentBar.label });
+    await bar.getByRole("button", { name: consentBar.decline }).click();
+    await page.reload();
+
+    await page.getByRole("contentinfo").getByRole("button", { name: consentBar.change }).click();
+    await expect(bar).toBeVisible();
+    expect(await analyticsCommands(page)).not.toContainEqual(["consent", "update", GRANTED]);
+    await page.reload();
+    await expect(bar).toBeHidden();
+    expect(await analyticsCommands(page)).toContainEqual(["consent", "default", DENIED]);
   });
 });
 

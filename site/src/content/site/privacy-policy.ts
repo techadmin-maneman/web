@@ -1,4 +1,5 @@
 // The privacy policy, as counsel drafted it, with its blanks filled and its brackets settled (docs/open-points.md, item 188).
+// Version 1.01 adds "Measuring our advertising" (docs/decisions/0288-attribution-and-conversions.md).
 
 import type { LegalPage } from "./legal.ts";
 
@@ -7,8 +8,8 @@ export const privacyPolicy: LegalPage = {
   approved: true,
   title: "Privacy Policy",
   version: {
-    number: "1.00",
-    date: "25 October 2026",
+    number: "1.01",
+    date: "20 November 2026",
   },
   intro: [
     "Welcome to Mane Man’s privacy policy (“Privacy Policy”).",
@@ -170,6 +171,26 @@ export const privacyPolicy: LegalPage = {
         },
         {
           text: "Additionally, you may encounter cookies or other similar devices on certain pages of the Platform that are placed by third parties. We do not control the use of cookies by third parties. If you send us personal correspondence, such as emails, or if other users or third parties send us correspondence about your activities or postings on the Platform, we may collect such information within a file specific to you.",
+        },
+      ],
+    },
+    {
+      heading: "Measuring our advertising",
+      blocks: [
+        {
+          text: "We advertise on Google and on Meta (Facebook and Instagram). To learn which of our ads bring us clients, we tell them when someone leaves their details with us, books or has a consultation, or pays for a visit.",
+        },
+        {
+          lead: "What we share:",
+          text: "your phone number and first name, hashed: turned by a one-way formula into codes Google and Meta compare with their own records, so they are not sent as they are; the ad’s click code in the link you came by, if there was one; what happened and when; and, for a payment, its amount. Unless you decline cookies on our cookie bar, we also share Google’s and Meta’s cookie codes, your device’s IP address and your browser’s type, which help them recognise you.",
+        },
+        {
+          lead: "Why:",
+          text: "Google and Meta match what we send with their own records, to tell us which of our ads worked and to show our ads to people more likely to need us. Their own privacy policies say how they handle it.",
+        },
+        {
+          lead: "To stop:",
+          text: "decline cookies on our cookie bar to keep their cookies off this site; Cookie choices, in our pages’ footer, brings the bar back to change your answer. To stop us sharing your details for this altogether, write to grievance@maneman.in and we will stop within seven days.",
         },
       ],
     },

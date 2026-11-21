@@ -393,6 +393,17 @@ export const LANDING_NOTICES = {
   waitlist: "waitlist-v1",
 } as const satisfies Readonly<Record<string, NoticeVersion>>;
 
+/**
+ * The line under /book's first button (docs/decisions/0288-attribution-and-conversions.md): what the details are used
+ * for, with the privacy policy's section on it linked. Each lead keeps the version it was shown, so new words take a
+ * new version.
+ */
+export const AD_NOTICE = {
+  version: "ad-measurement-v1",
+  says: "We use these details to contact you, and share them hashed with Google and Meta to measure our ads.",
+  link: "Privacy Policy",
+} as const;
+
 /** The booking form's agreement, by the page it is given on: the same line, named for where it was given. */
 export const CONSULTATION_NOTICES = {
   site_booking: "site-consultation-v2",

@@ -19,6 +19,7 @@ const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   payment_to_refund: "payments",
   erasure_request: "consents",
   grievance: "consents",
+  heard_from_missing: "referrals",
 };
 
 /** The tab of the client's page a task of the group is about: Visits, unless the group is about something else. */

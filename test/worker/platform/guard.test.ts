@@ -32,7 +32,7 @@ describe("validateStaticConfig: environment and providers", () => {
 
   it("refuses a production Worker holding any stub provider, naming each one", () => {
     expect(problemsOf({ ...production, IMAGE_PROVIDER: "stub" })).toEqual(["IMAGE_PROVIDER is a stub in production"]);
-    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(10);
+    expect(problemsOf({ ...production, ...STUBS })).toHaveLength(Object.keys(STUBS).length);
   });
 
   it("needs a long key secret for the reporting copy in Supabase, and none otherwise", () => {

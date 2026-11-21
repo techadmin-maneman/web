@@ -102,6 +102,7 @@ export const tasks = {
     consultation_request: "Consultation request",
     // A group the board does not draw (docs/decisions/0086-the-next-visit-is-offered.md).
     first_fit_to_book: "First fit to book",
+    heard_from_missing: "How they heard of us",
     replacement_order: "Replacement order",
     made_to_order_ask: "Made to order",
     stock_at_risk: "Stock at risk",
@@ -204,6 +205,8 @@ export const tasks = {
      * or gives it to ops on the phone, who record it on their page; the task goes when either does (ADR 0092).
      */
     address_to_confirm: (when: string) => `Visit ${when} · no address`,
+    /** "Consulted Tue 22 Sep · not asked": kept on the client's page, under How they found us. */
+    heard_from_missing: (consulted: string) => `Consulted ${consulted} · not asked`,
     /** "Asked for 23 Sep 2026, morning": the day nobody could book for them, self-serve booking being off. */
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /**

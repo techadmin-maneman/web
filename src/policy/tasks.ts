@@ -91,6 +91,7 @@ export const TASK_GROUPS = [
   "address_to_confirm",
   "consultation_request",
   "first_fit_to_book",
+  "heard_from_missing",
   "replacement_order",
   "made_to_order_ask",
   "stock_at_risk",
@@ -166,6 +167,8 @@ export const TASK_SLA_HOURS: Slas = {
   address_to_confirm: 48,
   consultation_request: 48,
   first_fit_to_book: 48,
+  // How a client heard of us, asked at their consultation: kept within two days, while they remember (ADR 0288).
+  heard_from_missing: 48,
   replacement_order: 48,
   // A client told their size is made to order: ordered, and they are messaged, within the day.
   made_to_order_ask: 24,

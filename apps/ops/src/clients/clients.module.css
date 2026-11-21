@@ -462,6 +462,11 @@
   margin: var(--sp-12) 0 0;
 }
 
+/* What a call last took, above the clients: spaced as the page's other blocks are, by their gap alone. */
+.taken {
+  margin: 0;
+}
+
 /* The page's buttons (packages/ui/Button.tsx), as wide as their words. */
 .primary {
   display: inline-flex;

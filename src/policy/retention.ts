@@ -22,8 +22,14 @@ export const AUDIT_LOG_MONTHS = 24;
 export const RESOLVED_ALERT_MONTHS = 12;
 export const RAZORPAY_EVENT_MONTHS = 12;
 
-/** The closed chat of a number we never knew, nor any technician's. */
+/** The closed chat of a number we never knew, nor any technician's, and the touch it made. */
 export const STRANGER_CHAT_MONTHS = 12;
+
+/** A touch's address and browser, which Meta matches by (docs/decisions/0288-attribution-and-conversions.md). */
+export const TOUCH_ADDRESS_DAYS = 90;
+
+/** A visitor no number ever named, with their touches, after their last: the visitor cookie's own life. */
+export const UNNAMED_VISITOR_DAYS = 396;
 
 /** A message we sent, unless a no-show or a move holds it as its evidence, or a closed task names it. */
 export const SENT_MESSAGE_MONTHS = 24;

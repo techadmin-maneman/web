@@ -3,8 +3,11 @@
 // slot or the address has left what we need to call them. The steps after it start from what it kept. On a phone, How
 // it works folds above its button (ADR 0265).
 
+import { TextLink } from "@maneman/ui/TextLink";
+import { AD_NOTICE } from "@rules/config/notices.ts";
 import { referral } from "../../content/referral.ts";
 import { booking } from "../../content/site.ts";
+import { phoneHash, track } from "../../lib/analytics.ts";
 import { leaveLead } from "../../lib/api.ts";
 import { readAttribution } from "../../lib/visit.ts";
 import { PersonFieldset, Send, StepLine } from "./fields.tsx";
@@ -36,17 +39,24 @@ export function AboutYou(props: {
       return;
     }
     const attribution = readAttribution();
+    // One ID for the browser's lead and the server's, so Meta counts them once (ADR 0288).
+    const eventId = crypto.randomUUID();
     const request = {
       name: fields.name.trim(),
       mobile: mobileToSend(fields),
       consent: true as const,
       terms: true as const,
+      event_id: eventId,
+      ad_notice: AD_NOTICE.version,
       ...(attribution === undefined ? {} : { attribution }),
     };
     void form.submit(
       event,
       (token, keyFor) => leaveLead({ ...request, turnstile_token: token }, keyFor(request)),
       () => {
+        void phoneHash(request.mobile).then((hash) => {
+          track({ name: "generate_lead", page: "book", event_id: eventId, phone_hash: hash });
+        });
         props.onKept(fields);
       },
     );
@@ -72,6 +82,12 @@ export function AboutYou(props: {
         label={booking.start}
         sendingLabel={booking.saving}
       />
+      <p class={styles.adNotice}>
+        {AD_NOTICE.says}{" "}
+        <TextLink inline newTab className={styles.adNoticeLink} href="/privacy#measuring-our-advertising">
+          {AD_NOTICE.link}
+        </TextLink>
+      </p>
     </form>
   );
 }

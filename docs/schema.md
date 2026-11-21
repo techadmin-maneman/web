@@ -37,7 +37,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
-| Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
+| Where clients came from, and what Google and Meta were told | `visitors`, `touches`, `person_attribution`, `conversions` | A visit, chat or call since is not put down to its channel, what a client told ops is gone, and a conversion recorded since is never sent | Adding the touches and conversions since `<T>` from the copy, then bringing each person's attribution up to date from their touches |
+| Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries`, `campaign_links` | A credit, a grant, a partner, a partner's payment, an entry of spend, a campaign link or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `qc_points`, `checklist_items`, `partial_reasons`, `lost_reasons`, `not_fitted_reasons`, `failure_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, and a fit's stock risk is found or cleared again within the hour | Closing or giving it again on the Tasks board |
@@ -62,6 +63,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [appointments](#appointments): Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 - [audit_log](#audit_log): Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 - [board_version](#board_version): One row: a number that triggers raise whenever a visit, a move, leave, a technician or the day's slot times change, so the open dispatch board reads itself again only then (ADR 0069).
+- [campaign_links](#campaign_links): Growth's campaign links: a society activation's or an offer's short link, its tags, code and discount for the first fit, and when it was retired (ADR 0288).
 - [care_leave](#care_leave): Leave for a Care team member, from one date to another; their chats are covered meanwhile (ADR 0134).
 - [care_names](#care_names): The first name each Care team member is known by to clients, as their Support card shows it (ADR 0136).
 - [care_owners](#care_owners): Each client's named Care person, given at their first chat and moved by a Customer Care manager (ADR 0131).
@@ -87,6 +89,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [consumables](#consumables): The consumables ops keep: name, unit, what one costs, the reorder levels, the day it is retired from, and FSM's part for it (ADR 0087).
 - [consumables_used](#consumables_used): The consumables a technician recorded at a job's third step, with what its service expected and what one cost that day (ADR 0038, ADR 0087).
 - [conversations](#conversations): The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).
+- [conversions](#conversions): Each lead, consultation booked and done, and payment, recorded once for Google and Meta, with the client's channels when it happened and each platform's send (ADR 0288).
 - [count_lines](#count_lines): Each item a count task counted: what the ledger held, which the counter never saw, the count, any recount, and whether the ledger took it (ADR 0185).
 - [count_tasks](#count_tasks): Each cycle count of one class of items at one place: raised once its period comes round, counted blind, counted again where it differs, signed off where that stands (ADR 0185).
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
@@ -143,6 +146,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [payment_links](#payment_links): The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 - [people](#people): One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).
+- [person_attribution](#person_attribution): Each person's first and last touch and their channels, what they told ops of how they heard of us, and whether they asked us to stop sharing with Google and Meta (ADR 0288).
 - [photo_sets](#photo_sets): A visit's set of photographs, before or after (ADR 0028).
 - [photos](#photos): One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).
 - [piece_returns](#piece_returns): Each piece that came off a client at a replacement, held in the technician's kit as returned until handed in (ADR 0163).
@@ -179,7 +183,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [slot_holds](#slot_holds): A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 - [slot_times](#slot_times): Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
 - [sos_alerts](#sos_alerts): A technician's SOS, kept until ops mark it handled: whose, the visit, when, said safe, and where they were while it is open (ADR 0248).
-- [spend_entries](#spend_entries): A month's offline spend to win clients, for a city or national, by channel, as typed on the console's Spend page; one taken off kept, with who and when (ADR 0150).
+- [spend_entries](#spend_entries): Spend to win clients, by the day, for a city or national, by channel: typed on the console's Spend page, taken from an ad account's CSV, or a society activation's costs; one taken off kept, with who and when (ADR 0150, ADR 0288).
 - [staff](#staff): Each member of staff on the console's Staff list, by their Access e-mail, and whether they are let in (ADR 0109).
 - [staff_access_mode](#staff_access_mode): One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
 - [staff_grants](#staff_grants): What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).
@@ -214,6 +218,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [technician_updates](#technician_updates): A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).
 - [technicians](#technicians): Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 - [terms_acceptances](#terms_acceptances): Each time a person agreed to the terms and the privacy policy as they booked: the versions, where and when. Rows are only ever added.
+- [touches](#touches): Everything that reached us carrying where it came from, a page of the site, a WhatsApp chat or a call, with its channel by the rule; a person's once their number names it (ADR 0288).
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
 - [vendor_breakers](#vendor_breakers): Each vendor's failures in a row, and until when its work waits while it is held off (ADR 0203).
@@ -223,6 +228,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [visit_pay_rates](#visit_pay_rates): What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).
 - [visit_positions](#visit_positions): Where a technician is on a visit, the latest reading alone, from check-in to the close; deleted then, or by the sweep after 12 hours (ADR 0248).
 - [visit_ratings](#visit_ratings): A client's stars for a visit done, one a visit, kept with its technician for their figure on Me, and whether it was low when given, which opens a Tasks row for Care (ADR 0260).
+- [visitors](#visitors): Each browser the site's visitor cookie names, with the reference its WhatsApp messages end with, and the person once a number names them (ADR 0288).
 - [waitlist_entries](#waitlist_entries): Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).
 - [word_versions](#word_versions): Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).
 - [zoho_access_tokens](#zoho_access_tokens): Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).
@@ -387,6 +393,37 @@ Made by `0090_board_version.sql`.
 | --- | --- | --- | --- | --- | --- |
 | `id` | INTEGER | no |  | primary key |  |
 | `version` | INTEGER | no |  |  |  |
+
+## campaign_links
+
+Growth's campaign links: a society activation's or an offer's short link, its tags, code and discount for the first fit, and when it was retired (ADR 0288).
+
+Made by `0227_attribution.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `kind` | TEXT | no |  |  | society: an activation at a society, /s/<slug>; offer: a link for an ad, a post or a newsletter, /o/<slug>. |
+| `slug` | TEXT | no |  |  |  |
+| `code` | TEXT | no |  |  | The code the link carries; a society's is short enough to read out. |
+| `name` | TEXT | no |  |  | The society's name, or the offer's. |
+| `utm_source` | TEXT | no |  |  |  |
+| `utm_medium` | TEXT | no |  |  |  |
+| `utm_campaign` | TEXT | no |  |  |  |
+| `city` | TEXT | yes |  | → `cities.name` |  |
+| `pincode` | TEXT | yes |  |  | A society's pincode: its discount holds only for an address in it. |
+| `held_date` | TEXT | yes |  |  | A society activation's day, in India. |
+| `discount_code_id` | TEXT | yes |  | → `discount_codes.id` | One of Finance's codes, taken off the first fit of anyone who came through the link. |
+| `created_by` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `retired_by` | TEXT | yes |  |  | Retired: the link sends visitors to /book with nothing, and no new touch carries it. |
+| `retired_at` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `campaign_links_by_discount_code`: on (`discount_code_id`), where `discount_code_id IS NOT NULL`
+- A `UNIQUE` constraint: unique on (`slug`)
+- A `UNIQUE` constraint: unique on (`code`)
 
 ## care_leave
 
@@ -910,6 +947,43 @@ Indexes:
 - `conversations_by_person`: on (`person_id`), where `person_id IS NOT NULL`
 - `conversations_by_state`: on (`state`, `last_message_at`)
 - `conversations_to_archive`: on (`last_message_at`), where `state = 'closed' AND person_id IS NOT NULL AND (archived_through IS NULL OR archived_through <> last_message_at)`
+
+## conversions
+
+Each lead, consultation booked and done, and payment, recorded once for Google and Meta, with the client's channels when it happened and each platform's send (ADR 0288).
+
+Made by `0227_attribution.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `event_id` | TEXT | no |  | primary key | The ID each platform is sent, the browser's copy's own where there is one, so Meta counts the two once. |
+| `event` | TEXT | no |  |  |  |
+| `subject_id` | TEXT | no |  |  | The lead, the visit or the payment it is. |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `occurred_at` | TEXT | no |  |  |  |
+| `value_paise` | INTEGER | yes |  |  | A payment's amount before GST, less nothing refunded: what the platforms are told it was worth. |
+| `attributed_channel` | TEXT | no |  |  | The client's channels when it happened. |
+| `last_touch_channel` | TEXT | no |  |  |  |
+| `source_url` | TEXT | yes |  |  | The page a lead was left on, which Meta asks of a website's event. |
+| `meta_state` | TEXT | no |  |  | Each platform's send: waiting, sent, given up after its tries, or not for it (with why). |
+| `meta_tries` | INTEGER | no | `0` |  |  |
+| `meta_next_at` | TEXT | yes |  |  |  |
+| `meta_error` | TEXT | yes |  |  |  |
+| `meta_sent_at` | TEXT | yes |  |  |  |
+| `google_state` | TEXT | no |  |  |  |
+| `google_tries` | INTEGER | no | `0` |  |  |
+| `google_next_at` | TEXT | yes |  |  |  |
+| `google_error` | TEXT | yes |  |  |  |
+| `google_sent_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `conversions_by_event`: on (`event`, `occurred_at`)
+- `conversions_by_person`: on (`person_id`)
+- `conversions_google_due`: on (`google_next_at`), where `google_state = 'pending'`
+- `conversions_meta_due`: on (`meta_next_at`), where `meta_state = 'pending'`
+- A `UNIQUE` constraint: unique on (`event`, `subject_id`)
 
 ## count_lines
 
@@ -1657,7 +1731,7 @@ Triggers: `last_visits_fitted_added`, `last_visits_fitted_changed`.
 
 Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
 
-Made by `0002_lead_path.sql`; changed by `0015_fsm_leads.sql`, `0031_optional_loss_extent.sql`, `0037_cron_indexes.sql`, `0038_alerts.sql`, `0039_money_path.sql`, `0120_whatsapp_leads.sql`, `0127_found_us.sql`.
+Made by `0002_lead_path.sql`; changed by `0015_fsm_leads.sql`, `0031_optional_loss_extent.sql`, `0037_cron_indexes.sql`, `0038_alerts.sql`, `0039_money_path.sql`, `0120_whatsapp_leads.sql`, `0127_found_us.sql`, `0227_attribution.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -1684,15 +1758,18 @@ Made by `0002_lead_path.sql`; changed by `0015_fsm_leads.sql`, `0031_optional_lo
 | `loss_extent` | TEXT | yes |  |  |  |
 | `fsm_queued_at` | TEXT | yes |  |  | When a booked lead was put on the fsm-sync queue. Empty on a lead whose queueing failed, which the sweeper then queues (src/scheduled/sweeper.ts). |
 | `fsm_request_tried_at` | TEXT | yes |  |  | Set before a lead's Request is first asked of FSM, as for a work order above. |
-| `source` | TEXT | yes |  |  |  |
 | `found_us` | TEXT | yes |  |  | How the client told Care they found us, for a lead Care saved from a chat (docs/decisions/0148-the-channel-rule.md): one of the channel codes in src/policy/channels.ts. NULL for a lead from the site, whose tags tell. |
+| `touch_id` | TEXT | yes |  | → `touches.id` | The touch a lead was made by; empty on a lead from before, which the cron gives one (src/domain/attribution/backfill.ts). |
+| `source` | TEXT | yes |  |  |  |
 
 Indexes:
 
 - `leads_by_fsm_request`: on (`fsm_request_id`), where `fsm_request_id IS NOT NULL`
 - `leads_by_person`: on (`person_id`)
 - `leads_by_sync_state`: on (`sync_state`, `created_at`)
+- `leads_by_touch`: on (`touch_id`), where `touch_id IS NOT NULL`
 - `leads_fsm_unqueued`: on (`created_at`), where `fsm_queued_at IS NULL AND fsm_request_id IS NULL AND source = 'form' AND first_choice_window IS NOT NULL`
+- `leads_without_touch`: on (`created_at`), where `touch_id IS NULL`
 
 ## leave_requests
 
@@ -2236,6 +2313,33 @@ Indexes:
 - A `UNIQUE` constraint: unique on (`mobile_e164`)
 
 Triggers: `conversations_linked_to_new_number`, `conversations_linked_to_new_person`.
+
+## person_attribution
+
+Each person's first and last touch and their channels, what they told ops of how they heard of us, and whether they asked us to stop sharing with Google and Meta (ADR 0288).
+
+Made by `0227_attribution.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `person_id` | TEXT | no |  | primary key; → `people.id` |  |
+| `first_touch_id` | TEXT | yes |  | → `touches.id` | Empty, with both channels, for a person no touch names yet, whose answer below is kept all the same. |
+| `last_touch_id` | TEXT | yes |  | → `touches.id` |  |
+| `attributed_channel` | TEXT | yes |  |  | The client's channel: the first touch's, or a code's that came before booking (src/policy/channels.ts). |
+| `last_touch_channel` | TEXT | yes |  |  |  |
+| `settled_at` | TEXT | yes |  |  | When the first consultation was booked: the channel no longer moves after it. |
+| `heard_from` | TEXT | yes |  |  | What the client told ops (src/policy/heard-from.ts), apart from the channel, and ops' own words for "other". |
+| `heard_from_other` | TEXT | yes |  |  |  |
+| `heard_from_by` | TEXT | yes |  |  |  |
+| `heard_from_at` | TEXT | yes |  |  |  |
+| `sharing_stopped_at` | TEXT | yes |  |  | The client asked that nothing more of theirs go to Google or Meta: when, and the member of staff who recorded it. |
+| `sharing_stopped_by` | TEXT | yes |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `person_attribution_by_first_touch`: on (`first_touch_id`)
+- `person_attribution_by_last_touch`: on (`last_touch_id`)
 
 ## photo_sets
 
@@ -3112,9 +3216,9 @@ Indexes:
 
 ## spend_entries
 
-A month's offline spend to win clients, for a city or national, by channel, as typed on the console's Spend page; one taken off kept, with who and when (ADR 0150).
+Spend to win clients, by the day, for a city or national, by channel: typed on the console's Spend page, taken from an ad account's CSV, or a society activation's costs; one taken off kept, with who and when (ADR 0150, ADR 0288).
 
-Made by `0129_spend_entries.sql`.
+Made by `0129_spend_entries.sql`; changed by `0227_attribution.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3129,9 +3233,16 @@ Made by `0129_spend_entries.sql`.
 | `entered_at` | TEXT | no |  |  |  |
 | `removed_by` | TEXT | yes |  |  |  |
 | `removed_at` | TEXT | yes |  |  |  |
+| `spent_date` | TEXT | yes |  |  | The day spent, where the entry came from, and the link and cost line a society's spend was on. |
+| `source` | TEXT | no | `'manual'` |  |  |
+| `link_id` | TEXT | yes |  | → `campaign_links.id` |  |
+| `cost_line` | TEXT | yes |  |  |  |
+| `import_id` | TEXT | yes |  |  | The CSV a row came in with, so one file is never taken twice. |
 
 Indexes:
 
+- `spend_entries_by_day`: on (`spent_date`), where `removed_at IS NULL AND spent_date IS NOT NULL`
+- `spend_entries_by_link`: on (`link_id`), where `link_id IS NOT NULL`
 - `spend_entries_by_month`: on (`month`), where `removed_at IS NULL`
 
 ## staff
@@ -3856,6 +3967,58 @@ Indexes:
 
 Triggers: `terms_acceptances_no_delete`, `terms_acceptances_no_update`.
 
+## touches
+
+Everything that reached us carrying where it came from, a page of the site, a WhatsApp chat or a call, with its channel by the rule; a person's once their number names it (ADR 0288).
+
+Made by `0227_attribution.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `at` | TEXT | no |  |  |  |
+| `via` | TEXT | no |  |  | How it reached us: a page of the site, a WhatsApp chat, a call ops took. |
+| `visitor_id` | TEXT | yes |  | → `visitors.id` |  |
+| `person_id` | TEXT | yes |  | → `people.id` |  |
+| `mobile_e164` | TEXT | yes |  |  | A chat's number while no person has it: the touch becomes theirs once Care save or link the chat. |
+| `utm_source` | TEXT | yes |  |  |  |
+| `utm_medium` | TEXT | yes |  |  |  |
+| `utm_campaign` | TEXT | yes |  |  |  |
+| `utm_content` | TEXT | yes |  |  |  |
+| `utm_term` | TEXT | yes |  |  |  |
+| `gclid` | TEXT | yes |  |  |  |
+| `gbraid` | TEXT | yes |  |  |  |
+| `wbraid` | TEXT | yes |  |  |  |
+| `fbclid` | TEXT | yes |  |  |  |
+| `fbc` | TEXT | yes |  |  | Meta's cookies as the browser had them, or the click cookie built from fbclid. |
+| `fbp` | TEXT | yes |  |  |  |
+| `ctwa_clid` | TEXT | yes |  |  | A click-to-WhatsApp ad's click ID, ad and post, from the chat's first message. |
+| `ad_source_id` | TEXT | yes |  |  |  |
+| `ad_source_url` | TEXT | yes |  |  |  |
+| `referrer` | TEXT | yes |  |  |  |
+| `landing_path` | TEXT | yes |  |  |  |
+| `invite_code` | TEXT | yes |  |  | A friend's or a partner's code (?ref, /r/:code), as it was given. |
+| `code_kind` | TEXT | yes |  |  | The code of ours it carried, where it was one: a friend's, a partner's or a society's. |
+| `link_id` | TEXT | yes |  | → `campaign_links.id` |  |
+| `declared_channel` | TEXT | yes |  |  | What a call was put under, and by whom: ops now, a tracking number later. |
+| `declared_by` | TEXT | yes |  |  |  |
+| `channel` | TEXT | no |  |  | The touch's channel by the rule (src/policy/channels.ts). |
+| `campaign_signal` | INTEGER | no |  |  | 1 where a campaign put something in it: only such a touch moves the last touch. |
+| `ad_consent` | TEXT | yes |  |  | The visitor's answer to the site's cookie bar: null while unanswered. Denied sends Meta neither cookie nor address. |
+| `ad_notice` | TEXT | yes |  |  | The version of the line /book's first step shows on Google and Meta (src/config/notices.ts, AD_NOTICE), where the touch is that step's; its time is the touch's own. |
+| `user_agent` | TEXT | yes |  |  | For Meta's match only, never shown; cleared 90 days on. |
+| `client_ip` | TEXT | yes |  |  |  |
+| `landing_key` | TEXT | yes |  |  | A page's own mark for its landing, the moment the browser kept it: a landing sent again is one touch. |
+
+Indexes:
+
+- `touches_by_link`: on (`link_id`), where `link_id IS NOT NULL`
+- `touches_by_person`: on (`person_id`, `at`), where `person_id IS NOT NULL`
+- `touches_by_visitor`: on (`visitor_id`, `at`), where `visitor_id IS NOT NULL`
+- `touches_one_per_landing`: unique on (`visitor_id`, `landing_key`), where `landing_key IS NOT NULL`
+- `touches_unclaimed_by_mobile`: on (`mobile_e164`), where `person_id IS NULL AND mobile_e164 IS NOT NULL`
+- `touches_with_address`: on (`at`), where `client_ip IS NOT NULL OR user_agent IS NOT NULL`
+
 ## tryon_jobs
 
 One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
@@ -4089,6 +4252,27 @@ Indexes:
 - `visit_ratings_by_person`: on (`person_id`)
 - `visit_ratings_by_technician`: on (`technician_id`, `created_at`)
 - `visit_ratings_low`: on (`created_at`), where `low = 1`
+
+## visitors
+
+Each browser the site's visitor cookie names, with the reference its WhatsApp messages end with, and the person once a number names them (ADR 0288).
+
+Made by `0227_attribution.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key | The site's visitor cookie's value. |
+| `ref` | TEXT | no |  |  | The reference a WhatsApp message from this visitor ends with (src/config/ref-tokens.ts). |
+| `person_id` | TEXT | yes |  | → `people.id` | Once a number they gave, or a chat their reference opened, names them. |
+| `created_at` | TEXT | no |  |  |  |
+| `seen_at` | TEXT | no |  |  | Their latest touch: a visitor never named is deleted 13 months after it. |
+| `declined_at` | TEXT | yes |  |  | When their browser declined the cookie bar: a landing reported after, unless it says they accepted, is declined. |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`ref`)
+- `visitors_by_person`: on (`person_id`), where `person_id IS NOT NULL`
+- `visitors_unnamed_by_seen`: on (`seen_at`), where `person_id IS NULL`
 
 ## waitlist_entries
 

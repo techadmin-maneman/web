@@ -173,6 +173,23 @@ function appPersonalData(db: D1Database, personId: string): D1PreparedStatement[
        WHERE person_id = ?1`,
       )
       .bind(personId),
+    // What each touch carried goes, and their browser is theirs no more; each touch and its channel stay, as figures
+    // (docs/decisions/0288-attribution-and-conversions.md). A chat their number sent before it was theirs is made
+    // theirs first, while the person's row still holds the number.
+    db
+      .prepare(
+        `UPDATE touches SET person_id = ?1, mobile_e164 = NULL
+         WHERE person_id IS NULL AND mobile_e164 = (SELECT mobile_e164 FROM people WHERE id = ?1)`,
+      )
+      .bind(personId),
+    db
+      .prepare(
+        `UPDATE touches SET mobile_e164 = NULL, utm_source = NULL, utm_medium = NULL, utm_campaign = NULL, utm_content = NULL, utm_term = NULL, gclid = NULL, gbraid = NULL, wbraid = NULL, fbclid = NULL, fbc = NULL, fbp = NULL, ctwa_clid = NULL, ad_source_id = NULL, ad_source_url = NULL, referrer = NULL, landing_path = NULL, invite_code = NULL, user_agent = NULL, client_ip = NULL, visitor_id = NULL
+       WHERE person_id = ?1`,
+      )
+      .bind(personId),
+    db.prepare("UPDATE visitors SET person_id = NULL WHERE person_id = ?1").bind(personId),
+    db.prepare("UPDATE person_attribution SET heard_from_other = NULL WHERE person_id = ?1").bind(personId),
   ];
 }
 

@@ -16,6 +16,7 @@ import type { AppEnv } from "./context.ts";
 import { provedNumber } from "./number-proof.ts";
 import { checkTurnstile, visitorOf } from "./visitor.ts";
 import { driveCheckOf } from "./drive-check.ts";
+import { visitContextOf } from "./visit-context.ts";
 
 /** The number, the Turnstile check and the daily limits, the same for both pages. */
 async function checkPerson(c: Context<AppEnv>, mobile: string, token: string, name: string): Promise<Checked> {
@@ -54,5 +55,6 @@ export function formRequest(c: Context<AppEnv>): FormRequest {
     syncContact: (personId) => queueContactSync(c, personId),
     bookHold: (holdId) => bookHold(c, holdId),
     drives: driveCheckOf(c),
+    visit: visitContextOf(c),
   };
 }

@@ -1,14 +1,18 @@
-// The Funnel page's words. No design draws it; every word here is ours.
-
-import { quantity } from "@maneman/web-kit/figures";
+// The Funnel page's words (docs/decisions/0288-attribution-and-conversions.md). No design draws it; every word here is
+// ours.
 
 /** The Zoho Analytics dashboards, built on the nightly reporting copy, each opened in a tab of its own. */
 const DASHBOARDS = "https://analytics.zoho.in/workspace/568020000000002006/view/";
 
 export const funnel = {
   title: "Funnel",
-  period: "Over",
-  periods: { "30": "The last 30 days", "90": "The last 90 days" },
+  period: "Period",
+  periods: { week: "Week", month: "Month" },
+  starting: "Week or month of",
+  by: "Channel by",
+  bys: { first: "How the client found us", last: "Their last touch" },
+  channel: "Channel",
+  allChannels: "All channels",
   /** Beside the title: the days counted. */
   counted: (from: string, to: string) => `${from} to ${to}`,
   steps: {
@@ -17,15 +21,40 @@ export const funnel = {
     leads: "New clients",
     booked: "Booked a consultation",
     consulted: "Had a consultation",
-    fitted: "Fitted",
+    fitted: "First fits paid",
   },
-  /** A step as a share of the new clients: "12 · 40%". */
-  share: (count: number, of: number) =>
-    of === 0 ? quantity(count) : `${quantity(count)} · ${String(Math.round((count / of) * 100))}%`,
   channels: {
     title: "By channel",
-    columns: ["Channel", "New clients", "Booked", "Had a consultation", "Fitted"] as const,
-    none: "No new clients in these days.",
+    columns: [
+      "Channel",
+      "Spend",
+      "New clients",
+      "Per client",
+      "Booked",
+      "Consulted",
+      "Per consultation",
+      "First fits",
+      "Per fit",
+      "Fit revenue",
+      "Return",
+    ] as const,
+    total: "All channels",
+    none: "Nothing in this period.",
+  },
+  /** Revenue for each rupee spent: "2.4×". */
+  roas: (revenue: number, spend: number) => `${(revenue / spend).toFixed(1)}×`,
+  cohorts: {
+    title: "Revenue after the first fit",
+    columns: ["Channel", "Clients fitted", "30 days", "90 days", "180 days"] as const,
+    /** A span not yet over for every client in the cohort. */
+    soFar: (amount: string) => `${amount} so far`,
+    none: "No first fits in this period.",
+  },
+  heard: {
+    title: "What clients told us",
+    told: "They said",
+    notAsked: "Not asked",
+    none: "No consultations done in this period.",
   },
   dashboards: {
     title: "Dashboards",
