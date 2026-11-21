@@ -32,6 +32,10 @@
   --ops-tile-phone: 136px; /* a figure's tile on a phone, two to a row */
   --ops-settings-menu: 216px; /* Settings' own menu */
   --ops-setting-label: 280px; /* a setting's label beside its box, and a list's search */
+  /* The phone's tab bar as drawn (packages/ui/tab-bar.module.css), less the home indicator's room: its rule, a tab's
+     padding, the md icon's 21 px (@maneman/brand/icons), the gap and the name's line. A toast stands above it, held
+     there by e2e/ops/campaign-links.e2e.ts. */
+  --ops-tab-bar: calc(var(--hairline) + var(--sp-8) * 2 + 21px + var(--sp-4) + var(--fs-13) * var(--lh-115));
 
   /* The shared parts' room, as the console draws them. */
   --drawer-width: var(--ops-panel);
@@ -46,12 +50,4 @@
   --box-note-max: var(--measure-column);
   /* A panel on white over the paper page, so a panel reads as raised (the dark theme sets its own). */
   --ui-raised: var(--white);
-}
-
-@media (max-width: 600px) {
-  :root {
-    --ops-tab-bar: 57px; /* the phone's tab bar (frame/PhoneTabs.tsx): its icon, its name and their room */
-    /* A toast stands as far above the tab bar as it stands above the window's foot at a desk. */
-    --toast-lift: calc(var(--ops-tab-bar) + var(--sp-24) + env(safe-area-inset-bottom));
-  }
 }
