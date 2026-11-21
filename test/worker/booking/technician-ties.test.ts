@@ -1,5 +1,5 @@
-// Who takes a hold when technicians are equally free that day (src/domain/booking/technician-choice.ts): whoever holds the
-// least over the week around that day, never whoever sorts first by name. NOW is Monday 21 September 2026, 12 noon
+// Who takes a hold when technicians are equally free that day (src/domain/booking/technician-choice.ts,
+// src/policy/allotment.ts): whoever holds the least over the week around that day, never whoever sorts first by name. NOW is Monday 21 September 2026, 12 noon
 // in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
@@ -82,10 +82,11 @@ describe("a hold between technicians equally free that day", () => {
     expect(taken.filter((name) => name === "Zubin Shah")).toHaveLength(2);
   });
 
-  it("still goes first to whoever holds less that day, whatever the week holds", async () => {
+  it("weighs the week's work against the driving a start adds (ADR 0289)", async () => {
+    // Zubin's visit that day adds ten minutes to his driving; Aditya's week holds an hour and a half more, worth 15.
     await booked(ADITYA, "2026-09-24");
     await booked(ADITYA, "2026-09-25");
     await booked(ZUBIN, "2026-09-23");
-    expect(await holdOn("2026-09-23", "morning")).toBe("Aditya Rao");
+    expect(await holdOn("2026-09-23", "morning")).toBe("Zubin Shah");
   });
 });

@@ -30,6 +30,7 @@ What a later release drops, once no deployed Worker reads it. Each waits for the
 | The four `_cm` columns of `hair_profiles`, their lines in its blanking trigger, and `hair_profiles_inches_blanked`      | the `_in` columns, read since 0202                            | the release after 0202's                                                                                       | 0240 |
 | The `_cm` fields of the technician's and the console's hair profile, taken and given for the build before               | the `_in` fields                                              | the release after 0202's, once phones have updated                                                             | 0240 |
 | A consultation's consumables step, answered and nothing recorded, for a phone of the build before                       | Nothing: a consultation takes none                            | the release after 0202's, once phones have updated                                                             | 0240 |
+| `technicians.reach_min`, and an `ops_settings` row named `technician_reach_min`, no longer read                         | `technicians.radius_km` and `technician_radius_km`, from 0228 | the release after 0228's                                                                                       | 0289 |
 
 ## Comments an applied migration cannot correct
 

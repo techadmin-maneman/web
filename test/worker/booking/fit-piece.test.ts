@@ -8,6 +8,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fittingOf, techniciansFor } from "../../../src/domain/booking/occupancy.ts";
+import { startOffers } from "../../../src/domain/booking/start-offers.ts";
 import { tellOfStockGap } from "../../../src/domain/inventory/stock-gap.ts";
 import { NOW, markDatabase } from "../helpers.ts";
 import { IMRAN, SAMEER, working, type Working } from "../job-fixtures.ts";
@@ -86,6 +87,21 @@ describe("a fit's technicians", () => {
     await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: "gurgaon-room", counted: 1 });
     await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: SAMEER, counted: 1 });
     expect(await offered({ product: "essential" })).toEqual({ [IMRAN]: "stockroom", [SAMEER]: "kit" });
+  });
+
+  it("send the fit to the one whose kit holds the piece first, at every start both can take", async () => {
+    await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: SAMEER, counted: 1 });
+    const [day] = await startOffers({
+      db: env.DB,
+      placing: { personId: CLIENT, pincode: "122018" },
+      visit: { type: "first_fit", minutes: 120, fitting: { product: "essential" } },
+      from: "2026-09-23",
+      days: 1,
+      now: NOW,
+    });
+    const shared = (day?.starts ?? []).filter((start) => start.takers.length > 1);
+    expect(shared.length).toBeGreaterThan(0);
+    for (const start of shared) expect(start.takers[0]?.technician.id).toBe(SAMEER);
   });
 
   it("carry no piece for a visit that fits nothing", async () => {

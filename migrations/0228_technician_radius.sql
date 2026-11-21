@@ -7,3 +7,11 @@ ALTER TABLE technicians ADD COLUMN radius_km INTEGER CHECK (radius_km IS NULL OR
 UPDATE technicians
 SET radius_km = MIN(60, MAX(1, CAST(ROUND((reach_min - 10) * 0.4 * 100 / 140) AS INTEGER)))
 WHERE reach_min IS NOT NULL;
+
+-- The business's reach, where ops set one, becomes its radius the same way; the old setting's row is left unread.
+INSERT INTO ops_settings (name, value, set_by, set_at)
+SELECT 'technician_radius_km',
+       CAST(MIN(60, MAX(1, CAST(ROUND((CAST(value AS REAL) - 10) * 0.4 * 100 / 140) AS INTEGER))) AS TEXT),
+       set_by, set_at
+FROM ops_settings WHERE name = 'technician_reach_min'
+ON CONFLICT (name) DO NOTHING;

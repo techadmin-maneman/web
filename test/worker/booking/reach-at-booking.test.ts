@@ -6,7 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { startOffers } from "../../../src/domain/booking/start-offers.ts";
 import { markDatabase, NOW } from "../helpers.ts";
-import { client, IMRAN, SANDEEP, SANA, technician } from "./client-booking-fixtures.ts";
+import { client, IMRAN, SANDEEP, SANA, technician, visit } from "./client-booking-fixtures.ts";
 
 /** A home, as ops set one: 28.4955 is 4 km north of the client, 28.5674 12 km, 28.7295 30 km. */
 async function home(id: string, lat: number, lng: number) {
@@ -72,5 +72,23 @@ describe("reach at booking", () => {
   it("puts a technician with no home pin in the ring, so a city whose pins are not set still books", async () => {
     await home(IMRAN, 28.7295, 77.0266);
     expect(await offered(rohit)).toEqual([SANDEEP]);
+  });
+
+  it("sends a technician with no home pin only after anyone whose home is known", async () => {
+    await home(IMRAN, 28.4955, 77.0266);
+    const both = (await tuesday(rohit)).filter((start) => start.takers.length === 2);
+    expect(both.length).toBeGreaterThan(0);
+    for (const start of both) expect(start.takers.map((taker) => taker.technician.id)).toEqual([IMRAN, SANDEEP]);
+  });
+
+  it("gives a start to the one with less booked that week, though the other drives a little less", async () => {
+    // Imran lives 4 km from the client and Sandeep 6, but Imran has four and a half hours booked on Monday.
+    await home(IMRAN, 28.4955, 77.0266);
+    await home(SANDEEP, 28.5135, 77.0266);
+    for (const at of ["03:30", "05:30", "07:30"])
+      await visit(null, "service", "scheduled", `2026-09-21T${at}:00.000Z`, IMRAN);
+    const both = (await tuesday(rohit)).filter((start) => start.takers.length === 2);
+    expect(both.length).toBeGreaterThan(0);
+    for (const start of both) expect(start.takers[0]?.technician.id).toBe(SANDEEP);
   });
 });

@@ -25,8 +25,10 @@ steps; the next allots technicians the evening before the visit, at the reminder
    into the km it covered.
 2. **An overflow ring past it.** A technician takes a visit in the ring, out to a percentage of their radius (150%
    until ops change it), only where it costs least; beyond the ring, they are not offered it. A technician with no home
-   pin stands in the ring wherever the visit is, so anyone whose home is known and in reach goes first, and a city
-   whose pins are not set yet still books. A move stays with its technician, and ops may still place any visit by hand.
+   pin is still offered visits, so a city whose pins are not set yet still books, but goes after every technician whose
+   home is known and who can take that start: nobody can tell how far they would drive. The plan the owner approved
+   said a technician with no home pin is offered nothing; this departure awaits the owner's ruling. A move stays with
+   its technician, and ops may still place any visit by hand.
 3. **The least cost goes.** Of those who can take a start, the one it costs least, in minutes: the driving it adds,
    now with the drive home after the day's last visit; going into the ring; for a fit whose spec is known, a piece in
    the city's stockroom or nowhere in it; and each hour more booked that week than the least booked of them. Ties go
@@ -38,6 +40,6 @@ steps; the next allots technicians the evening before the visit, at the reminder
 
 ## Consequences
 
-- A technician with no home pin now loses to one whose home is known and in reach; staging's Noida and Mumbai
-  technicians and one in Gurgaon have none, and take visits as before until ops set them.
+- A technician with no home pin now goes after anyone whose home is known; staging's Noida and Mumbai technicians and
+  one in Gurgaon have none, and take visits as before where nobody else can, until ops set them.
 - More starts are offered for a fit, since a kit that holds the piece no longer narrows who may take it.

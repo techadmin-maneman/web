@@ -1,6 +1,6 @@
 // The starts a visit may be booked at (docs/decisions/0210-booking-by-start-time.md): each day's starts a step apart
-// that some technician in the visit's city can take, and who, best first. Best is whoever the visit costs least
-// (src/policy/allotment.ts), then whoever has the least booked that day, then over the week around it.
+// that some technician in the visit's city can take, and who, best first. Best is whoever's home is known, then whoever
+// the visit costs least (src/policy/allotment.ts), then whoever has the least booked that day, then over the week.
 //
 // Today is offered from the lead time on, and only for a kind of visit ops let clients book for today. A day ops
 // black out, or from the day a service is retired on, is offered to nobody; and no technician who took the client's
@@ -42,12 +42,14 @@ export interface StartPlacing {
 
 /**
  * A technician who can take a start, the driving it adds to their day, what their taking it costs in all
- * (src/policy/allotment.ts), and the lock the hold on their day takes.
+ * (src/policy/allotment.ts), whether their home is known, and the lock the hold on their day takes.
  */
 interface Taker {
   readonly technician: Technician;
   readonly addedDrive: number;
   readonly cost: number;
+  /** False for one with no home pin, whose driving nobody can tell: they go after everyone whose home is known. */
+  readonly homeKnown: boolean;
   readonly revision: number;
 }
 
@@ -112,6 +114,12 @@ function loadOf(plans: DayPlans, technicianId: string, date: string): { day: num
   return { day: minutes(date), week };
 }
 
+/** Where the visit sits for a technician, and whether their home is known to measure it from. */
+interface Placing {
+  readonly standing: Standing;
+  readonly homeKnown: boolean;
+}
+
 interface Radius {
   readonly id: string;
   readonly home_lat: number | null;
@@ -137,23 +145,24 @@ function standings(
   technicians: readonly Technician[],
   rows: ReadonlyMap<string, Radius>,
   at: { readonly pin: Pin | null; readonly moving: boolean; readonly inputs: OpsInputs },
-): Map<string, Standing> {
-  const placed = new Map<string, Standing>();
+): Map<string, Placing> {
+  const placed = new Map<string, Placing>();
   for (const technician of technicians) {
     if (at.moving) {
-      placed.set(technician.id, "inside");
+      placed.set(technician.id, { standing: "inside", homeKnown: true });
       continue;
     }
     const row = rows.get(technician.id);
     const lat = row?.home_lat ?? null;
     const lng = row?.home_lng ?? null;
+    const home = lat === null || lng === null ? null : { lat, lng };
     const standing = standingOf({
-      home: lat === null || lng === null ? null : { lat, lng },
+      home,
       to: at.pin,
       radiusKm: row?.radius_km ?? at.inputs.technicianRadiusKm,
       overflow: at.inputs.allotment.overflow,
     });
-    if (standing !== "beyond") placed.set(technician.id, standing);
+    if (standing !== "beyond") placed.set(technician.id, { standing, homeKnown: home !== null });
   }
   return placed;
 }
@@ -166,11 +175,14 @@ interface Candidate {
   readonly load: { readonly day: number; readonly week: number };
   readonly overflow: boolean;
   readonly piece: Piece | null;
+  readonly homeKnown: boolean;
 }
 
-/** Those who can take a start, each with what it costs, least first; a tie to the one with less booked. */
-function bestFirst(candidates: readonly Candidate[], inputs: OpsInputs): Taker[] {
-  const leastWeek = Math.min(...candidates.map((candidate) => candidate.load.week));
+/**
+ * Those who can take a start, best first: whoever's home is known, then least cost, then less booked. `leastWeek` is
+ * the least booked week of everyone who works the day, so a cost means the same at every start of it.
+ */
+function bestFirst(candidates: readonly Candidate[], inputs: OpsInputs, leastWeek: number): Taker[] {
   return candidates
     .map((candidate) => ({
       candidate,
@@ -178,12 +190,16 @@ function bestFirst(candidates: readonly Candidate[], inputs: OpsInputs): Taker[]
     }))
     .sort(
       (a, b) =>
-        a.cost - b.cost || a.candidate.load.day - b.candidate.load.day || a.candidate.load.week - b.candidate.load.week,
+        Number(b.candidate.homeKnown) - Number(a.candidate.homeKnown) ||
+        a.cost - b.cost ||
+        a.candidate.load.day - b.candidate.load.day ||
+        a.candidate.load.week - b.candidate.load.week,
     )
     .map(({ candidate, cost }) => ({
       technician: candidate.technician,
       addedDrive: candidate.addedDrive,
       cost,
+      homeKnown: candidate.homeKnown,
       revision: candidate.revision,
     }));
 }
@@ -246,10 +262,12 @@ export async function startOffers(input: {
       const earliest = earliestOn(date, visit, inputs, now);
       if (earliest === null || closed.has(date) || retired(date)) return { date, starts: [] };
       const byStart = new Map<number, Candidate[]>();
+      let leastWeek = Infinity;
       for (const technician of technicians) {
         const day = plans.day(technician.id, date);
         if (day === null) continue;
         const load = loadOf(plans, technician.id, date);
+        leastWeek = Math.min(leastWeek, load.week);
         for (const placed of placements(day, toPlan, rules, earliest)) {
           // A start Google's drive was already found to leave no room for is not offered (./drive-check.ts).
           const placing = { time: timeOf(placed.start), minutes: visit.minutes, pin };
@@ -260,8 +278,9 @@ export async function startOffers(input: {
             addedDrive: placed.addedDrive,
             revision: plans.revision(technician.id, date),
             load,
-            overflow: where.get(technician.id) === "overflow",
+            overflow: where.get(technician.id)?.standing === "overflow",
             piece: able.pieces.get(technician.id) ?? null,
+            homeKnown: where.get(technician.id)?.homeKnown ?? true,
           });
           byStart.set(placed.start, takers);
         }
@@ -272,7 +291,7 @@ export async function startOffers(input: {
         .map(([start, takers]): StartOffer => {
           const allowed = allowedTechnicians(takers, (taker) => barred.has(taker.technician.id));
           const time = timeOf(start);
-          return { time, startsAt: indiaInstant(date, time), takers: bestFirst(allowed, inputs) };
+          return { time, startsAt: indiaInstant(date, time), takers: bestFirst(allowed, inputs, leastWeek) };
         });
       return { date, starts };
     }),
