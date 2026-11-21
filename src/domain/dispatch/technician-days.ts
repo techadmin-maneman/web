@@ -35,24 +35,24 @@ export async function homesOf(db: D1Database): Promise<Map<string, Home>> {
   return new Map(results.map(({ id, label, lat, lng }) => [id, { label, lat, lng }]));
 }
 
-/** Each technician's own reach from home, in minutes, where ops have set one (docs/decisions/0223-reach-from-home.md). */
-export async function reachesOf(db: D1Database): Promise<Map<string, number>> {
+/** Each technician's own radius from home, in km, where ops have set one (docs/decisions/0289-who-takes-a-visit.md). */
+export async function radiiOf(db: D1Database): Promise<Map<string, number>> {
   const { results } = await db
-    .prepare("SELECT id, reach_min FROM technicians WHERE reach_min IS NOT NULL")
-    .all<{ id: string; reach_min: number }>();
-  return new Map(results.map((row) => [row.id, row.reach_min]));
+    .prepare("SELECT id, radius_km FROM technicians WHERE radius_km IS NOT NULL")
+    .all<{ id: string; radius_km: number }>();
+  return new Map(results.map((row) => [row.id, row.radius_km]));
 }
 
-/** Sets a technician's own reach, or returns them to the business's with null, with its audit entry. */
-export async function setReach(
+/** Sets a technician's own radius, or returns them to the business's with null, with its audit entry. */
+export async function setRadius(
   db: D1Database,
-  input: { technicianId: string; reachMin: number | null; audit: AuditEntry; now: Date },
+  input: { technicianId: string; radiusKm: number | null; audit: AuditEntry; now: Date },
 ): Promise<void> {
   await db.batch([
     db
-      .prepare("UPDATE technicians SET reach_min = ?2, updated_at = ?3 WHERE id = ?1")
-      .bind(input.technicianId, input.reachMin, input.now.toISOString()),
-    auditStatement(db, { ...input.audit, detail: { reach_min: input.reachMin ?? "" } }, input.now),
+      .prepare("UPDATE technicians SET radius_km = ?2, updated_at = ?3 WHERE id = ?1")
+      .bind(input.technicianId, input.radiusKm, input.now.toISOString()),
+    auditStatement(db, { ...input.audit, detail: { radius_km: input.radiusKm ?? "" } }, input.now),
   ]);
 }
 

@@ -52,12 +52,12 @@ describe("a city's reach", () => {
     const reach = await (
       await request(ops, "/api/service-area/reach?city=Gurgaon")
     ).json<{
-      technicians: { id: string; reach_min: number; home: unknown }[];
+      technicians: { id: string; radius_km: number; ring_km: number; home: unknown }[];
       pincodes: { pincode: string; reached: boolean | null; reached_by: string[]; nearest: unknown }[];
     }>();
-    expect(reach.technicians.map(({ id, reach_min }) => ({ id, reach_min }))).toEqual([
-      { id: NEAR, reach_min: 45 },
-      { id: FAR, reach_min: 45 },
+    expect(reach.technicians.map(({ id, radius_km, ring_km }) => ({ id, radius_km, ring_km }))).toEqual([
+      { id: NEAR, radius_km: 10, ring_km: 15 },
+      { id: FAR, radius_km: 10, ring_km: 15 },
     ]);
     const byPin = Object.fromEntries(reach.pincodes.map((each) => [each.pincode, each]));
     expect(byPin["122018"]).toMatchObject({ reached: true, reached_by: [NEAR] });
@@ -72,30 +72,30 @@ describe("a city's reach", () => {
   });
 });
 
-describe("a technician's own reach", () => {
+describe("a technician's own radius", () => {
   it("is set, audited, and given back to the business's with null", async () => {
     const set = await request(ops, `/api/technicians/${NEAR}/reach`, {
       method: "POST",
       headers: POST,
-      body: JSON.stringify({ reach_min: 90 }),
+      body: JSON.stringify({ radius_km: 25 }),
     });
-    expect(await set.json()).toEqual({ reach_min: 90 });
+    expect(await set.json()).toEqual({ radius_km: 25 });
     const roster = await (
       await request(ops, "/api/technicians")
-    ).json<{ technicians: { id: string; reach_min: number | null }[] }>();
-    expect(roster.technicians.find((each) => each.id === NEAR)?.reach_min).toBe(90);
+    ).json<{ technicians: { id: string; radius_km: number | null }[] }>();
+    expect(roster.technicians.find((each) => each.id === NEAR)?.radius_km).toBe(25);
     expect((await auditFor("technician.reach")).results).toHaveLength(1);
 
     const back = await request(ops, `/api/technicians/${NEAR}/reach`, {
       method: "POST",
       headers: POST,
-      body: JSON.stringify({ reach_min: null }),
+      body: JSON.stringify({ radius_km: null }),
     });
-    expect(await back.json()).toEqual({ reach_min: null });
+    expect(await back.json()).toEqual({ radius_km: null });
     const outside = await request(ops, `/api/technicians/${NEAR}/reach`, {
       method: "POST",
       headers: POST,
-      body: JSON.stringify({ reach_min: 5 }),
+      body: JSON.stringify({ radius_km: 61 }),
     });
     expect(outside.status).toBe(400);
   });

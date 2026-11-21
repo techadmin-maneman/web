@@ -15,7 +15,7 @@ import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { reachesCity } from "../../policy/access.ts";
 import { visitsToComeBy } from "../../domain/dispatch/unassigned.ts";
-import { homesOf, reachesOf, weeksOf } from "../../domain/dispatch/technician-days.ts";
+import { homesOf, radiiOf, weeksOf } from "../../domain/dispatch/technician-days.ts";
 import { HomeSchema, WorkingDaySchema } from "../schemas/technician-days.ts";
 
 const LeaveSchema = z
@@ -95,8 +95,8 @@ const TechniciansSchema = z
           home: z
             .union([HomeSchema, z.null()])
             .openapi({ description: "Where their day starts; null until ops set it." }),
-          reach_min: z.union([z.number().int(), z.null()]).openapi({
-            description: "Minutes of driving from home they take visits within; null takes the business's (ADR 0223).",
+          radius_km: z.union([z.number().int(), z.null()]).openapi({
+            description: "Straight-line km from home they take visits within; null takes the business's (ADR 0289).",
           }),
         })
         .strict(),
@@ -123,9 +123,9 @@ const TechniciansSchema = z
       description:
         "The cities the caller may give a technician, those their Operations MANAGE reaches, in display order.",
     }),
-    default_reach_min: z.number().int().openapi({
+    default_radius_km: z.number().int().openapi({
       description:
-        "The business's reach from Settings, which a technician with no reach of their own takes (ADR 0223).",
+        "The business's radius from Settings, which a technician with no radius of their own takes (ADR 0289).",
     }),
   })
   .strict()
@@ -144,7 +144,7 @@ const techniciansRoute = opsRoute({
 export function registerOpsField(app: App): void {
   app.openapi(techniciansRoute, async (c) => {
     // The phones and the leave are one read each for the whole roster, not one per technician.
-    const [roll, devices, leave, cities, reach, managed, toCome, weeks, homes, reaches, inputs] = await Promise.all([
+    const [roll, devices, leave, cities, reach, managed, toCome, weeks, homes, radii, inputs] = await Promise.all([
       roster(c.env.DB),
       devicesByTechnician(c.env.DB, c.var.deps.now()),
       leaveFrom(c.env.DB, indiaDate(c.var.deps.now())),
@@ -154,7 +154,7 @@ export function registerOpsField(app: App): void {
       visitsToComeBy(c.env.DB, c.var.deps.now()),
       weeksOf(c.env.DB),
       homesOf(c.env.DB),
-      reachesOf(c.env.DB),
+      radiiOf(c.env.DB),
       opsInputs(c),
     ]);
     const everyone = roll.filter((technician) => reachesCity(reach, technician.city));
@@ -191,11 +191,11 @@ export function registerOpsField(app: App): void {
           .map(({ id, from, to, from_time, to_time, note }) => ({ id, from, to, from_time, to_time, note })),
         hours: weeks.get(technician.id) ?? [],
         home: homeOf(technician.id),
-        reach_min: reaches.get(technician.id) ?? null,
+        radius_km: radii.get(technician.id) ?? null,
       }));
     const switchedOff = everyone.filter((technician) => !technician.active).map(summaryOf);
     return c.json(
-      { technicians, switched_off: switchedOff, cities: given, default_reach_min: inputs.technicianReachMin },
+      { technicians, switched_off: switchedOff, cities: given, default_radius_km: inputs.technicianRadiusKm },
       200,
     );
   });

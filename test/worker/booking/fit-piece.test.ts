@@ -1,6 +1,6 @@
-// A fit goes to a technician who can reach its piece (src/domain/booking/occupancy.ts): of those trained to fit in the
-// visit's city, only those whose kit, or their city's stockroom, holds a piece of the client's exact spec; and any of
-// them where none does, so the fit can still be booked and the evening's kit check tells ops what is short. And ops are
+// Where a fit's piece is for each technician who may take it (src/domain/booking/occupancy.ts): every one trained to fit
+// in the visit's city, with whether their kit, or their city's stockroom, holds a piece of the client's exact spec, or
+// neither, which the choice of who goes counts (src/policy/allotment.ts) and the evening's kit check tells ops of. And ops are
 // told at the booking of a fit with no piece of its client's spec in reach, too soon for any supplier to deliver one
 // (src/domain/inventory/stock-gap.ts).
 // NOW is Monday 21 September 2026, 12 noon in India.
@@ -18,8 +18,11 @@ const CLIENT = "88888888-8888-4888-8888-888888888882";
 let job: Working;
 let code: string;
 
-const offered = async (fitting: { product: string | null } | null) =>
-  (await techniciansFor(env.DB, null, { pincode: "122018", personId: CLIENT }, fitting)).map((each) => each.id).sort();
+/** Each technician offered, by ID, with where the piece is for them. */
+async function offered(fitting: { product: string | null } | null): Promise<Record<string, string | null>> {
+  const { technicians, pieces } = await techniciansFor(env.DB, null, { pincode: "122018", personId: CLIENT }, fitting);
+  return Object.fromEntries(technicians.map((each) => [each.id, pieces.get(each.id) ?? null]));
+}
 
 beforeEach(async () => {
   await markDatabase();
@@ -57,36 +60,37 @@ beforeEach(async () => {
   code = (await added.json<{ code: string }>()).code;
 });
 
-describe("a fit's technician", () => {
-  it("is any trained fitter in the city where none can reach a piece of the client's spec", async () => {
-    expect(await offered({ product: "essential" })).toEqual([IMRAN, SAMEER].sort());
+describe("a fit's technicians", () => {
+  it("are every trained fitter in the city, none with a piece where none can reach one", async () => {
+    expect(await offered({ product: "essential" })).toEqual({ [IMRAN]: "none", [SAMEER]: "none" });
   });
 
-  it("is one whose kit holds a piece of the client's exact spec, where any does", async () => {
+  it("show whose kit holds a piece of the client's exact spec", async () => {
     await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: SAMEER, counted: 1 });
-    expect(await offered({ product: "essential" })).toEqual([SAMEER]);
+    expect(await offered({ product: "essential" })).toEqual({ [IMRAN]: "none", [SAMEER]: "kit" });
     // A replacement fits the profile's own product; a first fit paid for another is matched to that, which none holds.
-    expect(await offered({ product: null })).toEqual([SAMEER]);
-    expect(await offered({ product: "natural" })).toEqual([IMRAN, SAMEER].sort());
+    expect(await offered({ product: null })).toEqual({ [IMRAN]: "none", [SAMEER]: "kit" });
+    // No piece is made to that spec as Natural, so it is made to order: nobody can hold one, and none counts.
+    expect(await offered({ product: "natural" })).toEqual({ [IMRAN]: null, [SAMEER]: null });
     // A replacement is matched to the package it is booked as, which may differ from the one worn; with none, the worn.
-    expect(await offered(fittingOf("replacement", "natural"))).toEqual([IMRAN, SAMEER].sort());
-    expect(await offered(fittingOf("replacement", null))).toEqual([SAMEER]);
+    expect(await offered(fittingOf("replacement", "natural"))).toEqual({ [IMRAN]: null, [SAMEER]: null });
+    expect(await offered(fittingOf("replacement", null))).toEqual({ [IMRAN]: "none", [SAMEER]: "kit" });
   });
 
-  it("is any in the city whose stockroom holds one", async () => {
+  it("show the city's stockroom where it holds one", async () => {
     await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: "gurgaon-room", counted: 1 });
-    expect(await offered({ product: "essential" })).toEqual([IMRAN, SAMEER].sort());
+    expect(await offered({ product: "essential" })).toEqual({ [IMRAN]: "stockroom", [SAMEER]: "stockroom" });
   });
 
-  it("is the one whose own kit holds it before any whose stockroom does, who would fetch it first", async () => {
+  it("show a kit before the stockroom, for the one who would not need to fetch it", async () => {
     await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: "gurgaon-room", counted: 1 });
     await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: SAMEER, counted: 1 });
-    expect(await offered({ product: "essential" })).toEqual([SAMEER]);
+    expect(await offered({ product: "essential" })).toEqual({ [IMRAN]: "stockroom", [SAMEER]: "kit" });
   });
 
-  it("is not asked for a visit that fits nothing", async () => {
+  it("carry no piece for a visit that fits nothing", async () => {
     await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: SAMEER, counted: 1 });
-    expect(await offered(null)).toEqual([IMRAN, SAMEER].sort());
+    expect(await offered(null)).toEqual({ [IMRAN]: null, [SAMEER]: null });
   });
 });
 
@@ -191,9 +195,11 @@ describe("staging's test records", () => {
   it("book a test client only with a test technician, and a real client never with one", async () => {
     const everyone = await env.DB.prepare("SELECT id FROM technicians ORDER BY id").all<{ id: string }>();
     await env.DB.prepare("UPDATE technicians SET test_record = 1 WHERE id = ?1").bind(IMRAN).run();
-    expect(await offered(null)).toEqual(everyone.results.map((row) => row.id).filter((id) => id !== IMRAN));
+    expect(Object.keys(await offered(null))).toEqual(
+      everyone.results.map((row) => row.id).filter((id) => id !== IMRAN),
+    );
 
     await env.DB.prepare("UPDATE people SET test_record = 1 WHERE id = ?1").bind(CLIENT).run();
-    expect(await offered(null)).toEqual([IMRAN]);
+    expect(Object.keys(await offered(null))).toEqual([IMRAN]);
   });
 });

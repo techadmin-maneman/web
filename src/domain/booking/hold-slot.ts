@@ -122,7 +122,7 @@ interface Candidate {
 
 /**
  * Who can take the hold, best first (./start-offers.ts): at the start asked for, or at any start inside the window,
- * the least driving first and then the earliest start. A client's move stays with its own technician where they can
+ * the least it costs first (src/policy/allotment.ts) and then the earliest start. A client's move stays with its own technician where they can
  * take it.
  */
 async function candidatesFor({
@@ -167,11 +167,11 @@ async function candidatesFor({
         time: start.time,
         startsAt: start.startsAt,
         revision: taker.revision,
-        addedDrive: taker.addedDrive,
+        cost: taker.cost,
       })),
     )
     .filter((candidate) => input.technicianId === undefined || candidate.technician.id === input.technicianId)
-    .sort((a, b) => ownFirst(b) - ownFirst(a) || a.addedDrive - b.addedDrive || a.time.localeCompare(b.time));
+    .sort((a, b) => ownFirst(b) - ownFirst(a) || a.cost - b.cost || a.time.localeCompare(b.time));
 }
 
 /**

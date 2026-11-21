@@ -179,7 +179,7 @@ function reachWords(own: number | null, everyone: number | null): string {
   return everyone === null ? copy.businessReach : copy.everyonesReach(everyone);
 }
 
-/** How far they go from home, their own or the business's, changed where it reads (docs/decisions/0223-reach-from-home.md). */
+/** How far they go from home, their own or the business's, changed where it reads (docs/decisions/0289-who-takes-a-visit.md). */
 function ReachRow(props: {
   technician: Technician;
   everyone: number | null;
@@ -187,18 +187,18 @@ function ReachRow(props: {
   onChange: () => Promise<void>;
 }) {
   const { technician, everyone } = props;
-  const value = reachWords(technician.reach_min, everyone);
+  const value = reachWords(technician.radius_km, everyone);
   return (
     <EditableRow<string>
       label={copy.reach}
       words={EDITING}
       mayChange={props.mayChange}
       value={value}
-      start={() => (technician.reach_min === null ? "" : String(technician.reach_min))}
+      start={() => (technician.radius_km === null ? "" : String(technician.radius_km))}
       save={async (typed) => {
-        const minutes = typed.trim() === "" ? null : Number(typed);
-        if (minutes !== null && (!Number.isInteger(minutes) || minutes < 10 || minutes > 180)) return copy.errors.reach;
-        const answer = await techniciansApi.setReach(technician.id, minutes);
+        const km = typed.trim() === "" ? null : Number(typed);
+        if (km !== null && (!Number.isInteger(km) || km < 1 || km > 60)) return copy.errors.reach;
+        const answer = await techniciansApi.setRadius(technician.id, km);
         if (!answer.ok) return errorText(copy.errors, answer);
         await props.onChange();
         return null;
@@ -209,8 +209,8 @@ function ReachRow(props: {
           {...control}
           width="figure"
           inputMode="numeric"
-          min={10}
-          max={180}
+          min={1}
+          max={60}
           placeholder={everyone === null ? undefined : String(everyone)}
           value={typed}
           onChange={(event) => {

@@ -1,5 +1,5 @@
-// A city's reach under Areas › Served (apps/ops/src/areas/Reach.tsx, ADR 0223): the served pincodes no reach takes in,
-// and each technician's reach as a way to choose its pincodes. Every name and number is made up.
+// A city's reach under Areas › Served (apps/ops/src/areas/Reach.tsx, ADRs 0223 and 0289): the served pincodes no reach
+// takes in, and each technician's radius as a way to choose its pincodes. Every name and number is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -19,8 +19,8 @@ const REACH: CityReach = {
       name: "Imran Qureshi",
       initials: "IQ",
       home: { lat: 28.45, lng: 77.02 },
-      reach_min: 45,
-      reach_km: 10,
+      radius_km: 10,
+      ring_km: 15,
     },
   ],
   pincodes: [
@@ -30,7 +30,7 @@ const REACH: CityReach = {
       served: true,
       paused_until: null,
       centre: { lat: 28.49, lng: 77.02 },
-      nearest: { technician_id: "t1", minutes: 22 },
+      nearest: { technician_id: "t1", km: 4.4 },
       reached: true,
       reached_by: ["t1"],
     },
@@ -40,7 +40,7 @@ const REACH: CityReach = {
       served: true,
       paused_until: null,
       centre: { lat: 28.72, lng: 77.02 },
-      nearest: { technician_id: "t1", minutes: 95 },
+      nearest: { technician_id: "t1", km: 30 },
       reached: false,
       reached_by: [],
     },
@@ -104,16 +104,16 @@ describe("a city's reach", () => {
     await answered();
     expect(page.querySelector(`img[alt="${copy.mapAlt("Gurgaon")}"]`)).not.toBeNull();
     expect(page.textContent).toContain(copy.outOfReach(1));
-    expect(page.textContent).toContain(copy.unreached("122099", "Sector 99", copy.nearest("Imran Qureshi", 95)));
+    expect(page.textContent).toContain(copy.unreached("122099", "Sector 99", copy.nearest("Imran Qureshi", 30)));
     act(() => {
       button(copy.chooseUnreached)?.click();
     });
     expect([...(chosen[0] ?? [])]).toEqual(["122099"]);
   });
 
-  it("chooses the pincodes within a technician's reach", async () => {
+  it("chooses the pincodes within a technician's radius", async () => {
     await answered();
-    expect(page.textContent).toContain(copy.within("Imran Qureshi", 45, 1));
+    expect(page.textContent).toContain(copy.within("Imran Qureshi", 10, 1));
     act(() => {
       button(copy.chooseWithin("Imran Qureshi"))?.click();
     });

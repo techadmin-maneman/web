@@ -31,7 +31,7 @@ const technician = (
   leave,
   hours: [],
   home: null,
-  reach_min: null,
+  radius_km: null,
 });
 
 export const TECHNICIANS = {
@@ -83,7 +83,7 @@ export const TECHNICIANS = {
     technician(3, "Faizan Ali", "FA", null, [], [], null),
   ],
   switched_off: [],
-  default_reach_min: 45,
+  default_radius_km: 10,
   cities: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad", "Mumbai", "Bengaluru"],
 } satisfies Roster;
 

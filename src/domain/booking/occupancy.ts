@@ -6,6 +6,7 @@ import { isAFitting, type VisitType } from "../../config/visit-types.ts";
 import { bookedLength } from "../../policy/visit-length.ts";
 import { minutesBetween } from "../../lib/durations.ts";
 import { fitCode } from "../inventory/stock-gap.ts";
+import type { Piece } from "../../policy/allotment.ts";
 
 /** The days ops black out between two dates: nobody is offered a visit on them. */
 export async function loadBlackouts(
@@ -73,14 +74,18 @@ interface VisitPlace {
  * (docs/decisions/0278-a-technician-in-training-takes-no-visits.md). Staging's test records stay apart:
  * a test client is booked only with a test technician, and a real client never is.
  */
-const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technicians t
+const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials,
+    CASE WHEN ?5 IS NULL THEN NULL
+      WHEN EXISTS (SELECT 1 FROM stock_balances b WHERE b.consumable_code = ?5 AND b.quantity > 0 AND b.place = t.id)
+        THEN 'kit'
+      WHEN EXISTS (SELECT 1 FROM stock_balances b JOIN stock_places r ON r.id = b.place
+                    WHERE b.consumable_code = ?5 AND b.quantity > 0
+                      AND r.kind = 'stockroom' AND r.city = t.city AND r.active = 1) THEN 'stockroom'
+      ELSE 'none' END AS piece
+  FROM technicians t
   WHERE t.active = 1 AND (t.id = ?3 OR (t.city = ${bookingCity("?1", "?2")} AND (?4 = 0 OR t.fits_trained = 1)
     AND t.training_end_date IS NULL
-    AND (?2 IS NULL OR t.test_record = (SELECT COALESCE(MAX(p.test_record), 0) FROM people p WHERE p.id = ?2))
-    AND (?5 IS NULL OR EXISTS (
-      SELECT 1 FROM stock_balances b WHERE b.consumable_code = ?5 AND b.quantity > 0
-        AND (b.place = t.id OR (?6 = 0 AND b.place IN (SELECT r.id FROM stock_places r
-                                           WHERE r.kind = 'stockroom' AND r.city = t.city AND r.active = 1)))))))
+    AND (?2 IS NULL OR t.test_record = (SELECT COALESCE(MAX(p.test_record), 0) FROM people p WHERE p.id = ?2))))
   ORDER BY t.id = ?3 DESC, t.name`;
 
 /** A fit to place: the package booked, which its piece is of; null where none is, the client's own then. */
@@ -97,37 +102,24 @@ export const fittingOf = (type: VisitType | null, tier: string | null): Fitting 
 
 /**
  * Who can take a booking: the active technicians in the visit's city, and for a fit only those trained to fit (ADR
- * 0119) whose own kit holds a piece of the client's exact spec; where none does, those whose city's stockroom holds
- * one; where none does, any trained fitter, and the evening's kit check tells ops what is short. A client's move may go to any of them, its own
- * technician first, who keeps it wherever they work.
+ * 0119), each with where the client's piece of the exact spec is for them: in their own kit, in their city's
+ * stockroom, or nowhere in it, which the choice of who goes counts (src/policy/allotment.ts) and the evening's kit check
+ * tells ops of. A client's move may go to any of them, its own technician first, who keeps it wherever they work.
  */
 export async function techniciansFor(
   db: D1Database,
   moving: Moving | null,
   place: VisitPlace,
   fitting: Fitting | null = null,
-): Promise<Technician[]> {
-  const read = async (code: string | null, kitOnly = false) => {
-    const { results } = await db
-      .prepare(TECHNICIANS_IN_THE_CITY)
-      .bind(
-        place.pincode,
-        place.personId,
-        moving?.technicianId ?? null,
-        fitting === null ? 0 : 1,
-        code,
-        kitOnly ? 1 : 0,
-      )
-      .all<Technician>();
-    return results;
-  };
+): Promise<{ technicians: Technician[]; pieces: ReadonlyMap<string, Piece> }> {
   const code = fitting === null || place.personId === null ? null : await fitCode(db, place.personId, fitting.product);
-  if (code === null) return read(null);
-  for (const kitOnly of [true, false]) {
-    const holding = await read(code, kitOnly);
-    if (holding.length > 0) return holding;
-  }
-  return read(null);
+  const { results } = await db
+    .prepare(TECHNICIANS_IN_THE_CITY)
+    .bind(place.pincode, place.personId, moving?.technicianId ?? null, fitting === null ? 0 : 1, code)
+    .all<Technician & { piece: Piece | null }>();
+  const pieces = new Map<string, Piece>();
+  for (const row of results) if (row.piece !== null) pieces.set(row.id, row.piece);
+  return { technicians: results.map(({ id, name, initials }) => ({ id, name, initials })), pieces };
 }
 
 /** A visit being moved: only its technician can take the move, and its own time is left out. */
