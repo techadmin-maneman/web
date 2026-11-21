@@ -201,33 +201,36 @@ const once = (stop?: AbortSignal): AddEventListenerOptions =>
  * page's first paint.
  */
 function afterLoad(run: () => void, { stop, settleMs = SETTLE_MS }: Capture): void {
-  let started = false;
+  let loaded = false;
+  let freed = false;
+  let settling: ReturnType<typeof setTimeout> | undefined;
   const whenFree = () => {
-    if (stop?.aborted === true) return;
+    if (freed || stop?.aborted === true) return;
+    freed = true;
     if (typeof requestIdleCallback === "function") requestIdleCallback(run, { timeout: 3000 });
     else setTimeout(run, 0);
   };
   const start = () => {
-    if (started || stop?.aborted === true) return;
-    started = true;
-    setTimeout(whenFree, settleMs);
+    if (loaded || stop?.aborted === true) return;
+    loaded = true;
+    settling = setTimeout(whenFree, settleMs);
   };
+  // A visitor's first tap or key comes after the page has painted: the reports need wait no longer, settling or not.
+  const now = () => {
+    clearTimeout(settling);
+    whenFree();
+  };
+  addEventListener("pointerdown", now, once(stop));
+  addEventListener("keydown", now, once(stop));
   if (document.readyState === "complete") {
     start();
     return;
   }
   addEventListener("load", start, once(stop));
-  // A visitor's first tap or key comes after the page has painted: the reports need wait no longer.
-  const now = () => {
-    if (started || stop?.aborted === true) return;
-    started = true;
-    whenFree();
-  };
-  addEventListener("pointerdown", now, once(stop));
-  addEventListener("keydown", now, once(stop));
   const wait = setTimeout(start, LOAD_WAIT_MS);
   stop?.addEventListener("abort", () => {
     clearTimeout(wait);
+    clearTimeout(settling);
   });
 }
 

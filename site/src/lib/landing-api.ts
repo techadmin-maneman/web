@@ -9,7 +9,10 @@ type Landing = components["schemas"]["Landing"];
 /** As long as ./api.ts waits for a write. */
 const POST_TIMEOUT_MS = 20_000;
 
-/** Gives up after `ms`, as ./api.ts's own does: AbortSignal.timeout is missing before Safari 16. */
+/**
+ * Gives up after `ms`, as ./api.ts's own does: AbortSignal.timeout is missing before Safari 16. A copy, not shared: a
+ * module both import becomes a chunk of its own, one more request before the page's first paint.
+ */
 function within(ms: number): AbortSignal {
   const giveUp = new AbortController();
   setTimeout(() => {

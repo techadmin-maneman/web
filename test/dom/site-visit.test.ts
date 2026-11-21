@@ -282,6 +282,18 @@ describe("a visitor's landings", () => {
     expect(reported.map((touch) => touch.utm_source)).toEqual(["google"]);
   });
 
+  it("go at a tap in the second the page settles, without waiting it out", async () => {
+    history.replaceState(null, "", "/try?utm_source=google&utm_medium=cpc");
+    captureAttribution({ stop: pages.signal, settleMs: 60_000 });
+    await answered();
+    expect(reported).toEqual([]);
+
+    window.dispatchEvent(new Event("pointerdown"));
+    await answered();
+    await answered();
+    expect(reported.map((touch) => touch.utm_source)).toEqual(["google"]);
+  });
+
   it("go on a browser that has no AbortSignal.timeout, as Safari before 16", async () => {
     const timeout = Object.getOwnPropertyDescriptor(AbortSignal, "timeout");
     Object.defineProperty(AbortSignal, "timeout", { value: undefined, configurable: true });

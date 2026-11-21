@@ -774,6 +774,12 @@ test.describe("other pages", () => {
     await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
   });
 
+  // A chat begun with the visitor's reference opens with the page's greeting (site/src/lib/contact-clicks.ts).
+  test("every page carries the chat greeting a chat with the visitor's reference opens with", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("body")).toHaveAttribute("data-chat-greeting", siteCopy.whatsapp.greeting);
+  });
+
   // A reminder or the launch alert could be stopped only from the app.
   test("/stop stops the messages its link names in one tap, and forgets the link", async ({ page }) => {
     const sent: unknown[] = [];
