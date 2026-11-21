@@ -12,7 +12,7 @@ import { createStubConversions } from "./stub.ts";
 
 export type BookedVia = "website" | "chat" | "phone_call" | "system";
 
-/** What each platform is told of a conversion, hashed already where it is a person's. */
+/** What each platform is told of a conversion, hashed already where it is a person's, but Google's pincode. */
 export interface ConversionToSend {
   readonly eventId: string;
   readonly event: "lead_submit" | "consult_booked" | "consult_done" | "first_fit_paid" | "service_paid";

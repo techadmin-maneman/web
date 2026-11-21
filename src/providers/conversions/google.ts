@@ -1,9 +1,9 @@
-// Google's Data Manager API (docs/decisions/0288-attribution-and-conversions.md), which has carried Google Ads'
-// offline conversions and enhanced conversions for leads since 2026: one event a request to events:ingest, to the
-// conversion action for its kind in our Ads account, with the click ID where the client came by an ad and the number,
-// hashed, always. The Worker signs in as our service account: a token it asks Google for with a JWT signed by the
-// account's key, kept until five minutes before it lapses. In test mode each request is validateOnly: Google checks it
-// and records nothing.
+// Google's Data Manager API (docs/decisions/0288-attribution-and-conversions.md), which has carried Google Ads' offline
+// conversions and enhanced conversions for leads since 2026: one event a request to events:ingest, to the conversion
+// action for its kind in our Ads account, with the click ID where the client came by an ad, the number, hashed, always,
+// and their address where Google can match it whole: both names hashed, the pincode as it is. The Worker signs in as
+// our service account: a token it asks Google for with a JWT signed by the account's key, kept until five minutes
+// before it lapses. In test mode each request is validateOnly: Google checks it and records nothing.
 
 import type { GoogleEvent, GoogleSettings } from "../../config/conversions.ts";
 import { toBase64Url } from "../../lib/base64url.ts";

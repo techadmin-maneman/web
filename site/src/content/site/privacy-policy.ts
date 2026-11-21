@@ -182,7 +182,7 @@ export const privacyPolicy: LegalPage = {
         },
         {
           lead: "What we share:",
-          text: "your phone number, your name and the city, state and pincode of the address we visit, hashed: turned by a one-way formula into codes Google and Meta compare with their own records, so they are not sent as they are. Google is given the pincode as it is, with your hashed name, to match the address. With them go the ad’s click code in the link you came by, if there was one; what happened and when; and, for a payment, its amount. Unless you decline cookies on our cookie bar, we also share Google’s and Meta’s cookie codes, your device’s IP address and your browser’s type, which help them recognise you.",
+          text: "your phone number and your name, hashed: turned by a one-way formula into codes Google and Meta compare with their own records, so they are not sent as they are. Meta is also given the city, state and pincode of the address we visit, hashed the same way, and Google the pincode as it is, to match the address with your name. With them go the ad’s click code in the link you came by, if there was one; what happened and when; and, for a payment, its amount. Unless you decline cookies on our cookie bar, we also share Google’s and Meta’s cookie codes, your device’s IP address and your browser’s type, which help them recognise you.",
         },
         {
           lead: "Why:",
