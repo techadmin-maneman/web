@@ -78,10 +78,13 @@ cookies; a WhatsApp chat or a call carried nothing; and nothing was sent to eith
    history its clients were never told would be shared. Meta is sent through the Conversions API: a lead from the
    website, with the event ID the browser's Pixel used, so Meta counts the two once; a booking as Schedule, told as
    made on the website, in a chat, on a call or by our system, as it was (owner, 20 November 2026); a consultation
-   done, a first fit (Purchase) and a service paid from a physical store. Each carries the hashed number
-   and first name, and, where the visitor did not decline the cookie bar, Meta's cookies, the address and the browser.
+   done, a first fit (Purchase) and a service paid from a physical store. Each carries the hashed number and first
+   name; the hashed city, state and pincode of the client's current address, the city its pincode is served from where
+   we serve it; the country, India; and, where the visitor did not decline the cookie bar, Meta's cookies, the IP
+   address and the browser.
    Google is sent through the **Data Manager API**, which carries Google's offline conversions and enhanced
-   conversions for leads since 2026, under a service account: the click ID where there is one, the hashed number always,
+   conversions for leads since 2026, under a service account: one click ID where there is one, gclid first, the hashed
+   number always, and an address where Google can match it whole (both names hashed, India and the pincode as they are),
    and where it happened (a booking as WEB, MESSAGE, PHONE or OTHER as it was made, a visit or a payment as in
    store). A lead reaches Google from GA4 instead.
    Neither platform hears of a test record, and an event too old for it (7 days for Meta's website events, 62 for its

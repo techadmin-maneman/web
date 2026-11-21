@@ -1,7 +1,7 @@
 // The ad platforms with nothing behind them, for local runs and the tests (docs/decisions/0288-attribution-and-
 // conversions.md): each send is logged with the request the real platform would be given, its hashes and IDs but never
-// an address or a browser, and taken. A test can make every send fail, as a platform that is down does, or refuse one
-// for good.
+// an IP address, a place or a browser, and taken. A test can make every send fail, as a platform that is down does,
+// or refuse one for good.
 
 import type { Logger } from "../../log.ts";
 import type { ConversionPlatform, ConversionToSend, SendOutcome } from "./index.ts";
@@ -13,11 +13,15 @@ export const STUB_ANSWER: { meta: SendOutcome | null; google: SendOutcome | null
 /** Every send the stubs took, for the tests to read. */
 export const STUB_SENT: { platform: "meta" | "google"; conversion: ConversionToSend }[] = [];
 
-/** Meta's event as a log may hold it: hashes and IDs, never the address or the browser it would carry. */
+/** Meta's event as a log may hold it: hashes and IDs, never the IP address, the place or the browser it would carry. */
 function loggable(event: Record<string, unknown>): Record<string, unknown> {
   const userData = { ...(event.user_data as Record<string, unknown>) };
   delete userData.client_ip_address;
   delete userData.client_user_agent;
+  // A pincode's hash is found again by hashing every pincode.
+  delete userData.ct;
+  delete userData.st;
+  delete userData.zp;
   return { ...event, user_data: userData };
 }
 

@@ -5,13 +5,14 @@
 
 import type { VendorFetchDependencies } from "../vendor-fetch.ts";
 import type { ConversionSettings } from "../../config/conversions.ts";
+import type { GoogleAddress, MetaPlace } from "../../lib/ad-match.ts";
 import { createGoogleConversions } from "./google.ts";
 import { createMetaConversions } from "./meta.ts";
 import { createStubConversions } from "./stub.ts";
 
 export type BookedVia = "website" | "chat" | "phone_call" | "system";
 
-/** What each platform is told of a conversion, hashed already where it is a person's. */
+/** What each platform is told of a conversion, hashed already where it is a person's, but Google's pincode. */
 export interface ConversionToSend {
   readonly eventId: string;
   readonly event: "lead_submit" | "consult_booked" | "consult_done" | "first_fit_paid" | "service_paid";
@@ -28,6 +29,8 @@ export interface ConversionToSend {
   /** The number, hashed in each platform's own form (src/lib/ad-match.ts). */
   readonly phone: { readonly meta: string; readonly google: string };
   readonly firstName: string | null;
+  /** Where the client's address is, in each platform's own form (src/lib/ad-match.ts): Google's only whole. */
+  readonly place: { readonly meta: MetaPlace; readonly google: GoogleAddress | null };
   /** Our person's ID, hashed, so Meta can tell one client's events apart. */
   readonly externalId: string;
   /** What the browser gave, where the visitor did not decline the cookie bar. */
