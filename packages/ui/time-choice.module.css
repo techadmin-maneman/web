@@ -52,6 +52,7 @@
   .time {
     position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: var(--time-height);
@@ -84,6 +85,18 @@
     border-color: var(--pick-on);
     background: var(--pick-on);
     color: var(--pick-on-text);
+  }
+
+  /* A word beneath the time, as "Recommended": small, in brass on paper, the chip's own colour once chosen. */
+  .note {
+    font-size: var(--fs-13);
+    font-weight: var(--weight-regular);
+    line-height: var(--lh-125);
+    color: var(--brass-text);
+  }
+
+  .on .note {
+    color: inherit;
   }
 
   /* Taken: where it was, struck through, on the shade a full window has. */

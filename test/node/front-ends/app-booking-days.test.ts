@@ -24,6 +24,7 @@ const start = (date: string, time: string, open: boolean, charged = false) => ({
   arrives_by: `${date}T${time}:30+05:30`,
   open,
   change_charged: charged,
+  recommended: false,
 });
 
 /** A day open at 9 am where `open`, and taken at noon. */

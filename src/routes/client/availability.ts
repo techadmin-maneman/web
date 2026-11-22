@@ -88,7 +88,10 @@ const AvailabilitySchema = z
   .openapi("Availability");
 /** A day's grid of starts as the API gives it, each open or taken. */
 function startsOfDay(asked: {
-  readonly day: { readonly date: string; readonly starts: readonly { readonly time: string }[] };
+  readonly day: {
+    readonly date: string;
+    readonly starts: readonly { readonly time: string; readonly recommended: boolean }[];
+  };
   readonly minutes: number;
   readonly shut: boolean;
   readonly inputs: OpsInputs;
@@ -104,6 +107,7 @@ function startsOfDay(asked: {
     },
     day.starts.map((start) => start.time),
   );
+  const recommended = new Set(day.starts.filter((start) => start.recommended).map((start) => start.time));
   return grid.map(({ time, open }) => {
     const startsAt = indiaInstant(day.date, time);
     return {
@@ -112,6 +116,7 @@ function startsOfDay(asked: {
       arrives_by: new Date(startsAt.getTime() + inputs.bookingRules.arrival * MINUTE_MS).toISOString(),
       open: !asked.shut && open,
       change_charged: changeChargedOnBooking(startsAt, asked.now, asked.terms),
+      recommended: !asked.shut && open && recommended.has(time),
     };
   });
 }

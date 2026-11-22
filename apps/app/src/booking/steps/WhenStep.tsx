@@ -45,7 +45,13 @@ function periodsOf(day: Day) {
     );
     return {
       name: WINDOW_NAMES[window],
-      times: inside.map((start) => ({ id: start.starts_at, label: dayClock(start.time), open: start.open })),
+      // The day's starts that add least driving say so (docs/decisions/0293-steering-booking-times.md).
+      times: inside.map((start) => ({
+        id: start.starts_at,
+        label: dayClock(start.time),
+        open: start.open,
+        note: start.recommended ? copy.recommended : undefined,
+      })),
     };
   });
 }

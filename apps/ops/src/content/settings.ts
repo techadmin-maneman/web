@@ -247,6 +247,10 @@ export const settings = {
         no_piece_cost: "Piece nowhere in the city",
         share_cost: "Each hour more booked that week",
       },
+      steering: {
+        recommended: "Marked Recommended",
+        drive_cap: "Not offered beyond the day’s best by",
+      },
       no_show_charge: dispatch.typeNames,
       // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
       no_show_waiver: { payment: "The visit’s payment", credit: "The free service visit used" },

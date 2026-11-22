@@ -17,6 +17,7 @@ import type { RefusedMessages } from "../../policy/message-refusals.ts";
 import type { Ratings } from "../../policy/ratings.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
 import type { Allotment } from "../../policy/allotment.ts";
+import type { Steering } from "../../policy/steering.ts";
 import type { BookingRules, WorkingHours } from "../../policy/start-times.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import type { CareHours } from "../../policy/care-hours.ts";
@@ -65,6 +66,8 @@ export interface OpsInputs {
   readonly technicianRadiusKm: number;
   /** The overflow ring and what each of a choice's costs counts as (src/policy/allotment.ts). */
   readonly allotment: Allotment;
+  /** How many of a day's times clients see marked Recommended, and the most driving a time shown to them adds. */
+  readonly steering: Steering;
   readonly checkinRadiusM: number;
   /** The check-in radius at a pin Google placed only roughly (src/policy/check-in.ts). */
   readonly checkinRadiusApproximateM: number;
@@ -160,6 +163,7 @@ function shape(values: OpsValues): OpsInputs {
     driveEstimate: values.drive_estimate,
     technicianRadiusKm: values.technician_radius_km,
     allotment: values.allotment,
+    steering: values.steering,
     checkinRadiusM: values.checkin_radius_m,
     checkinRadiusApproximateM: values.checkin_radius_approximate_m,
     noShowWaitMin: values.no_show_wait_min,

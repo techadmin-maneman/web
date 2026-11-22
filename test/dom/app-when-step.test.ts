@@ -17,8 +17,8 @@ import { arrivalHours, booking } from "../../apps/app/src/content.ts";
 const PRICE = { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 };
 const copy = booking.when;
 
-/** A start on Tuesday 22 September at `time`, India's clock. */
-const start = (time: string, open: boolean, charged = false) => {
+/** A start on Tuesday 22 September at `time`, India's clock, marked Recommended where `recommended`. */
+const start = (time: string, open: boolean, charged = false, recommended = false) => {
   const startsAt = new Date(`2026-09-22T${time}:00+05:30`);
   return {
     time,
@@ -26,6 +26,7 @@ const start = (time: string, open: boolean, charged = false) => {
     arrives_by: new Date(startsAt.getTime() + 30 * 60_000).toISOString(),
     open,
     change_charged: charged,
+    recommended,
   };
 };
 
@@ -37,7 +38,7 @@ const DAY: Day = {
     { window: "afternoon", start: "12:00", end: "16:00", open: false, change_charged: false },
     { window: "evening", start: "16:00", end: "20:00", open: true, change_charged: false },
   ],
-  starts: [start("09:00", false), start("11:30", true), start("12:00", false), start("16:00", true, true)],
+  starts: [start("09:00", false), start("11:30", true, false, true), start("12:00", false), start("16:00", true, true)],
 };
 
 /** The next day, every start taken. */
@@ -130,7 +131,13 @@ describe("the day and time", () => {
     act(() => {
       root.render(step(null));
     });
-    expect(times().map((label) => label?.textContent)).toEqual(["9 am, taken", "11:30 am", "12 pm, taken", "4 pm"]);
+    // A time that drives least says so beneath it, read with it.
+    expect(times().map((label) => label?.textContent)).toEqual([
+      "9 am, taken",
+      `11:30 am${copy.recommended}`,
+      "12 pm, taken",
+      "4 pm",
+    ]);
     expect(times().map((label) => label?.querySelector("input")?.disabled)).toEqual([true, false, true, false]);
     expect(page.textContent).toContain(`Morning${copy.open(1)}`);
     expect(page.textContent).toContain(`Afternoon${copy.fullyBooked}`);

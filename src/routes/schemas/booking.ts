@@ -226,6 +226,11 @@ export const StartSchema = z
     change_charged: z.boolean().openapi({
       description: "Booked now, moving or cancelling it would already cost the client: it starts inside the notice.",
     }),
+    recommended: z.boolean().openapi({
+      description:
+        "One of the day's open starts that add least driving, as many as ops set, marked Recommended " +
+        "(docs/decisions/0293-steering-booking-times.md).",
+    }),
   })
   .strict()
   .openapi("Start");

@@ -13,6 +13,8 @@ export interface TimeOption {
   /** The time as every surface writes one: "11:30 am". */
   readonly label: string;
   readonly open: boolean;
+  /** A word beneath the time, as "Recommended", read with it; left out for none. */
+  readonly note?: string | undefined;
 }
 
 export interface TimePeriod {
@@ -85,6 +87,7 @@ export function TimeChoice(props: {
                     }}
                   />
                   {time.label}
+                  {time.note !== undefined && <span className={styles.note}>{time.note}</span>}
                   {!time.open && <VisuallyHidden>{`, ${props.takenWord}`}</VisuallyHidden>}
                 </label>
               ))}

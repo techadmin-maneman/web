@@ -13766,6 +13766,10 @@ Request body:
     "change_charged": {
       "type": "boolean",
       "description": "Booked now, moving or cancelling it would already cost the client: it starts inside the notice."
+    },
+    "recommended": {
+      "type": "boolean",
+      "description": "One of the day's open starts that add least driving, as many as ops set, marked Recommended (docs/decisions/0293-steering-booking-times.md)."
     }
   },
   "required": [
@@ -13773,7 +13777,8 @@ Request body:
     "starts_at",
     "arrives_by",
     "open",
-    "change_charged"
+    "change_charged",
+    "recommended"
   ],
   "additionalProperties": false
 }

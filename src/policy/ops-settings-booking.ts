@@ -6,6 +6,7 @@ import { HOUR_OF_DAY } from "../config/setting-units.ts";
 import { DRIVE_ESTIMATE, DRIVE_ESTIMATE_KEYS, driveEstimateConflicts } from "./drive-estimate.ts";
 import { TECHNICIAN_RADIUS_KM } from "./reach.ts";
 import { ALLOTMENT, ALLOTMENT_KEYS } from "./allotment.ts";
+import { STEERING, STEERING_KEYS } from "./steering.ts";
 import type { OpsSetting } from "./ops-settings.ts";
 import {
   BOOKING_RULE_KEYS,
@@ -111,5 +112,19 @@ export const BOOKING_SETTINGS = [
       share_cost: { min: 0, max: 60, unit: "minutes of driving" },
     },
     fallback: ALLOTMENT,
+  },
+  {
+    name: "steering",
+    title: "Times offered to clients",
+    note: "The times that add least driving are marked Recommended in the app; a time adding more driving than the day’s best, by more than this, is not offered to clients, unless it is the day’s last. Ops see every time.",
+    unit: "minutes",
+    min: 0,
+    max: 240,
+    keys: STEERING_KEYS,
+    bounds: {
+      recommended: { min: 0, max: 10, unit: "times a day" },
+      drive_cap: { min: 5, max: 240, unit: "minutes more driving" },
+    },
+    fallback: STEERING,
   },
 ] as const satisfies readonly OpsSetting[];
