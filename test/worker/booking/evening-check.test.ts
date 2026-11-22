@@ -159,18 +159,22 @@ describe("tomorrow checked on Google", () => {
     expect(origins).toContain(28.57);
   });
 
-  // Ops fix the day's only draft on the board while Google is asked: the second read finds no draft at all.
-  it("still tells ops of a fixed visit's drive where the day's last draft was fixed meanwhile", async () => {
+  /**
+   * The day's only draft, Imran's at 11, with Vikram's fixed 10 o'clock visit beside it, both drives jammed; `meanwhile`
+   * is done to the draft while Google is asked. What was told.
+   */
+  async function whileAsked(meanwhile: string): Promise<string[]> {
     await technician(VIKRAM, "Vikram Sethi", "VS");
     await env.DB.prepare(
       "UPDATE technicians SET home_lat = 28.6, home_lng = 77.0266, home_label = 'Home' WHERE id = ?1",
     )
       .bind(VIKRAM)
       .run();
-    await booked(28.4601);
+    await booked(meanwhile.startsWith("DELETE") ? 28.4602 : 28.4601);
     await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(visitId, IMRAN).run();
     const someone = (await client()).id;
-    await env.DB.prepare("UPDATE addresses SET lat = 28.6101, lng = 77.0266 WHERE person_id = ?1").bind(someone).run();
+    const lat = meanwhile.startsWith("DELETE") ? 28.6102 : 28.6101;
+    await env.DB.prepare("UPDATE addresses SET lat = ?2, lng = 77.0266 WHERE person_id = ?1").bind(someone, lat).run();
     const fixed = await visit(someone, "service", "scheduled", indiaInstant(TUESDAY, "10:00").toISOString(), VIKRAM);
     await env.DB.prepare("UPDATE appointments SET service_city = 'Gurgaon', service_pincode = '122018' WHERE id = ?1")
       .bind(fixed)
@@ -178,14 +182,25 @@ describe("tomorrow checked on Google", () => {
     const { check, told } = google((from) => (from.lat === IMRANS_HOME || from.lat === 28.6 ? 300 : 10));
     const routes = check.routes;
     if (routes === null) throw new Error("the fake asks Google");
-    const fixing: RoutesProvider = {
+    const changing: RoutesProvider = {
       ...routes,
       route: async (stops, departing) => {
-        await env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(visitId).run();
+        await env.DB.prepare(meanwhile).bind(visitId).run();
         return routes.route(stops, departing);
       },
     };
-    await run({ ...check, routes: fixing });
+    await run({ ...check, routes: changing });
+    return told;
+  }
+
+  // Fixed in place meanwhile, the draft is a fixed visit now, whose drive Google found too long: ops are told of both.
+  it("tells ops of the drives Google found short where the day's draft was fixed in place meanwhile", async () => {
+    const told = await whileAsked("UPDATE appointments SET technician_draft = 0 WHERE id = ?1");
+    expect(told.sort()).toEqual([`leg_short:${IMRAN}:${TUESDAY}:11:00`, `leg_short:${VIKRAM}:${TUESDAY}:10:00`]);
+  });
+
+  it("tells ops of no drive to a draft gone meanwhile, and still of the fixed visit's", async () => {
+    const told = await whileAsked("UPDATE appointments SET deleted_at = '2026-09-21T06:00:00.000Z' WHERE id = ?1");
     expect(told).toEqual([`leg_short:${VIKRAM}:${TUESDAY}:10:00`]);
   });
 

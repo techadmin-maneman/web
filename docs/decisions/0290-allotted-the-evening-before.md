@@ -46,6 +46,8 @@ cut driving. The owner chose the reminder hour (6 pm until ops change it) as the
    one more re-plan. What still falls short is fixed as it stands, so the reminders still go, and ops are alerted to
    the drive (leg_short), to shift a visit or call the client. Where the routes provider is off, the estimate stands.
    The lock at the hour fixes what the check left, however much of it ran, so no run does more than one city's work.
+   A city with no draft left tomorrow is not checked: its visits were fixed at booking, whose own check asked Google
+   of the drives either side (ADR 0287), or placed by ops by hand.
    Asking for traffic bills as Compute Routes Pro rather than Essentials, one call a drive; at a few technicians a
    city that is tens of calls an evening, inside the daily route ceiling the board and booking share.
 

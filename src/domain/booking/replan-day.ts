@@ -123,10 +123,14 @@ export interface CityDay {
   readonly radii: ReadonlyMap<string, Radius>;
 }
 
-/** A city's day, India's, as booking plans on it; null where it has no draft to re-plan. */
+/**
+ * A city's day, India's, as booking plans on it; null where it has no draft to re-plan, unless `evenWithoutDrafts`
+ * asks for its technicians' days all the same (./evening-check.ts, once drafts may have been fixed meanwhile).
+ */
 export async function readDay(
   db: D1Database,
   input: { readonly city: string; readonly date: string; readonly now: Date; readonly inputs: OpsInputs },
+  { evenWithoutDrafts = false }: { readonly evenWithoutDrafts?: boolean } = {},
 ): Promise<CityDay | null> {
   const { city, date, now, inputs } = input;
   const { results: rows } = await db
@@ -146,7 +150,7 @@ export async function readDay(
       now.toISOString(),
     )
     .all<DraftRow>();
-  if (rows.length === 0) return null;
+  if (rows.length === 0 && !evenWithoutDrafts) return null;
   const { results: crewRows } = await db
     .prepare("SELECT id, home_lat, home_lng, radius_km FROM technicians WHERE city = ?1 AND active = 1")
     .bind(city)
