@@ -81,6 +81,32 @@ describe("reach at booking", () => {
     for (const start of both) expect(start.takers.map((taker) => taker.technician.id)).toEqual([IMRAN, SANDEEP]);
   });
 
+  it("lets a move stay with its own technician wherever they live, and measures everyone else as for a booking", async () => {
+    // Sandeep's visit is moved: he lives 30 km away, past his ring, and keeps it. Imran lives 4 km away; Farhan 30 km,
+    // so is not offered it; Kabir has no home pin, so goes after Imran.
+    await technician("t3", "Farhan Ali", "FA");
+    await technician("t4", "Kabir Sood", "KS");
+    await home(SANDEEP, 28.7295, 77.0266);
+    await home(IMRAN, 28.4955, 77.0266);
+    await home("t3", 28.7295, 77.0266);
+    const moved = await visit(rohit, "service", "scheduled", "2026-09-24T05:00:00.000Z", SANDEEP);
+    const [day] = await startOffers({
+      db: env.DB,
+      placing: { personId: rohit, moving: { visitId: moved, technicianId: SANDEEP } },
+      visit: { type: "service", minutes: 90 },
+      from: "2026-09-22",
+      days: 1,
+      now: NOW,
+    });
+    const starts = day?.starts ?? [];
+    const takers = [...new Set(starts.flatMap((start) => start.takers.map((taker) => taker.technician.id)))].sort();
+    expect(takers).toEqual([IMRAN, SANDEEP, "t4"].sort());
+    for (const start of starts) {
+      const ids = start.takers.map((taker) => taker.technician.id);
+      if (ids.includes(IMRAN) && ids.includes("t4")) expect(ids.indexOf(IMRAN)).toBeLessThan(ids.indexOf("t4"));
+    }
+  });
+
   it("gives a start to the one with less booked that week, though the other drives a little less", async () => {
     // Imran lives 4 km from the client and Sandeep 6, but Imran has four and a half hours booked on Monday.
     await home(IMRAN, 28.4955, 77.0266);

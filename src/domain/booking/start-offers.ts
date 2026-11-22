@@ -138,17 +138,17 @@ async function radiiIn(db: D1Database, cityOf: CityOf): Promise<ReadonlyMap<stri
 
 /**
  * Where the visit's pin sits for each technician who may take it, inside their radius or in the overflow ring past it
- * (docs/decisions/0289-who-takes-a-visit.md), those beyond both left out. A move stays with its
- * technician wherever they are.
+ * (docs/decisions/0289-who-takes-a-visit.md), those beyond both left out. A move's own technician, `keeping`, may keep
+ * it wherever they are; anyone else is measured as for a new booking.
  */
 function standings(
   technicians: readonly Technician[],
   rows: ReadonlyMap<string, Radius>,
-  at: { readonly pin: Pin | null; readonly moving: boolean; readonly inputs: OpsInputs },
+  at: { readonly pin: Pin | null; readonly keeping: string | null; readonly inputs: OpsInputs },
 ): Map<string, Placing> {
   const placed = new Map<string, Placing>();
   for (const technician of technicians) {
-    if (at.moving) {
+    if (technician.id === at.keeping) {
       placed.set(technician.id, { standing: "inside", homeKnown: true });
       continue;
     }
@@ -250,7 +250,7 @@ export async function startOffers(input: {
     reading,
     radiiIn(db, cityOf),
   ]);
-  const where = standings(able.technicians, radii, { pin, moving: (placing.moving ?? null) !== null, inputs });
+  const where = standings(able.technicians, radii, { pin, keeping: placing.moving?.technicianId ?? null, inputs });
   const technicians = able.technicians.filter((technician) => where.has(technician.id));
   const rules = planRulesOf(inputs);
   const toPlan = { minutes: visit.minutes, pin, fit: visit.fitting !== null && visit.fitting !== undefined };
