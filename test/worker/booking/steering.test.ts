@@ -1,5 +1,6 @@
 // Clients steered to the times that drive least (src/policy/steering.ts, ADR 0293): the app's and the site's times
-// leave out a start that adds more driving than ops allow, never the day's last, and mark the cheapest; a client's
+// leave out a start that adds more driving than the day's best by more than ops allow, never the day's last, and mark
+// the cheapest; a client's
 // hold takes only a start offered; ops see and may hold every start. NOW is Monday 21 September 2026, 12 noon in
 // India. Every name and number is made up.
 
@@ -15,7 +16,7 @@ import { client, IMRAN, SANA, technician, visit } from "./client-booking-fixture
 const TUESDAY = "2026-09-22";
 const SERVICE = { type: "service", tier: "standard", minutes: 60 } as const;
 const FREE = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
-/** Two times a day marked, and no time offered to a client that adds more than 10 minutes of driving. */
+/** Two times a day marked, and no time offered to a client that adds over 10 minutes more driving than the day's best. */
 const STEERED = { recommended: 2, drive_cap: 10 };
 
 let rohit: string;

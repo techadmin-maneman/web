@@ -155,13 +155,6 @@
   --compare-knob-radius: 50%;
 }
 
-/* Below 340 px three times to a row leave a chip too narrow for "Recommended": two, then. */
-@media (width < 340px) {
-  :root {
-    --time-columns: 2;
-  }
-}
-
 body {
   background: var(--white-000);
   color: var(--ink-900);

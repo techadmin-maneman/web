@@ -24,7 +24,7 @@ describe("the widths a layout changes at", () => {
     const off = sheets.flatMap((path) =>
       [...readFileSync(path, "utf8").matchAll(/@media\s+([^{]*?)\s*\{/g)]
         .map((match) => match[1] ?? "")
-        .flatMap((condition) => condition.match(/\((?:min|max)-width:[^)]*\)/g) ?? [])
+        .flatMap((condition) => condition.match(/\((?:(?:min|max)-width:|width\s*[<>])[^)]*\)/g) ?? [])
         .filter((width) => !listed.has(width))
         .map((width) => `${path} ${width}`),
     );
