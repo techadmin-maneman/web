@@ -90,10 +90,12 @@ export function Narrowing<Row>({
   /** A choice of the page's own after the table's, as the period its figures count over. */
   children?: ReactNode;
 }) {
+  const forDesk =
+    view.searchable || view.columns.some((column) => column.choice !== undefined) || children !== undefined;
   return (
     <Toolbar
       label={label}
-      className={classes(styles.bar, className)}
+      className={classes(styles.bar, forDesk ? undefined : styles.phoneBar, className)}
       end={
         view.narrowed ? (
           <>

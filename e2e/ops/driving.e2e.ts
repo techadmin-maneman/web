@@ -60,9 +60,13 @@ test("keeps to the city picked in the header, with no list of cities of its own"
   await page.goto("/driving");
   const cityLists = page.getByRole("main").getByRole("combobox", { name: copy.columns.city, exact: true });
   await expect(cityLists).toHaveCount(3);
+  // A table narrowed by its own list first: the header's city draws the report afresh, that choice gone with the list.
+  await cityLists.nth(1).selectOption("Gurgaon");
   const asked = page.waitForRequest((request) => request.url().includes("city=Gurgaon"));
   await chooseCity(page, "Gurgaon");
   await asked;
   await expect(page.getByRole("rowheader", { name: "Imran Qureshi" })).toBeVisible();
   await expect(cityLists).toHaveCount(0);
+  // With nothing left to narrow By city by on a desk, it draws no bar; a phone keeps its order there.
+  await expect(page.getByRole("search", { name: copy.narrow.cities })).toBeHidden();
 });

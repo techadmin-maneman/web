@@ -18,6 +18,7 @@ import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { dayClock, shortDate } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { useCallback, useState } from "react";
+import { hoursAndMinutes } from "../content/common.ts";
 import { driving as copy } from "../content/driving.ts";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { useCity } from "../lib/city.ts";
@@ -38,8 +39,8 @@ function Figures({ row }: { row: DriveRow }) {
   return (
     <>
       <td className={FIGURE}>{quantity(row.drives)}</td>
-      <td className={FIGURE}>{copy.duration(row.planned_minutes)}</td>
-      <td className={FIGURE}>{copy.duration(row.actual_minutes)}</td>
+      <td className={FIGURE}>{hoursAndMinutes(row.planned_minutes)}</td>
+      <td className={FIGURE}>{hoursAndMinutes(row.actual_minutes)}</td>
       <td className={FIGURE}>{copy.signed(gapOf(row))}</td>
     </>
   );
@@ -72,9 +73,9 @@ function Totals({ report }: { report: Driving }) {
   return (
     <Columns row>
       <StatTile label={copy.drives} value={quantity(sum((row) => row.drives))} />
-      <StatTile label={copy.planned} value={copy.duration(planned)} />
-      <StatTile label={copy.actual} value={copy.duration(actual)} />
-      <StatTile label={copy.gap} value={copy.signed(actual - planned)} />
+      <StatTile label={copy.planned} value={copy.total(planned)} />
+      <StatTile label={copy.actual} value={copy.total(actual)} />
+      <StatTile label={copy.gap} value={copy.signedTotal(actual - planned)} />
     </Columns>
   );
 }
@@ -227,8 +228,8 @@ function Span({ from, to }: { from: string; to: string }) {
   return null;
 }
 
-function Report({ weeks, by }: { weeks: DrivingWeeks; by: DrivingBy }) {
-  const { city } = useCity();
+/** The report for the city picked in the header, or every city: drawn afresh for each, its tables' choices with it. */
+function Report({ weeks, by, city }: { weeks: DrivingWeeks; by: DrivingBy; city: string | null }) {
   const load = useCallback(() => drivingApi.driving(weeks, by, city), [weeks, by, city]);
   const [loaded, retry] = useLoad(load);
   if (loaded.state === "loading") return <PanelLoading />;
@@ -246,6 +247,7 @@ function Report({ weeks, by }: { weeks: DrivingWeeks; by: DrivingBy }) {
 }
 
 export function DrivingScreen() {
+  const { city } = useCity();
   const [weeks, setWeeks] = useState<DrivingWeeks>("4");
   const [by, setBy] = useState<DrivingBy>("week");
   return (
@@ -279,7 +281,7 @@ export function DrivingScreen() {
           onChange={setBy}
         />
       </Toolbar>
-      <Report key={`${weeks}/${by}`} weeks={weeks} by={by} />
+      <Report key={`${weeks}/${by}/${city ?? ""}`} weeks={weeks} by={by} city={city} />
     </Stack>
   );
 }

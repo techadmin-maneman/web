@@ -13,9 +13,18 @@
     display: none;
   }
 
+  /* A bar with nothing for a desk, no search and no list: the phone's order alone, so a desk draws no bar at all. */
+  .phoneBar {
+    display: none;
+  }
+
   @media (max-width: 600px) {
     .phoneOnly {
       display: block;
+    }
+
+    .phoneBar {
+      display: flex;
     }
   }
 

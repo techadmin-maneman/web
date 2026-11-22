@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DrivingScreen } from "../../apps/ops/src/driving/DrivingScreen.tsx";
 import { driving as copy } from "../../apps/ops/src/content/driving.ts";
 import { tables } from "../../packages/ui/words.ts";
+import { hoursAndMinutes } from "../../apps/ops/src/content/common.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
 
@@ -67,8 +68,18 @@ describe("the Driving page", () => {
     await opened();
     expect(asked).toContain("/api/reports/driving?weeks=4&by=week");
     const rows = [...page.querySelectorAll("tbody tr")].map((row) => row.textContent);
-    expect(rows[0]).toBe(`GurgaonMon 14 Sep6${copy.duration(180)}${copy.duration(204)}${copy.signed(24)}`);
+    expect(rows[0]).toBe(`GurgaonMon 14 Sep6${hoursAndMinutes(180)}${hoursAndMinutes(204)}${copy.signed(24)}`);
     expect(rows[1]).toContain("Imran Qureshi");
+    expect([hoursAndMinutes(75_030), hoursAndMinutes(45), hoursAndMinutes(180)]).toEqual([
+      "1,250 h 30 min",
+      "45 min",
+      "3 h",
+    ]);
+    expect([copy.total(75_030), copy.total(5_999), copy.signedTotal(-6_720)]).toEqual([
+      "1,251 h",
+      "99 h 59 min",
+      "−112 h",
+    ]);
   });
 
   it("lists every learned drive time, and which booking plans with", async () => {

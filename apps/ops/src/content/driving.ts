@@ -1,14 +1,14 @@
 // Reports › Driving (docs/decisions/0294-learned-drive-times.md): the words of the page.
 
 import { quantity } from "@maneman/web-kit/figures";
+import { hoursAndMinutes } from "./common.ts";
 
-/** "1,250 h 30 min", "45 min", "3 h": a length of time as the console writes one, its hours grouped. */
-function duration(total: number): string {
-  const hours = Math.floor(total / 60);
-  const minutes = total % 60;
-  if (hours === 0) return `${String(minutes)} min`;
-  return minutes === 0 ? `${quantity(hours)} h` : `${quantity(hours)} h ${String(minutes)} min`;
-}
+/** "+", "−" or nothing, before a gap of minutes. */
+const signOf = (minutes: number): string => `${minutes > 0 ? "+" : ""}${minutes < 0 ? "−" : ""}`;
+
+/** A tile's total, from 100 hours in whole hours, "1,251 h", as minutes beside them would not fit; else as the console. */
+const total = (minutes: number): string =>
+  minutes >= 100 * 60 ? `${quantity(Math.round(minutes / 60))} h` : hoursAndMinutes(minutes);
 
 export const driving = {
   period: "Over",
@@ -21,9 +21,11 @@ export const driving = {
   planned: "Planned",
   actual: "Taken",
   gap: "Gap",
-  duration,
+  total,
   /** "+12 min", "−1 h 5 min", "0 min" */
-  signed: (minutes: number) => `${minutes > 0 ? "+" : ""}${minutes < 0 ? "−" : ""}${duration(Math.abs(minutes))}`,
+  signed: (minutes: number) => `${signOf(minutes)}${hoursAndMinutes(Math.abs(minutes))}`,
+  /** A tile's gap: "+27 min", "−112 h". */
+  signedTotal: (minutes: number) => `${signOf(minutes)}${total(Math.abs(minutes))}`,
   byCity: "By city",
   byTechnician: "By technician",
   columns: { city: "City", technician: "Technician", day: "Day", week: "Week of" },

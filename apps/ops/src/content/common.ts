@@ -1,6 +1,7 @@
 // The console's words every screen may use: a refusal of access, an erased client, the loading and failure lines,
 // and the site's booking page a launch sends people to.
 
+import { quantity } from "@maneman/web-kit/figures";
 import type { EnvironmentName } from "@rules/config/environments.ts";
 
 /** The words of the shared parts (@maneman/ui/words), which every screen may use too. */
@@ -38,12 +39,12 @@ export const UNCONFIRMED = "We couldn’t confirm that went through. Check befor
 /** A refusal with no words of its own. */
 export const FAILED = "That didn’t work. Try again.";
 
-/** A length of time as the console writes it: "1 h 30 min", "45 min", "3 h". */
+/** A length of time as the console writes it: "1 h 30 min", "45 min", "3 h", "1,250 h". */
 export function hoursAndMinutes(total: number): string {
   const hours = Math.floor(total / 60);
   const minutes = total % 60;
   if (hours === 0) return `${String(minutes)} min`;
-  return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} min`;
+  return minutes === 0 ? `${quantity(hours)} h` : `${quantity(hours)} h ${String(minutes)} min`;
 }
 
 /** Razorpay not answering, wherever a payment, refund or link waits on it. */
