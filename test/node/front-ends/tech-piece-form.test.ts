@@ -9,6 +9,7 @@ import {
   DECLINED,
   kitChoices,
   labelTaken,
+  noticeFor,
   pieceBody,
   profileToMatch,
   stillMissing,
@@ -123,7 +124,7 @@ describe("the piece step", () => {
     });
   });
 
-  // A label lost or never stuck on never stops the fit (docs/decisions/0291-pieces-without-labels.md).
+  // A label lost or never stuck on never stops the fit.
   it("goes on with no label once a hair system is picked from the kit, labelled or not, and sends none", () => {
     const kit = {
       ...FIRST_FIT,
@@ -164,6 +165,12 @@ describe("the piece step", () => {
     expect(stillMissing(picked, held("2026-09-21", 1), "none")).toBeNull();
     // A piece never labelled, its expiry not on the card, is the API's to judge.
     expect(stillMissing(picked, held("2026-09-20", 2), "none")).toBeNull();
+  });
+
+  it("says a hair system picked with no label was refused for its pieces having expired", () => {
+    expect(noticeFor(["stock_code"], { no_label: true, stock_code: "hs_exact" })).toBe(copy.piece.expired);
+    expect(noticeFor(["stock_code"], { piece_code: LABEL, stock_code: "hs_exact" })).toBe(copy.corrected.other);
+    expect(noticeFor(["piece_code"], { no_label: true })).toBe(copy.corrected.piece);
   });
 
   it("sends the hair system picked from the kit", () => {

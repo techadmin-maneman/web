@@ -20,7 +20,7 @@ export type Choice = string | null;
 /** What the technician has typed and chosen on the step. */
 export interface PieceForm {
   readonly code: string;
-  /** The piece has no label to read: the hair system picked from the kit is what is fitted (ADR 0291). */
+  /** The piece has no label to read: the hair system picked from the kit is what is fitted. */
   readonly noLabel: boolean;
   readonly base: string;
   readonly lot: string;
@@ -149,9 +149,12 @@ export function choiceSent(sent: PieceSent | null): Choice {
 }
 
 /** Why the step is open again: the label the API refused, or the step as a whole. */
-export function noticeFor(refusedFields: readonly string[]): string {
+export function noticeFor(refusedFields: readonly string[], sent: unknown = null): string {
   const aLabel = refusedFields.some((field) => field === "piece_code" || field === "old_piece");
-  return aLabel ? copy.corrected.piece : copy.corrected.other;
+  if (aLabel) return copy.corrected.piece;
+  // A hair system picked with no label is refused only where every piece of it the kit could give has expired.
+  const noLabel = typeof sent === "object" && sent !== null && "no_label" in sent && sent.no_label === true;
+  return noLabel && refusedFields.includes("stock_code") ? copy.piece.expired : copy.corrected.other;
 }
 
 /** The piece of the kit a label names, with the hair system it is; null for a label no piece in the kit carries. */

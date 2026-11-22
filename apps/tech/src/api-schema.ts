@@ -5869,7 +5869,7 @@ export interface components {
         PieceRequest: components["schemas"]["PieceFitted"] | components["schemas"]["PieceDeclined"] | components["schemas"]["PieceFitLater"];
         /** @description The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing. */
         PieceFitted: {
-            /** @description The label on the piece, read or typed. Left out where the piece has none, with no_label, and the step is recorded under one made for it from the visit (docs/decisions/0291-pieces-without-labels.md). */
+            /** @description The label on the piece, read or typed. Left out where the piece has none, with no_label, and the step is recorded under one made for it from the visit. */
             piece_code?: string;
             /**
              * @description The piece has no label to read, so none is sent: the hair system it is, picked from the kit by stock_code, comes out of the kit as it would with one, from a lot in date. Refused, fields stock_code, with none picked, or where every piece of it the kit holds has expired.

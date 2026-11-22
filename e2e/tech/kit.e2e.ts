@@ -139,7 +139,7 @@ test("reports the pieces not scanned missing, with the ones that came", async ({
   expect(writesTo(fake, "transfers/tr-1/receive")[0]?.body).toEqual({ units: ["MM-ESS-0000008-J"], rest: "missing" });
 });
 
-// Labels lost or unreadable never hold a top-up back (docs/decisions/0291-pieces-without-labels.md).
+// Labels lost or unreadable never hold a top-up back.
 test("receives a hair system's top-up whole without a scan", async ({ page }) => {
   const fake = await fakeTech(page);
   withAKit(fake);
@@ -165,6 +165,8 @@ test("after part of a hair system is received, takes the piece still to come", a
   const scan = coming.getByLabel(copy.scan.label);
   await scan.fill("MM-ESS-0000007-H");
   await scan.press("Enter");
+  // Once a piece is scanned, receiving them all unscanned is no longer offered beside receiving those scanned.
+  await expect(coming.getByRole("button", { name: copy.coming.receiveAll })).toHaveCount(0);
   await coming.getByRole("button", { name: copy.coming.restToCome(1) }).click();
 
   // The piece received is no longer on the top-up: the one to come is still to scan.

@@ -229,14 +229,15 @@ function NotFittedRows({ job, said, photos }: { job: Job; said: OutcomeRequest |
 }
 
 /**
- * The piece fitted at this visit, by its label: the piece step still on the phone, else the client's newest piece once
- * it is one fitted on the visit's day or after.
+ * The piece fitted at this visit, by its label: the piece step still on the phone, by its hair system where it went
+ * with no label, else the client's newest piece once it is one fitted on the visit's day or after.
  */
-function fittedPiece(job: Job, queued: readonly Queued[]): string | null {
+export function fittedPiece(job: Job, queued: readonly Queued[]): string | null {
   if (!job.steps.includes("piece")) return null;
   const sent = queued.find((event) => event.job_id === job.id && event.kind === "piece")?.body as
-    { piece_code?: unknown } | null | undefined;
+    { piece_code?: unknown; no_label?: unknown; stock_code?: unknown } | null | undefined;
   if (typeof sent?.piece_code === "string") return sent.piece_code;
+  if (sent?.no_label === true) return job.kit_hair_systems.find((each) => each.code === sent.stock_code)?.name ?? null;
   const newest = job.pieces?.[0] ?? null;
   const fittedOn = newest?.fitted_at ?? null;
   if (newest === null || fittedOn === null) return null;

@@ -5,11 +5,10 @@
 //
 // The piece is the unit its label names, where the kit holds it, and that unit is fitted
 // (docs/decisions/0161-pieces-as-units.md). A label we never made takes a piece never labelled, or failing one, a unit,
-// which has then gone missing. A piece with no label at all (docs/decisions/0291-pieces-without-labels.md) takes one the
-// same way, in date first, and it is fitted; a unit so taken carries the label made for the piece from then on, so a recall, a
-// warranty or a supplier's failures, which find a unit's piece by its label, still find it. A correction puts the units
-// the visit took back in the kit. A piece that came off is held in the kit as returned
-// (src/domain/inventory/piece-returns.ts).
+// which has then gone missing. A piece with no label at all takes one the job card would offer (./made-labels.ts), and it
+// is fitted; a unit so taken carries the label made for the piece, so a recall, a warranty or a supplier's failures,
+// which find a unit's piece by its label, still find it. A correction puts the units the visit took back in the kit,
+// each under its own label. A piece that came off is held in the kit as returned (src/domain/inventory/piece-returns.ts).
 
 import { useStillToRecord } from "../../policy/stock.ts";
 import { latestStep, takenFor, takenFromKit } from "../field/job-use.ts";
@@ -17,8 +16,9 @@ import { failureWordsOf, jobSheet } from "../field/job-sheet-settings.ts";
 import { pieceStepOf } from "./pieces.ts";
 import { fitsNothing, pieceBodyOf } from "../field/job-event-bodies.ts";
 import { pieceReturnStatements } from "./piece-returns.ts";
-import { givenBackToLots, inDateAt } from "./stock-lots.ts";
-import { takenFrom, takesOf, unitChanges, type Taken } from "./stock-units.ts";
+import { noLabelTake, ownLabelsBack } from "./made-labels.ts";
+import { givenBackToLots } from "./stock-lots.ts";
+import { hairSystemProduct, takenFrom, takesOf, unitChanges, type Taken } from "./stock-units.ts";
 
 /** The hair system a piece step's body names, if any. */
 function stockCodeOf(body: unknown): string | null {
@@ -44,15 +44,16 @@ async function pieceMove(
   kit: string,
 ): Promise<PieceMove> {
   if (move.quantity < 0) {
-    const named = move.label === null || move.noLabel ? null : [move.label];
+    if (move.noLabel) {
+      const at = { code: move.code, kit, visitId: move.jobId, day: move.day };
+      return { ...(await noLabelTake(db, at, -move.quantity)).taken, state: "fitted" };
+    }
+    const named = move.label === null ? null : [move.label];
     const fitted = named === null ? null : await takenFrom(db, { code: move.code, place: kit, quantity: 1, named });
     if (fitted !== null) return { ...fitted, state: "fitted" };
-    // With no label to read its expiry from, the piece is one of a lot in date on the visit's day, where the kit has one.
-    const lotId = move.noLabel ? (await inDateAt(db, { code: move.code, place: kit, day: move.day })).lotId : null;
-    const leaving = { code: move.code, place: kit, quantity: -move.quantity, lotId, prefer: "unlabelled" } as const;
-    const taken = await takenFrom(db, leaving);
-    // A label read but not the kit's is a unit gone missing; a piece with none to read is the one fitted.
-    return { units: taken?.units ?? [], takes: taken?.takes ?? [], state: move.noLabel ? "fitted" : "missing" };
+    // A label read but not the kit's: a piece never labelled, or failing one, a unit, gone missing.
+    const taken = await takenFrom(db, { code: move.code, place: kit, quantity: -move.quantity, prefer: "unlabelled" });
+    return { units: taken?.units ?? [], takes: taken?.takes ?? [], state: "missing" };
   }
   const { results } = await db
     .prepare(
@@ -163,11 +164,17 @@ export async function recordPieceUse(
       actor: technicianId,
     }),
   );
+  const restored: D1PreparedStatement[] = [];
+  for (const [stock, move] of moves) {
+    const product = move.state === "held" && move.units.length > 0 ? await hairSystemProduct(db, stock) : null;
+    if (product !== null) restored.push(...ownLabelsBack(db, move.units, product));
+  }
   const labels = noLabel ? relabelled(db, { moves: moves.values(), label, jobId }) : [];
   const results = await db.batch<{ quantity: number }>([
     ...taken.movements,
     ...taken.lots,
     ...units,
+    ...restored,
     ...labels,
     ...returned,
   ]);

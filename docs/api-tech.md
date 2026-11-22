@@ -10757,7 +10757,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "type": "string",
       "minLength": 3,
       "maxLength": 40,
-      "description": "The label on the piece, read or typed. Left out where the piece has none, with no_label, and the step is recorded under one made for it from the visit (docs/decisions/0291-pieces-without-labels.md)."
+      "description": "The label on the piece, read or typed. Left out where the piece has none, with no_label, and the step is recorded under one made for it from the visit."
     },
     "no_label": {
       "type": "boolean",

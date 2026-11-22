@@ -10,13 +10,6 @@
   white-space: nowrap;
 }
 
-/* A code made for a piece fitted with no label, said so on a quiet line of its own. */
-.noLabel {
-  display: block;
-  color: var(--ui-text-muted);
-  font-weight: var(--weight-regular);
-}
-
 .base {
   --local-piece-base: 84px;
   width: var(--local-piece-base);

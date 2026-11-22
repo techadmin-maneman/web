@@ -25,7 +25,7 @@ const PieceFittedSchema = z
       .openapi({
         description:
           "The label on the piece, read or typed. Left out where the piece has none, with no_label, and the step is " +
-          "recorded under one made for it from the visit (docs/decisions/0291-pieces-without-labels.md).",
+          "recorded under one made for it from the visit.",
       }),
     no_label: z
       .literal(true)

@@ -49,8 +49,11 @@ function holdUp(text: string): void {
 
 const codes: string[] = [];
 
-/** What the label's check found, as the step would say. */
-const check: { looked: Parameters<typeof Scanner>[0]["looked"] } = { looked: NOT_LOOKED };
+/** What the label's check found, as the step would say, and whether the kit holds a hair system to pick instead. */
+const check: { looked: Parameters<typeof Scanner>[0]["looked"]; kitToPick: boolean } = {
+  looked: NOT_LOOKED,
+  kitToPick: true,
+};
 
 function Step() {
   const [code, setCode] = useState("");
@@ -65,9 +68,11 @@ function Step() {
       setCode(next);
     },
     onLook: () => undefined,
-    onNoLabel: () => {
-      noLabels.push(true);
-    },
+    onNoLabel: check.kitToPick
+      ? () => {
+          noLabels.push(true);
+        }
+      : undefined,
   });
 }
 
@@ -85,6 +90,7 @@ beforeEach(() => {
   codes.length = 0;
   noLabels.length = 0;
   check.looked = NOT_LOOKED;
+  check.kitToPick = true;
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -125,7 +131,7 @@ describe("the hair system step's scanner", () => {
     expect(page.textContent).toContain(copy.piece.malformed);
   });
 
-  // A label lost or never stuck on never stops the fit (docs/decisions/0291-pieces-without-labels.md).
+  // A label lost or never stuck on never stops the fit.
   it("offers No label on it beside typing the code, for a piece with none to read", () => {
     const noLabel = [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.piece.noLabel);
     expect(noLabel).toBeDefined();
@@ -133,6 +139,16 @@ describe("the hair system step's scanner", () => {
       noLabel?.click();
     });
     expect(noLabels).toEqual([true]);
+  });
+
+  it("offers no No label on it where the kit holds no hair system to pick in its place", () => {
+    check.kitToPick = false;
+    act(() => {
+      root.render(createElement(Step));
+    });
+    const texts = [...page.querySelectorAll("button")].map((each) => each.textContent.trim());
+    expect(texts).toContain(copy.piece.typeCode);
+    expect(texts).not.toContain(copy.piece.noLabel);
   });
 
   it("offers Check again under the scanner for a label read with no signal, its code box left shut", () => {

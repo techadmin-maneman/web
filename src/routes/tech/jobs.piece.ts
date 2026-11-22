@@ -3,8 +3,8 @@
 // A hair system it names must be one of ours, since it comes out of the technician's kit
 // (src/domain/inventory/piece-use.ts). A label one of the kit's units carries names the hair system and its lot
 // itself, and an expired one is refused (docs/decisions/0163-pieces-scanned-from-the-kit.md). A piece with no label to
-// read is recorded under one made for it from the visit, the hair system it is picked from the kit
-// (docs/decisions/0291-pieces-without-labels.md), so a missing label never stops the fit.
+// read is recorded under one made for it from the visit (src/domain/inventory/made-labels.ts), the hair system it is
+// picked from the kit, so a missing label never stops the fit.
 
 import { z } from "@hono/zod-openapi";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
@@ -13,8 +13,8 @@ import { decisionAtVisit } from "../../domain/visits/one-visit.ts";
 import { fitsToday } from "../../policy/one-visit.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
 import { isHairSystem } from "../../domain/inventory/hair-systems.ts";
-import { madeLabel } from "../../domain/inventory/made-labels.ts";
-import { inDateAt } from "../../domain/inventory/stock-lots.ts";
+import { madeLabel, noLabelTake } from "../../domain/inventory/made-labels.ts";
+import { takenFor } from "../../domain/field/job-use.ts";
 import { kitUnit } from "../../domain/inventory/stock-units.ts";
 import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { technicianOf } from "../../http/technician-session.ts";
@@ -41,7 +41,8 @@ async function asTheKitHoldsIt(c: Ctx, job: WorkableJob, sent: PieceBody): Promi
 /**
  * The piece's label: the one read; or, where the piece has none, one made from the visit, for a hair system picked
  * from the kit. Refused, by its field, with neither label nor no_label, or with both, or no_label and nothing picked,
- * or picked where every piece of it the kit holds has expired, as a label naming an expired one is.
+ * or picked where every piece of it the kit could give has expired, as a label naming an expired one is; never where
+ * the visit took that hair system already, as a step sent again or corrected has.
  */
 async function labelledOf(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<PieceBody | { invalid: string[] }> {
   if (fitsNothing(sent)) return sent;
@@ -49,9 +50,12 @@ async function labelledOf(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<Pi
   if (sent.piece_code !== undefined) return { invalid: ["piece_code"] };
   const stockCode = sent.stock_code ?? null;
   if (stockCode === null) return { invalid: ["stock_code"] };
-  const day = indiaDate(job.windowStart);
-  const kit = await inDateAt(c.env.DB, { code: stockCode, place: technicianOf(c).technicianId, day });
-  if (kit.allExpired) return { invalid: ["stock_code"] };
+  const { technicianId } = technicianOf(c);
+  const at = { code: stockCode, kit: technicianId, visitId: job.id, day: indiaDate(job.windowStart) };
+  if ((await noLabelTake(c.env.DB, at, 1)).expired) {
+    const took = (await takenFor(c.env.DB, { jobId: job.id, technicianId, hairSystems: true })).get(stockCode) ?? 0;
+    if (took >= 0) return { invalid: ["stock_code"] };
+  }
   return { ...sent, piece_code: await madeLabel(c.env.DB, job.id) };
 }
 

@@ -75,20 +75,52 @@ export function ChoiceList({
   );
 }
 
+type KitChoice = { readonly hairSystem: KitHairSystem; readonly matches: boolean };
+
+/** The kit's hair systems as radio rows, one of which is the piece fitted with no label to read. */
+function KitPick(props: {
+  readonly choices: readonly KitChoice[];
+  readonly stock: string | null;
+  readonly onStock: (stock: string) => void;
+}) {
+  return (
+    <div className={shared.field}>
+      <ChoiceGroup legend={copy.piece.kit.title} legendLook="caps" ruled>
+        {props.choices.map(({ hairSystem, matches }) => (
+          <Radio
+            key={hairSystem.code}
+            name="kit-piece"
+            label={`${hairSystem.name} · ${copy.piece.kit.held(hairSystem.held)}`}
+            detail={matches ? copy.piece.kit.matches : undefined}
+            checked={props.stock === hairSystem.code}
+            onChange={() => {
+              props.onStock(hairSystem.code);
+            }}
+          />
+        ))}
+      </ChoiceGroup>
+    </div>
+  );
+}
+
 /**
  * The hair systems the kit holds, those made to the client's profile first and marked so: one tap picks the one fitted,
- * which comes out of the kit, and a second tap leaves it for a piece from elsewhere. A kit holding none shows nothing.
+ * which comes out of the kit, and a second tap leaves it for a piece from elsewhere. Where the piece has no label to
+ * read, `pick`, the one fitted is one of these, a choice of one. A kit holding none shows nothing.
  */
 export function KitPieces({
   choices,
   stock,
+  pick = false,
   onStock,
 }: {
-  choices: readonly { readonly hairSystem: KitHairSystem; readonly matches: boolean }[];
+  choices: readonly KitChoice[];
   stock: string | null;
+  pick?: boolean;
   onStock: (stock: string | null) => void;
 }) {
   if (choices.length === 0) return null;
+  if (pick) return <KitPick choices={choices} stock={stock} onStock={onStock} />;
   return (
     <section className={shared.field} aria-labelledby="kit-pieces-title">
       <h2 className={capsLook(shared.fieldTitle)} id="kit-pieces-title">

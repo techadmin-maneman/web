@@ -131,7 +131,7 @@ const unlabelledOf = (choices: ReturnType<typeof kitChoices>) =>
 
 /**
  * The label as read so far: confirmed once it is known, with no signal to check it as typed, saying so; else the
- * scanner, which also says the piece has no label.
+ * scanner, which also says the piece has no label where the kit holds a hair system to pick in its place.
  */
 function LabelRead(props: {
   readonly job: Job;
@@ -166,7 +166,7 @@ function LabelRead(props: {
       cannotFit={props.cannotFit}
       onCode={props.onCode}
       onLook={props.onLook}
-      onNoLabel={props.onNoLabel}
+      onNoLabel={kitChoices(matched, form.choice).length === 0 ? undefined : props.onNoLabel}
     />
   );
 }
@@ -217,9 +217,7 @@ function Fitting({
   const { noLabel, stock, choice, later } = form;
   const { looked, looking, look } = lookup;
   const missing = stillMissing(form, job, checkedOf(looked));
-  const setNoLabel = set.noLabel;
-  const setStock = set.stock;
-  const setFailure = set.failure;
+  const { noLabel: setNoLabel, stock: setStock, failure: setFailure } = set;
   const matched = { ...job, profile: matchTo };
   const cannotFit = (
     <CannotFit
@@ -237,7 +235,7 @@ function Fitting({
       action={fitsNothingToday(form, job) ? visit.next(copy.checklistTitles.consultation) : undefined}
       ready={missing === null}
       unfinished={missing ?? undefined}
-      notice={refused === null ? null : noticeFor(refused.fields)}
+      notice={refused === null ? null : noticeFor(refused.fields, refused.body)}
       onBack={onBack}
       onAction={() => {
         onFinish({ piece: pieceBody(form, job) });
@@ -277,6 +275,7 @@ function Fitting({
         <KitPieces
           choices={noLabel ? kitChoices(matched, choice) : unlabelledOf(kitChoices(matched, choice))}
           stock={stock}
+          pick={noLabel}
           onStock={setStock}
         />
       )}

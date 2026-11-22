@@ -156,16 +156,16 @@ test.describe("the hair system step", () => {
     });
   });
 
-  // A label lost or never stuck on never stops the fit (docs/decisions/0291-pieces-without-labels.md).
+  // A label lost or never stuck on never stops the fit.
   test("fits a piece with no label as the hair system picked from the kit, sending no label", async ({ page }) => {
     const fake = await onThePiece(page);
     await page.getByRole("button", { name: techCopy.steps.piece.noLabel, exact: true }).click();
-    await expect(page.getByRole("heading", { level: 2, name: techCopy.steps.piece.pickTitle })).toBeVisible();
-    await expect(page.getByText(techCopy.steps.piece.noLabelNote)).toBeVisible();
-    // The kit's labelled hair system is listed too, and Next waits for one to be picked.
-    const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
+    // The link tapped is gone, so the heading, now asking for a pick, takes the focus.
+    await expect(page.getByRole("heading", { level: 2, name: techCopy.steps.piece.pickTitle })).toBeFocused();
+    // The kit's labelled hair system is listed too, one of a set, and Next waits for one to be picked.
+    const kit = page.getByRole("group", { name: techCopy.steps.piece.kit.title });
     await expect(page.getByText(techCopy.steps.piece.pickFromKit, { exact: true })).toBeVisible();
-    await kit.getByRole("button").first().click();
+    await kit.getByRole("radio").first().check();
     expect(await axeViolations(page)).toEqual([]);
     await stepAction(page).click();
 
@@ -182,8 +182,19 @@ test.describe("the hair system step", () => {
     await onThePiece(page);
     await page.getByRole("button", { name: techCopy.steps.piece.noLabel, exact: true }).click();
     await page.getByRole("button", { name: techCopy.steps.piece.scanInstead }).click();
-    await expect(page.getByRole("heading", { level: 2, name: techCopy.steps.piece.scanTitle })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: techCopy.steps.piece.scanTitle })).toBeFocused();
     await expect(page.getByRole("button", { name: techCopy.steps.piece.typeCode })).toBeVisible();
+  });
+
+  test("offers no label only where the kit holds a hair system to pick in its place", async ({ page }) => {
+    const fake = await fakeTech(page);
+    fake.type = "replacement";
+    fake.pieces = [WORN];
+    fake.kitHairSystems = [];
+    startedThrough(fake, "before_photos");
+    await page.goto(`/jobs/${JOB_ID}/piece`);
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.typeCode })).toBeVisible();
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.noLabel, exact: true })).toHaveCount(0);
   });
 
   test("confirms a label from the kit against the profile and the kit, and holds an expired one", async ({ page }) => {

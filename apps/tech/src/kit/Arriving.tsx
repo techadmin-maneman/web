@@ -186,7 +186,7 @@ function Pieces(props: {
   const [busy, once] = useOneAtATime();
   const [product, details] = nameParts(topUp.name);
   const unscanned = topUp.units.length - scanned.length;
-  // Null receives the whole top-up unscanned, its labels lost or unreadable (docs/decisions/0291-pieces-without-labels.md).
+  // Null receives the whole top-up unscanned, its labels lost or unreadable.
   const receive = (labels: readonly string[] | null, rest: "on_its_way" | "missing") =>
     once(async () => {
       const answer = await api.receiveTopUp(topUp.id, labels, rest);
@@ -238,7 +238,8 @@ function Pieces(props: {
           {copy.coming.restToCome(scanned.length)}
         </TextButton>
       )}
-      {unscanned > 0 && !offline && (
+      {/* Offered before any piece is scanned, so it is never beside receiving the pieces scanned. */}
+      {scanned.length === 0 && unscanned > 0 && !offline && (
         <TextButton className={styles.rest} disabled={busy} onClick={() => void receive(null, "on_its_way")}>
           {copy.coming.receiveAll}
         </TextButton>

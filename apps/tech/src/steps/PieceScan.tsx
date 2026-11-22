@@ -8,7 +8,7 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { QrCamera } from "@maneman/ui/ScanField";
 import { StepMark } from "@maneman/ui/StepMark";
 import { TextButton } from "@maneman/ui/TextLink";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { job as jobCopy, profile as profileCopy, steps } from "../content.ts";
 import { sayKnown } from "../lang/index.ts";
@@ -62,7 +62,8 @@ function Row({ name, last = false, children }: { name: string; last?: boolean; c
 
 /**
  * What is expected: the product, the spec it is made to, and on a replacement the piece it replaces, with why it came
- * off where that was before it was due. Headed to scan the piece, or to pick it where it has no label.
+ * off where that was before it was due. Headed to scan the piece, or to pick it where it has no label; the heading
+ * takes the focus as one turns to the other, since the link tapped is gone.
  */
 export function Expected(props: {
   job: Job;
@@ -76,9 +77,18 @@ export function Expected(props: {
   const spec = fit === null ? "" : specOf(fit);
   const old = cameOff(job);
   const inProfile = profileNamesAnother(job);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const headedFor = useRef(noLabel);
+  useEffect(() => {
+    if (headedFor.current === noLabel) return;
+    headedFor.current = noLabel;
+    heading.current?.focus();
+  }, [noLabel]);
   return (
     <>
-      <h2 className={styles.title}>{noLabel ? copy.pickTitle : copy.scanTitle}</h2>
+      <h2 className={styles.title} ref={heading} tabIndex={-1}>
+        {noLabel ? copy.pickTitle : copy.scanTitle}
+      </h2>
       <dl className={styles.rows}>
         {product !== null && <Row name={productKey(job)}>{sayKnown(product)}</Row>}
         {spec !== "" && <Row name={copy.expected.spec}>{spec}</Row>}
@@ -154,8 +164,8 @@ export function Scanner(props: {
   cannotFit: ReactNode;
   onCode: (code: string) => void;
   onLook: () => void;
-  /** The piece has no label to read (docs/decisions/0291-pieces-without-labels.md). */
-  onNoLabel: () => void;
+  /** The piece has no label to read; left out where the kit holds no hair system to pick in its place. */
+  onNoLabel?: (() => void) | undefined;
 }) {
   const [typing, setTyping] = useState(given(props.code));
   // Each read opens the camera afresh, so a label the check refuses can be followed by another.
@@ -185,9 +195,11 @@ export function Scanner(props: {
         >
           {copy.typeCode}
         </TextButton>
-        <TextButton className={styles.link} onClick={props.onNoLabel}>
-          {copy.noLabel}
-        </TextButton>
+        {props.onNoLabel !== undefined && (
+          <TextButton className={styles.link} onClick={props.onNoLabel}>
+            {copy.noLabel}
+          </TextButton>
+        )}
         {props.cannotFit}
       </div>
       {typed && <TypedCode code={props.code} onCode={props.onCode} />}
@@ -220,7 +232,6 @@ export function Scanner(props: {
 export function NoLabel(props: { readonly cannotFit: ReactNode; readonly onScan: () => void }) {
   return (
     <div className={styles.scanner}>
-      <p className={styles.note}>{copy.noLabelNote}</p>
       <div className={styles.links}>
         <TextButton className={styles.link} onClick={props.onScan}>
           {copy.scanInstead}

@@ -736,10 +736,7 @@ export const clients = {
     failed: (date: string, reason: string | null) => (reason === null ? date : `${date} · ${reason}`),
     /** A piece another took the place of: "Replaced 24 Jun". */
     replaced: (date: string) => `Replaced ${date}`,
-    /**
-     * Beneath a piece fitted with no label on it, under the code made for it, which can be written on it later
-     * (docs/decisions/0291-pieces-without-labels.md).
-     */
+    /** Beneath a piece fitted with no label on it, under the code made for it, which can be written on it later. */
     noLabel: "No label",
     /** Marking one failed, and taking that back, for the reasons atFault offers. Our words. */
     failure: {

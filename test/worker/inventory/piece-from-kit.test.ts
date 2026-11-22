@@ -4,12 +4,13 @@
 //
 // What these hold: the job card lists each kit hair system's labelled pieces; a label one of them carries names its
 // hair system and lot whatever the step said; an expired one is refused; a piece with no label is fitted from the kit
-// under a label made for it, which its unit then carries (docs/decisions/0291-pieces-without-labels.md); and a piece
+// under a label made for it, which its unit then carries (src/domain/inventory/made-labels.ts); and a piece
 // that comes off at a replacement is held in the kit as returned, its unit with it where it is one of ours.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { madeLabel } from "../../../src/domain/inventory/made-labels.ts";
+import { aPerson } from "../fixtures/index.ts";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
@@ -30,9 +31,9 @@ async function added(grey: number): Promise<string> {
 }
 
 /** The labels in Imran's kit of a hair system, delivered with the lot given and handed to them. */
-async function inTheKit(of: string, lot: Record<string, string>): Promise<string[]> {
-  await job.opsPost("/api/stock/deliveries", { consumable_code: of, quantity: 2, ...lot });
-  await job.opsPost("/api/stock/transfers", { consumable_code: of, quantity: 2, from: "central", to: IMRAN });
+async function inTheKit(of: string, lot: Record<string, string>, quantity = 2): Promise<string[]> {
+  await job.opsPost("/api/stock/deliveries", { consumable_code: of, quantity, ...lot });
+  await job.opsPost("/api/stock/transfers", { consumable_code: of, quantity, from: "central", to: IMRAN });
   const { units } = await (
     await request(job.ops, `/api/stock/units?consumable_code=${of}&place_id=${IMRAN}`)
   ).json<{ units: { code: string }[] }>();
@@ -92,7 +93,7 @@ describe("a piece scanned from the kit", () => {
   });
 });
 
-// A label lost or never stuck on never stops the fit (docs/decisions/0291-pieces-without-labels.md).
+// A label lost or never stuck on never stops the fit.
 describe("a piece with no label", () => {
   beforeEach(async () => {
     await setUp("first_fit");
@@ -103,6 +104,14 @@ describe("a piece with no label", () => {
     await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
     return job.post(`/api/tech/jobs/${JOB}/piece`, body, event);
   };
+  /** The lot of the unit fitted. */
+  const fittedLot = () =>
+    env.DB.prepare(
+      `SELECT l.lot_code FROM stock_units u JOIN stock_lots l ON l.id = u.lot_id
+       WHERE u.consumable_code = ?1 AND u.state = 'fitted'`,
+    )
+      .bind(code)
+      .first<string>("lot_code");
   const recorded = async () =>
     JSON.parse(
       (await env.DB.prepare("SELECT body FROM job_events WHERE kind = 'piece' ORDER BY rowid DESC").first<string>(
@@ -150,22 +159,111 @@ describe("a piece with no label", () => {
     const step = await job.post(`/api/tech/jobs/${JOB}/piece`, { no_label: true, stock_code: code }, "event-piece-02");
     expect(step.status).toBe(202);
     // The older lot leaves first by label, but a piece with none is one known to be in date.
-    const lot = await env.DB.prepare(
-      `SELECT l.lot_code FROM stock_units u JOIN stock_lots l ON l.id = u.lot_id
-       WHERE u.consumable_code = ?1 AND u.state = 'fitted'`,
-    )
-      .bind(code)
-      .first<string>("lot_code");
-    expect(lot).toBe("NEW");
+    expect(await fittedLot()).toBe("NEW");
   });
 
-  it("is made a label no unit of stock carries already", async () => {
+  it("is not refused when sent again, or corrected, once only expired pieces are left", async () => {
+    await inTheKit(code, { lot_code: "OLD", expires_on: "2026-09-20" });
+    await inTheKit(code, { lot_code: "NEW", expires_on: "2028-03-31" }, 1);
+    const step = { no_label: true, stock_code: code };
+    expect((await fit(step, "event-piece-01")).status).toBe(202);
+    expect((await job.post(`/api/tech/jobs/${JOB}/piece`, step, "event-piece-01")).status).toBe(202);
+    expect((await job.post(`/api/tech/jobs/${JOB}/piece`, step, "event-piece-02")).status).toBe(202);
+    expect(await fittedLot()).toBe("NEW");
+  });
+
+  it("is a piece of no lot before one of a lot past its date", async () => {
+    await inTheKit(code, { lot_code: "OLD", expires_on: "2026-09-20" });
+    await inTheKit(code, {});
+    expect((await fit({ no_label: true, stock_code: code }, "event-piece-01")).status).toBe(202);
+    const lots = await env.DB.prepare("SELECT lot_id FROM stock_units WHERE consumable_code = ?1 AND state = 'fitted'")
+      .bind(code)
+      .all<{ lot_id: string | null }>();
+    expect(lots.results).toEqual([{ lot_id: null }]);
+  });
+
+  it("is a piece never labelled before a unit, whichever lot expires first", async () => {
+    const later = await inTheKit(code, { lot_code: "LATER", expires_on: "2028-03-31" });
+    // One of the later lot's pieces lost its unit, so it is a piece never labelled.
+    const lost = await env.DB.prepare("SELECT id FROM stock_units WHERE code = ?1")
+      .bind(later[0] ?? "")
+      .first<string>("id");
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM stock_unit_events WHERE unit_id = ?1").bind(lost),
+      env.DB.prepare("DELETE FROM stock_units WHERE id = ?1").bind(lost),
+    ]);
+    await inTheKit(code, { lot_code: "SOONER", expires_on: "2027-01-31" });
+    expect((await fit({ no_label: true, stock_code: code }, "event-piece-01")).status).toBe(202);
+    const fittedUnits = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM stock_units WHERE state = 'fitted'",
+    ).first<number>("n");
+    expect(fittedUnits).toBe(0);
+    const left = await env.DB.prepare(
+      `SELECT b.quantity FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
+       WHERE b.place = ?1 AND l.lot_code = 'LATER'`,
+    )
+      .bind(IMRAN)
+      .first<number>("quantity");
+    expect(left).toBe(1);
+  });
+
+  it("is never a piece kept for another client's made-to-order", async () => {
+    await inTheKit(code, { lot_code: "KEPT", expires_on: "2027-01-31" }, 1);
+    await inTheKit(code, { lot_code: "FREE", expires_on: "2028-03-31" }, 1);
+    await aPerson({ id: "p-other", name: "Someone Else" });
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO suppliers (id, name, country, currency, payment_terms_days, warranty_days, created_at, updated_at)
+         VALUES ('sup-1', 'Supplier', 'CN', 'USD', 30, 90, ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO custom_orders (id, number, person_id, product, base_width_in, base_length_in, colour, grey_percent,
+           density_percent, supplier_id, supplier_price, amount, state, raised_by, raised_at, updated_at)
+         VALUES ('co-1', 1, 'p-other', 'essential', 8, 10, '1B', 20, 100, 'sup-1', 12000, 4500000, 'paid', 'test', ?1, ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `UPDATE stock_units SET custom_order_id = 'co-1'
+         WHERE lot_id = (SELECT id FROM stock_lots WHERE lot_code = 'KEPT')`,
+      ),
+    ]);
+    expect((await fit({ no_label: true, stock_code: code }, "event-piece-01")).status).toBe(202);
+    expect(await fittedLot()).toBe("FREE");
+  });
+
+  it("gives a unit put back by a correction its own label again, and the made one to the unit fitted", async () => {
+    const other = await added(30);
+    await inTheKit(code, {});
+    await inTheKit(other, {});
+    const all = await env.DB.prepare("SELECT id, code FROM stock_units").all<{ id: string; code: string }>();
+    const before = new Map(all.results.map((unit) => [unit.id, unit.code]));
+    expect((await fit({ no_label: true, stock_code: code }, "event-piece-01")).status).toBe(202);
+    const made = (await recorded()).piece_code;
+    const first = (await env.DB.prepare("SELECT id FROM stock_units WHERE state = 'fitted'").first<string>("id")) ?? "";
+    const corrected = { no_label: true, stock_code: other };
+    expect((await job.post(`/api/tech/jobs/${JOB}/piece`, corrected, "event-piece-02")).status).toBe(202);
+    const back = await env.DB.prepare("SELECT state, code FROM stock_units WHERE id = ?1")
+      .bind(first)
+      .first<{ state: string; code: string }>();
+    expect(back).toEqual({ state: "held", code: before.get(first) });
+    const now = await env.DB.prepare("SELECT consumable_code, code FROM stock_units WHERE state = 'fitted'").all();
+    expect(now.results).toEqual([{ consumable_code: other, code: made }]);
+  });
+
+  it("is made a label no piece of another visit or unit of stock carries already", async () => {
     const own = await madeLabel(env.DB, JOB);
     const [label = ""] = await inTheKit(code, {});
     await env.DB.prepare("UPDATE stock_units SET code = ?1 WHERE code = ?2").bind(own, label).run();
-    const made = await madeLabel(env.DB, JOB);
-    expect(made).not.toBe(own);
-    expect(made).toMatch(/^MM-NL-\d{7}-[A-Z]$/);
+    const past = await madeLabel(env.DB, JOB);
+    expect(past).not.toBe(own);
+    expect(past).toMatch(/^MM-NL-\d{7}-[A-Z]$/);
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, synced_at)
+       VALUES ('pc-other', 'pc-other', ?1, ?2, '2026-03-21T06:30:00.000Z', ?3)`,
+    )
+      .bind(PERSON, past, NOW.toISOString())
+      .run();
+    const next = await madeLabel(env.DB, JOB);
+    expect([own, past]).not.toContain(next);
   });
 
   it("is refused with no hair system picked, with a label sent as well, or with neither label nor none", async () => {
