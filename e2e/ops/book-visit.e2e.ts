@@ -10,6 +10,7 @@ import {
   CLIENT,
   CONSENTS,
   empty,
+  fails,
   json,
   PIECES,
   RECORD,
@@ -101,33 +102,38 @@ async function openVisits(page: Page, over: Answers = {}): Promise<void> {
 
 const panel = (page: Page) => page.getByRole("dialog", { name: `Book a visit for ${CLIENT.name}` });
 
-/** Records the words of each element the page brings into view, as the drawer does a line beneath its buttons. */
+/** Records each element the page brings into view, as the drawer does a line beneath its buttons. */
 async function recordScrolls(page: Page): Promise<void> {
   await page.evaluate(() => {
-    const brought: string[] = [];
+    const brought: Element[] = [];
     Object.assign(window, { brought });
     type Bring = (this: Element, how?: boolean | ScrollIntoViewOptions) => void;
     const bring = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView")?.value as Bring;
     Element.prototype.scrollIntoView = function (this: Element, how?: boolean | ScrollIntoViewOptions) {
-      brought.push(this.textContent);
+      brought.push(this);
       bring.call(this, how);
     };
   });
 }
 
+/** The words of each element brought into view. */
 const broughtIntoView = (page: Page) =>
-  page.evaluate(() => (window as unknown as { brought: string[] }).brought.slice());
+  page.evaluate(() => (window as unknown as { brought: Element[] }).brought.map((each) => each.textContent));
 
-/** Whether the room the element keeps beneath it, brought into view, is at least the Book bar's height. */
+/**
+ * Whether the element was brought into view keeping room beneath it at least the Book bar's height: the margin is read
+ * off the element scrolled itself, where alone it acts, and the bar is the drawer's foot, stuck to its bottom.
+ */
 const clearsTheBar = (element: Locator) =>
   element.evaluate((node) => {
-    let kept: Element | null = node;
-    while (kept !== null && parseFloat(getComputedStyle(kept).scrollMarginBottom) === 0) kept = kept.parentElement;
-    const bar = [...(node.closest("dialog")?.querySelectorAll("*") ?? [])].find(
-      (each) => getComputedStyle(each).position === "sticky",
-    );
-    if (kept === null || bar === undefined) return false;
-    return parseFloat(getComputedStyle(kept).scrollMarginBottom) >= bar.getBoundingClientRect().height;
+    const brought = (window as unknown as { brought: Element[] }).brought;
+    const scrolled = brought.findLast((each) => each.contains(node));
+    const bar = [...(node.closest("dialog")?.querySelectorAll("*") ?? [])].find((each) => {
+      const style = getComputedStyle(each);
+      return style.position === "sticky" && style.bottom !== "auto";
+    });
+    if (scrolled === undefined || bar === undefined) return false;
+    return parseFloat(getComputedStyle(scrolled).scrollMarginBottom) >= bar.getBoundingClientRect().height;
   });
 
 /** Whether what is at the middle of the element is the element itself, not the Book bar or anything else over it. */
@@ -550,9 +556,7 @@ test("says a link that was not texted, and sends it again on asking", async ({ p
   expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
 
   // Sent again once the booking has closed: why, in the booking's own words, beneath the buttons.
-  await page.route("**/api/holds/*/send-link", (route) =>
-    route.fulfill({ status: 409, json: { error: { code: "hold_expired", request_id: "r-4" } } }),
-  );
+  await page.route("**/api/holds/*/send-link", fails(409, "hold_expired"));
   const sendAgain = panel(page).getByRole("button", { name: opsCopy.tasks.link.resend, exact: true });
   await sendAgain.click();
   const refused = panel(page)
