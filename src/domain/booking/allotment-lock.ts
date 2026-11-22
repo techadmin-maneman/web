@@ -10,6 +10,21 @@ import { readOpsInputs } from "../platform/ops-settings.ts";
 import { fixingDrafts } from "../visits/technician-draft.ts";
 import { boardMoved } from "../visits/visit-upkeep.ts";
 
+/**
+ * Whether a draft on India's `date` in `city` is left to the evening's check and lock, so nothing else moves it: one of
+ * today's or before, or tomorrow's once the half hour before its city's lock has begun (./evening-check.ts).
+ */
+export function leftToTheLock(
+  hours: ReminderHours,
+  at: { readonly city: string | null; readonly date: string },
+  now: Date,
+) {
+  const today = indiaDate(now);
+  if (at.date <= today) return true;
+  if (at.date !== addDays(today, 1)) return false;
+  return hourHasCome(lockHourOf(hours, at.city), new Date(now.getTime() + CHECK_BEFORE_LOCK_MINUTES * 60_000));
+}
+
 /** The reminder hour in force, the nation's and each city's own, as the evening's lock and its reminders read it. */
 export async function reminderHoursAt(db: D1Database, now: Date): Promise<ReminderHours> {
   const [inputs, cities] = await Promise.all([readOpsInputs(db, now), cityReminderHours(db)]);

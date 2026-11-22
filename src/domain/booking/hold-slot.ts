@@ -1,6 +1,7 @@
 // Holding a start while the client pays (docs/decisions/0210-booking-by-start-time.md). The claims' key stops two holds
 // taking the same quarter hour, or planning on a day another changed since, and a booked visit then holds its time
-// itself; holds nobody is paying for are let go first.
+// itself; holds nobody is paying for are let go first. A start a draft's move makes room for (./make-room.ts) is held
+// with that move in the same batch, so a draft fixed or moved meanwhile fails the hold, which tries the next taker.
 
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
 import { graceEnds, ownUnpaid } from "./hold-stages.ts";
@@ -19,6 +20,9 @@ import type { Price } from "../money/price-book.ts";
 import { fittingOf, type Moving, type Technician } from "./occupancy.ts";
 import { heldMinutes } from "../visits/visit-times.ts";
 import { insertRow, type SqlValue } from "../../lib/sql.ts";
+import { visitUpkeep } from "../visits/visit-upkeep.ts";
+import type { Room } from "./make-room.ts";
+import { draftChanged, draftMove, startOf } from "./draft-moves.ts";
 
 /**
  * What a hold is for: its service's kind and tier, and the length it is held and booked for, copied onto the hold as
@@ -118,6 +122,8 @@ interface Candidate {
   readonly time: string;
   readonly startsAt: Date;
   readonly revision: number;
+  /** The draft the hold moves to make room, where nobody could take the start without. */
+  readonly room?: Room;
 }
 
 /**
@@ -169,12 +175,15 @@ async function candidatesFor({
         revision: taker.revision,
         cost: taker.cost,
         homeKnown: taker.homeKnown,
+        ...(taker.room === undefined ? {} : { room: taker.room }),
       })),
     )
     .filter((candidate) => input.technicianId === undefined || candidate.technician.id === input.technicianId)
     .sort(
       (a, b) =>
         ownFirst(b) - ownFirst(a) ||
+        // A start that moves no draft before one that does.
+        Number(a.room !== undefined) - Number(b.room !== undefined) ||
         Number(b.homeKnown) - Number(a.homeKnown) ||
         a.cost - b.cost ||
         a.time.localeCompare(b.time),
@@ -194,7 +203,7 @@ async function roadCheck(
     drives: DriveCheck | null;
     candidates: readonly Candidate[];
   },
-): Promise<(technicianId: string, time: string) => Promise<boolean>> {
+): Promise<(technicianId: string, time: string, room?: Room) => Promise<boolean>> {
   const { input, now, inputs, drives, candidates } = asked;
   if (drives === null || candidates.length === 0) return () => Promise.resolve(true);
   const [plans, pin] = await Promise.all([
@@ -213,10 +222,34 @@ async function roadCheck(
     pinOfVisit(db, { personId: input.personId, pincode: input.pincode ?? null }),
   ]);
   const rules = planRulesOf(inputs);
-  return async (technicianId, time) => {
-    const day = plans.day(technicianId, input.date);
-    if (day === null) return true;
+  return async (technicianId, time, room) => {
+    const read = plans.day(technicianId, input.date);
+    if (read === null) return true;
+    // Where a draft moves to make room, the drives either side are of the day without it.
+    const day =
+      room === undefined ? read : { ...read, stops: read.stops.filter((s) => s.start !== startOf(room.draft)) };
     return drivesFit(db, drives, { day, rules, now }, { time, minutes: input.service.minutes, pin });
+  };
+}
+
+/**
+ * The move of the draft that makes room for a hold (./make-room.ts), and its upkeep, written ahead of the hold; then
+ * the lock it takes on the day it goes to, written after it and kept with it, so a hold planned on that day before the
+ * move fails until this one is booked or let go.
+ */
+function roomMade(
+  db: D1Database,
+  made: { readonly room: Room; readonly date: string },
+  at: string,
+): { readonly before: D1PreparedStatement[]; readonly after: (holdId: string) => D1PreparedStatement } {
+  const { room, date } = made;
+  const move = draftMove(db, { row: room.draft, to: room.to, date, revision: room.revision, lock: false }, at);
+  return {
+    before: [...move.statements, ...visitUpkeep(db, { visits: [room.draft.id] }, at)],
+    after: (holdId) =>
+      db
+        .prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, ?3, ?4)")
+        .bind(room.to, date, `rev:${String(room.revision + 1)}`, holdId),
   };
 }
 
@@ -278,8 +311,9 @@ function holdRow(
  * Holds the start the client chose, or the best start in their window, with whoever it costs least
  * (./start-offers.ts, src/policy/allotment.ts), never the technician who took the client's visit just before or just
  * after it (src/domain/booking/technician-rotation.ts). Where Google is on, the drives either side are checked first.
- * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
- * `holdSeconds` for payment, and keeps its time for `graceSeconds` after, both as ops set them when it is made.
+ * Holds nobody is paying for are let go first. A start only a draft's move makes room for is held with that move
+ * (./make-room.ts). Null when nobody is free, or the day is blacked out. The hold waits `holdSeconds` for payment, and
+ * keeps its time for `graceSeconds` after, both as ops set them when it is made.
  */
 export async function holdSlot({
   db,
@@ -307,31 +341,34 @@ export async function holdSlot({
   const at = now.toISOString();
   const expiresAt = new Date(now.getTime() + holdSeconds * 1000).toISOString();
   const roadFits = await roadCheck(db, { input, now, inputs, drives: drives ?? null, candidates });
-  for (const { technician, time, startsAt, revision } of candidates) {
-    if (!(await roadFits(technician.id, time))) continue;
+  for (const { technician, time, startsAt, revision, room } of candidates) {
+    if (!(await roadFits(technician.id, time, room))) continue;
     const id = crypto.randomUUID();
     const start = unitAt(time, schedule.on(date));
     // A hold is labelled with the window its start falls in, whatever window it was asked in.
     const held = { ...input, window: windowAt(time, schedule.on(date)) };
     const claims = claimsAt(time, service.minutes + inputs.bookingRules.wrap_up, revision);
+    const making = room === undefined ? null : roomMade(db, { room, date }, at);
     try {
       await db.batch([
         ...(input.alongside ?? []),
         ...releaseDeadHolds(db, now, from === "app" ? personId : null),
+        ...(making?.before ?? []),
         insertRow(db, "slot_holds", holdRow(held, { id, technician, start, startsAt, at, expiresAt, graceSeconds })),
         ...claims.map((claim) =>
           db
             .prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, ?3, ?4)")
             .bind(technician.id, date, claim, id),
         ),
+        ...(making === null ? [] : [making.after(id)]),
         ...(input.afterHold?.(id) ?? []),
       ]);
       return { id, service, date, window: held.window, technician, startUnit: start, startsAt, price, expiresAt };
     } catch (error) {
-      // Another hold took this technician's time, or changed their day, between the look and the write: the next one,
-      // then. Any other
-      // failure, a new number's person written twice at once say, is not a lost window.
-      if (!failedUniqueOn(error, "slot_claims")) throw error;
+      // Another hold took this technician's time, or changed their day, or the draft making room was fixed or moved,
+      // between the look and the write: the next one, then. Any other failure, a new number's person written twice at
+      // once say, is not a lost window.
+      if (!draftChanged(error)) throw error;
     }
   }
   return null;
