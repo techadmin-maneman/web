@@ -56,7 +56,7 @@ describe("a booking held on its link, on Home", () => {
         ],
       }),
     );
-    expect(page.textContent).toContain(copy.line("first fit", "Sun 22 Nov at 10 am", "7 am Sun 22 Nov"));
+    expect(page.textContent).toContain(copy.line("first fit", "Sun 22 Nov at 10 am", "7 am"));
     expect(page.querySelector("a")?.getAttribute("href")).toBe("https://rzp.io/i/held");
     expect(page.textContent).toContain(copy.pay("Rs. 21,500"));
   });

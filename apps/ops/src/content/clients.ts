@@ -391,6 +391,8 @@ export const clients = {
         held: (kind: string, when: string, until: string) => `A ${kind} for ${when} is held until ${until}, unpaid.`,
         paid: (kind: string, when: string) => `A ${kind} for ${when} is paid and being booked.`,
         letGo: "Let it go",
+        /** Asked before a held booking is let go: its link stops working. */
+        letGoAsk: "Let this booking go? Its payment link stops working.",
         lettingGo: "Letting go…",
         letGone: "Let go. Book again.",
         errors: {

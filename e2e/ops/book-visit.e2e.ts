@@ -20,6 +20,7 @@ import {
   type OpsReply,
 } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { DISMISS } from "../../packages/ui/words.ts";
 
 const AVAILABILITY: Call = "GET /api/visits/availability";
 const BOOK: Call = "POST /api/visits";
@@ -513,10 +514,21 @@ test("names the booking held on its link that refuses another of its kind, and l
     .click();
   await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.already_booked);
   await expect(panel(page)).toContainText(
-    opsCopy.clients.visits.book.inTheWay.held("service visit", "Wed 22 Sep, 12 pm", "7:30 am Wed 22 Sep"),
+    opsCopy.clients.visits.book.inTheWay.held("service visit", "Wed 22 Sep, 12 pm", "7:30 am"),
   );
-  await panel(page).getByRole("button", { name: opsCopy.clients.visits.book.inTheWay.letGo }).click();
-  await expect(panel(page)).toContainText(opsCopy.clients.visits.book.inTheWay.letGone);
+  const inTheWay = opsCopy.clients.visits.book.inTheWay;
+  await panel(page)
+    .getByRole("button", { name: `${inTheWay.letGo} · service visit, Wed 22 Sep, 12 pm`, exact: true })
+    .click();
+  // Asked once more, since its link stops working; kept, nothing is let go.
+  const asked = panel(page).getByRole("group", { name: inTheWay.letGoAsk });
+  await asked.getByRole("button", { name: DISMISS.keep, exact: true }).click();
+  expect(letGo).toBe(false);
+  await panel(page)
+    .getByRole("button", { name: `${inTheWay.letGo} · service visit, Wed 22 Sep, 12 pm` })
+    .click();
+  await asked.getByRole("button", { name: inTheWay.letGo, exact: true }).click();
+  await expect(panel(page)).toContainText(inTheWay.letGone);
   await expect(panel(page).getByRole("alert")).toHaveCount(0);
   expect(letGo).toBe(true);
 });

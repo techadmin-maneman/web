@@ -107,7 +107,7 @@ export const home = {
   credits: freeVisitsTile,
   /** A visit ops booked that waits on the payment link they sent: held until it is paid, then booked. */
   heldBooking: {
-    /** "Your first fit, Sun 22 Nov at 10 am, is held until 7 am Sun 22 Nov." */
+    /** "Your first fit, Sun 22 Nov at 10 am, is held until 7 am." */
     line: (visit: string, when: string, until: string) => `Your ${visit}, ${when}, is held until ${until}.`,
     pay: (amount: string) => `Pay ${amount} to confirm`,
   },

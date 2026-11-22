@@ -18,3 +18,7 @@
   display: grid;
   gap: var(--sp-8);
 }
+
+.inTheWay p {
+  margin: 0;
+}

@@ -102,6 +102,8 @@ function BookingRefusal({
   clear: (failed: null) => void;
 }) {
   const [letGo, setLetGo] = useState(false);
+  // A refusal after it, from another try, ends what was said of the let-go.
+  if (letGo && refused !== null) setLetGo(false);
   return (
     <>
       {refused !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: refused })} />}

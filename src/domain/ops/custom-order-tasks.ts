@@ -32,7 +32,7 @@ export const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: st
 
 /**
  * Arrived: a piece reserved to it is held, in the warehouse or a kit, and no first fit or replacement is booked, under
- * way or paid for the client to fit it at. Where it is held, so ops know whether it must first go to a technician's
+ * way or paid for the client to fit it at. Read from the pieces held now, never every order ever paid. Where it is held, so ops know whether it must first go to a technician's
  * kit, and which fit to book.
  */
 export const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: string } = {
@@ -41,11 +41,12 @@ export const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: str
          ${ORDER_NUMBER} || ' · ' || ${HELD_AT} AS detail,
          json_object('order', k.number, 'piece_code', u.code, 'held_at', ${HELD_AT}, 'fit', ${FIT}) AS facts,
          u.labelled_at AS since, NULL AS due_by, '' AS episode
-    FROM custom_orders k
-    JOIN stock_units u INDEXED BY stock_units_reserved ON u.custom_order_id = k.id AND u.state = 'held'
+    FROM stock_units u INDEXED BY stock_units_held
+    JOIN custom_orders k ON k.id = u.custom_order_id
     LEFT JOIN stock_places sp ON sp.id = u.place LEFT JOIN technicians t ON t.id = u.place
     JOIN people pe ON pe.id = k.person_id
-   WHERE k.state = 'paid' AND k.refunded_at IS NULL AND pe.erased_at IS NULL
+   WHERE u.state = 'held' AND u.custom_order_id IS NOT NULL
+     AND k.state = 'paid' AND k.refunded_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = k.person_id
        AND a.type IN ('first_fit', 'replacement') AND ${statusIn("a.status", VISIT_LIVE)} AND a.deleted_at IS NULL)
      AND NOT EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = k.person_id

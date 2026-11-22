@@ -87,7 +87,8 @@ const ORDER_COLUMNS = `id, number, supplier_id, currency, state, expected_on, no
   second_approved_by, sent_at, cancel_reason,
   (SELECT json_object('id', k.id, 'number', k.number, 'person_id', k.person_id,
       'person_name', CASE WHEN pe.erased_at IS NULL THEN pe.name END)
-    FROM custom_orders k JOIN people pe ON pe.id = k.person_id WHERE k.po_id = purchase_orders.id) AS custom_order`;
+    FROM po_lines l JOIN custom_orders k ON k.id = l.custom_order_id JOIN people pe ON pe.id = k.person_id
+    WHERE l.po_id = purchase_orders.id AND l.custom_order_id IS NOT NULL LIMIT 1) AS custom_order`;
 
 /** The custom order an order's row names, as SQLite wrote it. */
 function customOrderOf(written: string | null): CustomOrderOf | null {

@@ -39,6 +39,7 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   erasure_request: "Decide in Deletion requests",
   grievance: "Answer in Concerns",
   fit_guarantee_claim: "Open the chat",
+  custom_order_to_send: "Send in Purchasing",
 };
 
 /**
