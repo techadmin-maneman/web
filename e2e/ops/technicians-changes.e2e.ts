@@ -270,7 +270,7 @@ test("lists the technicians switched off apart, and switches one back on", async
         leave: [],
         hours: [],
         home: null,
-        reach_min: null,
+        radius_km: null,
       },
     ],
     switched_off: [],

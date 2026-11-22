@@ -193,7 +193,7 @@ export function TechnicianScreen({ technicianId, tab }: { technicianId: string; 
       <TechnicianPage
         entry={entry}
         cities={roster.cities}
-        everyone={roster.default_reach_min}
+        everyone={roster.default_radius_km}
         tab={tab}
         onChange={readAgain}
       />

@@ -16704,7 +16704,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Set how far a technician goes from home, in minutes of driving, or return them to the business's with null */
+        /** Set how far a technician goes from home, in straight-line km, or return them to the business's with null */
         post: {
             parameters: {
                 query?: never;
@@ -16727,11 +16727,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            reach_min: number | null;
+                            radius_km: number | null;
                         };
                     };
                 };
-                /** @description invalid_request: a reach outside 10 to 180 minutes */
+                /** @description invalid_request: a radius outside 1 to 60 km */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -17500,7 +17500,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+                    name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
                 };
                 cookie?: never;
             };
@@ -29448,8 +29448,8 @@ export interface components {
                     lat: number;
                     lng: number;
                 } | null;
-                reach_min: number;
-                reach_km: number;
+                radius_km: number;
+                ring_km: number;
             }[];
             pincodes: {
                 pincode: string;
@@ -29462,11 +29462,11 @@ export interface components {
                 } | null;
                 nearest: {
                     technician_id: string;
-                    minutes: number;
+                    km: number;
                 } | null;
-                /** @description Whether any reach takes it in; null where nothing could be measured. */
+                /** @description Whether any technician's ring takes it in; null where nothing could be measured. */
                 reached: boolean | null;
-                /** @description The technicians whose reach takes it in. */
+                /** @description The technicians whose radius takes it in. */
                 reached_by: string[];
             }[];
         };
@@ -31254,8 +31254,8 @@ export interface components {
                 hours: components["schemas"]["WorkingDay"][];
                 /** @description Where their day starts; null until ops set it. */
                 home: components["schemas"]["TechnicianHome"] | null;
-                /** @description Minutes of driving from home they take visits within; null takes the business's (ADR 0223). */
-                reach_min: number | null;
+                /** @description Straight-line km from home they take visits within; null takes the business's (ADR 0289). */
+                radius_km: number | null;
             }[];
             /** @description Technicians switched off, by name: they cannot sign in, and nothing is booked on them. */
             switched_off: {
@@ -31276,8 +31276,8 @@ export interface components {
             }[];
             /** @description The cities the caller may give a technician, those their Operations MANAGE reaches, in display order. */
             cities: string[];
-            /** @description The business's reach from Settings, which a technician with no reach of their own takes (ADR 0223). */
-            default_reach_min: number;
+            /** @description The business's radius from Settings, which a technician with no radius of their own takes (ADR 0289). */
+            default_radius_km: number;
         };
         TechnicianLeave: {
             /** Format: uuid */
@@ -32069,7 +32069,7 @@ export interface components {
             session_token: string;
         };
         TechnicianReach: {
-            reach_min: number | null;
+            radius_km: number | null;
         };
         TechnicianPay: {
             /**
@@ -32162,7 +32162,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;
@@ -32195,7 +32195,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_reach_min" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;

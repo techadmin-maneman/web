@@ -6,7 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { tellOfUnreachedPincodes } from "../../../src/domain/clients/pincode-reach.ts";
-import { DRIVE_ESTIMATE } from "../../../src/policy/drive-estimate.ts";
+import { ALLOTMENT } from "../../../src/policy/allotment.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
 
@@ -94,7 +94,7 @@ describe("served pincodes out of every reach", () => {
         return Promise.resolve();
       },
     };
-    const inputs = { technicianReachMin: 45, driveEstimate: DRIVE_ESTIMATE };
+    const inputs = { technicianRadiusKm: 10, allotment: ALLOTMENT };
     await tellOfUnreachedPincodes(env.DB, deps, inputs);
     expect(alerts).toEqual(["pincodes_unreached:Gurgaon"]);
     await env.DB.prepare("UPDATE serviceable_pincodes SET served = 0 WHERE pincode = '122099'").run();

@@ -1,5 +1,5 @@
-// A city's reach under Areas (src/domain/clients/pincode-reach.ts, docs/decisions/0223-reach-from-home.md): its
-// technicians, how far each goes from home, and its pincodes with the nearest of them; and the same as one picture,
+// A city's reach under Areas (src/domain/clients/pincode-reach.ts, docs/decisions/0223-reach-from-home.md, 0289): its
+// technicians, their radius and ring from home, and its pincodes with the nearest of them; and the same as one picture,
 // drawn by the routes provider and kept a quarter of an hour, as the day map is.
 
 import { z } from "@hono/zod-openapi";
@@ -17,7 +17,7 @@ const MAP_KEPT_SECONDS = 15 * 60;
 const CITY = z.object({ city: z.string().trim().min(1).max(60) });
 const PIN = z.object({ lat: z.number(), lng: z.number() }).strict();
 
-/** The map's colours: served, held and not served, paused, served but out of every reach; and a home and its reach. */
+/** The map's colours: served, held and not served, paused, served but out of every reach; and a home and its radius. */
 const COLOURS = { served: "2e7d32", held: "8a8a8a", paused: "e0a100", unreached: "c62828", home: "1b2a49" } as const;
 
 const reachRoute = opsRoute({
@@ -38,8 +38,8 @@ const reachRoute = opsRoute({
                   name: z.string(),
                   initials: z.string(),
                   home: z.union([PIN, z.null()]),
-                  reach_min: z.number().int(),
-                  reach_km: z.number(),
+                  radius_km: z.number().int(),
+                  ring_km: z.number(),
                 })
                 .strict(),
             ),
@@ -51,14 +51,11 @@ const reachRoute = opsRoute({
                   served: z.boolean(),
                   paused_until: z.union([z.iso.date(), z.null()]),
                   centre: z.union([PIN, z.null()]),
-                  nearest: z.union([
-                    z.object({ technician_id: z.string(), minutes: z.number().int() }).strict(),
-                    z.null(),
-                  ]),
-                  reached: z
-                    .union([z.boolean(), z.null()])
-                    .openapi({ description: "Whether any reach takes it in; null where nothing could be measured." }),
-                  reached_by: z.array(z.string()).openapi({ description: "The technicians whose reach takes it in." }),
+                  nearest: z.union([z.object({ technician_id: z.string(), km: z.number() }).strict(), z.null()]),
+                  reached: z.union([z.boolean(), z.null()]).openapi({
+                    description: "Whether any technician's ring takes it in; null where nothing could be measured.",
+                  }),
+                  reached_by: z.array(z.string()).openapi({ description: "The technicians whose radius takes it in." }),
                 })
                 .strict(),
             ),
@@ -103,7 +100,7 @@ function areaMapOf(reach: Awaited<ReturnType<typeof cityReach>>): AreaMap {
   return {
     pincodes: groups,
     homes: homed.map((each) => ({ colour: COLOURS.home, label: each.initials.slice(0, 1), point: each.home })),
-    reaches: homed.map((each) => ({ colour: COLOURS.home, centre: each.home, km: each.reach_km })),
+    reaches: homed.map((each) => ({ colour: COLOURS.home, centre: each.home, km: each.radius_km })),
   };
 }
 

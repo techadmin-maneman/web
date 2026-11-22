@@ -14,7 +14,7 @@ import { routeReach } from "../../http/staff-access.ts";
 import { reachesCity } from "../../policy/access.ts";
 import { weekProblems } from "../../policy/start-times.ts";
 import { rosterTechnician } from "../../domain/dispatch/technician-roster.ts";
-import { setHome, setReach, setWeek } from "../../domain/dispatch/technician-days.ts";
+import { setHome, setRadius, setWeek } from "../../domain/dispatch/technician-days.ts";
 import { SuggestionsSchema } from "../schemas/address.ts";
 import { HomeSchema, WorkingDaySchema } from "../schemas/technician-days.ts";
 
@@ -109,22 +109,22 @@ const homeRoute = opsRoute({
 const reachRoute = opsRoute({
   method: "post",
   path: "/api/technicians/{id}/reach",
-  summary: "Set how far a technician goes from home, in minutes of driving, or return them to the business's with null",
+  summary: "Set how far a technician goes from home, in straight-line km, or return them to the business's with null",
   request: {
     params: technicianId,
     body: {
       required: true,
       ...json(
         z
-          .object({ reach_min: z.union([z.number().int().min(10).max(180), z.null()]) })
+          .object({ radius_km: z.union([z.number().int().min(1).max(60), z.null()]) })
           .strict()
           .openapi("TechnicianReach"),
       ),
     },
   },
   responses: {
-    200: { description: "Set", ...json(z.object({ reach_min: z.union([z.number().int(), z.null()]) }).strict()) },
-    400: errorResponse("invalid_request: a reach outside 10 to 180 minutes"),
+    200: { description: "Set", ...json(z.object({ radius_km: z.union([z.number().int(), z.null()]) }).strict()) },
+    400: errorResponse("invalid_request: a radius outside 1 to 60 km"),
     404: unknownTechnician,
   },
 });
@@ -192,11 +192,11 @@ export function registerOpsTechnicianDays(app: App): void {
 
   app.openapi(reachRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const { reach_min: reachMin } = c.req.valid("json");
+    const { radius_km: radiusKm } = c.req.valid("json");
     if (!(await inReach(c, id))) return refuse(c, "not_found");
-    await setReach(c.env.DB, {
+    await setRadius(c.env.DB, {
       technicianId: id,
-      reachMin,
+      radiusKm,
       audit: {
         surface: "ops",
         actor: actorOf(c),
@@ -206,6 +206,6 @@ export function registerOpsTechnicianDays(app: App): void {
       },
       now: c.var.deps.now(),
     });
-    return c.json({ reach_min: reachMin }, 200);
+    return c.json({ radius_km: radiusKm }, 200);
   });
 }

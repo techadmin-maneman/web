@@ -50,7 +50,7 @@ function Unreached({ reach, onChoose }: { reach: CityReach; onChoose: (pincodes:
         {unreached.map((each) => {
           const nearest = each.nearest;
           const name = nearest === null ? undefined : names.get(nearest.technician_id);
-          const said = nearest === null || name === undefined ? null : copy.nearest(name, nearest.minutes);
+          const said = nearest === null || name === undefined ? null : copy.nearest(name, nearest.km);
           return (
             <li key={each.pincode} className={shared.missing}>
               {copy.unreached(each.pincode, each.area, said)}
@@ -84,7 +84,9 @@ function Within({ reach, onChoose }: { reach: CityReach; onChoose: (pincodes: Re
         const theirs = reach.pincodes.filter((each) => each.reached_by.includes(technician.id));
         return (
           <li key={technician.id} className={shared.launchItem}>
-            <p className={shared.launchLine}>{copy.within(technician.name, technician.reach_min, theirs.length)}</p>
+            <p className={shared.launchLine}>
+              {copy.within(technician.name, technician.radius_km, technician.ring_km, theirs.length)}
+            </p>
             <Button
               variant="outline"
               size="small"

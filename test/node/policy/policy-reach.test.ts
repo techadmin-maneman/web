@@ -1,33 +1,52 @@
-// How far a technician goes from home (src/policy/reach.ts, ADR 0223), and what a job short of its consumables owes
-// (src/policy/consumable-shortfall.ts, ADR 0222).
+// How far a technician goes from home and who of them takes a visit (src/policy/reach.ts, src/policy/allotment.ts,
+// ADR 0289), and what a job short of its consumables owes (src/policy/consumable-shortfall.ts, ADR 0222).
 
 import { describe, expect, it } from "vitest";
-import { DRIVE_ESTIMATE } from "../../../src/policy/drive-estimate.ts";
-import { reachKm, reachMinutes, TECHNICIAN_REACH_MIN, withinReach } from "../../../src/policy/reach.ts";
+import { ALLOTMENT, costOf } from "../../../src/policy/allotment.ts";
+import { ringKm, standingOf } from "../../../src/policy/reach.ts";
 import { needsReason, shortfallOf } from "../../../src/policy/consumable-shortfall.ts";
 
 const HOME = { lat: 28.4595, lng: 77.0266 };
-/** About 4 km north, and about 30 km north. */
-const NEAR = { lat: 28.4955, lng: 77.0266 };
-const FAR = { lat: 28.7295, lng: 77.0266 };
+/** A pin `km` due north of home. */
+const north = (km: number) => ({ lat: HOME.lat + km / 111.195, lng: HOME.lng });
 
-describe("a technician's reach", () => {
-  it("takes in what the estimate drives within it, and leaves out what it does not", () => {
-    expect(reachMinutes(HOME, NEAR, DRIVE_ESTIMATE)).toBeLessThan(TECHNICIAN_REACH_MIN);
-    expect(withinReach({ home: HOME, to: NEAR, reach: 45, estimate: DRIVE_ESTIMATE })).toBe(true);
-    expect(withinReach({ home: HOME, to: FAR, reach: 45, estimate: DRIVE_ESTIMATE })).toBe(false);
-    expect(withinReach({ home: HOME, to: FAR, reach: 180, estimate: DRIVE_ESTIMATE })).toBe(true);
+describe("a technician's radius", () => {
+  const standing = (km: number) => standingOf({ home: HOME, to: north(km), radiusKm: 10, overflow: 150 });
+
+  it("takes in what is inside it, puts what is in the ring past it in the overflow, and leaves out the rest", () => {
+    expect(standing(4)).toBe("inside");
+    expect(standing(9.9)).toBe("inside");
+    expect(standing(12)).toBe("overflow");
+    expect(standing(14.9)).toBe("overflow");
+    expect(standing(15.5)).toBe("beyond");
+    expect(ringKm(10, 150)).toBe(15);
   });
 
-  it("leaves it to the city where a home or the address has no pin", () => {
-    expect(withinReach({ home: null, to: FAR, reach: 10, estimate: DRIVE_ESTIMATE })).toBe(true);
-    expect(withinReach({ home: HOME, to: null, reach: 10, estimate: DRIVE_ESTIMATE })).toBe(true);
+  it("puts a technician with no home in the ring, and leaves an address with no pin to the city", () => {
+    expect(standingOf({ home: null, to: north(1), radiusKm: 10, overflow: 150 })).toBe("overflow");
+    expect(standingOf({ home: HOME, to: null, radiusKm: 10, overflow: 150 })).toBe("inside");
+  });
+});
+
+describe("what a technician taking a visit costs", () => {
+  const taking = { addedDrive: 20, overflow: false, piece: null, weekMinutes: 600 };
+
+  it("is the driving it adds, where nothing else counts", () => {
+    expect(costOf(taking, 600, ALLOTMENT)).toBe(20);
   });
 
-  it("draws as the straight-line kilometres the estimate runs backwards, the time to park left out", () => {
-    // 45 minutes, ten of them to park: 35 minutes at 24 km/h is 14 km of road, 10 km in a straight line at 140%.
-    expect(reachKm(45, DRIVE_ESTIMATE)).toBeCloseTo(10, 5);
-    expect(reachKm(5, DRIVE_ESTIMATE)).toBe(0);
+  it("adds the ring, a piece to fetch or find, and each hour more booked that week than the least", () => {
+    expect(costOf({ ...taking, overflow: true }, 600, ALLOTMENT)).toBe(50);
+    expect(costOf({ ...taking, piece: "kit" }, 600, ALLOTMENT)).toBe(20);
+    expect(costOf({ ...taking, piece: "stockroom" }, 600, ALLOTMENT)).toBe(50);
+    expect(costOf({ ...taking, piece: "none" }, 600, ALLOTMENT)).toBe(110);
+    expect(costOf(taking, 420, ALLOTMENT)).toBe(50);
+  });
+
+  it("lets a kit holder a little further away win over one nearer who would need the piece found", () => {
+    const holder = costOf({ ...taking, addedDrive: 45, piece: "kit" }, 600, ALLOTMENT);
+    const nearer = costOf({ ...taking, addedDrive: 15, piece: "none" }, 600, ALLOTMENT);
+    expect(holder).toBeLessThan(nearer);
   });
 });
 

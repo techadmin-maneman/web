@@ -240,6 +240,13 @@ export const settings = {
         evening_from: "Evening rush from",
         evening_to: "Evening rush until",
       },
+      allotment: {
+        overflow: "Overflow ring",
+        overflow_cost: "Going into the ring",
+        stockroom_cost: "Piece in the stockroom",
+        no_piece_cost: "Piece nowhere in the city",
+        share_cost: "Each hour more booked that week",
+      },
       no_show_charge: dispatch.typeNames,
       // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
       no_show_waiver: { payment: "The visit’s payment", credit: "The free service visit used" },

@@ -1,5 +1,5 @@
-// The week around a visit's day that a tie between technicians is weighed over (./start-offers.ts): whoever has the
-// least that day, then over the week, so a tie never goes by name. Who may take it at all is
+// The week around a visit's day that each technician's share of the work is weighed over (./start-offers.ts,
+// src/policy/allotment.ts), so a tie never goes by name. Who may take it at all is
 // src/domain/booking/technician-rotation.ts's.
 
 import { addDays } from "../../lib/india-time.ts";

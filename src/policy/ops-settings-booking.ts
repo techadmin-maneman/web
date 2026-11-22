@@ -1,10 +1,11 @@
 // The settings of booking by start time (docs/decisions/0210-booking-by-start-time.md), in the Rules table of
 // ./ops-settings.ts: the starts, the arrival window and the day's limits; which visits may be booked for today; a
-// city's working hours; and the drive estimate.
+// city's working hours; the drive estimate; and who of the technicians takes a visit.
 
 import { HOUR_OF_DAY } from "../config/setting-units.ts";
 import { DRIVE_ESTIMATE, DRIVE_ESTIMATE_KEYS, driveEstimateConflicts } from "./drive-estimate.ts";
-import { TECHNICIAN_REACH_MIN } from "./reach.ts";
+import { TECHNICIAN_RADIUS_KM } from "./reach.ts";
+import { ALLOTMENT, ALLOTMENT_KEYS } from "./allotment.ts";
 import type { OpsSetting } from "./ops-settings.ts";
 import {
   BOOKING_RULE_KEYS,
@@ -84,14 +85,31 @@ export const BOOKING_SETTINGS = [
     conflicts: (value) => driveEstimateConflicts(value),
   },
   {
-    // A technician's own reach, set on their page, comes first (docs/decisions/0223-reach-from-home.md).
-    name: "technician_reach_min",
-    title: "Technician reach",
-    note: "Minutes of driving from home within which a technician is offered visits, unless their own is set.",
-    unit: "minutes",
-    min: 10,
-    max: 180,
+    // A technician's own radius, set on their page, comes first (docs/decisions/0289-who-takes-a-visit.md).
+    name: "technician_radius_km",
+    title: "Technician radius",
+    note: "How far from home, in a straight line, a technician takes visits, unless their own is set.",
+    unit: "km",
+    min: 1,
+    max: 60,
     keys: null,
-    fallback: TECHNICIAN_REACH_MIN,
+    fallback: TECHNICIAN_RADIUS_KM,
+  },
+  {
+    name: "allotment",
+    title: "Who takes a visit",
+    note: "The technician a visit costs least goes. Each of these counts as minutes of driving.",
+    unit: "minutes",
+    min: 0,
+    max: 480,
+    keys: ALLOTMENT_KEYS,
+    bounds: {
+      overflow: { min: 100, max: 300, unit: "% of the radius" },
+      overflow_cost: { min: 0, max: 240, unit: "minutes of driving" },
+      stockroom_cost: { min: 0, max: 240, unit: "minutes of driving" },
+      no_piece_cost: { min: 0, max: 480, unit: "minutes of driving" },
+      share_cost: { min: 0, max: 60, unit: "minutes of driving" },
+    },
+    fallback: ALLOTMENT,
   },
 ] as const satisfies readonly OpsSetting[];

@@ -16,6 +16,7 @@
 import type { RefusedMessages } from "../../policy/message-refusals.ts";
 import type { Ratings } from "../../policy/ratings.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
+import type { Allotment } from "../../policy/allotment.ts";
 import type { BookingRules, WorkingHours } from "../../policy/start-times.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import type { CareHours } from "../../policy/care-hours.ts";
@@ -60,8 +61,10 @@ export interface OpsInputs {
   readonly sameDayBooking: Readonly<Record<VisitType, string>>;
   readonly workingHours: WorkingHours;
   readonly driveEstimate: DriveEstimate;
-  /** Minutes of driving from home a technician takes visits within, unless their own is set (src/policy/reach.ts). */
-  readonly technicianReachMin: number;
+  /** Straight-line km from home a technician takes visits within, unless their own is set (src/policy/reach.ts). */
+  readonly technicianRadiusKm: number;
+  /** The overflow ring and what each of a choice's costs counts as (src/policy/allotment.ts). */
+  readonly allotment: Allotment;
   readonly checkinRadiusM: number;
   /** The check-in radius at a pin Google placed only roughly (src/policy/check-in.ts). */
   readonly checkinRadiusApproximateM: number;
@@ -155,7 +158,8 @@ function shape(values: OpsValues): OpsInputs {
     sameDayBooking: values.same_day_booking,
     workingHours: values.working_hours,
     driveEstimate: values.drive_estimate,
-    technicianReachMin: values.technician_reach_min,
+    technicianRadiusKm: values.technician_radius_km,
+    allotment: values.allotment,
     checkinRadiusM: values.checkin_radius_m,
     checkinRadiusApproximateM: values.checkin_radius_approximate_m,
     noShowWaitMin: values.no_show_wait_min,

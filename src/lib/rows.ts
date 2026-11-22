@@ -1879,6 +1879,7 @@ export interface Rows {
     readonly home_lng: number | null;
     readonly reach_min: number | null;
     readonly training_end_date: string | null;
+    readonly radius_km: number | null;
   };
   readonly terms_acceptances: {
     readonly id: string;

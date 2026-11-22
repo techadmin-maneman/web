@@ -1,6 +1,6 @@
 // The starts a visit may be booked at (docs/decisions/0210-booking-by-start-time.md): each day's starts a step apart
-// that some technician in the visit's city can take, and who, best first. Best is whoever the visit adds the least
-// driving to, then whoever has the least booked that day, then over the week around it.
+// that some technician in the visit's city can take, and who, best first. Best is whoever's home is known, then whoever
+// the visit costs least (src/policy/allotment.ts), then whoever has the least booked that day, then over the week.
 //
 // Today is offered from the lead time on, and only for a kind of visit ops let clients book for today. A day ops
 // black out, or from the day a service is retired on, is offered to nobody; and no technician who took the client's
@@ -11,7 +11,8 @@ import { addDays, indiaDate, indiaInstant, indiaTime } from "../../lib/india-tim
 import type { Pin } from "../../lib/geo.ts";
 import { minuteOf, placements, timeOf, type PlanRules } from "../../policy/day-plan.ts";
 import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician-rotation.ts";
-import { withinReach } from "../../policy/reach.ts";
+import { standingOf, type Standing } from "../../policy/reach.ts";
+import { costOf, type Piece } from "../../policy/allotment.ts";
 import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
 import { tieRange } from "./technician-choice.ts";
 import { loadDayPlans, type CityOf, type DayPlans, type Leaving } from "./day-plans.ts";
@@ -39,10 +40,16 @@ export interface StartPlacing {
   readonly leaving?: Leaving;
 }
 
-/** A technician who can take a start, the driving it adds to their day, and the lock the hold on their day takes. */
+/**
+ * A technician who can take a start, the driving it adds to their day, what their taking it costs in all
+ * (src/policy/allotment.ts), whether their home is known, and the lock the hold on their day takes.
+ */
 interface Taker {
   readonly technician: Technician;
   readonly addedDrive: number;
+  readonly cost: number;
+  /** False for one with no home pin, whose driving nobody can tell: they go after everyone whose home is known. */
+  readonly homeKnown: boolean;
   readonly revision: number;
 }
 
@@ -107,40 +114,94 @@ function loadOf(plans: DayPlans, technicianId: string, date: string): { day: num
   return { day: minutes(date), week };
 }
 
-interface Reach {
+/** Where the visit sits for a technician, and whether their home is known to measure it from. */
+interface Placing {
+  readonly standing: Standing;
+  readonly homeKnown: boolean;
+}
+
+interface Radius {
   readonly id: string;
   readonly home_lat: number | null;
   readonly home_lng: number | null;
-  readonly reach_min: number | null;
+  readonly radius_km: number | null;
 }
 
-/** Each home and reach of the technicians of the visit's city, read beside who may take it rather than after. */
-async function reachesIn(db: D1Database, cityOf: CityOf): Promise<ReadonlyMap<string, Reach>> {
+/** Each home and radius of the technicians of the visit's city, read beside who may take it rather than after. */
+async function radiiIn(db: D1Database, cityOf: CityOf): Promise<ReadonlyMap<string, Radius>> {
   const { results } = await db
-    .prepare(`SELECT id, home_lat, home_lng, reach_min FROM technicians WHERE city = ${bookingCity("?1", "?2")}`)
+    .prepare(`SELECT id, home_lat, home_lng, radius_km FROM technicians WHERE city = ${bookingCity("?1", "?2")}`)
     .bind(cityOf.pincode, cityOf.personId)
-    .all<Reach>();
+    .all<Radius>();
   return new Map(results.map((row) => [row.id, row]));
 }
 
 /**
- * The technicians whose reach from home takes in the visit's pin (docs/decisions/0223-reach-from-home.md); all of them
- * where the pin is not known, or for a move, which stays with its technician.
+ * Where the visit's pin sits for each technician who may take it, inside their radius or in the overflow ring past it
+ * (docs/decisions/0289-who-takes-a-visit.md), those beyond both left out. A move's own technician, `keeping`, may keep
+ * it wherever they are; anyone else is measured as for a new booking.
  */
-function inReach(
+function standings(
   technicians: readonly Technician[],
-  rows: ReadonlyMap<string, Reach>,
-  at: { readonly pin: Pin | null; readonly moving: boolean; readonly inputs: OpsInputs },
-): Technician[] {
-  if (at.pin === null || at.moving || technicians.length === 0) return [...technicians];
-  return technicians.filter((technician) => {
+  rows: ReadonlyMap<string, Radius>,
+  at: { readonly pin: Pin | null; readonly keeping: string | null; readonly inputs: OpsInputs },
+): Map<string, Placing> {
+  const placed = new Map<string, Placing>();
+  for (const technician of technicians) {
+    if (technician.id === at.keeping) {
+      placed.set(technician.id, { standing: "inside", homeKnown: true });
+      continue;
+    }
     const row = rows.get(technician.id);
     const lat = row?.home_lat ?? null;
     const lng = row?.home_lng ?? null;
     const home = lat === null || lng === null ? null : { lat, lng };
-    const reach = row?.reach_min ?? at.inputs.technicianReachMin;
-    return withinReach({ home, to: at.pin, reach, estimate: at.inputs.driveEstimate });
-  });
+    const standing = standingOf({
+      home,
+      to: at.pin,
+      radiusKm: row?.radius_km ?? at.inputs.technicianRadiusKm,
+      overflow: at.inputs.allotment.overflow,
+    });
+    if (standing !== "beyond") placed.set(technician.id, { standing, homeKnown: home !== null });
+  }
+  return placed;
+}
+
+/** A technician who can take a start, before what their taking it costs is counted against the others'. */
+interface Candidate {
+  readonly technician: Technician;
+  readonly addedDrive: number;
+  readonly revision: number;
+  readonly load: { readonly day: number; readonly week: number };
+  readonly overflow: boolean;
+  readonly piece: Piece | null;
+  readonly homeKnown: boolean;
+}
+
+/**
+ * Those who can take a start, best first: whoever's home is known, then least cost, then less booked. `leastWeek` is
+ * the least booked week of everyone who works the day, so a cost means the same at every start of it.
+ */
+function bestFirst(candidates: readonly Candidate[], inputs: OpsInputs, leastWeek: number): Taker[] {
+  return candidates
+    .map((candidate) => ({
+      candidate,
+      cost: costOf({ ...candidate, weekMinutes: candidate.load.week }, leastWeek, inputs.allotment),
+    }))
+    .sort(
+      (a, b) =>
+        Number(b.candidate.homeKnown) - Number(a.candidate.homeKnown) ||
+        a.cost - b.cost ||
+        a.candidate.load.day - b.candidate.load.day ||
+        a.candidate.load.week - b.candidate.load.week,
+    )
+    .map(({ candidate, cost }) => ({
+      technician: candidate.technician,
+      addedDrive: candidate.addedDrive,
+      cost,
+      homeKnown: candidate.homeKnown,
+      revision: candidate.revision,
+    }));
 }
 
 /** Google's kept drives, each set of pins looked up once for the request: the starts in one gap share their drives. */
@@ -171,7 +232,7 @@ export async function startOffers(input: {
   const cityOf = { ...place, keeping: placing.moving?.technicianId ?? null };
   const reading = input.inputs === undefined ? readOpsInputs(db, now) : Promise.resolve(input.inputs);
   // The city's technicians' days are read beside who may take the visit, so the plans wait on no trip of their own.
-  const [everyone, closed, clientVisits, pin, plans, inputs, reaches] = await Promise.all([
+  const [able, closed, clientVisits, pin, plans, inputs, radii] = await Promise.all([
     techniciansFor(db, placing.moving ?? null, place, visit.fitting ?? null),
     loadBlackouts(db, from, to, place),
     visitsOfClient(db, placing.personId, placing.moving?.visitId ?? placing.replacing ?? null),
@@ -187,9 +248,10 @@ export async function startOffers(input: {
       leaving: { ...placing.leaving, visitId: placing.moving?.visitId ?? placing.leaving?.visitId ?? null },
     }),
     reading,
-    reachesIn(db, cityOf),
+    radiiIn(db, cityOf),
   ]);
-  const technicians = inReach(everyone, reaches, { pin, moving: (placing.moving ?? null) !== null, inputs });
+  const where = standings(able.technicians, radii, { pin, keeping: placing.moving?.technicianId ?? null, inputs });
+  const technicians = able.technicians.filter((technician) => where.has(technician.id));
   const rules = planRulesOf(inputs);
   const toPlan = { minutes: visit.minutes, pin, fit: visit.fitting !== null && visit.fitting !== undefined };
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
@@ -199,11 +261,13 @@ export async function startOffers(input: {
       const date = addDays(from, index);
       const earliest = earliestOn(date, visit, inputs, now);
       if (earliest === null || closed.has(date) || retired(date)) return { date, starts: [] };
-      const byStart = new Map<number, (Taker & { load: { day: number; week: number } })[]>();
+      const byStart = new Map<number, Candidate[]>();
+      let leastWeek = Infinity;
       for (const technician of technicians) {
         const day = plans.day(technician.id, date);
         if (day === null) continue;
         const load = loadOf(plans, technician.id, date);
+        leastWeek = Math.min(leastWeek, load.week);
         for (const placed of placements(day, toPlan, rules, earliest)) {
           // A start Google's drive was already found to leave no room for is not offered (./drive-check.ts).
           const placing = { time: timeOf(placed.start), minutes: visit.minutes, pin };
@@ -214,6 +278,9 @@ export async function startOffers(input: {
             addedDrive: placed.addedDrive,
             revision: plans.revision(technician.id, date),
             load,
+            overflow: where.get(technician.id)?.standing === "overflow",
+            piece: able.pieces.get(technician.id) ?? null,
+            homeKnown: where.get(technician.id)?.homeKnown ?? true,
           });
           byStart.set(placed.start, takers);
         }
@@ -222,15 +289,9 @@ export async function startOffers(input: {
       const starts = [...byStart.entries()]
         .sort(([a], [b]) => a - b)
         .map(([start, takers]): StartOffer => {
-          const allowed = allowedTechnicians(takers, (taker) => barred.has(taker.technician.id)).sort(
-            (a, b) => a.addedDrive - b.addedDrive || a.load.day - b.load.day || a.load.week - b.load.week,
-          );
+          const allowed = allowedTechnicians(takers, (taker) => barred.has(taker.technician.id));
           const time = timeOf(start);
-          return {
-            time,
-            startsAt: indiaInstant(date, time),
-            takers: allowed.map(({ technician, addedDrive, revision }) => ({ technician, addedDrive, revision })),
-          };
+          return { time, startsAt: indiaInstant(date, time), takers: bestFirst(allowed, inputs, leastWeek) };
         });
       return { date, starts };
     }),

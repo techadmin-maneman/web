@@ -91,12 +91,13 @@ export const technicians = {
     home: "Day starts from",
     noHome: "Not set",
     /**
-     * How far from home they are offered visits: their own, or everyone's from Settings
-     * (docs/decisions/0223-reach-from-home.md). An empty box returns them to everyone's.
+     * How far from home they are offered visits, in a straight line: their own, or everyone's from Settings
+     * (docs/decisions/0289-who-takes-a-visit.md). An empty box returns them to everyone's.
      */
-    reach: "Takes visits within",
-    reachValue: (minutes: number) => `${String(minutes)} min drive of home`,
-    everyonesReach: (minutes: number) => `${String(minutes)} min drive of home, the setting for everyone`,
+    reach: "Radius",
+    reachValue: (km: number) => `${String(km)}\u00a0km of home`,
+    reachUnit: "km",
+    everyonesReach: (km: number) => `${String(km)}\u00a0km of home, the setting for everyone`,
     /** Everyone's, before the roster that says how far it is has been read. */
     businessReach: "The setting for everyone",
     search: {
@@ -110,7 +111,7 @@ export const technicians = {
       invalid_request: "Pick at least one time that ends after it starts.",
       no_days: "Pick at least one day.",
       ends: "The day ends after it starts.",
-      reach: "10 to 180 minutes, or empty for the business’s.",
+      reach: "Enter 1–60 km, or leave it empty for the setting for everyone.",
       not_found: changed("No longer exists."),
       unavailable: "Google couldn’t place it. Try another search.",
       offline: OFFLINE,

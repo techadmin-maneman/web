@@ -30,7 +30,7 @@ const IMRAN: Technician = {
   leave: [],
   hours: [],
   home: null,
-  reach_min: null,
+  radius_km: null,
 };
 
 let page: HTMLDivElement;

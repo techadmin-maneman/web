@@ -10,7 +10,7 @@ Days ops close are never offered: everywhere (`visit_blackouts`) or in one city 
 
 ## Who can take a visit
 
-A visit goes to a technician in the client's city (`src/domain/dispatch/technician-fit.ts`); a first fit only to one trained to fit, with a hair system matched to the client. A technician never takes two of a client's visits in a row unless nobody else can (`src/policy/technician-rotation.ts`). Among those free, whoever holds least that day, then that week, takes it (`src/domain/booking/technician-choice.ts`). Leave is read with everything else a day holds, so a job on a day off is refused (`src/domain/booking/occupancy.ts`, `src/domain/dispatch/leave.ts`).
+A visit goes to a technician in the client's city (`src/domain/dispatch/technician-fit.ts`); a first fit only to one trained to fit. Each technician takes visits within a radius of home in straight-line km, their own or Settings' (`src/policy/reach.ts`), and in an overflow ring past it at a cost; beyond the ring, never. A technician never takes two of a client's visits in a row unless nobody else can (`src/policy/technician-rotation.ts`). Among those free, whoever's home is known goes before any technician with no home pin, then whoever the visit costs least: the driving it adds, home again after the day's last visit included, with going into the ring, a fit's piece not in their kit, and a fuller week counted as minutes of driving, each figure under Settings › "Who takes a visit" (`src/policy/allotment.ts`, `src/domain/booking/start-offers.ts`). Leave is read with everything else a day holds, so a job on a day off is refused (`src/domain/booking/occupancy.ts`, `src/domain/dispatch/leave.ts`).
 
 Wherever a visit is booked, on the site, in the app or in the console, the starts offered rest on the free drive estimate, leaving out any Google's kept drive leaves no room for; before a start is held, Google checks the drives either side of it (`src/domain/booking/drive-check.ts`, ADR 0287).
 
@@ -48,3 +48,4 @@ A client moves or cancels in the app; what a late change costs is in Settings ·
 - [0068, a paid hold is kept](../decisions/0068-a-paid-hold-is-kept.md): why a payment always ends booked or refunded.
 - [0086, the next visit is offered](../decisions/0086-the-next-visit-is-offered.md): why the app, not ops, books the next visit.
 - [0111, never two in a row](../decisions/0111-a-technician-never-takes-two-visits-in-a-row.md) and [0117, own city](../decisions/0117-a-technician-takes-visits-in-their-own-city.md).
+- [0289, who takes a visit](../decisions/0289-who-takes-a-visit.md): the radius in km, the overflow ring, and the least cost.

@@ -22593,7 +22593,7 @@ Request body:
 
 ### POST /api/technicians/{id}/reach
 
-Set how far a technician goes from home, in minutes of driving, or return them to the business's with null
+Set how far a technician goes from home, in straight-line km, or return them to the business's with null
 
 Request body:
 
@@ -22609,7 +22609,7 @@ Request body:
 {
   "type": "object",
   "properties": {
-    "reach_min": {
+    "radius_km": {
       "anyOf": [
         {
           "type": "integer"
@@ -22621,13 +22621,13 @@ Request body:
     }
   },
   "required": [
-    "reach_min"
+    "radius_km"
   ],
   "additionalProperties": false
 }
 ```
 
-**400**: invalid_request: a reach outside 10 to 180 minutes
+**400**: invalid_request: a radius outside 1 to 60 km
 
 ```json
 {
@@ -44625,10 +44625,10 @@ Request body:
               }
             ]
           },
-          "reach_min": {
+          "radius_km": {
             "type": "integer"
           },
-          "reach_km": {
+          "ring_km": {
             "type": "number"
           }
         },
@@ -44637,8 +44637,8 @@ Request body:
           "name",
           "initials",
           "home",
-          "reach_min",
-          "reach_km"
+          "radius_km",
+          "ring_km"
         ],
         "additionalProperties": false
       }
@@ -44699,13 +44699,13 @@ Request body:
                   "technician_id": {
                     "type": "string"
                   },
-                  "minutes": {
-                    "type": "integer"
+                  "km": {
+                    "type": "number"
                   }
                 },
                 "required": [
                   "technician_id",
-                  "minutes"
+                  "km"
                 ],
                 "additionalProperties": false
               },
@@ -44723,14 +44723,14 @@ Request body:
                 "type": "null"
               }
             ],
-            "description": "Whether any reach takes it in; null where nothing could be measured."
+            "description": "Whether any technician's ring takes it in; null where nothing could be measured."
           },
           "reached_by": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "The technicians whose reach takes it in."
+            "description": "The technicians whose radius takes it in."
           }
         },
         "required": [
@@ -53317,7 +53317,7 @@ Request body:
             ],
             "description": "Where their day starts; null until ops set it."
           },
-          "reach_min": {
+          "radius_km": {
             "anyOf": [
               {
                 "type": "integer"
@@ -53326,7 +53326,7 @@ Request body:
                 "type": "null"
               }
             ],
-            "description": "Minutes of driving from home they take visits within; null takes the business's (ADR 0223)."
+            "description": "Straight-line km from home they take visits within; null takes the business's (ADR 0289)."
           }
         },
         "required": [
@@ -53345,7 +53345,7 @@ Request body:
           "leave",
           "hours",
           "home",
-          "reach_min"
+          "radius_km"
         ],
         "additionalProperties": false
       }
@@ -53436,16 +53436,16 @@ Request body:
       },
       "description": "The cities the caller may give a technician, those their Operations MANAGE reaches, in display order."
     },
-    "default_reach_min": {
+    "default_radius_km": {
       "type": "integer",
-      "description": "The business's reach from Settings, which a technician with no reach of their own takes (ADR 0223)."
+      "description": "The business's radius from Settings, which a technician with no radius of their own takes (ADR 0289)."
     }
   },
   "required": [
     "technicians",
     "switched_off",
     "cities",
-    "default_reach_min"
+    "default_radius_km"
   ],
   "additionalProperties": false
 }
@@ -56619,12 +56619,12 @@ Request body:
 {
   "type": "object",
   "properties": {
-    "reach_min": {
+    "radius_km": {
       "anyOf": [
         {
           "type": "integer",
-          "minimum": 10,
-          "maximum": 180
+          "minimum": 1,
+          "maximum": 60
         },
         {
           "type": "null"
@@ -56633,7 +56633,7 @@ Request body:
     }
   },
   "required": [
-    "reach_min"
+    "radius_km"
   ],
   "additionalProperties": false
 }
@@ -57096,7 +57096,8 @@ Request body:
         "same_day_booking",
         "working_hours",
         "drive_estimate",
-        "technician_reach_min",
+        "technician_radius_km",
+        "allotment",
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
@@ -57298,7 +57299,8 @@ Request body:
         "same_day_booking",
         "working_hours",
         "drive_estimate",
-        "technician_reach_min",
+        "technician_radius_km",
+        "allotment",
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",

@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0289. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0290. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -83,6 +83,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0256](0256-fit-guarantee-setting.md) The fit guarantee's days as a setting, and a claim as a Tasks row
 - [0278](0278-a-technician-in-training-takes-no-visits.md) A technician in training takes no visits
 - [0287](0287-a-start-googles-drive-refused-is-not-offered.md) A start Google's drive leaves no room for is not offered again
+- [0289](0289-who-takes-a-visit.md) Who takes a visit: a radius in km, an overflow ring, and the least cost
 
 ### Field work
 
@@ -533,7 +534,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
 | [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted | [0225](0225-the-console-on-a-desk-and-a-phone.md) |
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted | [0257](0257-razorpay-only.md) |
-| [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md), [0287](0287-a-start-googles-drive-refused-is-not-offered.md) |
+| [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md), [0287](0287-a-start-googles-drive-refused-is-not-offered.md), [0289](0289-who-takes-a-visit.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
 | [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |
 | [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted | [0263](0263-the-home-pages-order-and-bands.md), [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) |
@@ -546,7 +547,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0220](0220-opening-a-city-from-india-posts-pincodes.md) | Opening a city from India Post's pincodes | 2026-10-25 | accepted | [0221](0221-launches-scheduled-paused-and-checked.md) |
 | [0221](0221-launches-scheduled-paused-and-checked.md) | Launches scheduled, paused and checked first | 2026-10-25 | accepted | [0224](0224-demand-and-the-next-to-open.md) |
 | [0222](0222-consumables-short-of-expected.md) | Consumables short of what a visit expects are said why, and checked | 2026-10-25 | accepted |  |
-| [0223](0223-reach-from-home.md) | Reach from home, drawn on the city's map and checked at the address | 2026-10-26 | accepted |  |
+| [0223](0223-reach-from-home.md) | Reach from home, drawn on the city's map and checked at the address | 2026-10-26 | accepted | [0289](0289-who-takes-a-visit.md) |
 | [0224](0224-demand-and-the-next-to-open.md) | Demand, and the next pincodes to open | 2026-10-26 | accepted |  |
 | [0225](0225-the-console-on-a-desk-and-a-phone.md) | The console on a desk and a phone, to the November redesign | 2026-11-02 | accepted | [0226](0226-the-console-frame-redesigned.md), [0227](0227-today-by-home-and-tasks-as-one-table.md), [0229](0229-dispatch-and-booking-redesigned.md), [0230](0230-clients-redesigned.md), [0231](0231-messages-redesigned.md), [0232](0232-technicians-stock-and-money-redesigned.md), [0233](0233-settings-redesigned.md), [0235](0235-full-size-check-fixes.md), [0236](0236-second-design-pass.md) |
 | [0226](0226-the-console-frame-redesigned.md) | The console's frame, to the November redesign | 2026-11-02 | accepted | [0228](0228-the-header-city-within-a-persons-reach.md) |
@@ -612,3 +613,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0286](0286-the-icons-are-the-mark.md) | The browser's and the home screen's icons are the mark | 2026-11-19 | accepted, on the owner's ruling of 19 November 2026 |  |
 | [0287](0287-a-start-googles-drive-refused-is-not-offered.md) | A start Google's drive leaves no room for is not offered again | 2026-11-19 | accepted, on the owner's go-ahead of 19 November 2026 |  |
 | [0288](0288-attribution-and-conversions.md) | Attribution and conversions | 2026-11-20 | accepted, on the owner's brief and rulings of 20 November 2026 |  |
+| [0289](0289-who-takes-a-visit.md) | Who takes a visit: a radius in km, an overflow ring, and the least cost | 2026-11-22 | accepted |  |
