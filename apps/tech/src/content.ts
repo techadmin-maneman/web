@@ -809,6 +809,8 @@ export const steps = localised({
   corrected: {
     piece: "We couldn’t record the label you gave. Correct it and tap Next.",
     other: "We couldn’t record this step as it was. Correct it and tap Next.",
+    // Our words: a hair system picked with no label, none of whose pieces the kit may give.
+    noneToFit: "That hair system can’t be fitted from your kit. Pick another.",
   },
   consumables: {
     less: (name: string, step: number, unit: string) =>
@@ -850,6 +852,11 @@ export const steps = localised({
     density: (percent: number) => `${String(percent)}% density`,
     pointAt: "Point at the label",
     typeCode: "Type the code",
+    // Our words: the prototype draws no piece without a label.
+    noLabel: "No label on it",
+    pickTitle: "Pick the hair system",
+    scanInstead: "Scan the label instead",
+    pickFromKit: "Pick the hair system from your kit",
     typedLabel: "Code on the label",
     cannotFit: {
       action: "Can’t fit today",
@@ -1516,6 +1523,8 @@ export const kit = localised({
     /** Part of a hair system's pieces in hand, the rest still on the way. */
     restToCome: (count: number) => `Receive ${String(count)} scanned · the rest to come`,
     scanned: (count: number, of: number) => `${String(count)} of ${String(of)} scanned`,
+    /** Labels lost or unreadable never hold a top-up back. */
+    receiveAll: "No labels? Receive all",
     notOnIt: "That label isn’t on this transfer.",
     settled: "Already received or sent back.",
   },

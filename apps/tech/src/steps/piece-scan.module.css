@@ -56,9 +56,12 @@
   margin-top: var(--sp-4);
 }
 
+/* With larger text the links wrap whole, never one broken across two lines. */
 .links {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  column-gap: var(--sp-16);
 }
 
 /* The links beneath the scanner, and Rescan: the prototype's 15 px at the semibold weight, a gloved tap high. */
@@ -66,6 +69,7 @@
   min-height: var(--tech-min);
   font-size: var(--fs-15);
   font-weight: var(--weight-semibold);
+  white-space: nowrap;
 }
 
 .typedLabel {

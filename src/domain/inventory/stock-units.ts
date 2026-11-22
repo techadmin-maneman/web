@@ -30,7 +30,7 @@ export function labelOf(segment: string, serial: number): string {
 }
 
 /** The same label, made in SQL from a segment and a serial. */
-const labelSql = (segment: string, serial: string) =>
+export const labelSql = (segment: string, serial: string) =>
   `'MM-' || ${segment} || '-' || printf('%07d', ${serial}) || '-' || ` +
   `substr('${CHECK_LETTERS}', (${serial}) % ${String(CHECK_LETTERS.length)} + 1, 1)`;
 
@@ -46,7 +46,7 @@ export const productSegment = (product: string): string =>
 const LOT_SEGMENT = "LT";
 
 /** One piece a place holds, or a transfer carries: its lot, and its unit if it is labelled. */
-interface Piece {
+export interface Piece {
   readonly lotId: string | null;
   readonly unit: { readonly id: string; readonly code: string } | null;
 }
@@ -63,7 +63,7 @@ export function takesOf(pieces: readonly { readonly lotId: string | null }[]): L
   return [...byLot].map(([lotId, quantity]) => ({ lotId, quantity }));
 }
 
-const takenOf = (pieces: readonly Piece[]): Taken => ({
+export const takenOf = (pieces: readonly Piece[]): Taken => ({
   units: pieces.flatMap((piece) => (piece.unit === null ? [] : [piece.unit.id])),
   takes: takesOf(pieces),
 });
@@ -119,7 +119,7 @@ function piecesOf(total: number, lots: readonly { id: string; quantity: number }
 const SOONEST_FIRST = "ORDER BY l.recalled_at IS NOT NULL, l.expires_on IS NULL, l.expires_on, l.received_at";
 
 /** The pieces a place holds of a hair system, in the order they leave. */
-async function piecesAt(db: D1Database, code: string, place: Place): Promise<Piece[]> {
+export async function piecesAt(db: D1Database, code: string, place: Place): Promise<Piece[]> {
   const [held, lots, units] = await Promise.all([
     db
       .prepare("SELECT quantity FROM stock_balances WHERE consumable_code = ?1 AND place = ?2")

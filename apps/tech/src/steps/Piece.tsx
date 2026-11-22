@@ -5,7 +5,7 @@
 // choice (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). "Can't fit today" closes the fit from here.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, unreachable, type EventBody, type Job } from "../api.ts";
 import { steps as copy, visit } from "../content.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
@@ -33,7 +33,7 @@ import {
   type PieceForm,
 } from "./piece-form.ts";
 import { ChoiceList, KitPieces, NOT_LOOKED, type Looked } from "./PieceFields.tsx";
-import { Confirmed, Expected, lineOf, Scanner } from "./PieceScan.tsx";
+import { Confirmed, Expected, lineOf, NoLabel, Scanner } from "./PieceScan.tsx";
 import { isLabel } from "./label.ts";
 import { pieceSent, type PieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
@@ -129,6 +129,95 @@ const checkedOf = (looked: Looked): LabelChecked =>
 const unlabelledOf = (choices: ReturnType<typeof kitChoices>) =>
   choices.filter(({ hairSystem }) => hairSystem.units.length === 0);
 
+/** The kit's hair systems with a piece free to fit, one of which a piece with no label is picked as. */
+const freeOf = (choices: ReturnType<typeof kitChoices>) => choices.filter(({ hairSystem }) => hairSystem.held > 0);
+
+/**
+ * The label as read so far: confirmed once it is known, with no signal to check it as typed, saying so; else the
+ * scanner, which also says the piece has no label where the kit holds a hair system free to pick in its place; or,
+ * with no label, the way back to the scanner, the pick being the kit's list beneath.
+ */
+function LabelRead(props: {
+  readonly job: Job;
+  readonly matched: Parameters<typeof kitMatch>[0] & Parameters<typeof labelWarning>[0];
+  readonly form: PieceForm;
+  readonly read: { readonly missing: string | null; readonly looked: Looked; readonly looking: boolean };
+  readonly cannotFit: ReactNode;
+  readonly onCode: (code: string) => void;
+  readonly onLook: () => void;
+  readonly onNoLabel: (noLabel: boolean) => void;
+}) {
+  const { job, matched, form, read } = props;
+  if (form.noLabel) {
+    return (
+      <NoLabel
+        cannotFit={props.cannotFit}
+        onScan={() => {
+          props.onNoLabel(false);
+        }}
+      />
+    );
+  }
+  if (read.missing === null && isLabel(form.code) && read.looked.state !== "offline") {
+    return (
+      <Confirmed
+        code={form.code}
+        line={lineOf(job, { choice: form.choice, stock: form.stock, fit: matched.profile?.fit ?? null })}
+        matches={kitMatch(matched, form.choice, form.stock)}
+        left={leftAfter(job, form.stock)}
+        onRescan={() => {
+          props.onCode("");
+        }}
+      />
+    );
+  }
+  return (
+    <Scanner
+      code={form.code}
+      looked={read.looked}
+      looking={read.looking}
+      warning={labelWarning(matched, form)}
+      cannotFit={props.cannotFit}
+      onCode={props.onCode}
+      onLook={props.onLook}
+      onNoLabel={
+        freeOf(kitChoices(matched, form.choice)).length === 0
+          ? undefined
+          : () => {
+              props.onNoLabel(true);
+            }
+      }
+    />
+  );
+}
+
+/**
+ * The step's form as the technician fills it in, a refused piece's as it was sent; and a label read or typed taken with
+ * what follows it (piece-form's labelTaken).
+ */
+function usePieceForm(job: Job, sent: PieceSent | null) {
+  const [code, setCode] = useState(sent?.code ?? "");
+  const [noLabel, setNoLabel] = useState(sent?.noLabel ?? false);
+  const [base, setBase] = useState(sent?.base ?? "");
+  const [lot, setLot] = useState(sent?.lot ?? "");
+  const [stock, setStock] = useState<string | null>(sent?.stock ?? null);
+  const [failure, setFailure] = useState(sent?.failure ?? null);
+  const lookup = useLookup(job, { code, base, lot }, { base: setBase, lot: setLot });
+  const [{ choice, later }, decide] = useDecision(sent);
+  // The piece that comes off is the one the card has on the client's head from before today.
+  const oldCode = cameOff(job)?.piece_code ?? "";
+  const form: PieceForm = { code, noLabel, base, lot, stock, oldCode, failure, choice, later };
+  const takeLabel = (label: string) => {
+    const next = labelTaken(job, stock, label, sent);
+    setCode(label);
+    lookup.setLooked(NOT_LOOKED);
+    setStock(next.stock);
+    setBase(next.base);
+    setLot(next.lot);
+  };
+  return { form, lookup, decide, set: { noLabel: setNoLabel, stock: setStock, failure: setFailure }, takeLabel };
+}
+
 /** The step once the job is in hand: a refused piece starts as it was sent, so nothing is read twice. */
 function Fitting({
   job,
@@ -144,27 +233,20 @@ function Fitting({
   onFinish: (finish: Finish) => void;
   onBack: () => void;
 }) {
-  const sent = pieceSent(refused);
-  const [code, setCode] = useState(sent?.code ?? "");
-  const [base, setBase] = useState(sent?.base ?? "");
-  const [lot, setLot] = useState(sent?.lot ?? "");
-  const [stock, setStock] = useState<string | null>(sent?.stock ?? null);
-  const [failure, setFailure] = useState(sent?.failure ?? null);
-  const { looked, setLooked, looking, look } = useLookup(job, { code, base, lot }, { base: setBase, lot: setLot });
-  const [{ choice, later }, decide] = useDecision(sent);
-  // The piece that comes off is the one the card has on the client's head from before today.
-  const form: PieceForm = { code, base, lot, stock, oldCode: cameOff(job)?.piece_code ?? "", failure, choice, later };
+  const { form, lookup, decide, set, takeLabel } = usePieceForm(job, pieceSent(refused));
+  const { noLabel, stock, choice, later } = form;
+  const { looked, looking, look } = lookup;
   const missing = stillMissing(form, job, checkedOf(looked));
-  /** A label read or typed, with what follows it (piece-form's labelTaken). */
-  const takeLabel = (label: string) => {
-    const next = labelTaken(job, stock, label, sent);
-    setCode(label);
-    setLooked(NOT_LOOKED);
-    setStock(next.stock);
-    setBase(next.base);
-    setLot(next.lot);
-  };
+  const { noLabel: setNoLabel, stock: setStock, failure: setFailure } = set;
   const matched = { ...job, profile: matchTo };
+  const cannotFit = (
+    <CannotFit
+      reasons={job.not_fitted_reasons}
+      onClose={(why) => {
+        onFinish({ cannotFit: why });
+      }}
+    />
+  );
   const fitsToday = !fitsNothingToday(form, job) && (!job.one_visit || choice !== null);
 
   return (
@@ -173,7 +255,7 @@ function Fitting({
       action={fitsNothingToday(form, job) ? visit.next(copy.checklistTitles.consultation) : undefined}
       ready={missing === null}
       unfinished={missing ?? undefined}
-      notice={refused === null ? null : noticeFor(refused.fields)}
+      notice={refused === null ? null : noticeFor(refused.fields, refused.body)}
       onBack={onBack}
       onAction={() => {
         onFinish({ piece: pieceBody(form, job) });
@@ -182,39 +264,33 @@ function Fitting({
       {job.one_visit && <Asked job={job} decided={{ choice, later }} decide={decide} />}
       {fitsToday && (
         <div className={styles.scan}>
-          <Expected job={job} fit={matchTo?.fit ?? null} choice={choice} failure={failure} onFailure={setFailure} />
-          {/* Confirmed once it is known: with no signal to check it, it stays as typed, saying so. */}
-          {missing === null && isLabel(code) && looked.state !== "offline" ? (
-            <Confirmed
-              code={code}
-              line={lineOf(job, { choice, stock, fit: matchTo?.fit ?? null })}
-              matches={kitMatch(matched, choice, stock)}
-              left={leftAfter(job, stock)}
-              onRescan={() => {
-                takeLabel("");
-              }}
-            />
-          ) : (
-            <Scanner
-              code={code}
-              looked={looked}
-              looking={looking}
-              warning={labelWarning(matched, form)}
-              cannotFit={
-                <CannotFit
-                  reasons={job.not_fitted_reasons}
-                  onClose={(why) => {
-                    onFinish({ cannotFit: why });
-                  }}
-                />
-              }
-              onCode={takeLabel}
-              onLook={() => void look()}
-            />
-          )}
+          <Expected job={job} form={form} fit={matchTo?.fit ?? null} onFailure={setFailure} />
+          {/* With no label to read, the hair system is picked from the kit below; either way, no pick is kept over. */}
+          <LabelRead
+            job={job}
+            matched={matched}
+            form={form}
+            read={{ missing, looked, looking }}
+            cannotFit={cannotFit}
+            onCode={takeLabel}
+            onLook={() => void look()}
+            onNoLabel={(none) => {
+              takeLabel("");
+              setNoLabel(none);
+            }}
+          />
         </div>
       )}
-      {fitsToday && <KitPieces choices={unlabelledOf(kitChoices(matched, choice))} stock={stock} onStock={setStock} />}
+      {/* Every hair system the kit has free where the piece has no label; else only those whose pieces carry none. */}
+      {fitsToday && (
+        <KitPieces
+          choices={noLabel ? freeOf(kitChoices(matched, choice)) : unlabelledOf(kitChoices(matched, choice))}
+          stock={stock}
+          pick={noLabel}
+          warning={noLabel ? labelWarning(matched, form) : null}
+          onStock={setStock}
+        />
+      )}
     </StepFrame>
   );
 }

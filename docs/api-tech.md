@@ -10756,7 +10756,15 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "piece_code": {
       "type": "string",
       "minLength": 3,
-      "maxLength": 40
+      "maxLength": 40,
+      "description": "The label on the piece, read or typed. Left out where the piece has none, with no_label, and the step is recorded under one made for it from the visit."
+    },
+    "no_label": {
+      "type": "boolean",
+      "enum": [
+        true
+      ],
+      "description": "The piece has no label to read, so none is sent: the hair system it is, picked from the kit by stock_code, comes out of the kit, in date and never a unit kept for another client or of a recalled lot. Refused, fields stock_code, with none picked, or where the kit holds it but no piece of it that may be fitted."
     },
     "base": {
       "type": [
@@ -10822,9 +10830,6 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "description": "On a one visit, and only there: the product the client chose, by its tier from the card's products."
     }
   },
-  "required": [
-    "piece_code"
-  ],
   "additionalProperties": false,
   "description": "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing."
 }

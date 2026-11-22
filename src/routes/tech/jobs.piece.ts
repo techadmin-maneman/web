@@ -2,7 +2,9 @@
 // later, or that they decided against it; on any other job that takes one, the piece fitted or the one that failed.
 // A hair system it names must be one of ours, since it comes out of the technician's kit
 // (src/domain/inventory/piece-use.ts). A label one of the kit's units carries names the hair system and its lot
-// itself, and an expired one is refused (docs/decisions/0163-pieces-scanned-from-the-kit.md).
+// itself, and an expired one is refused (docs/decisions/0163-pieces-scanned-from-the-kit.md). A piece with no label to
+// read is recorded under one made for it from the visit (src/domain/inventory/made-labels.ts), the hair system it is
+// picked from the kit, so a missing label never stops the fit.
 
 import { z } from "@hono/zod-openapi";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
@@ -11,6 +13,8 @@ import { decisionAtVisit } from "../../domain/visits/one-visit.ts";
 import { fitsToday } from "../../policy/one-visit.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
 import { isHairSystem } from "../../domain/inventory/hair-systems.ts";
+import { madeLabel, noLabelTake } from "../../domain/inventory/made-labels.ts";
+import { takenFor } from "../../domain/field/job-use.ts";
 import { kitUnit } from "../../domain/inventory/stock-units.ts";
 import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { technicianOf } from "../../http/technician-session.ts";
@@ -27,16 +31,39 @@ type PieceBody = z.infer<typeof PieceRequestSchema>;
  * whatever the step said; one that expired before the visit's day is refused.
  */
 async function asTheKitHoldsIt(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<PieceBody | null> {
-  if (fitsNothing(sent)) return sent;
+  if (fitsNothing(sent) || sent.piece_code === undefined || sent.no_label === true) return sent;
   const unit = await kitUnit(c.env.DB, technicianOf(c).technicianId, sent.piece_code);
   if (unit === null) return sent;
   if (unit.expiresOn !== null && unit.expiresOn < indiaDate(job.windowStart)) return null;
   return { ...sent, stock_code: unit.consumableCode, supplier_lot: sent.supplier_lot ?? unit.lotCode ?? undefined };
 }
 
+/**
+ * The piece's label: the one read; or, where the piece has none, one made from the visit, for a hair system picked
+ * from the kit. Refused, by its field, with neither label nor no_label, or with both, or no_label and nothing picked,
+ * or picked where the kit holds it but none it may give, past its date, kept for another client or recalled, as a label
+ * naming such a piece is; never where the visit took that hair system already, as a step sent again or corrected has.
+ */
+async function labelledOf(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<PieceBody | { invalid: string[] }> {
+  if (fitsNothing(sent)) return sent;
+  if (sent.no_label !== true) return sent.piece_code === undefined ? { invalid: ["piece_code"] } : sent;
+  if (sent.piece_code !== undefined) return { invalid: ["piece_code"] };
+  const stockCode = sent.stock_code ?? null;
+  if (stockCode === null) return { invalid: ["stock_code"] };
+  const { technicianId } = technicianOf(c);
+  const at = { code: stockCode, kit: technicianId, visitId: job.id, day: indiaDate(job.windowStart) };
+  if ((await noLabelTake(c.env.DB, at, 1)).unfit) {
+    const took = (await takenFor(c.env.DB, { jobId: job.id, technicianId, hairSystems: true })).get(stockCode) ?? 0;
+    if (took >= 0) return { invalid: ["stock_code"] };
+  }
+  return { ...sent, piece_code: await madeLabel(c.env.DB, job.id) };
+}
+
 /** The piece step's body for this job: a one visit's choice, or a piece fitted or failed where the job takes one. */
 export async function pieceBody(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<StepBody> {
-  const body = await asTheKitHoldsIt(c, job, sent);
+  const labelled = await labelledOf(c, job, sent);
+  if ("invalid" in labelled) return labelled;
+  const body = await asTheKitHoldsIt(c, job, labelled);
   if (body === null) return { invalid: ["piece_code"] };
   const stockCode = fitsNothing(body) ? null : (body.stock_code ?? null);
   if (stockCode !== null && !(await isHairSystem(c.env.DB, stockCode))) return { invalid: ["stock_code"] };

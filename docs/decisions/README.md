@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0291. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0292. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -164,6 +164,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0271](0271-the-technician-follow-ups.md) The technician follow-ups
 - [0273](0273-why-a-hair-system-failed.md) Why a hair system failed
 - [0280](0280-the-technician-apps-hindi-corrected.md) The technician app's Hindi corrected, and the job card's arrival named
+- [0291](0291-pieces-without-labels.md) A piece without a label never stops the fit
 
 ### Money and Books
 
@@ -486,9 +487,9 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0158](0158-transfers-in-transit.md) | Transfers in transit | 2026-10-12 | accepted |  |
 | [0159](0159-stock-views-and-expiry.md) | Stock views and expiry | 2026-10-12 | accepted |  |
 | [0160](0160-demand-and-opening-counts.md) | Demand ahead and opening counts | 2026-10-12 | accepted |  |
-| [0161](0161-pieces-as-units.md) | Pieces as units | 2026-10-12 | accepted |  |
+| [0161](0161-pieces-as-units.md) | Pieces as units | 2026-10-12 | accepted | [0291](0291-pieces-without-labels.md) |
 | [0162](0162-scanning-labels.md) | Scanning labels | 2026-10-12 | accepted | [0271](0271-the-technician-follow-ups.md) |
-| [0163](0163-pieces-scanned-from-the-kit.md) | Pieces scanned from the kit | 2026-10-12 | accepted |  |
+| [0163](0163-pieces-scanned-from-the-kit.md) | Pieces scanned from the kit | 2026-10-12 | accepted | [0291](0291-pieces-without-labels.md) |
 | [0164](0164-the-kit-screen.md) | The kit screen | 2026-10-12 | accepted |  |
 | [0165](0165-suppliers.md) | Suppliers | 2026-10-12 | accepted |  |
 | [0166](0166-purchase-orders.md) | Purchase orders | 2026-10-12 | accepted |  |
@@ -616,3 +617,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0288](0288-attribution-and-conversions.md) | Attribution and conversions | 2026-11-20 | accepted, on the owner's brief and rulings of 20 November 2026 |  |
 | [0289](0289-who-takes-a-visit.md) | Who takes a visit: a radius in km, an overflow ring, and the least cost | 2026-11-22 | accepted | [0290](0290-allotted-the-evening-before.md) |
 | [0290](0290-allotted-the-evening-before.md) | A visit's technician is fixed the evening before | 2026-11-22 | accepted |  |
+| [0291](0291-pieces-without-labels.md) | A piece without a label never stops the fit | 2026-11-22 | accepted |  |

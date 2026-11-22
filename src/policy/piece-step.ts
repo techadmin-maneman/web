@@ -11,7 +11,9 @@ type OldPiece = { readonly piece_code: string; readonly failure_reason?: string 
  * replacement the one that came off.
  */
 type PieceSent = {
-  readonly piece_code: string;
+  readonly piece_code?: string;
+  /** The piece had no label, and piece_code is the one made for it from the visit. */
+  readonly no_label?: true;
   readonly base?: string | null;
   readonly supplier_lot?: string | null;
   readonly stock_code?: string | null;
@@ -22,6 +24,7 @@ type PieceSent = {
 /** What the step records: every field, null where the phone sent none. */
 type PieceRecorded = {
   readonly piece_code: string;
+  readonly no_label?: true;
   readonly base: string | null;
   readonly supplier_lot: string | null;
   readonly stock_code: string | null;
@@ -31,11 +34,12 @@ type PieceRecorded = {
 
 /** The piece as the step records it, or the field whose label is not one. */
 export function pieceRecorded(sent: PieceSent): PieceRecorded | { readonly invalid: string[] } {
-  if (!isPieceCode(sent.piece_code)) return { invalid: ["piece_code"] };
+  if (sent.piece_code === undefined || !isPieceCode(sent.piece_code)) return { invalid: ["piece_code"] };
   const oldPiece = sent.old_piece ?? null;
   if (oldPiece !== null && !isPieceCode(oldPiece.piece_code)) return { invalid: ["old_piece"] };
   return {
     piece_code: sent.piece_code,
+    ...(sent.no_label === true ? { no_label: true } : {}),
     base: sent.base ?? null,
     supplier_lot: sent.supplier_lot ?? null,
     stock_code: sent.stock_code ?? null,

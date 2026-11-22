@@ -239,6 +239,13 @@ const refuse = (route: Route, status: number, code: string, fields: readonly str
         : { code, request_id: "test", fields: [...fields], moved },
   });
 
+/** The field a fitted piece's step is refused on, as the API refuses it; null for one it takes. */
+function pieceRefused(body: { piece_code?: string; no_label?: boolean; stock_code?: string } | null): string | null {
+  if (body?.no_label !== true) return isPieceCode(body?.piece_code ?? "") ? null : "piece_code";
+  if (body.piece_code !== undefined) return "piece_code";
+  return body.stock_code === undefined ? "stock_code" : null;
+}
+
 /** A 1×1 grey PNG: the last visit's photograph, which is nobody's. */
 const LAST_VISIT_PHOTO = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgAB4iG8MwAAAABJRU5ErkJggg==",
@@ -542,18 +549,21 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 409, "too_early_to_close");
       if (path.endsWith("/checkin") && fake.checkInEarly) return refuse(route, 409, "too_early_to_arrive");
 
-      // A one visit's client may decide against the fit, or book it for later, when the piece step carries no label.
+      // A one visit's client may decide against the fit, or book it for later, when the piece step carries no label;
+      // a piece with none to read names the hair system picked from the kit instead, as the API takes it
+      // (src/routes/tech/jobs.piece.ts).
       const body = route.request().postDataJSON() as {
         piece_code?: string;
+        no_label?: boolean;
+        stock_code?: string;
         declined?: boolean;
         product?: string;
         fit_later?: boolean;
       } | null;
       const declined = body?.declined === true;
       const later = body?.fit_later === true;
-      if (path.endsWith("/piece") && !declined && !later && !isPieceCode(body?.piece_code ?? "")) {
-        return refuse(route, 400, "invalid_request", ["piece_code"]);
-      }
+      const refused = path.endsWith("/piece") && !declined && !later ? pieceRefused(body) : null;
+      if (refused !== null) return refuse(route, 400, "invalid_request", [refused]);
       fake.writes.push({ path, eventId, startsAt, body });
       if (path.endsWith("/piece") && fake.oneVisit) {
         const product = body?.product ?? "";

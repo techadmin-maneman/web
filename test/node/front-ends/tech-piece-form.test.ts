@@ -9,6 +9,7 @@ import {
   DECLINED,
   kitChoices,
   labelTaken,
+  noticeFor,
   pieceBody,
   profileToMatch,
   stillMissing,
@@ -18,6 +19,7 @@ import {
 
 const EMPTY: PieceForm = {
   code: "",
+  noLabel: false,
   base: "",
   lot: "",
   stock: null,
@@ -120,6 +122,57 @@ describe("the piece step", () => {
       base: "Mane Man Essential, before labels",
       stock_code: "hs_old",
     });
+  });
+
+  // A label lost or never stuck on never stops the fit.
+  it("goes on with no label once a hair system is picked from the kit, labelled or not, and sends none", () => {
+    const kit = {
+      ...FIRST_FIT,
+      kit_hair_systems: [
+        {
+          code: "hs_exact",
+          name: "Mane Man Essential",
+          held: 1,
+          units: [{ code: LABEL, lot_code: null, expires_on: null }],
+        },
+      ],
+    } as unknown as typeof FIRST_FIT;
+    const none = { ...EMPTY, noLabel: true };
+    expect(stillMissing(none, kit, "none")).toBe(copy.piece.pickFromKit);
+    expect(stillMissing({ ...none, stock: "hs_exact" }, kit, "none")).toBeNull();
+    expect(pieceBody({ ...none, stock: "hs_exact" }, kit)).toEqual({
+      no_label: true,
+      base: "Mane Man Essential",
+      stock_code: "hs_exact",
+    });
+  });
+
+  it("holds a hair system picked with no label where every piece of it in the kit has expired", () => {
+    const held = (expires: string, count: number) =>
+      ({
+        ...FIRST_FIT,
+        kit_hair_systems: [
+          {
+            code: "hs_exact",
+            name: "Mane Man Essential",
+            held: count,
+            units: [{ code: LABEL, lot_code: "HS-1", expires_on: expires }],
+          },
+        ],
+      }) as unknown as typeof FIRST_FIT;
+    const picked = { ...EMPTY, noLabel: true, stock: "hs_exact" };
+    expect(stillMissing(picked, held("2026-09-20", 1), "none")).toBe(copy.piece.expiredAction);
+    // A pick the kit no longer has a piece of free, as a refused step's may be, is no pick.
+    expect(stillMissing(picked, held("2028-03-31", 0), "none")).toBe(copy.piece.pickFromKit);
+    expect(stillMissing(picked, held("2026-09-21", 1), "none")).toBeNull();
+    // A piece never labelled, its expiry not on the card, is the API's to judge.
+    expect(stillMissing(picked, held("2026-09-20", 2), "none")).toBeNull();
+  });
+
+  it("says a hair system picked with no label was refused for none of it in the kit being fit to fit", () => {
+    expect(noticeFor(["stock_code"], { no_label: true, stock_code: "hs_exact" })).toBe(copy.corrected.noneToFit);
+    expect(noticeFor(["stock_code"], { piece_code: LABEL, stock_code: "hs_exact" })).toBe(copy.corrected.other);
+    expect(noticeFor(["piece_code"], { no_label: true })).toBe(copy.corrected.piece);
   });
 
   it("sends the hair system picked from the kit", () => {

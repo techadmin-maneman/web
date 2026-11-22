@@ -27,7 +27,6 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/ops/src/technicians/TechnicianForms.tsx": { fn: 89 },
   "apps/tech/src/camera/CaptureScreen.tsx": { fn: 96 },
   "apps/tech/src/login/SignIn.tsx": { fn: 121 },
-  "apps/tech/src/steps/Piece.tsx": { fn: 84 },
   "apps/tech/src/steps/Profile.tsx": { fn: 85 },
   "scripts/lib/wrangler-config-check.ts": { lines: 419 },
   "site/src/islands/invite/Consultation.tsx": { fn: 142 },

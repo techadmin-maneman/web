@@ -29,6 +29,8 @@ export interface PieceSent {
   /** A one visit's product with its fit booked for another day. */
   readonly later: boolean;
   readonly code: string;
+  /** The piece had no label to read (docs/decisions/0291-pieces-without-labels.md). */
+  readonly noLabel: boolean;
   readonly base: string;
   readonly lot: string;
   /** The hair system from the kit, by its stock code; null where none was sent. */
@@ -52,6 +54,7 @@ export function pieceSent(refused: Queued | null): PieceSent | null {
     product: typeof sent.product === "string" ? sent.product : null,
     later: sent.fit_later === true,
     code: textOf(sent.piece_code),
+    noLabel: sent.no_label === true,
     base: textOf(sent.base),
     lot: textOf(sent.supplier_lot),
     stock: typeof sent.stock_code === "string" ? sent.stock_code : null,

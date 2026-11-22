@@ -48,6 +48,7 @@ describe("a refused piece", () => {
       product: null,
       later: false,
       code: "MM-STD-7193 C",
+      noLabel: false,
       base: "Lace",
       lot: "LOT-5120",
       stock: null,
@@ -67,6 +68,15 @@ describe("a refused piece", () => {
       code: "",
     });
     expect(pieceSent(refused("piece", { declined: true }))).toMatchObject({ declined: true, code: "" });
+  });
+
+  // A piece with no label sent none: the step opens again on its hair system, saying so (ADR 0291).
+  it("keeps that the piece had no label, and the hair system picked for it", () => {
+    expect(pieceSent(refused("piece", { no_label: true, stock_code: "HS-ESS-1B" }))).toMatchObject({
+      noLabel: true,
+      code: "",
+      stock: "HS-ESS-1B",
+    });
   });
 
   it("is nothing to start from with no refused step", () => {

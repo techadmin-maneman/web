@@ -597,3 +597,28 @@ test("names the hair system from the piece step still on the phone", async ({ pa
   await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.closed })).toBeVisible();
   await expect(page.locator("dl").first().getByText("MM-ESS-0000779-S", { exact: true })).toBeVisible();
 });
+
+test("a close with its piece step still on the phone, sent with no label, names the hair system picked", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.type = "replacement";
+  const name = "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density";
+  fake.kitHairSystems = holding("essential", "MM-ESS-0000779-S").map((each) => ({ ...each, name }));
+  startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos", "sign_off");
+  await page.route(`**/api/tech/jobs/${JOB_ID}/piece`, () => undefined);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await queuedOnPhone(page, [
+    {
+      id: "01000000-0000-7000-8000-000000000031",
+      kind: "piece",
+      route: "piece",
+      body: { no_label: true, stock_code: "hs_essential" },
+    },
+    { id: "01000000-0000-7000-8000-000000000032", kind: "outcome", route: "outcome", body: { outcome: "done" } },
+  ]);
+  await page.goto(`/jobs/${JOB_ID}/done`);
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.closeOut.titles.closed })).toBeVisible();
+  await expect(page.locator("dl").first().getByText(name, { exact: true })).toBeVisible();
+});

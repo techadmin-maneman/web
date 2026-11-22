@@ -20,6 +20,8 @@ export type Choice = string | null;
 /** What the technician has typed and chosen on the step. */
 export interface PieceForm {
   readonly code: string;
+  /** The piece has no label to read: the hair system picked from the kit is what is fitted. */
+  readonly noLabel: boolean;
   readonly base: string;
   readonly lot: string;
   /** The hair system from the kit, by its stock code; null for a piece from elsewhere. */
@@ -147,9 +149,12 @@ export function choiceSent(sent: PieceSent | null): Choice {
 }
 
 /** Why the step is open again: the label the API refused, or the step as a whole. */
-export function noticeFor(refusedFields: readonly string[]): string {
+export function noticeFor(refusedFields: readonly string[], sent: unknown = null): string {
   const aLabel = refusedFields.some((field) => field === "piece_code" || field === "old_piece");
-  return aLabel ? copy.corrected.piece : copy.corrected.other;
+  if (aLabel) return copy.corrected.piece;
+  // A hair system picked with no label is refused only where the kit holds none of it that may be fitted.
+  const noLabel = typeof sent === "object" && sent !== null && "no_label" in sent && sent.no_label === true;
+  return noLabel && refusedFields.includes("stock_code") ? copy.corrected.noneToFit : copy.corrected.other;
 }
 
 /** The piece of the kit a label names, with the hair system it is; null for a label no piece in the kit carries. */
@@ -168,6 +173,26 @@ function kitPieceOf(
 function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string): boolean {
   const piece = kitPieceOf(job, label);
   return piece !== null && piece.expires_on !== null && piece.expires_on < job.date;
+}
+
+/**
+ * With no label to read, the hair system picked from the kit is the piece: one with a piece free is all it asks, in
+ * date. A pick the kit no longer has free, as a refused step's may be, is no pick.
+ */
+function noLabelMissing(form: PieceForm, job: Pick<Job, "kit_hair_systems" | "date">): string | null {
+  const held = job.kit_hair_systems.find((each) => each.code === form.stock)?.held ?? 0;
+  if (form.stock === null || held <= 0) return copy.piece.pickFromKit;
+  return allExpiredInKit(job, form.stock) ? copy.piece.expiredAction : oldLabelMissing(form);
+}
+
+/**
+ * Whether every piece the kit holds of a hair system is labelled and has expired, so none picked with no label can be
+ * fitted; one never labelled, whose expiry the card does not carry, is left to the API to judge.
+ */
+function allExpiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, stock: string): boolean {
+  const held = job.kit_hair_systems.find((each) => each.code === stock);
+  if (held === undefined || held.held === 0 || held.units.length < held.held) return false;
+  return held.units.every((unit) => unit.expires_on !== null && unit.expires_on < job.date);
 }
 
 /** What the label warns of: a piece of the kit that has expired, or a hair system not the one this fit is for. */
@@ -248,6 +273,7 @@ export function stillMissing(
   if (fitsNothingToday(form, job)) return null;
   // A one visit fits today only a hair system the kit holds; one it does not is booked for later.
   if (job.one_visit && form.choice !== null && !inKit(job, form.choice)) return oneVisit.notInKitAction;
+  if (form.noLabel) return noLabelMissing(form, job);
   if (expiredInKit(job, form.code)) return copy.piece.expiredAction;
   if (!isLabel(form.code)) return copy.piece.checkFirst;
   if (checked === "another_client") return copy.piece.notThisClientAction;
@@ -257,8 +283,12 @@ export function stillMissing(
   const fromKit = unlabelled || kitPieceOf(job, form.code) !== null;
   if (!fromKit && checked === "none") return copy.piece.uncheckedAction;
   if (!fromKit && checked === "unknown") return copy.piece.notInKitAction;
-  return given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;
+  return oldLabelMissing(form);
 }
+
+/** On a replacement, the label of the piece that came off where one is given and is no label: what keeps Next dim. */
+const oldLabelMissing = (form: PieceForm): string | null =>
+  given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;
 
 /** The step's body: against the fit, or the piece with what was said of it, and on a replacement the one off. */
 export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit" | "kit_hair_systems">): EventBody<"piece"> {
@@ -269,7 +299,8 @@ export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit" | "kit_hai
     ? form.base.trim()
     : job.kit_hair_systems.find((each) => each.code === form.stock)?.name;
   return {
-    piece_code: form.code,
+    // With no label, none is sent; the API records the piece under one made for it.
+    ...(form.noLabel ? { no_label: true as const } : { piece_code: form.code }),
     ...(job.one_visit && form.choice !== null ? { product: form.choice } : {}),
     ...(base === undefined ? {} : { base }),
     ...(given(form.lot) ? { supplier_lot: form.lot.trim() } : {}),
