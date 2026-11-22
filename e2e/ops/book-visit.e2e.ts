@@ -2,7 +2,7 @@
 // one. A paid visit goes out as a payment link; anything else is booked at once. The API is answered from here, so
 // the windows and the outcome read the same on every run; each reply is held to docs/openapi-ops.json.
 
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import {
@@ -100,6 +100,49 @@ async function openVisits(page: Page, over: Answers = {}): Promise<void> {
 }
 
 const panel = (page: Page) => page.getByRole("dialog", { name: `Book a visit for ${CLIENT.name}` });
+
+/** Records the words of each element the page brings into view, as the drawer does a line beneath its buttons. */
+async function recordScrolls(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const brought: string[] = [];
+    Object.assign(window, { brought });
+    type Bring = (this: Element, how?: boolean | ScrollIntoViewOptions) => void;
+    const bring = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView")?.value as Bring;
+    Element.prototype.scrollIntoView = function (this: Element, how?: boolean | ScrollIntoViewOptions) {
+      brought.push(this.textContent);
+      bring.call(this, how);
+    };
+  });
+}
+
+const broughtIntoView = (page: Page) =>
+  page.evaluate(() => (window as unknown as { brought: string[] }).brought.slice());
+
+/** Whether the room the element keeps beneath it, brought into view, is at least the Book bar's height. */
+const clearsTheBar = (element: Locator) =>
+  element.evaluate((node) => {
+    let kept: Element | null = node;
+    while (kept !== null && parseFloat(getComputedStyle(kept).scrollMarginBottom) === 0) kept = kept.parentElement;
+    const bar = [...(node.closest("dialog")?.querySelectorAll("*") ?? [])].find(
+      (each) => getComputedStyle(each).position === "sticky",
+    );
+    if (kept === null || bar === undefined) return false;
+    return parseFloat(getComputedStyle(kept).scrollMarginBottom) >= bar.getBoundingClientRect().height;
+  });
+
+/** Whether what is at the middle of the element is the element itself, not the Book bar or anything else over it. */
+const seen = (element: Locator) =>
+  element.evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    const at = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    return at !== null && node.contains(at);
+  });
+
+/** Whether the element starts beneath the control, not beside it in its row. */
+async function beneath(element: Locator, control: Locator): Promise<boolean> {
+  const [box, above] = await Promise.all([element.boundingBox(), control.boundingBox()]);
+  return (box?.y ?? 0) >= (above?.y ?? 0) + (above?.height ?? 0);
+}
 
 test("books a fitted client’s service visit at a start someone is free at, sending the payment link", async ({
   page,
@@ -505,6 +548,18 @@ test("says a link that was not texted, and sends it again on asking", async ({ p
     panel(page).getByRole("status").filter({ hasText: opsCopy.clients.visits.book.inTheWay.notCopied }),
   ).toBeVisible();
   expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
+
+  // Sent again once the booking has closed: why, in the booking's own words, beneath the buttons.
+  await page.route("**/api/holds/*/send-link", (route) =>
+    route.fulfill({ status: 409, json: { error: { code: "hold_expired", request_id: "r-4" } } }),
+  );
+  const sendAgain = panel(page).getByRole("button", { name: opsCopy.tasks.link.resend, exact: true });
+  await sendAgain.click();
+  const refused = panel(page)
+    .getByRole("alert")
+    .filter({ hasText: opsCopy.clients.visits.book.inTheWay.errors.hold_expired });
+  await expect(refused).toBeVisible();
+  expect(await beneath(refused, sendAgain)).toBe(true);
 });
 
 test("names the booking held on its link that refuses another of its kind, and lets it go", async ({ page }) => {
@@ -598,6 +653,7 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
       ],
     }),
     "POST /api/holds/{id}/let-go": json({ error: { code: "hold_expired", request_id: "r-2" } }, 409),
+    "POST /api/holds/{id}/send-link": json({ error: { code: "unavailable", request_id: "r-3" } }, 503),
   });
   await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
   await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
@@ -615,11 +671,12 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
   await expect(asked).toHaveCount(0);
   await expect(panel(page)).not.toContainText(inTheWay.letGone);
 
-  // The browser will not copy its link, at a phone's width: on its own line beneath the buttons, in view with them,
-  // and in no toast.
+  // The browser will not copy its link, at a phone's width: the link on its own line beneath the buttons, brought
+  // into view clear of the Book bar with the buttons still in view, and in no toast.
   await page.setViewportSize({ width: 360, height: 800 });
   await page.evaluate(() => {
     Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
       value: { writeText: () => Promise.reject(new Error("denied")) },
     });
   });
@@ -627,24 +684,38 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
     name: `${opsCopy.tasks.link.copy} · service visit, Fri 24 Sep, 12 pm`,
     exact: true,
   });
+  await recordScrolls(page);
   await copyLink.click();
   const line = panel(page)
     .getByRole("status")
     .filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ });
   await expect(line).toBeVisible();
-  // Beneath the buttons, not among them, and seen: what is at its middle is the line, not the Book bar over it.
-  const [lineBox, buttonBox] = await Promise.all([line.boundingBox(), copyLink.boundingBox()]);
-  expect((lineBox?.y ?? 0) >= (buttonBox?.y ?? 0) + (buttonBox?.height ?? 0)).toBe(true);
-  const seen = await line.evaluate((element) => {
-    const box = element.getBoundingClientRect();
-    const at = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-    return at !== null && element.contains(at);
-  });
-  expect(seen).toBe(true);
+  expect(await beneath(line, copyLink)).toBe(true);
+  expect(await broughtIntoView(page)).toContain("https://rzp.io/i/stub4417");
+  expect(await clearsTheBar(line)).toBe(true);
+  expect(await seen(line)).toBe(true);
+  await expect(copyLink).toBeInViewport();
   expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
   // Pressed again, it is said again: a new message, the last one gone.
   const first = await line.locator("*").first().elementHandle();
   await copyLink.click();
   await expect.poll(() => first.evaluate((node) => node.isConnected)).toBe(false);
   await expect(line).toBeVisible();
+
+  // Sent again while Razorpay does not answer: why, beneath the buttons, brought into view clear of the bar.
+  const sendAgain = panel(page).getByRole("button", {
+    name: `${opsCopy.tasks.link.resend} · service visit, Fri 24 Sep, 12 pm`,
+    exact: true,
+  });
+  await sendAgain.click();
+  const refused = panel(page).getByRole("alert").filter({ hasText: opsCopy.tasks.link.errors.unavailable });
+  await expect(refused).toBeVisible();
+  expect(await beneath(refused, sendAgain)).toBe(true);
+  expect(await broughtIntoView(page)).toContain(opsCopy.tasks.link.errors.unavailable);
+  expect(await clearsTheBar(refused)).toBe(true);
+  expect(await seen(refused)).toBe(true);
+  await expect(sendAgain).toBeInViewport();
+  // The next press says only what it came to.
+  await copyLink.click();
+  await expect(refused).toHaveCount(0);
 });
