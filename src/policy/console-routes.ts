@@ -62,6 +62,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/alerts/{id}/send-again": inOwnDepartments("act"),
   "GET /api/visits/availability": inOwnPlaces("operations", "view"),
   "POST /api/visits": inOwnPlaces("operations", "act"),
+  "GET /api/clients/{id}/held-bookings": inOwnPlaces("operations", "view"),
+  "POST /api/holds/{id}/send-link": inOwnPlaces("operations", "act"),
+  "POST /api/holds/{id}/let-go": inOwnPlaces("operations", "act"),
   // Free to the client unless ops apply the client's own terms, as an ops move is free: everyday work, not a waiver.
   "POST /api/visits/{id}/cancel": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/close": inOwnPlaces("operations", "act"),

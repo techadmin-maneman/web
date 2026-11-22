@@ -15,6 +15,8 @@ import { useCallback, useState } from "react";
 import { type BookingWindow, type VisitAvailability, type VisitBooked, type VisitToBook } from "../api.ts";
 import shared from "./visit-dialog.module.css";
 import styles from "./book-visit.module.css";
+import { HeldLinkActions, InTheWay } from "./HeldBooking.tsx";
+import { Toast } from "@maneman/ui/Toast";
 import { CoverChoice } from "./book-choices.tsx";
 import { Refusal } from "@maneman/ui/Refusal";
 import { clientsApi } from "./clients-api.ts";
@@ -59,8 +61,10 @@ function payLine(choice: Choice, offered: VisitAvailability, covered: boolean): 
 
 /** What came of the booking: booked, on its way, or a link sent and the slot held until it closes. */
 function outcomeOf(booked: VisitBooked): string {
-  if (booked.link !== null)
-    return copy.outcomes.awaiting_payment(rupees(booked.price.amount), whenOf(booked.link.open_until));
+  if (booked.link !== null) {
+    const said = booked.link.texted ? copy.outcomes.awaiting_payment : copy.outcomes.not_texted;
+    return said(rupees(booked.price.amount), whenOf(booked.link.open_until));
+  }
   if (booked.outcome === "booked") return copy.outcomes.booked;
   return copy.outcomes.being_booked;
 }
@@ -74,11 +78,46 @@ function Booked({ booked }: { booked: VisitBooked }) {
       <p className={shared.done}>{outcome}</p>
       <p className={shared.done}>{summary}</p>
       {booked.link !== null && (
-        <p className={shared.done}>
-          {copy.link}: <span className={styles.link}>{booked.link.url}</span>
-        </p>
+        <>
+          <p className={shared.done}>
+            {copy.link}: <span className={styles.link}>{booked.link.url}</span>
+          </p>
+          <HeldLinkActions holdId={booked.hold_id} url={booked.link.url} />
+        </>
       )}
     </div>
+  );
+}
+
+/** Why the booking was refused, and for "Already booked" what it is about, with a held booking to let go. */
+function BookingRefusal({
+  refused,
+  clientId,
+  choice,
+  clear,
+}: {
+  refused: string | null;
+  clientId: string;
+  choice: Choice;
+  clear: (failed: null) => void;
+}) {
+  const [letGo, setLetGo] = useState(false);
+  return (
+    <>
+      {refused !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: refused })} />}
+      {refused === "already_booked" && (
+        <InTheWay
+          clientId={clientId}
+          kind={kindOf(choice)}
+          oneVisit={choice === "one_visit"}
+          onLetGo={() => {
+            clear(null);
+            setLetGo(true);
+          }}
+        />
+      )}
+      {letGo && refused === null && <Toast>{copy.inTheWay.letGone}</Toast>}
+    </>
   );
 }
 
@@ -345,7 +384,7 @@ function BookingDrawer({
       <StripButtons busy={busy} from={from} firstDay={offered.days[0]?.date} onFrom={setFrom} />
       <CoverChoice owed={offered.owed} value={cover} busy={busy} onChoose={setCovers} />
       {takesCode && <CodeOrAdd code={code} given={prefill.code !== undefined} busy={busy} onCode={setCode} />}
-      {refused !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: refused })} />}
+      <BookingRefusal refused={refused} clientId={clientId} choice={choice} clear={setFailed} />
     </Drawer>
   );
 }

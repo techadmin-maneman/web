@@ -79,6 +79,7 @@ import { registerOpsStaff } from "./staff.ts";
 import { registerOpsStandardCosts } from "./standard-costs.ts";
 import { registerOpsForecast } from "./stock-forecast.ts";
 import { registerOpsStockMatch } from "./stock-match.ts";
+import { registerOpsHeldBookings } from "./held-bookings.ts";
 import { registerOpsStockQuality } from "./stock-quality.ts";
 import { registerOpsStockUsage } from "./stock-usage.ts";
 import { registerOpsStockPlaces } from "./stock.places.ts";
@@ -135,6 +136,8 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerPincodeDemand,
   // The stock code a client's profile matches, and where its pieces are (docs/decisions/0173-matching-a-client-to-stock.md).
   registerOpsStockMatch,
+  // Bookings held on their payment link: what stands in the way of another, sent again, let go.
+  registerOpsHeldBookings,
   // Custom orders, paid in full before they are ordered (docs/decisions/0174-custom-orders.md).
   registerOpsCustomOrders,
   // The demand forecast (docs/decisions/0179-demand-forecast.md).

@@ -29,6 +29,7 @@ import { registerClientBooking } from "./routes/client/booking.ts";
 import { registerClientChanges } from "./routes/client/changes.ts";
 import { registerClientNotes } from "./routes/client/notes.ts";
 import { registerClientCustomOrders } from "./routes/client/custom-orders.ts";
+import { registerClientHeldBookings } from "./routes/client/held-bookings.ts";
 import { registerClientData } from "./routes/client/data.ts";
 import { registerClientDiscountCodes } from "./routes/client/discount-codes.ts";
 import { registerTechDiscountCodes } from "./routes/tech/discount-codes.ts";
@@ -164,6 +165,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientNotes,
     // Their custom orders, for Home (docs/decisions/0177-custom-orders-in-the-app.md).
     registerClientCustomOrders,
+    // Bookings ops made that wait on the payment link they sent, so the client can always pay it.
+    registerClientHeldBookings,
     registerClientRefer,
     registerClientData,
   ],

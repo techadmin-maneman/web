@@ -442,15 +442,16 @@ async function holdReference(db: D1Database, holdId: string, now: Date): Promise
 
 /**
  * Asks Razorpay for the hold's payment link, closing as the hold does, and keeps it on the hold. Razorpay texts it to
- * a client whose number is on the allowlist, which in production is every client. Null when Razorpay made none that
- * can be found, and the hold is then the caller's to let go.
+ * a client whose number is on the allowlist, which in production is every client; the answer says whether it did, so
+ * ops are never told a link went that did not. Null when Razorpay made none that can be found, and the hold is then
+ * the caller's to let go.
  */
 export async function sendHoldLink(
   db: D1Database,
   deps: { readonly payments: PaymentsProvider; readonly log: Logger; readonly messagingSettings: MessagingSettings },
   held: { readonly hold: Hold; readonly asked: VisitAsked; readonly sale: Sale; readonly closesAt: Date },
   now: Date,
-): Promise<MadeLink | null> {
+): Promise<(MadeLink & { readonly texted: boolean }) | null> {
   const { hold, asked, sale, closesAt } = held;
   const client = await db
     .prepare("SELECT name, mobile_e164 FROM people WHERE id = ?1")
@@ -480,7 +481,7 @@ export async function sendHoldLink(
     .prepare("UPDATE slot_holds SET payment_link_id = ?2, payment_link_url = ?3, updated_at = ?4 WHERE id = ?1")
     .bind(hold.id, made.id, made.shortUrl, now.toISOString())
     .run();
-  return made;
+  return { ...made, texted: notify };
 }
 
 /**

@@ -7170,6 +7170,54 @@ The client's custom orders still in hand
 }
 ```
 
+### GET /api/me/held-bookings
+
+The client's bookings held until they pay the link ops sent
+
+**200**: Their bookings held on a link, soonest first
+
+```json
+{
+  "$ref": "#/components/schemas/MyHeldBookings"
+}
+```
+
+**401**: session_required
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/refer/card
 
 The client's own card while it is live: the JPEG the invite shows
@@ -14404,6 +14452,70 @@ Request body:
   },
   "required": [
     "orders"
+  ],
+  "additionalProperties": false
+}
+```
+
+### MyHeldBookings
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "starts_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Its start; null for one held before starts."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "What it costs them, in paise."
+          },
+          "pay_url": {
+            "type": "string",
+            "description": "The link to pay by."
+          },
+          "open_until": {
+            "type": "string",
+            "description": "The last moment paying it books it."
+          }
+        },
+        "required": [
+          "type",
+          "date",
+          "starts_at",
+          "amount",
+          "pay_url",
+          "open_until"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "held"
   ],
   "additionalProperties": false
 }

@@ -39,6 +39,7 @@ import {
 } from "./VisitCard.tsx";
 import { ProposedMove } from "./ProposedMove.tsx";
 import { CustomOrderCard } from "./CustomOrderCard.tsx";
+import { HeldBookingCard } from "./HeldBookingCard.tsx";
 import { RemakeCard } from "./RemakeCard.tsx";
 import { Missed, PaymentOwed } from "./HomeNotes.tsx";
 import { HairSystemBlock } from "./HairSystemBlock.tsx";
@@ -68,6 +69,7 @@ export function HomeScreen() {
         <HomeBody me={me} offline={offline} />
         {owed !== null && <PaymentOwed owed={owed} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
+        <HeldBookingCard />
         <CustomOrderCard />
         {invoice !== null && <InvoiceLine invoice={invoice} />}
         {me.state === "fitted" && <HairSystemBlock me={me} />}

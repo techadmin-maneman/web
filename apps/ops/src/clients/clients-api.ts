@@ -15,6 +15,7 @@ import {
   type AvailabilityQuery,
   type HairCorrection,
   type InviteAttachment,
+  type VisitType,
 } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 
@@ -36,6 +37,14 @@ export const clientsApi = {
   setLostReason: (id: string, body: Sent<paths["/api/visits/{id}/lost-reason"]["post"]>) =>
     client.post("/api/visits/{id}/lost-reason", { path: { id }, body }),
   stockMatch: (id: string) => client.get("/api/clients/{id}/stock-match", { path: { id } }),
+  /** The client's bookings held on their link, and a visit of the kind still to come; every kind with none given. */
+  heldBookings: (id: string, kind?: VisitType, oneVisit = false) =>
+    client.get("/api/clients/{id}/held-bookings", {
+      path: { id },
+      query: kind === undefined ? {} : { kind, one_visit: oneVisit ? "true" : "false" },
+    }),
+  sendHeldLink: (holdId: string) => client.post("/api/holds/{id}/send-link", { path: { id: holdId } }),
+  letHeldBookingGo: (holdId: string) => client.post("/api/holds/{id}/let-go", { path: { id: holdId } }),
   sendCustomOrderLink: (id: string) => client.post("/api/custom-orders/{id}/send-link", { path: { id } }),
   cancelCustomOrder: (id: string) => client.post("/api/custom-orders/{id}/cancel", { path: { id } }),
   refundCustomOrder: (id: string, reason: Sent<paths["/api/custom-orders/{id}/refund"]["post"]>["reason"]) =>

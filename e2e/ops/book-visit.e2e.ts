@@ -9,6 +9,7 @@ import {
   answer,
   CLIENT,
   CONSENTS,
+  empty,
   json,
   PIECES,
   RECORD,
@@ -82,7 +83,7 @@ const LINK_SENT = {
   window: "afternoon",
   starts_at: "2027-09-23T06:30:00.000Z",
   technician: SANDEEP,
-  link: { url: "https://rzp.io/i/stub4417", open_until: "2027-09-23T04:30:00.000Z" },
+  link: { url: "https://rzp.io/i/stub4417", open_until: "2027-09-23T04:30:00.000Z", texted: true },
 } satisfies OpsReply<"/api/visits", "post", 201>;
 
 async function openVisits(page: Page, over: Answers = {}): Promise<void> {
@@ -376,4 +377,57 @@ test("lists a booking that refunded its payment by itself beneath the visits, an
   await expect(item).toContainText("Service visit, 24 Sep · Rs. 2,000");
   await expect(item).toContainText("Auto-refunded on 22 Sep 2027: paid after the hold expired.");
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("says a link that was not texted, and sends it again on asking", async ({ page }) => {
+  await openVisits(page, {
+    [BOOK]: json({ ...LINK_SENT, link: { ...LINK_SENT.link, texted: false } }, 201),
+    "POST /api/holds/{id}/send-link": json({ outcome: "not_texted" }),
+  });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  await expect(panel(page).getByRole("status").first()).toContainText("Payment link made for Rs. 2,000, not texted.");
+  await panel(page).getByRole("button", { name: opsCopy.tasks.link.resend }).click();
+  await expect(panel(page)).toContainText(opsCopy.tasks.link.outcomes.not_texted);
+});
+
+test("names the booking held on its link that refuses another of its kind, and lets it go", async ({ page }) => {
+  let letGo = false;
+  await openVisits(page, {
+    [BOOK]: json({ error: { code: "already_booked", request_id: "r-1" } }, 409),
+    [`GET /api/clients/${CLIENT.id}/held-bookings`]: json({
+      visit: null,
+      held: [
+        {
+          hold_id: HOLD,
+          type: "service",
+          date: "2027-09-22",
+          starts_at: "2027-09-22T06:30:00.000Z",
+          amount: 200000,
+          url: "https://rzp.io/i/stub4417",
+          open_until: "2027-09-22T02:00:00.000Z",
+        },
+      ],
+    }),
+    "POST /api/holds/{id}/let-go": async (route) => {
+      letGo = true;
+      await empty()(route);
+    },
+  });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.already_booked);
+  await expect(panel(page)).toContainText(
+    opsCopy.clients.visits.book.inTheWay.held("service visit", "Wed 22 Sep, 12 pm", "7:30 am Wed 22 Sep"),
+  );
+  await panel(page).getByRole("button", { name: opsCopy.clients.visits.book.inTheWay.letGo }).click();
+  await expect(panel(page)).toContainText(opsCopy.clients.visits.book.inTheWay.letGone);
+  await expect(panel(page).getByRole("alert")).toHaveCount(0);
+  expect(letGo).toBe(true);
 });

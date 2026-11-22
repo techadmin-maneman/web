@@ -4,3 +4,17 @@
 .link {
   overflow-wrap: anywhere;
 }
+
+/* A held booking's link: copy it, send it again, or let the booking go; side by side, wrapping on a phone. */
+.heldActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+  align-items: baseline;
+}
+
+/* What an "Already booked" refusal is about, beneath it. */
+.inTheWay {
+  display: grid;
+  gap: var(--sp-8);
+}
