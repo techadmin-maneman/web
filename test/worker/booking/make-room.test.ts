@@ -142,6 +142,22 @@ describe("room made at booking", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first("n")).toBe(0);
   });
 
+  it("falls to the next technician's room where the first one's draft was fixed between the look and the write", async () => {
+    // Farhan lives 3 km from Rohit, and his draft at 11:00 is Priya's, who lives near Sandeep: either move makes room.
+    await technician("t4", "Farhan Ali", "FA");
+    await home("t4", 28.4865);
+    const priya = (await client()).id;
+    await livesAt(priya, 28.56);
+    await elevenOClock(priya, "t4");
+    const [first, second] = (await atEleven()) ?? [];
+    expect([first?.to, second?.to]).toEqual([SANDEEP, SANDEEP]);
+    const fixed = env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(first?.draft);
+    const hold = await holdEleven([fixed]);
+    expect(hold?.technician.id).toBe(second?.technician);
+    const moved = await env.DB.prepare("SELECT appointment_id, now_technician_id FROM dispatch_moves").all();
+    expect(moved.results).toEqual([{ appointment_id: second?.draft, now_technician_id: SANDEEP }]);
+  });
+
   it("holds a start that moves nothing, where the window asked for has one, though moving a draft costs less", async () => {
     // Imran's fixed 16:30 is far north, so Rohit at 13:30 means a long way round; at 12:00, with the draft gone, less.
     const north = (await client()).id;
