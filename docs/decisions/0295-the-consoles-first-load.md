@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-11-23
 - Topic: Platform
+- Amends [0252](0252-client-app-redesign.md), decision 8: the console no longer keeps 150 KB
 
 ## Context
 

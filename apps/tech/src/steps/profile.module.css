@@ -5,7 +5,6 @@
   padding-inline: var(--screen-gutter);
 }
 
-/* Two to a row, each box the prototype's 48 px. */
 /* Which way the base's figures run, beneath its title, before them. */
 .how {
   margin: 0 0 var(--sp-12);
@@ -14,6 +13,7 @@
   color: var(--ui-text-soft);
 }
 
+/* Two to a row, each box the prototype's 48 px. */
 .figures {
   --field-height: var(--tech-min);
 

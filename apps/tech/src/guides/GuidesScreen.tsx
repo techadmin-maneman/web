@@ -70,7 +70,7 @@ export function GuideScreen({ type, back }: { readonly type: VisitType; readonly
   );
 }
 
-/** One task, read-only: its reference, the numbered instructions and what to watch for. */
+/** One task, read-only: the numbered instructions and what to watch for. */
 export function GuideTaskScreen({ type, task }: { readonly type: VisitType; readonly task: string }) {
   const { lists, ready } = useChecklists();
   const item = lists[type].find((each) => each.id === task);

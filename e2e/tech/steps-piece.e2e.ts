@@ -6,6 +6,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE, todayInIndia } from "./fixtures.ts";
+import { queuedOnPhone } from "./on-phone.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
 import { holding, startedThrough, writesTo, throughTheTasks } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
@@ -217,6 +218,35 @@ test.describe("the hair system step", () => {
     await page.getByRole("button", { name: techCopy.steps.piece.scanInstead }).click();
     await expect(page.getByRole("button", { name: techCopy.steps.piece.typeCode })).toBeVisible();
     await expect(warning).toHaveCount(0);
+  });
+
+  test("reopens a refused pick on the scanner, with no warning of it, once nothing in the kit is free", async ({
+    page,
+  }) => {
+    const fake = await fakeTech(page);
+    fake.type = "replacement";
+    fake.pieces = [WORN];
+    fake.profile = ROHITS_PROFILE;
+    // The one piece picked is kept for another client since, so the kit holds none free to pick.
+    fake.kitHairSystems = holding("standard", "MM-STD-5120-A").map((each) => ({ ...each, held: 0 }));
+    startedThrough(fake, "before_photos");
+    await page.goto("/");
+    // The phone's store is open once Today is drawn.
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await queuedOnPhone(page, [
+      {
+        id: "01000000-0000-7000-8000-00000000000c",
+        kind: "piece",
+        route: "piece",
+        body: { no_label: true, stock_code: "hs_standard" },
+        refused: { note: "invalid_request", fields: ["stock_code"] },
+      },
+    ]);
+    await page.goto("/waiting");
+    await page.getByRole("button", { name: techCopy.queue.correct }).click();
+    await expect(page.getByText(techCopy.steps.corrected.noneLeft)).toBeVisible();
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.typeCode })).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.otherThanFitted })).toHaveCount(0);
   });
 
   test("confirms a label from the kit against the profile and the kit, and holds an expired one", async ({ page }) => {

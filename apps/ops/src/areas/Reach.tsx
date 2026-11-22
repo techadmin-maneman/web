@@ -5,6 +5,7 @@
 import { AreaSection } from "./AreaSection.tsx";
 import { Button } from "@maneman/ui/Button";
 
+import { PanelFailed } from "@maneman/ui/States";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useEffect, useState } from "react";
 import type { CityReach } from "../api.ts";
@@ -108,7 +109,7 @@ function Within({ reach, onChoose }: { reach: CityReach; onChoose: (pincodes: Re
 
 function Reach({ city, onChoose }: { city: string; onChoose: (pincodes: ReadonlySet<string>) => void }) {
   const load = useCallback(() => areasApi.reach(city), [city]);
-  const [loaded] = useLoad(load);
+  const [loaded, retry] = useLoad(load);
   const map = useAreaMap(city);
   return (
     <AreaSection id="area-reach" title={copy.title}>
@@ -120,6 +121,7 @@ function Reach({ city, onChoose }: { city: string; onChoose: (pincodes: Readonly
           ))}
         </ul>
       )}
+      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Unreached reach={loaded.value} onChoose={onChoose} />}
       {loaded.state === "loaded" && <Within reach={loaded.value} onChoose={onChoose} />}
     </AreaSection>

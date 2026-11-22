@@ -198,10 +198,12 @@ function LabelRead(props: {
  */
 function usePieceForm(job: Job, sent: PieceSent | null, freeToPick: (choice: Choice) => number) {
   const [code, setCode] = useState(sent?.code ?? "");
-  const [noLabel, setNoLabel] = useState(() => opensWithNoLabel(sent, freeToPick(choiceSent(sent))));
+  const [picking] = useState(() => opensWithNoLabel(sent, freeToPick(choiceSent(sent))));
+  const [noLabel, setNoLabel] = useState(picking);
   const [base, setBase] = useState(sent?.base ?? "");
   const [lot, setLot] = useState(sent?.lot ?? "");
-  const [stock, setStock] = useState<string | null>(sent?.stock ?? null);
+  // A pick with no label that reopens on the scanner keeps none of it, as going back to the scanner keeps none.
+  const [stock, setStock] = useState<string | null>(sent?.noLabel === true && !picking ? null : (sent?.stock ?? null));
   const [failure, setFailure] = useState(sent?.failure ?? null);
   const lookup = useLookup(job, { code, base, lot }, { base: setBase, lot: setLot });
   const [{ choice, later }, decide] = useDecision(sent);

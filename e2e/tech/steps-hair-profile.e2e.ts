@@ -157,6 +157,15 @@ test.describe("the client’s hair profile", () => {
     expect(look.words).not.toBe(look.fill);
   });
 
+  test("says which way the base's width and length run, and reads it with each", async ({ page }) => {
+    await atTheProfile(page);
+    await expect(page.getByText(techCopy.profile.sections.baseHow)).toBeVisible();
+    for (const key of ["base_width_in", "base_length_in"] as const) {
+      const box = page.getByRole("textbox", { name: techCopy.profile.measurements[key] });
+      await expect(box).toHaveAccessibleDescription(techCopy.profile.sections.baseHow);
+    }
+  });
+
   test("keeps Next dim on a figure out of its range, and says the range", async ({ page }) => {
     await atTheProfile(page);
     await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
