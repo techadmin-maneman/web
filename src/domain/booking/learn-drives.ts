@@ -8,7 +8,14 @@ import type { Pin } from "../../lib/geo.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { minuteOf } from "../../policy/day-plan.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
-import { drivesOf, learn, type Away, type DoneJob, type DriveDone } from "../../policy/learned-drives.ts";
+import {
+  drivesOf,
+  learn,
+  type Away,
+  type DoneJob,
+  type DriveDone,
+  type DriveLearning,
+} from "../../policy/learned-drives.ts";
 import type { BookingRules } from "../../policy/start-times.ts";
 
 interface JobRow {
@@ -113,22 +120,23 @@ export async function drivesDone(
   });
 }
 
-/** Learns each city's drive times from the weeks before today, and keeps them; how many cities and drives. */
+/** Learns each city's drive times from the weeks ops set before today, and keeps them; how many cities and drives. */
 export async function learnDrives(
   db: D1Database,
   given: {
     readonly now: Date;
-    readonly weeks: number;
+    readonly learning: DriveLearning;
     readonly estimate: DriveEstimate;
     readonly booking: BookingRules;
   },
 ): Promise<{ cities: number; drives: number }> {
   const to = indiaDate(given.now);
-  const drives = await drivesDone(db, { ...given, from: addDays(to, -7 * given.weeks), to });
+  const drives = await drivesDone(db, { ...given, from: addDays(to, -7 * given.learning.weeks), to });
   const cities = [...new Set(drives.map((drive) => drive.city))];
+  const cleaning = { spread: given.learning.spread, breakMinutes: given.booking.break };
   const learned = cities.flatMap((city) => {
     const own = drives.filter((drive) => drive.city === city);
-    return learn(own, given.booking.break).map((slot) => ({ city, ...slot }));
+    return learn(own, cleaning).map((slot) => ({ city, ...slot }));
   });
   // Written in two statements however many cities there are, the night's run inside the cron's budget.
   await db.batch([

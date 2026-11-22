@@ -145,7 +145,7 @@ export const BOOKING_SETTINGS = [
   {
     name: "drive_learning",
     title: "Learning drive times",
-    note: "How many of a city’s drives an hour needs before its learned time is used, and how many weeks back drives are learned from, each night.",
+    note: "How many of a city’s drives an hour needs before its learned time is used, how many weeks back drives are learned from, each night, and how far from its estimate a drive may be and still be learned from, as many times it or that fraction of it.",
     unit: "drives",
     min: 2,
     max: 200,
@@ -153,6 +153,7 @@ export const BOOKING_SETTINGS = [
     bounds: {
       min_drives: { min: 5, max: 200, unit: "drives" },
       weeks: { min: 2, max: 26, unit: "weeks" },
+      spread: { min: 2, max: 6, unit: "times the estimate" },
     },
     fallback: DRIVE_LEARNING,
   },

@@ -1,7 +1,8 @@
 // Drive times learned from our own drives (docs/decisions/0294-learned-drive-times.md): a drive is the time from one
 // job's close to the same technician's next check-in that day, against what the estimate (./drive-estimate.ts) gave
-// for it. A drive over three times its estimate, or one that spans the day's break and took the break's length more
-// than its estimate, is left out, as an errand or a lunch, and so is one across the technician's leave. Each city's drives are grouped by weekday or weekend and the
+// for it. A drive more than ops' spread from its estimate either way, three times it or a third of it at first, is left
+// out, as an errand or a job closed late, and so is one that spans the day's break and took the break's length more
+// than its estimate, as a lunch, and one across the technician's leave. Each city's drives are grouped by weekday or weekend and the
 // hour they set off in, and each group's middle drive, as a per cent of its estimate, is that hour's pace once enough
 // drives stand behind it; until then the estimate stands. Ops set how many, how far back, and whether to use them.
 
@@ -12,11 +13,14 @@ import { minuteOf } from "./day-plan.ts";
 import { driveMinutes, type DriveEstimate } from "./drive-estimate.ts";
 import type { BookingRules } from "./start-times.ts";
 
-export const DRIVE_LEARNING_KEYS = ["min_drives", "weeks"] as const;
+export const DRIVE_LEARNING_KEYS = ["min_drives", "weeks", "spread"] as const;
 export type DriveLearning = Readonly<Record<(typeof DRIVE_LEARNING_KEYS)[number], number>>;
 
-/** Twenty drives in an hour's group before it is trusted; the last eight weeks' drives learned from. */
-export const DRIVE_LEARNING: DriveLearning = { min_drives: 20, weeks: 8 };
+/**
+ * Twenty drives in an hour's group before it is trusted; the last eight weeks' drives learned from; a drive kept within
+ * three times its estimate, or a third of it.
+ */
+export const DRIVE_LEARNING: DriveLearning = { min_drives: 20, weeks: 8, spread: 3 };
 
 export const DRIVE_TIMES_KEYS = ["use"] as const;
 export const DRIVE_TIMES_CHOICES = ["learned", "estimate"] as const;
@@ -41,9 +45,16 @@ export interface Observed {
   readonly overBreak: boolean;
 }
 
-/** Whether a drive is one to learn from: not over three times its estimate, nor spanning the break and taking it. */
-export function isClean(drive: Observed, breakMinutes: number): boolean {
-  if (drive.took <= 0 || drive.estimate <= 0 || drive.took > 3 * drive.estimate) return false;
+/** What a drive learned from keeps to: within `spread` times its estimate either way, and the day's break. */
+export interface Cleaning {
+  readonly spread: number;
+  readonly breakMinutes: number;
+}
+
+/** Whether a drive is one to learn from: within the spread of its estimate, and not spanning the break and taking it. */
+export function isClean(drive: Observed, { spread, breakMinutes }: Cleaning): boolean {
+  if (drive.took <= 0 || drive.estimate <= 0) return false;
+  if (drive.took > spread * drive.estimate || drive.took * spread < drive.estimate) return false;
   return !(drive.overBreak && drive.took >= drive.estimate + breakMinutes);
 }
 
@@ -129,16 +140,17 @@ export interface Learned {
   readonly drives: number;
 }
 
-/** Each slot's pace from a city's clean drives, the middle one's per cent of its estimate, rounded to a whole. */
-export function learn(drives: readonly Observed[], breakMinutes: number): Learned[] {
+/** Each slot's pace from a city's clean drives, the middle one's per cent of its estimate, rounded to a whole, 1 at least. */
+export function learn(drives: readonly Observed[], cleaning: Cleaning): Learned[] {
   const slots = new Map<string, number[]>();
-  for (const drive of drives.filter((each) => isClean(each, breakMinutes))) {
+  for (const drive of drives.filter((each) => isClean(each, cleaning))) {
     const key = `${drive.dayKind}/${String(drive.hour)}`;
     slots.set(key, [...(slots.get(key) ?? []), (drive.took / drive.estimate) * 100]);
   }
   return [...slots].map(([key, ratios]) => {
     const [dayKind, hour] = key.split("/") as [DayKind, string];
-    return { dayKind, hour: Number(hour), factorPct: Math.round(median(ratios) ?? 100), drives: ratios.length };
+    const factorPct = Math.max(1, Math.round(median(ratios) ?? 100));
+    return { dayKind, hour: Number(hour), factorPct, drives: ratios.length };
   });
 }
 

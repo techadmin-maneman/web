@@ -90,8 +90,9 @@ export async function drivingReport(
     slots
       .filter((row) => row.city === city)
       .map((row) => ({ dayKind: row.day_kind, hour: row.hour, factorPct: row.factor_pct, drives: row.drives }));
+  const cleaning = { spread: inputs.driveLearning.spread, breakMinutes: booking.break };
   const counted = done
-    .filter((drive) => (given.city === undefined || drive.city === given.city) && isClean(drive, booking.break))
+    .filter((drive) => (given.city === undefined || drive.city === given.city) && isClean(drive, cleaning))
     .map((drive) => {
       const pace = paceOf(learnedOf(drive.city), { dayKind: drive.dayKind, ...learning })?.[drive.hour] ?? 100;
       return { ...drive, planned: atPace(drive.estimate, pace, inputs.driveEstimate) };

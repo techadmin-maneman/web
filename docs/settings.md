@@ -178,7 +178,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `allotment` | Who takes a visit | minutes | `{"overflow":150,"overflow_cost":30,"stockroom_cost":30,"no_piece_cost":90,"share_cost":10}` |
 | `steering` | Times offered to clients | minutes | `{"recommended":3,"drive_cap":30}` |
 | `drive_times` | Drive times | a choice | `{"use":"learned"}` |
-| `drive_learning` | Learning drive times | drives | `{"min_drives":20,"weeks":8}` |
+| `drive_learning` | Learning drive times | drives | `{"min_drives":20,"weeks":8,"spread":3}` |
 | `payment_links` | Payment links | hours | `{"holds_hours":24,"closes_before_hours":2,"pay_within_days":14,"one_visit_days":0}` |
 | `arrival_notice_min` | Arrival message | minutes | `10` |
 | `move_proposal_hours` | Move proposals | hours | `48` |

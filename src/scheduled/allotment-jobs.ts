@@ -90,7 +90,7 @@ async function learnDrivesJob({ env, deps, log, inputs }: CronContext): Promise<
   const given = await inputs();
   const learned = await learnDrives(env.DB, {
     now: deps.now(),
-    weeks: given.driveLearning.weeks,
+    learning: given.driveLearning,
     estimate: given.driveEstimate,
     booking: given.bookingRules,
   });

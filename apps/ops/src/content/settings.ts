@@ -252,7 +252,11 @@ export const settings = {
         drive_cap: "Extra driving allowed",
       },
       drive_times: { use: "Used for booking and the plan" },
-      drive_learning: { min_drives: "Drives before an hour is used", weeks: "Weeks learned from" },
+      drive_learning: {
+        min_drives: "Drives before an hour is used",
+        weeks: "Weeks learned from",
+        spread: "Kept within, either way of the estimate",
+      },
       no_show_charge: dispatch.typeNames,
       // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
       no_show_waiver: { payment: "The visit’s payment", credit: "The free service visit used" },

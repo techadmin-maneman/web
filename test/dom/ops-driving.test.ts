@@ -6,6 +6,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DrivingScreen } from "../../apps/ops/src/driving/DrivingScreen.tsx";
 import { driving as copy } from "../../apps/ops/src/content/driving.ts";
+import { hoursAndMinutes } from "../../apps/ops/src/content/common.ts";
+import { tables } from "../../packages/ui/words.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
 
@@ -23,6 +25,8 @@ const REPORT = {
   learning: { use: "learned", min_drives: 20 },
 };
 
+/** What the report call answers with: the report above, unless a test sets its own. */
+let answer: unknown = REPORT;
 let page: HTMLDivElement;
 let root: Root;
 let asked: string[];
@@ -34,7 +38,7 @@ beforeEach(() => {
     contractChecked("ops", (url: string) => {
       const address = new URL(url, "https://ops.maneman.test");
       asked.push(`${address.pathname}${address.search}`);
-      if (address.pathname === "/api/reports/driving") return Promise.resolve(Response.json(REPORT));
+      if (address.pathname === "/api/reports/driving") return Promise.resolve(Response.json(answer));
       return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
     }),
   );
@@ -44,6 +48,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  answer = REPORT;
   act(() => {
     root.unmount();
   });
@@ -63,16 +68,42 @@ describe("the Driving page", () => {
     await opened();
     expect(asked).toContain("/api/reports/driving?weeks=4&by=week");
     const rows = [...page.querySelectorAll("tbody tr")].map((row) => row.textContent);
-    expect(rows[0]).toBe(`GurgaonWeek of Mon 14 Sep6${copy.minutes(180)}${copy.minutes(204)}${copy.gapMinutes(24)}`);
+    expect(rows[0]).toBe(`GurgaonMon 14 Sep6${hoursAndMinutes(180)}${hoursAndMinutes(204)}${copy.signed(24)}`);
     expect(rows[1]).toContain("Imran Qureshi");
   });
 
   it("lists every learned drive time, and which booking plans with", async () => {
     await opened();
     const rows = [...page.querySelectorAll("tbody tr")].map((row) => row.textContent);
-    expect(rows).toContain(`GurgaonWeekdays10 am140%24${copy.used}`);
+    expect(rows).toContain(`GurgaonWeekdays10 am140%24${copy.yes}`);
     expect(rows).toContain(`GurgaonWeekends5 pm90%3${copy.notYet}`);
-    expect(page.textContent).toContain(copy.minimum(20));
+    expect(page.textContent).toContain(copy.used(20));
+  });
+
+  it("says which hours have the drives to be used where ops use the estimate only", async () => {
+    answer = { ...REPORT, learning: { use: "estimate", min_drives: 20 } };
+    await opened();
+    const rows = [...page.querySelectorAll("tbody tr")].map((row) => row.textContent);
+    expect(rows).toContain(`GurgaonWeekdays10 am140%24${copy.yes}`);
+    expect(page.textContent).toContain(copy.estimateOnly(20));
+  });
+
+  it("shows a long list 50 rows at a time, and the rest when asked", async () => {
+    const days = Array.from({ length: 56 }, (_, day) => ({
+      ...WEEK,
+      period: new Date(Date.UTC(2026, 6, 27 + day)).toISOString().slice(0, 10),
+      city: "Gurgaon",
+    }));
+    answer = { ...REPORT, by_city: days };
+    await opened();
+    const cityRows = () => page.querySelectorAll("[aria-labelledby='driving-cities'] tbody tr");
+    expect(cityRows()).toHaveLength(50);
+    const more = [...page.querySelectorAll("button")].find((button) => button.textContent === tables.more);
+    await act(async () => {
+      more?.click();
+      await answered();
+    });
+    expect(cityRows()).toHaveLength(56);
   });
 
   it("asks again by day, and over another period, when they are chosen", async () => {

@@ -36,7 +36,7 @@ for (const width of [1440, 390]) {
     await page.goto("/driving");
     await expect(page.getByRole("heading", { level: 1, name: shell.sections.driving })).toBeVisible();
     await expect(page.getByRole("rowheader", { name: "Imran Qureshi" })).toBeVisible();
-    await expect(page.getByRole("cell", { name: copy.gapMinutes(-9) })).toBeAttached();
+    await expect(page.getByRole("cell", { name: copy.signed(-9) })).toBeAttached();
     await expect(page.getByRole("heading", { name: copy.learned })).toBeVisible();
     await page.waitForLoadState("networkidle");
     expect(await axeViolations(page)).toEqual([]);

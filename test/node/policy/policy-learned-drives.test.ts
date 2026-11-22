@@ -15,6 +15,9 @@ const north = (km: number) => ({ lat: 28.4 + km / 111.195, lng: 77.05 });
 /** India's `time` on `date` as an instant. */
 const at = (date: string, time: string) => new Date(`${date}T${time}:00+05:30`).toISOString();
 
+/** Three times the estimate either way, and a 30-minute break. */
+const CLEANING = { spread: 3, breakMinutes: 30 };
+
 const drive = (took: number, rest: Partial<Observed> = {}): Observed => ({
   dayKind: "weekday",
   hour: 10,
@@ -25,25 +28,34 @@ const drive = (took: number, rest: Partial<Observed> = {}): Observed => ({
 });
 
 describe("a drive learned from", () => {
-  it("is one up to three times its estimate", () => {
-    expect([drive(60), drive(61), drive(0)].map((each) => isClean(each, 30))).toEqual([true, false, false]);
+  it("is one within the spread ops set of its estimate, either way", () => {
+    const tooks = [60, 61, 7, 6, 0];
+    expect(tooks.map((took) => isClean(drive(took), CLEANING))).toEqual([true, false, true, false, false]);
+    expect(isClean(drive(61), { ...CLEANING, spread: 4 })).toBe(true);
   });
 
   it("is not one across the day's break that took the break's length more than its estimate", () => {
-    expect(isClean(drive(49, { overBreak: true }), 30)).toBe(true);
-    expect(isClean(drive(50, { overBreak: true }), 30)).toBe(false);
-    expect(isClean(drive(50), 30)).toBe(true);
+    expect(isClean(drive(49, { overBreak: true }), CLEANING)).toBe(true);
+    expect(isClean(drive(50, { overBreak: true }), CLEANING)).toBe(false);
+    expect(isClean(drive(50), CLEANING)).toBe(true);
   });
 });
 
 describe("a slot's pace", () => {
   it("is its middle drive's time as a per cent of its estimate, with how many drives stand behind it", () => {
-    const learned = learn([drive(24), drive(28), drive(32), drive(90), drive(18, { dayKind: "weekend" })], 30);
+    const learned = learn([drive(24), drive(28), drive(32), drive(90), drive(18, { dayKind: "weekend" })], CLEANING);
     expect(learned).toEqual([
       { dayKind: "weekday", hour: 10, factorPct: 140, drives: 3 },
       { dayKind: "weekend", hour: 10, factorPct: 90, drives: 1 },
     ]);
-    expect(learn([drive(24), drive(28)], 30)).toEqual([{ dayKind: "weekday", hour: 10, factorPct: 130, drives: 2 }]);
+    expect(learn([drive(24), drive(28)], CLEANING)).toEqual([
+      { dayKind: "weekday", hour: 10, factorPct: 130, drives: 2 },
+    ]);
+  });
+
+  it("is 1 per cent at the least, however short its middle drive", () => {
+    const long = { estimate: 300, took: 1 };
+    expect(learn([drive(1, long)], { ...CLEANING, spread: 1000 })[0]?.factorPct).toBe(1);
   });
 
   it("is the day's for each hour with the drives ops ask for, the estimate's for the rest", () => {

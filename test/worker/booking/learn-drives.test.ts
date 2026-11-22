@@ -12,7 +12,11 @@ import { atPace, DRIVE_ESTIMATE, driveMinutes } from "../../../src/policy/drive-
 import { DRIVE_LEARNING, DRIVE_TIMES } from "../../../src/policy/learned-drives.ts";
 import { BOOKING_RULES, WORKING_HOURS } from "../../../src/policy/start-times.ts";
 import { aCheckin, anAddress, anOutcome, aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
-import { captureLogs, markDatabase, NOW, request } from "../helpers.ts";
+import { captureLogs, fakeDependencies, LOCAL_CONFIG, markDatabase, NOW, request } from "../helpers.ts";
+import { writeRow, type RowOf } from "../fixtures/rows.ts";
+import { ALLOTMENT_HOURLY } from "../../../src/scheduled/allotment-jobs.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
+import { createLogger } from "../../../src/log.ts";
 import { enforce, listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
 
 const TECH = "tech-learning";
@@ -58,7 +62,8 @@ const factors = async () =>
     ).all()
   ).results;
 
-const learnNow = () => learnDrives(env.DB, { now: NOW, weeks: 8, estimate: DRIVE_ESTIMATE, booking: BOOKING_RULES });
+const learnNow = () =>
+  learnDrives(env.DB, { now: NOW, learning: DRIVE_LEARNING, estimate: DRIVE_ESTIMATE, booking: BOOKING_RULES });
 
 /** A slot of Gurgaon's, learned already. */
 const aLearnedSlot = (dayKind: string, hour: number, factorPct: number, drives: number) =>
@@ -119,7 +124,44 @@ describe("a drive learned from", () => {
     await aDayOfTwo("2026-09-15", ESTIMATED, "ops@maneman.in");
     expect(await learnNow()).toEqual({ cities: 0, drives: 0 });
   });
+
+  it("is none across the technician's leave, part of a day or whole days, whenever the leave began", async () => {
+    // Tuesday, away 10:05 to 10:15, during the drive; Wednesday, away from July, whole days; Thursday, away after it.
+    await aLeave({ from_date: "2026-09-15", to_date: "2026-09-15", from_time: "10:05", to_time: "10:15" });
+    await aLeave({ from_date: "2026-07-01", to_date: "2026-09-16" });
+    await aLeave({ from_date: "2026-09-17", to_date: "2026-09-17", from_time: "15:00", to_time: "16:00" });
+    for (const date of ["2026-09-15", "2026-09-16", "2026-09-17"]) await aDayOfTwo(date, ESTIMATED);
+    expect(await learnNow()).toEqual({ cities: 1, drives: 1 });
+  });
+
+  it("is one of the weeks ops set, as the night's job reads them", async () => {
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('drive_learning', ?1, 'ops', ?2)",
+    )
+      .bind(JSON.stringify({ ...DRIVE_LEARNING, weeks: 2 }), NOW.toISOString())
+      .run();
+    // Three weeks back, and last week: two weeks learned from, so the first is not.
+    await aDayOfTwo("2026-08-31", ESTIMATED);
+    await aDayOfTwo("2026-09-15", ESTIMATED);
+    const nightly = ALLOTMENT_HOURLY.filter((each) => each.name === "learn_drives");
+    const outcomes = await runCronJobs(nightly, {
+      env,
+      deps: fakeDependencies({ now: () => NOW }),
+      config: LOCAL_CONFIG,
+      log: createLogger(),
+    });
+    expect(outcomes).toMatchObject([{ ok: true }]);
+    expect(await factors()).toMatchObject([{ day_kind: "weekday", hour: 10, drives: 1 }]);
+  });
 });
+
+/** A period of the technician's leave, as ops record it. */
+const aLeave = (row: RowOf<"technician_leave">) =>
+  writeRow(
+    "technician_leave",
+    { id: crypto.randomUUID(), technician_id: TECH, actor: "ops@maneman.in", created_at: NOW.toISOString() },
+    row,
+  );
 
 describe("a learned slot", () => {
   const plansWith = (learning: Partial<typeof DRIVE_LEARNING>, times = DRIVE_TIMES) =>
