@@ -2635,7 +2635,7 @@ Made by `0016_booking.sql`; changed by `0220_prices_with_gst.sql`.
 
 Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
 
-Made by `0141_purchase_orders.sql`.
+Made by `0141_purchase_orders.sql`; changed by `0231_purchase_orders_unsent.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2663,6 +2663,7 @@ Made by `0141_purchase_orders.sql`.
 Indexes:
 
 - `purchase_orders_open`: on (`expected_on`), where `state IN ('approved', 'sent', 'part_received')`
+- `purchase_orders_unsent`: on (`drafted_at`), where `state IN ('drafted', 'approved')`
 - A `UNIQUE` constraint: unique on (`number`)
 
 ## push_subscriptions

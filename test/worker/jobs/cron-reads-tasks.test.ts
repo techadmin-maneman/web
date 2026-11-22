@@ -313,4 +313,58 @@ describe("a look at the Tasks board or the Stock page", () => {
 
     expect(after).toEqual(before);
   });
+
+  /**
+   * Custom orders numbered ?1 to ?2, each paid, its purchase order received and its piece fitted: nothing about any
+   * of them is still a task (docs/decisions/0174-custom-orders.md).
+   */
+  const FINISHED_ORDERS_SQL = [
+    `INSERT INTO purchase_orders (id, number, supplier_id, currency, state, drafted_by, drafted_at, updated_at)
+     SELECT 'po-' || i, 1000 + i, 'sup-1', 'INR', 'received', 'ops@localhost', '${AGO}', '${AGO}' FROM n`,
+    `INSERT INTO custom_orders (id, number, person_id, product, base_width_in, base_length_in, colour, grey_percent,
+       density_percent, supplier_id, supplier_price, amount, state, raised_by, raised_at, updated_at, paid_at, po_id)
+     SELECT 'k-' || i, 1000 + i, 'q-' || (1 + i % 5), 'essential', 7.5, 9, '1B', 30, 120, 'sup-1', 15000, 4500000,
+       'paid', 'ops@localhost', '${AGO}', '${AGO}', '${AGO}', 'po-' || i FROM n`,
+    `INSERT INTO po_lines (id, po_id, consumable_code, quantity, unit_price, custom_order_id)
+     SELECT 'pl-' || i, 'po-' || i, 'tape_strips', 1, 15000, 'k-' || i FROM n`,
+    `INSERT INTO stock_units (id, code, serial, consumable_code, state, place, labelled_at, moved_at, custom_order_id)
+     SELECT 'su-' || i, 'MM-' || i, 5000 + i, 'tape_strips', 'fitted', NULL, '${AGO}', '${AGO}', 'k-' || i FROM n`,
+  ];
+
+  it("reads no more for custom orders to send and pieces to fit when ten times the orders were fitted", async () => {
+    await env.DB.batch([
+      ...CLIENTS_SQL.slice(0, 2).map((sql) => over(sql, 1, 5)),
+      env.DB.prepare(
+        `INSERT INTO suppliers (id, name, country, currency, payment_terms_days, warranty_days, created_at, updated_at)
+         VALUES ('sup-1', 'Lumina Hair Co', 'IN', 'INR', 30, 90, ?1, ?1)`,
+      ).bind(AGO),
+      env.DB.prepare(
+        `INSERT INTO consumables (code, name, unit, unit_cost, created_at, updated_at)
+         VALUES ('tape_strips', 'Tape strips', 'strip', 1200, ?1, ?1)`,
+      ).bind(AGO),
+    ]);
+    await env.DB.batch(FINISHED_ORDERS_SQL.map((sql) => over(sql, 1, 20)));
+    // One order paid, its purchase order still drafted; one whose piece has arrived, held, its fit not booked.
+    await env.DB.batch([
+      ...FINISHED_ORDERS_SQL.map((sql) => over(sql, 9001, 9002)),
+      env.DB.prepare("UPDATE purchase_orders SET state = 'drafted' WHERE number = 10001"),
+      env.DB.prepare("UPDATE stock_units SET state = 'held', place = 'central' WHERE serial = 14002"),
+      env.DB.prepare("DELETE FROM stock_units WHERE serial = 14001"),
+    ]);
+    await rowsReadBy(tasks); // the console's settings, read once and kept
+    const before = await rowsReadBy(tasks);
+    const board = await (await tasks()).json<{ groups: { group: string; tasks: unknown[] }[] }>();
+    expect(board.groups.map((group) => [group.group, group.tasks.length])).toEqual(
+      expect.arrayContaining([
+        ["custom_order_to_send", 1],
+        ["custom_piece_to_fit", 1],
+      ]),
+    );
+
+    await env.DB.batch(FINISHED_ORDERS_SQL.map((sql) => over(sql, 21, 200)));
+    const after = await rowsReadBy(tasks);
+
+    expect({ before, after }).toEqual({ before, after: before });
+    expect(after).toBeLessThanOrEqual(TASKS_ROWS_READ_PER_LOOK);
+  });
 });
