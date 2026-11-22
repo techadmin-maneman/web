@@ -16,7 +16,7 @@ import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 
-/** A third technician, at home 28.6000, as far from the draft as Sandeep and busier. */
+/** A third technician, at home 28.6000: farther from the draft than Sandeep, so not the one it moves to. */
 const VIKRAM = "t9";
 
 const TUESDAY = "2026-09-22";
@@ -157,6 +157,36 @@ describe("tomorrow checked on Google", () => {
     expect(origins.filter((lat) => lat === 28.6)).toHaveLength(1);
     // Sandeep's drive on from 10 o'clock to the draft is asked, on the drives left once his first is free.
     expect(origins).toContain(28.57);
+  });
+
+  // Ops fix the day's only draft on the board while Google is asked: the second read finds no draft at all.
+  it("still tells ops of a fixed visit's drive where the day's last draft was fixed meanwhile", async () => {
+    await technician(VIKRAM, "Vikram Sethi", "VS");
+    await env.DB.prepare(
+      "UPDATE technicians SET home_lat = 28.6, home_lng = 77.0266, home_label = 'Home' WHERE id = ?1",
+    )
+      .bind(VIKRAM)
+      .run();
+    await booked(28.4601);
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(visitId, IMRAN).run();
+    const someone = (await client()).id;
+    await env.DB.prepare("UPDATE addresses SET lat = 28.6101, lng = 77.0266 WHERE person_id = ?1").bind(someone).run();
+    const fixed = await visit(someone, "service", "scheduled", indiaInstant(TUESDAY, "10:00").toISOString(), VIKRAM);
+    await env.DB.prepare("UPDATE appointments SET service_city = 'Gurgaon', service_pincode = '122018' WHERE id = ?1")
+      .bind(fixed)
+      .run();
+    const { check, told } = google((from) => (from.lat === IMRANS_HOME || from.lat === 28.6 ? 300 : 10));
+    const routes = check.routes;
+    if (routes === null) throw new Error("the fake asks Google");
+    const fixing: RoutesProvider = {
+      ...routes,
+      route: async (stops, departing) => {
+        await env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(visitId).run();
+        return routes.route(stops, departing);
+      },
+    };
+    await run({ ...check, routes: fixing });
+    expect(told).toEqual([`leg_short:${VIKRAM}:${TUESDAY}:10:00`]);
   });
 
   it("asks Google no more drives than the run has left, and leaves the rest on the estimate", async () => {

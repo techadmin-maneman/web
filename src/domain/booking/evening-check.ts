@@ -133,13 +133,18 @@ export async function eveningCheck(db: D1Database, check: EveningCheck, input: I
   if (ruledOut.size > 0) {
     await replanDay(db, { ...input, ruledOut });
     const again = await readDay(db, input);
-    // Only the days the re-plan changed are driven again; the rest keep what Google said of them.
-    const ids = new Set([...first.days.keys(), ...(again?.days.keys() ?? [])]);
-    const changed = new Set([...ids].filter((id) => !sameStops(first.days.get(id), again?.days.get(id))));
-    shorts = [
-      ...shorts.filter((short) => !changed.has(short.technicianId)),
-      ...(again === null ? [] : await shortsOf(db, check, again, { ...input, only: changed })),
-    ];
+    if (again === null) {
+      // No draft is left, fixed by ops or gone meanwhile: what Google said of the fixed visits still stands.
+      shorts = shorts.filter((short) => short.draftId === null);
+    } else {
+      // Only the days the re-plan changed are driven again; the rest keep what Google said of them.
+      const ids = new Set([...first.days.keys(), ...again.days.keys()]);
+      const changed = new Set([...ids].filter((id) => !sameStops(first.days.get(id), again.days.get(id))));
+      shorts = [
+        ...shorts.filter((short) => !changed.has(short.technicianId)),
+        ...(await shortsOf(db, check, again, { ...input, only: changed })),
+      ];
+    }
   }
   for (const short of shorts) {
     const named = await db

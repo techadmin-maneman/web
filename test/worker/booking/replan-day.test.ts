@@ -233,10 +233,10 @@ describe("each hour's re-plan", () => {
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
   });
 
-  /** The cities one hour's run re-plans, with what the hours of the locks say. */
   /** The cities a turn left out, as it warns of them. */
   let left: string[] = [];
 
+  /** The cities one hour's run re-plans, with what the hours of the locks say. */
   async function turnAt(time: string, readHours = NATIONAL_SIX): Promise<string[]> {
     const replanned: string[] = [];
     left = [];
