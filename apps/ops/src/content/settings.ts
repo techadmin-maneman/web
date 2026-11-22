@@ -249,7 +249,7 @@ export const settings = {
       },
       steering: {
         recommended: "Marked Recommended",
-        drive_cap: "Not offered beyond the day’s best by",
+        drive_cap: "Extra driving allowed",
       },
       no_show_charge: dispatch.typeNames,
       // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).

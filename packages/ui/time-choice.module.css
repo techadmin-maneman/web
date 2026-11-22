@@ -99,6 +99,14 @@
     color: inherit;
   }
 
+  /* A period where some time carries a note: every time keeps the note's line, unseen, so the times of a row align. */
+  .noted .time:not(:has(.note))::after {
+    content: "\a0";
+    visibility: hidden;
+    font-size: var(--fs-13);
+    line-height: var(--lh-125);
+  }
+
   /* Taken: where it was, struck through, on the shade a full window has. */
   .taken {
     border-color: var(--time-taken-edge);

@@ -228,7 +228,8 @@ export const StartSchema = z
     }),
     recommended: z.boolean().openapi({
       description:
-        "One of the day's open starts that add least driving, as many as ops set, marked Recommended " +
+        "One of the day's open starts that cost least, as booking weighs who takes a start, as many as ops set, " +
+        "marked Recommended " +
         "(docs/decisions/0293-steering-booking-times.md).",
     }),
   })

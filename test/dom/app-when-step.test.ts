@@ -134,7 +134,7 @@ describe("the day and time", () => {
     // A time that drives least says so beneath it, read with it.
     expect(times().map((label) => label?.textContent)).toEqual([
       "9 am, taken",
-      `11:30 am${copy.recommended}`,
+      `11:30 am, ${copy.recommended}`,
       "12 pm, taken",
       "4 pm",
     ]);

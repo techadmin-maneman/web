@@ -18,8 +18,9 @@ cap is measured from the day's best time.
 
 1. **The policy** (`src/policy/steering.ts`): of a day's starts, each weighed by its best technician (who takes it,
    ADR 0289), a start that adds more driving than the day's least-driving start, by more than `drive_cap`, is not
-   offered, unless it is the day's last start; of those offered, the `recommended` that cost least, the earlier first
-   where they cost the same, are marked Recommended. A start whose best technician has no home pin, whose driving
+   offered, unless it is the day's last start; of those within it, the `recommended` that cost least, the earlier
+   first where they cost the same, are marked Recommended. A client's move is weighed by its own technician wherever
+   they can take a start, as its hold puts them first. A start whose best technician has no home pin, whose driving
    nobody can tell, neither sets the day's best nor is left out, and is marked after those whose home is known, as
    booking weighs who takes a start.
 2. **Ops set both** in Settings › "Times offered to clients" (`steering`): three times a day marked, and 30 minutes
@@ -33,4 +34,7 @@ cap is measured from the day's best time.
 ## Consequences
 
 - A quiet day, whose starts drive alike, offers them all; a day always offers its last, so none goes dark.
-- Marking reads no more than offering did: the cost is the one booking already weighs each start by.
+- Marking reads no more than offering did: the cost is the one booking already weighs each start by, so changing
+  what "Who takes a visit" counts changes which times are marked.
+- A start that moves a draft to make room (ADR 0292) is weighed on the day without that draft, so steering may favour
+  it over one that moves nothing; the evening's re-plan settles the drafts again.

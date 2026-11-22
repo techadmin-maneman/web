@@ -116,14 +116,14 @@ export const BOOKING_SETTINGS = [
   {
     name: "steering",
     title: "Times offered to clients",
-    note: "The times that add least driving are marked Recommended in the app; a time adding more driving than the day’s best, by more than this, is not offered to clients, unless it is the day’s last. Ops see every time.",
+    note: "The times that cost least, as Who takes a visit counts them, are marked Recommended in the app; a time adding more driving than the day’s best, by more than this, is not offered to clients, unless it is the day’s last. Ops see every time.",
     unit: "minutes",
     min: 0,
     max: 240,
     keys: STEERING_KEYS,
     bounds: {
       recommended: { min: 0, max: 10, unit: "times a day" },
-      drive_cap: { min: 5, max: 240, unit: "minutes more driving" },
+      drive_cap: { min: 5, max: 240, unit: "minutes beyond the day’s best" },
     },
     fallback: STEERING,
   },

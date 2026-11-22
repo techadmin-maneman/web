@@ -83,10 +83,11 @@ const holdAt = (startsAt: Date, from: "app" | "ops") =>
   });
 
 describe("times steered for clients", () => {
-  it("leaves out a start that drives more than ops allow, but never the day's last, and marks the cheapest", async () => {
+  it("leaves out a start that drives more than ops allow beyond the day's best, never the last, and marks the cheapest", async () => {
     const every = await everyStart();
     const last = every.at(-1)?.time;
-    const over = every.filter((start) => start.drive > STEERED.drive_cap && start.time !== last);
+    const least = Math.min(...every.map((start) => start.drive));
+    const over = every.filter((start) => start.drive - least > STEERED.drive_cap && start.time !== last);
     // The day has starts above the cap, and some below it, so the steering has something to do.
     expect(over.length).toBeGreaterThan(0);
     expect(over.length).toBeLessThan(every.length - 1);
@@ -96,6 +97,7 @@ describe("times steered for clients", () => {
     );
     const cheapest = [...offered]
       .map((start) => every.find((each) => each.time === start.time))
+      .filter((start) => start !== undefined && start.drive - least <= STEERED.drive_cap)
       .sort((a, b) => (a?.cost ?? 0) - (b?.cost ?? 0) || (a?.time ?? "").localeCompare(b?.time ?? ""))
       .slice(0, STEERED.recommended)
       .map((start) => start?.time);
@@ -119,7 +121,8 @@ describe("times steered for clients", () => {
   it("holds a start not offered to clients for ops, never for a client", async () => {
     const every = await everyStart();
     const last = every.at(-1)?.time;
-    const hidden = every.find((start) => start.drive > STEERED.drive_cap && start.time !== last);
+    const least = Math.min(...every.map((start) => start.drive));
+    const hidden = every.find((start) => start.drive - least > STEERED.drive_cap && start.time !== last);
     expect(hidden).toBeDefined();
     if (hidden === undefined) return;
     expect(await holdAt(hidden.startsAt, "app")).toBeNull();

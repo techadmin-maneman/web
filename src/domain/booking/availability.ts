@@ -258,7 +258,7 @@ async function windowsOf({
   ]);
   const startable = windowsFitting(unitsFor(visit.minutes));
   return offers.map(({ date, starts: all }) => {
-    const starts: readonly WindowStart[] = steered ? steer(all, inputs.steering) : all;
+    const starts: readonly WindowStart[] = steered ? steer(all, inputs.steering, moving?.technicianId ?? null) : all;
     const hours = windowTimesOf(schedule.on(date));
     const windows = startable.map((window): WindowTechnicians => {
       const inside = starts.filter((start) => start.time >= hours[window].start && start.time < hours[window].end);

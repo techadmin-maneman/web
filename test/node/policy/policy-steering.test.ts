@@ -7,7 +7,7 @@ import { steer, STEERING } from "../../../src/policy/steering.ts";
 /** A start its best technician would drive `addedDrive` minutes for, at a cost of `cost`, their home known unless not. */
 const at = (time: string, addedDrive: number, cost = addedDrive, homeKnown = true) => ({
   time,
-  takers: [{ addedDrive, cost, homeKnown }],
+  takers: [{ technician: { id: "best" }, addedDrive, cost, homeKnown }],
 });
 
 const shown = (starts: ReturnType<typeof steer>) =>
@@ -41,6 +41,26 @@ describe("steering a day's starts", () => {
     // marked are Aditya's, as booking puts a known home first.
     const day = [at("09:00", 0, 30, false), at("11:00", 90), at("13:00", 95), at("15:00", 200)];
     expect(shown(steer(day, { recommended: 2, drive_cap: 30 }))).toEqual(["09:00", "11:00 *", "13:00 *", "15:00"]);
+  });
+
+  it("never marks a start kept only for being the day's last", () => {
+    // 18:30 drives 18 minutes beyond the day's best, over the cap of 10, so it is offered, as the last, unmarked.
+    const day = [at("10:00", 9), at("18:30", 27)];
+    expect(shown(steer(day, { recommended: 3, drive_cap: 10 }))).toEqual(["10:00 *", "18:30"]);
+  });
+
+  it("weighs a client's move by its own technician where they can take the start, as its hold does", () => {
+    // Sandeep, near the client, would drive 5 at 10:00; Imran, whose visit it is, 50. Imran's 11:00 drives 10.
+    const own = (time: string, imran: number, sandeep: number) => ({
+      time,
+      takers: [
+        { technician: { id: "sandeep" }, addedDrive: sandeep, cost: sandeep, homeKnown: true },
+        { technician: { id: "imran" }, addedDrive: imran, cost: imran, homeKnown: true },
+      ],
+    });
+    const day = [own("10:00", 50, 5), own("11:00", 10, 10), own("12:00", 12, 12)];
+    expect(shown(steer(day, { recommended: 1, drive_cap: 30 }, "imran"))).toEqual(["11:00 *", "12:00"]);
+    expect(shown(steer(day, { recommended: 1, drive_cap: 30 }))).toEqual(["10:00 *", "11:00", "12:00"]);
   });
 
   it("marks nothing where ops set none, and offers nothing on a day with no start", () => {

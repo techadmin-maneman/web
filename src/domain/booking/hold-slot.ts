@@ -167,7 +167,7 @@ async function candidatesFor({
   ]);
   const hours = windowTimesOf(schedule.on(date))[window];
   const day = offers[0]?.starts ?? [];
-  const offered = from === "ops" ? day : steer(day, steering);
+  const offered = from === "ops" ? day : steer(day, steering, moving?.technicianId ?? null);
   const inside = offered.filter((start) =>
     input.startsAt === undefined
       ? start.time >= hours.start && start.time < hours.end

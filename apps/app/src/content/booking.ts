@@ -134,7 +134,7 @@ export const booking = {
     /** Beside a part of the day: how many of its times are open. */
     open: (count: number) => `${String(count)} open`,
     fullyBooked: "Fully booked",
-    // Our words: the design marks no time; under the day's times that add least driving.
+    // Our words: the design marks no time; under the day's times that cost least.
     recommended: "Recommended",
     /** Read after a time struck through. */
     taken: "taken",
