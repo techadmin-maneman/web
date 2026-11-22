@@ -161,20 +161,25 @@ describe("tomorrow checked on Google", () => {
 
   /**
    * The day's only draft, Imran's at 11, with Vikram's fixed 10 o'clock visit beside it, both drives jammed; `meanwhile`
-   * is done to the draft while Google is asked. What was told.
+   * is done to the draft while Google is asked. Each case gives its own clients' pins, as Google's answers are kept
+   * between tests, and a drive kept would ask Google nothing, so nothing would happen meanwhile. What was told.
    */
-  async function whileAsked(meanwhile: string): Promise<string[]> {
+  async function whileAsked(
+    meanwhile: string,
+    pins: { readonly draft: number; readonly fixed: number },
+  ): Promise<string[]> {
     await technician(VIKRAM, "Vikram Sethi", "VS");
     await env.DB.prepare(
       "UPDATE technicians SET home_lat = 28.6, home_lng = 77.0266, home_label = 'Home' WHERE id = ?1",
     )
       .bind(VIKRAM)
       .run();
-    await booked(meanwhile.startsWith("DELETE") ? 28.4602 : 28.4601);
+    await booked(pins.draft);
     await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(visitId, IMRAN).run();
     const someone = (await client()).id;
-    const lat = meanwhile.startsWith("DELETE") ? 28.6102 : 28.6101;
-    await env.DB.prepare("UPDATE addresses SET lat = ?2, lng = 77.0266 WHERE person_id = ?1").bind(someone, lat).run();
+    await env.DB.prepare("UPDATE addresses SET lat = ?2, lng = 77.0266 WHERE person_id = ?1")
+      .bind(someone, pins.fixed)
+      .run();
     const fixed = await visit(someone, "service", "scheduled", indiaInstant(TUESDAY, "10:00").toISOString(), VIKRAM);
     await env.DB.prepare("UPDATE appointments SET service_city = 'Gurgaon', service_pincode = '122018' WHERE id = ?1")
       .bind(fixed)
@@ -195,13 +200,23 @@ describe("tomorrow checked on Google", () => {
 
   // Fixed in place meanwhile, the draft is a fixed visit now, whose drive Google found too long: ops are told of both.
   it("tells ops of the drives Google found short where the day's draft was fixed in place meanwhile", async () => {
-    const told = await whileAsked("UPDATE appointments SET technician_draft = 0 WHERE id = ?1");
+    const told = await whileAsked("UPDATE appointments SET technician_draft = 0 WHERE id = ?1", {
+      draft: 28.4601,
+      fixed: 28.6101,
+    });
     expect(told.sort()).toEqual([`leg_short:${IMRAN}:${TUESDAY}:11:00`, `leg_short:${VIKRAM}:${TUESDAY}:10:00`]);
+    expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 0 });
   });
 
   it("tells ops of no drive to a draft gone meanwhile, and still of the fixed visit's", async () => {
-    const told = await whileAsked("UPDATE appointments SET deleted_at = '2026-09-21T06:00:00.000Z' WHERE id = ?1");
+    const told = await whileAsked("UPDATE appointments SET deleted_at = '2026-09-21T06:00:00.000Z' WHERE id = ?1", {
+      draft: 28.4602,
+      fixed: 28.6102,
+    });
     expect(told).toEqual([`leg_short:${VIKRAM}:${TUESDAY}:10:00`]);
+    // Gone before the re-plan, it was never moved to Sandeep: the second read found no draft at all.
+    expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first("n")).toBe(0);
   });
 
   it("asks Google no more drives than the run has left, and leaves the rest on the estimate", async () => {
