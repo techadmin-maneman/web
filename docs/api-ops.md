@@ -51957,6 +51957,10 @@ Request body:
         }
       ],
       "description": "How far the technician has got, from the steps their phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before they arrive. A visit they have begun, or one in progress, is not moved."
+    },
+    "draft": {
+      "type": "boolean",
+      "description": "Whether its technician is still a draft, which the evening's re-plan may change; fixed the evening before (ADR 0290)."
     }
   },
   "required": [
@@ -51977,7 +51981,8 @@ Request body:
     "notice_hours",
     "untold",
     "proposal",
-    "begun"
+    "begun",
+    "draft"
   ],
   "additionalProperties": false
 }

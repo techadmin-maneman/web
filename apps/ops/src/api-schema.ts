@@ -30913,6 +30913,8 @@ export interface components {
             proposal: components["schemas"]["BoardProposedMove"] | null;
             /** @description How far the technician has got, from the steps their phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before they arrive. A visit they have begun, or one in progress, is not moved. */
             begun: ("arrived" | "started" | "closed") | null;
+            /** @description Whether its technician is still a draft, which the evening's re-plan may change; fixed the evening before (ADR 0290). */
+            draft: boolean;
         };
         DispatchClient: {
             /** Format: uuid */
