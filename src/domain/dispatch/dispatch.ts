@@ -335,8 +335,9 @@ function movedVisit(db: D1Database, move: PlannedMove, at: string): D1PreparedSt
   const { job } = move;
   return db
     .prepare(
+      // A visit ops place by hand is fixed where they place it: the evening's re-plan leaves it there.
       `UPDATE appointments SET technician_id = ?2, window_start = ?3, window_end = ?4, synced_at = ?5,
-         start_before_move = ?6
+         start_before_move = ?6, technician_draft = 0
        WHERE id = ?1`,
     )
     .bind(

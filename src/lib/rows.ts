@@ -75,6 +75,7 @@ export interface Rows {
     readonly checkin_waived_by: string | null;
     readonly checkin_waived_reason: string | null;
     readonly books_invoice_id: string | null;
+    readonly technician_draft: number;
   };
   readonly audit_log: {
     readonly id: number;

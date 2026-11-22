@@ -127,9 +127,11 @@ const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id
     AND ${statusIn("p.status", PAYMENT_HELD)})
   OR ${creditSpentOn("a.id")})`;
 
+/** A visit's columns for its client; a draft technician is left out until the evening before (src/domain/booking/allotment-lock.ts). */
 const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
   a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
-  t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
+  CASE WHEN a.technician_draft = 1 THEN NULL ELSE t.name END AS technician_name,
+  CASE WHEN a.technician_draft = 1 THEN NULL ELSE t.initials END AS technician_initials, ${PREPAID} AS prepaid,
   ${visitBegun("a")} AS begun, ${begunPastArrival("a")} AS started, ${landedOutcome("a")} AS landed_outcome, a.client_note,
   EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id AND n.closed_at IS NOT NULL) AS not_home,
   ${openProposalJson("a")} AS proposal,

@@ -2,6 +2,7 @@
 // in confirmBooking). NOW is Monday 21 September 2026, 12 noon in India; the price book is at 0% from 22 September.
 // Every name and number here is made up.
 
+import { fixedOnBooking } from "./client-booking-fixtures.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../../src/domain/booking/bookings.ts";
@@ -29,6 +30,7 @@ let cookie: string;
 
 beforeEach(async () => {
   await markDatabase();
+  await fixedOnBooking();
   for (const [id, name, initials] of [
     ["t1", "Imran Qureshi", "IQ"],
     ["t2", "Vikram Sethi", "VS"],
@@ -134,7 +136,8 @@ describe("moving a visit", () => {
     });
     const app = client();
     const held = await hold(app, "service", "2026-09-25", "evening");
-    expect(held).toMatchObject({ price: { amount: 0 }, technician: { name: "Vikram Sethi" } });
+    // Four days ahead, its technician is a draft, named the evening before (ADR 0290); who it is is checked below.
+    expect(held).toMatchObject({ price: { amount: 0 }, technician: null });
 
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     const moved = await env.DB.prepare("SELECT technician_id, window_start FROM appointments WHERE id = ?1")
@@ -147,7 +150,8 @@ describe("moving a visit", () => {
     await booked("service", THURSDAY_NOON, 200000);
     const app = client();
     const held = await hold(app, "service", "2026-09-25", "evening");
-    expect(held).toMatchObject({ price: { amount: 0 }, technician: { name: "Imran Qureshi" }, moves_visit_id: VISIT });
+    // Four days ahead, its technician is a draft again, named the evening before (ADR 0290).
+    expect(held).toMatchObject({ price: { amount: 0 }, technician: null, moves_visit_id: VISIT });
 
     const started = await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     expect(await started.json()).toEqual({ hold_id: held.id, checkout: null });
@@ -158,6 +162,10 @@ describe("moving a visit", () => {
       window_start: "2026-09-25T10:30:00.000Z",
       window_end: "2026-09-25T12:00:00.000Z",
     });
+    const kept = await env.DB.prepare("SELECT technician_id, technician_draft FROM appointments WHERE id = ?1")
+      .bind(VISIT)
+      .first();
+    expect(kept).toEqual({ technician_id: "t1", technician_draft: 1 });
     expect((await changes()).results).toEqual([
       {
         kind: "moved",

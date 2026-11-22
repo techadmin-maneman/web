@@ -3,6 +3,7 @@
 import { refundedMessage } from "../money/auto-refunds.ts";
 import { heldTimeFree } from "./hold-slot.ts";
 import { heldVisitTimes } from "../visits/visit-times.ts";
+import { bookedAsDraft, reminderHoursAt } from "./allotment-lock.ts";
 import { hasBegun, visitBegun } from "../visits/visit-begun.ts";
 import { visitPayment } from "../visits/visit-changes.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
@@ -35,7 +36,9 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
     .first<VisitToMove>();
   if (visit === null) return moveRefused(context, hold);
   if (!(await takesHeldTime(db, hold, visit, now))) return moveOvertaken(context, hold);
-  const { start, end } = await heldVisitTimes(db, hold);
+  const [{ start, end }, hours] = await Promise.all([heldVisitTimes(db, hold), reminderHoursAt(db, now)]);
+  // A visit moved past its day's lock is a draft again, its technician the engine's to change (./allotment-lock.ts).
+  const draft = bookedAsDraft(start, hold.city, now, hours) ? 1 : 0;
 
   const at = now.toISOString();
   const lateFee = "(SELECT id FROM payments WHERE razorpay_order_id = ?1)";
@@ -50,10 +53,10 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
       // The client chose this time, so their notice counts from it, however ops had moved the visit before.
       .prepare(
         `UPDATE appointments SET window_start = ?1, window_end = ?2, synced_at = ?3, start_before_move = NULL,
-           technician_id = ?5
+           technician_id = ?5, technician_draft = ?6
          WHERE id = ?4`,
       )
-      .bind(start.toISOString(), end.toISOString(), at, visit.id, hold.technician_id),
+      .bind(start.toISOString(), end.toISOString(), at, visit.id, hold.technician_id, draft),
     db
       .prepare("UPDATE slot_holds SET state = 'booked', appointment_id = ?1, updated_at = ?2 WHERE id = ?3")
       .bind(visit.id, at, hold.id),

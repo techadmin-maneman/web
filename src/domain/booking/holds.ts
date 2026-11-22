@@ -23,6 +23,7 @@ import { heldMinutes, visitTimes } from "../visits/visit-times.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { paidNotBooked } from "./hold-stages.ts";
 import { cityOfPincode } from "../cities/cities.ts";
+import { bookedAsDraft, reminderHoursAt } from "./allotment-lock.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
 
@@ -98,12 +99,14 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
   const minutes = heldMinutes(row);
   const lateCharge = row.late_change_charge ?? LATE_CHANGE_CHARGES[row.type];
   const price = { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent };
-  const [schedule, lateFee, credit, discount, inputs] = await Promise.all([
+  const [schedule, lateFee, credit, discount, inputs, lockHours, city] = await Promise.all([
     loadSlotSchedule(db),
     lateFeeOf(db, row, lateCharge),
     creditOn(db, row, now),
     holdDiscount(db, { id: row.id, price }),
     readOpsInputs(db, now),
+    reminderHoursAt(db, now),
+    cityOfPincode(db, row.pincode),
   ]);
   const { start, end } =
     row.starts_at === null
@@ -122,7 +125,10 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
     starts_at: start.toISOString(),
     ends_at: end.toISOString(),
     arrives_by: new Date(start.getTime() + inputs.bookingRules.arrival * MINUTE_MS).toISOString(),
-    technician: { name: row.technician_name, initials: row.technician_initials },
+    // Named only once fixed, the evening before (./allotment-lock.ts).
+    technician: bookedAsDraft(start, city, now, lockHours)
+      ? null
+      : { name: row.technician_name, initials: row.technician_initials },
     price,
     late_fee: lateFee,
     free_until: freeUntil(start, noticeHours).toISOString(),

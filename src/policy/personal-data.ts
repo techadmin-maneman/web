@@ -120,11 +120,12 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "checkin_waived_by",
       "checkin_waived_reason",
       "tier",
+      "technician_draft",
     ],
     whyLeftOut:
       "Our and FSM's keys, when each visit was last checked against FSM and Books, and ops letting the technician " +
       "check in past the geofence, which is about their arrival. The technician is given by name, and the price " +
-      "code by the hair system's name.",
+      "code by the hair system's name. Whether the technician was still a draft is our scheduling, not about them.",
     erasure: {
       blanks: ["client_note", "client_note_at"],
       why: "The visits stay, as the record of the service and its invoice; the client's notes to the technician go.",

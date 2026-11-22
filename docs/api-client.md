@@ -13783,20 +13783,28 @@ Request body:
       "description": "The latest the technician arrives: the start and its arrival window."
     },
     "technician": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "initials": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "initials"
+          ],
+          "additionalProperties": false
         },
-        "initials": {
-          "type": "string"
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "name",
-        "initials"
       ],
-      "additionalProperties": false
+      "description": "Who is coming; null while it is a draft, fixed and named the evening before (ADR 0290)."
     },
     "price": {
       "$ref": "#/components/schemas/Price"

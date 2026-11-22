@@ -7286,10 +7286,11 @@ export interface components {
              * @description The latest the technician arrives: the start and its arrival window.
              */
             arrives_by: string;
+            /** @description Who is coming; null while it is a draft, fixed and named the evening before (ADR 0290). */
             technician: {
                 name: string;
                 initials: string;
-            };
+            } | null;
             price: components["schemas"]["Price"];
             /** @description The late fee moving it inside the notice costs, where it is sold to charge one; else null. */
             late_fee: components["schemas"]["Price"] | null;

@@ -48,6 +48,7 @@ import { sendUnsentLinks } from "../domain/money/payment-links.ts";
 import type { OpsInputs } from "../domain/platform/ops-settings.ts";
 import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/platform/storage-meter.ts";
 import { queueReminders } from "../domain/messages/visit-messages.ts";
+import { lockDueDrafts } from "../domain/booking/allotment-lock.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { MeteredDatabase } from "../lib/d1-meter.ts";
@@ -332,9 +333,18 @@ async function hoursOf(db: D1Database, national: number): Promise<ReminderHours>
   return { national, cities: await cityReminderHours(db) };
 }
 
-async function remindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
+/**
+ * Tomorrow's technicians fixed at the reminder hour (src/domain/booking/allotment-lock.ts), whether or not messaging is
+ * on, and then, where it is, the reminders that name them.
+ */
+async function remindersJob({ env, deps, log, inputs, config }: CronContext): Promise<void> {
   const now = deps.now();
-  const reminders = await queueReminders(env.DB, now, await hoursOf(env.DB, (await inputs()).reminderHour));
+  // Read once, and only where the lock or the reminders need them.
+  let read: Promise<ReminderHours> | undefined;
+  const hours = () => (read ??= inputs().then((given) => hoursOf(env.DB, given.reminderHour)));
+  await lockDueDrafts(env.DB, now, hours);
+  if (!isSwitchedOn("messaging", config)) return;
+  const reminders = await queueReminders(env.DB, now, await hours());
   await queueMessages({ env, log }, reminders, "reminders");
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
@@ -466,7 +476,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "conversions", needs: "nothing", every: 5, at: 1, run: conversionsJob },
 
   // Every fifteen minutes.
-  { name: "visit_reminders", needs: "messaging", every: 15, at: 1, run: remindersJob },
+  // Needs nothing: the evening's lock runs in it whether or not messaging is on.
+  { name: "visit_reminders", needs: "nothing", every: 15, at: 1, run: remindersJob },
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets a client's advance against the
   // invoice once it is issued.
   { name: "invoices", needs: "books", every: 15, at: 3, run: invoicesJob },

@@ -99,3 +99,15 @@ export async function visit(
 
 export const later = (minutes: number) =>
   appFor("local", fakeDependencies({ now: () => new Date(NOW.getTime() + minutes * 60_000) }), {}, "client");
+
+/**
+ * The reminder hour moved to 9 am, so a visit booked for tomorrow at the tests' noon is fixed at once, not a draft
+ * (src/domain/booking/allotment-lock.ts): for tests of who takes a visit, which read its technician as booked.
+ */
+export async function fixedOnBooking(): Promise<void> {
+  await env.DB.prepare(
+    "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('reminder_hour', '9', 'ops@localhost', ?1)",
+  )
+    .bind(NOW.toISOString())
+    .run();
+}
