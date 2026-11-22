@@ -12,7 +12,10 @@ import {
 import { replanDay } from "../../../src/domain/booking/replan-day.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
-import { markDatabase, NOW } from "../helpers.ts";
+import { fakeDependencies, markDatabase, NOW } from "../helpers.ts";
+import { ALERT_WORDS } from "../../../src/config/alert-words.ts";
+import { createLogger } from "../../../src/log.ts";
+import { failedIn } from "../../../src/scheduled/allotment-jobs.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 import { aHold } from "../fixtures/index.ts";
 
@@ -151,7 +154,9 @@ describe("a day's drafts re-planned", () => {
       readHours,
       firstToday: () => Promise.resolve(true),
       check: () => Promise.reject(new Error("D1 overloaded")),
-      failed: (city) => failed.push(city),
+      failed: (city) => {
+        failed.push(city);
+      },
     });
     expect(failed).toEqual(["Gurgaon"]);
     await lockDueDrafts(env.DB, indiaInstant("2026-09-21", "18:01"), { readHours });
@@ -226,11 +231,24 @@ describe("each hour's re-plan", () => {
         city === "Noida"
           ? Promise.reject(new Error("D1 overloaded"))
           : replanDay(env.DB, { city, date, now: midnight, inputs }),
-      failed: (city) => failed.push(city),
+      failed: (city) => {
+        failed.push(city);
+      },
       left: () => undefined,
     });
     expect({ moved, failed }).toEqual({ moved: 1, failed: ["Noida"] });
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+  });
+
+  it("tells Admin once a day of a city whose drafts could not be re-planned", async () => {
+    const midnight = indiaInstant("2026-09-21", "00:20");
+    const failed = failedIn({ log: createLogger(), deps: fakeDependencies({ now: () => midnight }) });
+    await failed("Noida", new Error("D1 overloaded"));
+    await failed("Noida", new Error("D1 overloaded"));
+    const { results } = await env.DB.prepare("SELECT key, message FROM alerts WHERE key LIKE 'replan_failed:%'").all();
+    expect(results).toEqual([
+      { key: "replan_failed:Noida:2026-09-21", message: ALERT_WORDS.replan_failed({ city: "Noida" }) },
+    ]);
   });
 
   /** The cities a turn left out, as it warns of them. */

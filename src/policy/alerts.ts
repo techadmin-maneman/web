@@ -131,6 +131,8 @@ const OPERATIONS_KINDS = [
   "hair_profile_from_older",
   "unbooked_hold",
   "replaced_after_begun",
+  // A drive Google's traffic leaves too little room for, fixed as it stands at the evening's lock.
+  "leg_short",
 ];
 
 const DEPARTMENT_OF_KIND: ReadonlyMap<string, Department> = new Map([

@@ -7,7 +7,9 @@ import { checkBeforeLock, lockDueDrafts, replanAhead } from "../domain/booking/a
 import { takeOne } from "../domain/sign-in/rate-limit.ts";
 import { EVENING_DRIVES, eveningCheck } from "../domain/booking/evening-check.ts";
 import { learnDrives } from "../domain/booking/learn-drives.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 import { createCallBudget } from "../lib/call-budget.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { replanDay } from "../domain/booking/replan-day.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import type { CronContext, CronJob } from "./cron.ts";
@@ -26,10 +28,19 @@ function once<T>(read: () => Promise<T>): () => Promise<T> {
 /** How long a check before the lock asks Google for drives, after which the estimate stands, as the cron's calls stop. */
 const EVENING_DRIVES_FOR_MS = 20_000;
 
-const failedIn =
-  (log: CronContext["log"]) =>
-  (city: string, error: unknown): void => {
+/**
+ * A city whose drafts could not be re-planned: logged with why, and Admin told once that day, as its drafts keep their
+ * technicians and the lock fixes them as they stand.
+ */
+export const failedIn =
+  ({ log, deps }: Pick<CronContext, "log" | "deps">) =>
+  async (city: string, error: unknown): Promise<void> => {
     log.warn("replan_failed", { city, error: error instanceof Error ? error.message : String(error) });
+    await deps.alertOnce({
+      key: `replan_failed:${city}:${indiaDate(deps.now())}`,
+      message: ALERT_WORDS.replan_failed({ city }),
+      link: "/dispatch",
+    });
   };
 
 /** One of the days ahead in turn, re-planned each hour to cut driving before its drafts are fixed. */
@@ -39,7 +50,7 @@ async function replanDraftsJob({ env, deps, log, inputs }: CronContext): Promise
   const moved = await replanAhead(env.DB, now, {
     readHours: () => hoursOf(env.DB, given.reminderHour),
     replan: (city, date) => replanDay(env.DB, { city, date, now, inputs: given }),
-    failed: failedIn(log),
+    failed: failedIn({ log, deps }),
     left: (cities) => {
       log.warn("replan_cities_left", { cities });
     },
@@ -79,7 +90,7 @@ export async function eveningCheckJob({ env, deps, inputs, config, log }: CronCo
     readHours: async () => hoursOf(env.DB, (await inputs()).reminderHour),
     firstToday: (each) => takeOne(env.DB, "evening_check", each, { now, settings: config.settings }),
     check: async (each, date) => eveningCheck(env.DB, check, { city: each, date, now, inputs: await inputs() }),
-    failed: failedIn(log),
+    failed: failedIn({ log, deps }),
   });
   if (city !== null) log.info("evening_checked", { city });
   if (drives.ranOut()) log.warn("evening_drives_spent", { drives: EVENING_DRIVES });
