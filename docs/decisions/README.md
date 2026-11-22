@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0292. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0293. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -85,6 +85,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0287](0287-a-start-googles-drive-refused-is-not-offered.md) A start Google's drive leaves no room for is not offered again
 - [0289](0289-who-takes-a-visit.md) Who takes a visit: a radius in km, an overflow ring, and the least cost
 - [0290](0290-allotted-the-evening-before.md) A visit's technician is fixed the evening before
+- [0292](0292-room-made-at-booking.md) Booking moves a draft to make room
 
 ### Field work
 
@@ -616,5 +617,6 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0287](0287-a-start-googles-drive-refused-is-not-offered.md) | A start Google's drive leaves no room for is not offered again | 2026-11-19 | accepted, on the owner's go-ahead of 19 November 2026 |  |
 | [0288](0288-attribution-and-conversions.md) | Attribution and conversions | 2026-11-20 | accepted, on the owner's brief and rulings of 20 November 2026 |  |
 | [0289](0289-who-takes-a-visit.md) | Who takes a visit: a radius in km, an overflow ring, and the least cost | 2026-11-22 | accepted | [0290](0290-allotted-the-evening-before.md) |
-| [0290](0290-allotted-the-evening-before.md) | A visit's technician is fixed the evening before | 2026-11-22 | accepted |  |
+| [0290](0290-allotted-the-evening-before.md) | A visit's technician is fixed the evening before | 2026-11-22 | accepted | [0292](0292-room-made-at-booking.md) |
 | [0291](0291-pieces-without-labels.md) | A piece without a label never stops the fit | 2026-11-22 | accepted |  |
+| [0292](0292-room-made-at-booking.md) | Booking moves a draft to make room | 2026-11-22 | accepted |  |

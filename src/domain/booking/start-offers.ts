@@ -4,20 +4,23 @@
 //
 // Today is offered from the lead time on, and only for a kind of visit ops let clients book for today. A day ops
 // black out, or from the day a service is retired on, is offered to nobody; and no technician who took the client's
-// visit just before or just after that day takes it, unless nobody else can.
+// visit just before or just after that day takes it, unless nobody else can. A start nobody can take is offered where
+// moving one draft to another technician makes room for it (./make-room.ts).
 
 import type { VisitType } from "../../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../../lib/india-time.ts";
 import type { Pin } from "../../lib/geo.ts";
-import { minuteOf, placements, timeOf, type PlanRules } from "../../policy/day-plan.ts";
+import { minuteOf, placements, timeOf, type PlanDay, type PlanRules, type VisitToPlan } from "../../policy/day-plan.ts";
 import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician-rotation.ts";
-import { standingOf, type Standing } from "../../policy/reach.ts";
 import { costOf, type Piece } from "../../policy/allotment.ts";
 import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
 import { tieRange } from "./technician-choice.ts";
 import { loadDayPlans, type CityOf, type DayPlans, type Leaving } from "./day-plans.ts";
 import { bookingCity, loadBlackouts, techniciansFor, type Fitting, type Moving, type Technician } from "./occupancy.ts";
 import { visitsOfClient } from "./technician-rotation.ts";
+import { roomOn, type Room } from "./make-room.ts";
+import { pinColumns, standings, type Placing, type Radius } from "./standings.ts";
+import { draftsOf, type DraftRow } from "./draft-moves.ts";
 import { keptDrivesFit } from "./drive-check.ts";
 import { keptDriveThrough } from "../platform/road-drives.ts";
 import type { Point, RouteResult } from "../../providers/routes/index.ts";
@@ -51,6 +54,8 @@ interface Taker {
   /** False for one with no home pin, whose driving nobody can tell: they go after everyone whose home is known. */
   readonly homeKnown: boolean;
   readonly revision: number;
+  /** The draft the hold moves to make room for this taker, where nobody could take the start without. */
+  readonly room?: Room;
 }
 
 export interface StartOffer {
@@ -64,21 +69,6 @@ export interface DayStarts {
   readonly date: string;
   readonly starts: readonly StartOffer[];
 }
-
-/** The pincode a visit is at: the one it is booked at, else its client's current address's. */
-const pincodeOf = (person: string, pincode: string) =>
-  `COALESCE(${pincode}, (SELECT d.pincode FROM addresses d WHERE d.person_id = ${person} AND d.replaced_at IS NULL))`;
-
-/**
- * Where a visit is, as two columns, `lat` and `lng`, of a query that names its client's ID and its booked pincode: its
- * client's current pin, else the centre of the pincode it is booked at or the client's.
- */
-export const pinColumns = (person: string, pincode: string): string => `COALESCE(
-    (SELECT d.lat FROM addresses d WHERE d.person_id = ${person} AND d.replaced_at IS NULL AND d.lng IS NOT NULL),
-    (SELECT sp.centre_lat FROM serviceable_pincodes sp WHERE sp.pincode = ${pincodeOf(person, pincode)})) AS lat,
-  COALESCE(
-    (SELECT d.lng FROM addresses d WHERE d.person_id = ${person} AND d.replaced_at IS NULL AND d.lat IS NOT NULL),
-    (SELECT sp.centre_lng FROM serviceable_pincodes sp WHERE sp.pincode = ${pincodeOf(person, pincode)})) AS lng`;
 
 /** Where the visit is: its client's current pin, else the centre of the pincode it is booked at or the client's. */
 export async function pinOfVisit(
@@ -119,19 +109,6 @@ function loadOf(plans: DayPlans, technicianId: string, date: string): { day: num
   return { day: minutes(date), week };
 }
 
-/** Where the visit sits for a technician, and whether their home is known to measure it from. */
-export interface Placing {
-  readonly standing: Standing;
-  readonly homeKnown: boolean;
-}
-
-export interface Radius {
-  readonly id: string;
-  readonly home_lat: number | null;
-  readonly home_lng: number | null;
-  readonly radius_km: number | null;
-}
-
 /** Each home and radius of the technicians of the visit's city, read beside who may take it rather than after. */
 async function radiiIn(db: D1Database, cityOf: CityOf): Promise<ReadonlyMap<string, Radius>> {
   const { results } = await db
@@ -139,37 +116,6 @@ async function radiiIn(db: D1Database, cityOf: CityOf): Promise<ReadonlyMap<stri
     .bind(cityOf.pincode, cityOf.personId)
     .all<Radius>();
   return new Map(results.map((row) => [row.id, row]));
-}
-
-/**
- * Where the visit's pin sits for each technician who may take it, inside their radius or in the overflow ring past it
- * (docs/decisions/0289-who-takes-a-visit.md), those beyond both left out. A move's own technician, `keeping`, may keep
- * it wherever they are; anyone else is measured as for a new booking.
- */
-export function standings(
-  technicians: readonly Technician[],
-  rows: ReadonlyMap<string, Radius>,
-  at: { readonly pin: Pin | null; readonly keeping: string | null; readonly inputs: OpsInputs },
-): Map<string, Placing> {
-  const placed = new Map<string, Placing>();
-  for (const technician of technicians) {
-    if (technician.id === at.keeping) {
-      placed.set(technician.id, { standing: "inside", homeKnown: true });
-      continue;
-    }
-    const row = rows.get(technician.id);
-    const lat = row?.home_lat ?? null;
-    const lng = row?.home_lng ?? null;
-    const home = lat === null || lng === null ? null : { lat, lng };
-    const standing = standingOf({
-      home,
-      to: at.pin,
-      radiusKm: row?.radius_km ?? at.inputs.technicianRadiusKm,
-      overflow: at.inputs.allotment.overflow,
-    });
-    if (standing !== "beyond") placed.set(technician.id, { standing, homeKnown: home !== null });
-  }
-  return placed;
 }
 
 /** A technician who can take a start, before what their taking it costs is counted against the others'. */
@@ -181,6 +127,7 @@ interface Candidate {
   readonly overflow: boolean;
   readonly piece: Piece | null;
   readonly homeKnown: boolean;
+  readonly room?: Room;
 }
 
 /**
@@ -206,6 +153,7 @@ function bestFirst(candidates: readonly Candidate[], inputs: OpsInputs, leastWee
       cost,
       homeKnown: candidate.homeKnown,
       revision: candidate.revision,
+      ...(candidate.room === undefined ? {} : { room: candidate.room }),
     }));
 }
 
@@ -218,6 +166,85 @@ function keptOnce(): (points: readonly Point[]) => Promise<RouteResult | null> {
     seen.set(key, found);
     return found;
   };
+}
+
+/** Whether a draft's visit falls on India's `date`. */
+const onDay = (row: { readonly window_start: string }, date: string) => indiaDate(new Date(row.window_start)) === date;
+
+/** What each day's starts are read from, once for every day asked for. */
+interface Offering {
+  readonly db: D1Database;
+  readonly now: Date;
+  readonly visit: StartVisit;
+  readonly toPlan: VisitToPlan;
+  readonly technicians: readonly Technician[];
+  readonly plans: DayPlans;
+  readonly inputs: OpsInputs;
+  readonly where: ReadonlyMap<string, Placing>;
+  readonly pieces: ReadonlyMap<string, Piece>;
+  readonly clientVisits: Awaited<ReturnType<typeof visitsOfClient>>;
+  readonly drafts: readonly DraftRow[];
+  readonly radii: ReadonlyMap<string, Radius>;
+  readonly kept: ReturnType<typeof keptOnce>;
+}
+
+/** A technician who can take a start on `date`, as the start's list carries them. */
+function candidateOf(
+  offering: Offering,
+  on: { readonly technician: Technician; readonly date: string; readonly addedDrive: number; readonly room?: Room },
+): Candidate {
+  const { technician, date } = on;
+  const placing = offering.where.get(technician.id);
+  return {
+    technician,
+    addedDrive: on.addedDrive,
+    revision: offering.plans.revision(technician.id, date),
+    load: loadOf(offering.plans, technician.id, date),
+    overflow: placing?.standing === "overflow",
+    piece: offering.pieces.get(technician.id) ?? null,
+    homeKnown: placing?.homeKnown ?? true,
+    ...(on.room === undefined ? {} : { room: on.room }),
+  };
+}
+
+/**
+ * A day's starts some technician can take, and who, best first; then those nobody could take that moving one draft
+ * makes room for (./make-room.ts).
+ */
+async function startsOn(offering: Offering, date: string, earliest: number): Promise<StartOffer[]> {
+  const { db, now, visit, toPlan, plans, inputs, kept } = offering;
+  const rules = planRulesOf(inputs);
+  // A start Google's drive was already found to leave no room for is not offered (./drive-check.ts).
+  const drivesFit = (day: PlanDay, start: number) =>
+    keptDrivesFit({ day, rules, now }, { time: timeOf(start), minutes: visit.minutes, pin: toPlan.pin }, kept);
+  const byStart = new Map<number, Candidate[]>();
+  let leastWeek = Infinity;
+  for (const technician of offering.technicians) {
+    const day = plans.day(technician.id, date);
+    if (day === null) continue;
+    leastWeek = Math.min(leastWeek, loadOf(plans, technician.id, date).week);
+    for (const placed of placements(day, toPlan, rules, earliest)) {
+      if (!(await drivesFit(day, placed.start))) continue;
+      const candidate = candidateOf(offering, { technician, date, addedDrive: placed.addedDrive });
+      byStart.set(placed.start, [...(byStart.get(placed.start) ?? []), candidate]);
+    }
+  }
+  const city = { date, drafts: offering.drafts.filter((row) => onDay(row, date)), plans, radii: offering.radii, rules };
+  const booking = { technicians: offering.technicians, visit: toPlan, earliest, offered: new Set(byStart.keys()) };
+  for (const [start, rooms] of await roomOn(db, { ...city, inputs }, { ...booking, drivesFit })) {
+    byStart.set(
+      start,
+      rooms.map((room) => candidateOf(offering, { ...room, date })),
+    );
+  }
+  const barred = techniciansBarredOn(offering.clientVisits, date);
+  return [...byStart.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([start, takers]): StartOffer => {
+      const allowed = allowedTechnicians(takers, (taker) => barred.has(taker.technician.id));
+      const time = timeOf(start);
+      return { time, startsAt: indiaInstant(date, time), takers: bestFirst(allowed, inputs, leastWeek) };
+    });
 }
 
 /** Each day from `from`, for `days` days, with the starts some technician can take and who, best first. */
@@ -236,8 +263,9 @@ export async function startOffers(input: {
   const place = { pincode: placing.pincode ?? null, personId: placing.personId };
   const cityOf = { ...place, keeping: placing.moving?.technicianId ?? null };
   const reading = input.inputs === undefined ? readOpsInputs(db, now) : Promise.resolve(input.inputs);
+  const homes = radiiIn(db, cityOf);
   // The city's technicians' days are read beside who may take the visit, so the plans wait on no trip of their own.
-  const [able, closed, clientVisits, pin, plans, inputs, radii] = await Promise.all([
+  const [able, closed, clientVisits, pin, plans, inputs, radii, drafts] = await Promise.all([
     techniciansFor(db, placing.moving ?? null, place, visit.fitting ?? null),
     loadBlackouts(db, from, to, place),
     visitsOfClient(db, placing.personId, placing.moving?.visitId ?? placing.replacing ?? null),
@@ -253,52 +281,32 @@ export async function startOffers(input: {
       leaving: { ...placing.leaving, visitId: placing.moving?.visitId ?? placing.leaving?.visitId ?? null },
     }),
     reading,
-    radiiIn(db, cityOf),
+    homes,
+    homes.then((rows) => draftsOf(db, { technicianIds: [...rows.keys()], from, to, now })),
   ]);
   const where = standings(able.technicians, radii, { pin, keeping: placing.moving?.technicianId ?? null, inputs });
-  const technicians = able.technicians.filter((technician) => where.has(technician.id));
-  const rules = planRulesOf(inputs);
-  const toPlan = { minutes: visit.minutes, pin, fit: visit.fitting !== null && visit.fitting !== undefined };
+  const offering: Offering = {
+    db,
+    now,
+    visit,
+    toPlan: { minutes: visit.minutes, pin, fit: visit.fitting !== null && visit.fitting !== undefined },
+    technicians: able.technicians.filter((technician) => where.has(technician.id)),
+    plans,
+    inputs,
+    where,
+    pieces: able.pieces,
+    clientVisits,
+    drafts,
+    radii,
+    kept: keptOnce(),
+  };
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
-  const kept = keptOnce();
   return Promise.all(
     Array.from({ length: days }, async (_, index): Promise<DayStarts> => {
       const date = addDays(from, index);
       const earliest = earliestOn(date, visit, inputs, now);
       if (earliest === null || closed.has(date) || retired(date)) return { date, starts: [] };
-      const byStart = new Map<number, Candidate[]>();
-      let leastWeek = Infinity;
-      for (const technician of technicians) {
-        const day = plans.day(technician.id, date);
-        if (day === null) continue;
-        const load = loadOf(plans, technician.id, date);
-        leastWeek = Math.min(leastWeek, load.week);
-        for (const placed of placements(day, toPlan, rules, earliest)) {
-          // A start Google's drive was already found to leave no room for is not offered (./drive-check.ts).
-          const placing = { time: timeOf(placed.start), minutes: visit.minutes, pin };
-          if (!(await keptDrivesFit({ day, rules, now }, placing, kept))) continue;
-          const takers = byStart.get(placed.start) ?? [];
-          takers.push({
-            technician,
-            addedDrive: placed.addedDrive,
-            revision: plans.revision(technician.id, date),
-            load,
-            overflow: where.get(technician.id)?.standing === "overflow",
-            piece: able.pieces.get(technician.id) ?? null,
-            homeKnown: where.get(technician.id)?.homeKnown ?? true,
-          });
-          byStart.set(placed.start, takers);
-        }
-      }
-      const barred = techniciansBarredOn(clientVisits, date);
-      const starts = [...byStart.entries()]
-        .sort(([a], [b]) => a - b)
-        .map(([start, takers]): StartOffer => {
-          const allowed = allowedTechnicians(takers, (taker) => barred.has(taker.technician.id));
-          const time = timeOf(start);
-          return { time, startsAt: indiaInstant(date, time), takers: bestFirst(allowed, inputs, leastWeek) };
-        });
-      return { date, starts };
+      return { date, starts: await startsOn(offering, date, earliest) };
     }),
   );
 }

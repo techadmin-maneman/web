@@ -15,7 +15,8 @@ import type { RoutesProvider } from "../../providers/routes/index.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
 import { driveThrough, keptDriveThrough } from "../platform/road-drives.ts";
-import { readDay, replanDay, startOf, type CityDay } from "./replan-day.ts";
+import { startOf } from "./draft-moves.ts";
+import { readDay, replanDay, type CityDay } from "./replan-day.ts";
 
 /**
  * The drives one city's check may ask Google for: each takes a few of the 1,000 calls an invocation may make
