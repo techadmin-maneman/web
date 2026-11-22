@@ -29,6 +29,12 @@ export interface Crew {
   readonly weekMinutes: ReadonlyMap<string, number>;
 }
 
+/**
+ * What a draft costs left with a technician who may no longer take it, as when Google's drive leaves their day no room:
+ * more than any day's driving, so the plan moves it wherever it fits.
+ */
+const UNTAKEN = 10_000;
+
 /** The most times the plan goes over every move and swap; a day's drafts settle in two or three. */
 const PASSES = 6;
 
@@ -78,6 +84,7 @@ function costOf(plan: Plan, planning: Planning) {
   for (const draft of drafts) {
     const technicianId = plan.get(draft.id) ?? draft.technicianId;
     const taking = draft.takers.get(technicianId);
+    if (taking === undefined) total += UNTAKEN;
     total += (taking?.overflow === true ? allotment.overflow_cost : 0) + pieceCost(taking?.piece ?? null, allotment);
     weeks.set(technicianId, (weeks.get(technicianId) ?? 0) + draft.stop.end - draft.stop.start);
   }

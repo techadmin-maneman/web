@@ -18,7 +18,7 @@ import { pinOfVisit, planRulesOf, standings, type Radius } from "./start-offers.
 import { tieRange } from "./technician-choice.ts";
 import { visitsOfClient } from "./technician-rotation.ts";
 
-interface DraftRow {
+export interface DraftRow {
   readonly id: string;
   readonly person_id: string | null;
   readonly type: VisitType | null;
@@ -52,6 +52,8 @@ async function takersOf(
     readonly radii: ReadonlyMap<string, Radius>;
     readonly working: ReadonlySet<string>;
     readonly inputs: OpsInputs;
+    /** Who may no longer take it, Google's drive having left their day no room for it (./evening-check.ts). */
+    readonly ruledOut: ReadonlySet<string>;
   },
   date: string,
 ): Promise<Map<string, Taking>> {
@@ -64,11 +66,12 @@ async function takersOf(
   const where = standings(able.technicians, read.radii, { pin, keeping: null, inputs: read.inputs });
   const barred = techniciansBarredOn(visits, date);
   const allowed = allowedTechnicians(
-    able.technicians.filter((each) => where.has(each.id) && read.working.has(each.id)),
+    able.technicians.filter((each) => where.has(each.id) && read.working.has(each.id) && !read.ruledOut.has(each.id)),
     (each) => barred.has(each.id),
   );
-  // Who has it now always may keep it, so the plan starts from one that fits.
-  const takers = new Map<string, Taking>([[row.technician_id, { overflow: false, piece: null }]]);
+  // Who has it now may keep it, so the plan starts from one that fits, unless Google's drive ruled them out.
+  const takers = new Map<string, Taking>();
+  if (!read.ruledOut.has(row.technician_id)) takers.set(row.technician_id, { overflow: false, piece: null });
   for (const each of allowed) {
     takers.set(each.id, {
       overflow: where.get(each.id)?.standing === "overflow",
@@ -78,11 +81,19 @@ async function takersOf(
   return takers;
 }
 
-/** Re-plans a city's drafts on `date`, India's, and writes what changed; how many drafts moved. */
-export async function replanDay(
+/** A city's day as booking plans on it: its drafts, its technicians' days, drafts on them, and their homes. */
+export interface CityDay {
+  readonly rows: readonly DraftRow[];
+  readonly plans: DayPlans;
+  readonly days: ReadonlyMap<string, PlanDay>;
+  readonly radii: ReadonlyMap<string, Radius>;
+}
+
+/** A city's day, India's, as booking plans on it; null where it has no draft to re-plan. */
+export async function readDay(
   db: D1Database,
   input: { readonly city: string; readonly date: string; readonly now: Date; readonly inputs: OpsInputs },
-): Promise<number> {
+): Promise<CityDay | null> {
   const { city, date, now, inputs } = input;
   const { results: rows } = await db
     .prepare(
@@ -93,7 +104,7 @@ export async function replanDay(
     )
     .bind(indiaInstant(date, "00:00").toISOString(), indiaInstant(addDays(date, 1), "00:00").toISOString(), city)
     .all<DraftRow>();
-  if (rows.length === 0) return 0;
+  if (rows.length === 0) return null;
   const { results: crewRows } = await db
     .prepare("SELECT id, home_lat, home_lng, radius_km FROM technicians WHERE city = ?1 AND active = 1")
     .bind(city)
@@ -112,11 +123,35 @@ export async function replanDay(
     const day = plans.day(id, date);
     if (day !== null) days.set(id, day);
   }
+  return { rows, plans, days, radii };
+}
+
+/** The start of a draft on its day, in minutes from midnight, as its stop there begins. */
+export const startOf = (row: Pick<DraftRow, "window_start">): number => minuteOf(indiaTime(new Date(row.window_start)));
+
+/**
+ * Re-plans a city's drafts on `date`, India's, and writes what changed; how many drafts moved. `ruledOut` names, by
+ * draft, the technicians who may not keep or take it.
+ */
+export async function replanDay(
+  db: D1Database,
+  input: {
+    readonly city: string;
+    readonly date: string;
+    readonly now: Date;
+    readonly inputs: OpsInputs;
+    readonly ruledOut?: ReadonlyMap<string, ReadonlySet<string>>;
+  },
+): Promise<number> {
+  const { date, now, inputs } = input;
+  const read = await readDay(db, input);
+  if (read === null) return 0;
+  const { rows, plans, days, radii } = read;
   const working = new Set(days.keys());
 
   const drafts: Draft[] = [];
   for (const row of rows) {
-    const start = minuteOf(indiaTime(new Date(row.window_start)));
+    const start = startOf(row);
     const day = days.get(row.technician_id);
     const stop = day?.stops.find((each) => each.start === start);
     if (day === undefined || stop === undefined) continue;
@@ -124,7 +159,12 @@ export async function replanDay(
       id: row.id,
       stop,
       technicianId: row.technician_id,
-      takers: await takersOf(db, row, { radii, working, inputs }, date),
+      takers: await takersOf(
+        db,
+        row,
+        { radii, working, inputs, ruledOut: input.ruledOut?.get(row.id) ?? new Set() },
+        date,
+      ),
     });
   }
   // Each day without its drafts: what is fixed on it, which the plan places the drafts around.
