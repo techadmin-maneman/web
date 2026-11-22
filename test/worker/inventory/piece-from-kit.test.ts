@@ -140,6 +140,25 @@ describe("a piece with no label", () => {
     expect(await fitted()).toBe(first.piece_code);
   });
 
+  it("is refused where every piece of the hair system has expired, and taken from a lot in date", async () => {
+    await inTheKit(code, { lot_code: "OLD", expires_on: "2026-09-20" });
+    const refused = await fit({ no_label: true, stock_code: code }, "event-piece-01");
+    expect(refused.status).toBe(400);
+    expect((await refused.json<{ error: { fields?: string[] } }>()).error.fields).toEqual(["stock_code"]);
+
+    await inTheKit(code, { lot_code: "NEW", expires_on: "2028-03-31" });
+    const step = await job.post(`/api/tech/jobs/${JOB}/piece`, { no_label: true, stock_code: code }, "event-piece-02");
+    expect(step.status).toBe(202);
+    // The older lot leaves first by label, but a piece with none is one known to be in date.
+    const lot = await env.DB.prepare(
+      `SELECT l.lot_code FROM stock_units u JOIN stock_lots l ON l.id = u.lot_id
+       WHERE u.consumable_code = ?1 AND u.state = 'fitted'`,
+    )
+      .bind(code)
+      .first<string>("lot_code");
+    expect(lot).toBe("NEW");
+  });
+
   it("is made a label no unit of stock carries already", async () => {
     const own = await madeLabel(env.DB, JOB);
     const [label = ""] = await inTheKit(code, {});

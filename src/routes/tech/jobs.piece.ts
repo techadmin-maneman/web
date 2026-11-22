@@ -14,6 +14,7 @@ import { fitsToday } from "../../policy/one-visit.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
 import { isHairSystem } from "../../domain/inventory/hair-systems.ts";
 import { madeLabel } from "../../domain/inventory/made-labels.ts";
+import { inDateAt } from "../../domain/inventory/stock-lots.ts";
 import { kitUnit } from "../../domain/inventory/stock-units.ts";
 import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { technicianOf } from "../../http/technician-session.ts";
@@ -39,13 +40,18 @@ async function asTheKitHoldsIt(c: Ctx, job: WorkableJob, sent: PieceBody): Promi
 
 /**
  * The piece's label: the one read; or, where the piece has none, one made from the visit, for a hair system picked
- * from the kit. Refused, by its field, with neither label nor no_label, or with both, or no_label and nothing picked.
+ * from the kit. Refused, by its field, with neither label nor no_label, or with both, or no_label and nothing picked,
+ * or picked where every piece of it the kit holds has expired, as a label naming an expired one is.
  */
 async function labelledOf(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<PieceBody | { invalid: string[] }> {
   if (fitsNothing(sent)) return sent;
   if (sent.no_label !== true) return sent.piece_code === undefined ? { invalid: ["piece_code"] } : sent;
   if (sent.piece_code !== undefined) return { invalid: ["piece_code"] };
-  if ((sent.stock_code ?? null) === null) return { invalid: ["stock_code"] };
+  const stockCode = sent.stock_code ?? null;
+  if (stockCode === null) return { invalid: ["stock_code"] };
+  const day = indiaDate(job.windowStart);
+  const kit = await inDateAt(c.env.DB, { code: stockCode, place: technicianOf(c).technicianId, day });
+  if (kit.allExpired) return { invalid: ["stock_code"] };
   return { ...sent, piece_code: await madeLabel(c.env.DB, job.id) };
 }
 

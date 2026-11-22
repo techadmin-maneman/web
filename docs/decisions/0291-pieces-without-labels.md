@@ -22,8 +22,11 @@ hair system's top-up arriving in the kit was received only by scanning each of i
    passed over. Every reader of a piece keeps working on a label: the client's pieces, a replacement's piece coming
    off, failures, recalls and supplier claims. Ops can write it on the piece, or print it, later.
 3. **The piece leaves the kit as fitted** (`src/domain/inventory/piece-use.ts`): one of the hair system's pieces,
-   unlabelled first, as a label we never made takes one, but fitted, not gone missing. A unit so taken carries the
-   made label from then on, since a recall, a warranty and a supplier's failures find a unit's piece by its label.
+   unlabelled first, as a label we never made takes one, but fitted, not gone missing. With no label to read its
+   expiry from, it is one of a lot in date on the visit's day; where every piece of that hair system the kit holds
+   has expired, the step is refused, as a label naming an expired piece is, and the app holds Next where it can tell.
+   A unit so taken carries the made label from then on, since a recall, a warranty and a supplier's failures find a
+   unit's piece by its label.
 4. **A top-up is received whole without scanning** (`apps/tech/src/kit/Arriving.tsx`): "No labels? Receive all", as
    the API already allowed.
 5. **The console marks a made label** on the client's pieces: "MM-NL-0004417-K · no label".

@@ -172,6 +172,22 @@ function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string
   return piece !== null && piece.expires_on !== null && piece.expires_on < job.date;
 }
 
+/** With no label to read, the hair system picked from the kit is the piece: one is all it asks, in date. */
+function noLabelMissing(form: PieceForm, job: Pick<Job, "kit_hair_systems" | "date">): string | null {
+  if (form.stock === null) return copy.piece.pickFromKit;
+  return allExpiredInKit(job, form.stock) ? copy.piece.expiredAction : oldLabelMissing(form);
+}
+
+/**
+ * Whether every piece the kit holds of a hair system is labelled and has expired, so none picked with no label can be
+ * fitted; one never labelled, whose expiry the card does not carry, is left to the API to judge.
+ */
+function allExpiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, stock: string): boolean {
+  const held = job.kit_hair_systems.find((each) => each.code === stock);
+  if (held === undefined || held.held === 0 || held.units.length < held.held) return false;
+  return held.units.every((unit) => unit.expires_on !== null && unit.expires_on < job.date);
+}
+
 /** What the label warns of: a piece of the kit that has expired, or a hair system not the one this fit is for. */
 export function labelWarning(job: Matched & Pick<Job, "date">, form: PieceForm): string | null {
   if (expiredInKit(job, form.code)) return copy.piece.expired;
@@ -250,8 +266,7 @@ export function stillMissing(
   if (fitsNothingToday(form, job)) return null;
   // A one visit fits today only a hair system the kit holds; one it does not is booked for later.
   if (job.one_visit && form.choice !== null && !inKit(job, form.choice)) return oneVisit.notInKitAction;
-  // With no label to read, the hair system picked from the kit is the piece; one is all it asks.
-  if (form.noLabel) return form.stock === null ? copy.piece.pickFromKit : oldLabelMissing(form);
+  if (form.noLabel) return noLabelMissing(form, job);
   if (expiredInKit(job, form.code)) return copy.piece.expiredAction;
   if (!isLabel(form.code)) return copy.piece.checkFirst;
   if (checked === "another_client") return copy.piece.notThisClientAction;

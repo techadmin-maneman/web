@@ -10764,7 +10764,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
       "enum": [
         true
       ],
-      "description": "The piece has no label to read, so none is sent: the hair system it is, picked from the kit by stock_code, comes out of the kit as it would with one. Refused, fields stock_code, with none picked."
+      "description": "The piece has no label to read, so none is sent: the hair system it is, picked from the kit by stock_code, comes out of the kit as it would with one, from a lot in date. Refused, fields stock_code, with none picked, or where every piece of it the kit holds has expired."
     },
     "base": {
       "type": [

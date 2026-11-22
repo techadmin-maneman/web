@@ -128,7 +128,12 @@ describe("the piece step", () => {
     const kit = {
       ...FIRST_FIT,
       kit_hair_systems: [
-        { code: "hs_exact", name: "Mane Man Essential", units: [{ code: LABEL, lot_code: null, expires_on: null }] },
+        {
+          code: "hs_exact",
+          name: "Mane Man Essential",
+          held: 1,
+          units: [{ code: LABEL, lot_code: null, expires_on: null }],
+        },
       ],
     } as unknown as typeof FIRST_FIT;
     const none = { ...EMPTY, noLabel: true };
@@ -139,6 +144,26 @@ describe("the piece step", () => {
       base: "Mane Man Essential",
       stock_code: "hs_exact",
     });
+  });
+
+  it("holds a hair system picked with no label where every piece of it in the kit has expired", () => {
+    const held = (expires: string, count: number) =>
+      ({
+        ...FIRST_FIT,
+        kit_hair_systems: [
+          {
+            code: "hs_exact",
+            name: "Mane Man Essential",
+            held: count,
+            units: [{ code: LABEL, lot_code: "HS-1", expires_on: expires }],
+          },
+        ],
+      }) as unknown as typeof FIRST_FIT;
+    const picked = { ...EMPTY, noLabel: true, stock: "hs_exact" };
+    expect(stillMissing(picked, held("2026-09-20", 1), "none")).toBe(copy.piece.expiredAction);
+    expect(stillMissing(picked, held("2026-09-21", 1), "none")).toBeNull();
+    // A piece never labelled, its expiry not on the card, is the API's to judge.
+    expect(stillMissing(picked, held("2026-09-20", 2), "none")).toBeNull();
   });
 
   it("sends the hair system picked from the kit", () => {

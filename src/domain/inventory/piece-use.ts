@@ -6,7 +6,7 @@
 // The piece is the unit its label names, where the kit holds it, and that unit is fitted
 // (docs/decisions/0161-pieces-as-units.md). A label we never made takes a piece never labelled, or failing one, a unit,
 // which has then gone missing. A piece with no label at all (docs/decisions/0291-pieces-without-labels.md) takes one the
-// same way, and it is fitted; a unit so taken carries the label made for the piece from then on, so a recall, a
+// same way, in date first, and it is fitted; a unit so taken carries the label made for the piece from then on, so a recall, a
 // warranty or a supplier's failures, which find a unit's piece by its label, still find it. A correction puts the units
 // the visit took back in the kit. A piece that came off is held in the kit as returned
 // (src/domain/inventory/piece-returns.ts).
@@ -17,7 +17,7 @@ import { failureWordsOf, jobSheet } from "../field/job-sheet-settings.ts";
 import { pieceStepOf } from "./pieces.ts";
 import { fitsNothing, pieceBodyOf } from "../field/job-event-bodies.ts";
 import { pieceReturnStatements } from "./piece-returns.ts";
-import { givenBackToLots } from "./stock-lots.ts";
+import { givenBackToLots, inDateAt } from "./stock-lots.ts";
 import { takenFrom, takesOf, unitChanges, type Taken } from "./stock-units.ts";
 
 /** The hair system a piece step's body names, if any. */
@@ -39,6 +39,7 @@ async function pieceMove(
     readonly label: string | null;
     readonly noLabel: boolean;
     readonly jobId: string;
+    readonly day: string;
   },
   kit: string,
 ): Promise<PieceMove> {
@@ -46,7 +47,10 @@ async function pieceMove(
     const named = move.label === null || move.noLabel ? null : [move.label];
     const fitted = named === null ? null : await takenFrom(db, { code: move.code, place: kit, quantity: 1, named });
     if (fitted !== null) return { ...fitted, state: "fitted" };
-    const taken = await takenFrom(db, { code: move.code, place: kit, quantity: -move.quantity, prefer: "unlabelled" });
+    // With no label to read its expiry from, the piece is one of a lot in date on the visit's day, where the kit has one.
+    const lotId = move.noLabel ? (await inDateAt(db, { code: move.code, place: kit, day: move.day })).lotId : null;
+    const leaving = { code: move.code, place: kit, quantity: -move.quantity, lotId, prefer: "unlabelled" } as const;
+    const taken = await takenFrom(db, leaving);
     // A label read but not the kit's is a unit gone missing; a piece with none to read is the one fitted.
     return { units: taken?.units ?? [], takes: taken?.takes ?? [], state: move.noLabel ? "fitted" : "missing" };
   }
@@ -114,7 +118,7 @@ async function returnReason(
 /** Records the piece the technician's latest piece step fitted, from their kit. Returns whether their kit went down. */
 export async function recordPieceUse(
   db: D1Database,
-  input: { readonly jobId: string; readonly technicianId: string; readonly now: Date },
+  input: { readonly jobId: string; readonly technicianId: string; readonly now: Date; readonly day: string },
 ): Promise<{ readonly lowered: boolean }> {
   const { jobId, technicianId } = input;
   const latest = await db
@@ -142,7 +146,8 @@ export async function recordPieceUse(
   const noLabel = fittedBody !== null && !fitsNothing(fittedBody) && fittedBody.no_label === true;
   const moves = new Map<string, PieceMove>();
   for (const [stock, quantity] of owed) {
-    moves.set(stock, await pieceMove(db, { code: stock, quantity, label, noLabel, jobId }, technicianId));
+    const move = { code: stock, quantity, label, noLabel, jobId, day: input.day };
+    moves.set(stock, await pieceMove(db, move, technicianId));
   }
   const step = { jobId, technicianId, eventId: latest.id, kind: "piece", at } as const;
   const taken = await takenFromKit(db, step, owed, (stock) => moves.get(stock)?.takes ?? []);

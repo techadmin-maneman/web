@@ -315,7 +315,8 @@ function registerSteps(app: App): void {
       async (job) => {
         const { technicianId } = technicianOf(c);
         const { deps } = c.var;
-        const fitted = await recordPieceUse(c.env.DB, { jobId: job.id, technicianId, now: deps.now() });
+        const day = indiaDate(job.windowStart);
+        const fitted = await recordPieceUse(c.env.DB, { jobId: job.id, technicianId, now: deps.now(), day });
         await tellOfLowStock(c.env.DB, deps, {
           touched: [technicianId],
           lowered: fitted.lowered ? [technicianId] : [],

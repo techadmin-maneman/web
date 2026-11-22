@@ -179,3 +179,37 @@ export async function givenBackToLots(
   }
   return takes;
 }
+
+/**
+ * Of a hair system a place holds, the soonest to expire of its lots still in date on `day`, if any, and whether every
+ * piece it holds is in a lot past its date: a piece with no label to read its expiry from is taken in date, and is
+ * refused as an expired one would be where there is none (docs/decisions/0291-pieces-without-labels.md).
+ */
+export async function inDateAt(
+  db: D1Database,
+  at: { readonly code: string; readonly place: Place; readonly day: string },
+): Promise<{ readonly lotId: string | null; readonly allExpired: boolean }> {
+  const [held, expired, lot] = await Promise.all([
+    db
+      .prepare("SELECT quantity FROM stock_balances WHERE consumable_code = ?1 AND place = ?2")
+      .bind(at.code, at.place)
+      .first<number>("quantity"),
+    db
+      .prepare(
+        `SELECT COALESCE(SUM(b.quantity), 0) AS quantity FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
+         WHERE b.place = ?1 AND l.consumable_code = ?2 AND b.quantity > 0 AND l.expires_on < ?3`,
+      )
+      .bind(at.place, at.code, at.day)
+      .first<number>("quantity"),
+    db
+      .prepare(
+        `SELECT l.id FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
+         WHERE b.place = ?1 AND l.consumable_code = ?2 AND b.quantity > 0
+           AND (l.expires_on IS NULL OR l.expires_on >= ?3)
+         ${SOONEST_FIRST} LIMIT 1`,
+      )
+      .bind(at.place, at.code, at.day)
+      .first<string>("id"),
+  ]);
+  return { lotId: lot, allExpired: (held ?? 0) > 0 && (expired ?? 0) >= (held ?? 0) };
+}
