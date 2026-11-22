@@ -19,7 +19,7 @@ const FIT = `CASE WHEN EXISTS (SELECT 1 FROM pieces f WHERE f.person_id = k.pers
     AND f.deleted_at IS NULL) THEN 'replacement' ELSE 'first_fit' END`;
 
 /** Paid, not refunded, and its own purchase order still to go to the supplier. */
-export const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: string } = {
+const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: string } = {
   group: "custom_order_to_send",
   sql: `SELECT 'custom_order_to_send' AS "group", k.id AS id, k.person_id AS person_id, pe.name AS person_name,
          ${ORDER_NUMBER} || ' · ' || ${PO_NUMBER} AS detail,
@@ -36,7 +36,7 @@ export const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: st
  * as Stock reads them, not from the orders. Where it is held, so ops know whether it must first go to a technician's
  * kit, and which fit to book.
  */
-export const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: string } = {
+const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: string } = {
   group: "custom_piece_to_fit",
   sql: `SELECT 'custom_piece_to_fit' AS "group", k.id AS id, k.person_id AS person_id, pe.name AS person_name,
          ${ORDER_NUMBER} || ' · ' || ${HELD_AT} AS detail,
