@@ -255,7 +255,7 @@ export const settings = {
       drive_learning: {
         min_drives: "Drives before an hour is used",
         weeks: "Weeks learned from",
-        spread: "Kept within, either way of the estimate",
+        spread: "Learned within, either way",
       },
       no_show_charge: dispatch.typeNames,
       // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).

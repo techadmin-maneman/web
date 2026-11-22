@@ -126,9 +126,10 @@ describe("a drive learned from", () => {
   });
 
   it("is none across the technician's leave, part of a day or whole days, whenever the leave began", async () => {
-    // Tuesday, away 10:05 to 10:15, during the drive; Wednesday, away from July, whole days; Thursday, away after it.
-    await aLeave({ from_date: "2026-09-15", to_date: "2026-09-15", from_time: "10:05", to_time: "10:15" });
-    await aLeave({ from_date: "2026-07-01", to_date: "2026-09-16" });
+    // Each day left out by its own leave alone: away whole days from July to Tuesday; on Wednesday, 10:05 to 10:15,
+    // during the drive; on Thursday, after it, so Thursday's drive is learned.
+    await aLeave({ from_date: "2026-07-01", to_date: "2026-09-15" });
+    await aLeave({ from_date: "2026-09-16", to_date: "2026-09-16", from_time: "10:05", to_time: "10:15" });
     await aLeave({ from_date: "2026-09-17", to_date: "2026-09-17", from_time: "15:00", to_time: "16:00" });
     for (const date of ["2026-09-15", "2026-09-16", "2026-09-17"]) await aDayOfTwo(date, ESTIMATED);
     expect(await learnNow()).toEqual({ cities: 1, drives: 1 });

@@ -4,7 +4,7 @@
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, json, type OpsReply } from "./fixtures.ts";
+import { answer, chooseCity, json, signedInLocally, type OpsReply } from "./fixtures.ts";
 import { shell } from "../../apps/ops/src/content.ts";
 import { driving as copy } from "../../apps/ops/src/content/driving.ts";
 
@@ -50,4 +50,19 @@ test("asks for the report by day once it is chosen", async ({ page }) => {
   const asked = page.waitForRequest((request) => request.url().includes("/api/reports/driving?weeks=4&by=day"));
   await page.getByRole("radio", { name: copy.bys.day }).click();
   await asked;
+});
+
+test("keeps to the city picked in the header, with no list of cities of its own", async ({ page }) => {
+  await answer(page, {
+    "GET /api/whoami": signedInLocally(["Gurgaon", "Pune"]),
+    "GET /api/reports/driving": json(REPORT),
+  });
+  await page.goto("/driving");
+  const cityLists = page.getByRole("main").getByRole("combobox", { name: copy.columns.city, exact: true });
+  await expect(cityLists).toHaveCount(3);
+  const asked = page.waitForRequest((request) => request.url().includes("city=Gurgaon"));
+  await chooseCity(page, "Gurgaon");
+  await asked;
+  await expect(page.getByRole("rowheader", { name: "Imran Qureshi" })).toBeVisible();
+  await expect(cityLists).toHaveCount(0);
 });

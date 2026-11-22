@@ -6,7 +6,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DrivingScreen } from "../../apps/ops/src/driving/DrivingScreen.tsx";
 import { driving as copy } from "../../apps/ops/src/content/driving.ts";
-import { hoursAndMinutes } from "../../apps/ops/src/content/common.ts";
 import { tables } from "../../packages/ui/words.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
@@ -68,7 +67,7 @@ describe("the Driving page", () => {
     await opened();
     expect(asked).toContain("/api/reports/driving?weeks=4&by=week");
     const rows = [...page.querySelectorAll("tbody tr")].map((row) => row.textContent);
-    expect(rows[0]).toBe(`GurgaonMon 14 Sep6${hoursAndMinutes(180)}${hoursAndMinutes(204)}${copy.signed(24)}`);
+    expect(rows[0]).toBe(`GurgaonMon 14 Sep6${copy.duration(180)}${copy.duration(204)}${copy.signed(24)}`);
     expect(rows[1]).toContain("Imran Qureshi");
   });
 

@@ -18,7 +18,6 @@ import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { dayClock, shortDate } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { useCallback, useState } from "react";
-import { hoursAndMinutes } from "../content/common.ts";
 import { driving as copy } from "../content/driving.ts";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { useCity } from "../lib/city.ts";
@@ -39,8 +38,8 @@ function Figures({ row }: { row: DriveRow }) {
   return (
     <>
       <td className={FIGURE}>{quantity(row.drives)}</td>
-      <td className={FIGURE}>{hoursAndMinutes(row.planned_minutes)}</td>
-      <td className={FIGURE}>{hoursAndMinutes(row.actual_minutes)}</td>
+      <td className={FIGURE}>{copy.duration(row.planned_minutes)}</td>
+      <td className={FIGURE}>{copy.duration(row.actual_minutes)}</td>
       <td className={FIGURE}>{copy.signed(gapOf(row))}</td>
     </>
   );
@@ -55,6 +54,12 @@ function figureColumns<Row extends DriveRow>(): Column<Row>[] {
   ];
 }
 
+/** A city column, with a list to narrow by only where the header shows every city: one picked there, the report keeps to. */
+function cityColumn<Row extends { city: string }>(label: string, everyCity: boolean): Column<Row> {
+  const sort = (row: Row) => row.city;
+  return everyCity ? { label, sort, choice: sort } : { label, sort };
+}
+
 /** The day or week a row counts: the column's head says which. */
 function periodColumn<Row extends DriveRow>(by: DrivingBy): Column<Row> {
   return { label: by === "day" ? copy.columns.day : copy.columns.week, sort: (row) => row.period };
@@ -67,16 +72,23 @@ function Totals({ report }: { report: Driving }) {
   return (
     <Columns row>
       <StatTile label={copy.drives} value={quantity(sum((row) => row.drives))} />
-      <StatTile label={copy.planned} value={hoursAndMinutes(planned)} />
-      <StatTile label={copy.actual} value={hoursAndMinutes(actual)} />
+      <StatTile label={copy.planned} value={copy.duration(planned)} />
+      <StatTile label={copy.actual} value={copy.duration(actual)} />
       <StatTile label={copy.gap} value={copy.signed(actual - planned)} />
     </Columns>
   );
 }
 
-function ByCity({ report, by }: { report: Driving; by: DrivingBy }) {
+/** What each table is drawn from: the report, by day or week, and whether the header shows every city. */
+interface Shown {
+  readonly report: Driving;
+  readonly by: DrivingBy;
+  readonly everyCity: boolean;
+}
+
+function ByCity({ report, by, everyCity }: Shown) {
   const columns: readonly Column<DriveRow>[] = [
-    { label: copy.columns.city, sort: (row) => row.city, choice: (row) => row.city },
+    cityColumn<DriveRow>(copy.columns.city, everyCity),
     periodColumn<DriveRow>(by),
     ...figureColumns<DriveRow>(),
   ];
@@ -115,10 +127,10 @@ function ByCity({ report, by }: { report: Driving; by: DrivingBy }) {
   );
 }
 
-function ByTechnician({ report, by }: { report: Driving; by: DrivingBy }) {
+function ByTechnician({ report, by, everyCity }: Shown) {
   const columns: readonly Column<TechnicianRow>[] = [
     { label: copy.columns.technician, sort: (row) => row.name },
-    { label: copy.columns.city, sort: (row) => row.city, choice: (row) => row.city },
+    cityColumn<TechnicianRow>(copy.columns.city, everyCity),
     periodColumn<TechnicianRow>(by),
     ...figureColumns<TechnicianRow>(),
   ];
@@ -154,11 +166,11 @@ function ByTechnician({ report, by }: { report: Driving; by: DrivingBy }) {
 }
 
 /** Every city's learned drive times, a weekday or weekend hour a row, and whether each has the drives to be used. */
-function Learned({ report }: { report: Driving }) {
+function Learned({ report, everyCity }: Omit<Shown, "by">) {
   const minimum = report.learning.min_drives;
   const enough = (row: FactorRow) => row.drives >= minimum;
   const columns: readonly Column<FactorRow>[] = [
-    { label: copy.learnedColumns.city, sort: (row) => row.city, choice: (row) => row.city },
+    cityColumn<FactorRow>(copy.learnedColumns.city, everyCity),
     {
       label: copy.learnedColumns.days,
       sort: (row) => row.day_kind,
@@ -226,9 +238,9 @@ function Report({ weeks, by }: { weeks: DrivingWeeks; by: DrivingBy }) {
     <>
       <Span from={report.from} to={report.to} />
       <Totals report={report} />
-      <ByCity report={report} by={by} />
-      <ByTechnician report={report} by={by} />
-      <Learned report={report} />
+      <ByCity report={report} by={by} everyCity={city === null} />
+      <ByTechnician report={report} by={by} everyCity={city === null} />
+      <Learned report={report} everyCity={city === null} />
     </>
   );
 }
