@@ -695,8 +695,6 @@ export const visit = localised({
   /** A guided task (./visit/tasks.ts): one a screen. */
   task: (at: number, total: number) => `Task ${String(at)} of ${String(total)}`,
   nextTask: "Next task",
-  /** "Photo: solvent along the front edge": what the reference photograph shows, until there is one. */
-  reference: (what: string) => `Photo: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
   watchFor: "Watch for",
   taskDone: (title: string) => `Done: ${title}`,
   plan: {

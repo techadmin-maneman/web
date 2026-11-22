@@ -6,7 +6,7 @@
 import { localised, sayKnown } from "../lang/index.ts";
 export interface TaskWords {
   readonly title: string;
-  /** What the reference photograph shows, until there is one. */
+  /** What its reference photograph is to show, for the training lead to take; none is drawn until there is one. */
   readonly reference: string;
   readonly how: readonly string[];
   /** What to stop for, or to check; none where there is nothing to say. */
