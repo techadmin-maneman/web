@@ -609,11 +609,11 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
   await panel(page)
     .getByRole("button", { name: `${opsCopy.tasks.link.copy} · service visit, Fri 24 Sep, 12 pm`, exact: true })
     .click();
-  // Said, and shown beside the buttons to copy by hand.
+  // Shown beside the buttons to copy by hand, and said there; no toast covers the buttons.
   await expect(
     panel(page)
       .getByRole("status")
       .filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ }),
   ).toBeVisible();
-  await expect(panel(page).getByText("https://rzp.io/i/stub4417", { exact: true })).toHaveCount(2);
+  await expect(page.getByText("https://rzp.io/i/stub4417", { exact: true })).toHaveCount(1);
 });

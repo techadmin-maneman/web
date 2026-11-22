@@ -65,8 +65,10 @@ export function HeldLinkActions({
       await navigator.clipboard.writeText(url);
       setDone(linkCopy.copied);
     } catch {
-      setByHand(true);
-      setDone(url);
+      // Where the link is written out above, the toast says it; elsewhere it is shown, and said, beside the buttons,
+      // where a toast would cover them.
+      if (shown) setDone(url);
+      else setByHand(true);
     }
   };
   const send = () =>
@@ -90,10 +92,14 @@ export function HeldLinkActions({
           {about}
         </TextButton>
       )}
-      {byHand && !shown && (
-        <InlineMessage tone="note" inline className={styles.link}>
-          {url}
-        </InlineMessage>
+      {!shown && (
+        <span role="status">
+          {byHand && (
+            <InlineMessage tone="note" inline className={styles.link}>
+              {url}
+            </InlineMessage>
+          )}
+        </span>
       )}
       {done !== "" && <Toast>{done}</Toast>}
       {failed !== null && <Refusal inline said={failed} />}
