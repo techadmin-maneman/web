@@ -129,11 +129,9 @@ test("books a fitted client’s service visit at a start someone is free at, sen
   expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
 
   await booking.getByRole("button", { name: opsCopy.clients.visits.book.bookAt("Thu 23 Sep", "12 pm") }).click();
-  await expect(booking.getByRole("status").first()).toContainText("Payment link sent for Rs. 2,000.");
-  await expect(booking.getByRole("status").first()).toContainText(
-    "Service visit, Thu 23 Sep, 12 pm, with Sandeep Rawat.",
-  );
-  await expect(booking.getByRole("status").first()).toContainText("https://rzp.io/i/stub4417");
+  const booked = booking.getByRole("status").filter({ hasText: "Payment link sent for Rs. 2,000." });
+  await expect(booked).toContainText("Service visit, Thu 23 Sep, 12 pm, with Sandeep Rawat.");
+  await expect(booked).toContainText("https://rzp.io/i/stub4417");
   expect(sent).toEqual([
     {
       client: CLIENT.id,
@@ -484,9 +482,21 @@ test("says a link that was not texted, and sends it again on asking", async ({ p
   await panel(page).getByRole("button", { name: opsCopy.tasks.link.resend }).click();
   await expect(panel(page)).toContainText(opsCopy.tasks.link.outcomes.not_texted);
 
+  // Copied, it says so beneath the buttons, in no toast.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.resolve() },
+    });
+  });
+  await panel(page).getByRole("button", { name: opsCopy.tasks.link.copy, exact: true }).click();
+  await expect(panel(page).getByRole("status").filter({ hasText: opsCopy.tasks.link.copied })).toBeVisible();
+  expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
+
   // The browser will not copy it: beneath the buttons, it says so, the link being written out above; no toast.
   await page.evaluate(() => {
     Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
       value: { writeText: () => Promise.reject(new Error("denied")) },
     });
   });
@@ -618,11 +628,23 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
     exact: true,
   });
   await copyLink.click();
-  await expect(
-    panel(page)
-      .getByRole("status")
-      .filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ }),
-  ).toBeInViewport();
-  await expect(copyLink).toBeInViewport();
+  const line = panel(page)
+    .getByRole("status")
+    .filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ });
+  await expect(line).toBeVisible();
+  // Beneath the buttons, not among them, and seen: what is at its middle is the line, not the Book bar over it.
+  const [lineBox, buttonBox] = await Promise.all([line.boundingBox(), copyLink.boundingBox()]);
+  expect((lineBox?.y ?? 0) >= (buttonBox?.y ?? 0) + (buttonBox?.height ?? 0)).toBe(true);
+  const seen = await line.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const at = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    return at !== null && element.contains(at);
+  });
+  expect(seen).toBe(true);
   expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
+  // Pressed again, it is said again: a new message, the last one gone.
+  const first = await line.locator("*").first().elementHandle();
+  await copyLink.click();
+  await expect.poll(() => first.evaluate((node) => node.isConnected)).toBe(false);
+  await expect(line).toBeVisible();
 });

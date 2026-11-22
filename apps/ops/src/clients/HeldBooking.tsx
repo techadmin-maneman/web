@@ -60,10 +60,14 @@ export function HeldLinkActions({
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
   const line = useRef<HTMLSpanElement>(null);
+  const refused = useRef<HTMLSpanElement>(null);
   const maySend = useAccess().mayCall("POST /api/holds/{id}/send-link");
   useEffect(() => {
     if (said !== null) line.current?.scrollIntoView({ block: "nearest" });
   }, [said]);
+  useEffect(() => {
+    if (failed !== null) refused.current?.scrollIntoView({ block: "nearest" });
+  }, [failed]);
   const say = (text: string) => {
     setFailed(null);
     setSaid((last) => ({ text, count: (last?.count ?? 0) + 1 }));
@@ -100,7 +104,6 @@ export function HeldLinkActions({
             {about}
           </TextButton>
         )}
-        {failed !== null && <Refusal inline said={failed} />}
       </span>
       <span role="status" ref={line} className={styles.said}>
         {said !== null && (
@@ -109,6 +112,11 @@ export function HeldLinkActions({
           </InlineMessage>
         )}
       </span>
+      {failed !== null && (
+        <span ref={refused} className={styles.said}>
+          <Refusal inline said={failed} />
+        </span>
+      )}
     </div>
   );
 }
