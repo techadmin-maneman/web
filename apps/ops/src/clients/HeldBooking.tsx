@@ -7,14 +7,13 @@ import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextButton } from "@maneman/ui/TextLink";
-import { Toast } from "@maneman/ui/Toast";
 import { Refusal } from "@maneman/ui/Refusal";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { VisitType } from "../api.ts";
 import type { components } from "../api-schema.ts";
 import { dispatch, tasks } from "../content.ts";
@@ -40,70 +39,77 @@ const named = (type: VisitType) => dispatch.typeNames[type].toLowerCase();
 
 /**
  * Copy a held booking's link, or have Razorpay text it again. `subject` names the booking to a screen reader where
- * several are listed; `shown` says the link is written out above already.
+ * several are listed; `shown` says the link is written out above already; `lead` goes first in the row, as letting
+ * the booking go. What a press came to is said on its own line beneath the buttons, never in a toast, which would
+ * cover them at a phone's width; counted, so a second press says it again.
  */
 export function HeldLinkActions({
   holdId,
   url,
   subject = "",
   shown = false,
+  lead = null,
 }: {
   holdId: string;
   url: string;
   subject?: string;
   shown?: boolean;
+  lead?: ReactNode;
 }) {
-  const [done, setDone] = useState("");
-  // The browser would not copy it, so the address stays shown beside the buttons to copy by hand.
-  const [byHand, setByHand] = useState(false);
+  const [said, setSaid] = useState<{ readonly text: string; readonly count: number } | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
+  const line = useRef<HTMLSpanElement>(null);
   const maySend = useAccess().mayCall("POST /api/holds/{id}/send-link");
-  const copyLink = async () => {
+  useEffect(() => {
+    if (said !== null) line.current?.scrollIntoView({ block: "nearest" });
+  }, [said]);
+  const say = (text: string) => {
     setFailed(null);
+    setSaid((last) => ({ text, count: (last?.count ?? 0) + 1 }));
+  };
+  const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(url);
-      setDone(linkCopy.copied);
+      say(linkCopy.copied);
     } catch {
-      // Where the link is written out above, the toast says it; elsewhere it is shown, and said, beside the buttons,
-      // where a toast would cover them.
-      if (shown) setDone(url);
-      else setByHand(true);
+      // The browser would not copy it: the link to copy by hand, or where it is written out above, that it was not.
+      say(shown ? copy.notCopied : url);
     }
   };
   const send = () =>
     once(async () => {
-      setDone("");
+      setSaid(null);
       setFailed(null);
       const answer = await clientsApi.sendHeldLink(holdId);
-      if (answer.ok) setDone(linkCopy.outcomes[answer.body.outcome]);
+      if (answer.ok) say(linkCopy.outcomes[answer.body.outcome]);
       else setFailed(errorText({ ...copy.errors, ...linkCopy.errors }, { code: answer.code }));
     });
   const about = subject === "" ? null : <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>;
   return (
-    <span className={styles.heldActions}>
-      <TextButton tone="muted" onClick={() => void copyLink()}>
-        {linkCopy.copy}
-        {about}
-      </TextButton>
-      {maySend && (
-        <TextButton tone="muted" disabled={busy} onClick={() => void send()}>
-          {busy ? linkCopy.sending : linkCopy.resend}
+    <div>
+      <span className={styles.heldActions}>
+        {lead}
+        <TextButton tone="muted" onClick={() => void copyLink()}>
+          {linkCopy.copy}
           {about}
         </TextButton>
-      )}
-      {!shown && (
-        <span role="status">
-          {byHand && (
-            <InlineMessage tone="note" inline className={styles.link}>
-              {url}
-            </InlineMessage>
-          )}
-        </span>
-      )}
-      {done !== "" && <Toast>{done}</Toast>}
-      {failed !== null && <Refusal inline said={failed} />}
-    </span>
+        {maySend && (
+          <TextButton tone="muted" disabled={busy} onClick={() => void send()}>
+            {busy ? linkCopy.sending : linkCopy.resend}
+            {about}
+          </TextButton>
+        )}
+        {failed !== null && <Refusal inline said={failed} />}
+      </span>
+      <span role="status" ref={line} className={styles.said}>
+        {said !== null && (
+          <InlineMessage key={said.count} tone="note" inline className={styles.link}>
+            {said.text}
+          </InlineMessage>
+        )}
+      </span>
+    </div>
   );
 }
 
@@ -130,6 +136,24 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
       setAsking(false);
       setFailed(errorText(copy.errors, { code: answer.code }));
     });
+  const letGoButton = mayLetGo ? (
+    <TextButton
+      tone="muted"
+      onClick={() => {
+        setAsking(true);
+      }}
+    >
+      {copy.letGo}
+      <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
+    </TextButton>
+  ) : null;
+  // A link still being made has nothing to copy or send yet.
+  const actions =
+    held.url === null ? (
+      <span className={styles.heldActions}>{letGoButton}</span>
+    ) : (
+      <HeldLinkActions holdId={held.hold_id} url={held.url} subject={subject} lead={letGoButton} />
+    );
   return (
     <div className={styles.inTheWay}>
       <p>{copy.held(named(held.type), when, untilOf(held.open_until, held.date))}</p>
@@ -150,20 +174,7 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
           </FormActions>
         </div>
       ) : (
-        <span className={styles.heldActions}>
-          {mayLetGo && (
-            <TextButton
-              tone="muted"
-              onClick={() => {
-                setAsking(true);
-              }}
-            >
-              {copy.letGo}
-              <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
-            </TextButton>
-          )}
-          {held.url !== null && <HeldLinkActions holdId={held.hold_id} url={held.url} subject={subject} />}
-        </span>
+        actions
       )}
       {failed !== null && <Refusal inline said={failed} />}
     </div>

@@ -129,9 +129,11 @@ test("books a fitted client’s service visit at a start someone is free at, sen
   expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
 
   await booking.getByRole("button", { name: opsCopy.clients.visits.book.bookAt("Thu 23 Sep", "12 pm") }).click();
-  await expect(booking.getByRole("status")).toContainText("Payment link sent for Rs. 2,000.");
-  await expect(booking.getByRole("status")).toContainText("Service visit, Thu 23 Sep, 12 pm, with Sandeep Rawat.");
-  await expect(booking.getByRole("status")).toContainText("https://rzp.io/i/stub4417");
+  await expect(booking.getByRole("status").first()).toContainText("Payment link sent for Rs. 2,000.");
+  await expect(booking.getByRole("status").first()).toContainText(
+    "Service visit, Thu 23 Sep, 12 pm, with Sandeep Rawat.",
+  );
+  await expect(booking.getByRole("status").first()).toContainText("https://rzp.io/i/stub4417");
   expect(sent).toEqual([
     {
       client: CLIENT.id,
@@ -482,14 +484,17 @@ test("says a link that was not texted, and sends it again on asking", async ({ p
   await panel(page).getByRole("button", { name: opsCopy.tasks.link.resend }).click();
   await expect(panel(page)).toContainText(opsCopy.tasks.link.outcomes.not_texted);
 
-  // The browser will not copy it: the link is said, to copy from where it is written out.
+  // The browser will not copy it: beneath the buttons, it says so, the link being written out above; no toast.
   await page.evaluate(() => {
     Object.defineProperty(navigator, "clipboard", {
       value: { writeText: () => Promise.reject(new Error("denied")) },
     });
   });
   await panel(page).getByRole("button", { name: opsCopy.tasks.link.copy, exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ })).toBeVisible();
+  await expect(
+    panel(page).getByRole("status").filter({ hasText: opsCopy.clients.visits.book.inTheWay.notCopied }),
+  ).toBeVisible();
+  expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
 });
 
 test("names the booking held on its link that refuses another of its kind, and lets it go", async ({ page }) => {
@@ -600,20 +605,24 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
   await expect(asked).toHaveCount(0);
   await expect(panel(page)).not.toContainText(inTheWay.letGone);
 
-  // The browser will not copy its link: it is shown beside the buttons, written out nowhere else.
+  // The browser will not copy its link, at a phone's width: on its own line beneath the buttons, in view with them,
+  // and in no toast.
+  await page.setViewportSize({ width: 360, height: 800 });
   await page.evaluate(() => {
     Object.defineProperty(navigator, "clipboard", {
       value: { writeText: () => Promise.reject(new Error("denied")) },
     });
   });
-  await panel(page)
-    .getByRole("button", { name: `${opsCopy.tasks.link.copy} · service visit, Fri 24 Sep, 12 pm`, exact: true })
-    .click();
-  // Shown beside the buttons to copy by hand, and said there; no toast covers the buttons.
+  const copyLink = panel(page).getByRole("button", {
+    name: `${opsCopy.tasks.link.copy} · service visit, Fri 24 Sep, 12 pm`,
+    exact: true,
+  });
+  await copyLink.click();
   await expect(
     panel(page)
       .getByRole("status")
       .filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ }),
-  ).toBeVisible();
-  await expect(page.getByText("https://rzp.io/i/stub4417", { exact: true })).toHaveCount(1);
+  ).toBeInViewport();
+  await expect(copyLink).toBeInViewport();
+  expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
 });

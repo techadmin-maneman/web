@@ -74,18 +74,18 @@ function Booked({ booked }: { booked: VisitBooked }) {
   const summary = copy.summary(booked.service.name, shortDate(booked.date), indiaClock(booked.starts_at), technician);
   const outcome = outcomeOf(booked);
   return (
-    <div role="status">
-      <p className={shared.done}>{outcome}</p>
-      <p className={shared.done}>{summary}</p>
-      {booked.link !== null && (
-        <>
+    <>
+      <div role="status">
+        <p className={shared.done}>{outcome}</p>
+        <p className={shared.done}>{summary}</p>
+        {booked.link !== null && (
           <p className={shared.done}>
             {copy.link}: <span className={styles.link}>{booked.link.url}</span>
           </p>
-          <HeldLinkActions holdId={booked.hold_id} url={booked.link.url} shown />
-        </>
-      )}
-    </div>
+        )}
+      </div>
+      {booked.link !== null && <HeldLinkActions holdId={booked.hold_id} url={booked.link.url} shown />}
+    </>
   );
 }
 

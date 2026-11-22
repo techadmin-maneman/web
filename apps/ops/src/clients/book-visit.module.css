@@ -13,6 +13,14 @@
   align-items: baseline;
 }
 
+/* What a press of Copy link or Send again came to, on its own line beneath them; no room until it says something. */
+.said:not(:empty) {
+  display: block;
+  margin-top: var(--sp-8);
+  /* Brought into view clear of the drawer's Book bar, which stays over the foot of what scrolls. */
+  scroll-margin-bottom: calc(var(--sp-64) + var(--sp-32));
+}
+
 /* What an "Already booked" refusal is about, beneath it. */
 .inTheWay {
   display: grid;
