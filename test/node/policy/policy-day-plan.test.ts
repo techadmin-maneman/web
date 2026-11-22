@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   breakFits,
   minuteOf,
+  dayDrive,
   placedAt,
   placements,
   timeOf,
@@ -74,6 +75,12 @@ describe("a day's starts", () => {
     // A visit with no pin after a stop far from home: the drive home is left as it was, never taken below nought.
     const far = { ...DAY, stops: [{ start: minuteOf("09:30"), end: minuteOf("11:00"), pin: north(40), fit: false }] };
     expect(placedAt(far, { minutes: 60, pin: null, fit: false }, minuteOf("16:00"), RULES)?.addedDrive).toBe(10);
+  });
+
+  it("drive in all from home, through each stop in turn, and home after the last", () => {
+    // 25 out, 25 on to the service visit, 50 home.
+    expect(dayDrive(DAY, RULES)).toBe(100);
+    expect(dayDrive({ ...DAY, home: null }, RULES)).toBe(25);
   });
 
   it("start no earlier than the earliest asked for, on the step", () => {
