@@ -29,7 +29,7 @@ import { wayTo } from "../lib/navigate.ts";
 import { apiDate, clock, dayMonth, spanEnds, todayInIndia } from "../lib/when.ts";
 import { redirect } from "../route.ts";
 import { useSession } from "../session.ts";
-import { keptDay } from "../store/jobs.ts";
+import { keptDay, keptDaySettled } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
 import styles from "./schedule.module.css";
 
@@ -45,6 +45,8 @@ interface Day {
   readonly jobs: readonly JobSummary[] | null;
   /** The failed call's reference, for a day that would not load; null when the API never answered. */
   readonly requestId: string | null;
+  /** False while the day's visits may still be given out the evening before; true for a day the phone kept. */
+  readonly settled: boolean;
 }
 
 /**
@@ -53,19 +55,20 @@ interface Day {
  * is open; the week fails only where no day can be shown. `known` keeps each day as last read, so a read again with no
  * signal leaves what showed.
  */
-async function readWeek(today: string, known: Map<string, readonly JobSummary[]>) {
+async function readWeek(today: string, known: Map<string, Pick<Day, "jobs" | "settled">>) {
   const dates = Array.from({ length: SCHEDULE_DAYS }, (_, at) => addDays(today, at));
   const answers = await Promise.all(dates.map((date) => api.jobs(date)));
   const days = await Promise.all(
     dates.map(async (date, at): Promise<Day> => {
       const answer = answers[at];
       if (answer?.ok === true) {
-        known.set(date, answer.body.jobs);
-        return { date, jobs: answer.body.jobs, requestId: null };
+        known.set(date, { jobs: answer.body.jobs, settled: answer.body.settled });
+        return { date, jobs: answer.body.jobs, requestId: null, settled: answer.body.settled };
       }
       const requestId = answer === undefined ? null : answer.requestId;
       const kept = await keptDay(date).catch(() => null);
-      return { date, jobs: known.get(date) ?? kept, requestId };
+      const settled = kept === null ? true : await keptDaySettled(date).catch(() => true);
+      return { date, jobs: kept, settled, ...known.get(date), requestId };
     }),
   );
   const failed = answers.find((answer) => !answer.ok);
@@ -166,10 +169,16 @@ const stripDay = (day: Day): StripDate => ({
   date: day.date,
   weekday: sayNow(weekdayName(day.date).slice(0, 3)),
   number: String(Number(day.date.slice(8, 10))),
-  label: copy.dayLabel(weekdayName(day.date), dayMonth(day.date), day.jobs?.length ?? null),
+  label: copy.dayLabel(weekdayName(day.date), dayMonth(day.date), day.jobs?.length ?? null, day.settled),
   open: true,
   note: noteOf(day),
 });
+
+/** Under a day's title: how many jobs, or none; and, before the evening that gives its visits out, so far. */
+function daySub(jobs: number, settled: boolean): string {
+  if (jobs === 0) return settled ? copy.nothing : copy.comeEveningBefore;
+  return settled ? copy.jobs(jobs) : copy.jobsSoFar(jobs);
+}
 
 /** A day that would not load: with no signal, that it shows once there is some; with signal, Try again. */
 function DayFailed({ day, onRetry }: { readonly day: Day; readonly onRetry: () => void }) {
@@ -205,7 +214,7 @@ function DayView(props: {
         <DayFailed day={day} onRetry={props.onRetry} />
       ) : (
         <>
-          <p className={styles.daySub}>{jobs.length === 0 ? copy.nothing : copy.jobs(jobs.length)}</p>
+          <p className={styles.daySub}>{daySub(jobs.length, day.settled)}</p>
           <DayColumn
             label={copy.dayView}
             from={hours.from}
@@ -227,7 +236,7 @@ export function ScheduleScreen({ date }: { readonly date: string | null }) {
   const stripId = useId();
   // Read again as Today is: the app back in front, the phone finding signal, and every few minutes.
   const tick = useRefreshTick();
-  const known = useRef(new Map<string, readonly JobSummary[]>());
+  const known = useRef(new Map<string, Pick<Day, "jobs" | "settled">>());
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the tick is what asks for the read again
   const read = useCallback(() => readWeek(today, known.current), [today, tick]);
   const [loaded, retry] = useLoad(read);

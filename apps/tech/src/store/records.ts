@@ -19,6 +19,8 @@ import type { Queued } from "./replay.ts";
 export interface KeptDay {
   readonly date: string;
   readonly jobs: readonly JobSummary[];
+  /** Whether the list stood when kept: false while its visits might still be given out the evening before. */
+  readonly settled?: boolean;
 }
 
 /** What a check-in measured: the distance, the radius, and when the no-show wait ends. No later call gives it back. */

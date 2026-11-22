@@ -15,8 +15,11 @@ import { ADDRESS, pincode, VISITOR, post, site } from "./consultations-fixtures.
  */
 const CONSULTATION_TRIPS = 11;
 
-/** The round trips of the free booking written in the same request (src/http/book-hold.ts), which the form waits on. */
-const BOOKING_TRIPS = 8;
+/**
+ * The round trips of the free booking written in the same request (src/http/book-hold.ts), which the form waits on: one
+ * of them reads the reminder hours, which tell whether its technician is a draft (src/domain/booking/allotment-lock.ts).
+ */
+const BOOKING_TRIPS = 9;
 
 /** The lead's touch: written with the visitor's, then the client's first and last touch (ADR 0288). */
 const TOUCH_TRIPS = 2;

@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0290. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0291. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -84,6 +84,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0278](0278-a-technician-in-training-takes-no-visits.md) A technician in training takes no visits
 - [0287](0287-a-start-googles-drive-refused-is-not-offered.md) A start Google's drive leaves no room for is not offered again
 - [0289](0289-who-takes-a-visit.md) Who takes a visit: a radius in km, an overflow ring, and the least cost
+- [0290](0290-allotted-the-evening-before.md) A visit's technician is fixed the evening before
 
 ### Field work
 
@@ -534,7 +535,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
 | [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted | [0225](0225-the-console-on-a-desk-and-a-phone.md) |
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted | [0257](0257-razorpay-only.md) |
-| [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md), [0287](0287-a-start-googles-drive-refused-is-not-offered.md), [0289](0289-who-takes-a-visit.md) |
+| [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md), [0287](0287-a-start-googles-drive-refused-is-not-offered.md), [0289](0289-who-takes-a-visit.md), [0290](0290-allotted-the-evening-before.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
 | [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |
 | [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted | [0263](0263-the-home-pages-order-and-bands.md), [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) |
@@ -613,4 +614,5 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0286](0286-the-icons-are-the-mark.md) | The browser's and the home screen's icons are the mark | 2026-11-19 | accepted, on the owner's ruling of 19 November 2026 |  |
 | [0287](0287-a-start-googles-drive-refused-is-not-offered.md) | A start Google's drive leaves no room for is not offered again | 2026-11-19 | accepted, on the owner's go-ahead of 19 November 2026 |  |
 | [0288](0288-attribution-and-conversions.md) | Attribution and conversions | 2026-11-20 | accepted, on the owner's brief and rulings of 20 November 2026 |  |
-| [0289](0289-who-takes-a-visit.md) | Who takes a visit: a radius in km, an overflow ring, and the least cost | 2026-11-22 | accepted |  |
+| [0289](0289-who-takes-a-visit.md) | Who takes a visit: a radius in km, an overflow ring, and the least cost | 2026-11-22 | accepted | [0290](0290-allotted-the-evening-before.md) |
+| [0290](0290-allotted-the-evening-before.md) | A visit's technician is fixed the evening before | 2026-11-22 | accepted |  |

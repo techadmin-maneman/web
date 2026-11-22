@@ -96,6 +96,11 @@ export const VisitSummarySchema = z
     }),
     prepaid: z.boolean().openapi({ description: "Paid for ahead, or covered by a visit credit: the visit's Prepaid." }),
     technician: z.union([TechnicianSchema, z.null()]),
+    technician_pending: z.boolean().openapi({
+      description:
+        "Whether who is coming is still a draft, fixed and named the evening before (ADR 0290); a client is not told " +
+        "the technician until then.",
+    }),
     place: z
       .string()
       .openapi({ description: "The saved address's area, city and pincode, else the visit's city and pincode." }),

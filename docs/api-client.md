@@ -9217,6 +9217,10 @@ Request body:
         }
       ]
     },
+    "technician_pending": {
+      "type": "boolean",
+      "description": "Whether who is coming is still a draft, fixed and named the evening before (ADR 0290); a client is not told the technician until then."
+    },
     "place": {
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
@@ -9389,6 +9393,7 @@ Request body:
     "stage",
     "prepaid",
     "technician",
+    "technician_pending",
     "place",
     "client_note",
     "pay_at_visit",
@@ -10848,6 +10853,10 @@ Request body:
         }
       ]
     },
+    "technician_pending": {
+      "type": "boolean",
+      "description": "Whether who is coming is still a draft, fixed and named the evening before (ADR 0290); a client is not told the technician until then."
+    },
     "place": {
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
@@ -11167,6 +11176,7 @@ Request body:
     "stage",
     "prepaid",
     "technician",
+    "technician_pending",
     "place",
     "client_note",
     "pay_at_visit",
@@ -13783,20 +13793,28 @@ Request body:
       "description": "The latest the technician arrives: the start and its arrival window."
     },
     "technician": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "initials": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "initials"
+          ],
+          "additionalProperties": false
         },
-        "initials": {
-          "type": "string"
+        {
+          "type": "null"
         }
-      },
-      "required": [
-        "name",
-        "initials"
       ],
-      "additionalProperties": false
+      "description": "Who is coming; null while it is a draft, fixed and named the evening before (ADR 0290)."
     },
     "price": {
       "$ref": "#/components/schemas/Price"

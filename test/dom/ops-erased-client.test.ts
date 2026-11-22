@@ -29,6 +29,7 @@ const visit = (changes: Partial<ClientVisit>): ClientVisit => ({
   stage: null,
   prepaid: true,
   technician: { name: "Imran Qureshi", initials: "IQ" },
+  technician_pending: false,
   place: "Gurgaon 122018",
   one_visit: null,
   client_note: null,

@@ -553,7 +553,8 @@ test("after the day's last job, the close says the day is done, with tomorrow's 
   // This job alone today, so nothing is left once it closes.
   await page.route(
     (url) => url.pathname === "/api/tech/jobs" && url.searchParams.get("date") === today,
-    (route) => route.fulfill({ json: { date: today, jobs: jobsToday(today).slice(0, 1), sent_back: [] } }),
+    (route) =>
+      route.fulfill({ json: { date: today, jobs: jobsToday(today).slice(0, 1), settled: true, sent_back: [] } }),
   );
   await page.goto(`/jobs/${JOB_ID}/done`);
   await expect(page.getByText(techCopy.closeOut.next.doneForToday, { exact: true })).toBeVisible();

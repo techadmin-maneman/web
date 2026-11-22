@@ -314,6 +314,17 @@ describe("a day’s jobs", () => {
     expect(await loadDay(TODAY)).toMatchObject({ state: "loaded", fromPhone: true });
   });
 
+  // Tomorrow kept before the evening's lock still says its jobs are to come (ADR 0290), and a day kept before the
+  // phone knew to keep that, as it always did.
+  it("with no signal, says whether the list stood when it was kept", async () => {
+    api({ [`/api/tech/jobs?date=${TOMORROW}`]: { status: 200, json: { date: TOMORROW, jobs: [], settled: false } } });
+    await loadDay(TOMORROW);
+    await keepDay(TODAY, [summary("a", TODAY)]);
+    api({});
+    expect(await loadDay(TOMORROW)).toMatchObject({ state: "loaded", fromPhone: true, settled: false });
+    expect(await loadDay(TODAY)).toMatchObject({ state: "loaded", fromPhone: true, settled: true });
+  });
+
   it("with the API having a bad minute, is what the phone kept", async () => {
     await keepDay(TODAY, [summary("a", TODAY)]);
     api({ [`/api/tech/jobs?date=${TODAY}`]: { status: 503 } });

@@ -66,6 +66,10 @@ export interface HoldRow {
   city: string | null;
   /** Whether the technician it was held with is still switched on: 1, or 0 once ops switched them off. */
   technician_active: number;
+  /** 1 where ops chose the technician when booking in the console: the visit is fixed with them, never a draft. */
+  technician_chosen: number;
+  /** For a move, whether the visit it moves is still a draft; null for a new visit. */
+  moving_draft: number | null;
 }
 
 export async function bookingHoldRow(db: D1Database, holdId: string): Promise<HoldRow | null> {
@@ -74,7 +78,8 @@ export async function bookingHoldRow(db: D1Database, holdId: string): Promise<Ho
       `SELECT h.id, h.person_id, p.erased_at AS person_erased_at, h.type, h.tier, h.minutes, h.date, h.window_label,
               h.start_unit, h.starts_at, h.technician_id, h.amount, h.state, h.expires_at, h.grace_seconds, h.confirmed_at,
               h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind, h.created_at, h.use_credit,
-              h.one_visit,
+              h.one_visit, h.technician_chosen,
+              (SELECT m.technician_draft FROM appointments m WHERE m.id = h.moves_appointment_id) AS moving_draft,
               h.pay_by_link, h.pay_at_visit, h.refunded_at, h.pincode, sp.city, COALESCE(t.active, 0) AS technician_active
        FROM slot_holds h JOIN people p ON p.id = h.person_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode

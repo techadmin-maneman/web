@@ -28230,6 +28230,8 @@ export interface components {
             /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
+            /** @description Whether who is coming is still a draft, fixed and named the evening before (ADR 0290); a client is not told the technician until then. */
+            technician_pending: boolean;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
             /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
@@ -28405,6 +28407,8 @@ export interface components {
             /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
+            /** @description Whether who is coming is still a draft, fixed and named the evening before (ADR 0290); a client is not told the technician until then. */
+            technician_pending: boolean;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
             /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
@@ -28913,6 +28917,8 @@ export interface components {
              */
             starts_at: string;
             technician: components["schemas"]["FreeTechnician"];
+            /** @description Whether the technician is a draft the evening's re-plan may still change, fixed the evening before (ADR 0290); never where ops chose them. */
+            technician_draft: boolean;
             /** @description The payment link Razorpay texted the client, and when it closes and the slot goes. */
             link: {
                 url: string;
@@ -30913,6 +30919,8 @@ export interface components {
             proposal: components["schemas"]["BoardProposedMove"] | null;
             /** @description How far the technician has got, from the steps their phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before they arrive. A visit they have begun, or one in progress, is not moved. */
             begun: ("arrived" | "started" | "closed") | null;
+            /** @description Whether its technician is still a draft, which the evening's re-plan may change; fixed the evening before (ADR 0290). */
+            draft: boolean;
         };
         DispatchClient: {
             /** Format: uuid */

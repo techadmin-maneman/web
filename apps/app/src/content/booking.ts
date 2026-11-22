@@ -287,6 +287,8 @@ export const booking = {
     moved: "Visit moved",
     arrives: (hours: string) => `Arrives ${hours}`,
     technician: "Technician",
+    /** Who comes is fixed and named the evening before (docs/decisions/0290-allotted-the-evening-before.md). */
+    dayBefore: "Confirmed the day before",
     address: "Address",
     payment: "Payment",
     paid: (amount: string) => `${amount} paid`,
@@ -295,7 +297,7 @@ export const booking = {
     free: "Free",
     /** The reminder is ours, sent automatically, not the technician's. */
     tellsYou: "We remind you the day before.",
-    note: (name: string) => `Add a note for ${name}`,
+    note: (name: string | null) => (name === null ? "Add a note for your technician" : `Add a note for ${name}`),
     close: "Done",
   },
   /** While Razorpay's word and the booking are awaited: a title, and a line beneath it. */

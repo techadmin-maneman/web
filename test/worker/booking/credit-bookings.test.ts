@@ -2,6 +2,7 @@
 // or cancelling such a visit does to the credit (docs/decisions/0033-credit-ledger.md, "Spending"). NOW is Monday
 // 21 September 2026, 12 noon in India. Every name and number here is made up.
 
+import { fixedOnBooking } from "./client-booking-fixtures.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../../src/config/message-templates.ts";
@@ -40,6 +41,7 @@ async function bookService(
 
 beforeEach(async () => {
   await markDatabase();
+  await fixedOnBooking();
   captureLogs();
   await technician();
   // A second, so a client's visits booked back to back can alternate: no technician takes two in a row.
@@ -67,7 +69,8 @@ describe("booking with a credit", () => {
     expect(redeemed).toEqual({ visits: -1 });
     const composed = await composeVisitMessage(env.DB, "payment_receipt", visitId, PERSON);
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12–12:30 pm, with Imran, covered by one of your free service visits.",
+      // Three days ahead, its technician is named the evening before (ADR 0290).
+      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12–12:30 pm, with our technician, covered by one of your free service visits.",
     );
   });
 

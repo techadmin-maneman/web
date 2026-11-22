@@ -62,6 +62,17 @@ describe("a day's route", () => {
       // Traffic would bill as Compute Routes Pro.
       routingPreference: "TRAFFIC_UNAWARE",
     });
+    expect(body).not.toHaveProperty("departureTime");
+  });
+
+  it("asks for the traffic expected when a drive sets off only where it names when", async () => {
+    const { calls, routes } = answering(() => Response.json({ routes: [{ legs: [{ duration: "2400s" }] }] }));
+    const answer = await routes.route([HOME, NEXT], { departAt: new Date("2026-09-22T04:30:00.000Z") });
+    expect(answer).toMatchObject({ ok: true, legs: [{ seconds: 2400 }] });
+    expect(await calls[0]?.json()).toMatchObject({
+      routingPreference: "TRAFFIC_AWARE",
+      departureTime: "2026-09-22T04:30:00.000Z",
+    });
   });
 
   it("fails on a refusal, in Google's own words where it gives them, or an answer with no route", async () => {

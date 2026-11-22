@@ -1,6 +1,8 @@
 // The week's top-up (docs/decisions/0181-tomorrows-kits.md): on the evening ops set, the kit check looks a week ahead
 // for consumables, at what each kit's visits over the next seven days are expected to use and its kit level on top,
 // so a kit ends the week no lower than its level. Hair systems stay with tomorrow's check, which knows each client's.
+// A visit whose technician is still a draft (docs/decisions/0290-allotted-the-evening-before.md) counts with them: it
+// uses consumables whoever goes, and whoever has it now is the best guess of whose kit it draws on.
 
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { tierOf } from "../../config/visit-types.ts";

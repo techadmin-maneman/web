@@ -97,6 +97,7 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
         noting={notingOf(visit)}
         begun={hasBegun(visit)}
         technician={visit.technician}
+        technicianPending={visit.technician_pending}
         proposal={visit.proposed_move === null ? null : { visitId: visit.id, move: visit.proposed_move }}
       />
     );
@@ -164,6 +165,8 @@ function Consultation(props: {
   price?: OneVisitPrice | null;
   /** Who is coming, once a technician has the visit. */
   technician?: { readonly initials: string; readonly name: string } | null;
+  /** Whether who is coming is still to be confirmed, the day before. */
+  technicianPending?: boolean;
   /** A move to another day ops asked the client to confirm, still open. */
   proposal?: { readonly visitId: string; readonly move: NonNullable<VisitSummary["proposed_move"]> } | null;
 }) {
@@ -189,6 +192,7 @@ function Consultation(props: {
             </Fact>
             {props.place !== "" && <Fact icon={GLYPHS.pin}>{props.place}</Fact>}
             {!oneVisit && <Fact icon={CLIENT_ICONS.receipt}>{copy.free}</Fact>}
+            {props.technicianPending === true && <Fact icon={CLIENT_ICONS.user}>{home.technicianPending}</Fact>}
           </ul>
           {props.technician !== undefined && props.technician !== null && (
             <div className={styles.technician}>

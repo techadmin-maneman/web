@@ -29,7 +29,8 @@ export async function workableJob(db: D1Database, jobId: string): Promise<Workab
          (SELECT json_group_object(s.key, json(s.value)) FROM city_settings s WHERE s.city = appointments.service_city)
            AS city_rules
        FROM appointments
-       WHERE id = ?1 AND deleted_at IS NULL`,
+       -- A draft is no technician's yet, whoever it is with (src/domain/booking/allotment-lock.ts).
+       WHERE id = ?1 AND deleted_at IS NULL AND technician_draft = 0`,
     )
     .bind(jobId)
     .first<{

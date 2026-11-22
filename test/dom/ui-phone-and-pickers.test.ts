@@ -15,7 +15,7 @@ import { Popover, PopoverChoice, PopoverHeading } from "../../packages/ui/Popove
 import { SearchMenu } from "../../packages/ui/SearchMenu.tsx";
 import { NavGroup, NavItem, SideNav } from "../../packages/ui/SideNav.tsx";
 import { TabBar, TabBarItem } from "../../packages/ui/TabBar.tsx";
-import { RowOpener, rowRule } from "../../packages/ui/Table.tsx";
+import { CellDetail, RowOpener, rowRule } from "../../packages/ui/Table.tsx";
 import { ToggleButton } from "../../packages/ui/ToggleButton.tsx";
 
 const css = (name: string) => readFileSync(`packages/ui/${name}`, "utf8");
@@ -378,6 +378,12 @@ describe("a table row that opens a drawer", () => {
     expect(opener()).toMatch(
       /^<button type="button" class="[^"]+" aria-haspopup="dialog"><span class="[^"]+">Address<\/span><span class="[^"]+">Kunal Shah · 2 days left<\/span><\/button>$/,
     );
+  });
+
+  it("lends its line of detail to any cell, beneath the cell's value, looking the same", () => {
+    const detail = renderToStaticMarkup(createElement(CellDetail, { children: "Draft" }));
+    const meta = /<span class="([^"]+)">Kunal Shah/.exec(opener())?.[1];
+    expect(detail).toBe(`<span class="${meta ?? "none"}">Draft</span>`);
   });
 
   it("reaches over the whole row from its head, as a row's name does", () => {

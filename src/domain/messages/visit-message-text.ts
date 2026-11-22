@@ -144,7 +144,9 @@ async function composeVisitText(
 ): Promise<Composed> {
   const visit = await db
     .prepare(
-      `SELECT a.type, a.one_visit, a.window_start, a.status, a.technician_id, p.name, t.name AS technician
+      // A draft technician is not named (src/domain/booking/allotment-lock.ts): the client hears "our technician".
+      `SELECT a.type, a.one_visit, a.window_start, a.status, a.technician_id, p.name,
+         CASE WHEN a.technician_draft = 1 THEN NULL ELSE t.name END AS technician
        FROM appointments a JOIN people p ON p.id = a.person_id LEFT JOIN technicians t ON t.id = a.technician_id
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL`,
     )

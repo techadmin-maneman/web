@@ -656,8 +656,10 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       if (date === today && fake.dayFails) return route.abort("failed");
       // The visits with steps sent back come with every day's list, whatever its date.
       const sent_back = toFix(today);
+      // Tomorrow's list as it stands once the evening's lock has run; a later day's may still be given more.
+      const settled = date <= dayAfter(today);
       if (date === dayBefore(today) && fake.yesterday) {
-        return reply(route, 200, { date, jobs: jobsYesterday(today), sent_back });
+        return reply(route, 200, { date, jobs: jobsYesterday(today), settled, sent_back });
       }
       if (date === today) {
         const progress = { started_at: fake.progress.started_at, outcome: fake.progress.outcome };
@@ -665,12 +667,12 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         const jobs = listed.map((job, at) =>
           at === 0 && fake.firstMinutes !== null ? { ...job, minutes: fake.firstMinutes } : job,
         );
-        return reply(route, 200, { date, jobs, sent_back });
+        return reply(route, 200, { date, jobs, settled, sent_back });
       }
       if (date === dayAfter(today) && fake.tomorrow) {
-        return reply(route, 200, { date, jobs: jobsTomorrow(today), sent_back });
+        return reply(route, 200, { date, jobs: jobsTomorrow(today), settled, sent_back });
       }
-      return reply(route, 200, { date, jobs: [], sent_back });
+      return reply(route, 200, { date, jobs: [], settled, sent_back });
     }
     if (path === "/api/tech/pieces/lookup") {
       const code = url.searchParams.get("code") ?? "";

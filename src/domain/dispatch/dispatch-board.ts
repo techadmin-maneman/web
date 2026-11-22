@@ -76,6 +76,8 @@ interface Block extends Visit {
   readonly begun: Begun | null;
   /** A move to another day the client has been asked to confirm, still open; the visit stays put until they do. */
   readonly proposal: BoardProposedMove | null;
+  /** Its technician is a draft the evening's re-plan may change, fixed the evening before (ADR 0290). */
+  readonly draft: boolean;
 }
 
 interface BoardDay {
@@ -166,6 +168,7 @@ const landed = (kind: string): string =>
  */
 const BOARD_JOBS = `
   SELECT a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
+    a.technician_draft,
     a.service_pincode, a.asked_window, a.person_id, a.client_note, d.locality, sp.area, s.minutes AS service_minutes,
     s.name AS service_name,
     p.name AS client_name, p.mobile_e164 AS client_mobile, p.erased_at AS client_erased_at,
@@ -347,6 +350,7 @@ interface BoardJobRow {
   closed: number;
   /** The open move proposal, as openProposalJson writes it; null for none. */
   proposal: string | null;
+  technician_draft: number;
 }
 
 function visitOf(job: BoardJobRow): Visit {
@@ -401,6 +405,7 @@ function blockOf(job: BoardJobRow, about: AboutTheVisit, noticeInForce: number, 
     untold: about.untold,
     begun: begunFrom({ checkIn: job.checked_in === 1, start: job.started === 1, outcome: job.closed === 1 }),
     proposal: about.proposal,
+    draft: job.technician_draft === 1,
   };
 }
 

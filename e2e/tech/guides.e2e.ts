@@ -71,7 +71,7 @@ test("opens a later job's kind of visit from its preview, and goes back to the p
   const type = locked.find((job) => job.id === TOMORROW_JOB_ID)?.type ?? "service";
   // Registered after the fake, so it answers first: tomorrow's job before its card opens.
   await page.route(`**/api/tech/jobs?date=${tomorrow}`, (route) =>
-    route.fulfill({ json: { date: tomorrow, jobs: locked, sent_back: [] } }),
+    route.fulfill({ json: { date: tomorrow, jobs: locked, settled: true, sent_back: [] } }),
   );
   await page.goto(`/week/${tomorrow}`);
   await page.locator(`a[href="/week/${tomorrow}/${TOMORROW_JOB_ID}"]`).click();

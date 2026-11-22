@@ -102,7 +102,7 @@ export function ConfirmedStep(props: {
 }) {
   const { hold, reminded } = props;
   const copy = booking.confirmed;
-  const technician = firstNameOf(hold.technician.name);
+  const technician = hold.technician === null ? null : firstNameOf(hold.technician.name);
   const remindsTheDayBefore = reminded && hold.date > addDays(todayInIndia(Date.now()), 1);
   return (
     <div className={styles.confirmed} role="status">
@@ -117,7 +117,7 @@ export function ConfirmedStep(props: {
         <p className={styles.confirmedDate}>{weekdayDate(hold.date)}</p>
         <p className={styles.arrives}>{copy.arrives(arrivalHours(hold))}</p>
         <dl className={styles.facts}>
-          <Fact name={copy.technician}>{hold.technician.name}</Fact>
+          <Fact name={copy.technician}>{hold.technician === null ? copy.dayBefore : hold.technician.name}</Fact>
           {/* A move keeps its visit's own address, which the profile's may no longer be. */}
           {props.address !== null && props.moving === undefined && (
             <Fact name={copy.address}>{props.address.line1}</Fact>
@@ -153,7 +153,7 @@ export function ConfirmedStep(props: {
  * Add a note, on the visit just booked: kept on it for the technician, as Home's card keeps one. A booking whose visit
  * is not written yet sends it to us on WhatsApp instead.
  */
-function ConfirmedNote({ hold, technician }: { hold: Hold; technician: string }) {
+function ConfirmedNote({ hold, technician }: { hold: Hold; technician: string | null }) {
   const [open, setOpen] = useState(false);
   const message = messages.note(VISIT_TYPES[hold.type], shortDate(hold.date));
   if (hold.visit_id === null) {

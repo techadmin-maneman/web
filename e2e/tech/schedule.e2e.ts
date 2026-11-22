@@ -72,7 +72,7 @@ test("opens a later job still locked as a preview, which says when its card open
   const locked = jobsTomorrow(todayInIndia()).map((job) => ({ ...job, unlocked: false }));
   // Registered after the fake, so it answers first: tomorrow's job before its card opens.
   await page.route(`**/api/tech/jobs?date=${tomorrow}`, (route) =>
-    route.fulfill({ json: { date: tomorrow, jobs: locked, sent_back: [] } }),
+    route.fulfill({ json: { date: tomorrow, jobs: locked, settled: true, sent_back: [] } }),
   );
   await page.goto(`/week/${tomorrow}`);
   await page.locator(`a[href="/week/${tomorrow}/${TOMORROW_JOB_ID}"]`).click();
@@ -107,14 +107,15 @@ test("with no signal shows the days the phone keeps, says the rest didn't load, 
   fake.online = true;
   await context.setOffline(false);
   await expect(page.getByText(copy.dayFailed)).toHaveCount(0);
-  await expect(page.getByText(copy.nothing)).toBeVisible();
+  // Six days ahead, its visits are given out the evening before.
+  await expect(page.getByText(copy.comeEveningBefore)).toBeVisible();
 });
 
 test("keeps the days it showed when it reads the week again with no signal", async ({ page, context }) => {
   const fake = await fakeTech(page);
   await page.goto("/week");
   await page.getByRole("radio").last().check();
-  await expect(page.getByText(copy.nothing)).toBeVisible();
+  await expect(page.getByText(copy.comeEveningBefore)).toBeVisible();
   let unanswered = 0;
   page.on("requestfailed", (request) => {
     if (request.url().includes("/api/tech/jobs?date=")) unanswered += 1;
@@ -128,7 +129,7 @@ test("keeps the days it showed when it reads the week again with no signal", asy
   await expect.poll(() => unanswered).toBeGreaterThanOrEqual(7);
   // The read goes on to the phone's kept days once the calls fail; nothing on screen marks its end, so let it.
   await page.waitForTimeout(1000);
-  await expect(page.getByText(copy.nothing)).toBeVisible();
+  await expect(page.getByText(copy.comeEveningBefore)).toBeVisible();
   await expect(page.getByText(copy.dayFailed)).toHaveCount(0);
 });
 

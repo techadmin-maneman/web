@@ -269,6 +269,8 @@ function holdRow(
     pay_by_link: input.payByLink === true ? 1 : 0,
     pay_at_visit: input.payAtVisit === true ? 1 : 0,
     booked_from: from,
+    // Ops chose who goes: the visit is booked fixed with them (./allotment-lock.ts).
+    technician_chosen: input.technicianId === undefined ? 0 : 1,
   };
 }
 

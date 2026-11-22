@@ -5151,6 +5151,8 @@ export interface components {
             /** Format: date */
             date: string;
             jobs: components["schemas"]["TechnicianDayJob"][];
+            /** @description Whether the day's list stands: any day up to today, and tomorrow once its evening's lock has fixed who takes each visit (ADR 0290). A later day may still be given visits that are drafts now. */
+            settled: boolean;
             /** @description The technician's visits, of any day, with steps ops sent back that have not landed again, oldest first (ADR 0246). */
             sent_back: {
                 /** Format: uuid */

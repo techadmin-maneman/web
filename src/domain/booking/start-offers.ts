@@ -66,7 +66,19 @@ export interface DayStarts {
 }
 
 /** The pincode a visit is at: the one it is booked at, else its client's current address's. */
-const PINCODE = `COALESCE(?2, (SELECT d.pincode FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL))`;
+const pincodeOf = (person: string, pincode: string) =>
+  `COALESCE(${pincode}, (SELECT d.pincode FROM addresses d WHERE d.person_id = ${person} AND d.replaced_at IS NULL))`;
+
+/**
+ * Where a visit is, as two columns, `lat` and `lng`, of a query that names its client's ID and its booked pincode: its
+ * client's current pin, else the centre of the pincode it is booked at or the client's.
+ */
+export const pinColumns = (person: string, pincode: string): string => `COALESCE(
+    (SELECT d.lat FROM addresses d WHERE d.person_id = ${person} AND d.replaced_at IS NULL AND d.lng IS NOT NULL),
+    (SELECT sp.centre_lat FROM serviceable_pincodes sp WHERE sp.pincode = ${pincodeOf(person, pincode)})) AS lat,
+  COALESCE(
+    (SELECT d.lng FROM addresses d WHERE d.person_id = ${person} AND d.replaced_at IS NULL AND d.lat IS NOT NULL),
+    (SELECT sp.centre_lng FROM serviceable_pincodes sp WHERE sp.pincode = ${pincodeOf(person, pincode)})) AS lng`;
 
 /** Where the visit is: its client's current pin, else the centre of the pincode it is booked at or the client's. */
 export async function pinOfVisit(
@@ -74,14 +86,7 @@ export async function pinOfVisit(
   placing: Pick<StartPlacing, "personId" | "pincode">,
 ): Promise<Pin | null> {
   const row = await db
-    .prepare(
-      `SELECT COALESCE(
-           (SELECT d.lat FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL AND d.lng IS NOT NULL),
-           (SELECT sp.centre_lat FROM serviceable_pincodes sp WHERE sp.pincode = ${PINCODE})) AS lat,
-         COALESCE(
-           (SELECT d.lng FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL AND d.lat IS NOT NULL),
-           (SELECT sp.centre_lng FROM serviceable_pincodes sp WHERE sp.pincode = ${PINCODE})) AS lng`,
-    )
+    .prepare(`SELECT ${pinColumns("?1", "?2")}`)
     .bind(placing.personId, placing.pincode ?? null)
     .first<{ lat: number | null; lng: number | null }>();
   const lat = row?.lat ?? null;
@@ -115,12 +120,12 @@ function loadOf(plans: DayPlans, technicianId: string, date: string): { day: num
 }
 
 /** Where the visit sits for a technician, and whether their home is known to measure it from. */
-interface Placing {
+export interface Placing {
   readonly standing: Standing;
   readonly homeKnown: boolean;
 }
 
-interface Radius {
+export interface Radius {
   readonly id: string;
   readonly home_lat: number | null;
   readonly home_lng: number | null;
@@ -141,7 +146,7 @@ async function radiiIn(db: D1Database, cityOf: CityOf): Promise<ReadonlyMap<stri
  * (docs/decisions/0289-who-takes-a-visit.md), those beyond both left out. A move's own technician, `keeping`, may keep
  * it wherever they are; anyone else is measured as for a new booking.
  */
-function standings(
+export function standings(
   technicians: readonly Technician[],
   rows: ReadonlyMap<string, Radius>,
   at: { readonly pin: Pin | null; readonly keeping: string | null; readonly inputs: OpsInputs },

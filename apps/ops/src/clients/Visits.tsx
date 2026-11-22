@@ -9,7 +9,7 @@ import { NoValue } from "@maneman/ui/NoValue";
 import { Badge } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Button, RowButton } from "@maneman/ui/Button";
-import { ACTIONS, RowActions, rowRule, Table } from "@maneman/ui/Table";
+import { ACTIONS, CellDetail, RowActions, rowRule, Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { indiaClock, longDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
@@ -173,7 +173,10 @@ function VisitRow({
         {whatOf(visit)}
         {visit.client_note !== null && <p className={styles.note}>{copy.clientNote(visit.client_note)}</p>}
       </td>
-      <td>{visit.technician?.name ?? <NoValue />}</td>
+      <td>
+        {visit.technician?.name ?? <NoValue />}
+        {visit.technician !== null && visit.technician_pending && <CellDetail>{copy.draft}</CellDetail>}
+      </td>
       <td>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
       <td>
         <StateBadge visit={visit} />

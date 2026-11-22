@@ -2,6 +2,7 @@
 // visit, books it in one batch; a paid hold keeps its time until it is booked, by the half-hour pass if its request
 // failed (src/domain/booking/unbooked-holds.ts), or is given back (src/domain/booking/give-back.ts).
 
+import { bookedAsDraft, reminderHoursAt } from "./allotment-lock.ts";
 import { onPackageBooked } from "../clients/client-package.ts";
 import { carePersonStatement } from "../care/care-people.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
@@ -288,16 +289,22 @@ async function bookNewVisit(db: D1Database, hold: HoldRow, now: Date, options: C
  * request as the one they asked for.
  */
 async function newVisit(db: D1Database, hold: HoldRow, visitId: string, now: Date): Promise<D1PreparedStatement> {
-  const { start, end } = await heldVisitTimes(db, hold);
+  const [{ start, end }, hours] = await Promise.all([heldVisitTimes(db, hold), reminderHoursAt(db, now)]);
   const at = now.toISOString();
+  // Its technician is a draft until the evening before (./allotment-lock.ts), unless ops chose them or it replaces a
+  // visit already fixed, which a client's move keeps fixed (./move-in-place.ts).
+  const fixed = hold.technician_chosen === 1 || hold.moving_draft === 0;
+  const draft = !fixed && bookedAsDraft(start, hold.city, now, hours) ? 1 : 0;
   return db
     .prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, tier, window_start, window_end, technician_id, status,
-         service_city, service_pincode, synced_at, first_seen_at, one_visit, asked_checked_at, asked_window)
+         service_city, service_pincode, synced_at, first_seen_at, one_visit, asked_checked_at, asked_window,
+         technician_draft)
        SELECT ?1, ?1, ?2, ?3, ?4, ?5, ?6, (SELECT id FROM technicians WHERE id = ?7 AND active = 1), 'scheduled', ?8,
          ?9, ?10, ?10, ?11, ?10,
          (SELECT r.requested_window FROM consultation_requests r
-           WHERE r.person_id = ?2 AND ?3 = 'consultation' ORDER BY r.created_at DESC LIMIT 1)
+           WHERE r.person_id = ?2 AND ?3 = 'consultation' ORDER BY r.created_at DESC LIMIT 1),
+         ?13
        WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?12 AND state = 'held')`,
     )
     .bind(
@@ -313,6 +320,7 @@ async function newVisit(db: D1Database, hold: HoldRow, visitId: string, now: Dat
       at,
       hold.one_visit === 1 ? "booked" : null,
       hold.id,
+      draft,
     );
 }
 
