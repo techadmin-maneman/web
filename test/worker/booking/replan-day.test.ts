@@ -53,6 +53,36 @@ beforeEach(async () => {
 const visitRow = () =>
   env.DB.prepare("SELECT technician_id, technician_draft FROM appointments WHERE id = ?1").bind(visitId).first();
 
+/**
+ * The database, with `raced` done just before the re-plan writes its moves, after it read the day: as a hold, or ops,
+ * can change the day between the two.
+ */
+function racedBy(raced: () => Promise<unknown>): D1Database {
+  let writing = false;
+  let done = false;
+  return new Proxy(env.DB, {
+    get(target, key) {
+      if (key === "prepare") {
+        return (sql: string) => {
+          if (sql.includes("INSERT INTO dispatch_moves")) writing = true;
+          return target.prepare(sql);
+        };
+      }
+      if (key === "batch") {
+        return async (statements: D1PreparedStatement[]) => {
+          if (writing && !done) {
+            done = true;
+            await raced();
+          }
+          return target.batch(statements);
+        };
+      }
+      const value: unknown = Reflect.get(target, key);
+      return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+    },
+  });
+}
+
 describe("a day's drafts re-planned", () => {
   it("gives a draft to whoever it costs least, keeps it a draft, records the move, and keeps the day locked", async () => {
     const moved = await replanDay(env.DB, {
@@ -81,6 +111,24 @@ describe("a day's drafts re-planned", () => {
       inputs: await readOpsInputs(env.DB, NOW),
     });
     expect(plans.revision(IMRAN, TUESDAY)).toBe(1);
+  });
+
+  it("writes nothing where a hold locked the day it would go to, or the draft was fixed, after it was read", async () => {
+    const inputs = await readOpsInputs(env.DB, NOW);
+    const replan = (raced: () => Promise<unknown>) =>
+      replanDay(racedBy(raced), { city: "Gurgaon", date: TUESDAY, now: NOW, inputs });
+    const rival = await aHold({ person_id: (await client()).id, technician_id: IMRAN });
+    const holdLocks = () =>
+      env.DB.prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, 'rev:1', ?3)")
+        .bind(IMRAN, TUESDAY, rival.id)
+        .run();
+    expect(await replan(holdLocks)).toBe(0);
+    await env.DB.prepare("DELETE FROM slot_claims").run();
+    const opsFix = () =>
+      env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(visitId).run();
+    expect(await replan(opsFix)).toBe(0);
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 0 });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first("n")).toBe(0);
   });
 
   // A client's paid move waits to be booked onto the visit as it was; the rest of the day re-plans around it.
