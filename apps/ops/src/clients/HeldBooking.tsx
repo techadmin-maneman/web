@@ -32,17 +32,27 @@ const copy = clients.visits.book.inTheWay;
 const whenOf = (date: string, startsAt: string | null) =>
   startsAt === null ? shortDate(date) : `${shortDate(date)}, ${indiaClock(startsAt)}`;
 
-/** When a hold ends, written as its visit is: "7 am" on the visit's own day, else "Sat 21 Nov, 7 pm". */
+/** When a hold ends, written as its visit is: "7 am that day" on the visit's own day, else "Sat 21 Nov, 7 pm". */
 const untilOf = (instant: string, visitDate: string) =>
-  indiaDate(instant) === visitDate ? indiaClock(instant) : whenOf(indiaDate(instant), instant);
+  indiaDate(instant) === visitDate ? copy.thatDay(indiaClock(instant)) : whenOf(indiaDate(instant), instant);
 
 const named = (type: VisitType) => dispatch.typeNames[type].toLowerCase();
 
 /**
  * Copy a held booking's link, or have Razorpay text it again. `subject` names the booking to a screen reader where
- * several are listed.
+ * several are listed; `shown` says the link is written out above already.
  */
-export function HeldLinkActions({ holdId, url, subject = "" }: { holdId: string; url: string; subject?: string }) {
+export function HeldLinkActions({
+  holdId,
+  url,
+  subject = "",
+  shown = false,
+}: {
+  holdId: string;
+  url: string;
+  subject?: string;
+  shown?: boolean;
+}) {
   const [done, setDone] = useState("");
   // The browser would not copy it, so the address stays shown beside the buttons to copy by hand.
   const [byHand, setByHand] = useState(false);
@@ -79,8 +89,8 @@ export function HeldLinkActions({ holdId, url, subject = "" }: { holdId: string;
           {about}
         </TextButton>
       )}
-      {byHand && (
-        <InlineMessage tone="note" className={styles.link}>
+      {byHand && !shown && (
+        <InlineMessage tone="note" inline className={styles.link}>
           {url}
         </InlineMessage>
       )}
@@ -125,6 +135,7 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
             </Button>
             <CancelButton
               keep
+              disabled={busy}
               onClick={() => {
                 setAsking(false);
               }}

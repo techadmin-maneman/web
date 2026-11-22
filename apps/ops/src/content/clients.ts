@@ -393,6 +393,8 @@ export const clients = {
         letGo: "Let it go",
         /** Asked before a held booking is let go: its link stops working. */
         letGoAsk: "Let this booking go? Its payment link stops working.",
+        /** "7 am that day": a hold ending on its visit's own day. */
+        thatDay: (clock: string) => `${clock} that day`,
         lettingGo: "Letting go…",
         letGone: "Let go. Book again.",
         errors: {

@@ -18,11 +18,11 @@ function whenOf(held: HeldBooking): string {
   return held.starts_at === null ? day : `${day} at ${indiaClock(held.starts_at)}`;
 }
 
-/** The moment paying it last books it: "7 am" on the visit's own day, else "Sat 21 Nov at 7 pm". */
+/** The moment paying it last books it: "7 am that day" on the visit's own day, else "Sat 21 Nov at 7 pm". */
 function untilOf(held: HeldBooking): string {
   const day = indiaDate(held.open_until);
   const clock = indiaClock(held.open_until);
-  return day === held.date ? clock : `${shortDate(day)} at ${clock}`;
+  return day === held.date ? copy.thatDay(clock) : `${shortDate(day)} at ${clock}`;
 }
 
 export function HeldBookingCard() {

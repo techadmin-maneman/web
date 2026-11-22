@@ -514,7 +514,11 @@ test("names the booking held on its link that refuses another of its kind, and l
     .click();
   await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.already_booked);
   await expect(panel(page)).toContainText(
-    opsCopy.clients.visits.book.inTheWay.held("service visit", "Wed 22 Sep, 12 pm", "7:30 am"),
+    opsCopy.clients.visits.book.inTheWay.held(
+      "service visit",
+      "Wed 22 Sep, 12 pm",
+      opsCopy.clients.visits.book.inTheWay.thatDay("7:30 am"),
+    ),
   );
   const inTheWay = opsCopy.clients.visits.book.inTheWay;
   await panel(page)
@@ -529,6 +533,53 @@ test("names the booking held on its link that refuses another of its kind, and l
     .click();
   await asked.getByRole("button", { name: inTheWay.letGo, exact: true }).click();
   await expect(panel(page)).toContainText(inTheWay.letGone);
+
+  // Said once: another try refused, then another time chosen, says nothing of the let-go again.
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.already_booked);
+  await panel(page).getByRole("radio", { name: "12:30 pm", exact: true }).check();
+  await expect(panel(page).getByRole("alert")).toHaveCount(0);
+  await expect(panel(page)).not.toContainText(inTheWay.letGone);
   await expect(panel(page).getByRole("alert")).toHaveCount(0);
   expect(letGo).toBe(true);
+});
+
+// A hold for a visit booked days ahead ends on an earlier day; a let-go refused says why, and the hold stays.
+test("names the day a hold ends before its visit, and says why a let-go was refused", async ({ page }) => {
+  await openVisits(page, {
+    [BOOK]: json({ error: { code: "already_booked", request_id: "r-1" } }, 409),
+    [`GET /api/clients/${CLIENT.id}/held-bookings`]: json({
+      visit: null,
+      held: [
+        {
+          hold_id: HOLD,
+          type: "service",
+          date: "2027-09-24",
+          starts_at: "2027-09-24T06:30:00.000Z",
+          amount: 200000,
+          url: "https://rzp.io/i/stub4417",
+          open_until: "2027-09-22T13:30:00.000Z",
+          paid: false,
+        },
+      ],
+    }),
+    "POST /api/holds/{id}/let-go": json({ error: { code: "hold_expired", request_id: "r-2" } }, 409),
+  });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  const inTheWay = opsCopy.clients.visits.book.inTheWay;
+  await expect(panel(page)).toContainText(inTheWay.held("service visit", "Fri 24 Sep, 12 pm", "Wed 22 Sep, 7 pm"));
+  await panel(page)
+    .getByRole("button", { name: `${inTheWay.letGo} · service visit, Fri 24 Sep, 12 pm`, exact: true })
+    .click();
+  const asked = panel(page).getByRole("group", { name: inTheWay.letGoAsk });
+  await asked.getByRole("button", { name: inTheWay.letGo, exact: true }).click();
+  await expect(panel(page)).toContainText(inTheWay.errors.hold_expired);
+  await expect(asked).toHaveCount(0);
+  await expect(panel(page)).not.toContainText(inTheWay.letGone);
 });

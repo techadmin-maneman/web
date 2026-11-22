@@ -56,9 +56,28 @@ describe("a booking held on its link, on Home", () => {
         ],
       }),
     );
-    expect(page.textContent).toContain(copy.line("first fit", "Sun 22 Nov at 10 am", "7 am"));
+    expect(page.textContent).toContain(copy.line("first fit", "Sun 22 Nov at 10 am", copy.thatDay("7 am")));
     expect(page.querySelector("a")?.getAttribute("href")).toBe("https://rzp.io/i/held");
     expect(page.textContent).toContain(copy.pay("Rs. 21,500"));
+  });
+
+  // Held for a visit booked days ahead, it ends on an earlier day, which is named.
+  it("names the day a hold ends on, where it ends before its visit's day", async () => {
+    await show(
+      Response.json({
+        held: [
+          {
+            type: "service",
+            date: "2026-11-24",
+            starts_at: "2026-11-24T06:30:00.000Z",
+            amount: 200000,
+            pay_url: "https://rzp.io/i/ahead",
+            open_until: "2026-11-21T13:30:00.000Z",
+          },
+        ],
+      }),
+    );
+    expect(page.textContent).toContain(copy.line("service visit", "Tue 24 Nov at 12 pm", "Sat 21 Nov at 7 pm"));
   });
 
   it("shows nothing where its bookings cannot be read", async () => {

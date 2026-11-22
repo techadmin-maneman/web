@@ -82,7 +82,7 @@ function Booked({ booked }: { booked: VisitBooked }) {
           <p className={shared.done}>
             {copy.link}: <span className={styles.link}>{booked.link.url}</span>
           </p>
-          <HeldLinkActions holdId={booked.hold_id} url={booked.link.url} />
+          <HeldLinkActions holdId={booked.hold_id} url={booked.link.url} shown />
         </>
       )}
     </div>
