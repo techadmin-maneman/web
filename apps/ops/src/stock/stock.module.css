@@ -26,6 +26,12 @@
   margin-left: var(--sp-8);
 }
 
+/* Pieces kept for a client's custom order, under what the place holds. */
+.reserved {
+  display: block;
+  color: var(--ui-text-muted);
+}
+
 /* One place's columns: the item room for a long hair system name, the rest even. */
 .onePlace th:nth-child(1) {
   width: 36%;

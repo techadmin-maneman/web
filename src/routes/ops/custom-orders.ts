@@ -56,6 +56,10 @@ const OrderSchema = z.object({
   link_sent_at: z.string().nullable(),
   paid_at: z.string().nullable(),
   po_number: z.number().int().nullable(),
+  po_id: z.string().nullable().openapi({ description: "Its purchase order, to open on Purchasing; null until paid." }),
+  piece_at: z.string().nullable().openapi({
+    description: "Where its piece is held once arrived: the warehouse, a stockroom or a kit; null otherwise.",
+  }),
   raised_at: z.string(),
 });
 
@@ -161,6 +165,8 @@ const orderOut = (order: CustomOrder) => ({
   link_sent_at: order.linkSentAt,
   paid_at: order.paidAt,
   po_number: order.poNumber,
+  po_id: order.poId,
+  piece_at: order.pieceAt,
   refund_reason: order.refundReason,
   raised_at: order.raisedAt,
 });

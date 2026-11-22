@@ -79,8 +79,22 @@ const OpsBookingSchema = z
         "(ADR 0290); never where ops chose them.",
     }),
     link: z
-      .union([z.object({ url: z.string(), open_until: z.iso.datetime() }).strict(), z.null()])
-      .openapi({ description: "The payment link Razorpay texted the client, and when it closes and the slot goes." }),
+      .union([
+        z
+          .object({
+            url: z.string(),
+            open_until: z.iso.datetime(),
+            texted: z.boolean().openapi({
+              description:
+                "Whether Razorpay texted it: never to a number messaging may not text (a staging test record).",
+            }),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description: "The payment link for the client, whether it was texted, and when it closes and the slot goes.",
+      }),
   })
   .strict()
   .openapi("OpsBooking");
@@ -210,7 +224,7 @@ interface Answer {
   readonly sale: Sale;
   readonly outcome: (typeof OUTCOMES)[number];
   readonly visitId: string | null;
-  readonly link: { readonly url: string; readonly open_until: string } | null;
+  readonly link: { readonly url: string; readonly open_until: string; readonly texted: boolean } | null;
   readonly draft: boolean;
 }
 
@@ -407,7 +421,7 @@ export function registerOpsVisits(app: App): void {
         await letGo(c, hold.id, "link_not_made");
         return refuse(c, "unavailable");
       }
-      const link = { url: made.shortUrl, open_until: closesAt.toISOString() };
+      const link = { url: made.shortUrl, open_until: closesAt.toISOString(), texted: made.texted };
       const draft = await holdDraft(db, hold.id, now);
       return c.json(bookingBody({ hold, sale, outcome: "awaiting_payment", visitId: null, link, draft }), 201);
     }

@@ -211,6 +211,7 @@ export async function stockAnswer(c: Context<AppEnv>) {
       quantity: holding.quantity,
       low: holding.low,
       counted_at: holding.countedAt,
+      reserved: holding.reserved,
       lots: holding.lots.map((lot) => ({
         id: lot.id,
         lot_code: lot.lotCode,

@@ -80,6 +80,10 @@ const StockSchema = z
           quantity: z.number().int().openapi({ description: "The sum of the place's rows; below nought is a gap." }),
           low: z.boolean().openapi({ description: "At or below the level for its kind of place." }),
           counted_at: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When it was last counted there." }),
+          reserved: z
+            .number()
+            .int()
+            .openapi({ description: "Of its pieces there, those reserved to a client's custom order." }),
           lots: z
             .array(
               z

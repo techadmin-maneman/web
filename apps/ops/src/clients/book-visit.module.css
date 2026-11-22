@@ -4,3 +4,30 @@
 .link {
   overflow-wrap: anywhere;
 }
+
+/* A held booking's link: copy it, send it again, or let the booking go; side by side, wrapping on a phone. */
+.heldActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+  align-items: baseline;
+}
+
+/* What a press of Copy link or Send again came to, on its own line beneath them; no room until it says something. */
+.said:not(:empty) {
+  display: block;
+  margin-top: var(--sp-8);
+  /* Brought into view clear of the drawer's Book bar, which stays over the foot of what scrolls: room for its
+     tallest, the pay line wrapped beside the button and the button on a line of its own. */
+  scroll-margin-bottom: calc(var(--sp-64) * 2 + var(--sp-32));
+}
+
+/* What an "Already booked" refusal is about, beneath it. */
+.inTheWay {
+  display: grid;
+  gap: var(--sp-8);
+}
+
+.inTheWay p {
+  margin: 0;
+}

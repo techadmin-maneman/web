@@ -14,11 +14,19 @@ import { catchUpWithRazorpay } from "../../../src/domain/money/razorpay-catch-up
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { asClient, signedIn } from "../clients.ts";
+import { aHold } from "../fixtures/index.ts";
 import { A_NUMBER, captureLogs, deliverRazorpay, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
 interface Orders {
-  orders: { id: string; number: number; status: string; short_url: string | null; po_number: number | null }[];
+  orders: {
+    id: string;
+    number: number;
+    status: string;
+    short_url: string | null;
+    po_number: number | null;
+    piece_at?: string | null;
+  }[];
   suppliers: { id: string; name: string }[];
   profile_ready: boolean;
 }
@@ -201,6 +209,18 @@ describe("a custom order's money, wherever it goes", () => {
     expect(await alertKeys()).toContain("custom_order_payment_stranded:pay_custom_1");
   });
 
+  it("paid, tells ops to order its piece by hand where its purchase order could not be drafted", async () => {
+    const [order] = (await (await raise()).json<Orders>()).orders;
+    // Its hair system is no longer sold, so no stock code can be made to its spec.
+    await env.DB.prepare("DELETE FROM services WHERE kind = 'first_fit' AND tier = 'essential'").run();
+    const linkId =
+      (await env.DB.prepare("SELECT razorpay_link_id FROM custom_orders").first<string>("razorpay_link_id")) ?? "";
+    await deliverRazorpay(linkPaid({ id: linkId, reference_id: order?.id ?? "" }), { deps: job.deps });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM purchase_orders").first<number>("n")).toBe(0);
+    const number = `CU-${String(order?.number ?? 0).padStart(4, "0")}`;
+    expect(job.deps.alerts).toContainEqual(expect.stringContaining(`custom order ${number}`));
+  });
+
   it("is never stranded by cancelling its purchase order alone", async () => {
     const [order] = (await (await raise()).json<Orders>()).orders;
     await deliverRazorpay(linkPaid(await linkOf(order?.id ?? "")), { deps: job.deps });
@@ -248,7 +268,7 @@ describe("a custom order's money, wherever it goes", () => {
 describe("a custom order's piece", () => {
   const OTHER = "66666666-6666-4666-8666-666666666661";
 
-  it("arrives reserved to its client: out of free stock, and never offered at another client's fit", async () => {
+  it("arrives reserved to its client: held for them alone, and never offered at another client's fit", async () => {
     await env.DB.batch([
       env.DB.prepare(
         "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810066661', 'Asha Verma')",
@@ -298,8 +318,19 @@ describe("a custom order's piece", () => {
       (await (await request(job.ops, `/api/clients/${OTHER}/custom-orders`)).json<Orders>()).orders[0]?.status,
     ).toBe("arrived");
 
-    const matched = await (await request(job.ops, `/api/clients/${OTHER}/stock-match`)).json<{ held: unknown[] }>();
-    expect(matched.held).toEqual([]);
+    // Their own reserved piece is held for them, where it waits; no one else's match counts it.
+    const matched = await (
+      await request(job.ops, `/api/clients/${OTHER}/stock-match`)
+    ).json<{ held: { place_id: string; pieces: number; reserved: number }[] }>();
+    expect(matched.held).toEqual([expect.objectContaining({ place_id: "central", pieces: 1, reserved: 1 })]);
+    // It is shown arrived, and where its piece is; Stock counts it reserved.
+    const arrived = (await (await request(job.ops, `/api/clients/${OTHER}/custom-orders`)).json<Orders>()).orders[0];
+    expect(arrived).toMatchObject({ status: "arrived", piece_at: "National warehouse" });
+    const stock = await (
+      await request(job.ops, "/api/stock")
+    ).json<{ holdings: { consumable_code: string; place_id: string; quantity: number; reserved: number }[] }>();
+    const central = stock.holdings.find((each) => each.consumable_code === po?.code && each.place_id === "central");
+    expect(central).toMatchObject({ quantity: 1, reserved: 1 });
     await job.opsPost("/api/stock/transfers", {
       consumable_code: po?.code ?? "",
       quantity: 1,
@@ -328,12 +359,118 @@ describe("a paid custom order's refund", () => {
   }
   const refund = (id: string, reason: string) => job.opsPost(`/api/custom-orders/${id}/refund`, { reason });
 
+  /** The board's tasks of one group, by their ids. */
+  const tasksOf = async (group: string) => {
+    const board = await (
+      await request(job.ops, "/api/tasks")
+    ).json<{ groups: { group: string; tasks: { id: string; facts: Record<string, unknown> }[] }[] }>();
+    return board.groups.find((each) => each.group === group)?.tasks ?? [];
+  };
+
+  it("waits on ops as a task until its purchase order is sent, then its piece until a fit is booked", async () => {
+    const id = await paidOrder();
+    const po = await env.DB.prepare(
+      "SELECT o.id, o.number, l.id AS line FROM purchase_orders o JOIN po_lines l ON l.po_id = o.id",
+    ).first<{ id: string; number: number; line: string }>();
+    const [toSend] = await tasksOf("custom_order_to_send");
+    expect(toSend?.id).toBe(id);
+    expect(toSend?.facts).toMatchObject({ purchase_order: po?.number, purchase_order_id: po?.id, approved: false });
+    // Purchasing says whose custom order the purchase order is.
+    const book = await (
+      await request(job.ops, "/api/purchase-orders")
+    ).json<{ orders: { id: string; custom_order: { id: string; person_id: string; person_name: string | null } }[] }>();
+    const forClient = book.orders.find((each) => each.id === po?.id)?.custom_order;
+    expect(forClient).toMatchObject({ id, person_id: PERSON });
+    expect(forClient?.person_name).not.toBeNull();
+
+    // The supplier's currency has no rate set, so the order needs a second approver: one approval leaves it drafted.
+    expect((await job.opsPost(`/api/purchase-orders/${po?.id ?? ""}/approve`, {})).status).toBe(200);
+    expect((await tasksOf("custom_order_to_send"))[0]?.facts).toMatchObject({ approved: false });
+    await env.DB.prepare(
+      "UPDATE purchase_orders SET second_approved_by = 'second@maneman.in', state = 'approved' WHERE id = ?1",
+    )
+      .bind(po?.id ?? "")
+      .run();
+    expect((await tasksOf("custom_order_to_send"))[0]?.facts).toMatchObject({ approved: true });
+    expect((await job.opsPost(`/api/purchase-orders/${po?.id ?? ""}/send`, {})).status).toBe(200);
+    expect(await tasksOf("custom_order_to_send")).toEqual([]);
+    expect(await tasksOf("custom_piece_to_fit")).toEqual([]);
+
+    // The fixture's first fit is behind them: nothing is booked to fit the piece at once it arrives.
+    await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(JOB).run();
+    const received = await job.opsPost(`/api/purchase-orders/${po?.id ?? ""}/receipts`, {
+      lines: [{ po_line_id: po?.line ?? "", received: 1, damaged: 0, qc_failed: 0, lot_code: null, expires_on: null }],
+      supplier_invoice: null,
+      rupee_rate: 8325,
+      freight_paise: 0,
+      duty_paise: 0,
+      clearing_paise: 0,
+      note: null,
+    });
+    expect(received.status).toBe(200);
+    const [toFit] = await tasksOf("custom_piece_to_fit");
+    expect(toFit?.id).toBe(id);
+    expect(toFit?.facts).toMatchObject({ held_at: "National warehouse" });
+
+    // A first fit booked for the client is where it goes: the task leaves, and stays away while the fit is under way.
+    await env.DB.prepare("UPDATE appointments SET status = 'scheduled' WHERE id = ?1").bind(JOB).run();
+    expect(await tasksOf("custom_piece_to_fit")).toEqual([]);
+    for (const status of ["dispatched", "in_progress"]) {
+      await env.DB.prepare("UPDATE appointments SET status = ?2 WHERE id = ?1").bind(JOB, status).run();
+      expect(await tasksOf("custom_piece_to_fit"), status).toEqual([]);
+    }
+    // Nor while a fit is paid for and waits to be booked.
+    await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(JOB).run();
+    await aHold({
+      id: "hold-paid",
+      person_id: PERSON,
+      technician_id: IMRAN,
+      type: "first_fit",
+      date: "2026-09-25",
+      confirmed_at: NOW.toISOString(),
+    });
+    expect(await tasksOf("custom_piece_to_fit")).toEqual([]);
+    await env.DB.prepare("UPDATE slot_holds SET state = 'released' WHERE id = 'hold-paid'").run();
+    expect((await tasksOf("custom_piece_to_fit"))[0]?.facts).toMatchObject({ fit: "first_fit" });
+
+    // Moved to a kit, it is named by its technician; a client fitted before is fitted it at a replacement.
+    const code = await env.DB.prepare("SELECT consumable_code FROM stock_units").first<string>("consumable_code");
+    await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 1, from: "central", to: IMRAN });
+    await env.DB.prepare(
+      `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, synced_at)
+       VALUES ('pc-1', 'pc-1', ?1, 'MM-1', ?2, ?2)`,
+    )
+      .bind(PERSON, NOW.toISOString())
+      .run();
+    expect((await tasksOf("custom_piece_to_fit"))[0]?.facts).toMatchObject({
+      held_at: "Imran Qureshi",
+      fit: "replacement",
+    });
+    expect((await orders()).orders[0]).toMatchObject({ piece_at: "Imran Qureshi" });
+
+    // Fitted, the piece is no longer held, and the task goes.
+    await env.DB.prepare("UPDATE stock_units SET state = 'fitted'").run();
+    expect(await tasksOf("custom_piece_to_fit")).toEqual([]);
+  });
+
+  it("leaves the board, and its purchase order stops naming the client, once the client is erased", async () => {
+    const id = await paidOrder();
+    expect((await tasksOf("custom_order_to_send"))[0]?.id).toBe(id);
+    await env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(PERSON, NOW.toISOString()).run();
+    expect(await tasksOf("custom_order_to_send")).toEqual([]);
+    const book = await (
+      await request(job.ops, "/api/purchase-orders")
+    ).json<{ orders: { custom_order: { person_name: string | null } | null }[] }>();
+    expect(book.orders[0]?.custom_order).toMatchObject({ person_name: null });
+  });
+
   it("is whole before its order goes out, and cancels the draft with it, once", async () => {
     const id = await paidOrder();
     const refunded = await refund(id, "not_ordered");
     expect((await refunded.json<Orders>()).orders[0]?.status).toBe("refunded");
     expect(payments.made.refunds).toEqual([{ paymentId: "pay_custom_1", amount: 4_500_000 }]);
     expect(await env.DB.prepare("SELECT state FROM purchase_orders").first<string>("state")).toBe("cancelled");
+    expect(await tasksOf("custom_order_to_send")).toEqual([]);
     expect([(await refund(id, "not_ordered")).status, payments.made.refunds.length]).toEqual([409, 1]);
     // Claimed before Razorpay was asked, so a press whose answer is lost asks again as for one that may be made.
     expect(await env.DB.prepare("SELECT refund_asked_at FROM custom_orders").first<string>("refund_asked_at")).toBe(

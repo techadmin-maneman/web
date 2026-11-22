@@ -34,6 +34,8 @@ const ORDER = {
   link_sent_at: null,
   paid_at: null,
   po_number: null,
+  po_id: null,
+  piece_at: null,
   refund_reason: null,
   raised_at: "2026-09-21T05:12:00.000Z",
 };
@@ -177,7 +179,7 @@ describe("the client’s custom orders", () => {
       "fetch",
       contractChecked("ops", (url: string, init?: RequestInit) => {
         const address = new URL(url, "https://ops.maneman.test");
-        const paid = { ...ORDER, status: "ordered", paid_at: "2026-09-21T06:00:00.000Z", po_number: 3 };
+        const paid = { ...ORDER, status: "ordered", paid_at: "2026-09-21T06:00:00.000Z", po_number: 3, po_id: "po-3" };
         if (address.pathname === "/api/whoami") return Promise.resolve(UNKNOWN_CALLER());
         if (init?.method !== "POST") return Promise.resolve(Response.json({ ...BOOK, orders: [paid] }));
         posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
@@ -191,6 +193,9 @@ describe("the client’s custom orders", () => {
       }),
     );
     await show();
+    // Being ordered, it names its purchase order, which opens on Purchasing.
+    const order = [...page.querySelectorAll("a")].find((link) => link.textContent === copy.purchaseOrder(3));
+    expect(order?.getAttribute("href")).toBe("/purchasing#order-po-3");
     await press(copy.refund);
     expect(page.textContent).toContain(copy.errors.refund_not_due);
     await press(copy.refund);

@@ -81,6 +81,7 @@ function Held({ stock, consumable, place }: { stock: Stock; consumable: Consumab
   return (
     <td className={styles.held}>
       {copy.held(holding?.quantity ?? 0, unitOf(stock, consumable.code))}
+      {(holding?.reserved ?? 0) > 0 && <span className={styles.reserved}>{copy.reserved(holding?.reserved ?? 0)}</span>}
       {state !== null && (
         <span className={styles.state}>
           <StateBadge state={state} />
@@ -291,6 +292,7 @@ function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string
             key: consumable.code,
             title: consumable.name,
             meta: [
+              (held?.reserved ?? 0) > 0 ? copy.reserved(held?.reserved ?? 0) : null,
               soonest === null ? null : copy.phone.expires(listDate(soonest, year)),
               counted === null ? copy.phone.notCounted : copy.phone.counted(listDate(indiaDate(counted), year)),
             ]
@@ -317,7 +319,12 @@ function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string
           return (
             <tr key={consumable.code}>
               <ItemName consumable={consumable} />
-              <td className={FIGURE}>{copy.held(held?.quantity ?? 0, unitOf(stock, consumable.code))}</td>
+              <td className={FIGURE}>
+                {copy.held(held?.quantity ?? 0, unitOf(stock, consumable.code))}
+                {(held?.reserved ?? 0) > 0 && (
+                  <span className={styles.reserved}>{copy.reserved(held?.reserved ?? 0)}</span>
+                )}
+              </td>
               <td>
                 <StateBadge state={stateOf(stock, consumable, place)} />
               </td>

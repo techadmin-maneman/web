@@ -16,6 +16,7 @@ export type LoginChallenge = Schemas["LoginChallenge"];
 export type Me = Schemas["Me"];
 /** A hair system made to the client's profile, as Home shows it on its way. */
 export type CustomOrder = Schemas["MyCustomOrders"]["orders"][number];
+export type HeldBooking = Schemas["MyHeldBookings"]["held"][number];
 export type Profile = Schemas["Profile"];
 export type Address = Schemas["Address"];
 type AddressSave = Schemas["AddressSave"];
@@ -134,6 +135,7 @@ export const api = {
   logout: () => client.post("/api/auth/logout"),
   me: () => client.get(HOME_PATH),
   customOrders: () => client.get("/api/me/custom-orders"),
+  heldBookings: () => client.get("/api/me/held-bookings"),
   profile: () => client.get("/api/profile"),
   saveAddress: (address: AddressSave) => client.patch("/api/profile/address", { body: address }),
   /** One session token for every keystroke of a search, so Google bills the session and not the letters. */

@@ -30,6 +30,8 @@ export const DECIDED_IN: Partial<Record<Group, { readonly page: SectionPath; rea
   number_change: { page: "/number-changes", row: "change" },
   erasure_request: { page: "/deletion-requests", row: "request" },
   grievance: { page: "/grievances", row: "grievance" },
+  // A paid custom order is approved and sent from its purchase order (its row is the order, not the task).
+  custom_order_to_send: { page: "/purchasing", row: "order" },
 };
 
 export interface Waiting {

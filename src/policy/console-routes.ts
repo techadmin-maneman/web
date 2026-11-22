@@ -8,6 +8,9 @@
 import { can, DEPARTMENTS, NATIONAL, type Caller, type Department, type Level, type ZoneOfCity } from "./access.ts";
 import { alertDepartment, markDoneLevel } from "./alerts.ts";
 import type { TaskGroup } from "./tasks.ts";
+import { TASK_DEPARTMENTS } from "./task-departments.ts";
+
+export { TASK_DEPARTMENTS };
 
 /** A route that keeps to the caller's own departments and places, as Tasks lists each department its own groups. */
 export const OWN_DEPARTMENTS = "own";
@@ -59,6 +62,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/alerts/{id}/send-again": inOwnDepartments("act"),
   "GET /api/visits/availability": inOwnPlaces("operations", "view"),
   "POST /api/visits": inOwnPlaces("operations", "act"),
+  "GET /api/clients/{id}/held-bookings": inOwnPlaces("operations", "view"),
+  "POST /api/holds/{id}/send-link": inOwnPlaces("operations", "act"),
+  "POST /api/holds/{id}/let-go": inOwnPlaces("operations", "act"),
   // Free to the client unless ops apply the client's own terms, as an ops move is free: everyday work, not a waiver.
   "POST /api/visits/{id}/cancel": inOwnPlaces("operations", "act"),
   "POST /api/visits/{id}/close": inOwnPlaces("operations", "act"),
@@ -389,48 +395,6 @@ export const WAIVING_A_NO_SHOW: RouteNeed = inOwnPlaces("finance", "manage");
 export const REFUNDING_A_DISPUTE: RouteNeed = inOwnPlaces("finance", "manage");
 /** A technician with no city is seen only nationally, so leaving them without one asks Operations MANAGE nationally. */
 export const GIVING_NO_CITY: RouteNeed = need("operations", "manage");
-
-/** The department that decides each group of tasks: its people see the group on Tasks, and Act may take a task of it. */
-export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
-  untold_move: "operations",
-  move_unanswered: "operations",
-  visit_not_begun: "operations",
-  visit_left_open: "operations",
-  unassigned_visit: "operations",
-  leave_request: "operations",
-  recall_call: "customer_care",
-  unanswered_chat: "customer_care",
-  city_matter: "operations",
-  remedy_approval: "customer_care",
-  leave_conflict: "operations",
-  address_to_confirm: "customer_care",
-  consultation_request: "customer_care",
-  first_fit_to_book: "customer_care",
-  heard_from_missing: "customer_care",
-  replacement_order: "operations",
-  made_to_order_ask: "operations",
-  stock_at_risk: "operations",
-  at_risk_client: "customer_care",
-  partial_visit: "operations",
-  consumables_short: "operations",
-  fit_unsigned: "customer_care",
-  message_undelivered: "customer_care",
-  erasure_follow_up: "customer_care",
-  low_rating: "customer_care",
-  fit_guarantee_claim: "customer_care",
-  kit_request: "operations",
-  reschedule_request: "operations",
-  referral_review: "growth",
-  no_show_decision: "finance",
-  no_show_dispute: "finance",
-  number_change: "customer_care",
-  erasure_request: "customer_care",
-  grievance: "customer_care",
-  draft_invoice: "finance",
-  payment_owed: "finance",
-  upi_due: "finance",
-  payment_to_refund: "finance",
-};
 
 /** What seeing a group of tasks, or taking a task of it, asks: the board keeps each task to the caller's cities. */
 export const taskNeed = (group: TaskGroup, level: Level): RouteNeed => inOwnPlaces(TASK_DEPARTMENTS[group], level);

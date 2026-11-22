@@ -13,6 +13,7 @@ import {
   draftOrder,
   markSent,
   purchaseOrders,
+  type CustomOrderOf,
 } from "../../domain/purchasing/purchase-orders.ts";
 import { receiptsOf } from "../../domain/purchasing/receipts.ts";
 import { allSuppliers, type Supplier } from "../../domain/purchasing/suppliers.ts";
@@ -62,6 +63,18 @@ const OrdersSchema = z
           sent_at: z.union([z.iso.datetime(), z.null()]),
           cancel_reason: MaybeText,
           needs_second_approval: z.boolean(),
+          custom_order: z
+            .object({
+              id: Text,
+              number: z.number().int(),
+              person_id: Text,
+              person_name: MaybeText.openapi({ description: "The client's name; null once they are erased." }),
+            })
+            .strict()
+            .nullable()
+            .openapi({
+              description: "The custom order this was drafted for, and its client; null for an order of stock.",
+            }),
           receipts: z.array(
             z
               .object({
@@ -272,6 +285,31 @@ const cancelRoute = opsRoute({
   },
 });
 
+/** The custom order a purchase order was drafted for, and its client, as the API names them. */
+const customOrderJson = (order: CustomOrderOf) => ({
+  id: order.id,
+  number: order.number,
+  person_id: order.personId,
+  person_name: order.personName,
+});
+
+/** A receipt against an order, as the API names it. */
+const receiptJson = (receipt: Awaited<ReturnType<typeof receiptsOf>>[number]) => ({
+  id: receipt.id,
+  received_by: receipt.receivedBy,
+  received_at: receipt.receivedAt,
+  supplier_invoice: receipt.supplierInvoice,
+  lines: receipt.lines.map((line) => ({
+    po_line_id: line.poLineId,
+    received: line.received,
+    damaged: line.damaged,
+    qc_failed: line.qcFailed,
+    lot_code: line.lotCode,
+    expires_on: line.expiresOn,
+    landed_unit_paise: line.landedUnitPaise,
+  })),
+});
+
 export async function ordersAnswer(c: Context<AppEnv>) {
   const [orders, suppliers, consumables, inputs, letterhead] = await Promise.all([
     purchaseOrders(c.env.DB),
@@ -318,23 +356,8 @@ export async function ordersAnswer(c: Context<AppEnv>) {
       needs_second_approval:
         needsSecondApproval(order, above, inputs.poRupeesToOne) ||
         (order.state === "drafted" && ownApprovalNeedsSecond(order, order.approvedBy, inputs.poOwnApproval)),
-      receipts: receipts
-        .filter((receipt) => receipt.poId === order.id)
-        .map((receipt) => ({
-          id: receipt.id,
-          received_by: receipt.receivedBy,
-          received_at: receipt.receivedAt,
-          supplier_invoice: receipt.supplierInvoice,
-          lines: receipt.lines.map((line) => ({
-            po_line_id: line.poLineId,
-            received: line.received,
-            damaged: line.damaged,
-            qc_failed: line.qcFailed,
-            lot_code: line.lotCode,
-            expires_on: line.expiresOn,
-            landed_unit_paise: line.landedUnitPaise,
-          })),
-        })),
+      custom_order: order.customOrder === null ? null : customOrderJson(order.customOrder),
+      receipts: receipts.filter((receipt) => receipt.poId === order.id).map(receiptJson),
     })),
     suppliers: suppliers.map(supplierJson),
     consumables: consumables.results,

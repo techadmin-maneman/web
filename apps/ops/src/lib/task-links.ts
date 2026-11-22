@@ -14,6 +14,7 @@ type Group = TaskGroup["group"];
 const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   replacement_order: "pieces",
   made_to_order_ask: "pieces",
+  custom_order_to_send: "pieces",
   draft_invoice: "payments",
   payment_owed: "payments",
   payment_to_refund: "payments",
@@ -36,6 +37,8 @@ function onTheBoard(task: Task): string {
 
 /** The section and row a task is decided on; null for a group done from its row or on the client's page. */
 export function decidedAt(group: Group, task: Task): string | null {
+  // A paid custom order is sent from its purchase order, on Purchasing.
+  if (task.facts.group === "custom_order_to_send") return rowPath("/purchasing", "order", task.facts.purchase_order_id);
   // A claim is closed from its row; its way on is the client's chat, where Care read the photographs sent with it.
   if (task.facts.group === "fit_guarantee_claim") {
     const chat = task.facts.conversation_id;

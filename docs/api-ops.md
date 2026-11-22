@@ -5450,6 +5450,507 @@ The stock code the client's hair profile matches exactly, and where its pieces a
 }
 ```
 
+### GET /api/clients/{id}/held-bookings
+
+The client's bookings held on their payment link, and what stands in the way of booking a kind
+
+**200**: What is held, and in the way
+
+```json
+{
+  "$ref": "#/components/schemas/OpsHeldBookings"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client within the reader's places
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/holds/{id}/send-link
+
+Text a held booking's payment link to the client again
+
+**200**: What sending it came to
+
+```json
+{
+  "$ref": "#/components/schemas/OpsHeldLinkSent"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such held booking within the caller's places
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: hold_expired: it was paid, lapsed or let go, so its link is closed
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "hold_expired"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: Razorpay did not answer; try again in a minute
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/holds/{id}/let-go
+
+Let a booking held on its payment link go, its link cancelled and its time freed
+
+**204**: Let go: its link cancelled and its time freed
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such held booking within the caller's places
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: hold_expired: it was paid, is being booked, lapsed or was let go already
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "hold_expired"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: Razorpay would not cancel its link or say it is shut, so it is kept; try again
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/custom-orders/{id}/refund
 
 A paid custom order refunded in full: not yet ordered, late past the grace, or failed its check
@@ -42054,11 +42555,16 @@ Request body:
             "open_until": {
               "type": "string",
               "format": "date-time"
+            },
+            "texted": {
+              "type": "boolean",
+              "description": "Whether Razorpay texted it: never to a number messaging may not text (a staging test record)."
             }
           },
           "required": [
             "url",
-            "open_until"
+            "open_until",
+            "texted"
           ],
           "additionalProperties": false
         },
@@ -42066,7 +42572,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The payment link Razorpay texted the client, and when it closes and the slot goes."
+      "description": "The payment link for the client, whether it was texted, and when it closes and the slot goes."
     }
   },
   "required": [
@@ -44973,6 +45479,10 @@ Request body:
           },
           "pieces": {
             "type": "integer"
+          },
+          "reserved": {
+            "type": "integer",
+            "description": "Of those, the pieces reserved to this client's own custom order."
           }
         },
         "required": [
@@ -44980,7 +45490,8 @@ Request body:
           "name",
           "kind",
           "city",
-          "pieces"
+          "pieces",
+          "reserved"
         ]
       }
     },
@@ -44996,6 +45507,149 @@ Request body:
     "city",
     "held",
     "in_transit"
+  ]
+}
+```
+
+### OpsHeldBookings
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ],
+          "description": "Its kind: a consultation, where a one visit was asked."
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "window": {
+          "type": "string",
+          "enum": [
+            "morning",
+            "afternoon",
+            "evening"
+          ]
+        },
+        "starts_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "kind",
+        "date",
+        "window",
+        "starts_at"
+      ],
+      "additionalProperties": false,
+      "description": "A visit still to come that a second would double; null for none."
+    },
+    "held": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hold_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "starts_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "What the client pays, in paise, GST included."
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The link to pay by; null while it is still being made."
+          },
+          "open_until": {
+            "type": "string",
+            "description": "When it is held until; then its time goes back."
+          },
+          "paid": {
+            "type": "boolean",
+            "description": "Paid and being booked: no link to send, and it cannot be let go."
+          }
+        },
+        "required": [
+          "hold_id",
+          "type",
+          "date",
+          "starts_at",
+          "amount",
+          "url",
+          "open_until",
+          "paid"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Bookings held on their link, soonest first."
+    }
+  },
+  "required": [
+    "visit",
+    "held"
+  ]
+}
+```
+
+### OpsHeldLinkSent
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "resent",
+        "not_texted"
+      ],
+      "description": "resent: Razorpay texted the link again; not_texted: messaging may not text this number (a staging test record)."
+    }
+  },
+  "required": [
+    "outcome"
   ]
 }
 ```
@@ -45113,6 +45767,20 @@ Request body:
               "null"
             ]
           },
+          "po_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its purchase order, to open on Purchasing; null until paid."
+          },
+          "piece_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where its piece is held once arrived: the warehouse, a stockroom or a kit; null otherwise."
+          },
           "raised_at": {
             "type": "string"
           }
@@ -45139,6 +45807,8 @@ Request body:
           "link_sent_at",
           "paid_at",
           "po_number",
+          "po_id",
+          "piece_at",
           "raised_at"
         ]
       }
@@ -54179,6 +54849,8 @@ Request body:
               "heard_from_missing",
               "replacement_order",
               "made_to_order_ask",
+              "custom_order_to_send",
+              "custom_piece_to_fit",
               "stock_at_risk",
               "at_risk_client",
               "partial_visit",
@@ -54596,6 +55268,81 @@ Request body:
         "group",
         "kind",
         "name"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "custom_order_to_send"
+          ]
+        },
+        "order": {
+          "type": "integer",
+          "description": "The custom order's number, CU-0042 as 42."
+        },
+        "purchase_order": {
+          "type": "integer",
+          "description": "Its purchase order's number."
+        },
+        "purchase_order_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Its purchase order's ID, to open it on Purchasing."
+        },
+        "approved": {
+          "type": "boolean",
+          "description": "Approved already: only sending it is left."
+        }
+      },
+      "required": [
+        "group",
+        "order",
+        "purchase_order",
+        "purchase_order_id",
+        "approved"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "custom_piece_to_fit"
+          ]
+        },
+        "order": {
+          "type": "integer",
+          "description": "The custom order's number."
+        },
+        "piece_code": {
+          "type": "string",
+          "description": "The reserved piece's label."
+        },
+        "held_at": {
+          "type": "string",
+          "description": "Where the piece is held: the warehouse, a stockroom or a kit."
+        },
+        "fit": {
+          "type": "string",
+          "enum": [
+            "first_fit",
+            "replacement"
+          ],
+          "description": "The visit to book to fit it: a replacement for a client fitted before."
+        }
+      },
+      "required": [
+        "group",
+        "order",
+        "piece_code",
+        "held_at",
+        "fit"
       ],
       "additionalProperties": false
     },
@@ -61059,6 +61806,10 @@ Request body:
             ],
             "description": "When it was last counted there."
           },
+          "reserved": {
+            "type": "integer",
+            "description": "Of its pieces there, those reserved to a client's custom order."
+          },
           "lots": {
             "type": "array",
             "items": {
@@ -61103,6 +61854,7 @@ Request body:
           "quantity",
           "low",
           "counted_at",
+          "reserved",
           "lots"
         ],
         "additionalProperties": false
@@ -62436,6 +63188,42 @@ Request body:
           "needs_second_approval": {
             "type": "boolean"
           },
+          "custom_order": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer"
+              },
+              "person_id": {
+                "type": "string"
+              },
+              "person_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The client's name; null once they are erased."
+              }
+            },
+            "required": [
+              "id",
+              "number",
+              "person_id",
+              "person_name"
+            ],
+            "additionalProperties": false,
+            "description": "The custom order this was drafted for, and its client; null for an order of stock."
+          },
           "receipts": {
             "type": "array",
             "items": {
@@ -62546,6 +63334,7 @@ Request body:
           "sent_at",
           "cancel_reason",
           "needs_second_approval",
+          "custom_order",
           "receipts"
         ],
         "additionalProperties": false

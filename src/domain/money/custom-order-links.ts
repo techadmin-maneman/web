@@ -103,7 +103,8 @@ export async function customOrderOfLink(db: D1Database, link: RazorpayPaymentLin
 
 /**
  * A custom order's link paid: the payment recorded as its client's, the order marked paid, and its purchase order
- * drafted. Each step is written once, so a second word of the same payment changes nothing.
+ * drafted, or ops told where it could not be. Each step is written once, so a second word of the same payment changes
+ * nothing.
  */
 export async function customOrderPaid(
   db: D1Database,
@@ -138,9 +139,16 @@ export async function customOrderPaid(
     });
     return;
   }
-  await draftCustomOrderPo(db, paid.orderId, {
+  const drafted = await draftCustomOrderPo(db, paid.orderId, {
     actor: { kind: "system", id: "custom-order" },
     requestId: `custom-order:${paid.orderId}`,
     now,
   });
+  if (!drafted) {
+    await deps.alertOnce({
+      key: `custom_order_po_not_drafted:${paid.orderId}`,
+      message: ALERT_WORDS.custom_order_po_not_drafted({ order: numberOf(order.number) }),
+      link: `/clients/${order.person_id}/pieces`,
+    });
+  }
 }

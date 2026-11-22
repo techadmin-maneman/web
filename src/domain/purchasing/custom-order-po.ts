@@ -57,7 +57,7 @@ export async function draftCustomOrderPo(db: D1Database, orderId: string, writte
   if (order === null) return false;
   if (order.po_id !== null) return true;
   const code = await codeFor(db, order, written);
-  if (code === null) return false;
+  if (code === null) return draftedAlready(db, orderId);
   const poId = crypto.randomUUID();
   const at = written.now.toISOString();
   const note = `Custom order CU-${String(order.number).padStart(4, "0")}`;
@@ -93,5 +93,14 @@ export async function draftCustomOrderPo(db: D1Database, orderId: string, writte
       )
       .bind(orderId, code, poId, at),
   ]);
-  return kept?.meta.changes === 1;
+  return kept?.meta.changes === 1 || (await draftedAlready(db, orderId));
+}
+
+/** Whether another try drafted the order's purchase order first, so it has one all the same. */
+async function draftedAlready(db: D1Database, orderId: string): Promise<boolean> {
+  const drafted = await db
+    .prepare("SELECT po_id FROM custom_orders WHERE id = ?1")
+    .bind(orderId)
+    .first<string | null>("po_id");
+  return drafted !== null;
 }

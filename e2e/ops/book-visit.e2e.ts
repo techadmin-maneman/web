@@ -2,13 +2,15 @@
 // one. A paid visit goes out as a payment link; anything else is booked at once. The API is answered from here, so
 // the windows and the outcome read the same on every run; each reply is held to docs/openapi-ops.json.
 
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import {
   answer,
   CLIENT,
   CONSENTS,
+  empty,
+  fails,
   json,
   PIECES,
   RECORD,
@@ -19,6 +21,7 @@ import {
   type OpsReply,
 } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { DISMISS } from "../../packages/ui/words.ts";
 
 const AVAILABILITY: Call = "GET /api/visits/availability";
 const BOOK: Call = "POST /api/visits";
@@ -83,7 +86,7 @@ const LINK_SENT = {
   starts_at: "2027-09-23T06:30:00.000Z",
   technician: SANDEEP,
   technician_draft: false,
-  link: { url: "https://rzp.io/i/stub4417", open_until: "2027-09-23T04:30:00.000Z" },
+  link: { url: "https://rzp.io/i/stub4417", open_until: "2027-09-23T04:30:00.000Z", texted: true },
 } satisfies OpsReply<"/api/visits", "post", 201>;
 
 async function openVisits(page: Page, over: Answers = {}): Promise<void> {
@@ -99,6 +102,54 @@ async function openVisits(page: Page, over: Answers = {}): Promise<void> {
 }
 
 const panel = (page: Page) => page.getByRole("dialog", { name: `Book a visit for ${CLIENT.name}` });
+
+/** Records each element the page brings into view, as the drawer does a line beneath its buttons. */
+async function recordScrolls(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const brought: Element[] = [];
+    Object.assign(window, { brought });
+    type Bring = (this: Element, how?: boolean | ScrollIntoViewOptions) => void;
+    const bring = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView")?.value as Bring;
+    Element.prototype.scrollIntoView = function (this: Element, how?: boolean | ScrollIntoViewOptions) {
+      brought.push(this);
+      bring.call(this, how);
+    };
+  });
+}
+
+/** The words of each element brought into view. */
+const broughtIntoView = (page: Page) =>
+  page.evaluate(() => (window as unknown as { brought: Element[] }).brought.map((each) => each.textContent));
+
+/**
+ * Whether the element was brought into view keeping room beneath it at least the Book bar's height: the margin is read
+ * off the element scrolled itself, where alone it acts, and the bar is the drawer's foot, stuck to its bottom.
+ */
+const clearsTheBar = (element: Locator) =>
+  element.evaluate((node) => {
+    const brought = (window as unknown as { brought: Element[] }).brought;
+    const scrolled = brought.findLast((each) => each.contains(node));
+    const bar = [...(node.closest("dialog")?.querySelectorAll("*") ?? [])].find((each) => {
+      const style = getComputedStyle(each);
+      return style.position === "sticky" && style.bottom !== "auto";
+    });
+    if (scrolled === undefined || bar === undefined) return false;
+    return parseFloat(getComputedStyle(scrolled).scrollMarginBottom) >= bar.getBoundingClientRect().height;
+  });
+
+/** Whether what is at the middle of the element is the element itself, not the Book bar or anything else over it. */
+const seen = (element: Locator) =>
+  element.evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    const at = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    return at !== null && node.contains(at);
+  });
+
+/** Whether the element starts beneath the control, not beside it in its row. */
+async function beneath(element: Locator, control: Locator): Promise<boolean> {
+  const [box, above] = await Promise.all([element.boundingBox(), control.boundingBox()]);
+  return (box?.y ?? 0) >= (above?.y ?? 0) + (above?.height ?? 0);
+}
 
 test("books a fitted client’s service visit at a start someone is free at, sending the payment link", async ({
   page,
@@ -128,9 +179,9 @@ test("books a fitted client’s service visit at a start someone is free at, sen
   expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
 
   await booking.getByRole("button", { name: opsCopy.clients.visits.book.bookAt("Thu 23 Sep", "12 pm") }).click();
-  await expect(booking.getByRole("status")).toContainText("Payment link sent for Rs. 2,000.");
-  await expect(booking.getByRole("status")).toContainText("Service visit, Thu 23 Sep, 12 pm, with Sandeep Rawat.");
-  await expect(booking.getByRole("status")).toContainText("https://rzp.io/i/stub4417");
+  const booked = booking.getByRole("status").filter({ hasText: "Payment link sent for Rs. 2,000." });
+  await expect(booked).toContainText("Service visit, Thu 23 Sep, 12 pm, with Sandeep Rawat.");
+  await expect(booked).toContainText("https://rzp.io/i/stub4417");
   expect(sent).toEqual([
     {
       client: CLIENT.id,
@@ -364,6 +415,94 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
   await expect(tasks.getByRole("row")).toHaveCount(0);
 });
 
+// An arrived custom piece waited on the board with no way to book its fit.
+test("books the fit of an arrived custom piece from its Tasks row, as a replacement for a client fitted before", async ({
+  page,
+}) => {
+  const ORDER = "8a000000-0000-4000-8000-000000000001";
+  const arrived = {
+    ...TASKS,
+    groups: [
+      {
+        group: "custom_piece_to_fit",
+        count: 1,
+        closable: false,
+        tasks: [
+          {
+            id: ORDER,
+            person: { id: CLIENT.id, name: CLIENT.name },
+            facts: {
+              group: "custom_piece_to_fit",
+              order: 42,
+              piece_code: "MM-0042",
+              held_at: "Sandeep Yadav",
+              fit: "replacement",
+            },
+            detail: "CU-0042 · Sandeep Yadav",
+            since: "2027-09-19T06:00:00.000Z",
+            due: "2027-09-21T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  } satisfies OpsReply<"/api/tasks">;
+  const natural = { tier: "natural", name: "Mane Man Natural", minutes: 180 };
+  const replacement = {
+    ...WINDOWS,
+    kind: "replacement",
+    services: [{ ...natural, price: { amount_ex_gst: 4_500_000, amount: 4_500_000, gst_percent: 0 } }],
+    service: natural,
+    owed: [],
+  } satisfies OpsReply<"/api/visits/availability">;
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, { "GET /api/tasks": json(arrived), [AVAILABILITY]: json(replacement) });
+  await page.goto("/tasks");
+  const tasks = page.getByRole("region", { name: opsCopy.tasks.title });
+  await expect(tasks).toContainText("CU-0042 · at Sandeep Yadav");
+  await expect(tasks.getByRole("link", { name: CLIENT.name, exact: true })).toHaveAttribute(
+    "href",
+    `/clients/${CLIENT.id}/visits`,
+  );
+  await tasks.getByRole("button", { name: `${opsCopy.tasks.book} · ${CLIENT.name}` }).click();
+  const kinds = opsCopy.clients.visits.book.kinds;
+  await expect(panel(page).getByRole("radio", { name: kinds.replacement, exact: true })).toBeChecked();
+});
+
+// A one visit refused by a consultation still to come was named as a first fit, and a paid booking offered "Let it go".
+test("names a consultation that refuses a one visit as a consultation, and lets no paid booking go", async ({
+  page,
+}) => {
+  await openVisits(page, {
+    [BOOK]: json({ error: { code: "already_booked", request_id: "r-1" } }, 409),
+    [`GET /api/clients/${CLIENT.id}/held-bookings`]: json({
+      visit: { kind: "consultation", date: "2027-09-24", window: "morning", starts_at: "2027-09-24T04:30:00.000Z" },
+      held: [
+        {
+          hold_id: HOLD,
+          type: "service",
+          date: "2027-09-22",
+          starts_at: "2027-09-22T06:30:00.000Z",
+          amount: 200000,
+          url: "https://rzp.io/i/stub4417",
+          open_until: "2027-09-22T02:00:00.000Z",
+          paid: true,
+        },
+      ],
+    }),
+  });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  const inTheWay = opsCopy.clients.visits.book.inTheWay;
+  await expect(panel(page)).toContainText(inTheWay.visit("consultation", "Fri 24 Sep, 10 am"));
+  await expect(panel(page)).toContainText(inTheWay.paid("service visit", "Wed 22 Sep, 12 pm"));
+  await expect(panel(page).getByRole("button", { name: inTheWay.letGo })).toHaveCount(0);
+  await expect(panel(page).getByRole("button", { name: opsCopy.tasks.link.copy })).toHaveCount(0);
+});
+
 // A booking that refunded its payment by itself showed nowhere in the console.
 test("lists a booking that refunded its payment by itself beneath the visits, and why", async ({ page }) => {
   const refunded = {
@@ -380,4 +519,211 @@ test("lists a booking that refunded its payment by itself beneath the visits, an
   await expect(item).toContainText("Service visit, 24 Sep · Rs. 2,000");
   await expect(item).toContainText("Auto-refunded on 22 Sep 2027: paid after the hold expired.");
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("says a link that was not texted, and sends it again on asking", async ({ page }) => {
+  await openVisits(page, {
+    [BOOK]: json({ ...LINK_SENT, link: { ...LINK_SENT.link, texted: false } }, 201),
+    "POST /api/holds/{id}/send-link": json({ outcome: "not_texted" }),
+  });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  await expect(panel(page).getByRole("status").first()).toContainText("Payment link made for Rs. 2,000, not texted.");
+  await panel(page).getByRole("button", { name: opsCopy.tasks.link.resend }).click();
+  await expect(panel(page)).toContainText(opsCopy.tasks.link.outcomes.not_texted);
+
+  // Copied, it says so beneath the buttons, in no toast.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.resolve() },
+    });
+  });
+  await panel(page).getByRole("button", { name: opsCopy.tasks.link.copy, exact: true }).click();
+  await expect(panel(page).getByRole("status").filter({ hasText: opsCopy.tasks.link.copied })).toBeVisible();
+  expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
+
+  // The browser will not copy it: beneath the buttons, it says so, the link being written out above; no toast.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+    });
+  });
+  await panel(page).getByRole("button", { name: opsCopy.tasks.link.copy, exact: true }).click();
+  await expect(
+    panel(page).getByRole("status").filter({ hasText: opsCopy.clients.visits.book.inTheWay.notCopied }),
+  ).toBeVisible();
+  expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
+
+  // Sent again once the booking has closed: why, in the booking's own words, beneath the buttons.
+  await page.route("**/api/holds/*/send-link", fails(409, "hold_expired"));
+  const sendAgain = panel(page).getByRole("button", { name: opsCopy.tasks.link.resend, exact: true });
+  await sendAgain.click();
+  const refused = panel(page)
+    .getByRole("alert")
+    .filter({ hasText: opsCopy.clients.visits.book.inTheWay.errors.hold_expired });
+  await expect(refused).toBeVisible();
+  expect(await beneath(refused, sendAgain)).toBe(true);
+});
+
+test("names the booking held on its link that refuses another of its kind, and lets it go", async ({ page }) => {
+  let letGo = false;
+  let answer: () => void = () => undefined;
+  const answered = new Promise<void>((resolve) => {
+    answer = resolve;
+  });
+  await openVisits(page, {
+    [BOOK]: json({ error: { code: "already_booked", request_id: "r-1" } }, 409),
+    [`GET /api/clients/${CLIENT.id}/held-bookings`]: json({
+      visit: null,
+      held: [
+        {
+          hold_id: HOLD,
+          type: "service",
+          date: "2027-09-22",
+          starts_at: "2027-09-22T06:30:00.000Z",
+          amount: 200000,
+          url: "https://rzp.io/i/stub4417",
+          open_until: "2027-09-22T02:00:00.000Z",
+          paid: false,
+        },
+      ],
+    }),
+    "POST /api/holds/{id}/let-go": async (route) => {
+      letGo = true;
+      await answered;
+      await empty()(route);
+    },
+  });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.already_booked);
+  await expect(panel(page)).toContainText(
+    opsCopy.clients.visits.book.inTheWay.held(
+      "service visit",
+      "Wed 22 Sep, 12 pm",
+      opsCopy.clients.visits.book.inTheWay.thatDay("7:30 am"),
+    ),
+  );
+  const inTheWay = opsCopy.clients.visits.book.inTheWay;
+  await panel(page)
+    .getByRole("button", { name: `${inTheWay.letGo} · service visit, Wed 22 Sep, 12 pm`, exact: true })
+    .click();
+  // Asked once more, since its link stops working; kept, nothing is let go.
+  const asked = panel(page).getByRole("group", { name: inTheWay.letGoAsk });
+  await asked.getByRole("button", { name: DISMISS.keep, exact: true }).click();
+  expect(letGo).toBe(false);
+  await panel(page)
+    .getByRole("button", { name: `${inTheWay.letGo} · service visit, Wed 22 Sep, 12 pm` })
+    .click();
+  await asked.getByRole("button", { name: inTheWay.letGo, exact: true }).click();
+  // While it is let go, keeping it is no longer a choice.
+  await expect(asked.getByRole("button", { name: DISMISS.keep, exact: true })).toBeDisabled();
+  answer();
+  await expect(panel(page)).toContainText(inTheWay.letGone);
+
+  // Said once: another try refused, then another time chosen, says nothing of the let-go again.
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.already_booked);
+  await panel(page).getByRole("radio", { name: "12:30 pm", exact: true }).check();
+  await expect(panel(page).getByRole("alert")).toHaveCount(0);
+  // Read once, at once: the toast goes by itself in six seconds, so a retrying read could pass without the fix.
+  expect(await page.getByText(inTheWay.letGone).count()).toBe(0);
+  expect(letGo).toBe(true);
+});
+
+// A hold for a visit booked days ahead ends on an earlier day; a let-go refused says why, and the hold stays.
+test("names the day a hold ends before its visit, and says why a let-go was refused", async ({ page }) => {
+  await openVisits(page, {
+    [BOOK]: json({ error: { code: "already_booked", request_id: "r-1" } }, 409),
+    [`GET /api/clients/${CLIENT.id}/held-bookings`]: json({
+      visit: null,
+      held: [
+        {
+          hold_id: HOLD,
+          type: "service",
+          date: "2027-09-24",
+          starts_at: "2027-09-24T06:30:00.000Z",
+          amount: 200000,
+          url: "https://rzp.io/i/stub4417",
+          open_until: "2027-09-22T13:30:00.000Z",
+          paid: false,
+        },
+      ],
+    }),
+    "POST /api/holds/{id}/let-go": json({ error: { code: "hold_expired", request_id: "r-2" } }, 409),
+    "POST /api/holds/{id}/send-link": json({ error: { code: "unavailable", request_id: "r-3" } }, 503),
+  });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  const inTheWay = opsCopy.clients.visits.book.inTheWay;
+  await expect(panel(page)).toContainText(inTheWay.held("service visit", "Fri 24 Sep, 12 pm", "Wed 22 Sep, 7 pm"));
+  await panel(page)
+    .getByRole("button", { name: `${inTheWay.letGo} · service visit, Fri 24 Sep, 12 pm`, exact: true })
+    .click();
+  const asked = panel(page).getByRole("group", { name: inTheWay.letGoAsk });
+  await asked.getByRole("button", { name: inTheWay.letGo, exact: true }).click();
+  await expect(panel(page)).toContainText(inTheWay.errors.hold_expired);
+  await expect(asked).toHaveCount(0);
+  await expect(panel(page)).not.toContainText(inTheWay.letGone);
+
+  // The browser will not copy its link, at a phone's width: the link on its own line beneath the buttons, brought
+  // into view clear of the Book bar with the buttons still in view, and in no toast.
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+    });
+  });
+  const copyLink = panel(page).getByRole("button", {
+    name: `${opsCopy.tasks.link.copy} · service visit, Fri 24 Sep, 12 pm`,
+    exact: true,
+  });
+  await recordScrolls(page);
+  await copyLink.click();
+  const line = panel(page)
+    .getByRole("status")
+    .filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ });
+  await expect(line).toBeVisible();
+  expect(await beneath(line, copyLink)).toBe(true);
+  expect(await broughtIntoView(page)).toContain("https://rzp.io/i/stub4417");
+  expect(await clearsTheBar(line)).toBe(true);
+  expect(await seen(line)).toBe(true);
+  await expect(copyLink).toBeInViewport();
+  expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
+  // Pressed again, it is said again: a new message, the last one gone.
+  const first = await line.locator("*").first().elementHandle();
+  await copyLink.click();
+  await expect.poll(() => first.evaluate((node) => node.isConnected)).toBe(false);
+  await expect(line).toBeVisible();
+
+  // Sent again while Razorpay does not answer: why, beneath the buttons, brought into view clear of the bar.
+  const sendAgain = panel(page).getByRole("button", {
+    name: `${opsCopy.tasks.link.resend} · service visit, Fri 24 Sep, 12 pm`,
+    exact: true,
+  });
+  await sendAgain.click();
+  const refused = panel(page).getByRole("alert").filter({ hasText: opsCopy.tasks.link.errors.unavailable });
+  await expect(refused).toBeVisible();
+  expect(await beneath(refused, sendAgain)).toBe(true);
+  expect(await broughtIntoView(page)).toContain(opsCopy.tasks.link.errors.unavailable);
+  expect(await clearsTheBar(refused)).toBe(true);
+  expect(await seen(refused)).toBe(true);
+  await expect(sendAgain).toBeInViewport();
+  // The next press says only what it came to.
+  await copyLink.click();
+  await expect(refused).toHaveCount(0);
 });

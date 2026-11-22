@@ -39,7 +39,7 @@ this map, or when the map names something that no longer exists.
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
   `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`, `site-today`, `site-notices`,
   `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
-  `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each), `drive-check` (Google's drives either side of a start), `allotment-lock` (a visit's technician a draft until the evening's lock), `replan-day` (a city's drafts re-planned to cost least), `evening-check` (tomorrow's drives asked of Google, on the traffic when each sets off, before it is fixed), `public-booking-code` (a site booking's discount code), `made-to-order-asks` (a client's ask for a hair system made to their size, a Tasks row),
+  `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each), `drive-check` (Google's drives either side of a start), `allotment-lock` (a visit's technician a draft until the evening's lock), `replan-day` (a city's drafts re-planned to cost least), `evening-check` (tomorrow's drives asked of Google, on the traffic when each sets off, before it is fixed), `public-booking-code` (a site booking's discount code), `made-to-order-asks` (a client's ask for a hair system made to their size, a Tasks row), `held-bookings` (a booking ops made, held on its payment link: shown, sent again, let go),
   `day-plans` (each technician's days as booking plans them), `packages` (each package and its figures, and when its
   visits fall due), `packages-console` (a package added, changed, ordered or deleted in the console), `client-prices`
   (a first fit priced by the hair system made to the client, and any visit's price from its parts)
@@ -308,7 +308,7 @@ docs/tracking.md).
 
 ### Ops' own work
 
-- **Database work** (`src/domain/ops/`): `needs-a-hand`, `alert-names`, `tasks`, `task-queues` (the board's queues), `task-facts` (what each task turns on),
+- **Database work** (`src/domain/ops/`): `needs-a-hand`, `alert-names`, `tasks`, `task-queues` (the board's queues), `custom-order-tasks` (a paid custom order's order to send and piece to fit), `task-facts` (what each task turns on),
   `task-reach` (whose cities each is in), `task-closures`, `task-owners`, `grievances`, `activity`, `staff`,
   `task-spans` (when each task opened and closed), `targets` (each month's plan, city by city)
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `client-errors`, `grievances`, `ops-settings`, `console-routes`, `access`,

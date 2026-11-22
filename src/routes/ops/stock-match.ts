@@ -26,6 +26,10 @@ const StockMatchSchema = z
         kind: z.string(),
         city: z.string().nullable(),
         pieces: z.number().int(),
+        reserved: z
+          .number()
+          .int()
+          .openapi({ description: "Of those, the pieces reserved to this client's own custom order." }),
       }),
     ),
     in_transit: z.number().int(),
@@ -62,6 +66,7 @@ export function registerOpsStockMatch(app: App): void {
           kind: place.kind,
           city: place.city,
           pieces: place.pieces,
+          reserved: place.reserved,
         })),
         in_transit: stocked?.inTransit ?? 0,
       },

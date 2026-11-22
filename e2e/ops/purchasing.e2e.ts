@@ -5,7 +5,7 @@ import type { Page } from "@playwright/test";
 import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
+import { answer, json, TASKS, TASKS_READ_ON, type Answers, type OpsReply } from "./fixtures.ts";
 import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { purchasing as copy } from "../../apps/ops/src/content/purchasing.ts";
 import { EDITING } from "../../apps/ops/src/content/common.ts";
@@ -28,6 +28,7 @@ const ORDER = {
   sent_at: null,
   cancel_reason: null,
   needs_second_approval: true,
+  custom_order: null,
   receipts: [],
 };
 
@@ -89,6 +90,66 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
+
+// A custom order's purchase order was drafted with no word of whose it was, and a task could not open it.
+test("names the client a custom order's purchase order is for, and opens it from its task", async ({ page }) => {
+  const PO = "7b000000-0000-4000-8000-000000000002";
+  const toSend = {
+    ...TASKS,
+    groups: [
+      {
+        group: "custom_order_to_send",
+        count: 1,
+        closable: false,
+        tasks: [
+          {
+            id: "7c000000-0000-4000-8000-000000000001",
+            person: { id: "22000000-0000-4000-8000-000000000001", name: "Neha Kapoor" },
+            facts: {
+              group: "custom_order_to_send",
+              order: 42,
+              purchase_order: 8,
+              purchase_order_id: PO,
+              approved: false,
+            },
+            detail: "CU-0042 · PO-0008",
+            since: "2027-09-21T06:00:00.000Z",
+            due: "2027-09-22T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  } satisfies OpsReply<"/api/tasks">;
+  const CUSTOM = {
+    ...ORDER,
+    id: PO,
+    number: 8,
+    lines: [{ id: "pl-2", consumable_code: "hs-1", quantity: 1, unit_price: 15000, received: 0, hair_system: true }],
+    total: 15_000,
+    custom_order: {
+      id: "co-1",
+      number: 42,
+      person_id: "22000000-0000-4000-8000-000000000001",
+      person_name: "Neha Kapoor",
+    },
+  };
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, {
+    "GET /api/tasks": json(toSend),
+    "GET /api/purchase-orders": json({ ...BOOK, orders: [ORDER, CUSTOM] }),
+    "GET /api/supplier-claims": json({ claims: [], returns: [] }),
+    "GET /api/supplier-scorecard": json({ suppliers: [] }),
+  });
+  // The board leads the task to its purchase order, opened there.
+  await page.goto("/tasks");
+  await page.getByRole("link", { name: "Send in Purchasing · Neha Kapoor", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/purchasing#order-${PO}$`));
+  await expect(page.getByRole("row").filter({ hasText: "PO-0008" })).toContainText(copy.customFor(42, "Neha Kapoor"));
+  const named = page.getByRole("link", { name: copy.customFor(42, "Neha Kapoor") });
+  await expect(named).toHaveAttribute("href", "/clients/22000000-0000-4000-8000-000000000001/pieces");
+  await expect(page.getByRole("heading", { name: /PO-0008/ })).toBeVisible();
+});
 
 test("lists each order, opens one, and approves it, awaiting a second approver", async ({ page }) => {
   await open(page, { "POST /api/purchase-orders/{id}/approve": json(FIRST_APPROVED) });

@@ -107,6 +107,14 @@ export const home = {
   },
   /** Home's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
   credits: freeVisitsTile,
+  /** A visit ops booked that waits on the payment link they sent: held until it is paid, then booked. */
+  heldBooking: {
+    /** "Your first fit, Sun 22 Nov at 10 am, is held until 7 am that day." */
+    line: (visit: string, when: string, until: string) => `Your ${visit}, ${when}, is held until ${until}.`,
+    /** "7 am that day": a hold ending on its visit's own day. */
+    thatDay: (clock: string) => `${clock} that day`,
+    pay: (amount: string) => `Pay ${amount} to confirm`,
+  },
   /** A hair system made to their profile, as it comes to them (docs/decisions/0177-custom-orders-in-the-app.md). */
   customOrder: {
     awaitingPayment: "Your hair system, made to your profile, is ready to order.",

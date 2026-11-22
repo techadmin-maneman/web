@@ -85,6 +85,7 @@ describe("tasks", () => {
       payment_to_refund: 24,
       // A client told their size is made to order: ordered, and messaged, within the day (ADR 0253).
       made_to_order_ask: 24,
+      custom_order_to_send: 24,
       // A UPI payment at the visit: recorded the same day it is made (ADR 0209).
       upi_due: 12,
       // A technician's ask for leave: answered within the day, so they can plan theirs.

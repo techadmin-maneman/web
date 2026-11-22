@@ -37,7 +37,9 @@ import {
   makeCode,
   holdOf,
   holdsCount,
+  visit,
 } from "./ops-visits-fixtures.ts";
+import { asClient, signedIn } from "../clients.ts";
 
 /** The first reference of NOW's year, which the first link ops send takes before any payment. */
 
@@ -384,5 +386,150 @@ describe("a payment link for a visit ops booked, paid", () => {
     await deliver(linkPaid({ ...sent, linkId: "plink_unseen" }, paidAt), "evt-7");
 
     expect(await holdOf(sent.holdId)).toMatchObject({ confirmed_at: paidAt.toISOString() });
+  });
+});
+
+// A booking held on its link that the client never saw: ops are told it was not texted, send it again or copy it, see
+// it named when it stands in the way of another of its kind, and let it go (src/domain/booking/held-bookings.ts).
+describe("a booking held on its payment link", () => {
+  const firstFit = { client: ROHIT, kind: "first_fit", tier: NATURAL.tier, date: "2026-09-25", window: "morning" };
+  const call = (path: string, method = "GET", vendors: Vendors = {}): Promise<Response> =>
+    request(
+      opsApp(vendors),
+      path,
+      { method, headers: { "Content-Type": "application/json", Origin: "https://maneman.test" } },
+      bindings(),
+    );
+
+  it("says whether its link was texted, and texts it again only to a number messaging may text", async () => {
+    await rohit("consulted");
+    const offList = { allowlist: ["+919810000777"] };
+    const answer = await book(firstFit, offList);
+    const body = await answer.json<{ hold_id: string; link: { texted: boolean } }>();
+    expect(body.link.texted).toBe(false);
+
+    const notTexted = await call(`/api/holds/${body.hold_id}/send-link`, "POST", offList);
+    expect(await notTexted.json()).toEqual({ outcome: "not_texted" });
+    expect(payments.made.resent).toEqual([]);
+
+    const sent = await call(`/api/holds/${body.hold_id}/send-link`, "POST");
+    expect(await sent.json()).toEqual({ outcome: "resent" });
+    expect(payments.made.resent).toHaveLength(1);
+  });
+
+  it("is named when it stands in the way of another of its kind, and let go, frees the way", async () => {
+    await rohit("consulted");
+    const first = await (await book(firstFit)).json<{ hold_id: string; link: { url: string } }>();
+    const refused = await book({ ...firstFit, date: "2026-09-26" });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ error: { code: "already_booked" } });
+
+    const inTheWay = await (
+      await call(`/api/clients/${ROHIT}/held-bookings?kind=first_fit`)
+    ).json<{ visit: unknown; held: { hold_id: string; url: string; type: string }[] }>();
+    expect(inTheWay.visit).toBeNull();
+    expect(inTheWay.held).toEqual([
+      expect.objectContaining({ hold_id: first.hold_id, type: "first_fit", url: first.link.url }),
+    ]);
+
+    const letGo = await call(`/api/holds/${first.hold_id}/let-go`, "POST");
+    expect(letGo.status).toBe(204);
+    expect(payments.made.cancelledLinks).toHaveLength(1);
+    expect((await holdOf(first.hold_id))?.state).toBe("released");
+    const audited = await env.DB.prepare(
+      "SELECT action, detail FROM audit_log WHERE action = 'booking.give_back' AND subject_id = ?1",
+    )
+      .bind(first.hold_id)
+      .first<{ action: string; detail: string }>();
+    expect(JSON.parse(audited?.detail ?? "{}")).toMatchObject({ reason: "let_go" });
+
+    expect((await call(`/api/holds/${first.hold_id}/let-go`, "POST")).status).toBe(409);
+    expect((await book({ ...firstFit, date: "2026-09-26" })).status).toBe(201);
+  });
+
+  it("is never let go once paid, while being booked, or while Razorpay will not cancel its link", async () => {
+    await rohit("consulted");
+    const first = await (await book(firstFit)).json<{ hold_id: string }>();
+    const letGo = (vendors: Vendors = {}) => call(`/api/holds/${first.hold_id}/let-go`, "POST", vendors);
+    const leaseOf = () =>
+      env.DB.prepare("SELECT booking_until FROM slot_holds WHERE id = ?1")
+        .bind(first.hold_id)
+        .first<string | null>("booking_until");
+
+    // Razorpay will not cancel its link: it stays held, its link open, free to be let go again.
+    const down: PaymentsProvider = {
+      ...payments,
+      cancelPaymentLink: () => Promise.reject(new ProviderError(503, "SERVER_ERROR", "down")),
+    };
+    expect((await letGo({ payments: down })).status).toBe(503);
+    expect((await holdOf(first.hold_id))?.state).toBe("held");
+    expect(await leaseOf()).toBeNull();
+
+    // Another try is booking it.
+    await env.DB.prepare("UPDATE slot_holds SET booking_until = ?2 WHERE id = ?1")
+      .bind(first.hold_id, new Date(NOW.getTime() + 60_000).toISOString())
+      .run();
+    expect((await letGo()).status).toBe(409);
+    await env.DB.prepare("UPDATE slot_holds SET booking_until = NULL WHERE id = ?1").bind(first.hold_id).run();
+
+    // Paid: it is the booking's to book, never let go, and nothing is refunded.
+    await env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1")
+      .bind(first.hold_id, NOW.toISOString())
+      .run();
+    expect((await letGo()).status).toBe(409);
+    expect(payments.made.cancelledLinks).toEqual([]);
+    expect(payments.made.refunds).toEqual([]);
+    expect((await holdOf(first.hold_id))?.state).toBe("held");
+    // Ops see it once, as the first fit still to come that refuses another.
+    const found = await (
+      await call(`/api/clients/${ROHIT}/held-bookings?kind=first_fit`)
+    ).json<{ visit: { kind: string; date: string } | null; held: unknown[] }>();
+    expect(found.visit).toMatchObject({ kind: "first_fit", date: "2026-09-25" });
+    expect(found.held).toEqual([]);
+  });
+
+  it("is let go where Razorpay will not cancel its link because it is cancelled already, and kept where it was paid", async () => {
+    await rohit("consulted");
+    const first = await (await book(firstFit)).json<{ hold_id: string }>();
+    const linkId = (await holdOf(first.hold_id))?.payment_link_id ?? "";
+    // The cancel went through before, but its answer was lost: Razorpay now refuses to cancel it again.
+    const refusing: PaymentsProvider = {
+      ...payments,
+      cancelPaymentLink: () => Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "already cancelled")),
+    };
+    payments.linksNow.set(linkId, { id: linkId, status: "paid", reference_id: null, order_id: "order_1" });
+    expect((await call(`/api/holds/${first.hold_id}/let-go`, "POST", { payments: refusing })).status).toBe(409);
+    expect((await holdOf(first.hold_id))?.state).toBe("held");
+
+    payments.linksNow.set(linkId, { id: linkId, status: "cancelled", reference_id: null, order_id: null });
+    expect((await call(`/api/holds/${first.hold_id}/let-go`, "POST", { payments: refusing })).status).toBe(204);
+    expect((await holdOf(first.hold_id))?.state).toBe("released");
+    expect(payments.made.refunds).toEqual([]);
+  });
+
+  it("names a consultation still to come as what refuses a one visit", async () => {
+    await rohit("new");
+    await visit(ROHIT, "consultation", "scheduled", "2026-09-25T04:30:00.000Z", IMRAN);
+    const found = await (
+      await call(`/api/clients/${ROHIT}/held-bookings?kind=first_fit&one_visit=true`)
+    ).json<{ visit: { kind: string; date: string } | null }>();
+    expect(found.visit).toMatchObject({ kind: "consultation", date: "2026-09-25" });
+  });
+
+  it("is shown to its client to pay, held until the hold's own end, and no longer once paid", async () => {
+    await rohit("consulted");
+    const first = await (await book(firstFit)).json<{ hold_id: string; link: { url: string } }>();
+    const cookie = await signedIn(ROHIT);
+    const mine = async () =>
+      (await (await asClient(cookie, "/api/me/held-bookings")).json<{ held: Record<string, unknown>[] }>()).held;
+    // Its own end, not the grace a late payment is given past it.
+    const until = (await holdOf(first.hold_id))?.expires_at;
+    expect(await mine()).toEqual([
+      expect.objectContaining({ type: "first_fit", pay_url: first.link.url, open_until: until }),
+    ]);
+    await env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1")
+      .bind(first.hold_id, NOW.toISOString())
+      .run();
+    expect(await mine()).toEqual([]);
   });
 });

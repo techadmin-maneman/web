@@ -385,6 +385,32 @@ export const clients = {
         booked: "Booked.",
         being_booked: "Booked.",
         awaiting_payment: (amount: string, until: string) => `Payment link sent for ${amount}. Held until ${until}.`,
+        /** Razorpay made the link and did not text it (a number messaging may not text): ops copy or send it. */
+        not_texted: (amount: string, until: string) =>
+          `Payment link made for ${amount}, not texted. Held until ${until}.`,
+      },
+      /** What an "Already booked" refusal is about: the visit still to come, or a booking held on its link. */
+      inTheWay: {
+        visit: (kind: string, when: string) => `A ${kind} is booked for ${when}.`,
+        held: (kind: string, when: string, until: string) => `A ${kind} for ${when} is held until ${until}, unpaid.`,
+        paid: (kind: string, when: string) => `A ${kind} for ${when} is paid and being booked.`,
+        letGo: "Let it go",
+        /** Asked before a held booking is let go: its link stops working. */
+        letGoAsk: "Let this booking go? Its payment link stops working.",
+        /** A link the browser would not copy, where it is written out above to select. */
+        notCopied: "Not copied. Select the link above.",
+        /** "7 am that day": a hold ending on its visit's own day. */
+        thatDay: (clock: string) => `${clock} that day`,
+        lettingGo: "Letting go…",
+        letGone: "Let go. Book again.",
+        errors: {
+          hold_expired: "That booking was paid, lapsed or let go already.",
+          not_permitted: "Your access doesn’t include this. Ask an admin.",
+          not_found: "That booking no longer exists.",
+          unavailable: "Razorpay couldn’t cancel its link, so it’s still held. Try again in a minute.",
+          offline: "You’re offline. Reconnect and try again.",
+          unknown: "That didn’t work. Try again.",
+        },
       },
       link: "Payment link",
       loading: "Finding free times…",

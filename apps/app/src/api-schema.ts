@@ -5333,6 +5333,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/held-bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's bookings held until they pay the link ops sent */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Their bookings held on a link, soonest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MyHeldBookings"];
+                    };
+                };
+                /** @description session_required */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/refer/card": {
         parameters: {
             query?: never;
@@ -7451,6 +7505,25 @@ export interface components {
                 amount: number;
                 /** @description The link to pay by, while it waits for payment. */
                 pay_url: string | null;
+            }[];
+        };
+        MyHeldBookings: {
+            held: {
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /** Format: date */
+                date: string;
+                /**
+                 * Format: date-time
+                 * @description Its start; null for one held before starts.
+                 */
+                starts_at: string | null;
+                /** @description What it costs them, in paise. */
+                amount: number;
+                /** @description The link to pay by. */
+                pay_url: string;
+                /** @description When it is held until; then its time goes back. */
+                open_until: string;
             }[];
         };
         Refer: {

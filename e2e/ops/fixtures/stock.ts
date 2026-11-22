@@ -167,6 +167,7 @@ const holding = (code: string, place: string, quantity: number, low = false, cou
   quantity,
   low,
   counted_at: countedAt,
+  reserved: 0,
   lots: [],
 });
 

@@ -4027,6 +4027,359 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/clients/{id}/held-bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The client's bookings held on their payment link, and what stands in the way of booking a kind */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description The kind of visit to be booked; every kind if left out. */
+                    kind?: "consultation" | "first_fit" | "service" | "replacement";
+                    /** @description A consultation and fit in one visit. */
+                    one_visit?: "true" | "false";
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What is held, and in the way */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsHeldBookings"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such client within the reader's places */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/holds/{id}/send-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Text a held booking's payment link to the client again */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The held booking (its hold). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What sending it came to */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpsHeldLinkSent"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such held booking within the caller's places */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description hold_expired: it was paid, lapsed or let go, so its link is closed */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "hold_expired";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description unavailable: Razorpay did not answer; try again in a minute */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "unavailable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/holds/{id}/let-go": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Let a booking held on its payment link go, its link cancelled and its time freed */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description The held booking (its hold). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Let go: its link cancelled and its time freed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such held booking within the caller's places */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description hold_expired: it was paid, is being booked, lapsed or was let go already */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "hold_expired";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description unavailable: Razorpay would not cancel its link or say it is shut, so it is kept; try again */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "unavailable";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/custom-orders/{id}/refund": {
         parameters: {
             query?: never;
@@ -15047,7 +15400,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "custom_order_to_send" | "custom_piece_to_fit" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -28919,11 +29272,13 @@ export interface components {
             technician: components["schemas"]["FreeTechnician"];
             /** @description Whether the technician is a draft the evening's re-plan may still change, fixed the evening before (ADR 0290); never where ops chose them. */
             technician_draft: boolean;
-            /** @description The payment link Razorpay texted the client, and when it closes and the slot goes. */
+            /** @description The payment link for the client, whether it was texted, and when it closes and the slot goes. */
             link: {
                 url: string;
                 /** Format: date-time */
                 open_until: string;
+                /** @description Whether Razorpay texted it: never to a number messaging may not text (a staging test record). */
+                texted: boolean;
             } | null;
         };
         VisitToBook: {
@@ -29514,8 +29869,52 @@ export interface components {
                 kind: string;
                 city: string | null;
                 pieces: number;
+                /** @description Of those, the pieces reserved to this client's own custom order. */
+                reserved: number;
             }[];
             in_transit: number;
+        };
+        OpsHeldBookings: {
+            /** @description A visit still to come that a second would double; null for none. */
+            visit: {
+                /**
+                 * @description Its kind: a consultation, where a one visit was asked.
+                 * @enum {string}
+                 */
+                kind: "consultation" | "first_fit" | "service" | "replacement";
+                /** Format: date */
+                date: string;
+                /** @enum {string} */
+                window: "morning" | "afternoon" | "evening";
+                /** Format: date-time */
+                starts_at: string | null;
+            } | null;
+            /** @description Bookings held on their link, soonest first. */
+            held: {
+                /** Format: uuid */
+                hold_id: string;
+                /** @enum {string} */
+                type: "consultation" | "first_fit" | "service" | "replacement";
+                /** Format: date */
+                date: string;
+                /** Format: date-time */
+                starts_at: string | null;
+                /** @description What the client pays, in paise, GST included. */
+                amount: number;
+                /** @description The link to pay by; null while it is still being made. */
+                url: string | null;
+                /** @description When it is held until; then its time goes back. */
+                open_until: string;
+                /** @description Paid and being booked: no link to send, and it cannot be let go. */
+                paid: boolean;
+            }[];
+        };
+        OpsHeldLinkSent: {
+            /**
+             * @description resent: Razorpay texted the link again; not_texted: messaging may not text this number (a staging test record).
+             * @enum {string}
+             */
+            outcome: "resent" | "not_texted";
         };
         ClientCustomOrders: {
             orders: {
@@ -29543,6 +29942,10 @@ export interface components {
                 link_sent_at: string | null;
                 paid_at: string | null;
                 po_number: number | null;
+                /** @description Its purchase order, to open on Purchasing; null until paid. */
+                po_id: string | null;
+                /** @description Where its piece is held once arrived: the warehouse, a stockroom or a kit; null otherwise. */
+                piece_at: string | null;
                 raised_at: string;
             }[];
             suppliers: {
@@ -31463,7 +31866,7 @@ export interface components {
             lapsed: number;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "custom_order_to_send" | "custom_piece_to_fit" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -31571,6 +31974,34 @@ export interface components {
             kind: "first_fit" | "replacement";
             /** @description The hair system, by its package's name. */
             name: string;
+        } | {
+            /** @enum {string} */
+            group: "custom_order_to_send";
+            /** @description The custom order's number, CU-0042 as 42. */
+            order: number;
+            /** @description Its purchase order's number. */
+            purchase_order: number;
+            /**
+             * Format: uuid
+             * @description Its purchase order's ID, to open it on Purchasing.
+             */
+            purchase_order_id: string;
+            /** @description Approved already: only sending it is left. */
+            approved: boolean;
+        } | {
+            /** @enum {string} */
+            group: "custom_piece_to_fit";
+            /** @description The custom order's number. */
+            order: number;
+            /** @description The reserved piece's label. */
+            piece_code: string;
+            /** @description Where the piece is held: the warehouse, a stockroom or a kit. */
+            held_at: string;
+            /**
+             * @description The visit to book to fit it: a replacement for a client fitted before.
+             * @enum {string}
+             */
+            fit: "first_fit" | "replacement";
         } | {
             /** @enum {string} */
             group: "recall_call";
@@ -33001,6 +33432,8 @@ export interface components {
                 low: boolean;
                 /** @description When it was last counted there. */
                 counted_at: string | null;
+                /** @description Of its pieces there, those reserved to a client's custom order. */
+                reserved: number;
                 /** @description The lots the place holds some of, soonest to expire first. */
                 lots: {
                     id: string;
@@ -33278,6 +33711,14 @@ export interface components {
                 sent_at: string | null;
                 cancel_reason: string | null;
                 needs_second_approval: boolean;
+                /** @description The custom order this was drafted for, and its client; null for an order of stock. */
+                custom_order: {
+                    id: string;
+                    number: number;
+                    person_id: string;
+                    /** @description The client's name; null once they are erased. */
+                    person_name: string | null;
+                } | null;
                 receipts: {
                     id: string;
                     received_by: string;

@@ -99,6 +99,7 @@ const RECORD_PLACES = {
   payment_link: { table: "payment_links", city: (row) => cityOfVisit(`${row}.appointment_id`) },
   piece: { table: "pieces", city: (row) => clientCity(`${row}.person_id`) },
   made_to_order_ask: { table: "made_to_order_asks", city: (row) => clientCity(`${row}.person_id`) },
+  custom_order: { table: "custom_orders", city: (row) => clientCity(`${row}.person_id`) },
   no_show: { table: "no_show_cases", city: (row) => cityOfVisit(`${row}.appointment_id`) },
   dispute: { table: "no_show_disputes", city: (row) => cityOfVisit(caseVisit(`${row}.case_id`)) },
   grievance: { table: "grievances", city: (row) => clientCity(`${row}.person_id`) },
