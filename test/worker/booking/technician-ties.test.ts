@@ -82,6 +82,20 @@ describe("a hold between technicians equally free that day", () => {
     expect(taken.filter((name) => name === "Zubin Shah")).toHaveLength(2);
   });
 
+  it("goes to one whose home is known before one with no home pin, though the drive costs more (ADR 0289)", async () => {
+    // The client's pincode, and Aditya's home 9 km north of it: inside his radius, but some 90 minutes there and back,
+    // where Zubin, with no home pin, would cost only the ring's half hour.
+    await env.DB.prepare(
+      "UPDATE serviceable_pincodes SET centre_lat = 28.4, centre_lng = 77.05 WHERE pincode = '122018'",
+    ).run();
+    await env.DB.prepare(
+      "UPDATE technicians SET home_lat = 28.4809, home_lng = 77.05, home_label = 'Home' WHERE id = ?1",
+    )
+      .bind(ADITYA)
+      .run();
+    expect(await holdOn("2026-09-23", "morning")).toBe("Aditya Rao");
+  });
+
   it("weighs the week's work against the driving a start adds (ADR 0289)", async () => {
     // Zubin's visit that day adds ten minutes to his driving; Aditya's week holds an hour and a half more, worth 15.
     await booked(ADITYA, "2026-09-24");

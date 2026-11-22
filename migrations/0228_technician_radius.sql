@@ -9,6 +9,8 @@ SET radius_km = MIN(60, MAX(1, CAST(ROUND((reach_min - 10) * 0.4 * 100 / 140) AS
 WHERE reach_min IS NOT NULL;
 
 -- The business's reach, where ops set one, becomes its radius the same way; the old setting's row is left unread.
+-- backfill: at most one ops_settings row and the snapshot its trigger rewrites, and above, the few technicians with a
+-- reach of their own (none on staging, under 50 anywhere) × (1 + their indexes): under 500 writes.
 INSERT INTO ops_settings (name, value, set_by, set_at)
 SELECT 'technician_radius_km',
        CAST(MIN(60, MAX(1, CAST(ROUND((CAST(value AS REAL) - 10) * 0.4 * 100 / 140) AS INTEGER))) AS TEXT),

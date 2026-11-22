@@ -17,7 +17,7 @@ export interface ReachTechnician {
   readonly home: Pin | null;
   /** Their own radius in km, or the business's: the circle the map draws. */
   readonly radius_km: number;
-  /** How far past it they still go, when nobody nearer can. */
+  /** How far past it they still go, at the overflow ring's cost (src/policy/allotment.ts). */
   readonly ring_km: number;
 }
 

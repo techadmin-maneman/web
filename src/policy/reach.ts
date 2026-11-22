@@ -1,7 +1,8 @@
 // How far a technician goes from home (docs/decisions/0289-who-takes-a-visit.md): a radius in straight-line km, their
-// own where ops set one, else the business's, and past it an overflow ring they reach only when nobody nearer can
-// take the visit. A technician with no home pin stands in the ring wherever the visit is, so a city whose pins are not
-// set yet still books; booking puts them after everyone whose home is known (src/domain/booking/start-offers.ts).
+// own where ops set one, else the business's, and past it an overflow ring they reach at a cost (./allotment.ts), so
+// a nearer technician goes first unless the driving they would add outweighs it. A technician with no home pin stands
+// in the ring wherever the visit is, so a city whose pins are not set yet still books; booking puts them after
+// everyone whose home is known (src/domain/booking/start-offers.ts).
 
 import { kmBetween, type Pin } from "../lib/geo.ts";
 
