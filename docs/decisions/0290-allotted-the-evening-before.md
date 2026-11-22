@@ -24,10 +24,20 @@ cut driving. The owner chose the reminder hour (6 pm until ops change it) as the
 3. **Until then nobody is told who.** The client's visits and the hold leave the technician out, and the app says
    "Confirmed the evening before"; a booking's messages say "our technician"; the technician's app does not list a
    draft.
-4. **A visit ops place by hand is fixed** where they place it.
+4. **A visit ops place by hand is fixed** where they place it; one a client moves past its day's lock is a draft
+   again. The board's drawer says when a visit's technician is a draft.
+5. **Drafts are re-planned to cost least** (`src/policy/replan.ts`, `src/domain/booking/replan-day.ts`): each keeps
+   its promised time, and moves to another technician, or swaps with another draft, wherever that costs less in all
+   (ADR 0289's cost, summed over the city's day) and still fits both days. Nobody who may not take it gets it. The
+   moves are written in one batch under the claims a move takes (ADR 0069), so a hold on the same time since fails
+   the batch, and nobody is told. The night re-plans the week ahead at 2 am.
+6. **Tomorrow is checked on Google before it is fixed** (`src/domain/booking/evening-check.ts`). At the reminder
+   hour, each city is re-planned on the estimate, each technician's day is driven on Google leg by leg, and a drive
+   with too little room rules its technician out of the draft at either end before one more re-plan. What still falls
+   short is fixed as it stands, so the reminders still go, and ops are alerted to the drive (leg_short), to shift a
+   visit or call the client. Where the routes provider is off, the estimate stands.
 
 ## Consequences
 
 - The client learns the name in the evening's reminder, as before for a visit booked well ahead.
-- The re-plan that changes a draft's technician to cut driving, and the booking that moves a draft to make room, come
-  in the next changes; until then a draft keeps the technician booking placed it with.
+- The booking that moves a draft to make room for a time nobody could otherwise take comes in its own change.

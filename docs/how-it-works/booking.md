@@ -12,6 +12,8 @@ Days ops close are never offered: everywhere (`visit_blackouts`) or in one city 
 
 A visit goes to a technician in the client's city (`src/domain/dispatch/technician-fit.ts`); a first fit only to one trained to fit. Each technician takes visits within a radius of home in straight-line km, their own or Settings' (`src/policy/reach.ts`), and in an overflow ring past it at a cost; beyond the ring, never. A technician never takes two of a client's visits in a row unless nobody else can (`src/policy/technician-rotation.ts`). Among those free, whoever's home is known goes before any technician with no home pin, then whoever the visit costs least: the driving it adds, home again after the day's last visit included, with going into the ring, a fit's piece not in their kit, and a fuller week counted as minutes of driving, each figure under Settings › "Who takes a visit" (`src/policy/allotment.ts`, `src/domain/booking/start-offers.ts`). Leave is read with everything else a day holds, so a job on a day off is refused (`src/domain/booking/occupancy.ts`, `src/domain/dispatch/leave.ts`).
 
+Who takes a visit is a draft until the evening before (ADR 0290): booking only proves the time fits someone's day. Each night the drafts of the week ahead are re-planned to cost least, keeping every promised time (`src/domain/booking/replan-day.ts`); at the reminder hour, tomorrow is re-planned, checked on Google's traffic, and fixed, just before the reminder names the technician (`src/domain/booking/allotment-lock.ts`, `src/domain/booking/evening-check.ts`). Until then the client sees no name and the technician no visit.
+
 Wherever a visit is booked, on the site, in the app or in the console, the starts offered rest on the free drive estimate, leaving out any Google's kept drive leaves no room for; before a start is held, Google checks the drives either side of it (`src/domain/booking/drive-check.ts`, ADR 0287).
 
 ## Booking from the site
@@ -49,3 +51,4 @@ A client moves or cancels in the app; what a late change costs is in Settings ·
 - [0086, the next visit is offered](../decisions/0086-the-next-visit-is-offered.md): why the app, not ops, books the next visit.
 - [0111, never two in a row](../decisions/0111-a-technician-never-takes-two-visits-in-a-row.md) and [0117, own city](../decisions/0117-a-technician-takes-visits-in-their-own-city.md).
 - [0289, who takes a visit](../decisions/0289-who-takes-a-visit.md): the radius in km, the overflow ring, and the least cost.
+- [0290, fixed the evening before](../decisions/0290-allotted-the-evening-before.md): drafts, the night's re-plan, and the evening's check and lock.
