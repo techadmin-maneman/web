@@ -29,7 +29,7 @@ export const driving = {
   used: "Yes",
   notYet: "Not yet",
   /** Ops use the estimate only (Settings › Booking, Drive times). */
-  estimateOnly: "Drive times use the estimate only. Learned times are kept and shown here.",
+  estimateOnly: "Drive times use the estimate only.",
   /** "In use once a slot has 20 drives." */
   minimum: (drives: number) => `In use once a slot has ${String(drives)} drives.`,
   noLearned: "Nothing learned yet.",
