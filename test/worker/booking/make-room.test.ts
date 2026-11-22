@@ -235,6 +235,18 @@ describe("room made at booking", () => {
     expect(await atEleven({ now: indiaInstant("2026-09-21", "17:45") })).toBeUndefined();
   });
 
+  it("keeps to the city's own lock: Gurgaon's at 8 pm leaves its drafts to a booking at 5:45", async () => {
+    await env.DB.prepare(
+      "INSERT INTO city_settings (city, key, value, updated_by, updated_at) VALUES ('Gurgaon', 'reminder_hour', '20', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    expect(await atEleven({ now: indiaInstant("2026-09-21", "17:45") })).toEqual([
+      { technician: IMRAN, draft, to: SANDEEP },
+    ]);
+    expect(await atEleven({ now: indiaInstant("2026-09-21", "19:45") })).toBeUndefined();
+  });
+
   it("makes no room by moving a visit whose technician is fixed", async () => {
     await env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(draft).run();
     expect(await atEleven()).toBeUndefined();

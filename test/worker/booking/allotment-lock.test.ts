@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../../src/config/message-templates.ts";
-import { bookedAsDraft, daySettled, lockDrafts } from "../../../src/domain/booking/allotment-lock.ts";
+import { bookedAsDraft, daySettled, leftToTheLock, lockDrafts } from "../../../src/domain/booking/allotment-lock.ts";
 import { jobsOn } from "../../../src/domain/field/tech-jobs.ts";
 import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
@@ -118,5 +118,21 @@ describe("a draft's technician", () => {
     await env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(visitId).run();
     expect(await told()).toContain("with Imran");
     expect(await theirs()).toHaveLength(1);
+  });
+});
+
+describe("the drafts left to the evening's check and lock", () => {
+  const hours = { national: 18, cities: new Map([["Pune", 20]]) };
+  const at = (date: string, time: string) => indiaInstant(date, time);
+
+  it("are today's, whatever the hour, and tomorrow's once the half hour before its city's own lock has begun", () => {
+    expect(leftToTheLock(hours, { city: "Gurgaon", date: "2026-09-21" }, at("2026-09-21", "08:00"))).toBe(true);
+    expect(leftToTheLock(hours, { city: "Gurgaon", date: "2026-09-22" }, at("2026-09-21", "17:20"))).toBe(false);
+    expect(leftToTheLock(hours, { city: "Gurgaon", date: "2026-09-22" }, at("2026-09-21", "17:40"))).toBe(true);
+    // Pune locks at 8 pm, so its drafts are a booking's to move until 7:30.
+    expect(leftToTheLock(hours, { city: "Pune", date: "2026-09-22" }, at("2026-09-21", "17:40"))).toBe(false);
+    expect(leftToTheLock(hours, { city: "Pune", date: "2026-09-22" }, at("2026-09-21", "19:40"))).toBe(true);
+    // The day after tomorrow is the hourly re-plan's and a booking's, whatever the hour.
+    expect(leftToTheLock(hours, { city: "Gurgaon", date: "2026-09-23" }, at("2026-09-21", "17:40"))).toBe(false);
   });
 });
