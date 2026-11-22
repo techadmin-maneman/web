@@ -90,6 +90,62 @@ describe("a piece scanned from the kit", () => {
   });
 });
 
+// A label lost or never stuck on never stops the fit (docs/decisions/0291-pieces-without-labels.md).
+describe("a piece with no label", () => {
+  beforeEach(async () => {
+    await setUp("first_fit");
+  });
+
+  const fit = async (body: object, event: string) => {
+    await job.workTo("consumables");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [], short_reason: "other" }, "event-consumables-01");
+    return job.post(`/api/tech/jobs/${JOB}/piece`, body, event);
+  };
+  const recorded = async () =>
+    JSON.parse(
+      (await env.DB.prepare("SELECT body FROM job_events WHERE kind = 'piece' ORDER BY rowid DESC").first<string>(
+        "body",
+      )) ?? "{}",
+    ) as { piece_code?: string; no_label?: boolean; stock_code?: string };
+
+  it("is fitted as the hair system picked from the kit, under a label made for it, the same one sent again", async () => {
+    await inTheKit(code, { lot_code: "HS-1", expires_on: "2028-03-31" });
+    expect((await fit({ no_label: true, stock_code: code }, "event-piece-01")).status).toBe(202);
+    const first = await recorded();
+    expect(first).toMatchObject({ no_label: true, stock_code: code });
+    expect(first.piece_code).toMatch(/^MM-NL-\d{7}-[A-Z]$/);
+    // One of the kit's pieces is fitted, not gone missing, though its label was never read.
+    const states = await env.DB.prepare(
+      "SELECT state, COUNT(*) AS n FROM stock_units WHERE consumable_code = ?1 GROUP BY state ORDER BY state",
+    )
+      .bind(code)
+      .all();
+    expect(states.results).toEqual([
+      { state: "fitted", n: 1 },
+      { state: "held", n: 1 },
+    ]);
+
+    expect(
+      (await job.post(`/api/tech/jobs/${JOB}/piece`, { no_label: true, stock_code: code }, "event-piece-02")).status,
+    ).toBe(202);
+    expect((await recorded()).piece_code).toBe(first.piece_code);
+  });
+
+  it("is refused with no hair system picked, with a label sent as well, or with neither label nor none", async () => {
+    const [label = ""] = await inTheKit(code, {});
+    const refused = async (body: object, event: string) => {
+      const step = await fit(body, event);
+      expect(step.status).toBe(400);
+      return (await step.json<{ error: { fields?: string[] } }>()).error.fields;
+    };
+    expect(await refused({ no_label: true }, "event-piece-01")).toEqual(["stock_code"]);
+    expect(await refused({ no_label: true, piece_code: label, stock_code: code }, "event-piece-02")).toEqual([
+      "piece_code",
+    ]);
+    expect(await refused({ stock_code: code }, "event-piece-03")).toEqual(["piece_code"]);
+  });
+});
+
 describe("a piece that comes off", () => {
   beforeEach(async () => {
     await setUp("replacement");

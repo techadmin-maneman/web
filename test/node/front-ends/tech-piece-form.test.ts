@@ -18,6 +18,7 @@ import {
 
 const EMPTY: PieceForm = {
   code: "",
+  noLabel: false,
   base: "",
   lot: "",
   stock: null,
@@ -119,6 +120,24 @@ describe("the piece step", () => {
       piece_code: LABEL,
       base: "Mane Man Essential, before labels",
       stock_code: "hs_old",
+    });
+  });
+
+  // A label lost or never stuck on never stops the fit (docs/decisions/0291-pieces-without-labels.md).
+  it("goes on with no label once a hair system is picked from the kit, labelled or not, and sends none", () => {
+    const kit = {
+      ...FIRST_FIT,
+      kit_hair_systems: [
+        { code: "hs_exact", name: "Mane Man Essential", units: [{ code: LABEL, lot_code: null, expires_on: null }] },
+      ],
+    } as unknown as typeof FIRST_FIT;
+    const none = { ...EMPTY, noLabel: true };
+    expect(stillMissing(none, kit, "none")).toBe(copy.piece.pickFromKit);
+    expect(stillMissing({ ...none, stock: "hs_exact" }, kit, "none")).toBeNull();
+    expect(pieceBody({ ...none, stock: "hs_exact" }, kit)).toEqual({
+      no_label: true,
+      base: "Mane Man Essential",
+      stock_code: "hs_exact",
     });
   });
 

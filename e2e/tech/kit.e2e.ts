@@ -139,6 +139,17 @@ test("reports the pieces not scanned missing, with the ones that came", async ({
   expect(writesTo(fake, "transfers/tr-1/receive")[0]?.body).toEqual({ units: ["MM-ESS-0000008-J"], rest: "missing" });
 });
 
+// Labels lost or unreadable never hold a top-up back (docs/decisions/0291-pieces-without-labels.md).
+test("receives a hair system's top-up whole without a scan", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  await page.goto("/kit");
+  const coming = page.getByRole("region", { name: copy.coming.title });
+  await coming.getByRole("button", { name: copy.coming.receiveAll }).click();
+  await expect.poll(() => writesTo(fake, "transfers/tr-1/receive").length).toBe(1);
+  expect(writesTo(fake, "transfers/tr-1/receive")[0]?.body).toEqual({ rest: "on_its_way" });
+});
+
 test("after part of a hair system is received, takes the piece still to come", async ({ page }) => {
   const fake = await fakeTech(page);
   withAKit(fake);

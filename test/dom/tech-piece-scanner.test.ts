@@ -65,8 +65,14 @@ function Step() {
       setCode(next);
     },
     onLook: () => undefined,
+    onNoLabel: () => {
+      noLabels.push(true);
+    },
   });
 }
+
+/** Each time the piece was said to have no label. */
+const noLabels: boolean[] = [];
 
 let page: HTMLDivElement;
 let root: Root;
@@ -77,6 +83,7 @@ beforeEach(() => {
   camera.open = null;
   camera.stopped = false;
   codes.length = 0;
+  noLabels.length = 0;
   check.looked = NOT_LOOKED;
   page = document.createElement("div");
   document.body.append(page);
@@ -116,6 +123,16 @@ describe("the hair system step's scanner", () => {
     const box = page.querySelector("input");
     expect(box).not.toBeNull();
     expect(page.textContent).toContain(copy.piece.malformed);
+  });
+
+  // A label lost or never stuck on never stops the fit (docs/decisions/0291-pieces-without-labels.md).
+  it("offers No label on it beside typing the code, for a piece with none to read", () => {
+    const noLabel = [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.piece.noLabel);
+    expect(noLabel).toBeDefined();
+    act(() => {
+      noLabel?.click();
+    });
+    expect(noLabels).toEqual([true]);
   });
 
   it("offers Check again under the scanner for a label read with no signal, its code box left shut", () => {

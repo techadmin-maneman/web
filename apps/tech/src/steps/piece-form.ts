@@ -20,6 +20,8 @@ export type Choice = string | null;
 /** What the technician has typed and chosen on the step. */
 export interface PieceForm {
   readonly code: string;
+  /** The piece has no label to read: the hair system picked from the kit is what is fitted (ADR 0291). */
+  readonly noLabel: boolean;
   readonly base: string;
   readonly lot: string;
   /** The hair system from the kit, by its stock code; null for a piece from elsewhere. */
@@ -248,6 +250,8 @@ export function stillMissing(
   if (fitsNothingToday(form, job)) return null;
   // A one visit fits today only a hair system the kit holds; one it does not is booked for later.
   if (job.one_visit && form.choice !== null && !inKit(job, form.choice)) return oneVisit.notInKitAction;
+  // With no label to read, the hair system picked from the kit is the piece; one is all it asks.
+  if (form.noLabel) return form.stock === null ? copy.piece.pickFromKit : oldLabelMissing(form);
   if (expiredInKit(job, form.code)) return copy.piece.expiredAction;
   if (!isLabel(form.code)) return copy.piece.checkFirst;
   if (checked === "another_client") return copy.piece.notThisClientAction;
@@ -257,8 +261,12 @@ export function stillMissing(
   const fromKit = unlabelled || kitPieceOf(job, form.code) !== null;
   if (!fromKit && checked === "none") return copy.piece.uncheckedAction;
   if (!fromKit && checked === "unknown") return copy.piece.notInKitAction;
-  return given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;
+  return oldLabelMissing(form);
 }
+
+/** On a replacement, the label of the piece that came off where one is given and is no label: what keeps Next dim. */
+const oldLabelMissing = (form: PieceForm): string | null =>
+  given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;
 
 /** The step's body: against the fit, or the piece with what was said of it, and on a replacement the one off. */
 export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit" | "kit_hair_systems">): EventBody<"piece"> {
@@ -269,7 +277,8 @@ export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit" | "kit_hai
     ? form.base.trim()
     : job.kit_hair_systems.find((each) => each.code === form.stock)?.name;
   return {
-    piece_code: form.code,
+    // With no label, none is sent; the API records the piece under one made for it.
+    ...(form.noLabel ? { no_label: true as const } : { piece_code: form.code }),
     ...(job.one_visit && form.choice !== null ? { product: form.choice } : {}),
     ...(base === undefined ? {} : { base }),
     ...(given(form.lot) ? { supplier_lot: form.lot.trim() } : {}),

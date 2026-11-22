@@ -12,6 +12,7 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { Suspense, useCallback, useState, type ReactNode } from "react";
+import { isMadeLabel } from "@rules/config/pieces.ts";
 import { type Piece } from "../api.ts";
 import { clients } from "../content.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
@@ -43,7 +44,7 @@ function PieceRow({ piece, failure }: { piece: Piece; failure: ReactNode }) {
   return (
     <tr>
       <th scope="row" className={styles.code}>
-        {piece.piece_code}
+        {isMadeLabel(piece.piece_code) ? copy.madeLabel(piece.piece_code) : piece.piece_code}
       </th>
       <td className={styles.base}>{piece.base ?? clients.unknown}</td>
       <td className={styles.fitted}>{dateOf(piece.fitted_at)}</td>

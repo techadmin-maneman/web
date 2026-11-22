@@ -17,7 +17,24 @@ export const ChecklistRequestSchema = z
 
 const PieceFittedSchema = z
   .object({
-    piece_code: z.string().min(3).max(40),
+    piece_code: z
+      .string()
+      .min(3)
+      .max(40)
+      .optional()
+      .openapi({
+        description:
+          "The label on the piece, read or typed. Left out where the piece has none, with no_label, and the step is " +
+          "recorded under one made for it from the visit (docs/decisions/0291-pieces-without-labels.md).",
+      }),
+    no_label: z
+      .literal(true)
+      .optional()
+      .openapi({
+        description:
+          "The piece has no label to read, so none is sent: the hair system it is, picked from the kit by stock_code, " +
+          "comes out of the kit as it would with one. Refused, fields stock_code, with none picked.",
+      }),
     base: z
       .string()
       .min(1)
@@ -212,10 +229,11 @@ export function pieceBodyOf(body: unknown): PieceBody | null {
   return parsed.success ? parsed.data : null;
 }
 
-type FittedBody = z.infer<typeof PieceFittedSchema>;
+/** A one visit's piece step that fitted nothing: the fit declined, or booked for later. */
+type NothingFitted = z.infer<typeof PieceDeclinedSchema> | z.infer<typeof PieceLaterSchema>;
 
 /** Whether a one visit's piece step fitted nothing that day: the client decided against it, or booked it for later. */
-export const fitsNothing = (piece: PieceBody): piece is Exclude<PieceBody, FittedBody> =>
+export const fitsNothing = (piece: PieceBody): piece is NothingFitted =>
   "declined" in piece || "fit_later" in piece;
 
 /** The lines a stored consumables step names; none for a body that is not one. */

@@ -3801,7 +3801,15 @@
           "piece_code": {
             "type": "string",
             "minLength": 3,
-            "maxLength": 40
+            "maxLength": 40,
+            "description": "The label on the piece, read or typed. Left out where the piece has none, with no_label, and the step is recorded under one made for it from the visit (docs/decisions/0291-pieces-without-labels.md)."
+          },
+          "no_label": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The piece has no label to read, so none is sent: the hair system it is, picked from the kit by stock_code, comes out of the kit as it would with one. Refused, fields stock_code, with none picked."
           },
           "base": {
             "type": [
@@ -3867,9 +3875,6 @@
             "description": "On a one visit, and only there: the product the client chose, by its tier from the card's products."
           }
         },
-        "required": [
-          "piece_code"
-        ],
         "additionalProperties": false,
         "description": "The piece fitted, with its base and lot, and on a replacement the one that came off. A failure_reason on the piece itself marks it as failed and fits nothing."
       },

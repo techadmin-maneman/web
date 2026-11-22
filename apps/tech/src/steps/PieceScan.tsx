@@ -156,6 +156,8 @@ export function Scanner(props: {
   cannotFit: ReactNode;
   onCode: (code: string) => void;
   onLook: () => void;
+  /** The piece has no label to read (docs/decisions/0291-pieces-without-labels.md). */
+  onNoLabel: () => void;
 }) {
   const [typing, setTyping] = useState(given(props.code));
   // Each read opens the camera afresh, so a label the check refuses can be followed by another.
@@ -185,6 +187,9 @@ export function Scanner(props: {
         >
           {copy.typeCode}
         </TextButton>
+        <TextButton className={styles.link} onClick={props.onNoLabel}>
+          {copy.noLabel}
+        </TextButton>
         {props.cannotFit}
       </div>
       {typed && <TypedCode code={props.code} onCode={props.onCode} />}
@@ -206,6 +211,24 @@ export function Scanner(props: {
       ) : (
         <LookedNote looked={props.looked} />
       )}
+    </div>
+  );
+}
+
+/**
+ * A piece with no label to read: the hair system picked from the kit, listed beneath, is what is fitted, and the label
+ * is made for it; Scan the label instead to read one after all.
+ */
+export function NoLabel(props: { readonly cannotFit: ReactNode; readonly onScan: () => void }) {
+  return (
+    <div className={styles.scanner}>
+      <p className={styles.note}>{copy.noLabelNote}</p>
+      <div className={styles.links}>
+        <TextButton className={styles.link} onClick={props.onScan}>
+          {copy.scanInstead}
+        </TextButton>
+        {props.cannotFit}
+      </div>
     </div>
   );
 }

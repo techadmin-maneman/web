@@ -9,3 +9,9 @@
 const PIECE_CODE_PATTERN = /^MM-[A-Z0-9]{2,6}-\d{2,8}-[A-Z]$/;
 
 export const isPieceCode = (code: string): boolean => PIECE_CODE_PATTERN.test(code);
+
+/**
+ * Whether a label is one we made for a piece fitted with none on it (src/domain/inventory/made-labels.ts,
+ * docs/decisions/0291-pieces-without-labels.md): NL in place of a product's three letters.
+ */
+export const isMadeLabel = (code: string): boolean => code.startsWith("MM-NL-");

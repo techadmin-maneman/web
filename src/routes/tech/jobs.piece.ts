@@ -2,7 +2,9 @@
 // later, or that they decided against it; on any other job that takes one, the piece fitted or the one that failed.
 // A hair system it names must be one of ours, since it comes out of the technician's kit
 // (src/domain/inventory/piece-use.ts). A label one of the kit's units carries names the hair system and its lot
-// itself, and an expired one is refused (docs/decisions/0163-pieces-scanned-from-the-kit.md).
+// itself, and an expired one is refused (docs/decisions/0163-pieces-scanned-from-the-kit.md). A piece with no label to
+// read is recorded under one made for it from the visit, the hair system it is picked from the kit
+// (docs/decisions/0291-pieces-without-labels.md), so a missing label never stops the fit.
 
 import { z } from "@hono/zod-openapi";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
@@ -11,6 +13,7 @@ import { decisionAtVisit } from "../../domain/visits/one-visit.ts";
 import { fitsToday } from "../../policy/one-visit.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
 import { isHairSystem } from "../../domain/inventory/hair-systems.ts";
+import { madeLabel } from "../../domain/inventory/made-labels.ts";
 import { kitUnit } from "../../domain/inventory/stock-units.ts";
 import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { technicianOf } from "../../http/technician-session.ts";
@@ -27,16 +30,30 @@ type PieceBody = z.infer<typeof PieceRequestSchema>;
  * whatever the step said; one that expired before the visit's day is refused.
  */
 async function asTheKitHoldsIt(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<PieceBody | null> {
-  if (fitsNothing(sent)) return sent;
+  if (fitsNothing(sent) || sent.piece_code === undefined || sent.no_label === true) return sent;
   const unit = await kitUnit(c.env.DB, technicianOf(c).technicianId, sent.piece_code);
   if (unit === null) return sent;
   if (unit.expiresOn !== null && unit.expiresOn < indiaDate(job.windowStart)) return null;
   return { ...sent, stock_code: unit.consumableCode, supplier_lot: sent.supplier_lot ?? unit.lotCode ?? undefined };
 }
 
+/**
+ * The piece's label: the one read; or, where the piece has none, one made from the visit, for a hair system picked
+ * from the kit. Refused, by its field, with neither label nor no_label, or with both, or no_label and nothing picked.
+ */
+async function labelledOf(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<PieceBody | { invalid: string[] }> {
+  if (fitsNothing(sent)) return sent;
+  if (sent.no_label !== true) return sent.piece_code === undefined ? { invalid: ["piece_code"] } : sent;
+  if (sent.piece_code !== undefined) return { invalid: ["piece_code"] };
+  if ((sent.stock_code ?? null) === null) return { invalid: ["stock_code"] };
+  return { ...sent, piece_code: await madeLabel(c.env.DB, job.id) };
+}
+
 /** The piece step's body for this job: a one visit's choice, or a piece fitted or failed where the job takes one. */
 export async function pieceBody(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<StepBody> {
-  const body = await asTheKitHoldsIt(c, job, sent);
+  const labelled = await labelledOf(c, job, sent);
+  if ("invalid" in labelled) return labelled;
+  const body = await asTheKitHoldsIt(c, job, labelled);
   if (body === null) return { invalid: ["piece_code"] };
   const stockCode = fitsNothing(body) ? null : (body.stock_code ?? null);
   if (stockCode !== null && !(await isHairSystem(c.env.DB, stockCode))) return { invalid: ["stock_code"] };

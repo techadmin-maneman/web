@@ -5,7 +5,8 @@
 //
 // The piece is the unit its label names, where the kit holds it, and that unit is fitted
 // (docs/decisions/0161-pieces-as-units.md). A label we never made takes a piece never labelled, or failing one, a unit,
-// which has then gone missing. A correction puts the units the visit took back in the kit. A piece that came off is
+// which has then gone missing. A piece with no label at all (docs/decisions/0291-pieces-without-labels.md) takes one the
+// same way, and it is fitted. A correction puts the units the visit took back in the kit. A piece that came off is
 // held in the kit as returned (src/domain/inventory/piece-returns.ts).
 
 import { useStillToRecord } from "../../policy/stock.ts";
@@ -30,15 +31,22 @@ interface PieceMove extends Taken {
 
 async function pieceMove(
   db: D1Database,
-  move: { readonly code: string; readonly quantity: number; readonly label: string | null; readonly jobId: string },
+  move: {
+    readonly code: string;
+    readonly quantity: number;
+    readonly label: string | null;
+    readonly noLabel: boolean;
+    readonly jobId: string;
+  },
   kit: string,
 ): Promise<PieceMove> {
   if (move.quantity < 0) {
-    const named = move.label === null ? null : [move.label];
+    const named = move.label === null || move.noLabel ? null : [move.label];
     const fitted = named === null ? null : await takenFrom(db, { code: move.code, place: kit, quantity: 1, named });
     if (fitted !== null) return { ...fitted, state: "fitted" };
     const taken = await takenFrom(db, { code: move.code, place: kit, quantity: -move.quantity, prefer: "unlabelled" });
-    return { units: taken?.units ?? [], takes: taken?.takes ?? [], state: "missing" };
+    // A label read but not the kit's is a unit gone missing; a piece with none to read is the one fitted.
+    return { units: taken?.units ?? [], takes: taken?.takes ?? [], state: move.noLabel ? "fitted" : "missing" };
   }
   const { results } = await db
     .prepare(
@@ -108,9 +116,11 @@ export async function recordPieceUse(
     return { lowered: false };
   }
   const label = pieceStepOf(body).fitted?.code ?? null;
+  const fittedBody = pieceBodyOf(body);
+  const noLabel = fittedBody !== null && !fitsNothing(fittedBody) && fittedBody.no_label === true;
   const moves = new Map<string, PieceMove>();
   for (const [stock, quantity] of owed) {
-    moves.set(stock, await pieceMove(db, { code: stock, quantity, label, jobId }, technicianId));
+    moves.set(stock, await pieceMove(db, { code: stock, quantity, label, noLabel, jobId }, technicianId));
   }
   const step = { jobId, technicianId, eventId: latest.id, kind: "piece", at } as const;
   const taken = await takenFromKit(db, step, owed, (stock) => moves.get(stock)?.takes ?? []);

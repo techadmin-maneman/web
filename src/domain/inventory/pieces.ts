@@ -92,6 +92,8 @@ export function pieceStepOf(body: unknown): PieceStep {
     failed.push({ code: oldPiece.piece_code, reason: oldPiece.failure_reason, field: "old_piece" });
   }
   const code = piece.piece_code;
+  // A label is always there once the step lands: read, or made for a piece with none (./made-labels.ts).
+  if (code === undefined) return { fitted: null, failed };
   const failure = piece.failure_reason ?? null;
   if (failure !== null) return { fitted: null, failed: [...failed, { code, reason: failure, field: "piece_code" }] };
   return { fitted: { code, base: piece.base ?? null, supplierLot: piece.supplier_lot ?? null }, failed };
@@ -119,7 +121,7 @@ export async function pieceLabelTaken(
   return null;
 }
 
-async function piecesLabelled(
+export async function piecesLabelled(
   db: D1Database,
   code: string,
 ): Promise<{ person_id: string | null; appointment_id: string | null }[]> {
