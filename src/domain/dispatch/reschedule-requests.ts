@@ -35,8 +35,9 @@ export async function askToReschedule(
 ): Promise<RescheduleAsked | "not_found" | "not_changeable"> {
   const visit = await db
     .prepare(
+      // A draft is no technician's yet, whoever it is with (src/domain/booking/allotment-lock.ts).
       `SELECT technician_id, ${statusIn("status", VISIT_LIVE)} AS live FROM appointments
-        WHERE id = ?1 AND deleted_at IS NULL`,
+        WHERE id = ?1 AND deleted_at IS NULL AND technician_draft = 0`,
     )
     .bind(input.appointmentId)
     .first<{ technician_id: string | null; live: number }>();
@@ -46,7 +47,8 @@ export async function askToReschedule(
     .prepare(
       `INSERT OR IGNORE INTO reschedule_requests (id, appointment_id, technician_id, reason, requested_at)
        SELECT ?1, a.id, ?3, ?4, ?5 FROM appointments a
-        WHERE a.id = ?2 AND a.technician_id = ?3 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_LIVE)}`,
+        WHERE a.id = ?2 AND a.technician_id = ?3 AND a.deleted_at IS NULL AND a.technician_draft = 0
+          AND ${statusIn("a.status", VISIT_LIVE)}`,
     )
     .bind(crypto.randomUUID(), input.appointmentId, input.technicianId, input.reason, input.now.toISOString())
     .run();

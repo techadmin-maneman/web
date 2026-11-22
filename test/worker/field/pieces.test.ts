@@ -161,6 +161,23 @@ describe("the label the technician scans", () => {
   });
 });
 
+describe("the label scanned on a draft", () => {
+  it("says whose it is for no job still a draft, no technician's until the evening's lock", async () => {
+    await fittedPieceStatement(env.DB, FITTED).run();
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE id = ?1").bind(JOB).run();
+    const cookie = `mm_tech=${await openTechnicianSession(env.DB, {
+      technicianId: IMRAN,
+      deviceId: "phone-abc-123",
+      label: null,
+      now: NOW,
+    })}`;
+    const answer = await request(tech, `/api/tech/pieces/lookup?code=MM-STD-4417-B&job=${JOB}`, {
+      headers: { Cookie: cookie },
+    });
+    expect(await answer.json()).toMatchObject({ belongs_to_this_job: false });
+  });
+});
+
 describe("GET /api/clients/:id/pieces", () => {
   it("reads the client's pieces from our records, with the reasons one may have failed for", async () => {
     await fittedPieceStatement(env.DB, FITTED).run();

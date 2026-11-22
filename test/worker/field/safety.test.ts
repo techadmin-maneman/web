@@ -55,6 +55,12 @@ describe("where the technician is on a visit", () => {
     expect((await sendPosition(job, reading(2))).status).toBe(404);
   });
 
+  it("is refused for a visit still a draft, no technician's until the evening's lock", async () => {
+    const job = await checkedIn();
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE id = ?1").bind(JOB).run();
+    expect((await sendPosition(job, reading(2))).status).toBe(404);
+  });
+
   it("is gone once the visit closes, and is refused after it", async () => {
     const job = await checkedIn();
     await job.workTo("outcome");
