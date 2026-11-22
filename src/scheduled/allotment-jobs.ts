@@ -1,14 +1,16 @@
 // The cron's part in who takes a visit (docs/decisions/0290-allotted-the-evening-before.md): each hour's re-plan of
-// one of the days ahead; in the half hour before a city's lock, its tomorrow re-planned and checked on Google; and the
-// evening's lock, which fixes it, just before the reminders that name the technician.
+// one of the days ahead; in the half hour before a city's lock, its tomorrow re-planned and checked on Google; the
+// evening's lock, which fixes it, just before the reminders that name the technician; and each night, the drive times
+// learned from the drives done.
 
 import { checkBeforeLock, lockDueDrafts, replanAhead } from "../domain/booking/allotment-lock.ts";
 import { takeOne } from "../domain/sign-in/rate-limit.ts";
 import { EVENING_DRIVES, eveningCheck } from "../domain/booking/evening-check.ts";
+import { learnDrives } from "../domain/booking/learn-drives.ts";
 import { createCallBudget } from "../lib/call-budget.ts";
 import { replanDay } from "../domain/booking/replan-day.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
-import type { CronContext } from "./cron.ts";
+import type { CronContext, CronJob } from "./cron.ts";
 
 /** The reminder hour, with the hours of the cities that set their own (src/domain/cities/city-rules.ts). */
 export async function hoursOf(db: D1Database, national: number): Promise<ReminderHours> {
@@ -82,3 +84,21 @@ export async function eveningCheckJob({ env, deps, inputs, config, log }: CronCo
   if (city !== null) log.info("evening_checked", { city });
   if (drives.ranOut()) log.warn("evening_drives_spent", { drives: EVENING_DRIVES });
 }
+
+/** Each night, every city's drive times learned afresh from the weeks of drives ops set. */
+export async function learnDrivesJob({ env, deps, log, inputs }: CronContext): Promise<void> {
+  const given = await inputs();
+  const learned = await learnDrives(env.DB, {
+    now: deps.now(),
+    weeks: given.driveLearning.weeks,
+    estimate: given.driveEstimate,
+    booking: given.bookingRules,
+  });
+  log.info("drives_learned", learned);
+}
+
+/** The allotment's hourly jobs, in the cron's table (./cron.ts): the re-plan, and the night's learning from 2 am. */
+export const ALLOTMENT_HOURLY: readonly CronJob[] = [
+  { name: "replan_drafts", needs: "nothing", every: 60, at: 20, run: replanDraftsJob },
+  { name: "learn_drives", needs: "nothing", every: 60, at: 37, slot: { hour: 2 }, run: learnDrivesJob },
+];

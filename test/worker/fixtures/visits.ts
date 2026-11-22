@@ -62,6 +62,26 @@ export function aCheckin(visit: { readonly id: string; readonly technicianId: st
   );
 }
 
+/** The technician's outcome closing the visit, as the phone sent it at `at`, landed and standing. */
+export function anOutcome(visit: { readonly id: string; readonly technicianId: string }, at: string) {
+  return writeRow(
+    "job_events",
+    {
+      id: crypto.randomUUID(),
+      appointment_id: visit.id,
+      event_id: crypto.randomUUID(),
+      technician_id: visit.technicianId,
+      kind: "outcome",
+      body: "{}",
+      occurred_at: at,
+      received_at: at,
+      superseded: 0,
+      updated_at: at,
+    },
+    {},
+  );
+}
+
 export async function aNoShow(
   visit: { readonly id: string; readonly technicianId: string },
   row: RowOf<"no_show_cases"> = {},

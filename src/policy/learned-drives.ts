@@ -1,11 +1,16 @@
 // Drive times learned from our own drives (docs/decisions/0294-learned-drive-times.md): a drive is the time from one
 // job's close to the same technician's next check-in that day, against what the estimate (./drive-estimate.ts) gave
 // for it. A drive over three times its estimate, or one that spans the day's break and took the break's length more
-// than its estimate, is left out, as an errand or a lunch. Each city's drives are grouped by weekday or weekend and the
+// than its estimate, is left out, as an errand or a lunch, and so is one across the technician's leave. Each city's drives are grouped by weekday or weekend and the
 // hour they set off in, and each group's middle drive, as a per cent of its estimate, is that hour's pace once enough
 // drives stand behind it; until then the estimate stands. Ops set how many, how far back, and whether to use them.
 
-import { weekdayOf } from "../lib/india-time.ts";
+import { MINUTE_MS } from "../lib/durations.ts";
+import type { Pin } from "../lib/geo.ts";
+import { indiaTime, weekdayOf } from "../lib/india-time.ts";
+import { minuteOf } from "./day-plan.ts";
+import { driveMinutes, type DriveEstimate } from "./drive-estimate.ts";
+import type { BookingRules } from "./start-times.ts";
 
 export const DRIVE_LEARNING_KEYS = ["min_drives", "weeks"] as const;
 export type DriveLearning = Readonly<Record<(typeof DRIVE_LEARNING_KEYS)[number], number>>;
@@ -40,6 +45,64 @@ export interface Observed {
 export function isClean(drive: Observed, breakMinutes: number): boolean {
   if (drive.took <= 0 || drive.estimate <= 0 || drive.took > 3 * drive.estimate) return false;
   return !(drive.overBreak && drive.took >= drive.estimate + breakMinutes);
+}
+
+/** A job as it was done: whose, its India date, when its technician checked in and closed it, and its client's pin. */
+export interface DoneJob {
+  readonly technicianId: string;
+  readonly date: string;
+  readonly arrived: string | null;
+  readonly closed: string | null;
+  readonly pin: Pin | null;
+}
+
+/** Part of a technician's day away, in minutes from midnight; a day away whole has no jobs to drive between. */
+export interface Away {
+  readonly technicianId: string;
+  readonly date: string;
+  readonly from: number;
+  readonly to: number;
+}
+
+/** India's minute of the day an instant falls in. */
+const minuteAt = (instant: string): number => minuteOf(indiaTime(new Date(instant)));
+
+/**
+ * Each drive between two of a technician's jobs that follow each other on a day, `jobs` in time order for each
+ * technician: from the one's close to the other's check-in, with what the estimate gave for it at the hour it set off.
+ * None where either end has no pin or no time, nor across leave.
+ */
+export function drivesOf(
+  jobs: readonly DoneJob[],
+  given: {
+    readonly estimate: DriveEstimate;
+    readonly booking: Pick<BookingRules, "break_from" | "break_to">;
+    readonly away: readonly Away[];
+  },
+): Observed[] {
+  const drives: Observed[] = [];
+  jobs.forEach((next, index) => {
+    const job = index === 0 ? undefined : jobs[index - 1];
+    if (job?.technicianId !== next.technicianId || job.date !== next.date) return;
+    if (job.closed === null || next.arrived === null || job.pin === null || next.pin === null) return;
+    const took = Math.round((Date.parse(next.arrived) - Date.parse(job.closed)) / MINUTE_MS);
+    const setsOff = minuteAt(job.closed);
+    const arrives = setsOff + took;
+    const awayThen = given.away.some(
+      (away) =>
+        away.technicianId === job.technicianId && away.date === job.date && away.from < arrives && away.to > setsOff,
+    );
+    if (took <= 0 || awayThen) return;
+    const hour = Math.floor(setsOff / 60);
+    drives.push({
+      dayKind: dayKindOf(job.date),
+      hour,
+      estimate: driveMinutes(job.pin, next.pin, hour, given.estimate),
+      took,
+      overBreak: setsOff < given.booking.break_to * 60 && arrives > given.booking.break_from * 60,
+    });
+  });
+  return drives;
 }
 
 /** The middle of the figures, the mean of the middle two where they are even; none for none. */
