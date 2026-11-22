@@ -12612,6 +12612,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reports/driving": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Drives between jobs, planned against taken, by technician and city, and the drive times learned */
+        get: {
+            parameters: {
+                query?: {
+                    weeks?: "1" | "4" | "8";
+                    by?: "day" | "week";
+                    /** @description One city to narrow to, within those the caller's grants reach; every city they reach when left out. */
+                    city?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The report */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Driving"];
+                    };
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/waitlist": {
         parameters: {
             query?: never;
@@ -17853,7 +17930,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+                    name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "drive_times" | "drive_learning" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
                 };
                 cookie?: never;
             };
@@ -31189,6 +31266,56 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        Driving: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            by_technician: {
+                /**
+                 * Format: date
+                 * @description The day, or the Monday its week starts on.
+                 */
+                period: string;
+                drives: number;
+                /** @description What booking plans for these drives at today's pace. */
+                planned_minutes: number;
+                /** @description What they took, from each close to the next check-in. */
+                actual_minutes: number;
+                technician_id: string;
+                name: string;
+                city: string;
+            }[];
+            by_city: {
+                /**
+                 * Format: date
+                 * @description The day, or the Monday its week starts on.
+                 */
+                period: string;
+                drives: number;
+                /** @description What booking plans for these drives at today's pace. */
+                planned_minutes: number;
+                /** @description What they took, from each close to the next check-in. */
+                actual_minutes: number;
+                city: string;
+            }[];
+            factors: {
+                city: string;
+                /** @enum {string} */
+                day_kind: "weekday" | "weekend";
+                hour: number;
+                /** @description The middle drive's time, as a per cent of its estimate. */
+                factor_pct: number;
+                drives: number;
+                /** @description Whether booking plans with it now. */
+                in_use: boolean;
+            }[];
+            learning: {
+                /** @enum {string} */
+                use: "learned" | "estimate";
+                min_drives: number;
+            };
+        };
         PincodeLaunch: {
             confirm: boolean;
             /**
@@ -32601,7 +32728,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "drive_times" | "drive_learning" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;
@@ -32634,7 +32761,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
+            name: "checkin_radius_m" | "checkin_radius_approximate_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "task_lapse_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "booking_rules" | "same_day_booking" | "working_hours" | "drive_estimate" | "technician_radius_km" | "allotment" | "steering" | "drive_times" | "drive_learning" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "guarantee_days" | "ratings" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "leave_notice_min" | "day_ahead_hour" | "refused_messages" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_own_approval" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;

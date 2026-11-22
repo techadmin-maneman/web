@@ -105,6 +105,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
 - [discount_codes](#discount_codes): The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
+- [drive_factors](#drive_factors): 
 - [erasure_follow_ups](#erasure_follow_ups): Each erasure Care still finish by hand in the CRM, which the Tasks board lists until they close it (ADR 0066).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [failure_reasons](#failure_reasons): Why a hair system failed, as ops set them, one they took off kept as retired; none means the committed list (ADR 0273).
@@ -1351,6 +1352,21 @@ Indexes:
 - `dispatch_moves_untold`: on (`now_start`), where `fsm_write_state = 'written' AND told_at IS NULL`
 
 Triggers: `dispatch_moves_board_added`, `dispatch_moves_board_changed`.
+
+## drive_factors
+
+
+
+Made by `0231_drive_factors.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `city` | TEXT | no |  | primary key |  |
+| `day_kind` | TEXT | no |  | primary key |  |
+| `hour` | INTEGER | no |  | primary key |  |
+| `factor_pct` | INTEGER | no |  |  |  |
+| `drives` | INTEGER | no |  |  |  |
+| `learned_at` | TEXT | no |  |  |  |
 
 ## erasure_follow_ups
 

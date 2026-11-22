@@ -28,6 +28,7 @@ import { registerOpsCredits } from "./credits.ts";
 import { registerOpsCustomOrders } from "./custom-orders.ts";
 import { registerOpsDemandEvents } from "./demand-events.ts";
 import { registerOpsDiscountCodes } from "./discount-codes.ts";
+import { registerOpsDriving } from "./driving.ts";
 import { registerOpsDispatchDay } from "./dispatch-day.ts";
 import { registerOpsDispatchMoves } from "./dispatch-moves.ts";
 import { registerOpsDispatch } from "./dispatch.ts";
@@ -182,6 +183,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsWords,
   registerOpsGrievances,
   registerOpsActivity,
+  registerOpsDriving,
   registerOpsWaitlist,
   registerOpsDispatch,
   registerOpsDispatchDay,

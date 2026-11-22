@@ -8,11 +8,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { learnDrives } from "../../../src/domain/booking/learn-drives.ts";
 import { loadDayPlans } from "../../../src/domain/booking/day-plans.ts";
 import { jobsOn } from "../../../src/domain/field/tech-jobs.ts";
-import { DRIVE_ESTIMATE, driveMinutes } from "../../../src/policy/drive-estimate.ts";
+import { atPace, DRIVE_ESTIMATE, driveMinutes } from "../../../src/policy/drive-estimate.ts";
 import { DRIVE_LEARNING, DRIVE_TIMES } from "../../../src/policy/learned-drives.ts";
 import { BOOKING_RULES, WORKING_HOURS } from "../../../src/policy/start-times.ts";
 import { aCheckin, anAddress, anOutcome, aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
-import { captureLogs, markDatabase, NOW } from "../helpers.ts";
+import { captureLogs, markDatabase, NOW, request } from "../helpers.ts";
+import { enforce, listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
 
 const TECH = "tech-learning";
 const HERE = { lat: 28.45, lng: 77.05 };
@@ -69,7 +70,7 @@ beforeEach(async () => {
   await markDatabase();
   captureLogs();
   await aTechnician({ id: TECH });
-  const [here, there] = [(await aPerson()).id, (await aPerson()).id];
+  const [here, there] = [(await aPerson()).id ?? "", (await aPerson()).id ?? ""];
   await anAddress(here, HERE);
   await anAddress(there, THERE);
   clients = { here, there };
@@ -154,5 +155,55 @@ describe("a learned slot", () => {
     };
     await aLearnedSlot("weekday", 12, 200, 20);
     expect(await nextDrive("learned")).toBe(2 * ((await nextDrive("estimate")) ?? 0));
+  });
+});
+
+describe("the Driving report", () => {
+  const OPS = "ops@maneman.in";
+  const report = (query: string, email = OPS) => request(opsAs(person(email)), `/api/reports/driving?${query}`);
+
+  beforeEach(async () => {
+    // Tuesday and Wednesday a fifth and a half over the estimate; Thursday four times it, which is not counted.
+    await aDayOfTwo("2026-09-15", Math.round(ESTIMATED * 1.2));
+    await aDayOfTwo("2026-09-16", Math.round(ESTIMATED * 1.5));
+    await aDayOfTwo("2026-09-17", ESTIMATED * 4);
+    await aLearnedSlot("weekday", 10, 150, 20);
+    await aLearnedSlot("weekend", 10, 90, 3);
+    await listStaff(OPS, ["operations:view:national"]);
+  });
+
+  it("sets each technician's and city's drives planned at today's pace against what they took, by week", async () => {
+    const answer = await report("weeks=4&by=week");
+    expect(answer.status).toBe(200);
+    const body = await answer.json();
+    const planned = 2 * atPace(ESTIMATED, 150, DRIVE_ESTIMATE);
+    const taken = Math.round(ESTIMATED * 1.2) + Math.round(ESTIMATED * 1.5);
+    const week = { period: "2026-09-14", drives: 2, planned_minutes: planned, actual_minutes: taken };
+    expect(body).toEqual({
+      from: "2026-08-24",
+      to: "2026-09-20",
+      by_technician: [{ ...week, technician_id: TECH, name: "Imran Qureshi", city: "Gurgaon" }],
+      by_city: [{ ...week, city: "Gurgaon" }],
+      factors: [
+        { city: "Gurgaon", day_kind: "weekday", hour: 10, factor_pct: 150, drives: 20, in_use: true },
+        { city: "Gurgaon", day_kind: "weekend", hour: 10, factor_pct: 90, drives: 3, in_use: false },
+      ],
+      learning: { use: "learned", min_drives: 20 },
+    });
+  });
+
+  it("counts them by day, the latest first", async () => {
+    const body = await (await report("weeks=1&by=day")).json<{ by_city: { period: string; drives: number }[] }>();
+    expect(body.by_city.map((row) => [row.period, row.drives])).toEqual([
+      ["2026-09-16", 1],
+      ["2026-09-15", 1],
+    ]);
+  });
+
+  it("is for those who see Operations everywhere, once the Staff list is enforced", async () => {
+    await enforce();
+    await listStaff("gurgaon@maneman.in", ["operations:view:city:Gurgaon"]);
+    expect((await report("weeks=4")).status).toBe(200);
+    expect((await report("weeks=4", "gurgaon@maneman.in")).status).toBe(403);
   });
 });

@@ -8,12 +8,13 @@ import type { Pin } from "../../lib/geo.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { minuteOf } from "../../policy/day-plan.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
-import { drivesOf, learn, type Away, type DoneJob } from "../../policy/learned-drives.ts";
+import { drivesOf, learn, type Away, type DoneJob, type DriveDone } from "../../policy/learned-drives.ts";
 import type { BookingRules } from "../../policy/start-times.ts";
 import { PIN, VISIT_PLACE } from "./day-plans.ts";
 
 interface JobRow {
   readonly technician_id: string;
+  readonly name: string;
   readonly city: string;
   readonly window_start: string;
   readonly lat: number | null;
@@ -54,24 +55,29 @@ function awayOf(rows: readonly LeaveRow[], from: string, to: string): Away[] {
   });
 }
 
-/** Learns each city's drive times from the weeks before today, and keeps them; how many cities and drives. */
-export async function learnDrives(
+/** A drive between two of a technician's jobs, with their name and city. */
+export interface CityDrive extends DriveDone {
+  readonly name: string;
+  readonly city: string;
+}
+
+/** The drives between each technician's jobs on India's dates from `from` up to `to`, `to` not among them. */
+export async function drivesDone(
   db: D1Database,
   given: {
-    readonly now: Date;
-    readonly weeks: number;
+    readonly from: string;
+    readonly to: string;
     readonly estimate: DriveEstimate;
     readonly booking: BookingRules;
   },
-): Promise<{ cities: number; drives: number }> {
-  const to = indiaDate(given.now);
-  const from = addDays(to, -7 * given.weeks);
+): Promise<CityDrive[]> {
+  const { from, to } = given;
   const [jobs, leave] = await db.batch([
     // A job is where its client is as booking plans it; the first check-in that passed is its arrival, and its last
     // outcome standing its close.
     db
       .prepare(
-        `SELECT a.technician_id, t.city, a.window_start, ${PIN},
+        `SELECT a.technician_id, t.name, t.city, a.window_start, ${PIN},
            (SELECT MIN(c.at) FROM checkins c
              WHERE c.appointment_id = a.id AND c.technician_id = a.technician_id AND c.passed = 1) AS arrived,
            (SELECT MAX(e.occurred_at) FROM job_events e
@@ -98,10 +104,29 @@ export async function learnDrives(
     closed: row.closed,
     pin: pinOf(row),
   });
-  const cities = [...new Set(rows.map((row) => row.city))];
+  const technicians = new Map(rows.map((row) => [row.technician_id, row]));
+  return drivesOf(rows.map(done), { ...given, away }).map((drive) => {
+    const technician = technicians.get(drive.technicianId);
+    return { ...drive, name: technician?.name ?? "", city: technician?.city ?? "" };
+  });
+}
+
+/** Learns each city's drive times from the weeks before today, and keeps them; how many cities and drives. */
+export async function learnDrives(
+  db: D1Database,
+  given: {
+    readonly now: Date;
+    readonly weeks: number;
+    readonly estimate: DriveEstimate;
+    readonly booking: BookingRules;
+  },
+): Promise<{ cities: number; drives: number }> {
+  const to = indiaDate(given.now);
+  const drives = await drivesDone(db, { ...given, from: addDays(to, -7 * given.weeks), to });
+  const cities = [...new Set(drives.map((drive) => drive.city))];
   const learned = cities.flatMap((city) => {
-    const drives = drivesOf(rows.filter((row) => row.city === city).map(done), { ...given, away });
-    return learn(drives, given.booking.break).map((slot) => ({ city, ...slot }));
+    const own = drives.filter((drive) => drive.city === city);
+    return learn(own, given.booking.break).map((slot) => ({ city, ...slot }));
   });
   // Written in two statements however many cities there are, the night's run inside the cron's budget.
   await db.batch([

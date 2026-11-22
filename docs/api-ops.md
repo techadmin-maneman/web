@@ -16982,6 +16982,91 @@ The audit log, newest first: who did what, on which record, when
 }
 ```
 
+### GET /api/reports/driving
+
+Drives between jobs, planned against taken, by technician and city, and the drive times learned
+
+**200**: The report
+
+```json
+{
+  "$ref": "#/components/schemas/Driving"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/waitlist
 
 Who is waiting in the caller's cities, by pincode, the longest wait first
@@ -52031,6 +52116,174 @@ Request body:
 }
 ```
 
+### Driving
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "to": {
+      "type": "string",
+      "format": "date"
+    },
+    "by_technician": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "format": "date",
+            "description": "The day, or the Monday its week starts on."
+          },
+          "drives": {
+            "type": "integer"
+          },
+          "planned_minutes": {
+            "type": "integer",
+            "description": "What booking plans for these drives at today's pace."
+          },
+          "actual_minutes": {
+            "type": "integer",
+            "description": "What they took, from each close to the next check-in."
+          },
+          "technician_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "drives",
+          "planned_minutes",
+          "actual_minutes",
+          "technician_id",
+          "name",
+          "city"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "by_city": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "format": "date",
+            "description": "The day, or the Monday its week starts on."
+          },
+          "drives": {
+            "type": "integer"
+          },
+          "planned_minutes": {
+            "type": "integer",
+            "description": "What booking plans for these drives at today's pace."
+          },
+          "actual_minutes": {
+            "type": "integer",
+            "description": "What they took, from each close to the next check-in."
+          },
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "drives",
+          "planned_minutes",
+          "actual_minutes",
+          "city"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "factors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "day_kind": {
+            "type": "string",
+            "enum": [
+              "weekday",
+              "weekend"
+            ]
+          },
+          "hour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          },
+          "factor_pct": {
+            "type": "integer",
+            "description": "The middle drive's time, as a per cent of its estimate."
+          },
+          "drives": {
+            "type": "integer"
+          },
+          "in_use": {
+            "type": "boolean",
+            "description": "Whether booking plans with it now."
+          }
+        },
+        "required": [
+          "city",
+          "day_kind",
+          "hour",
+          "factor_pct",
+          "drives",
+          "in_use"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "learning": {
+      "type": "object",
+      "properties": {
+        "use": {
+          "type": "string",
+          "enum": [
+            "learned",
+            "estimate"
+          ]
+        },
+        "min_drives": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "use",
+        "min_drives"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "by_technician",
+    "by_city",
+    "factors",
+    "learning"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### PincodeLaunch
 
 ```json
@@ -57866,6 +58119,8 @@ Request body:
         "technician_radius_km",
         "allotment",
         "steering",
+        "drive_times",
+        "drive_learning",
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",
@@ -58070,6 +58325,8 @@ Request body:
         "technician_radius_km",
         "allotment",
         "steering",
+        "drive_times",
+        "drive_learning",
         "payment_links",
         "arrival_notice_min",
         "move_proposal_hours",

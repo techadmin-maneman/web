@@ -81,9 +81,10 @@ describe("the drives of a day", () => {
   ];
 
   it("run from each job's close to the next one's check-in, against the estimate at the hour they set off in", () => {
+    const day = { technicianId: "imran", date: "2026-10-21", dayKind: "weekday" };
     expect(drivesOf(DAY, given)).toEqual([
-      { dayKind: "weekday", hour: 10, estimate: 25, took: 40, overBreak: false },
-      { dayKind: "weekday", hour: 13, estimate: 25, took: 75, overBreak: true },
+      { ...day, hour: 10, estimate: 25, took: 40, overBreak: false },
+      { ...day, hour: 13, estimate: 25, took: 75, overBreak: true },
     ]);
   });
 

@@ -64,6 +64,12 @@ export interface Away {
   readonly to: number;
 }
 
+/** A drive between two of a technician's jobs, on its India date. */
+export interface DriveDone extends Observed {
+  readonly technicianId: string;
+  readonly date: string;
+}
+
 /** India's minute of the day an instant falls in. */
 const minuteAt = (instant: string): number => minuteOf(indiaTime(new Date(instant)));
 
@@ -79,8 +85,8 @@ export function drivesOf(
     readonly booking: Pick<BookingRules, "break_from" | "break_to">;
     readonly away: readonly Away[];
   },
-): Observed[] {
-  const drives: Observed[] = [];
+): DriveDone[] {
+  const drives: DriveDone[] = [];
   jobs.forEach((next, index) => {
     const job = index === 0 ? undefined : jobs[index - 1];
     if (job?.technicianId !== next.technicianId || job.date !== next.date) return;
@@ -95,6 +101,8 @@ export function drivesOf(
     if (took <= 0 || awayThen) return;
     const hour = Math.floor(setsOff / 60);
     drives.push({
+      technicianId: job.technicianId,
+      date: job.date,
       dayKind: dayKindOf(job.date),
       hour,
       estimate: driveMinutes(job.pin, next.pin, hour, given.estimate),
