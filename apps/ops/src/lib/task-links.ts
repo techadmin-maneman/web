@@ -15,7 +15,6 @@ const CLIENT_TAB: Partial<Record<Group, ClientTab>> = {
   replacement_order: "pieces",
   made_to_order_ask: "pieces",
   custom_order_to_send: "pieces",
-  custom_piece_to_fit: "pieces",
   draft_invoice: "payments",
   payment_owed: "payments",
   payment_to_refund: "payments",

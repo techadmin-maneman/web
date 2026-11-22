@@ -8,10 +8,11 @@ import type { VisitType } from "../../config/visit-types.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { liveVisitOf, type LiveVisit } from "./availability.ts";
+import { BOOKING_LEASE_MS } from "./bookings.ts";
 import { giveBack } from "./give-back.ts";
-import { graceEnds } from "./hold-stages.ts";
+import { graceEnds, heldOnLink } from "./hold-stages.ts";
 
-/** A booking held while its payment link is still open. */
+/** A booking held on its payment link. */
 export interface HeldBooking {
   readonly holdId: string;
   readonly type: VisitType;
@@ -20,9 +21,12 @@ export interface HeldBooking {
   readonly startsAt: string | null;
   /** What the client pays, in paise, GST included. */
   readonly amount: number;
-  readonly url: string;
+  /** Its link; null while it is still being made. */
+  readonly url: string | null;
   /** When it is held until, as the client is told: a payment's grace past it is ours, never shown. */
   readonly openUntil: string;
+  /** Paid, and being booked: it has no link to send, and cannot be let go. */
+  readonly paid: boolean;
 }
 
 type HeldRow = {
@@ -31,13 +35,10 @@ type HeldRow = {
   date: string;
   starts_at: string | null;
   amount: number;
-  payment_link_url: string;
+  payment_link_url: string | null;
   open_until: string;
+  paid: number;
 };
-
-/** Held, paid by a link that was made, not yet paid, and open still at `?2`. */
-const OPEN = `h.state = 'held' AND h.pay_by_link = 1 AND h.confirmed_at IS NULL AND h.payment_link_url IS NOT NULL
-  AND ${graceEnds("h")} > ?2`;
 
 const heldOf = (row: HeldRow): HeldBooking => ({
   holdId: row.id,
@@ -47,9 +48,13 @@ const heldOf = (row: HeldRow): HeldBooking => ({
   amount: row.amount,
   url: row.payment_link_url,
   openUntil: row.open_until,
+  paid: row.paid === 1,
 });
 
-/** The client's bookings waiting on their link at `now`, soonest first; of one kind alone where `type` is given. */
+/**
+ * The client's bookings held on their link at `now`, soonest first; of one kind alone where `type` is given. Read as
+ * the refusal of a second of its kind reads them, so what refuses a booking is always among them.
+ */
 export async function heldBookingsOf(
   db: D1Database,
   personId: string,
@@ -58,15 +63,24 @@ export async function heldBookingsOf(
 ): Promise<HeldBooking[]> {
   const { results } = await db
     .prepare(
-      `SELECT h.id, h.type, h.date, h.starts_at, h.amount, h.payment_link_url, h.expires_at AS open_until
+      `SELECT h.id, h.type, h.date, h.starts_at, h.amount, h.payment_link_url, h.expires_at AS open_until,
+         (h.confirmed_at IS NOT NULL OR h.razorpay_order_id IS NOT NULL) AS paid
        FROM slot_holds h JOIN people pe ON pe.id = h.person_id
-       WHERE h.person_id = ?1 AND ${OPEN} AND (?3 IS NULL OR h.type = ?3) AND pe.erased_at IS NULL
+       WHERE h.person_id = ?1 AND ${heldOnLink("h", "?2")} AND (?3 IS NULL OR h.type = ?3) AND pe.erased_at IS NULL
        ORDER BY h.date, h.starts_at`,
     )
     .bind(personId, now.toISOString(), type)
     .all<HeldRow>();
   return results.map(heldOf);
 }
+
+/** The client's held bookings still to pay, with their link: what their app asks them to pay. */
+export async function heldToPayOf(db: D1Database, personId: string, now: Date): Promise<HeldToPay[]> {
+  return (await heldBookingsOf(db, personId, now)).filter((held): held is HeldToPay => !held.paid && held.url !== null);
+}
+
+/** A held booking still to pay, by its link. */
+type HeldToPay = HeldBooking & { readonly url: string };
 
 /** The client a booking held on its link is for; null for no such hold. */
 export async function heldBookingPerson(db: D1Database, holdId: string): Promise<string | null> {
@@ -79,7 +93,8 @@ export async function heldBookingPerson(db: D1Database, holdId: string): Promise
 
 /** What stands in the way of booking the client another visit of a kind: one still to come, or one held on its link. */
 export interface InTheWay {
-  readonly visit: LiveVisit | null;
+  /** The visit still to come, of its own kind: a one visit is refused by a consultation still to come too. */
+  readonly visit: (LiveVisit & { readonly kind: VisitType }) | null;
   readonly held: readonly HeldBooking[];
 }
 
@@ -94,7 +109,8 @@ export async function inTheWay(
     oneVisit ? liveVisitOf(db, personId, { type: "consultation", now }) : null,
     heldBookingsOf(db, personId, now, kind),
   ]);
-  return { visit: visit ?? consultation, held };
+  if (visit !== null) return { visit: { ...visit, kind }, held };
+  return { visit: consultation === null ? null : { ...consultation, kind: "consultation" }, held };
 }
 
 /** What sending a held booking's link again came to. */
@@ -139,12 +155,28 @@ export async function resendHeldLink(
 }
 
 /** What letting a held booking go came to. */
-export type LetGo = "let_go" | "not_found" | "closed";
+export type LetGo = "let_go" | "not_found" | "closed" | "unavailable";
 
 /**
- * Lets a booking held on its link go, its time freed, as ops ask: its link is cancelled first, so it takes no
- * payment after; one Razorpay will not cancel (paid or lapsed that moment) is let go all the same, and a payment that
- * came in time is refunded by the give-back, once.
+ * Takes the hold's booking lease (bookings.ts confirmBooking) while it is let go, so a payment landing that moment
+ * waits rather than books it; only for a hold nothing is paid on yet and no try is booking.
+ */
+async function leaseToLetGo(db: D1Database, holdId: string, now: Date): Promise<boolean> {
+  const taken = await db
+    .prepare(
+      `UPDATE slot_holds SET booking_until = ?2
+       WHERE id = ?1 AND pay_by_link = 1 AND state = 'held' AND confirmed_at IS NULL AND razorpay_order_id IS NULL
+         AND (booking_until IS NULL OR booking_until <= ?3) RETURNING id`,
+    )
+    .bind(holdId, new Date(now.getTime() + BOOKING_LEASE_MS).toISOString(), now.toISOString())
+    .first();
+  return taken !== null;
+}
+
+/**
+ * Lets an unpaid booking held on its link go, its time freed, as ops ask. Its link is cancelled first, under the
+ * booking lease: Razorpay will not cancel a link once paid, so a cancelled one takes no payment after, and nothing is
+ * refunded. One paid, being booked, or whose link Razorpay will not cancel is kept, its link open.
  */
 export async function letHeldBookingGo(
   db: D1Database,
@@ -153,20 +185,25 @@ export async function letHeldBookingGo(
   written: { readonly now: Date; readonly reason: string; readonly alongside: readonly D1PreparedStatement[] },
 ): Promise<LetGo> {
   const hold = await db
-    .prepare("SELECT state, payment_link_id FROM slot_holds WHERE id = ?1 AND pay_by_link = 1")
+    .prepare("SELECT payment_link_id FROM slot_holds WHERE id = ?1 AND pay_by_link = 1")
     .bind(holdId)
-    .first<{ state: string; payment_link_id: string | null }>();
+    .first<{ payment_link_id: string | null }>();
   if (hold === null) return "not_found";
-  if (hold.state !== "held") return "closed";
-  if (hold.payment_link_id !== null) {
-    try {
-      await deps.payments.cancelPaymentLink(hold.payment_link_id);
-    } catch (error) {
-      deps.log.warn("hold_link_not_cancelled", { hold_id: holdId, reason: failureReason(error) });
+  if (!(await leaseToLetGo(db, holdId, written.now))) return "closed";
+  try {
+    if (hold.payment_link_id !== null) {
+      try {
+        await deps.payments.cancelPaymentLink(hold.payment_link_id);
+      } catch (error) {
+        deps.log.warn("hold_link_not_cancelled", { hold_id: holdId, reason: failureReason(error) });
+        return "unavailable";
+      }
     }
+    const given = await giveBack({ db, payments: deps.payments, now: written.now }, holdId, written.reason, {
+      alongside: written.alongside,
+    });
+    return given.kind === "booked" ? "closed" : "let_go";
+  } finally {
+    await db.prepare("UPDATE slot_holds SET booking_until = NULL WHERE id = ?1").bind(holdId).run();
   }
-  const given = await giveBack({ db, payments: deps.payments, now: written.now }, holdId, written.reason, {
-    alongside: written.alongside,
-  });
-  return given.kind === "booked" ? "closed" : "let_go";
 }

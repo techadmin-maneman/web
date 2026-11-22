@@ -1,7 +1,7 @@
-// A task done by booking the client a visit: a consultation asked for, a first fit to book, a replacement due, and a
-// first fit or replacement left partly done, booked again free (src/policy/tasks.ts). The row opens the panel the
-// client's page books from, started from what the task holds; the task leaves the board once the visit is booked, and
-// stays while a payment link for it waits to be paid.
+// A task done by booking the client a visit: a consultation asked for, a first fit to book, a replacement due, a custom
+// piece arrived, and a first fit or replacement left partly done, booked again free (src/policy/tasks.ts). The row
+// opens the panel the client's page books from, started from what the task holds; the task leaves the board once the
+// visit is booked, and stays while a payment link for it waits to be paid.
 
 import { Button, RowButton } from "@maneman/ui/Button";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
@@ -37,6 +37,8 @@ function prefillOf(task: Task): Prefill | null {
     return { choice: "first_fit", ...(isWindow(facts.fit_window) ? { window: facts.fit_window } : {}) };
   }
   if (facts.group === "replacement_order" || facts.group === "recall_call") return { choice: "replacement" };
+  // A custom piece arrived: the fit it is fitted at.
+  if (facts.group === "custom_piece_to_fit") return { choice: facts.fit };
   // A first fit or replacement left partly done is made good, free.
   if (facts.group === "partial_visit" && (facts.kind === "first_fit" || facts.kind === "replacement")) {
     return { choice: facts.kind, covers: task.id };

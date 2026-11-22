@@ -13,6 +13,13 @@ export type HoldState = "held" | "booked" | "released";
 export const graceEnds = (hold: string): string =>
   `strftime('%Y-%m-%dT%H:%M:%fZ', ${hold}.expires_at, '+' || COALESCE(${hold}.grace_seconds, ${String(PAYMENT_GRACE_SECONDS)}) || ' seconds')`;
 
+/**
+ * A booking ops made that waits on its payment link, paid or not, until its grace is over: what refuses the client a
+ * second of its kind (visit-booking.ts), and what ops are shown for it. `now` is the time's parameter.
+ */
+export const heldOnLink = (hold: string, now: string): string =>
+  `${hold}.pay_by_link = 1 AND ${hold}.state = 'held' AND ${graceEnds(hold)} > ${now}`;
+
 /** graceEnds, for a hold already read: the last moment a payment for it counts as made in time. */
 export function graceEndOf(hold: { readonly expires_at: string; readonly grace_seconds: number | null }): Date {
   const graceSeconds = hold.grace_seconds ?? PAYMENT_GRACE_SECONDS;

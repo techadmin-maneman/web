@@ -78,8 +78,8 @@ const ORDER_SQL = `SELECT k.id, k.number, k.person_id, k.product, k.base_width_i
     k.grey_percent, k.density_percent, k.wave, k.note, k.supplier_id, k.supplier_price, s.currency, k.amount,
     k.promised_on, k.state, k.short_url, k.link_sent_at, k.paid_at, o.number AS po_number, o.id AS po_id,
     o.state AS po_state, k.refunded_at, k.refund_reason, k.raised_at,
-    (SELECT COALESCE(sp.name, u.place) FROM stock_units u INDEXED BY stock_units_reserved
-       LEFT JOIN stock_places sp ON sp.id = u.place
+    (SELECT COALESCE(sp.name, t.name, u.place) FROM stock_units u INDEXED BY stock_units_reserved
+       LEFT JOIN stock_places sp ON sp.id = u.place LEFT JOIN technicians t ON t.id = u.place
       WHERE u.custom_order_id = k.id AND u.state IN ('held', 'in_transit') LIMIT 1) AS piece_at
   FROM custom_orders k JOIN suppliers s ON s.id = k.supplier_id LEFT JOIN purchase_orders o ON o.id = k.po_id`;
 

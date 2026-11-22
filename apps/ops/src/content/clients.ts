@@ -389,6 +389,7 @@ export const clients = {
       inTheWay: {
         visit: (kind: string, when: string) => `A ${kind} is booked for ${when}.`,
         held: (kind: string, when: string, until: string) => `A ${kind} for ${when} is held until ${until}, unpaid.`,
+        paid: (kind: string, when: string) => `A ${kind} for ${when} is paid and being booked.`,
         letGo: "Let it go",
         lettingGo: "Letting go…",
         letGone: "Let go. Book again.",
@@ -396,6 +397,7 @@ export const clients = {
           hold_expired: "That booking was paid, lapsed or let go already.",
           not_permitted: "Your access doesn’t include this. Ask an admin.",
           not_found: "That booking no longer exists.",
+          unavailable: "Razorpay didn’t answer, so it’s still held. Try again in a minute.",
           offline: "You’re offline. Reconnect and try again.",
           unknown: "That didn’t work. Try again.",
         },

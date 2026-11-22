@@ -30,18 +30,24 @@ const HeldSchema = z
     date: z.iso.date(),
     starts_at: z.iso.datetime().nullable(),
     amount: z.number().int().openapi({ description: "What the client pays, in paise, GST included." }),
-    url: z.string().openapi({ description: "The link to pay by." }),
+    url: z.string().nullable().openapi({ description: "The link to pay by; null while it is still being made." }),
     open_until: z.string().openapi({ description: "When it is held until; then its time goes back." }),
+    paid: z.boolean().openapi({ description: "Paid and being booked: no link to send, and it cannot be let go." }),
   })
   .strict();
 
 const HeldBookingsSchema = z
   .object({
     visit: z
-      .object({ date: z.iso.date(), window: z.enum(BOOKING_WINDOWS), starts_at: z.iso.datetime().nullable() })
+      .object({
+        kind: z.enum(VISIT_TYPES).openapi({ description: "Its kind: a consultation, where a one visit was asked." }),
+        date: z.iso.date(),
+        window: z.enum(BOOKING_WINDOWS),
+        starts_at: z.iso.datetime().nullable(),
+      })
       .strict()
       .nullable()
-      .openapi({ description: "A visit of the kind asked still to come, which a second would double; null for none." }),
+      .openapi({ description: "A visit still to come that a second would double; null for none." }),
     held: z.array(HeldSchema).openapi({ description: "Bookings held on their link, soonest first." }),
   })
   .openapi("OpsHeldBookings");
@@ -54,6 +60,7 @@ const heldBody = (held: HeldBooking) => ({
   amount: held.amount,
   url: held.url,
   open_until: held.openUntil,
+  paid: held.paid,
 });
 
 const listRoute = opsRoute({
@@ -108,7 +115,8 @@ const letGoRoute = opsRoute({
   responses: {
     204: { description: "Let go: its link cancelled and its time freed" },
     404: errorResponse("not_found: no such held booking within the caller's places"),
-    409: errorResponse("hold_expired: it was paid, lapsed or let go already"),
+    409: errorResponse("hold_expired: it was paid, is being booked, lapsed or was let go already"),
+    503: errorResponse("unavailable: Razorpay would not cancel its link, so it is kept; try again in a minute"),
   },
 });
 
@@ -133,6 +141,7 @@ export function registerOpsHeldBookings(app: App): void {
       found.visit === null
         ? null
         : {
+            kind: found.visit.kind,
             date: found.visit.date,
             window: found.visit.window,
             starts_at: found.visit.startsAt?.toISOString() ?? null,
@@ -171,6 +180,7 @@ export function registerOpsHeldBookings(app: App): void {
     });
     if (outcome === "not_found") return refuse(c, "not_found");
     if (outcome === "closed") return refuse(c, "hold_expired");
+    if (outcome === "unavailable") return refuse(c, "unavailable");
     return c.body(null, 204);
   });
 }

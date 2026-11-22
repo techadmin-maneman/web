@@ -361,6 +361,94 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
   await expect(tasks.getByRole("row")).toHaveCount(0);
 });
 
+// An arrived custom piece waited on the board with no way to book its fit.
+test("books the fit of an arrived custom piece from its Tasks row, as a replacement for a client fitted before", async ({
+  page,
+}) => {
+  const ORDER = "8a000000-0000-4000-8000-000000000001";
+  const arrived = {
+    ...TASKS,
+    groups: [
+      {
+        group: "custom_piece_to_fit",
+        count: 1,
+        closable: false,
+        tasks: [
+          {
+            id: ORDER,
+            person: { id: CLIENT.id, name: CLIENT.name },
+            facts: {
+              group: "custom_piece_to_fit",
+              order: 42,
+              piece_code: "MM-0042",
+              held_at: "Sandeep Yadav",
+              fit: "replacement",
+            },
+            detail: "CU-0042 · Sandeep Yadav",
+            since: "2027-09-19T06:00:00.000Z",
+            due: "2027-09-21T06:00:00.000Z",
+            owner: null,
+          },
+        ],
+      },
+    ],
+  } satisfies OpsReply<"/api/tasks">;
+  const natural = { tier: "natural", name: "Mane Man Natural", minutes: 180 };
+  const replacement = {
+    ...WINDOWS,
+    kind: "replacement",
+    services: [{ ...natural, price: { amount_ex_gst: 4_500_000, amount: 4_500_000, gst_percent: 0 } }],
+    service: natural,
+    owed: [],
+  } satisfies OpsReply<"/api/visits/availability">;
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, { "GET /api/tasks": json(arrived), [AVAILABILITY]: json(replacement) });
+  await page.goto("/tasks");
+  const tasks = page.getByRole("region", { name: opsCopy.tasks.title });
+  await expect(tasks).toContainText("CU-0042 · at Sandeep Yadav");
+  await expect(tasks.getByRole("link", { name: CLIENT.name, exact: true })).toHaveAttribute(
+    "href",
+    `/clients/${CLIENT.id}/visits`,
+  );
+  await tasks.getByRole("button", { name: `${opsCopy.tasks.book} · ${CLIENT.name}` }).click();
+  const kinds = opsCopy.clients.visits.book.kinds;
+  await expect(panel(page).getByRole("radio", { name: kinds.replacement, exact: true })).toBeChecked();
+});
+
+// A one visit refused by a consultation still to come was named as a first fit, and a paid booking offered "Let it go".
+test("names a consultation that refuses a one visit as a consultation, and lets no paid booking go", async ({
+  page,
+}) => {
+  await openVisits(page, {
+    [BOOK]: json({ error: { code: "already_booked", request_id: "r-1" } }, 409),
+    [`GET /api/clients/${CLIENT.id}/held-bookings`]: json({
+      visit: { kind: "consultation", date: "2027-09-24", window: "morning", starts_at: "2027-09-24T04:30:00.000Z" },
+      held: [
+        {
+          hold_id: HOLD,
+          type: "service",
+          date: "2027-09-22",
+          starts_at: "2027-09-22T06:30:00.000Z",
+          amount: 200000,
+          url: "https://rzp.io/i/stub4417",
+          open_until: "2027-09-22T02:00:00.000Z",
+          paid: true,
+        },
+      ],
+    }),
+  });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  const inTheWay = opsCopy.clients.visits.book.inTheWay;
+  await expect(panel(page)).toContainText(inTheWay.visit("consultation", "Fri 24 Sep, 10 am"));
+  await expect(panel(page)).toContainText(inTheWay.paid("service visit", "Wed 22 Sep, 12 pm"));
+  await expect(panel(page).getByRole("button", { name: inTheWay.letGo })).toHaveCount(0);
+  await expect(panel(page).getByRole("button", { name: opsCopy.tasks.link.copy })).toHaveCount(0);
+});
+
 // A booking that refunded its payment by itself showed nowhere in the console.
 test("lists a booking that refunded its payment by itself beneath the visits, and why", async ({ page }) => {
   const refunded = {
@@ -409,6 +497,7 @@ test("names the booking held on its link that refuses another of its kind, and l
           amount: 200000,
           url: "https://rzp.io/i/stub4417",
           open_until: "2027-09-22T02:00:00.000Z",
+          paid: false,
         },
       ],
     }),

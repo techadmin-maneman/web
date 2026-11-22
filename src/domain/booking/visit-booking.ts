@@ -33,7 +33,7 @@ import type { OpsInputs } from "../platform/ops-settings.ts";
 import { recordPayment, referenceHold } from "../money/payments.ts";
 import { lateFeeOn, type Price } from "../money/price-book.ts";
 import { currentAddress } from "../clients/profile.ts";
-import { graceEnds } from "./hold-stages.ts";
+import { heldOnLink } from "./hold-stages.ts";
 import { holdSlot, type Hold } from "./hold-slot.ts";
 import { liveVisitOf, ONE_AT_A_TIME, replacementOpenOn } from "./availability.ts";
 import { bookableService, offeredProducts, type PricedService } from "./services.ts";
@@ -117,7 +117,7 @@ async function linkStillOpen(db: D1Database, personId: string, kind: VisitType, 
   const open = await db
     .prepare(
       `SELECT 1 FROM slot_holds
-       WHERE person_id = ?1 AND type = ?2 AND pay_by_link = 1 AND state = 'held' AND ${graceEnds("slot_holds")} > ?3
+       WHERE person_id = ?1 AND type = ?2 AND ${heldOnLink("slot_holds", "?3")}
        LIMIT 1`,
     )
     .bind(personId, kind, now.toISOString())

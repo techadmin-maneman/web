@@ -50,6 +50,9 @@ export const TaskFactsSchema = z
       order: z.number().int().openapi({ description: "The custom order's number." }),
       piece_code: z.string().openapi({ description: "The reserved piece's label." }),
       held_at: z.string().openapi({ description: "Where the piece is held: the warehouse, a stockroom or a kit." }),
+      fit: z
+        .enum(["first_fit", "replacement"])
+        .openapi({ description: "The visit to book to fit it: a replacement for a client fitted before." }),
     }),
     facts("recall_call", { piece_codes: z.array(z.string()) }),
     facts("stock_at_risk", { consumable_code: z.string().nullable(), name: z.string().nullable() }),

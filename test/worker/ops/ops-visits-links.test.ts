@@ -37,7 +37,9 @@ import {
   makeCode,
   holdOf,
   holdsCount,
+  visit,
 } from "./ops-visits-fixtures.ts";
+import { asClient, signedIn } from "../clients.ts";
 
 /** The first reference of NOW's year, which the first link ops send takes before any payment. */
 
@@ -391,7 +393,7 @@ describe("a payment link for a visit ops booked, paid", () => {
 // it named when it stands in the way of another of its kind, and let it go (src/domain/booking/held-bookings.ts).
 describe("a booking held on its payment link", () => {
   const firstFit = { client: ROHIT, kind: "first_fit", tier: NATURAL.tier, date: "2026-09-25", window: "morning" };
-  const call = (path: string, method = "GET", vendors: Vendors = {}) =>
+  const call = (path: string, method = "GET", vendors: Vendors = {}): Promise<Response> =>
     request(
       opsApp(vendors),
       path,
@@ -443,5 +445,71 @@ describe("a booking held on its payment link", () => {
 
     expect((await call(`/api/holds/${first.hold_id}/let-go`, "POST")).status).toBe(409);
     expect((await book({ ...firstFit, date: "2026-09-26" })).status).toBe(201);
+  });
+
+  it("is never let go once paid, while being booked, or while Razorpay will not cancel its link", async () => {
+    await rohit("consulted");
+    const first = await (await book(firstFit)).json<{ hold_id: string }>();
+    const letGo = (vendors: Vendors = {}) => call(`/api/holds/${first.hold_id}/let-go`, "POST", vendors);
+    const leaseOf = () =>
+      env.DB.prepare("SELECT booking_until FROM slot_holds WHERE id = ?1")
+        .bind(first.hold_id)
+        .first<string | null>("booking_until");
+
+    // Razorpay will not cancel its link: it stays held, its link open, free to be let go again.
+    const down: PaymentsProvider = {
+      ...payments,
+      cancelPaymentLink: () => Promise.reject(new ProviderError(503, "SERVER_ERROR", "down")),
+    };
+    expect((await letGo({ payments: down })).status).toBe(503);
+    expect((await holdOf(first.hold_id))?.state).toBe("held");
+    expect(await leaseOf()).toBeNull();
+
+    // Another try is booking it.
+    await env.DB.prepare("UPDATE slot_holds SET booking_until = ?2 WHERE id = ?1")
+      .bind(first.hold_id, new Date(NOW.getTime() + 60_000).toISOString())
+      .run();
+    expect((await letGo()).status).toBe(409);
+    await env.DB.prepare("UPDATE slot_holds SET booking_until = NULL WHERE id = ?1").bind(first.hold_id).run();
+
+    // Paid: it is the booking's to book, never let go, and nothing is refunded.
+    await env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1")
+      .bind(first.hold_id, NOW.toISOString())
+      .run();
+    expect((await letGo()).status).toBe(409);
+    expect(payments.made.cancelledLinks).toEqual([]);
+    expect(payments.made.refunds).toEqual([]);
+    expect((await holdOf(first.hold_id))?.state).toBe("held");
+    // Ops see it paid and being booked, as what refuses another first fit.
+    const found = await (
+      await call(`/api/clients/${ROHIT}/held-bookings?kind=first_fit`)
+    ).json<{ held: { hold_id: string; paid: boolean }[] }>();
+    expect(found.held).toEqual([expect.objectContaining({ hold_id: first.hold_id, paid: true })]);
+  });
+
+  it("names a consultation still to come as what refuses a one visit", async () => {
+    await rohit("new");
+    await visit(ROHIT, "consultation", "scheduled", "2026-09-25T04:30:00.000Z", IMRAN);
+    const found = await (
+      await call(`/api/clients/${ROHIT}/held-bookings?kind=first_fit&one_visit=true`)
+    ).json<{ visit: { kind: string; date: string } | null }>();
+    expect(found.visit).toMatchObject({ kind: "consultation", date: "2026-09-25" });
+  });
+
+  it("is shown to its client to pay, held until the hold's own end, and no longer once paid", async () => {
+    await rohit("consulted");
+    const first = await (await book(firstFit)).json<{ hold_id: string; link: { url: string } }>();
+    const cookie = await signedIn(ROHIT);
+    const mine = async () =>
+      (await (await asClient(cookie, "/api/me/held-bookings")).json<{ held: Record<string, unknown>[] }>()).held;
+    // Its own end, not the grace a late payment is given past it.
+    const until = (await holdOf(first.hold_id))?.expires_at;
+    expect(await mine()).toEqual([
+      expect.objectContaining({ type: "first_fit", pay_url: first.link.url, open_until: until }),
+    ]);
+    await env.DB.prepare("UPDATE slot_holds SET confirmed_at = ?2 WHERE id = ?1")
+      .bind(first.hold_id, NOW.toISOString())
+      .run();
+    expect(await mine()).toEqual([]);
   });
 });

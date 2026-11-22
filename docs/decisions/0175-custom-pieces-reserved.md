@@ -1,6 +1,6 @@
 # 0175. Custom pieces reserved
 
-- Status: accepted
+- Status: accepted. Amended 22 November 2026: a client's own reserved piece counts in their match, and Stock and the order show where it is.
 - Date: 2026-10-12
 - Topic: Field work
 
@@ -19,3 +19,11 @@ A custom order's piece is made for one client and paid for in full (ADR 0174). T
 
 - A piece a client never takes becomes a case for ops; the refund rules for a late piece, or one that fails its check, come next.
 - Tests: `test/worker/purchasing/custom-orders.test.ts`.
+
+## Amended 22 November 2026: the client sees their own piece
+
+A piece that arrived for a custom order read as "None held yet" on its own client's match, and as free stock on Stock, so ops could not tell it was there for that client. Point 2 now reads:
+
+2. **It is never free stock to anyone else:** a client's match counts free pieces and the pieces reserved to their own custom orders, and says how many of each place's are theirs; every other client's match counts free pieces alone. Stock says how many of a place's pieces are reserved, and the client's order says where its piece is held.
+
+A paid order and its arrived piece each wait on the board as a task until its purchase order is sent and its fit is booked (`src/domain/ops/custom-order-tasks.ts`).

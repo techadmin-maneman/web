@@ -47,6 +47,7 @@ export type TaskFacts =
       readonly order: number;
       readonly piece_code: string;
       readonly held_at: string;
+      readonly fit: "first_fit" | "replacement";
     }
   | { readonly group: "recall_call"; readonly piece_codes: string[] }
   | { readonly group: "stock_at_risk"; readonly consumable_code: string | null; readonly name: string | null }

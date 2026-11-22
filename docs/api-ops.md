@@ -5879,7 +5879,7 @@ Let a booking held on its payment link go, its link cancelled and its time freed
 }
 ```
 
-**409**: hold_expired: it was paid, lapsed or let go already
+**409**: hold_expired: it was paid, is being booked, lapsed or was let go already
 
 ```json
 {
@@ -5897,6 +5897,42 @@ Let a booking held on its payment link go, its link cancelled and its time freed
               "type": "string",
               "enum": [
                 "hold_expired"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**503**: unavailable: Razorpay would not cancel its link, so it is kept; try again in a minute
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "unavailable"
               ]
             }
           },
@@ -45472,6 +45508,16 @@ Request body:
         "null"
       ],
       "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ],
+          "description": "Its kind: a consultation, where a one visit was asked."
+        },
         "date": {
           "type": "string",
           "format": "date"
@@ -45493,12 +45539,13 @@ Request body:
         }
       },
       "required": [
+        "kind",
         "date",
         "window",
         "starts_at"
       ],
       "additionalProperties": false,
-      "description": "A visit of the kind asked still to come, which a second would double; null for none."
+      "description": "A visit still to come that a second would double; null for none."
     },
     "held": {
       "type": "array",
@@ -45534,12 +45581,19 @@ Request body:
             "description": "What the client pays, in paise, GST included."
           },
           "url": {
-            "type": "string",
-            "description": "The link to pay by."
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The link to pay by; null while it is still being made."
           },
           "open_until": {
             "type": "string",
             "description": "When it is held until; then its time goes back."
+          },
+          "paid": {
+            "type": "boolean",
+            "description": "Paid and being booked: no link to send, and it cannot be let go."
           }
         },
         "required": [
@@ -45549,7 +45603,8 @@ Request body:
           "starts_at",
           "amount",
           "url",
-          "open_until"
+          "open_until",
+          "paid"
         ],
         "additionalProperties": false
       },
@@ -55252,13 +55307,22 @@ Request body:
         "held_at": {
           "type": "string",
           "description": "Where the piece is held: the warehouse, a stockroom or a kit."
+        },
+        "fit": {
+          "type": "string",
+          "enum": [
+            "first_fit",
+            "replacement"
+          ],
+          "description": "The visit to book to fit it: a replacement for a client fitted before."
         }
       },
       "required": [
         "group",
         "order",
         "piece_code",
-        "held_at"
+        "held_at",
+        "fit"
       ],
       "additionalProperties": false
     },

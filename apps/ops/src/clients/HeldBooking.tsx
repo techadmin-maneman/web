@@ -49,7 +49,7 @@ export function HeldLinkActions({ holdId, url }: { holdId: string; url: string }
       setFailed(null);
       const answer = await clientsApi.sendHeldLink(holdId);
       if (answer.ok) setDone(linkCopy.outcomes[answer.body.outcome]);
-      else setFailed(errorText({ ...linkCopy.errors, ...copy.errors }, { code: answer.code }));
+      else setFailed(errorText({ ...copy.errors, ...linkCopy.errors }, { code: answer.code }));
     });
   return (
     <span className={styles.heldActions}>
@@ -68,8 +68,8 @@ export function HeldLinkActions({ holdId, url }: { holdId: string; url: string }
 }
 
 /**
- * What an "Already booked" refusal is about, read as the refusal reads it: the visit of the kind still to come, or the
- * booking held on its link, which ops may let go so another can be booked.
+ * What an "Already booked" refusal is about, read as the refusal reads it: the visit still to come, named by its own
+ * kind, or the booking held on its link, which ops may let go so another can be booked while it is unpaid.
  */
 export function InTheWay({
   clientId,
@@ -89,7 +89,7 @@ export function InTheWay({
   const mayLetGo = useAccess().mayCall("POST /api/holds/{id}/let-go");
   if (loaded.state !== "loaded") return null;
   const { visit, held } = loaded.value;
-  const named = dispatch.typeNames[kind].toLowerCase();
+  const named = (type: VisitType) => dispatch.typeNames[type].toLowerCase();
   const letGo = (holdId: string) =>
     once(async () => {
       setFailed(null);
@@ -99,26 +99,24 @@ export function InTheWay({
     });
   return (
     <div className={styles.inTheWay}>
-      {visit !== null && <p>{copy.visit(named, whenOf(visit.date, visit.starts_at))}</p>}
-      {held.map((each) => (
-        <div key={each.hold_id}>
-          <p>
-            {copy.held(
-              dispatch.typeNames[each.type].toLowerCase(),
-              whenOf(each.date, each.starts_at),
-              untilOf(each.open_until),
-            )}
-          </p>
-          <span className={styles.heldActions}>
-            {mayLetGo && (
-              <TextButton tone="muted" compact disabled={busy} onClick={() => void letGo(each.hold_id)}>
-                {busy ? copy.lettingGo : copy.letGo}
-              </TextButton>
-            )}
-            <HeldLinkActions holdId={each.hold_id} url={each.url} />
-          </span>
-        </div>
-      ))}
+      {visit !== null && <p>{copy.visit(named(visit.kind), whenOf(visit.date, visit.starts_at))}</p>}
+      {held.map((each) =>
+        each.paid ? (
+          <p key={each.hold_id}>{copy.paid(named(each.type), whenOf(each.date, each.starts_at))}</p>
+        ) : (
+          <div key={each.hold_id}>
+            <p>{copy.held(named(each.type), whenOf(each.date, each.starts_at), untilOf(each.open_until))}</p>
+            <span className={styles.heldActions}>
+              {mayLetGo && (
+                <TextButton tone="muted" compact disabled={busy} onClick={() => void letGo(each.hold_id)}>
+                  {busy ? copy.lettingGo : copy.letGo}
+                </TextButton>
+              )}
+              {each.url !== null && <HeldLinkActions holdId={each.hold_id} url={each.url} />}
+            </span>
+          </div>
+        ),
+      )}
       {failed !== null && <Refusal inline said={failed} />}
     </div>
   );

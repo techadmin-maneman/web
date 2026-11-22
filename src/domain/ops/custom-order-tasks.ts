@@ -3,13 +3,20 @@
 // it has arrived. Each is read from the order as it stands, and leaves the board as the work is done: the order sent,
 // or a fit or replacement booked for the client.
 
+import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 import type { TaskGroup } from "../../policy/tasks.ts";
+import { paidNotBooked } from "../booking/hold-stages.ts";
 import { MADE_TO_ORDER_QUEUE } from "../booking/made-to-order-asks.ts";
 
 /** "CU-0042": the order's number as ops and the client read it. */
 const ORDER_NUMBER = "'CU-' || printf('%04d', k.number)";
 /** "PO-0042": its purchase order's. */
 const PO_NUMBER = "'PO-' || printf('%04d', o.number)";
+/** Where the piece is held: a place by its name, a kit by its technician's. */
+const HELD_AT = "COALESCE(sp.name, t.name, u.place)";
+/** The fit it is fitted at: a replacement for a client fitted before, else their first fit. */
+const FIT = `CASE WHEN EXISTS (SELECT 1 FROM pieces f WHERE f.person_id = k.person_id AND f.fitted_at IS NOT NULL
+    AND f.deleted_at IS NULL) THEN 'replacement' ELSE 'first_fit' END`;
 
 /** Paid, not refunded, and its own purchase order still to go to the supplier. */
 export const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: string } = {
@@ -24,22 +31,25 @@ export const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: st
 };
 
 /**
- * Arrived: a piece reserved to it is held, in the warehouse or a kit, and no first fit or replacement is booked for
- * the client to fit it at. Where it is held, so ops know whether it must first go to a technician's kit.
+ * Arrived: a piece reserved to it is held, in the warehouse or a kit, and no first fit or replacement is booked, under
+ * way or paid for the client to fit it at. Where it is held, so ops know whether it must first go to a technician's
+ * kit, and which fit to book.
  */
 export const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: string } = {
   group: "custom_piece_to_fit",
   sql: `SELECT 'custom_piece_to_fit' AS "group", k.id AS id, k.person_id AS person_id, pe.name AS person_name,
-         ${ORDER_NUMBER} || ' · ' || COALESCE(sp.name, u.place) AS detail,
-         json_object('order', k.number, 'piece_code', u.code, 'held_at', COALESCE(sp.name, u.place)) AS facts,
+         ${ORDER_NUMBER} || ' · ' || ${HELD_AT} AS detail,
+         json_object('order', k.number, 'piece_code', u.code, 'held_at', ${HELD_AT}, 'fit', ${FIT}) AS facts,
          u.labelled_at AS since, NULL AS due_by, '' AS episode
     FROM custom_orders k
     JOIN stock_units u INDEXED BY stock_units_reserved ON u.custom_order_id = k.id AND u.state = 'held'
-    LEFT JOIN stock_places sp ON sp.id = u.place
+    LEFT JOIN stock_places sp ON sp.id = u.place LEFT JOIN technicians t ON t.id = u.place
     JOIN people pe ON pe.id = k.person_id
    WHERE k.state = 'paid' AND k.refunded_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = k.person_id
-       AND a.type IN ('first_fit', 'replacement') AND a.status = 'scheduled' AND a.deleted_at IS NULL)`,
+       AND a.type IN ('first_fit', 'replacement') AND ${statusIn("a.status", VISIT_LIVE)} AND a.deleted_at IS NULL)
+     AND NOT EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = k.person_id
+       AND h.type IN ('first_fit', 'replacement') AND ${paidNotBooked("h")})`,
 };
 
 /**

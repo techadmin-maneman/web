@@ -91,6 +91,33 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
+// A custom order's purchase order was drafted with no word of whose it was, and a task could not open it.
+test("names the client a custom order's purchase order is for, and opens it from a task's link", async ({ page }) => {
+  const CUSTOM = {
+    ...ORDER,
+    id: "po-2",
+    number: 8,
+    lines: [{ id: "pl-2", consumable_code: "hs-1", quantity: 1, unit_price: 15000, received: 0, hair_system: true }],
+    total: 15_000,
+    custom_order: {
+      id: "co-1",
+      number: 42,
+      person_id: "22000000-0000-4000-8000-000000000001",
+      person_name: "Neha Kapoor",
+    },
+  };
+  await answer(page, {
+    "GET /api/purchase-orders": json({ ...BOOK, orders: [ORDER, CUSTOM] }),
+    "GET /api/supplier-claims": json({ claims: [], returns: [] }),
+    "GET /api/supplier-scorecard": json({ suppliers: [] }),
+  });
+  await page.goto("/purchasing#order-po-2");
+  await expect(page.getByRole("row").filter({ hasText: "PO-0008" })).toContainText(copy.customFor(42, "Neha Kapoor"));
+  const named = page.getByRole("link", { name: copy.customFor(42, "Neha Kapoor") });
+  await expect(named).toHaveAttribute("href", "/clients/22000000-0000-4000-8000-000000000001/pieces");
+  await expect(page.getByRole("heading", { name: /PO-0008/ })).toBeVisible();
+});
+
 test("lists each order, opens one, and approves it, awaiting a second approver", async ({ page }) => {
   await open(page, { "POST /api/purchase-orders/{id}/approve": json(FIRST_APPROVED) });
   const row = page.getByRole("row").filter({ hasText: "PO-0007" });

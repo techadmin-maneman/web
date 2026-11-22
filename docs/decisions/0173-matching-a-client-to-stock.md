@@ -1,6 +1,6 @@
 # 0173. Matching a client to stock
 
-- Status: accepted
+- Status: accepted. Amended 22 November 2026: places holding the client's own reserved pieces come first.
 - Date: 2026-10-12
 - Topic: Field work
 
@@ -19,3 +19,7 @@ The owner ruled on 11 October 2026 that a hair system matches a client only exac
 
 - Custom orders are raised from here next.
 - Tests: `test/worker/inventory/stock-match.test.ts`, `e2e/ops/clients-visits.e2e.ts`.
+
+## Amended 22 November 2026: the client's own piece first
+
+With a client's own reserved pieces now counted in their match ([0175](0175-custom-pieces-reserved.md), amended the same day), point 3's order is: the places holding pieces reserved to the client first, then the client's city, then the rest. The piece made for them is the one to fit, wherever it is.

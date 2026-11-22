@@ -150,6 +150,9 @@ export const ALERT_WORDS = {
   custom_order_payment_stranded: (a: { readonly payment: string; readonly amount: number; readonly order: string }) =>
     `Refund payment ${a.payment} of ${rupees(a.amount)} from the client's Payments: it came in for custom order ` +
     `${a.order}, which was cancelled or already paid.`,
+  custom_order_po_not_drafted: (a: { readonly order: string }) =>
+    `Order custom order ${a.order}'s piece from Purchasing by hand: it is paid, and its purchase order could not ` +
+    "be drafted.",
   custom_order_link_not_cancelled: (a: { readonly order: string; readonly link: string }) =>
     `Cancel payment link ${a.link} in Razorpay's dashboard: custom order ${a.order} is cancelled. If the client ` +
     "pays it first, refund them from their Payments.",

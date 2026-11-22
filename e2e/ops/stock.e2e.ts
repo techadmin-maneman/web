@@ -94,6 +94,39 @@ test("says a place with none left of something it keeps is out, not low", async 
   await expect(tape.getByRole("cell").nth(1)).not.toContainText(stock.low);
 });
 
+// A piece that arrived for a client's custom order read as ordinary stock.
+test("says how many of a place's hair systems are reserved for a client's custom order", async ({ page }) => {
+  const piece = {
+    code: "hs-natural-9x7",
+    name: "Natural 9 x 7",
+    unit: "piece",
+    retired: false,
+    hair_system: true,
+    reorder_kit: null,
+    reorder_central: null,
+    reorder_store: null,
+  };
+  const reserved = {
+    ...STOCK,
+    consumables: [...STOCK.consumables, piece],
+    holdings: [
+      ...STOCK.holdings,
+      {
+        consumable_code: piece.code,
+        place_id: "central",
+        quantity: 3,
+        low: false,
+        counted_at: null,
+        reserved: 2,
+        lots: [],
+      },
+    ],
+  };
+  await answer(page, { "GET /api/stock/demand": json(NO_DEMAND), "GET /api/stock": json(reserved) });
+  await page.goto("/stock");
+  await expect(onHand(page).getByRole("row").filter({ hasText: piece.name })).toContainText(stock.reserved(2));
+});
+
 // A column a kit was unreadable past eight or ten.
 test("past six places, shows the warehouse and one place, picked, saying above which are low on anything", async ({
   page,

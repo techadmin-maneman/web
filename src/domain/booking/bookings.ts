@@ -253,7 +253,7 @@ export async function confirmBooking(context: BookingContext, holdId: string): P
 }
 
 /** Longer than any try takes, a refund asked of Razorpay included. */
-const BOOKING_LEASE_MS = 5 * MINUTE_MS;
+export const BOOKING_LEASE_MS = 5 * MINUTE_MS;
 
 /** Takes the hold for this try while it books it; false while another try has it. */
 async function takeLease(db: D1Database, holdId: string, now: Date): Promise<boolean> {

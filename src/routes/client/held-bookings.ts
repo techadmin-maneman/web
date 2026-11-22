@@ -3,7 +3,7 @@
 
 import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import { heldBookingsOf } from "../../domain/booking/held-bookings.ts";
+import { heldToPayOf } from "../../domain/booking/held-bookings.ts";
 import { clientOf } from "../../http/client-session.ts";
 import type { App } from "../../http/context.ts";
 import { json } from "../../http/openapi.ts";
@@ -42,7 +42,7 @@ const heldRoute = clientRoute({
 
 export function registerClientHeldBookings(app: App): void {
   app.openapi(heldRoute, async (c) => {
-    const held = await heldBookingsOf(c.env.DB, clientOf(c).subjectId, c.var.deps.now());
+    const held = await heldToPayOf(c.env.DB, clientOf(c).subjectId, c.var.deps.now());
     return c.json(
       {
         held: held.map((each) => ({

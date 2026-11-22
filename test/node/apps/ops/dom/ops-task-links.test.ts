@@ -35,6 +35,9 @@ describe("where a task leads", () => {
     expect(taskClientPath("made_to_order_ask", CLIENT)).toBe(`/clients/${CLIENT}/pieces`);
     expect(taskClientPath("payment_owed", CLIENT)).toBe(`/clients/${CLIENT}/payments`);
     expect(taskClientPath("grievance", CLIENT)).toBe(`/clients/${CLIENT}/consents`);
+    expect(taskClientPath("custom_order_to_send", CLIENT)).toBe(`/clients/${CLIENT}/pieces`);
+    // Its fit is booked from the client's visits.
+    expect(taskClientPath("custom_piece_to_fit", CLIENT)).toBe(`/clients/${CLIENT}/visits`);
   });
 
   it("leads a task decided in its own section to its row there, and one done on the client’s page nowhere else", () => {

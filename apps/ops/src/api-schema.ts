@@ -4336,7 +4336,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description hold_expired: it was paid, lapsed or let go already */
+                /** @description hold_expired: it was paid, is being booked, lapsed or was let go already */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4346,6 +4346,24 @@ export interface paths {
                             error: {
                                 /** @enum {string} */
                                 code: "hold_expired";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description unavailable: Razorpay would not cancel its link, so it is kept; try again in a minute */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "unavailable";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -29851,8 +29869,13 @@ export interface components {
             in_transit: number;
         };
         OpsHeldBookings: {
-            /** @description A visit of the kind asked still to come, which a second would double; null for none. */
+            /** @description A visit still to come that a second would double; null for none. */
             visit: {
+                /**
+                 * @description Its kind: a consultation, where a one visit was asked.
+                 * @enum {string}
+                 */
+                kind: "consultation" | "first_fit" | "service" | "replacement";
                 /** Format: date */
                 date: string;
                 /** @enum {string} */
@@ -29872,10 +29895,12 @@ export interface components {
                 starts_at: string | null;
                 /** @description What the client pays, in paise, GST included. */
                 amount: number;
-                /** @description The link to pay by. */
-                url: string;
+                /** @description The link to pay by; null while it is still being made. */
+                url: string | null;
                 /** @description When it is held until; then its time goes back. */
                 open_until: string;
+                /** @description Paid and being booked: no link to send, and it cannot be let go. */
+                paid: boolean;
             }[];
         };
         OpsHeldLinkSent: {
@@ -31964,6 +31989,11 @@ export interface components {
             piece_code: string;
             /** @description Where the piece is held: the warehouse, a stockroom or a kit. */
             held_at: string;
+            /**
+             * @description The visit to book to fit it: a replacement for a client fitted before.
+             * @enum {string}
+             */
+            fit: "first_fit" | "replacement";
         } | {
             /** @enum {string} */
             group: "recall_call";
