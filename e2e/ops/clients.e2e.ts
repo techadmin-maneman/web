@@ -317,6 +317,18 @@ test("writes a gap where a piece has no supplier lot or replacement date, and of
   await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-A" })).toContainText("—");
 });
 
+test("marks a piece fitted with no label, under the label made for it", async ({ page }) => {
+  const [inWear, ...before] = PIECES.pieces;
+  const made = { ...inWear, piece_code: "MM-NL-0004417-K" };
+  await openClient(page, `/clients/${CLIENT.id}/pieces`, {
+    [READ_PIECES]: json({ ...PIECES, pieces: [made, ...before] }),
+  });
+  await expect(page.getByRole("row").filter({ hasText: made.piece_code })).toContainText(
+    opsCopy.clients.pieces.madeLabel(made.piece_code),
+  );
+  await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-B" })).not.toContainText("no label");
+});
+
 test("says so when the client has no piece yet", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_PIECES]: json({ pieces: [], failure_reasons: [] }) });
   await expect(page.getByText(opsCopy.clients.pieces.empty)).toBeVisible();
