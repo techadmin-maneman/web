@@ -71,9 +71,9 @@ async function pieceMove(
 }
 
 /**
- * The unit the visit fitted of the hair system a step with no label names takes the label made for its piece, taken
- * by this step or an earlier one, while the step is still the visit's latest; unless another unit carries that label
- * already, when the fit still lands and the unit keeps its own.
+ * The unit the visit fitted last of the hair system a step with no label names takes the label made for its piece,
+ * taken by this step or an earlier one, while the step is still the visit's latest; one unit only, and not where
+ * another carries that label already, when the fit still lands and the unit keeps its own.
  */
 function relabelled(
   db: D1Database,
@@ -90,7 +90,10 @@ function relabelled(
     db
       .prepare(
         `UPDATE stock_units SET code = ?1
-         WHERE appointment_id = ?2 AND consumable_code = ?3 AND state = 'fitted' AND code IS NOT ?1
+         WHERE id = (SELECT id FROM stock_units INDEXED BY stock_units_by_visit
+                     WHERE appointment_id = ?2 AND consumable_code = ?3 AND state = 'fitted'
+                     ORDER BY moved_at DESC LIMIT 1)
+           AND code IS NOT ?1
            AND ?4 = (${latestStep({ job: "?2", technician: "?5" }, "piece")})
            AND NOT EXISTS (SELECT 1 FROM stock_units WHERE code = ?1)`,
       )

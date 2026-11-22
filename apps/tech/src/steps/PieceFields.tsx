@@ -10,6 +10,7 @@ import { sayKnown } from "../lang/index.ts";
 import { When } from "./FitWhen.tsx";
 import { DECLINED, type Choice, type KitHairSystem } from "./piece-form.ts";
 import shared from "./steps.module.css";
+import scan from "./piece-scan.module.css";
 
 export type Looked =
   | { readonly state: "none" }
@@ -77,10 +78,14 @@ export function ChoiceList({
 
 type KitChoice = { readonly hairSystem: KitHairSystem; readonly matches: boolean };
 
-/** The kit's hair systems as radio rows, one of which is the piece fitted with no label to read. */
+/**
+ * The kit's hair systems as radio rows, one of which is the piece fitted with no label to read; beneath them, so the
+ * rows never move under the finger, a warning of one picked that is not this fit's.
+ */
 function KitPick(props: {
   readonly choices: readonly KitChoice[];
   readonly stock: string | null;
+  readonly warning: string | null;
   readonly onStock: (stock: string) => void;
 }) {
   return (
@@ -99,6 +104,11 @@ function KitPick(props: {
           />
         ))}
       </ChoiceGroup>
+      {props.warning !== null && (
+        <p className={scan.warn} role="alert">
+          {props.warning}
+        </p>
+      )}
     </div>
   );
 }
@@ -112,15 +122,18 @@ export function KitPieces({
   choices,
   stock,
   pick = false,
+  warning = null,
   onStock,
 }: {
   choices: readonly KitChoice[];
   stock: string | null;
   pick?: boolean;
+  /** Under a pick, what it warns of (piece-form's labelWarning); null for nothing. */
+  warning?: string | null;
   onStock: (stock: string | null) => void;
 }) {
   if (choices.length === 0) return null;
-  if (pick) return <KitPick choices={choices} stock={stock} onStock={onStock} />;
+  if (pick) return <KitPick choices={choices} stock={stock} warning={warning} onStock={onStock} />;
   return (
     <section className={shared.field} aria-labelledby="kit-pieces-title">
       <h2 className={capsLook(shared.fieldTitle)} id="kit-pieces-title">

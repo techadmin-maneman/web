@@ -175,9 +175,13 @@ function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string
   return piece !== null && piece.expires_on !== null && piece.expires_on < job.date;
 }
 
-/** With no label to read, the hair system picked from the kit is the piece: one is all it asks, in date. */
+/**
+ * With no label to read, the hair system picked from the kit is the piece: one with a piece free is all it asks, in
+ * date. A pick the kit no longer has free, as a refused step's may be, is no pick.
+ */
 function noLabelMissing(form: PieceForm, job: Pick<Job, "kit_hair_systems" | "date">): string | null {
-  if (form.stock === null) return copy.piece.pickFromKit;
+  const held = job.kit_hair_systems.find((each) => each.code === form.stock)?.held ?? 0;
+  if (form.stock === null || held <= 0) return copy.piece.pickFromKit;
   return allExpiredInKit(job, form.stock) ? copy.piece.expiredAction : oldLabelMissing(form);
 }
 

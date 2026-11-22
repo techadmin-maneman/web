@@ -135,7 +135,7 @@ const freeOf = (choices: ReturnType<typeof kitChoices>) => choices.filter(({ hai
 /**
  * The label as read so far: confirmed once it is known, with no signal to check it as typed, saying so; else the
  * scanner, which also says the piece has no label where the kit holds a hair system free to pick in its place; or,
- * with no label, the pick, warning of one not this fit's.
+ * with no label, the way back to the scanner, the pick being the kit's list beneath.
  */
 function LabelRead(props: {
   readonly job: Job;
@@ -151,7 +151,6 @@ function LabelRead(props: {
   if (form.noLabel) {
     return (
       <NoLabel
-        warning={labelWarning(matched, form)}
         cannotFit={props.cannotFit}
         onScan={() => {
           props.onNoLabel(false);
@@ -288,6 +287,7 @@ function Fitting({
           choices={noLabel ? freeOf(kitChoices(matched, choice)) : unlabelledOf(kitChoices(matched, choice))}
           stock={stock}
           pick={noLabel}
+          warning={noLabel ? labelWarning(matched, form) : null}
           onStock={setStock}
         />
       )}

@@ -162,6 +162,8 @@ describe("the piece step", () => {
       }) as unknown as typeof FIRST_FIT;
     const picked = { ...EMPTY, noLabel: true, stock: "hs_exact" };
     expect(stillMissing(picked, held("2026-09-20", 1), "none")).toBe(copy.piece.expiredAction);
+    // A pick the kit no longer has a piece of free, as a refused step's may be, is no pick.
+    expect(stillMissing(picked, held("2028-03-31", 0), "none")).toBe(copy.piece.pickFromKit);
     expect(stillMissing(picked, held("2026-09-21", 1), "none")).toBeNull();
     // A piece never labelled, its expiry not on the card, is the API's to judge.
     expect(stillMissing(picked, held("2026-09-20", 2), "none")).toBeNull();

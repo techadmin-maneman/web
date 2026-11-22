@@ -14,22 +14,26 @@ hair system's top-up arriving in the kit was received only by scanning each of i
 
 ## Decision
 
-1. **The piece step takes "No label on it"** (`apps/tech/src/steps/Piece.tsx`). The technician picks the hair system
-   from their kit, any of it, labelled or not, and Next goes. The step sends `no_label` and the stock code, no label.
+1. **The piece step takes "No label on it"** (`apps/tech/src/steps/Piece.tsx`), where the kit holds a hair system with
+   a piece free to fit. The technician picks one of those hair systems, labelled or not, as one choice of a set, and
+   Next goes; one not this fit's is warned of, as a label read for it is. The step sends `no_label` and the stock
+   code, no label.
 2. **The piece is recorded under a label made for it** (`src/domain/inventory/made-labels.ts`): MM, NL for no label, a
    seven-digit serial drawn from the visit and its check letter, as our labels are made. The same visit always makes
    the same label, so a step sent again records one piece; one another visit's piece or a unit of stock carries is
    passed over. Every reader of a piece keeps working on a label: the client's pieces, a replacement's piece coming
    off, failures, recalls and supplier claims. Ops can write it on the piece, or print it, later.
-3. **The piece leaves the kit as fitted** (`src/domain/inventory/piece-use.ts`): one of the hair system's pieces,
-   unlabelled first, as a label we never made takes one, but fitted, not gone missing. With no label to read its
-   expiry from, it is one of a lot in date on the visit's day; where every piece of that hair system the kit holds
-   has expired, the step is refused, as a label naming an expired piece is, and the app holds Next where it can tell.
-   A unit so taken carries the made label from then on, since a recall, a warranty and a supplier's failures find a
-   unit's piece by its label.
+3. **The piece leaves the kit as fitted, as the job card would offer it** (`src/domain/inventory/made-labels.ts`): with
+   no label to read its expiry or its owner from, it is in date on the visit's day, never a unit kept for another
+   client's order or of a recalled lot; a piece never labelled first, then a unit, and a recalled lot's piece last, as
+   every deduction takes it. Where the kit holds the hair system but no piece of it it may give, the step is refused,
+   as a label naming such a piece is, unless the visit took that hair system already, as a step sent again has; the
+   app holds Next where the card shows it. The unit taken carries the made label while it is fitted, since a recall,
+   a warranty and a supplier's failures find a unit's piece by its label, and its own again if a correction puts it
+   back in the kit.
 4. **A top-up is received whole without scanning** (`apps/tech/src/kit/Arriving.tsx`): "No labels? Receive all", as
-   the API already allowed.
-5. **The console marks a made label** on the client's pieces: "MM-NL-0004417-K · no label".
+   the API already allowed, offered before any of its pieces is scanned, so it never sits beside receiving those.
+5. **The console marks a made label** on the client's pieces: the code, with "No label" quietly beneath it.
 
 ## Consequences
 

@@ -196,7 +196,9 @@
   line-height: var(--lh-145);
 }
 
+/* The key keeps to its line, and a long value wraps beside it. */
 .rowKey {
+  flex-shrink: 0;
   color: var(--ui-text-soft);
 }
 
