@@ -80,7 +80,7 @@ export async function daySettled(
 }
 
 /** Whether a city's day still has a draft: the evening's lock has not yet run for it. */
-export async function draftsLeftIn(
+async function draftsLeftIn(
   db: D1Database,
   day: { readonly city: string | null; readonly date: string },
 ): Promise<boolean> {
@@ -141,7 +141,7 @@ export async function lockDueDrafts(
 }
 
 /** How long before a city's lock its tomorrow is re-planned and checked on Google, a city at a time. */
-export const CHECK_BEFORE_LOCK_MINUTES = 30;
+const CHECK_BEFORE_LOCK_MINUTES = 30;
 
 /**
  * Tomorrow in the next city whose lock is due within CHECK_BEFORE_LOCK_MINUTES, re-planned and checked on Google
@@ -194,7 +194,7 @@ const REPLAN_DAYS = 7;
  * The most cities one hour's re-plan takes on, each costing tens of statements; a day's next turn takes the cities after
  * them, round again, so each has a turn. A day has three or four turns a day.
  */
-export const REPLAN_CITIES = 3;
+const REPLAN_CITIES = 3;
 
 /** The turns a day ahead is sure of each day: every seventh hour from its own, at least three. */
 const TURNS_A_DAY = 3;

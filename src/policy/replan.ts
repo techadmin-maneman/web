@@ -26,7 +26,7 @@ export interface Draft {
   readonly takers: ReadonlyMap<string, Taking>;
 }
 
-export interface Crew {
+interface Crew {
   /** Each technician working the day, with what is fixed on it: the drafts left out. */
   readonly days: ReadonlyMap<string, PlanDay>;
   /** Minutes booked over the week around the day, the day's drafts left out. */
