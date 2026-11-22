@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
 import { loadDayPlans } from "../../../src/domain/booking/day-plans.ts";
 import { WORKING_HOURS } from "../../../src/policy/start-times.ts";
+import { DRIVE_LEARNING, DRIVE_TIMES } from "../../../src/policy/learned-drives.ts";
 import { NOW, request } from "../helpers.ts";
 import {
   AS_THE_BOARD_SHOWS_IT,
@@ -329,7 +330,7 @@ describe("leave", () => {
       from: "2026-09-24",
       to: "2026-09-25",
       now: NOW,
-      hours: WORKING_HOURS,
+      inputs: { workingHours: WORKING_HOURS, driveTimes: DRIVE_TIMES, driveLearning: DRIVE_LEARNING },
     });
     expect(plans.day(IMRAN, "2026-09-24")).toBeNull();
     expect(plans.day(IMRAN, "2026-09-25")).not.toBeNull();

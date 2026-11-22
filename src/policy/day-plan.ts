@@ -8,7 +8,7 @@
 // with no pin is reached in the shortest drive.
 
 import type { Pin } from "../lib/geo.ts";
-import { driveMinutes, type DriveEstimate } from "./drive-estimate.ts";
+import { atPace, driveMinutes, type DriveEstimate } from "./drive-estimate.ts";
 import type { BookingRules } from "./start-times.ts";
 
 /** Something already on the day, from its start to the end of its service, in minutes from midnight. */
@@ -52,17 +52,25 @@ export interface Placed {
   readonly addedDrive: number;
 }
 
-/** A drive on the day, setting off at `setsOff` minutes from midnight, at the day's learned pace for that hour. */
-function drive(day: PlanDay, from: Pin | null, to: Pin | null, setsOff: number, estimate: DriveEstimate): number {
+/** A drive from one pin to another, setting off at `setsOff` minutes from midnight. */
+interface Leg {
+  readonly from: Pin | null;
+  readonly to: Pin | null;
+  readonly setsOff: number;
+}
+
+/** A drive on the day, at the day's learned pace for the hour it sets off in. */
+function drive(day: PlanDay, { from, to, setsOff }: Leg, estimate: DriveEstimate): number {
   if (from === null || to === null) return estimate.least;
   const hour = Math.floor(setsOff / 60) % 24;
-  return driveMinutes(from, to, hour, estimate, day.pace?.[hour] ?? 100);
+  return atPace(driveMinutes(from, to, hour, estimate), day.pace?.[hour] ?? 100, estimate);
 }
 
 /** The drive into a stop from the one before it, or from home for the day's first; none from nowhere. */
 function driveIn(day: PlanDay, before: Stop | undefined, to: Pin | null, estimate: DriveEstimate): number {
-  if (before === undefined) return day.home === null ? 0 : drive(day, day.home, to, day.opens, estimate);
-  return drive(day, before.pin, to, before.end, estimate);
+  if (before === undefined)
+    return day.home === null ? 0 : drive(day, { from: day.home, to, setsOff: day.opens }, estimate);
+  return drive(day, { from: before.pin, to, setsOff: before.end }, estimate);
 }
 
 /**
@@ -115,14 +123,17 @@ export function placedAt(day: PlanDay, visit: VisitToPlan, start: number, rules:
   let leaving = 0;
   let saved = 0;
   if (after !== undefined) {
-    leaving = drive(day, visit.pin, after.pin, end + wrap, rules.drive);
+    leaving = drive(day, { from: visit.pin, to: after.pin, setsOff: end + wrap }, rules.drive);
     if (end + wrap + leaving > after.start) return null;
     saved = driveIn(day, before, after.pin, rules.drive);
   } else if (day.home !== null && visit.pin !== null) {
     // The day's last visit: the drive home after it counts, in place of the one from the stop before, though it may
     // end after the day closes. A visit with no pin leaves the drive home as it was, since nobody can tell it.
-    leaving = drive(day, visit.pin, day.home, end + wrap, rules.drive);
-    saved = before === undefined ? 0 : drive(day, before.pin, day.home, before.end + wrap, rules.drive);
+    leaving = drive(day, { from: visit.pin, to: day.home, setsOff: end + wrap }, rules.drive);
+    saved =
+      before === undefined
+        ? 0
+        : drive(day, { from: before.pin, to: day.home, setsOff: before.end + wrap }, rules.drive);
   }
   const placed: Stop = { start, end, pin: visit.pin, fit: visit.fit };
   if (
@@ -150,7 +161,7 @@ export function dayDrive(day: PlanDay, rules: PlanRules): number {
   }
   const lastPin = before?.pin ?? null;
   if (before !== undefined && lastPin !== null && day.home !== null) {
-    total += drive(day, lastPin, day.home, before.end + rules.booking.wrap_up, rules.drive);
+    total += drive(day, { from: lastPin, to: day.home, setsOff: before.end + rules.booking.wrap_up }, rules.drive);
   }
   return total;
 }

@@ -293,7 +293,7 @@ export async function startOffers(input: {
       from: tieRange(from).from,
       to: tieRange(to).to,
       now,
-      hours: reading.then((read) => read.workingHours),
+      inputs: reading,
       leaving: { ...placing.leaving, visitId: placing.moving?.visitId ?? placing.leaving?.visitId ?? null },
     }),
     reading,
