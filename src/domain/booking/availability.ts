@@ -3,6 +3,7 @@
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { replacementOpens, replacementOpensOn, type NextVisitDays } from "../../policy/next-visit.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
+import { steer } from "../../policy/steering.ts";
 import { paidNotBooked } from "./hold-stages.ts";
 import { remakesOwed } from "./remakes.ts";
 import { windowsFitting, type BookingWindow } from "../../config/scheduling.ts";
@@ -209,10 +210,14 @@ interface Placing {
   readonly pincode?: string | null;
 }
 
+/** A start as a window offers it: who can take it, and, steered for a client, whether it is marked Recommended. */
+type WindowStart = StartOffer & { readonly recommended?: boolean };
+
 /**
  * Each window of each day from `from` that a visit this long can start in, and the technicians free to take it: those
  * who can take a start inside it (./start-offers.ts), best first. A window the visit is too long to start in, as a
- * first fit's evening, is left out.
+ * first fit's evening, is left out. `steered`, as for a client, a start ops do not offer clients is left out, and the
+ * day's cheapest marked (src/policy/steering.ts); ops see every start.
  */
 async function windowsOf({
   db,
@@ -220,15 +225,17 @@ async function windowsOf({
   visit,
   range,
   now,
+  steered = false,
 }: {
   db: D1Database;
   placing: Placing;
   visit: VisitToPlace;
   range: { readonly from: string; readonly days: number };
   now: Date;
-}): Promise<{ date: string; windows: WindowTechnicians[]; starts: readonly StartOffer[] }[]> {
+  steered?: boolean;
+}): Promise<{ date: string; windows: WindowTechnicians[]; starts: readonly WindowStart[] }[]> {
   const { personId, moving = null, replacing = null, ownUnpaid = false, atCheckout = null, pincode = null } = placing;
-  const [offers, schedule] = await Promise.all([
+  const [offers, schedule, inputs] = await Promise.all([
     startOffers({
       db,
       placing: {
@@ -247,9 +254,11 @@ async function windowsOf({
       now,
     }),
     loadSlotSchedule(db),
+    readOpsInputs(db, now),
   ]);
   const startable = windowsFitting(unitsFor(visit.minutes));
-  return offers.map(({ date, starts }) => {
+  return offers.map(({ date, starts: all }) => {
+    const starts: readonly WindowStart[] = steered ? steer(all, inputs.steering, moving?.technicianId ?? null) : all;
     const hours = windowTimesOf(schedule.on(date));
     const windows = startable.map((window): WindowTechnicians => {
       const inside = starts.filter((start) => start.time >= hours[window].start && start.time < hours[window].end);
@@ -282,18 +291,22 @@ export async function availability({
   days: number;
   now: Date;
 }): Promise<{ date: string; windows: WindowOffer[]; starts: readonly OpenStart[] }[]> {
-  const offered = await windowsOf({ db, placing, visit, range: { from, days }, now });
+  const offered = await windowsOf({ db, placing, visit, range: { from, days }, now, steered: true });
   return offered.map(({ date, windows, starts }) => ({
     date,
     windows: windows.map(({ window, technicians }) => ({ window, open: technicians.length > 0 })),
-    starts: starts.map(({ time, startsAt }) => ({ time, startsAt })),
+    starts: starts.map(({ time, startsAt, recommended = false }) => ({ time, startsAt, recommended })),
   }));
 }
 
-/** A start someone can take, on India's clock and as an instant (docs/decisions/0210-booking-by-start-time.md). */
+/**
+ * A start someone can take, on India's clock and as an instant (docs/decisions/0210-booking-by-start-time.md), and
+ * whether it is one of the day's that cost least, marked Recommended.
+ */
 interface OpenStart {
   readonly time: string;
   readonly startsAt: Date;
+  readonly recommended: boolean;
 }
 
 /**

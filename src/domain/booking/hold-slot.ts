@@ -12,6 +12,7 @@ import { claimsAt, minuteOf, placedAt } from "../../policy/day-plan.ts";
 import type { SoldTerms } from "../../policy/moving-a-visit.ts";
 import { unitAt, windowAt, windowTimesOf } from "../../policy/slot-times.ts";
 import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
+import { steer } from "../../policy/steering.ts";
 import { loadDayPlans } from "./day-plans.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { pinOfVisit, planRulesOf, startOffers } from "./start-offers.ts";
@@ -129,20 +130,24 @@ interface Candidate {
 /**
  * Who can take the hold, best first (./start-offers.ts): at the start asked for, or at any start inside the window,
  * whoever's home is known, then the least it costs (src/policy/allotment.ts), then the earliest start. A client's move
- * stays with its own technician where they can take it.
+ * stays with its own technician where they can take it. A client's hold, from the app or the site, takes only a start
+ * clients are offered (src/policy/steering.ts); ops may hold any.
  */
 async function candidatesFor({
   db,
   input,
   now,
+  inputs,
 }: {
   db: D1Database;
   input: HoldInput;
   now: Date;
+  /** The inputs in force, read beside the day's offers rather than before them. */
+  inputs: Promise<OpsInputs>;
 }): Promise<Candidate[]> {
   const { personId, service, date, window, moves, from = "app" } = input;
   const moving = moves?.kind === "move" ? moves.visit : null;
-  const [offers, schedule] = await Promise.all([
+  const [offers, schedule, steering] = await Promise.all([
     startOffers({
       db,
       placing: {
@@ -158,9 +163,12 @@ async function candidatesFor({
       now,
     }),
     loadSlotSchedule(db),
+    inputs.then((read) => read.steering),
   ]);
   const hours = windowTimesOf(schedule.on(date))[window];
-  const inside = (offers[0]?.starts ?? []).filter((start) =>
+  const day = offers[0]?.starts ?? [];
+  const offered = from === "ops" ? day : steer(day, steering, moving?.technicianId ?? null);
+  const inside = offered.filter((start) =>
     input.startsAt === undefined
       ? start.time >= hours.start && start.time < hours.end
       : start.startsAt.getTime() === input.startsAt.getTime(),
@@ -332,10 +340,11 @@ export async function holdSlot({
   drives?: DriveCheck | null;
 }): Promise<Hold | null> {
   const { personId, service, date, price, from = "app" } = input;
+  const reading = readOpsInputs(db, now);
   const [candidates, schedule, inputs] = await Promise.all([
-    candidatesFor({ db, input, now }),
+    candidatesFor({ db, input, now, inputs: reading }),
     loadSlotSchedule(db),
-    readOpsInputs(db, now),
+    reading,
   ]);
 
   const at = now.toISOString();

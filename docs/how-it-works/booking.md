@@ -14,6 +14,8 @@ A visit goes to a technician in the client's city (`src/domain/dispatch/technici
 
 Who takes a visit is a draft until the evening before (ADR 0290): booking only proves the time fits someone's day. A time nobody can take is still offered where one technician's draft can go to another who may take it at its promised time, and holding it moves that draft, nobody told (`src/domain/booking/make-room.ts`, ADR 0292); never for a client's own move, and never a draft the evening's check or lock already holds. Each hour one day of the week ahead has its drafts re-planned to cost least, keeping every promised time (`src/domain/booking/replan-day.ts`); in the half hour before the reminder hour, tomorrow is re-planned and each drive is checked on the traffic Google expects when it sets off, a city at a time; at the hour the day is fixed, just before the reminder names the technician (`src/domain/booking/allotment-lock.ts`, `src/domain/booking/evening-check.ts`). Until then the client is told the technician is confirmed the day before, and the technician's phone lists the day's jobs as still to come. A technician ops choose when booking in the console is fixed at once.
 
+Clients are steered to the times that drive least (ADR 0293): in the app and on the site, a start that adds more driving to its technician's day than the day's best start does, by more than Settings › "Times offered to clients" allows, is not offered, unless it is the day's last, and the app marks the day's cheapest few Recommended (`src/policy/steering.ts`); a client's hold takes only a start they are offered. Ops in the console see and may book every start.
+
 Wherever a visit is booked, on the site, in the app or in the console, the starts offered rest on the free drive estimate, leaving out any Google's kept drive leaves no room for; before a start is held, Google checks the drives either side of it (`src/domain/booking/drive-check.ts`, ADR 0287).
 
 ## Booking from the site
@@ -53,3 +55,4 @@ A client moves or cancels in the app; what a late change costs is in Settings ·
 - [0289, who takes a visit](../decisions/0289-who-takes-a-visit.md): the radius in km, the overflow ring, and the least cost.
 - [0290, fixed the evening before](../decisions/0290-allotted-the-evening-before.md): drafts, the hourly re-plan, and the evening's check and lock.
 - [0292, room made at booking](../decisions/0292-room-made-at-booking.md): a time freed by moving one draft.
+- [0293, steering booking times](../decisions/0293-steering-booking-times.md): the cheapest times marked, the costliest not offered to clients.

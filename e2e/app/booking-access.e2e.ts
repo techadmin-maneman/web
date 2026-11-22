@@ -33,6 +33,21 @@ test("makes the days one tab stop, with arrow keys between, and the times the ne
   await expect(sheet.locator(OPEN_TIMES).first()).toBeFocused();
 });
 
+// Clients are steered to the times that drive least (docs/decisions/0293-steering-booking-times.md).
+test("marks the day's times that drive least Recommended, no more of them than ops set", async ({ page }) => {
+  await openSheet(page);
+  const sheet = page.getByRole("dialog", { name: appCopy.booking.when.title });
+  await expect(sheet.locator(OPEN_TIMES).first()).toBeAttached();
+  const marked = sheet
+    .locator("label")
+    .filter({ has: page.locator(OPEN_TIMES) })
+    .filter({
+      hasText: appCopy.booking.when.recommended,
+    });
+  await expect(marked.first()).toBeVisible();
+  expect(await marked.count()).toBeLessThanOrEqual(3);
+});
+
 test("scrolls the days sideways on a 320 px screen, and never the page", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await openSheet(page);

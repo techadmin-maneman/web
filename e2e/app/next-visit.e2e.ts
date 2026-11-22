@@ -38,6 +38,7 @@ const startsOn = (date: string) =>
       arrives_by: new Date(startsAt.getTime() + 30 * 60_000).toISOString(),
       open: true,
       change_charged: false,
+      recommended: false,
     };
   });
 

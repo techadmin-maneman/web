@@ -139,8 +139,17 @@
   padding: var(--sp-2) var(--screen-gutter) var(--sp-4);
 }
 
+/* The day's times, two to a row where three leave a time too narrow for "Recommended", at a phone's narrowest or with
+   its text enlarged (packages/brand/breakpoints.ts, timeNote): the grid's own width decides, so a zoom counts. */
 .times {
   margin-top: var(--sp-16);
+  container: times / inline-size;
+}
+
+@container times (width < 18.5rem) {
+  .times > * {
+    --time-columns: 2;
+  }
 }
 
 /* The promise of any time picked, under the times. */

@@ -13,6 +13,8 @@ export interface TimeOption {
   /** The time as every surface writes one: "11:30 am". */
   readonly label: string;
   readonly open: boolean;
+  /** A word beneath the time, as "Recommended", read with it; left out for none. */
+  readonly note?: string | undefined;
 }
 
 export interface TimePeriod {
@@ -44,6 +46,9 @@ function OpenCount(props: {
   );
 }
 
+/** Whether any time of a period carries a note: then every time of it keeps the note's line, so the times align. */
+const noted = (period: TimePeriod) => period.times.some((time) => time.note !== undefined);
+
 export function TimeChoice(props: {
   /** The radios' name, one per form. */
   readonly name: string;
@@ -65,7 +70,7 @@ export function TimeChoice(props: {
       {props.periods
         .filter((period) => period.times.length > 0)
         .map((period) => (
-          <div key={period.name} className={styles.period}>
+          <div key={period.name} className={classes(styles.period, noted(period) && styles.noted)}>
             <OpenCount period={period} fullWord={props.fullWord} openWord={props.openWord} />
             <div className={styles.times}>
               {period.times.map((time) => (
@@ -86,6 +91,12 @@ export function TimeChoice(props: {
                   />
                   {time.label}
                   {!time.open && <VisuallyHidden>{`, ${props.takenWord}`}</VisuallyHidden>}
+                  {time.note !== undefined && (
+                    <>
+                      <VisuallyHidden>, </VisuallyHidden>
+                      <span className={styles.note}>{time.note}</span>
+                    </>
+                  )}
                 </label>
               ))}
             </div>

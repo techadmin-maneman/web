@@ -150,7 +150,16 @@ describe("room made at booking", () => {
     const hold = await holdSlot({
       db: env.DB,
       // The afternoon's first starts need Anjali's draft moved; from 13:30 Imran is free as his day stands.
-      input: { personId: rohit, service: SERVICE, date: TUESDAY, window: "afternoon", price: FREE, pincode: "122018" },
+      // Held by ops, whose times are not steered (ADR 0293), so the afternoon's costly 13:30 is still among them.
+      input: {
+        personId: rohit,
+        service: SERVICE,
+        date: TUESDAY,
+        window: "afternoon",
+        price: FREE,
+        pincode: "122018",
+        from: "ops",
+      },
       now: NOW,
       holdSeconds: 600,
     });

@@ -7321,6 +7321,8 @@ export interface components {
             open: boolean;
             /** @description Booked now, moving or cancelling it would already cost the client: it starts inside the notice. */
             change_charged: boolean;
+            /** @description One of the day's open starts that cost least, as booking weighs who takes a start, as many as ops set, marked Recommended (docs/decisions/0293-steering-booking-times.md). */
+            recommended: boolean;
         };
         Hold: {
             /** Format: uuid */
