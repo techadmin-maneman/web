@@ -22,7 +22,8 @@ with the learned times beside.
 
 1. **A drive** (`src/policy/learned-drives.ts`) runs from one job's close, its last outcome standing, to the same
    technician's first check-in that passed at the next job of the day, against what the estimate gives between the
-   addresses the two check-ins were made at, setting off in the hour of the close. A drive over three times its
+   addresses the two check-ins were made at, setting off in the hour of the close. A check-in passed only by ops'
+   waiver, for a pin far from its door, is not an arrival learned from, as the estimate to that pin is wrong. A drive over three times its
    estimate is left out, and so is one that spans the break's window and took the break's length more than its
    estimate, as an errand or a lunch, and one across the technician's leave.
 2. **Each night**, from 2 am in India (`learn_drives`, `src/scheduled/allotment-jobs.ts`), every city's drives of the
@@ -33,7 +34,9 @@ with the learned times beside.
    of the estimate, never under the least drive; until then the estimate stands (`atPace`). Every day plan reads its
    technician's city's groups (`src/domain/booking/day-plans.ts`), so booking, the hourly re-plan and the evening's
    lock all plan at the pace, and so do the technician's leave-by and finish-by times (`src/policy/next-job.ts`).
-   Google's checks still compare the estimate itself, which is what they measure.
+   Google's checks measure the drive itself; the estimate they tell ops beside Google's drive, and the departure from
+   home they ask Google about, are the paced ones (`src/domain/booking/drive-check.ts`,
+   `src/domain/booking/evening-check.ts`).
 4. **Ops set it** in Settings › Booking: "Drive times", learned where enough drives or the estimate only, and "Learning
    drive times", the drives before an hour is used (5 to 200) and the weeks learned from (2 to 26). With the estimate
    only, the nightly run still learns, and the report shows what it would use.

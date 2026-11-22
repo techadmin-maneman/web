@@ -9,7 +9,7 @@ import type { Settings } from "../../config/settings.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { indiaInstant } from "../../lib/india-time.ts";
 import { timeOf, type PlanDay } from "../../policy/day-plan.ts";
-import { driveMinutes } from "../../policy/drive-estimate.ts";
+import { atPace, driveMinutes } from "../../policy/drive-estimate.ts";
 import type { Alert } from "../../providers/alerts.ts";
 import type { RoutesProvider } from "../../providers/routes/index.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
@@ -78,7 +78,12 @@ async function shortsOf(
       const setsOff = from === null ? plan.home : from.pin;
       if (setsOff === null || to.pin === null) continue;
       const readyAt = from === null ? plan.opens : from.end + bookingRules.wrap_up;
-      const estimate = driveMinutes(setsOff, to.pin, Math.floor(to.start / 60), driveEstimate);
+      const hour = Math.floor(to.start / 60);
+      const estimate = atPace(
+        driveMinutes(setsOff, to.pin, hour, driveEstimate),
+        plan.pace?.[hour] ?? 100,
+        driveEstimate,
+      );
       const leaves = from === null ? Math.max(plan.opens, to.start - estimate) : readyAt;
       const drive = { points: [setsOff, to.pin], departing: { departAt: indiaInstant(input.date, timeOf(leaves)) } };
       // A drive Google answered already costs nothing; only a new one takes from the run's drives.

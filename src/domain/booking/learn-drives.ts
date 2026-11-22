@@ -72,8 +72,8 @@ export async function drivesDone(
 ): Promise<CityDrive[]> {
   const { from, to } = given;
   const [jobs, leave] = await db.batch([
-    // A job's first check-in that passed is its arrival, at the address it was made at; its last outcome standing, its
-    // close.
+    // A job's first check-in that passed is its arrival, at the address it was made at; one passed only by ops' waiver,
+    // for a pin far from the door, is not, as the estimate to that pin is wrong. Its last outcome standing is its close.
     db
       .prepare(
         `SELECT a.technician_id, t.name, t.city, a.window_start, c.at AS arrived, d.lat, d.lng,
@@ -82,6 +82,7 @@ export async function drivesDone(
          FROM appointments a JOIN technicians t ON t.id = a.technician_id
          LEFT JOIN checkins c ON c.id = (SELECT first.id FROM checkins first
            WHERE first.appointment_id = a.id AND first.technician_id = a.technician_id AND first.passed = 1
+             AND first.waived_by IS NULL
            ORDER BY first.at LIMIT 1)
          LEFT JOIN addresses d ON d.id = c.address_id
          WHERE a.deleted_at IS NULL AND t.city IS NOT NULL AND ${statusIn("a.status", VISIT_ON_THE_BOARD)}

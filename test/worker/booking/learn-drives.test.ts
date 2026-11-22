@@ -28,7 +28,7 @@ let clients: { here: string; there: string };
 let doors: { here: string; there: string };
 
 /** On `date`, a job at 9 closed at 10, and the next checked in `took` minutes later, before the break's window. */
-async function aDayOfTwo(date: string, took: number): Promise<void> {
+async function aDayOfTwo(date: string, took: number, waivedBy: string | null = null): Promise<void> {
   const first = await aVisit({
     person_id: clients.here,
     technician_id: TECH,
@@ -47,7 +47,7 @@ async function aDayOfTwo(date: string, took: number): Promise<void> {
   ];
   await aCheckin(one, { at: at(date, "09:00"), address_id: doors.here });
   await anOutcome(one, at(date, "10:00"));
-  await aCheckin(two, { at: plus(at(date, "10:00"), took), address_id: doors.there });
+  await aCheckin(two, { at: plus(at(date, "10:00"), took), address_id: doors.there, waived_by: waivedBy });
   await anOutcome(two, at(date, "14:00"));
 }
 
@@ -111,6 +111,13 @@ describe("the night's learning", () => {
 
     expect(await learnNow()).toEqual({ cities: 0, drives: 0 });
     expect(await factors()).toEqual([]);
+  });
+});
+
+describe("a drive learned from", () => {
+  it("is none to a check-in that passed only by ops' waiver, its pin far from the door", async () => {
+    await aDayOfTwo("2026-09-15", ESTIMATED, "ops@maneman.in");
+    expect(await learnNow()).toEqual({ cities: 0, drives: 0 });
   });
 });
 

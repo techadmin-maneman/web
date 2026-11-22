@@ -11,7 +11,7 @@ import type { RoutesProvider } from "../../providers/routes/index.ts";
 import type { Settings } from "../../config/settings.ts";
 import { driveThrough, keptDriveThrough } from "../platform/road-drives.ts";
 import type { Point, RouteResult } from "../../providers/routes/index.ts";
-import { driveMinutes } from "../../policy/drive-estimate.ts";
+import { atPace, driveMinutes } from "../../policy/drive-estimate.ts";
 
 /** What Google is asked through, from the route's caller. */
 export interface DriveCheck {
@@ -120,6 +120,9 @@ function legsFit(
   const { start, end, before, after, from, to } = legs;
   const parking = rules.drive.parking;
   const [first, second] = answer.legs;
+  // What the plan gave the drive: the estimate at the day's learned pace for the hour (src/policy/learned-drives.ts).
+  const planned = (setsFrom: Point, setsTo: Point, hour: number) =>
+    atPace(driveMinutes(setsFrom, setsTo, hour, rules.drive), day.pace?.[hour] ?? 100, rules.drive);
   if (from !== null && first !== undefined) {
     const readyFrom = before === undefined ? day.opens : before.end + wrap;
     const google = minutesOf(first.seconds) + parking;
@@ -128,12 +131,7 @@ function legsFit(
         leg: "before",
         google_minutes: google,
         // At the hour the start was offered on: the stop's end, or the day's opening from home (src/policy/day-plan.ts).
-        estimate_minutes: driveMinutes(
-          from,
-          legs.pin,
-          hourOf(before === undefined ? day.opens : before.end),
-          rules.drive,
-        ),
+        estimate_minutes: planned(from, legs.pin, hourOf(before === undefined ? day.opens : before.end)),
         past_gap_minutes: readyFrom + google - start,
       });
       return false;
@@ -146,7 +144,7 @@ function legsFit(
       tooTight?.({
         leg: "after",
         google_minutes: google,
-        estimate_minutes: driveMinutes(legs.pin, to, hourOf(end + wrap), rules.drive),
+        estimate_minutes: planned(legs.pin, to, hourOf(end + wrap)),
         past_gap_minutes: end + wrap + google - after.start,
       });
       return false;
