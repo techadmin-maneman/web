@@ -1,8 +1,8 @@
-// Where a fit's piece is for each technician who may take it (src/domain/booking/occupancy.ts): every one trained to fit
-// in the visit's city, with whether their kit, or their city's stockroom, holds a piece of the client's exact spec, or
-// neither, which the choice of who goes counts (src/policy/allotment.ts) and the evening's kit check tells ops of. And ops are
-// told at the booking of a fit with no piece of its client's spec in reach, too soon for any supplier to deliver one
-// (src/domain/inventory/stock-gap.ts).
+// Where a fit's piece is for each technician who may take it (src/domain/booking/occupancy.ts): every one trained to
+// fit in the visit's city, with whether their kit, or their city's stockroom, holds a piece of the client's exact spec,
+// or neither, which the choice of who goes counts (src/policy/allotment.ts) and the evening's kit check tells ops of.
+// And ops are told at the booking of a fit with no piece of its client's spec in reach, too soon for any supplier to
+// deliver one (src/domain/inventory/stock-gap.ts).
 // NOW is Monday 21 September 2026, 12 noon in India.
 
 import { env } from "cloudflare:workers";

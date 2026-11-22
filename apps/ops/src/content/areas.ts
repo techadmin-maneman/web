@@ -177,7 +177,7 @@ export const areas = {
   reach: {
     title: "Reach",
     mapAlt: (city: string) => `${city}: its pincodes, and each technician’s reach from home`,
-    key: "Green served · Grey not served · Amber paused · Red served, out of every reach · Navy a technician’s home and radius · Pale navy their overflow ring",
+    key: "Green\u00a0served · Grey\u00a0not\u00a0served · Amber\u00a0paused · Red\u00a0served,\u00a0out\u00a0of\u00a0every\u00a0reach · Navy\u00a0a\u00a0technician’s\u00a0home\u00a0and\u00a0radius",
     outOfReach: (count: number) =>
       count === 1
         ? "1 served pincode no technician reaches:"
@@ -188,9 +188,9 @@ export const areas = {
     allReached: "Every served pincode is in someone’s reach.",
     unmeasured: "Set your technicians’ homes to see their reach.",
     chooseUnreached: "Choose them",
-    within: (name: string, km: number, count: number) =>
-      `${name} · ${String(km)}\u00a0km · ${count === 1 ? "1 pincode" : `${String(count)} pincodes`}`,
-    chooseWithin: (name: string) => `Choose the pincodes within ${name}’s reach`,
+    within: (name: string, km: number, ring: number, count: number) =>
+      `${name} · ${String(km)}\u00a0km, ring ${String(ring)}\u00a0km · ${count === 1 ? "1 pincode" : `${String(count)} pincodes`} within the radius`,
+    chooseWithin: (name: string) => `Choose the pincodes within ${name}’s radius`,
     choose: "Choose",
   },
   /** Demand for pincodes not served yet, and how the last month's launches went (ADR 0224). */

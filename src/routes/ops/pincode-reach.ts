@@ -17,18 +17,8 @@ const MAP_KEPT_SECONDS = 15 * 60;
 const CITY = z.object({ city: z.string().trim().min(1).max(60) });
 const PIN = z.object({ lat: z.number(), lng: z.number() }).strict();
 
-/**
- * The map's colours: served, held and not served, paused, served but out of every reach; a home and its radius; and
- * the overflow ring past it.
- */
-const COLOURS = {
-  served: "2e7d32",
-  held: "8a8a8a",
-  paused: "e0a100",
-  unreached: "c62828",
-  home: "1b2a49",
-  ring: "8a9bc4",
-} as const;
+/** The map's colours: served, held and not served, paused, served but out of every reach; and a home and its radius. */
+const COLOURS = { served: "2e7d32", held: "8a8a8a", paused: "e0a100", unreached: "c62828", home: "1b2a49" } as const;
 
 const reachRoute = opsRoute({
   method: "get",
@@ -110,11 +100,7 @@ function areaMapOf(reach: Awaited<ReturnType<typeof cityReach>>): AreaMap {
   return {
     pincodes: groups,
     homes: homed.map((each) => ({ colour: COLOURS.home, label: each.initials.slice(0, 1), point: each.home })),
-    // Each ring first, so its radius is drawn over it.
-    reaches: [
-      ...homed.map((each) => ({ colour: COLOURS.ring, centre: each.home, km: each.ring_km })),
-      ...homed.map((each) => ({ colour: COLOURS.home, centre: each.home, km: each.radius_km })),
-    ],
+    reaches: homed.map((each) => ({ colour: COLOURS.home, centre: each.home, km: each.radius_km })),
   };
 }
 

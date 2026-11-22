@@ -122,8 +122,8 @@ interface Candidate {
 
 /**
  * Who can take the hold, best first (./start-offers.ts): at the start asked for, or at any start inside the window,
- * whoever's home is known, then the least it costs (src/policy/allotment.ts), then the earliest start. A client's move stays with its own technician where they can
- * take it.
+ * whoever's home is known, then the least it costs (src/policy/allotment.ts), then the earliest start. A client's move
+ * stays with its own technician where they can take it.
  */
 async function candidatesFor({
   db,
@@ -274,9 +274,9 @@ function holdRow(
 
 /**
  * Holds the start the client chose, or the best start in their window, with whoever it costs least
- * (./start-offers.ts, src/policy/allotment.ts), never the technician who took the client's visit just before or just after it
- * (src/domain/booking/technician-rotation.ts). Where Google is on, the drives either side are checked first. Holds
- * nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
+ * (./start-offers.ts, src/policy/allotment.ts), never the technician who took the client's visit just before or just
+ * after it (src/domain/booking/technician-rotation.ts). Where Google is on, the drives either side are checked first.
+ * Holds nobody is paying for are let go first. Null when nobody is free, or the day is blacked out. The hold waits
  * `holdSeconds` for payment, and keeps its time for `graceSeconds` after, both as ops set them when it is made.
  */
 export async function holdSlot({

@@ -108,7 +108,7 @@ export const BOOKING_SETTINGS = [
       overflow_cost: { min: 0, max: 240, unit: "minutes of driving" },
       stockroom_cost: { min: 0, max: 240, unit: "minutes of driving" },
       no_piece_cost: { min: 0, max: 480, unit: "minutes of driving" },
-      share_cost: { min: 0, max: 60, unit: "minutes of driving an hour" },
+      share_cost: { min: 0, max: 60, unit: "minutes of driving" },
     },
     fallback: ALLOTMENT,
   },

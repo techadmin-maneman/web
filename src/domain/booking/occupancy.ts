@@ -103,8 +103,8 @@ export const fittingOf = (type: VisitType | null, tier: string | null): Fitting 
 /**
  * Who can take a booking: the active technicians in the visit's city, and for a fit only those trained to fit (ADR
  * 0119), each with where the client's piece of the exact spec is for them: in their own kit, in their city's
- * stockroom, or nowhere in it, which the choice of who goes counts (src/policy/allotment.ts) and the evening's kit check
- * tells ops of. A client's move may go to any of them, its own technician first, who keeps it wherever they work.
+ * stockroom, or nowhere in it, which the choice of who goes counts (src/policy/allotment.ts) and the evening's kit
+ * check tells ops of. A client's move may go to any of them, its own technician first, who keeps it wherever they work.
  */
 export async function techniciansFor(
   db: D1Database,

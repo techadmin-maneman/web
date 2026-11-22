@@ -1,6 +1,6 @@
 // Who takes a hold when technicians are equally free that day (src/domain/booking/technician-choice.ts,
-// src/policy/allotment.ts): whoever holds the least over the week around that day, never whoever sorts first by name. NOW is Monday 21 September 2026, 12 noon
-// in India. Every name and number here is made up.
+// src/policy/allotment.ts): whoever holds the least over the week around that day, never whoever sorts first by name.
+// NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";

@@ -84,7 +84,9 @@ function Within({ reach, onChoose }: { reach: CityReach; onChoose: (pincodes: Re
         const theirs = reach.pincodes.filter((each) => each.reached_by.includes(technician.id));
         return (
           <li key={technician.id} className={shared.launchItem}>
-            <p className={shared.launchLine}>{copy.within(technician.name, technician.radius_km, theirs.length)}</p>
+            <p className={shared.launchLine}>
+              {copy.within(technician.name, technician.radius_km, technician.ring_km, theirs.length)}
+            </p>
             <Button
               variant="outline"
               size="small"

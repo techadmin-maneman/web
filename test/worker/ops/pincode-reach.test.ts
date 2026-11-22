@@ -45,6 +45,8 @@ beforeEach(async () => {
   await pincode("122018", 1, 28.4955);
   await pincode("122099", 1, 28.7295);
   await pincode("122050", 0, 28.4655);
+  // 12 km north of Imran's home: past his 10 km radius, inside his 15 km ring.
+  await pincode("122012", 1, 28.5674);
 });
 
 describe("a city's reach", () => {
@@ -63,6 +65,8 @@ describe("a city's reach", () => {
     expect(byPin["122018"]).toMatchObject({ reached: true, reached_by: [NEAR] });
     expect(byPin["122099"]).toMatchObject({ reached: false, reached_by: [] });
     expect(byPin["122050"]).toMatchObject({ reached: true });
+    // In a ring a start can still be offered, so it is reached, though nobody's radius takes it in.
+    expect(byPin["122012"]).toMatchObject({ reached: true, reached_by: [] });
   });
 
   it("draws the city's map", async () => {

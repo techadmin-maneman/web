@@ -113,7 +113,7 @@ describe("a city's reach", () => {
 
   it("chooses the pincodes within a technician's radius", async () => {
     await answered();
-    expect(page.textContent).toContain(copy.within("Imran Qureshi", 10, 1));
+    expect(page.textContent).toContain(copy.within("Imran Qureshi", 10, 15, 1));
     act(() => {
       button(copy.chooseWithin("Imran Qureshi"))?.click();
     });

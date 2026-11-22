@@ -111,7 +111,7 @@ export const technicians = {
       invalid_request: "Pick at least one time that ends after it starts.",
       no_days: "Pick at least one day.",
       ends: "The day ends after it starts.",
-      reach: "1 to 60 km, or empty for the business’s.",
+      reach: "Enter 1–60 km, or leave it empty for the setting for everyone.",
       not_found: changed("No longer exists."),
       unavailable: "Google couldn’t place it. Try another search.",
       offline: OFFLINE,
