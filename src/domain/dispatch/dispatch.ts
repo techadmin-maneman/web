@@ -240,9 +240,11 @@ export async function planMove(db: D1Database, input: MoveInput, now: Date): Pro
 }
 
 /**
- * Moves a job in one batch: the move, its claim on the new time, the visit and the client's message. The claim is the clash test: a hold or another move that took the time since it was checked fails the
- * batch. It is let go in the same batch, since the visit's own row now holds the time. A visit changed or begun since
- * it was read fails the batch as well, and nothing is written.
+ * Moves a job in one batch: the move, its claim on the new time, the visit and the client's message. The claim is the
+ * clash test: a hold or another move that took the time since it was checked fails the batch. It is let go in the same
+ * batch, since the visit's own row now holds the time; the lock on the day is kept, so a hold planned on the day
+ * before the move reads it as changed. A visit changed or begun since it was read fails the batch as well, and nothing
+ * is written.
  */
 async function writeMove(db: D1Database, deps: MoveDeps, move: PlannedMove, now: Date): Promise<MoveOutcome> {
   const at = now.toISOString();
@@ -417,8 +419,9 @@ const claimOf = (db: D1Database, move: PlannedMove, claim: string): D1PreparedSt
     .prepare("INSERT INTO slot_claims (technician_id, date, claim, move_id) VALUES (?1, ?2, ?3, ?4)")
     .bind(move.technicianId, move.date, claim, move.id);
 
+/** The move's claims on its times let go, as the visit's own row holds them now; its lock on the day kept. */
 const releasingClaims = (db: D1Database, moveId: string): D1PreparedStatement =>
-  db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId);
+  db.prepare("DELETE FROM slot_claims WHERE move_id = ?1 AND claim NOT LIKE 'rev:%'").bind(moveId);
 
 /** A start the job would land at, and the window it falls in. */
 interface RoomStart {

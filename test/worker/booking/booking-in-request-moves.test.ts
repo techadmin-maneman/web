@@ -138,7 +138,9 @@ describe("a client's move in place, when ops change the visit before it is booke
     expect((await changes()).results).toEqual([]);
     expect((await messagesOf(PERSON)).results).toEqual([{ kind: "booking_refunded", subject_id: holdId }]);
     expect(messageQueue.sent).toHaveLength(1);
-    expect(await countOf("slot_claims")).toBe(0);
+    // Nothing holds a time; the board's move keeps only its lock on Sameer's day.
+    const { results: claims } = await env.DB.prepare("SELECT claim, move_id FROM slot_claims").all();
+    expect(claims).toMatchObject([{ claim: "rev:1", move_id: expect.any(String) as unknown }]);
   });
 
   it("refunds a late fee paid after ops gave the visit to another technician, and tells the client", async () => {

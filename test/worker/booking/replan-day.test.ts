@@ -10,6 +10,8 @@ import {
   replanDateAt,
 } from "../../../src/domain/booking/allotment-lock.ts";
 import { replanDay } from "../../../src/domain/booking/replan-day.ts";
+import { loadDayPlans } from "../../../src/domain/booking/day-plans.ts";
+import { WORKING_HOURS } from "../../../src/policy/start-times.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
 import { fakeDependencies, markDatabase, NOW } from "../helpers.ts";
@@ -53,7 +55,7 @@ const visitRow = () =>
   env.DB.prepare("SELECT technician_id, technician_draft FROM appointments WHERE id = ?1").bind(visitId).first();
 
 describe("a day's drafts re-planned", () => {
-  it("gives a draft to whoever it costs least, keeps it a draft, and records the move with no claim left", async () => {
+  it("gives a draft to whoever it costs least, keeps it a draft, records the move, and keeps the day locked", async () => {
     const moved = await replanDay(env.DB, {
       city: "Gurgaon",
       date: TUESDAY,
@@ -67,7 +69,19 @@ describe("a day's drafts re-planned", () => {
     ).toMatchObject({
       results: [{ was_technician_id: SANDEEP, now_technician_id: IMRAN, reason: "zone_rebalance", actor: "allotment" }],
     });
-    expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims").first())?.n).toBe(0);
+    // The lock on Imran's day is kept, so a hold planned on it before the move fails rather than miss the draft.
+    expect((await env.DB.prepare("SELECT technician_id, date, claim FROM slot_claims").all()).results).toEqual([
+      { technician_id: IMRAN, date: TUESDAY, claim: "rev:1" },
+    ]);
+    const plans = await loadDayPlans({
+      db: env.DB,
+      technicianIds: [IMRAN],
+      from: TUESDAY,
+      to: TUESDAY,
+      now: NOW,
+      hours: WORKING_HOURS,
+    });
+    expect(plans.revision(IMRAN, TUESDAY)).toBe(1);
   });
 
   // A client's paid move waits to be booked onto the visit as it was; the rest of the day re-plans around it.

@@ -137,8 +137,8 @@ export const startOf = (row: Pick<DraftRow, "window_start">): number => minuteOf
 /**
  * A draft's move to another technician, as a move on the board is written (ADR 0069): recorded, only while the visit is
  * still the draft as read; the day it goes to locked one past the lock `revision` read, unless the batch locked it
- * already; the visit given to its new technician; and the lock let go at the end of the batch (`release`). A hold placed
- * on that day since, or a draft fixed, moved or proposed since, fails the batch.
+ * already; and the visit given to its new technician. The lock is kept, so the day reads as changed to a hold planned
+ * on it before. A hold placed on that day since, or a draft fixed, moved or proposed since, fails the batch.
  */
 export function draftMove(
   db: D1Database,
@@ -150,7 +150,7 @@ export function draftMove(
     readonly lock: boolean;
   },
   at: string,
-): { readonly statements: D1PreparedStatement[]; readonly release: D1PreparedStatement } {
+): { readonly statements: D1PreparedStatement[] } {
   const { row, to } = move;
   const moveId = crypto.randomUUID();
   const statements = [
@@ -175,7 +175,7 @@ export function draftMove(
       : []),
     reallottingDraft(db, { visitId: row.id, technicianId: to, at }),
   ];
-  return { statements, release: db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId) };
+  return { statements };
 }
 
 /** Whether a batch failed for a draft or a day changed since it was read, which the next look tries again. */

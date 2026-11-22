@@ -180,15 +180,13 @@ async function writeMoves(
   const at = now.toISOString();
   const locked = new Set<string>();
   const statements: D1PreparedStatement[] = [...releaseDeadHolds(db, now)];
-  const releases: D1PreparedStatement[] = [];
   for (const { row, to } of work.moves) {
     const revision = work.plans.revision(to, work.date);
     const move = draftMove(db, { row, to, date: work.date, revision, lock: !locked.has(to) }, at);
     locked.add(to);
     statements.push(...move.statements);
-    releases.push(move.release);
   }
-  statements.push(...releases, ...visitUpkeep(db, { visits: work.moves.map((each) => each.row.id) }, at));
+  statements.push(...visitUpkeep(db, { visits: work.moves.map((each) => each.row.id) }, at));
   try {
     await db.batch(statements);
     return true;
