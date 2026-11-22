@@ -45,6 +45,8 @@ export const home = {
     return days === 1 ? "Tomorrow" : `In ${String(days)} days`;
   },
   technicianFor: "Your technician for this visit",
+  /** Who is coming, before the day before fixes it (ADR 0290). */
+  technicianPending: "Technician confirmed the day before",
   /** Home's hair system: how far through its months it is, and when its replacement may be booked (ADR 0253). */
   hairSystem: {
     title: "Your hair system",

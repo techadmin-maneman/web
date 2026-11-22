@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { lockDueDrafts } from "../../../src/domain/booking/allotment-lock.ts";
+import { lockDueDrafts, replanAhead } from "../../../src/domain/booking/allotment-lock.ts";
 import { replanDay } from "../../../src/domain/booking/replan-day.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
@@ -91,7 +91,45 @@ describe("a day's drafts re-planned", () => {
     await lockDueDrafts(env.DB, evening, {
       readHours: () => Promise.resolve({ national: 18, cities: new Map<string, number>() }),
       replan: (city, date) => replanDay(env.DB, { city, date, now: evening, inputs }),
+      failed: () => undefined,
     });
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 0 });
+  });
+
+  it("fixes tomorrow as it stands where its re-plan fails, and says which city failed", async () => {
+    const failed: string[] = [];
+    await lockDueDrafts(env.DB, indiaInstant("2026-09-21", "18:05"), {
+      readHours: () => Promise.resolve({ national: 18, cities: new Map<string, number>() }),
+      replan: () => Promise.reject(new Error("D1 overloaded")),
+      failed: (city) => failed.push(city),
+    });
+    expect(failed).toEqual(["Gurgaon"]);
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 0 });
+  });
+});
+
+describe("the night's re-plan", () => {
+  it("re-plans each city's days ahead, leaves them drafts, and goes on past a day that fails", async () => {
+    const inputs = await readOpsInputs(env.DB, NOW);
+    const thursday = await visit(
+      null,
+      "service",
+      "scheduled",
+      indiaInstant("2026-09-24", "11:00").toISOString(),
+      IMRAN,
+    );
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1, service_city = 'Noida' WHERE id = ?1")
+      .bind(thursday)
+      .run();
+    const failed: string[] = [];
+    const moved = await replanAhead(env.DB, NOW, {
+      replan: (city, date) =>
+        city === "Noida"
+          ? Promise.reject(new Error("D1 overloaded"))
+          : replanDay(env.DB, { city, date, now: NOW, inputs }),
+      failed: (city) => failed.push(city),
+    });
+    expect({ moved, failed }).toEqual({ moved: 1, failed: ["Noida"] });
+    expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
   });
 });

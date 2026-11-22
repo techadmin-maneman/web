@@ -135,6 +135,11 @@ export const JobsSchema = z
   .object({
     date: z.iso.date(),
     jobs: z.array(DayJobSchema),
+    settled: z.boolean().openapi({
+      description:
+        "Whether the day's list stands: any day up to today, and tomorrow once its evening's lock has fixed who takes " +
+        "each visit (ADR 0290). A later day may still be given visits that are drafts now.",
+    }),
     sent_back: z
       .array(
         z

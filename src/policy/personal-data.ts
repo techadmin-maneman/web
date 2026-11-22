@@ -525,9 +525,10 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "reference_number",
       "payment_checked_at",
       "tier",
+      "technician_chosen",
     ],
     whyLeftOut:
-      "How each slot was held and placed, by our, Razorpay's and FSM's keys; its price before GST; when we last asked Razorpay about its payment; a one-way hash of the network address, which reads as nothing; and the price code, which the hair system's name says.",
+      "How each slot was held and placed, by our, Razorpay's and FSM's keys; its price before GST; when we last asked Razorpay about its payment; a one-way hash of the network address, which reads as nothing; the price code, which the hair system's name says; and whether ops chose the technician, which is our scheduling, not about them.",
     erasure: {
       blanks: ["consents_shown", "consents_ip_hash"],
       why: "What the pay step showed, and the hashed network address, go; the booking stays.",

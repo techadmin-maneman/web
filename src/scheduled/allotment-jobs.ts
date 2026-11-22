@@ -3,7 +3,8 @@
 // come and then fixes it, just before the reminders that name the technician.
 
 import { lockDueDrafts, replanAhead } from "../domain/booking/allotment-lock.ts";
-import { eveningCheck } from "../domain/booking/evening-check.ts";
+import { EVENING_DRIVES, eveningCheck } from "../domain/booking/evening-check.ts";
+import { createCallBudget } from "../lib/call-budget.ts";
 import { replanDay } from "../domain/booking/replan-day.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import type { CronContext } from "./cron.ts";
@@ -23,7 +24,12 @@ function once<T>(read: () => Promise<T>): () => Promise<T> {
 export async function replanDraftsJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const now = deps.now();
   const given = await inputs();
-  const moved = await replanAhead(env.DB, now, (city, date) => replanDay(env.DB, { city, date, now, inputs: given }));
+  const moved = await replanAhead(env.DB, now, {
+    replan: (city, date) => replanDay(env.DB, { city, date, now, inputs: given }),
+    failed: (city, error) => {
+      log.warn("replan_failed", { city, error: error instanceof Error ? error.message : String(error) });
+    },
+  });
   if (moved > 0) log.info("drafts_replanned", { moved });
 }
 
@@ -31,14 +37,31 @@ export async function replanDraftsJob({ env, deps, log, inputs }: CronContext): 
  * Tomorrow re-planned and fixed in each city whose reminder hour has come, whether or not messaging is on, so the
  * reminders job runs with no switch (src/scheduled/cron.ts); the reminder hours, read once if at all, for the reminders.
  */
-export async function lockTomorrow({ env, deps, inputs, config }: CronContext): Promise<() => Promise<ReminderHours>> {
+export async function lockTomorrow({
+  env,
+  deps,
+  inputs,
+  config,
+  log,
+}: CronContext): Promise<() => Promise<ReminderHours>> {
   const now = deps.now();
   const readHours = once(async () => hoursOf(env.DB, (await inputs()).reminderHour));
-  const check = { routes: deps.routes, alert: deps.alert, alertOnce: deps.alertOnce, settings: config.settings };
+  const drives = createCallBudget(EVENING_DRIVES);
+  const check = {
+    routes: deps.routes,
+    drives,
+    alert: deps.alert,
+    alertOnce: deps.alertOnce,
+    settings: config.settings,
+  };
   await lockDueDrafts(env.DB, now, {
     readHours,
     // Re-planned on the estimate, checked on Google's traffic, and re-planned once more where it falls short.
     replan: async (city, date) => eveningCheck(env.DB, check, { city, date, now, inputs: await inputs() }),
+    failed: (city, error) => {
+      log.warn("replan_failed", { city, error: error instanceof Error ? error.message : String(error) });
+    },
   });
+  if (drives.ranOut()) log.warn("evening_drives_spent", { drives: EVENING_DRIVES });
   return readHours;
 }

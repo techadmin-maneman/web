@@ -39220,6 +39220,10 @@ Request body:
         }
       ]
     },
+    "technician_pending": {
+      "type": "boolean",
+      "description": "Whether who is coming is still a draft, fixed and named the evening before (ADR 0290); a client is not told the technician until then."
+    },
     "place": {
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
@@ -39561,6 +39565,7 @@ Request body:
     "stage",
     "prepaid",
     "technician",
+    "technician_pending",
     "place",
     "client_note",
     "pay_at_visit",
@@ -39966,6 +39971,10 @@ Request body:
         }
       ]
     },
+    "technician_pending": {
+      "type": "boolean",
+      "description": "Whether who is coming is still a draft, fixed and named the evening before (ADR 0290); a client is not told the technician until then."
+    },
     "place": {
       "type": "string",
       "description": "The saved address's area, city and pincode, else the visit's city and pincode."
@@ -40138,6 +40147,7 @@ Request body:
     "stage",
     "prepaid",
     "technician",
+    "technician_pending",
     "place",
     "client_note",
     "pay_at_visit",
@@ -42029,6 +42039,10 @@ Request body:
     "technician": {
       "$ref": "#/components/schemas/FreeTechnician"
     },
+    "technician_draft": {
+      "type": "boolean",
+      "description": "Whether the technician is a draft the evening's re-plan may still change, fixed the evening before (ADR 0290); never where ops chose them."
+    },
     "link": {
       "anyOf": [
         {
@@ -42066,6 +42080,7 @@ Request body:
     "window",
     "starts_at",
     "technician",
+    "technician_draft",
     "link"
   ],
   "additionalProperties": false

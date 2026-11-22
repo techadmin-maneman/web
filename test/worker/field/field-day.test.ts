@@ -165,6 +165,17 @@ describe("the day's jobs", () => {
     await insertJob(OTHER_JOB, { start: "2026-09-21T07:30:00.000Z", technician: SAMEER });
     expect((await get(`/api/tech/jobs/${OTHER_JOB}`)).status).toBe(404);
   });
+
+  // A visit's technician is a draft until the evening before (docs/decisions/0290-allotted-the-evening-before.md).
+  it("leaves out a draft, and says a day's list stands only up to today until the evening's lock", async () => {
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE id = ?1").bind(LATER_JOB).run();
+    const day = async (date: string) =>
+      (await get(`/api/tech/jobs?date=${date}`)).json<{ jobs: unknown[]; settled: boolean }>();
+    expect(await day("2026-09-21")).toMatchObject({ settled: true });
+    // Noon: tomorrow's lock is at 6 pm.
+    expect(await day("2026-09-22")).toMatchObject({ settled: false });
+    expect(await day("2026-09-25")).toMatchObject({ jobs: [], settled: false });
+  });
 });
 
 describe("the roster", () => {

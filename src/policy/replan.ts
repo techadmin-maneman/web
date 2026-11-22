@@ -6,10 +6,14 @@
 import type { Allotment, Piece } from "./allotment.ts";
 import { dayDrive, placedAt, type PlanDay, type PlanRules, type Stop } from "./day-plan.ts";
 
-/** What a technician taking a draft costs beside the driving: whether it is in their ring, and where its piece is. */
+/**
+ * What a technician taking a draft costs beside the driving: whether it is in their ring, where its piece is, and
+ * whether their home is known, without which nobody can tell what they would drive.
+ */
 export interface Taking {
   readonly overflow: boolean;
   readonly piece: Piece | null;
+  readonly homeKnown: boolean;
 }
 
 export interface Draft {
@@ -34,6 +38,12 @@ export interface Crew {
  * more than any day's driving, so the plan moves it wherever it fits.
  */
 const UNTAKEN = 10_000;
+
+/**
+ * What a draft costs with a technician whose home is not set: their driving counts nothing, so this keeps them after
+ * everyone whose home is known, as booking does (src/domain/booking/start-offers.ts), unless nobody else can take it.
+ */
+const NO_HOME = 1_000;
 
 /** The most times the plan goes over every move and swap; a day's drafts settle in two or three. */
 const PASSES = 6;
@@ -85,6 +95,7 @@ function costOf(plan: Plan, planning: Planning) {
     const technicianId = plan.get(draft.id) ?? draft.technicianId;
     const taking = draft.takers.get(technicianId);
     if (taking === undefined) total += UNTAKEN;
+    else if (!taking.homeKnown) total += NO_HOME;
     total += (taking?.overflow === true ? allotment.overflow_cost : 0) + pieceCost(taking?.piece ?? null, allotment);
     weeks.set(technicianId, (weeks.get(technicianId) ?? 0) + draft.stop.end - draft.stop.start);
   }
@@ -95,11 +106,19 @@ function costOf(plan: Plan, planning: Planning) {
 }
 
 /** Who takes each of the day's drafts, by the draft's ID: the plan that costs least of those its moves reach. */
-export function replan(planning: Planning): Map<string, string> {
+export function replan(whole: Planning): Map<string, string> {
+  const start: Plan = new Map(whole.drafts.map((draft) => [draft.id, draft.technicianId]));
+  // A day that does not fit as it stands, as with leave since laid over a draft, is left as it is, its drafts with it and
+  // nothing moved onto it: the plan works the other days.
+  const unfit = new Set([...whole.crew.days.keys()].filter((id) => dayWith(id, start, whole) === null));
+  const planning: Planning = {
+    ...whole,
+    drafts: whole.drafts.filter((draft) => !unfit.has(draft.technicianId)),
+    crew: { ...whole.crew, days: new Map([...whole.crew.days].filter(([id]) => !unfit.has(id))) },
+  };
   const { drafts, crew } = planning;
-  const plan: Plan = new Map(drafts.map((draft) => [draft.id, draft.technicianId]));
+  const plan: Plan = new Map(start);
   let best = costOf(plan, planning);
-  // A day that does not fit as it stands is left as it is: the plan never makes one fit by moving others about.
   if (best === null) return plan;
   const tryPlan = (next: Plan): boolean => {
     const cost = costOf(next, planning);

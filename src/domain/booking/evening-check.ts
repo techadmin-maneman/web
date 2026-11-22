@@ -1,22 +1,33 @@
 // Google's word on tomorrow before it is fixed (docs/decisions/0290-allotted-the-evening-before.md). After the
-// evening's re-plan on the estimate, each technician's day is driven on Google, leg by leg. Where a leg has too little
-// room and a draft is on it, that technician is ruled out of that draft and the day is re-planned once more; what
-// still has too little room is fixed as it stands, so the reminders still name who is coming, and ops are told the
-// drive, to shift a visit or call the client.
+// evening's re-plan on the estimate, each drive on each technician's day is asked of Google, on the traffic expected
+// when it sets off. Where a drive has too little room and a draft is at either end of it, that technician is ruled out
+// of that draft and the day is re-planned once more; what still has too little room is fixed as it stands, so the
+// reminders still name who is coming, and ops are told the drive, to shift a visit or call the client.
 
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import type { Settings } from "../../config/settings.ts";
+import type { CallBudget } from "../../lib/call-budget.ts";
+import { indiaInstant } from "../../lib/india-time.ts";
 import { timeOf } from "../../policy/day-plan.ts";
+import { driveMinutes } from "../../policy/drive-estimate.ts";
 import type { Alert } from "../../providers/alerts.ts";
-import type { Point, RoutesProvider } from "../../providers/routes/index.ts";
+import type { RoutesProvider } from "../../providers/routes/index.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
 import { driveThrough } from "../platform/road-drives.ts";
 import { readDay, replanDay, startOf, type CityDay } from "./replan-day.ts";
 
+/**
+ * The drives one evening's run may ask Google for, across its cities: each takes a few of the 1,000 calls an
+ * invocation may make (docs/decisions/0112-workers-paid.md). A drive past them stands on the estimate.
+ */
+export const EVENING_DRIVES = 120;
+
 /** What the check asks Google through, and tells ops by. */
 export interface EveningCheck {
   readonly routes: RoutesProvider | null;
+  /** The run's drives left to ask, of EVENING_DRIVES. */
+  readonly drives: CallBudget;
   readonly alert: Alert;
   readonly alertOnce: AlertOnce;
   readonly settings: Settings;
@@ -42,41 +53,48 @@ interface Short {
 const draftAt = (day: CityDay, technicianId: string, start: number): string | null =>
   day.rows.find((row) => row.technician_id === technicianId && startOf(row) === start)?.id ?? null;
 
-/** Each drive on the city's days that Google's traffic leaves too little room for; none where Google is off. */
+/**
+ * Each drive on the city's days that Google's traffic, as it is expected when the drive sets off, leaves too little
+ * room for; none where Google is off. A drive between visits sets off once the visit before is wrapped up; the day's
+ * first, from home, as late as the estimate lets it.
+ */
 async function shortsOf(db: D1Database, check: EveningCheck, day: CityDay, input: Input): Promise<Short[]> {
   const { routes } = check;
   if (routes === null) return [];
+  const { bookingRules, driveEstimate } = input.inputs;
   const shorts: Short[] = [];
   for (const [technicianId, plan] of day.days) {
     // Only the stops with a pin can be driven; a home not set starts the day at its first.
     const stops = [...plan.stops].sort((a, b) => a.start - b.start).filter((stop) => stop.pin !== null);
-    const points: Point[] = [...(plan.home === null ? [] : [plan.home]), ...stops.flatMap((stop) => stop.pin ?? [])];
-    if (stops.length === 0 || points.length < 2) continue;
-    const answer = await driveThrough(
-      db,
-      { routes, alert: check.alert },
-      {
-        points,
-        at: { now: input.now, settings: check.settings },
-      },
-    );
-    if (!answer.ok) continue;
-    const fromHome = plan.home === null ? 0 : 1;
-    answer.legs.forEach((leg, index) => {
-      const to = stops[index + 1 - fromHome];
-      const from = index - fromHome < 0 ? undefined : stops[index - fromHome];
-      if (to === undefined) return;
-      const readyAt = from === undefined ? plan.opens : from.end + input.inputs.bookingRules.wrap_up;
-      const needs = Math.ceil(leg.seconds / 60) + input.inputs.driveEstimate.parking;
-      if (needs <= to.start - readyAt) return;
+    for (const [index, to] of stops.entries()) {
+      const from = index === 0 ? null : (stops[index - 1] ?? null);
+      const setsOff = from === null ? plan.home : from.pin;
+      if (setsOff === null || to.pin === null) continue;
+      if (!check.drives.spend(1)) return shorts;
+      const readyAt = from === null ? plan.opens : from.end + bookingRules.wrap_up;
+      const estimate = driveMinutes(setsOff, to.pin, Math.floor(to.start / 60), driveEstimate);
+      const leaves = from === null ? Math.max(plan.opens, to.start - estimate) : readyAt;
+      const answer = await driveThrough(
+        db,
+        { routes, alert: check.alert },
+        {
+          points: [setsOff, to.pin],
+          at: { now: input.now, settings: check.settings },
+          departing: { departAt: indiaInstant(input.date, timeOf(leaves)) },
+        },
+      );
+      const leg = answer.ok ? answer.legs[0] : undefined;
+      if (leg === undefined) continue;
+      const needs = Math.ceil(leg.seconds / 60) + driveEstimate.parking;
+      if (needs <= to.start - readyAt) continue;
       shorts.push({
         technicianId,
         to: to.start,
         short: needs - (to.start - readyAt),
         draftId:
-          draftAt(day, technicianId, to.start) ?? (from === undefined ? null : draftAt(day, technicianId, from.start)),
+          draftAt(day, technicianId, to.start) ?? (from === null ? null : draftAt(day, technicianId, from.start)),
       });
-    });
+    }
   }
   return shorts;
 }

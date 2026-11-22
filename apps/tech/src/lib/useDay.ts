@@ -36,8 +36,11 @@ interface Failed {
 export type KeptLoad<T> =
   | { readonly state: "loading" }
   | Failed
-  /** `fromPhone` is true when this is what the phone kept, not what the API just said. */
-  | { readonly state: "loaded"; readonly value: T; readonly fromPhone: boolean };
+  /**
+   * `fromPhone` is true when this is what the phone kept, not what the API just said. `settled`, for a day the API
+   * just answered, is false while its visits may still be given to the technician the evening before.
+   */
+  | { readonly state: "loaded"; readonly value: T; readonly fromPhone: boolean; readonly settled?: boolean };
 
 const failed = (requestId: string | null, gone = false): Failed => ({ state: "failed", requestId, gone });
 
@@ -55,7 +58,7 @@ export async function loadDay(date: string): Promise<KeptLoad<readonly JobSummar
     await keepDay(date, answer.body.jobs).catch(() => undefined);
     await keepToFix(answer.body.sent_back).catch(() => undefined);
     await forgetStale().catch(() => undefined);
-    return { state: "loaded", value: answer.body.jobs, fromPhone: false };
+    return { state: "loaded", value: answer.body.jobs, fromPhone: false, settled: answer.body.settled };
   }
   if (!unreachable(answer)) return failed(answer.requestId);
   const kept = await keptDay(date).catch(() => null);

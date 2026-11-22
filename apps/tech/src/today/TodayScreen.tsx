@@ -226,7 +226,11 @@ export function TodayScreen() {
           heard={heard}
         />
       )}
-      <Tomorrow jobs={tomorrowJobs} loaded={tomorrow.state === "loaded"} />
+      <Tomorrow
+        jobs={tomorrowJobs}
+        loaded={tomorrow.state === "loaded"}
+        settled={tomorrow.state !== "loaded" || tomorrow.settled !== false}
+      />
     </main>
   );
 }

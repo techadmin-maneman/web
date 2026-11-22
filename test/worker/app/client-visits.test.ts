@@ -136,6 +136,14 @@ describe("GET /api/me", () => {
     });
   });
 
+  it("names no technician while who is coming is a draft, and says it is pending", async () => {
+    const { "ap-next": next } = await seed([booked("ap-next")]);
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE id = ?1").bind(next).run();
+    await signIn();
+    const me = await (await get("/api/me")).json<Record<string, unknown>>();
+    expect(me).toMatchObject({ next_visit: { technician: null, technician_pending: true } });
+  });
+
   it("is fitted once a visit after the consultation is done, with the next one ahead", async () => {
     await seed([done("ap-done", "2026-09-10"), booked("ap-next")]);
     await signIn();

@@ -7327,6 +7327,10 @@ One of the client's try-on looks, under the card's own unlock, never cached
         "$ref": "#/components/schemas/TechnicianDayJob"
       }
     },
+    "settled": {
+      "type": "boolean",
+      "description": "Whether the day's list stands: any day up to today, and tomorrow once its evening's lock has fixed who takes each visit (ADR 0290). A later day may still be given visits that are drafts now."
+    },
     "sent_back": {
       "type": "array",
       "items": {
@@ -7395,6 +7399,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
   "required": [
     "date",
     "jobs",
+    "settled",
     "sent_back"
   ],
   "additionalProperties": false,

@@ -10,6 +10,7 @@ import { kitHairSystems } from "../../domain/inventory/hair-systems.ts";
 import { kitUnits } from "../../domain/inventory/stock-units.ts";
 import type { JobSheetItem } from "../../config/job-sheet.ts";
 import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/field/job-sheet-settings.ts";
+import { daySettled } from "../../domain/booking/allotment-lock.ts";
 import { jobsOn } from "../../domain/field/tech-jobs.ts";
 import { jobDetail } from "../../domain/field/job-card.ts";
 import { refuse } from "../../http/errors.ts";
@@ -89,11 +90,12 @@ export function registerTechJobReads(app: App): void {
     const inputs = await opsInputs(c);
     const rules = { booking: inputs.bookingRules, drive: inputs.driveEstimate };
     const unlockHour = inputs.addressUnlockHour;
-    const [jobs, sentBack] = await Promise.all([
+    const [jobs, sentBack, settled] = await Promise.all([
       jobsOn({ db: c.env.DB, technicianId, date, now, unlockHour, rules }),
       visitsToFix(c.env.DB, { technicianId, now, unlockHour }),
+      daySettled(c.env.DB, { technicianId, date, now, nationalHour: inputs.reminderHour }),
     ]);
-    return c.json({ date, jobs, sent_back: sentBack }, 200);
+    return c.json({ date, jobs, settled, sent_back: sentBack }, 200);
   });
 
   app.openapi(jobRoute, async (c) => {

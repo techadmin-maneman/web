@@ -5,7 +5,8 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { eveningCheck, type EveningCheck } from "../../../src/domain/booking/evening-check.ts";
+import { EVENING_DRIVES, eveningCheck, type EveningCheck } from "../../../src/domain/booking/evening-check.ts";
+import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
 import type { Point, RoutesProvider } from "../../../src/providers/routes/index.ts";
@@ -17,22 +18,27 @@ const TUESDAY = "2026-09-22";
 const IMRANS_HOME = 28.4775;
 const SANDEEPS_HOME = 28.5674;
 
-/** Google answering each drive in `minutes(from)`, by the pin it sets off from; and what ops were told. */
-function google(minutes: (from: Point) => number): { check: EveningCheck; told: string[] } {
+/** Google answering each drive in `minutes(from)`, by the pin it sets off from; when each was asked to set off; and
+ * what ops were told. */
+function google(minutes: (from: Point) => number): { check: EveningCheck; told: string[]; departures: string[] } {
   const told: string[] = [];
+  const departures: string[] = [];
   const routes: RoutesProvider = {
-    route: (stops) =>
-      Promise.resolve({
+    route: (stops, departing) => {
+      departures.push(departing?.departAt.toISOString() ?? "on the road alone");
+      return Promise.resolve({
         ok: true,
         // Each leg sets off from the stop before it, which every leg has.
         legs: stops.slice(0, -1).map((from) => ({ seconds: minutes(from) * 60, meters: 1000 })),
         polyline: null,
-      }),
+      });
+    },
     map: () => Promise.resolve({ ok: false, detail: "no map here" }),
     areaMap: () => Promise.resolve({ ok: false, detail: "not drawn here" }),
   };
   const check: EveningCheck = {
     routes,
+    drives: createCallBudget(EVENING_DRIVES),
     alert: () => Promise.resolve(),
     alertOnce: (raised) => {
       told.push(raised.key);
@@ -40,7 +46,7 @@ function google(minutes: (from: Point) => number): { check: EveningCheck; told: 
     },
     settings: LOCAL_SETTINGS,
   };
-  return { check, told };
+  return { check, told, departures };
 }
 
 let visitId: string;
@@ -85,10 +91,16 @@ describe("tomorrow checked on Google", () => {
   it("gives a draft to another technician where Google leaves its first no room, and tells nobody", async () => {
     await booked(28.4595);
     // From Imran's home the road is jammed: three hours; from anywhere else, ten minutes.
-    const { check, told } = google((from) => (from.lat === IMRANS_HOME ? 180 : 10));
+    const { check, told, departures } = google((from) => (from.lat === IMRANS_HOME ? 180 : 10));
     await run(check);
     expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
     expect(told).toEqual([]);
+    // Each drive from home on the traffic of Tuesday morning, setting off before the 11 o'clock visit.
+    expect(departures.length).toBeGreaterThan(0);
+    for (const departure of departures) {
+      expect(departure >= indiaInstant(TUESDAY, "09:00").toISOString()).toBe(true);
+      expect(departure < indiaInstant(TUESDAY, "11:00").toISOString()).toBe(true);
+    }
   });
 
   it("leaves a draft as it stands where nobody's drive has room, and tells ops the drive", async () => {
@@ -98,6 +110,15 @@ describe("tomorrow checked on Google", () => {
     expect(await visitRow()).toMatchObject({ technician_draft: 1 });
     expect(told).toHaveLength(1);
     expect(told[0]).toMatch(/^leg_short:t[12]:2026-09-22:11:00$/);
+  });
+
+  it("asks Google no more drives than the run has left, and leaves the rest on the estimate", async () => {
+    await booked(28.4598);
+    const { check, told, departures } = google(() => 180);
+    await run({ ...check, drives: createCallBudget(0) });
+    expect(departures).toEqual([]);
+    expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+    expect(told).toEqual([]);
   });
 
   it("asks Google nothing where the routes provider is off, and re-plans on the estimate alone", async () => {

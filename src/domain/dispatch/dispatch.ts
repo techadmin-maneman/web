@@ -37,6 +37,7 @@ import { loadBlackouts } from "../booking/occupancy.ts";
 import { visitsOfClient } from "../booking/technician-rotation.ts";
 import { allowedTechnicians, breaksRotation } from "../../policy/technician-rotation.ts";
 import { releaseDeadHolds } from "../booking/hold-slot.ts";
+import { CLIENT_MOVING } from "../booking/hold-stages.ts";
 import { begunPastArrival, visitBegun } from "../visits/visit-begun.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
 import { alertStatement } from "../clients/app-alerts.ts";
@@ -51,7 +52,6 @@ import {
   isWhereItIs,
   movesOntoBlackout,
   isUnderWay,
-  CLIENT_MOVING,
   timesAt,
   landingOf,
   moveDays,

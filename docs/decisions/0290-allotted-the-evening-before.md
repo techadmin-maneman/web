@@ -16,14 +16,16 @@ cut driving. The owner chose the reminder hour (6 pm until ops change it) as the
 ## Decision
 
 1. **A visit is booked with a draft technician** (`appointments.technician_draft`), unless it is for today, or for
-   tomorrow once the reminder hour has come in its city, when it is fixed at once. Every visit booked before this keeps
-   its technician.
+   tomorrow once the reminder hour has come in its city, or ops chose the technician when booking it in the console
+   (`slot_holds.technician_chosen`), when it is fixed at once. Every visit booked before this keeps its technician.
 2. **The lock fixes tomorrow's drafts at the reminder hour**, in the same pass and just before the reminders that name
    the technician (`src/domain/booking/allotment-lock.ts`, `src/scheduled/cron.ts`). The technician's card already
    opens at that hour.
 3. **Until then nobody is told who.** The client's visits and the hold leave the technician out, and the app says
-   "Confirmed the evening before"; a booking's messages say "our technician"; the technician's app does not list a
-   draft.
+   "Confirmed the day before", as its reminder comes the day before; a booking's messages say "our technician"; the
+   technician's app does not list a draft, and says a day's jobs come the evening before rather than that nothing is
+   booked. Ops see the draft's technician, marked as a draft, on the board and in the console's booking.
+   A draft's changes do not reach the technician's alerts (migration 0230).
 4. **A visit ops place by hand is fixed** where they place it; one a client moves past its day's lock is a draft
    again. The board's drawer says when a visit's technician is a draft.
 5. **Drafts are re-planned to cost least** (`src/policy/replan.ts`, `src/domain/booking/replan-day.ts`): each keeps
@@ -32,10 +34,13 @@ cut driving. The owner chose the reminder hour (6 pm until ops change it) as the
    moves are written in one batch under the claims a move takes (ADR 0069), so a hold on the same time since fails
    the batch, and nobody is told. The night re-plans the week ahead at 2 am.
 6. **Tomorrow is checked on Google before it is fixed** (`src/domain/booking/evening-check.ts`). At the reminder
-   hour, each city is re-planned on the estimate, each technician's day is driven on Google leg by leg, and a drive
-   with too little room rules its technician out of the draft at either end before one more re-plan. What still falls
-   short is fixed as it stands, so the reminders still go, and ops are alerted to the drive (leg_short), to shift a
-   visit or call the client. Where the routes provider is off, the estimate stands.
+   hour, each city is re-planned on the estimate, and each drive on each technician's day is asked of Google on the
+   traffic expected when it sets off: once the visit before is wrapped up, or, for the day's first, from home as late
+   as the estimate lets it. A drive with too little room rules its technician out of the draft at either end before
+   one more re-plan. What still falls short is fixed as it stands, so the reminders still go, and ops are alerted to
+   the drive (leg_short), to shift a visit or call the client. Where the routes provider is off, the estimate stands.
+   Asking for traffic bills as Compute Routes Pro rather than Essentials, one call a drive; at a few technicians a
+   city that is tens of calls an evening, inside the daily route ceiling the board and booking share.
 
 ## Consequences
 

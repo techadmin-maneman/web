@@ -55,6 +55,10 @@ interface HoldRow {
   late_change_charge: Charge | null;
   technician_name: string;
   technician_initials: string;
+  /** Once booked, whether its visit's technician is still a draft; null before. */
+  visit_draft: number | null;
+  /** 1 where ops chose the technician, who is then fixed, never a draft. */
+  technician_chosen: number;
   appointment_id: string | null;
   moves_appointment_id: string | null;
   use_credit: number;
@@ -67,9 +71,13 @@ interface HoldRow {
 const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit, h.starts_at,
     h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.grace_seconds, h.confirmed_at, h.late_fee_ex_gst,
     h.late_fee_gst_percent, h.change_notice_hours, h.late_change_charge, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
-    h.moves_appointment_id, h.use_credit, h.person_id, h.pincode, h.one_visit,
+    h.moves_appointment_id, h.use_credit, h.person_id, h.pincode, h.one_visit, h.technician_chosen,
+    (SELECT a.technician_draft FROM appointments a WHERE a.id = h.appointment_id) AS visit_draft,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
-  FROM slot_holds h JOIN technicians t ON t.id = h.technician_id
+  FROM slot_holds h
+  -- Once booked, whoever its visit is with now, which the evening's re-plan may have changed.
+  JOIN technicians t ON t.id = COALESCE((SELECT a.technician_id FROM appointments a WHERE a.id = h.appointment_id),
+                                        h.technician_id)
   LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
   WHERE h.id = ?1 AND h.person_id = ?2`;
 
@@ -114,6 +122,12 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
       : { start: new Date(row.starts_at), end: new Date(Date.parse(row.starts_at) + minutes * MINUTE_MS) };
   const hours = windowTimesOf(schedule.on(row.date))[row.window_label];
   const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
+  // Named only once fixed, the evening before (./allotment-lock.ts): as its visit stands once booked; before, unless
+  // ops chose who.
+  const draft =
+    row.visit_draft === null
+      ? row.technician_chosen === 0 && bookedAsDraft(start, city, now, lockHours)
+      : row.visit_draft === 1;
   return {
     id: row.id,
     type: row.type,
@@ -125,10 +139,7 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
     starts_at: start.toISOString(),
     ends_at: end.toISOString(),
     arrives_by: new Date(start.getTime() + inputs.bookingRules.arrival * MINUTE_MS).toISOString(),
-    // Named only once fixed, the evening before (./allotment-lock.ts).
-    technician: bookedAsDraft(start, city, now, lockHours)
-      ? null
-      : { name: row.technician_name, initials: row.technician_initials },
+    technician: draft ? null : { name: row.technician_name, initials: row.technician_initials },
     price,
     late_fee: lateFee,
     free_until: freeUntil(start, noticeHours).toISOString(),

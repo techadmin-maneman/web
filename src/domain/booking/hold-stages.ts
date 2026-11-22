@@ -27,6 +27,12 @@ export const keepingItsTime = (hold: string, now: string): string =>
 export const paidNotBooked = (hold: string): string => `${hold}.state = 'held' AND ${hold}.confirmed_at IS NOT NULL`;
 
 /**
+ * Whether a move the client has paid for, or booked free, waits to be booked onto visit `a`. It is booked onto the visit
+ * as it was when the client chose the time, so ops' move, and the evening's re-plan, wait for it.
+ */
+export const CLIENT_MOVING = `EXISTS (SELECT 1 FROM slot_holds h WHERE h.moves_appointment_id = a.id AND ${paidNotBooked("h")})`;
+
+/**
  * A client's own holds the app lets go when it holds them another: unconfirmed, with no Razorpay order and no payment
  * link, so nothing can be paid on them. `person` is the client's parameter.
  */

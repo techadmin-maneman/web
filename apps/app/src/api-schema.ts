@@ -6207,6 +6207,8 @@ export interface components {
             /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
+            /** @description Whether who is coming is still a draft, fixed and named the evening before (ADR 0290); a client is not told the technician until then. */
+            technician_pending: boolean;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
             /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
@@ -6589,6 +6591,8 @@ export interface components {
             /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
+            /** @description Whether who is coming is still a draft, fixed and named the evening before (ADR 0290); a client is not told the technician until then. */
+            technician_pending: boolean;
             /** @description The saved address's area, city and pincode, else the visit's city and pincode. */
             place: string;
             /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */

@@ -1,13 +1,16 @@
 // A city's draft visits on one day, re-planned and written (docs/decisions/0290-allotted-the-evening-before.md): the
 // plan (src/policy/replan.ts) is read from the same days booking plans on, and each draft it gives to another
-// technician is moved in one batch under the claims a move takes (ADR 0069), so a hold on the same time since fails
-// the batch and nothing is written; the next pass tries again. Nobody is told: the time is the client's own, and who
-// is coming is named only once the evening's lock fixes it.
+// technician is moved in one batch under the lock a move takes on the day it goes to, so a hold placed there since
+// fails the batch and nothing is written; the next pass tries again. Nobody is told: the time is the client's own,
+// and who is coming is named only once the evening's lock fixes it.
 
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
+import { failedNotNullOn, failedUniqueOn } from "../../lib/d1-errors.ts";
+import { CLIENT_MOVING } from "./hold-stages.ts";
+import { releaseDeadHolds } from "./hold-slot.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { addDays, indiaInstant, indiaTime } from "../../lib/india-time.ts";
-import { claimsAt, minuteOf, type PlanDay } from "../../policy/day-plan.ts";
+import { minuteOf, type PlanDay } from "../../policy/day-plan.ts";
 import { replan, type Draft, type Taking } from "../../policy/replan.ts";
 import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician-rotation.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
@@ -45,7 +48,7 @@ function weekOf(plans: DayPlans, technicianId: string, date: string): number {
   return minutes;
 }
 
-/** Who may take a draft, as booking would offer it: in the city, trained, in their ring, and allowed by the rotation. */
+/** Who may take a draft, as booking would offer it: in the city, trained, in their ring, allowed by the rotation. */
 async function takersOf(
   db: D1Database,
   row: DraftRow,
@@ -70,13 +73,21 @@ async function takersOf(
     able.technicians.filter((each) => where.has(each.id) && read.working.has(each.id) && !read.ruledOut.has(each.id)),
     (each) => barred.has(each.id),
   );
+  const homeKnown = (id: string) => {
+    const radius = read.radii.get(id);
+    if (radius === undefined) return false;
+    return radius.home_lat !== null && radius.home_lng !== null;
+  };
   // Who has it now may keep it, so the plan starts from one that fits, unless Google's drive ruled them out.
   const takers = new Map<string, Taking>();
-  if (!read.ruledOut.has(row.technician_id)) takers.set(row.technician_id, { overflow: false, piece: null });
+  if (!read.ruledOut.has(row.technician_id)) {
+    takers.set(row.technician_id, { overflow: false, piece: null, homeKnown: homeKnown(row.technician_id) });
+  }
   for (const each of allowed) {
     takers.set(each.id, {
       overflow: where.get(each.id)?.standing === "overflow",
       piece: able.pieces.get(each.id) ?? null,
+      homeKnown: homeKnown(each.id),
     });
   }
   return takers;
@@ -194,25 +205,25 @@ export async function replanDay(
       : [{ row, to, minutes: draft.stop.end - draft.stop.start }];
   });
   if (moves.length === 0) return 0;
-  await writeMoves(db, { moves, plans, date, wrapUp: inputs.bookingRules.wrap_up }, now);
-  return moves.length;
+  return (await writeMoves(db, { moves, plans, date }, now)) ? moves.length : 0;
 }
 
 /**
- * The moves in one batch: each recorded, its time claimed on the day it goes to, with one lock a day past the last a
- * hold took, the visit given to its new technician while still the draft as read, and the claims let go. A hold that
- * took the time or a lock since, or a draft fixed or moved since, fails the batch, and nothing is written.
+ * The moves in one batch, as a move on the board is written (ADR 0069): holds nobody is paying for let go, each move
+ * recorded, the day it goes to locked one past the last lock a hold took, the visit given to its new technician while
+ * still the draft as read, and the locks let go. A hold placed on that day since, a draft fixed or moved since, or a
+ * client's own move of it waiting on payment, fails the batch and nothing is written; false then, for the next pass.
  */
 async function writeMoves(
   db: D1Database,
-  work: { readonly moves: readonly Move[]; readonly plans: DayPlans; readonly date: string; readonly wrapUp: number },
+  work: { readonly moves: readonly Move[]; readonly plans: DayPlans; readonly date: string },
   now: Date,
-): Promise<void> {
+): Promise<boolean> {
   const at = now.toISOString();
   const locked = new Set<string>();
-  const statements: D1PreparedStatement[] = [];
+  const statements: D1PreparedStatement[] = [...releaseDeadHolds(db, now)];
   const ids: string[] = [];
-  for (const { row, to, minutes } of work.moves) {
+  for (const { row, to } of work.moves) {
     const moveId = crypto.randomUUID();
     ids.push(moveId);
     statements.push(
@@ -223,32 +234,31 @@ async function writeMoves(
            VALUES (?1,
              (SELECT a.id FROM appointments a
               WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.technician_draft = 1
-                AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}),
+                AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND NOT ${CLIENT_MOVING}),
              ?3, ?4, ?5, ?5, 'zone_rebalance', 'allotment', 'written', 'written', ?6, ?6)`,
         )
         .bind(moveId, row.id, row.technician_id, to, row.window_start, at),
     );
-    const claims = claimsAt(
-      indiaTime(new Date(row.window_start)),
-      minutes + work.wrapUp,
-      work.plans.revision(to, work.date),
-    );
-    const lock = claims.at(-1) ?? "";
-    for (const claim of claims) {
-      // One lock a day, however many drafts the batch gives that technician.
-      if (claim === lock && locked.has(to)) continue;
+    // One lock a day, however many drafts the batch gives that technician.
+    if (!locked.has(to)) {
       statements.push(
         db
           .prepare("INSERT INTO slot_claims (technician_id, date, claim, move_id) VALUES (?1, ?2, ?3, ?4)")
-          .bind(to, work.date, claim, moveId),
+          .bind(to, work.date, `rev:${String(work.plans.revision(to, work.date) + 1)}`, moveId),
       );
+      locked.add(to);
     }
-    locked.add(to);
     statements.push(reallottingDraft(db, { visitId: row.id, technicianId: to, at }));
   }
   for (const moveId of ids) {
     statements.push(db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId));
   }
   statements.push(...visitUpkeep(db, { visits: work.moves.map((each) => each.row.id) }, at));
-  await db.batch(statements);
+  try {
+    await db.batch(statements);
+    return true;
+  } catch (error) {
+    if (failedUniqueOn(error, "slot_claims") || failedNotNullOn(error, "dispatch_moves.appointment_id")) return false;
+    throw error;
+  }
 }

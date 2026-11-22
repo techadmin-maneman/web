@@ -125,6 +125,15 @@ describe("a job in the coming week, changed", () => {
       .run();
     expect(await alerts()).toEqual([]);
   });
+
+  // A draft is not on the technician's phone until the evening before (ADR 0290), so its changes are not theirs to hear.
+  it("tells nothing of a draft moved, given to another or called off", async () => {
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE id = ?1").bind(AHEAD).run();
+    await move(later);
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(AHEAD, SAMEER).run();
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(AHEAD).run();
+    expect(await alerts()).toEqual([]);
+  });
 });
 
 describe("the cron's alerts", () => {

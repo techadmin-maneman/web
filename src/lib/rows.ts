@@ -1493,6 +1493,7 @@ export interface Rows {
     readonly pay_at_visit: number;
     readonly starts_at: string | null;
     readonly booked_from: string | null;
+    readonly technician_chosen: number;
   };
   readonly slot_times: {
     readonly id: string;

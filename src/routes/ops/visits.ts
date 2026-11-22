@@ -16,6 +16,7 @@ import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { freeTechnicians } from "../../domain/booking/availability.ts";
 import { confirmUnpaid } from "../../domain/booking/bookings.ts";
 import { giveBack } from "../../domain/booking/give-back.ts";
+import { holdDraft } from "../../domain/booking/allotment-lock.ts";
 import { visitOfHold } from "../../domain/booking/booked-hold.ts";
 import type { Hold } from "../../domain/booking/hold-slot.ts";
 import { remakesOwed, type Remake } from "../../domain/booking/remakes.ts";
@@ -72,6 +73,11 @@ const OpsBookingSchema = z
     window: z.enum(BOOKING_WINDOWS),
     starts_at: z.iso.datetime().openapi({ description: "The start the visit is booked at." }),
     technician: TechnicianSchema,
+    technician_draft: z.boolean().openapi({
+      description:
+        "Whether the technician is a draft the evening's re-plan may still change, fixed the evening before " +
+        "(ADR 0290); never where ops chose them.",
+    }),
     link: z
       .union([z.object({ url: z.string(), open_until: z.iso.datetime() }).strict(), z.null()])
       .openapi({ description: "The payment link Razorpay texted the client, and when it closes and the slot goes." }),
@@ -205,9 +211,10 @@ interface Answer {
   readonly outcome: (typeof OUTCOMES)[number];
   readonly visitId: string | null;
   readonly link: { readonly url: string; readonly open_until: string } | null;
+  readonly draft: boolean;
 }
 
-const bookingBody = ({ hold, sale, outcome, visitId, link }: Answer) => ({
+const bookingBody = ({ hold, sale, outcome, visitId, link, draft }: Answer) => ({
   hold_id: hold.id,
   outcome,
   visit_id: visitId,
@@ -218,6 +225,7 @@ const bookingBody = ({ hold, sale, outcome, visitId, link }: Answer) => ({
   window: hold.window,
   starts_at: hold.startsAt.toISOString(),
   technician: { id: hold.technician.id, name: hold.technician.name },
+  technician_draft: draft,
   link,
 });
 
@@ -400,7 +408,8 @@ export function registerOpsVisits(app: App): void {
         return refuse(c, "unavailable");
       }
       const link = { url: made.shortUrl, open_until: closesAt.toISOString() };
-      return c.json(bookingBody({ hold, sale, outcome: "awaiting_payment", visitId: null, link }), 201);
+      const draft = await holdDraft(db, hold.id, now);
+      return c.json(bookingBody({ hold, sale, outcome: "awaiting_payment", visitId: null, link, draft }), 201);
     }
 
     if (!(await confirmUnpaid(db, hold.id, now))) {
@@ -410,6 +419,7 @@ export function registerOpsVisits(app: App): void {
     await bookHold(c, hold.id);
     const visitId = await visitOfHold(db, hold.id);
     const outcome = visitId === null ? "being_booked" : "booked";
-    return c.json(bookingBody({ hold, sale, outcome, visitId, link: null }), 201);
+    const draft = await holdDraft(db, hold.id, now);
+    return c.json(bookingBody({ hold, sale, outcome, visitId, link: null, draft }), 201);
   });
 }

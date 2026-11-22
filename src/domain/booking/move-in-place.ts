@@ -37,8 +37,9 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
   if (visit === null) return moveRefused(context, hold);
   if (!(await takesHeldTime(db, hold, visit, now))) return moveOvertaken(context, hold);
   const [{ start, end }, hours] = await Promise.all([heldVisitTimes(db, hold), reminderHoursAt(db, now)]);
-  // A visit moved past its day's lock is a draft again, its technician the engine's to change (./allotment-lock.ts).
-  const draft = bookedAsDraft(start, hold.city, now, hours) ? 1 : 0;
+  // A visit moved past its day's lock is a draft again, its technician the engine's to change (./allotment-lock.ts),
+  // unless ops chose them.
+  const draft = hold.technician_chosen === 0 && bookedAsDraft(start, hold.city, now, hours) ? 1 : 0;
 
   const at = now.toISOString();
   const lateFee = "(SELECT id FROM payments WHERE razorpay_order_id = ?1)";
@@ -94,11 +95,14 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
 
 /**
  * Whether the visit can still take the hold's time: ops have not moved it since the client chose it, and nothing else
- * has taken that time on the held technician's day.
+ * has taken that time on the held technician's day. The evening's re-plan giving a draft to another technician moves
+ * no time, so it does not count (src/domain/booking/replan-day.ts).
  */
 async function takesHeldTime(db: D1Database, hold: HoldRow, visit: VisitToMove, now: Date): Promise<boolean> {
   const movedSince = await db
-    .prepare("SELECT 1 FROM dispatch_moves WHERE appointment_id = ?1 AND created_at >= ?2 LIMIT 1")
+    .prepare(
+      "SELECT 1 FROM dispatch_moves WHERE appointment_id = ?1 AND created_at >= ?2 AND actor != 'allotment' LIMIT 1",
+    )
     .bind(visit.id, hold.created_at)
     .first();
   if (movedSince !== null) return false;

@@ -8,6 +8,7 @@ import { hourHasCome } from "../../policy/city-settings.ts";
 import { cityReminderHours, reminderHourCame, type ReminderHours } from "../cities/city-rules.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
 import { fixingDrafts } from "../visits/technician-draft.ts";
+import { boardMoved } from "../visits/visit-upkeep.ts";
 
 /** The reminder hour in force, the nation's and each city's own, as the evening's lock and its reminders read it. */
 export async function reminderHoursAt(db: D1Database, now: Date): Promise<ReminderHours> {
@@ -28,6 +29,44 @@ export function bookedAsDraft(start: Date, city: string | null, now: Date, hours
   if (day <= today) return false;
   if (day === addDays(today, 1)) return !hourHasCome(lockHourOf(hours, city), now);
   return true;
+}
+
+/**
+ * Whether a hold's visit is with a draft technician: as its visit stands once booked; before, by when it starts,
+ * unless ops chose who.
+ */
+export async function holdDraft(db: D1Database, holdId: string, now: Date): Promise<boolean> {
+  const row = await db
+    .prepare(
+      `SELECT h.technician_chosen, h.starts_at, sp.city,
+              (SELECT a.technician_draft FROM appointments a WHERE a.id = h.appointment_id) AS visit_draft
+       FROM slot_holds h LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
+       WHERE h.id = ?1`,
+    )
+    .bind(holdId)
+    .first<{ technician_chosen: number; starts_at: string | null; city: string | null; visit_draft: number | null }>();
+  if (row === null) return false;
+  if (row.visit_draft !== null) return row.visit_draft === 1;
+  if (row.technician_chosen === 1 || row.starts_at === null) return false;
+  return bookedAsDraft(new Date(row.starts_at), row.city, now, await reminderHoursAt(db, now));
+}
+
+/**
+ * Whether a technician's list for `date` stands as the evening's lock leaves it: any day up to today, and tomorrow once
+ * the reminder hour of the technician's city has come. A later day may still be given visits that are drafts now.
+ */
+export async function daySettled(
+  db: D1Database,
+  day: { readonly technicianId: string; readonly date: string; readonly now: Date; readonly nationalHour: number },
+): Promise<boolean> {
+  const today = indiaDate(day.now);
+  if (day.date <= today) return true;
+  if (day.date !== addDays(today, 1)) return false;
+  const [cities, technician] = await Promise.all([
+    cityReminderHours(db),
+    db.prepare("SELECT city FROM technicians WHERE id = ?1").bind(day.technicianId).first<{ city: string | null }>(),
+  ]);
+  return hourHasCome(lockHourOf({ national: day.nationalHour, cities }, technician?.city ?? null), day.now);
 }
 
 /**
@@ -54,6 +93,8 @@ export async function lockDueDrafts(
   deps: {
     readonly readHours: () => Promise<ReminderHours>;
     readonly replan: (city: string, date: string) => Promise<unknown>;
+    /** A city whose re-plan failed: told, and left as it stands, so the lock still fixes it. */
+    readonly failed: (city: string, error: unknown) => void;
   },
 ): Promise<void> {
   const today = indiaDate(now);
@@ -67,11 +108,16 @@ export async function lockDueDrafts(
     .all<{ city: string | null; tomorrow: number }>();
   if (due.length === 0) return;
   const hours = await deps.readHours();
-  for (const { city, tomorrow: isTomorrow } of due) {
-    if (city !== null && isTomorrow === 1 && hourHasCome(lockHourOf(hours, city), now))
+  for (const city of new Set(due.flatMap((row) => (row.tomorrow === 1 && row.city !== null ? [row.city] : [])))) {
+    if (!hourHasCome(lockHourOf(hours, city), now)) continue;
+    try {
       await deps.replan(city, tomorrow);
+    } catch (error) {
+      deps.failed(city, error);
+    }
   }
-  await lockDrafts(db, now, hours).run();
+  // The board's version goes up with it, so an open board stops calling the visits drafts.
+  await db.batch([lockDrafts(db, now, hours), boardMoved(db)]);
 }
 
 /** The days ahead the night's re-plan looks over: tomorrow and the week after it. */
@@ -81,7 +127,10 @@ const REPLAN_DAYS = 7;
 export async function replanAhead(
   db: D1Database,
   now: Date,
-  replan: (city: string, date: string) => Promise<number>,
+  deps: {
+    readonly replan: (city: string, date: string) => Promise<number>;
+    readonly failed: (city: string, error: unknown) => void;
+  },
 ): Promise<number> {
   const today = indiaDate(now);
   const { results } = await db
@@ -98,7 +147,11 @@ export async function replanAhead(
   let moved = 0;
   for (const key of cityDays) {
     const [city = "", date = ""] = key.split("|");
-    moved += await replan(city, date);
+    try {
+      moved += await deps.replan(city, date);
+    } catch (error) {
+      deps.failed(city, error);
+    }
   }
   return moved;
 }

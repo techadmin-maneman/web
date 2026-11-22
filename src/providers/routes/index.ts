@@ -43,9 +43,14 @@ export interface AreaMap {
   readonly reaches: readonly { readonly colour: string; readonly centre: Point; readonly km: number }[];
 }
 
+/** When the drive sets off, where it is asked on the traffic expected then: a dearer call than the road alone. */
+export interface Departing {
+  readonly departAt: Date;
+}
+
 export interface RoutesProvider {
-  /** The drive through the stops in their order: one leg between each two. */
-  route(stops: readonly Point[]): Promise<RouteResult>;
+  /** The drive through the stops in their order: one leg between each two; on the traffic at `departing` if given. */
+  route(stops: readonly Point[], departing?: Departing): Promise<RouteResult>;
   /** One picture of every route, each in its colour, its stops numbered in order. */
   map(routes: readonly MapRoute[]): Promise<MapResult>;
   /** One picture of a city's pincodes and its technicians' reach. */

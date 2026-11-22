@@ -117,7 +117,7 @@ export function ConfirmedStep(props: {
         <p className={styles.confirmedDate}>{weekdayDate(hold.date)}</p>
         <p className={styles.arrives}>{copy.arrives(arrivalHours(hold))}</p>
         <dl className={styles.facts}>
-          <Fact name={copy.technician}>{hold.technician === null ? copy.eveningBefore : hold.technician.name}</Fact>
+          <Fact name={copy.technician}>{hold.technician === null ? copy.dayBefore : hold.technician.name}</Fact>
           {/* A move keeps its visit's own address, which the profile's may no longer be. */}
           {props.address !== null && props.moving === undefined && (
             <Fact name={copy.address}>{props.address.line1}</Fact>

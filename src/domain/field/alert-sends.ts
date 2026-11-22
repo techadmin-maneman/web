@@ -108,7 +108,7 @@ async function workingOn(db: D1Database, date: string): Promise<string[]> {
   const { results } = await db
     .prepare(
       `SELECT DISTINCT technician_id FROM appointments
-        WHERE technician_id IS NOT NULL AND deleted_at IS NULL AND ${toDo("status")}
+        WHERE technician_id IS NOT NULL AND technician_draft = 0 AND deleted_at IS NULL AND ${toDo("status")}
           AND window_start >= ?1 AND window_start < ?2`,
     )
     .bind(from, to)
@@ -154,7 +154,7 @@ export async function writeDayAhead(db: D1Database, { now, date }: { readonly no
     .prepare(
       `SELECT technician_id, COUNT(*) AS jobs, MIN(window_start || ' ' || id) AS first
          FROM appointments
-        WHERE technician_id IS NOT NULL AND deleted_at IS NULL AND ${toDo("status")}
+        WHERE technician_id IS NOT NULL AND technician_draft = 0 AND deleted_at IS NULL AND ${toDo("status")}
           AND window_start >= ?1 AND window_start < ?2
         GROUP BY technician_id`,
     )

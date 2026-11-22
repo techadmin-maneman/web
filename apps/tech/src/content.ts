@@ -91,6 +91,8 @@ export const today = localised({
   tomorrow: "Tomorrow",
   tomorrowJobs: (count: number, time: string) => `${String(count)} ${count === 1 ? "job" : "jobs"} from ${time}`,
   nothingBooked: "Nothing booked",
+  /** Tomorrow, before the evening's lock gives out its visits. */
+  comeThisEvening: "Jobs come this evening",
   /** Yesterday's jobs not yet closed, as a card at the top: their work can still be finished and sent. */
   leftOpen: (time: string, who: string) => `Still open from yesterday · ${time} · ${who}`,
   leftOpenBody: "Finish it and send it.",
@@ -1250,9 +1252,10 @@ export const schedule = localised({
   /** "12 to 18 Nov · 12 jobs" */
   range: (from: string, to: string, jobs: number) => `${from} to ${to} · ${counted(jobs, "job", "jobs")}`,
   /** What a screen reader hears for a day in the strip: "Thursday 12 Nov, 4 jobs"; null for a day that did not load. */
-  dayLabel: (weekday: string, date: string, jobs: number | null) => {
+  dayLabel: (weekday: string, date: string, jobs: number | null, settled: boolean) => {
     if (jobs === null) return `${weekday} ${date}, didn’t load`;
-    return `${weekday} ${date}, ${jobs === 0 ? "nothing booked" : counted(jobs, "job", "jobs")}`;
+    if (jobs === 0) return `${weekday} ${date}, ${settled ? "nothing booked" : "jobs come the evening before"}`;
+    return `${weekday} ${date}, ${counted(jobs, "job", "jobs")}${settled ? "" : " so far"}`;
   },
   dayFailed: "This day didn’t load. It shows once there’s signal.",
   dayNotLoaded: "This day didn’t load.",
@@ -1262,7 +1265,10 @@ export const schedule = localised({
   /** "Today, Thu 12 Nov": only today is named, as the prototype writes it; every other day as `day`. */
   today: (weekday: string, date: string) => `Today, ${weekday} ${date}`,
   jobs: (count: number) => counted(count, "job", "jobs"),
+  /** A day whose visits the evening before gives out: what is on it so far. */
+  jobsSoFar: (count: number) => `${counted(count, "job", "jobs")} so far`,
   nothing: "Nothing booked",
+  comeEveningBefore: "Jobs come the evening before",
   dayView: "The day, by the hour",
   now: "Now",
   /** "18 min · leave 9:12 am" */

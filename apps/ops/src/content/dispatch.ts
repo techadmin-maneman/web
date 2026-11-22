@@ -221,7 +221,7 @@ export const dispatch = {
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, time: string, technician: string) => `${date} · ${time} · ${technician}`,
     /** A technician the evening's re-plan may still change (docs/decisions/0290-allotted-the-evening-before.md). */
-    draft: (technician: string) => `${technician}, draft until the evening before`,
+    draft: (technician: string) => `${technician} · draft`,
     // at_visit: a consultation and fit in one visit, paid once fitted (ADR 0105), or a visit paid by UPI there.
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
     badges: { prepaid: "Prepaid", credit: "Free visit", free: "No charge", at_visit: "Pays at the visit" },

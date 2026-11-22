@@ -26,7 +26,7 @@ const day = (homeKm: number, stops: PlanDay["stops"] = []): PlanDay => ({
   away: [],
 });
 
-const inside: Taking = { overflow: false, piece: null };
+const inside: Taking = { overflow: false, piece: null, homeKnown: true };
 
 function draft(id: string, at: string, km: number, technicianId: string, takers: Record<string, Taking>): Draft {
   const start = minuteOf(at);
@@ -79,7 +79,7 @@ describe("a day's re-plan", () => {
   });
 
   it("sends a draft into someone's ring only where the driving saved outweighs the ring's cost", () => {
-    const ring: Taking = { overflow: true, piece: null };
+    const ring: Taking = { overflow: true, piece: null, homeKnown: true };
     // From 28 km, Bhavesh at 50 drives 44 there and back against Aman's 56: 12 saved, under the ring's 30.
     const near = replan({
       drafts: [draft("d1", "10:00", 28, "A", { A: inside, B: ring })],
@@ -106,6 +106,48 @@ describe("a day's re-plan", () => {
       allotment: ALLOT,
     });
     expect(plan.get("d1")).toBe("A");
+  });
+
+  it("never moves a draft to a technician with no home pin while one whose home is known can keep it", () => {
+    // Bina has no home pin, so her driving counts nothing; Aman lives 40 km off, and keeps the draft.
+    const plan = replan({
+      drafts: [draft("d1", "10:00", 40, "A", { A: inside, B: { overflow: true, piece: null, homeKnown: false } })],
+      crew: crewOf({ A: day(0), B: { ...day(0), home: null } }),
+      rules: RULES,
+      allotment: ALLOT,
+    });
+    expect(plan.get("d1")).toBe("A");
+  });
+
+  it("sends a fit to whoever holds its piece, over a little less driving", () => {
+    // Bhavesh lives 10 km nearer, but the piece is in Aman's kit and nowhere else in the city.
+    const plan = replan({
+      drafts: [
+        draft("d1", "10:00", 30, "B", {
+          A: { overflow: false, piece: "kit", homeKnown: true },
+          B: { overflow: false, piece: "none", homeKnown: true },
+        }),
+      ],
+      crew: crewOf({ A: day(15), B: day(25) }),
+      rules: RULES,
+      allotment: ALLOT,
+    });
+    expect(plan.get("d1")).toBe("A");
+  });
+
+  it("still re-plans the other days where one technician's day no longer fits as it stands", () => {
+    // Chetan's leave now covers his draft, so his day is left as it is; Aman's draft still goes to Bhavesh.
+    const away = { ...day(20), away: [{ from: minuteOf("09:00"), to: minuteOf("20:00") }] };
+    const plan = replan({
+      drafts: [
+        draft("d1", "10:00", 45, "A", { A: inside, B: inside }),
+        draft("d2", "14:00", 20, "C", { A: inside, B: inside, C: inside }),
+      ],
+      crew: crewOf({ A: day(0), B: day(50), C: away }),
+      rules: RULES,
+      allotment: ALLOT,
+    });
+    expect([plan.get("d1"), plan.get("d2")]).toEqual(["B", "C"]);
   });
 
   it("evens out the week where the driving is the same", () => {

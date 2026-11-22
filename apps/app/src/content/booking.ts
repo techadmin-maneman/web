@@ -288,7 +288,7 @@ export const booking = {
     arrives: (hours: string) => `Arrives ${hours}`,
     technician: "Technician",
     /** Who comes is fixed and named the evening before (docs/decisions/0290-allotted-the-evening-before.md). */
-    eveningBefore: "Confirmed the evening before",
+    dayBefore: "Confirmed the day before",
     address: "Address",
     payment: "Payment",
     paid: (amount: string) => `${amount} paid`,

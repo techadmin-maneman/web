@@ -374,9 +374,11 @@ export const clients = {
       /** The panel's main action, once a time is chosen: "Book Tue 3 Nov, 2 pm". */
       bookAt: (day: string, time: string) => `Book ${day}, ${time}`,
       chooseTime: "Choose a time",
-      /** "Service visit, Wed 23 Sep, morning, with Sandeep Rawat." */
+      /** "Service visit, Wed 23 Sep, 11 am, with Sandeep Rawat." */
       summary: (visit: string, day: string, time: string, technician: string) =>
         `${visit}, ${day}, ${time}, with ${technician}.`,
+      /** A technician the evening's re-plan may still change, fixed the evening before. */
+      draftTechnician: (technician: string) => `${technician}, a draft until the evening before`,
       outcomes: {
         booked: "Booked.",
         being_booked: "Booked.",

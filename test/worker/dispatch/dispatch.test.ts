@@ -169,6 +169,17 @@ describe("a change of technician alone", () => {
     // Nor anything in their app: a technician swap is silent (docs/decisions/0255-client-alerts-and-push.md).
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM client_app_alerts").first("n")).toBe(0);
   });
+
+  // Ops' choice is theirs to keep: the evening's re-plan never moves it again (ADR 0290).
+  it("fixes a draft given to another technician", async () => {
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE id = ?1").bind(FIT).run();
+    const answer = await move({ appointment_id: FIT, technician_id: SAMEER, reason: "zone_rebalance" });
+    expect(answer.status).toBe(200);
+    expect(await env.DB.prepare("SELECT technician_draft FROM appointments WHERE id = ?1").bind(FIT).first()).toEqual({
+      technician_draft: 0,
+    });
+  });
 });
 
 describe("a visit with no room", () => {
