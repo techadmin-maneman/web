@@ -163,9 +163,10 @@ export async function writeDayAhead(db: D1Database, { now, date }: { readonly no
           AND NOT EXISTS (SELECT 1 FROM appointments d
                            WHERE d.technician_draft = 1 AND d.window_start >= ?1 AND d.window_start < ?2
                              AND d.service_city IS t.city)
+          AND NOT EXISTS (SELECT 1 FROM tech_alerts x WHERE x.technician_id = a.technician_id AND x.once_key = ?3)
         GROUP BY a.technician_id`,
     )
-    .bind(from, to)
+    .bind(from, to, `day_ahead:${date}`)
     .all<{ technician_id: string; jobs: number; first: string }>();
   if (days.results.length === 0) return 0;
   const off = await db

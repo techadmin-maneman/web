@@ -186,6 +186,8 @@ export const clients = {
   visits: {
     /** The client's note to the technician, under the visit it is on. */
     clientNote: (text: string) => `Their note: “${text}”`,
+    /** Under a technician the evening's re-plan may still change. */
+    draft: "Draft",
     address: "Visit address",
     noAddress: "No address yet.",
     access: "Access",
@@ -379,8 +381,6 @@ export const clients = {
         `${visit}, ${day}, ${time}, with ${technician}.`,
       /** A technician the evening's re-plan may still change, fixed the evening before. */
       draftTechnician: (technician: string) => `${technician}, a draft until the evening before`,
-      /** In the visits' table, as the board's drawer marks one: "Imran Qureshi · draft". */
-      draftShort: (technician: string) => `${technician}\u00a0·\u00a0draft`,
       outcomes: {
         booked: "Booked.",
         being_booked: "Booked.",

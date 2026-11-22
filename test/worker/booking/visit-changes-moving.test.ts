@@ -236,6 +236,8 @@ describe("moving a visit", () => {
     const app = client();
     const held = await hold(app, "service", "2026-09-26", "afternoon");
     expect(held.price.amount).toBe(200000);
+    // The visit it replaces is fixed, so the new one is too, its technician named (ADR 0290).
+    expect(held).toMatchObject({ technician: { name: expect.any(String) as string } });
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     await env.DB.prepare(
       `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, method, status,
@@ -249,8 +251,13 @@ describe("moving a visit", () => {
     expect(
       await confirmBooking({ db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() }, held.id),
     ).toBe("booked");
-    const visits = await env.DB.prepare("SELECT status FROM appointments ORDER BY window_start").all();
-    expect(visits.results).toEqual([{ status: "cancelled" }, { status: "scheduled" }]);
+    const visits = await env.DB.prepare(
+      "SELECT status, technician_draft FROM appointments ORDER BY window_start",
+    ).all();
+    expect(visits.results).toEqual([
+      { status: "cancelled", technician_draft: 0 },
+      { status: "scheduled", technician_draft: 0 },
+    ]);
     expect((await visitRow())?.status).toBe("cancelled");
     expect((await changes()).results).toEqual([
       expect.objectContaining({ kind: "replaced", notice: "late", kept_amount: 200000, payment_id: PAYMENT }),

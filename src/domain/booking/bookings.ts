@@ -291,8 +291,10 @@ async function bookNewVisit(db: D1Database, hold: HoldRow, now: Date, options: C
 async function newVisit(db: D1Database, hold: HoldRow, visitId: string, now: Date): Promise<D1PreparedStatement> {
   const [{ start, end }, hours] = await Promise.all([heldVisitTimes(db, hold), reminderHoursAt(db, now)]);
   const at = now.toISOString();
-  // Its technician is a draft until the evening before (./allotment-lock.ts), unless ops chose them.
-  const draft = hold.technician_chosen === 0 && bookedAsDraft(start, hold.city, now, hours) ? 1 : 0;
+  // Its technician is a draft until the evening before (./allotment-lock.ts), unless ops chose them or it replaces a
+  // visit already fixed, which a client's move keeps fixed (./move-in-place.ts).
+  const fixed = hold.technician_chosen === 1 || hold.moving_draft === 0;
+  const draft = !fixed && bookedAsDraft(start, hold.city, now, hours) ? 1 : 0;
   return db
     .prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, tier, window_start, window_end, technician_id, status,

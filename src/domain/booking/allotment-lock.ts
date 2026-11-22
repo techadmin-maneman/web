@@ -190,8 +190,14 @@ export async function checkBeforeLock(
 /** The days ahead the hourly re-plan looks over, one in turn: tomorrow and the six after it. */
 const REPLAN_DAYS = 7;
 
-/** The most cities one hour's re-plan takes on, each costing tens of statements; any more wait for the day's next turn. */
+/**
+ * The most cities one hour's re-plan takes on, each costing tens of statements; a day's next turn takes the cities after
+ * them, round again, so each has a turn. A day has three or four turns a day.
+ */
 export const REPLAN_CITIES = 3;
+
+/** The turns a day ahead is sure of each day: every seventh hour from its own, at least three. */
+const TURNS_A_DAY = 3;
 
 /**
  * The day ahead this hour re-plans: tomorrow at midnight, the day after at 1 am, and so on round the week, so each day
@@ -200,14 +206,28 @@ export const REPLAN_CITIES = 3;
 export const replanDateAt = (now: Date): string =>
   addDays(indiaDate(now), 1 + (Number(indiaTime(now).slice(0, 2)) % REPLAN_DAYS));
 
-/** This hour's day ahead in each city with drafts on it, up to REPLAN_CITIES, re-planned; how many drafts moved. */
+/**
+ * The cities this turn takes of those with drafts: REPLAN_CITIES of them, from where the day's turns before it left off,
+ * round again.
+ */
+function turnOf(cities: readonly string[], now: Date): string[] {
+  const turn = Math.floor(Number(indiaTime(now).slice(0, 2)) / REPLAN_DAYS);
+  const from = (turn * REPLAN_CITIES) % Math.max(cities.length, 1);
+  return [...cities.slice(from), ...cities.slice(0, from)].slice(0, REPLAN_CITIES);
+}
+
+/**
+ * This hour's day ahead in the turn's cities with drafts on it, re-planned; how many drafts moved. Tomorrow in a city
+ * whose check before the lock has begun is left to it, which knows Google's word (checkBeforeLock).
+ */
 export async function replanAhead(
   db: D1Database,
   now: Date,
   deps: {
+    readonly readHours: () => Promise<ReminderHours>;
     readonly replan: (city: string, date: string) => Promise<number>;
     readonly failed: (city: string, error: unknown) => void;
-    /** The cities past REPLAN_CITIES, left for the day's next turn. */
+    /** More cities than a day's turns take: some are never re-planned that day. */
     readonly left: (cities: readonly string[]) => void;
   },
 ): Promise<number> {
@@ -220,14 +240,20 @@ export async function replanAhead(
     )
     .bind(indiaInstant(date, "00:00").toISOString(), indiaInstant(addDays(date, 1), "00:00").toISOString())
     .all<{ city: string }>();
+  let cities = results.map((row) => row.city);
+  if (date === addDays(indiaDate(now), 1) && cities.length > 0) {
+    const hours = await deps.readHours();
+    const soon = new Date(now.getTime() + CHECK_BEFORE_LOCK_MINUTES * 60_000);
+    cities = cities.filter((city) => !hourHasCome(lockHourOf(hours, city), soon));
+  }
   let moved = 0;
-  for (const { city } of results.slice(0, REPLAN_CITIES)) {
+  for (const city of turnOf(cities, now)) {
     try {
       moved += await deps.replan(city, date);
     } catch (error) {
       deps.failed(city, error);
     }
   }
-  if (results.length > REPLAN_CITIES) deps.left(results.slice(REPLAN_CITIES).map((row) => row.city));
+  if (cities.length > REPLAN_CITIES * TURNS_A_DAY) deps.left(cities.slice(REPLAN_CITIES * TURNS_A_DAY));
   return moved;
 }

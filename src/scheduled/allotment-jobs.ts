@@ -35,6 +35,7 @@ export async function replanDraftsJob({ env, deps, log, inputs }: CronContext): 
   const now = deps.now();
   const given = await inputs();
   const moved = await replanAhead(env.DB, now, {
+    readHours: () => hoursOf(env.DB, given.reminderHour),
     replan: (city, date) => replanDay(env.DB, { city, date, now, inputs: given }),
     failed: failedIn(log),
     left: (cities) => {

@@ -6,7 +6,9 @@
 // A one visit's client is seldom known before the visit, so its kit carries the one-visit range
 // (docs/decisions/0184-the-one-visit-range.md): one of each of the hair systems its city's latest forecast expects most.
 // On the evening ops set, the check looks a week ahead for consumables (./kit-week.ts). What is on its way to a kit
-// counts as held, so a top-up approved is not proposed again in the next hour.
+// counts as held, so a top-up approved is not proposed again in the next hour. A visit whose technician is still a draft
+// (docs/decisions/0290-allotted-the-evening-before.md) counts with them, as the check runs before the evening's lock;
+// its next hour's run, after the lock, proposes again for whoever then has it.
 
 import { addDays, indiaDate, indiaHour, indiaInstant, weekdayOf } from "../../lib/india-time.ts";
 import { latestFits } from "../clients/hair-profiles.ts";
@@ -45,7 +47,7 @@ async function neededTomorrow(
         .prepare(
           `SELECT a.technician_id, u.consumable_code AS code, SUM(u.quantity) AS quantity
          FROM appointments a JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
-         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL AND a.technician_draft = 0 GROUP BY 1, 2`,
+         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL GROUP BY 1, 2`,
         )
         .bind(from, to),
     ),
@@ -54,7 +56,7 @@ async function neededTomorrow(
         .prepare(
           `SELECT a.technician_id, a.person_id, a.type, a.tier, a.one_visit, t.city
          FROM appointments a JOIN technicians t ON t.id = a.technician_id
-         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL AND a.technician_draft = 0
+         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL
            AND a.type IN ('first_fit', 'replacement')`,
         )
         .bind(from, to),

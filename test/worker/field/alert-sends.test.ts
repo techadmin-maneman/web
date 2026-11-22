@@ -243,7 +243,7 @@ describe("the cron's alerts", () => {
     expect(await writeDayAhead(env.DB, { now: NOW, date: "2026-09-22" })).toBe(2);
   });
 
-  it("sends the next day's jobs in the hour ops set for it, and only then", async () => {
+  it("sends the next day's jobs from the hour ops set for it, never before", async () => {
     await appointment(AHEAD, IMRAN, "2026-09-22T05:30:00.000Z");
     const run = (now: Date) =>
       techAlertsJob({
@@ -268,6 +268,40 @@ describe("the cron's alerts", () => {
     expect(await alerts()).toMatchObject([
       { kind: "day_ahead", appointment_id: "22222222-2222-4222-8222-222222222297" },
     ]);
+  });
+
+  // Gurgaon locks at 9 pm, after the 8 pm day ahead (ADR 0290): its technicians are told once their tomorrow is fixed.
+  it("sends a city's next day once its lock has fixed it, after the hour, and nothing past its lock's hour", async () => {
+    await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon' WHERE id = ?1").bind(IMRAN).run();
+    await env.DB.prepare(
+      "INSERT INTO city_settings (city, key, value, updated_by, updated_at) VALUES ('Gurgaon', 'reminder_hour', '21', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await appointment(AHEAD, IMRAN, "2026-09-22T05:30:00.000Z");
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1, service_city = 'Gurgaon' WHERE id = ?1")
+      .bind(AHEAD)
+      .run();
+    const run = (now: Date) =>
+      techAlertsJob({
+        env,
+        deps: fakeDependencies({ now: () => now }),
+        config: LOCAL_CONFIG,
+        log: createLogger(),
+        budget: createCallBudget(10),
+        inputs: () => createCachedOpsInputs()(env.DB, now),
+      });
+    await run(new Date("2026-09-21T14:35:00.000Z")); // 8:05 pm, the draft not yet fixed
+    expect(await alerts()).toEqual([]);
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(AHEAD).run();
+    await run(new Date("2026-09-21T15:35:00.000Z")); // 9:05 pm, after Gurgaon's lock
+    await run(new Date("2026-09-21T15:40:00.000Z"));
+    expect(await alerts()).toMatchObject([{ kind: "day_ahead", appointment_id: AHEAD }]);
+
+    // Past 9 pm's hour nothing more is sent, though a job is given out for tomorrow.
+    await env.DB.prepare("DELETE FROM tech_alerts").run();
+    await run(new Date("2026-09-21T16:35:00.000Z")); // 10:05 pm
+    expect(await alerts()).toEqual([]);
   });
 
   it("deletes alerts older than the inbox shows", async () => {

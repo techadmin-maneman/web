@@ -32,11 +32,12 @@ export const openProposalJson = (visit: string): string => `(SELECT json_object(
   WHERE p.appointment_id = ${visit}.id AND p.answered_at IS NULL AND p.expected_start = ${visit}.window_start)`;
 
 /**
- * Whether the visit whose row is named `visit` has a proposal still open: one ops made against its start as it stands,
- * which the client may yet accept.
+ * Whether the visit whose row is named `visit` has a proposal still open at `now`, a parameter: one ops made against
+ * its start as it stands, unanswered and not yet past its time, which the client may yet accept.
  */
-export const hasOpenProposal = (visit: string): string => `EXISTS (SELECT 1 FROM move_proposals p
-  WHERE p.appointment_id = ${visit}.id AND p.answered_at IS NULL AND p.expected_start = ${visit}.window_start)`;
+export const hasOpenProposal = (visit: string, now: string): string => `EXISTS (SELECT 1 FROM move_proposals p
+  WHERE p.appointment_id = ${visit}.id AND p.answered_at IS NULL AND p.expected_start = ${visit}.window_start
+    AND p.expires_at > ${now})`;
 
 /** What openProposalJson answers. */
 const PROPOSAL = z.object({

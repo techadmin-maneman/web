@@ -19,9 +19,9 @@ const keyOf = async (points: readonly Point[], departing?: Departing): Promise<R
     )}`,
   );
 
-/** Google's drive through these pins where one is kept, asking Google nothing; null where none is. */
-export async function keptDriveThrough(points: readonly Point[]): Promise<RouteResult | null> {
-  const kept = await caches.default.match(await keyOf(points)).catch(() => undefined);
+/** Google's drive through these pins, at `departing` if given, where one is kept, asking Google nothing; else null. */
+export async function keptDriveThrough(points: readonly Point[], departing?: Departing): Promise<RouteResult | null> {
+  const kept = await caches.default.match(await keyOf(points, departing)).catch(() => undefined);
   return kept === undefined ? null : kept.json<RouteResult>();
 }
 

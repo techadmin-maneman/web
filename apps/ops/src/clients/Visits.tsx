@@ -31,9 +31,6 @@ import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = clients.visits;
 
-/** Who takes a visit, marked as the board's drawer marks a draft the evening's re-plan may still change. */
-const technicianOf = (name: string, draft: boolean): string => (draft ? copy.book.draftShort(name) : name);
-
 /** Where a visit stands: to come, by its stage; done, by how it was closed; else its status. */
 function stateOf(visit: ClientVisit): string {
   const paid = visit.prepaid ? ` · ${copy.prepaid}` : "";
@@ -176,7 +173,10 @@ function VisitRow({
         {whatOf(visit)}
         {visit.client_note !== null && <p className={styles.note}>{copy.clientNote(visit.client_note)}</p>}
       </td>
-      <td>{visit.technician === null ? <NoValue /> : technicianOf(visit.technician.name, visit.technician_pending)}</td>
+      <td>
+        {visit.technician?.name ?? <NoValue />}
+        {visit.technician !== null && visit.technician_pending && <p className={styles.note}>{copy.draft}</p>}
+      </td>
       <td>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
       <td>
         <StateBadge visit={visit} />

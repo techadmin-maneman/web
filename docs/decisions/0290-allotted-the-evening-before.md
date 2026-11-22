@@ -34,9 +34,10 @@ cut driving. The owner chose the reminder hour (6 pm until ops change it) as the
    its promised time, and moves to another technician, or swaps with another draft, wherever that costs less in all
    (ADR 0289's cost, summed over the city's day) and still fits both days. Nobody who may not take it gets it. The
    moves are written in one batch under the claims a move takes (ADR 0069), so a hold on the same time since fails
-   the batch, and nobody is told. Each hour re-plans one day of the week ahead in turn, in up to three cities, so a
-   run's statements stay few and each day is re-planned three or four times a day; a draft with a move proposal
-   still open, or a client's own move waiting on payment, is left as it stands.
+   the batch, and nobody is told. Each hour re-plans one day of the week ahead in turn, in three cities, the day's
+   next turn taking the cities after them, so a run's statements stay few and each day is re-planned three or four
+   times a day; tomorrow in a city whose check before the lock has begun is left to that check. A draft with a move
+   proposal still open, or a client's own move waiting on payment, is left as it stands.
 6. **Tomorrow is checked on Google before it is fixed** (`src/domain/booking/evening-check.ts`). In the half hour
    before its reminder hour, each city in turn, one every five minutes and once a day, is re-planned on the
    estimate, and each drive on each technician's day is asked of Google on the
@@ -51,4 +52,8 @@ cut driving. The owner chose the reminder hour (6 pm until ops change it) as the
 ## Consequences
 
 - The client learns the name in the evening's reminder, as before for a visit booked well ahead.
+- The kit checks count a draft with whoever has it now (ADR 0181): tomorrow's check runs before the lock, and its
+  next hour's run after it proposes again for whoever then has the visit; the week's top-up counts the week's drafts.
+- A technician's day ahead is sent once their city's lock has fixed tomorrow: from the hour ops set, up to the hour
+  of the last city's lock.
 - The booking that moves a draft to make room for a time nobody could otherwise take comes in its own change.

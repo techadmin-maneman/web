@@ -8,13 +8,13 @@ import { ALERT_WORDS } from "../../config/alert-words.ts";
 import type { Settings } from "../../config/settings.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { indiaInstant } from "../../lib/india-time.ts";
-import { timeOf } from "../../policy/day-plan.ts";
+import { timeOf, type PlanDay } from "../../policy/day-plan.ts";
 import { driveMinutes } from "../../policy/drive-estimate.ts";
 import type { Alert } from "../../providers/alerts.ts";
 import type { RoutesProvider } from "../../providers/routes/index.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
-import { driveThrough } from "../platform/road-drives.ts";
+import { driveThrough, keptDriveThrough } from "../platform/road-drives.ts";
 import { readDay, replanDay, startOf, type CityDay } from "./replan-day.ts";
 
 /**
@@ -58,31 +58,38 @@ const draftAt = (day: CityDay, technicianId: string, start: number): string | nu
  * room for; none where Google is off. A drive between visits sets off once the visit before is wrapped up; the day's
  * first, from home, as late as the estimate lets it.
  */
-async function shortsOf(db: D1Database, check: EveningCheck, day: CityDay, input: Input): Promise<Short[]> {
+async function shortsOf(
+  db: D1Database,
+  check: EveningCheck,
+  day: CityDay,
+  input: Input & { readonly only?: ReadonlySet<string> },
+): Promise<Short[]> {
   const { routes } = check;
   if (routes === null) return [];
   const { bookingRules, driveEstimate } = input.inputs;
   const shorts: Short[] = [];
   for (const [technicianId, plan] of day.days) {
+    if (input.only !== undefined && !input.only.has(technicianId)) continue;
     // Only the stops with a pin can be driven; a home not set starts the day at its first.
     const stops = [...plan.stops].sort((a, b) => a.start - b.start).filter((stop) => stop.pin !== null);
     for (const [index, to] of stops.entries()) {
       const from = index === 0 ? null : (stops[index - 1] ?? null);
       const setsOff = from === null ? plan.home : from.pin;
       if (setsOff === null || to.pin === null) continue;
-      if (!check.drives.spend(1)) return shorts;
       const readyAt = from === null ? plan.opens : from.end + bookingRules.wrap_up;
       const estimate = driveMinutes(setsOff, to.pin, Math.floor(to.start / 60), driveEstimate);
       const leaves = from === null ? Math.max(plan.opens, to.start - estimate) : readyAt;
-      const answer = await driveThrough(
-        db,
-        { routes, alert: check.alert },
-        {
-          points: [setsOff, to.pin],
-          at: { now: input.now, settings: check.settings },
-          departing: { departAt: indiaInstant(input.date, timeOf(leaves)) },
-        },
-      );
+      const drive = { points: [setsOff, to.pin], departing: { departAt: indiaInstant(input.date, timeOf(leaves)) } };
+      // A drive Google answered already costs nothing; only a new one takes from the run's drives.
+      const kept = await keptDriveThrough(drive.points, drive.departing);
+      if (kept === null && !check.drives.spend(1)) return shorts;
+      const answer =
+        kept ??
+        (await driveThrough(
+          db,
+          { routes, alert: check.alert },
+          { ...drive, at: { now: input.now, settings: check.settings } },
+        ));
       const leg = answer.ok ? answer.legs[0] : undefined;
       if (leg === undefined) continue;
       const needs = Math.ceil(leg.seconds / 60) + driveEstimate.parking;
@@ -97,6 +104,16 @@ async function shortsOf(db: D1Database, check: EveningCheck, day: CityDay, input
     }
   }
   return shorts;
+}
+
+/** Whether a technician's day has the same stops, each at the same start and pin, as before. */
+function sameStops(was: PlanDay | undefined, now: PlanDay): boolean {
+  const key = (day: PlanDay) =>
+    [...day.stops]
+      .sort((a, b) => a.start - b.start)
+      .map((stop) => `${String(stop.start)}@${String(stop.pin?.lat)},${String(stop.pin?.lng)}`)
+      .join("|");
+  return was !== undefined && key(was) === key(now);
 }
 
 /**
@@ -115,7 +132,14 @@ export async function eveningCheck(db: D1Database, check: EveningCheck, input: I
   if (ruledOut.size > 0) {
     await replanDay(db, { ...input, ruledOut });
     const again = await readDay(db, input);
-    shorts = again === null ? [] : await shortsOf(db, check, again, input);
+    // Only the days the re-plan changed are driven again; the rest keep what Google said of them.
+    const changed = new Set(
+      [...(again?.days ?? [])].filter(([id, plan]) => !sameStops(first.days.get(id), plan)).map(([id]) => id),
+    );
+    shorts = [
+      ...shorts.filter((short) => !changed.has(short.technicianId)),
+      ...(again === null ? [] : await shortsOf(db, check, again, { ...input, only: changed })),
+    ];
   }
   for (const short of shorts) {
     const named = await db

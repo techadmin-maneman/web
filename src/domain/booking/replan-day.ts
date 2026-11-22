@@ -137,9 +137,14 @@ export async function readDay(
        FROM appointments a
        WHERE a.technician_draft = 1 AND a.window_start >= ?1 AND a.window_start < ?2 AND a.service_city = ?3
          AND a.deleted_at IS NULL AND a.technician_id IS NOT NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
-         AND NOT ${hasOpenProposal("a")}`,
+         AND NOT ${CLIENT_MOVING} AND NOT ${hasOpenProposal("a", "?4")}`,
     )
-    .bind(indiaInstant(date, "00:00").toISOString(), indiaInstant(addDays(date, 1), "00:00").toISOString(), city)
+    .bind(
+      indiaInstant(date, "00:00").toISOString(),
+      indiaInstant(addDays(date, 1), "00:00").toISOString(),
+      city,
+      now.toISOString(),
+    )
     .all<DraftRow>();
   if (rows.length === 0) return null;
   const { results: crewRows } = await db
@@ -262,7 +267,7 @@ async function writeMoves(
              (SELECT a.id FROM appointments a
               WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.technician_draft = 1
                 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND NOT ${CLIENT_MOVING}
-                AND NOT ${hasOpenProposal("a")}),
+                AND NOT ${hasOpenProposal("a", "?6")}),
              ?3, ?4, ?5, ?5, 'zone_rebalance', 'allotment', 'written', 'written', ?6, ?6)`,
         )
         .bind(moveId, row.id, row.technician_id, to, row.window_start, at),

@@ -3,17 +3,22 @@
 // hour the alerts older than the inbox shows deleted; then a push for each alert new since.
 
 import { dropOldAlerts, pushNewAlerts, writeDayAhead, writeTimedAlerts } from "../domain/field/alert-sends.ts";
+import { cityReminderHours } from "../domain/cities/city-rules.ts";
 import { addDays, indiaDate, indiaTime } from "../lib/india-time.ts";
 import type { CronContext } from "./cron.ts";
 
 /**
  * The next day's jobs, from the hour ops set: each technician's once a day, as its alert is written once, and only once
- * their city's evening lock has run, which may be later.
+ * their city's evening lock has run, which may be later. Nothing is sent past the hour of the last city's lock, or of
+ * the day ahead if that is later.
  */
 async function dayAhead({ env, log, inputs }: CronContext, now: Date): Promise<void> {
   const hour = Number(indiaTime(now).slice(0, 2));
-  const from = (await inputs()).dayAheadHour;
+  const { dayAheadHour: from, reminderHour } = await inputs();
   if (hour < from) return;
+  const last = Math.max(from, reminderHour);
+  // A city may lock later than the nation; its own hours are read only once the nation's has passed.
+  if (hour > last && hour > Math.max(last, ...(await cityReminderHours(env.DB)).values())) return;
   if (hour === from) await dropOldAlerts(env.DB, now);
   const written = await writeDayAhead(env.DB, { now, date: addDays(indiaDate(now), 1) });
   if (written > 0) log.info("day_ahead_written", { technicians: written });

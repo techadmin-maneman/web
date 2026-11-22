@@ -85,6 +85,8 @@ beforeEach(async () => {
 
 describe("tomorrow's kits", () => {
   it("are checked from the evening, each shortfall proposed as a top-up from the city's stockroom, and ops told", async () => {
+    // Before the evening's lock, tomorrow's visits are still drafts (ADR 0290): they count with whoever has them now.
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1").run();
     expect(await checkTomorrowsKits(env.DB, NOW, alertOnce, KIT_CHECK)).toBe(0);
     expect(await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK)).toBe(1);
     expect(await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK)).toBe(1);
