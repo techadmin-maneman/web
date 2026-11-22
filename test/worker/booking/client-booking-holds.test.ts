@@ -6,7 +6,18 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
+import {
+  appFor,
+  d1TripsOf,
+  fakeDependencies,
+  LOCAL_SETTINGS,
+  markDatabase,
+  NOW,
+  request,
+  savedAddress,
+} from "../helpers.ts";
+import { takeOne } from "../../../src/domain/sign-in/rate-limit.ts";
+import { HOLDS_PER_HOUR } from "../../../src/policy/rate-limits.ts";
 import {
   IMRAN,
   SANDEEP,
@@ -99,6 +110,16 @@ describe("POST /api/holds", () => {
     const answer = await hold(rohit, TUESDAY_AFTERNOON);
     expect(answer.status).toBe(201);
     expect(d1TripsOf(answer)).toBeLessThanOrEqual(HOLD_TRIPS);
+  });
+
+  it("refuses a client's hold once they have held the hour's limit of times, and holds nothing", async () => {
+    const rohit = await client();
+    for (let used = 0; used < HOLDS_PER_HOUR; used += 1) {
+      await takeOne(env.DB, "hold:person", rohit.id, { now: NOW, settings: LOCAL_SETTINGS });
+    }
+    const answer = await hold(rohit, TUESDAY_AFTERNOON);
+    expect(answer.status).toBe(429);
+    expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_holds").first())?.n).toBe(0);
   });
 
   // Never the same technician twice in a row, unless nobody else in the city is free (ADR 0117).

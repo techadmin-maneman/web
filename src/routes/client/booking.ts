@@ -38,6 +38,8 @@ import { servesItself } from "../../http/self-serve.ts";
 import { visitorOf } from "../../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../../policy/booking.ts";
 import { takesCredit } from "../../policy/referral-reward.ts";
+import { HOLDS_PER_HOUR } from "../../policy/rate-limits.ts";
+import { takeOne } from "../../domain/sign-in/rate-limit.ts";
 import { BookingSchema, HoldSchema, Tier } from "../schemas/booking.ts";
 import { TermsSchema } from "../schemas/terms.ts";
 import { driveCheckOf } from "../../http/drive-check.ts";
@@ -104,6 +106,7 @@ const holdRoute = selfServeRoute({
       "address_required: the client has not given the address the visit goes to; taken: nobody is free in that " +
         "window now; not_changeable; or ops_assisted",
     ),
+    429: errorResponse(`rate_limited: ${String(HOLDS_PER_HOUR)} holds an hour`),
     422: errorResponse(
       "not_bookable: this kind of visit, this service, or that day, is not open to the client; no_product: a first " +
         "fit, on a day the console offers no hair system; made_to_order: a fit whose hair system no stock code is " +
@@ -222,21 +225,35 @@ async function addressRefusal(
   return (await servedFor(db, address, type, now)) ? null : "not_served";
 }
 
+type HoldAsked = z.infer<(typeof holdRoute)["request"]["body"]["content"]["application/json"]["schema"]>;
+
+/**
+ * What a hold is read with, each read a trip to D1 and back, so the reads that need nothing from each other go
+ * together: whether the client may hold again this hour, the time asked, the move or the visit, its range, their
+ * address, and the inputs in force.
+ */
+function holdReads(c: Context<AppEnv>, personId: string, body: HoldAsked, now: Date) {
+  const { type, tier, date, window: asked, starts_at: startText, moving: movingId } = body;
+  return Promise.all([
+    takeOne(c.env.DB, "hold:person", personId, { now, settings: c.var.config.settings }),
+    askedTime(c.env.DB, { date, window: asked, startText }),
+    movingId === undefined ? null : moveTermsFor({ c, personId, visitId: movingId, type, on: date }),
+    movingId === undefined ? bookable(c, personId, { type, tier }, date) : null,
+    rangeFor(c, personId, type),
+    currentAddress(c.env.DB, personId),
+    opsInputs(c),
+  ]);
+}
+
 export function registerClientBooking(app: App): void {
   app.openapi(holdRoute, async (c) => {
     const personId = clientOf(c).subjectId;
-    const { type, tier, date, window: asked, starts_at: startText, moving: movingId } = c.req.valid("json");
+    const body = c.req.valid("json");
+    const { type, date, moving: movingId } = body;
     if (!servesItself(c, type)) return refuse(c, "ops_assisted");
     const now = c.var.deps.now();
-    // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
-    const [time, move, offered, range, address, inputs] = await Promise.all([
-      askedTime(c.env.DB, { date, window: asked, startText }),
-      movingId === undefined ? null : moveTermsFor({ c, personId, visitId: movingId, type, on: date }),
-      movingId === undefined ? bookable(c, personId, { type, tier }, date) : null,
-      rangeFor(c, personId, type),
-      currentAddress(c.env.DB, personId),
-      opsInputs(c),
-    ]);
+    const [allowed, time, move, offered, range, address, inputs] = await holdReads(c, personId, body, now);
+    if (!allowed) return refuse(c, "rate_limited");
     if (time === null) return refuse(c, "invalid_request", ["starts_at"]);
     const { window, startsAt } = time;
     if (movingId !== undefined && move === null) return refuse(c, "not_changeable");

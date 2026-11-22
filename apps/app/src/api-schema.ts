@@ -4305,6 +4305,24 @@ export interface paths {
                         });
                     };
                 };
+                /** @description rate_limited: 30 holds an hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
             };
         };
         delete?: never;
