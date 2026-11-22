@@ -47,6 +47,7 @@ export const SECTIONS = [
   { page: "campaign-links", path: "/campaign-links", reads: "GET /api/campaign-links" },
   { page: "care-numbers", path: "/care-numbers", reads: "GET /api/care-numbers" },
   { page: "activity", path: "/activity", reads: "GET /api/activity" },
+  { page: "driving", path: "/driving", reads: "GET /api/reports/driving" },
 ] as const satisfies readonly SectionShape[];
 
 export type Section = (typeof SECTIONS)[number];
@@ -71,7 +72,7 @@ export const NAV = [
   { entry: "requests", pages: ["grievances", "number-changes", "deletion-requests"] },
   { entry: "money", pages: ["ledger", "payments", "technician-pay", "partner-commission"] },
   { entry: "growth", pages: ["funnel", "referrals", "waitlist", "spend", "campaign-links"] },
-  { entry: "reports", pages: ["care-numbers", "activity"] },
+  { entry: "reports", pages: ["care-numbers", "activity", "driving"] },
 ] as const satisfies readonly { entry: string; pages: readonly Page[] }[];
 
 export type NavEntry = (typeof NAV)[number];

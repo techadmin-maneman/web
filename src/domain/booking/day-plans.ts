@@ -45,12 +45,12 @@ const pinOf = (row: Located): Pin | null =>
   row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng };
 
 /** Where a visit's client is: their current address's pin, else the centre of the pincode it is booked at. */
-export const VISIT_PLACE = `LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
+const VISIT_PLACE = `LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = COALESCE(a.service_pincode, d.pincode)`;
 /** Where a hold's client is, as VISIT_PLACE. */
 const HOLD_PLACE = `LEFT JOIN addresses d ON d.person_id = h.person_id AND d.replaced_at IS NULL
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = COALESCE(h.pincode, d.pincode)`;
-export const PIN = "COALESCE(d.lat, sp.centre_lat) AS lat, COALESCE(d.lng, sp.centre_lng) AS lng";
+const PIN = "COALESCE(d.lat, sp.centre_lat) AS lat, COALESCE(d.lng, sp.centre_lng) AS lng";
 
 interface VisitRow extends Located {
   readonly technician_id: string;

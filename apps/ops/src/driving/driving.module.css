@@ -1,0 +1,10 @@
+/* Reports › Driving: its tables as wide as the console's, scrolling inside their panel on a phone, and each row's
+   name set as its heading. */
+
+.table {
+  min-width: var(--ops-table-min);
+}
+
+.who {
+  font-weight: var(--weight-medium);
+}

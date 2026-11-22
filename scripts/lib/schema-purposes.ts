@@ -41,6 +41,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each cycle count of one class of items at one place: raised once its period comes round, counted blind, counted again where it differs, signed off where that stands (ADR 0185).",
   demand_events:
     "The calendar of uplifts ops keep, each an event in a city or every city, which lifts the forecast's baseline (ADR 0179).",
+  drive_factors:
+    "Each city's drive times learned from its technicians' drives, a row a weekday or the weekend and hour: the middle drive's time as a per cent of its estimate and how many drives stand behind it, written afresh each night (ADR 0294).",
   forecast_accuracy:
     "How right each forecast run was: its first period's expected use and high case of each stock code in each city beside what the kits used (ADR 0183).",
   forecast_lines:

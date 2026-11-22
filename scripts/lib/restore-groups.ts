@@ -341,6 +341,12 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "Adding the events again on the Supply plan page; the next run is due within the planning period",
   },
   {
+    what: "Learned drive times",
+    tables: ["drive_factors"],
+    leftAtT: "The drive times learned the night before `<T>` stand until the next night's run",
+    putBackBy: "Nothing: each night's run learns them afresh from the drives done",
+  },
+  {
     what: "Worked out from other tables",
     tables: ["last_visits", "ops_settings_snapshot", "stock_balances", "stock_lot_balances"],
     leftAtT: "Nothing of their own: triggers keep each from the table it is worked out from",

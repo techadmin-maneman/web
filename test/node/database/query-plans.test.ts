@@ -86,6 +86,8 @@ const SMALL_TABLES = new Set([
   // A row a day of a technician's own week, seven at most each.
   "technician_hours",
   "cities",
+  // Each city's learned drive times: a row a city, weekday or weekend, and hour, 48 at most.
+  "drive_factors",
   "zones",
   "serviceable_pincodes",
   "ops_settings",

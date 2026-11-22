@@ -24,6 +24,8 @@ const at = (date: string, time: string) => new Date(`${date}T${time}:00+05:30`).
 const plus = (instant: string, minutes: number) => new Date(Date.parse(instant) + minutes * 60_000).toISOString();
 
 let clients: { here: string; there: string };
+/** Where each client lives, which a check-in at their door is made at. */
+let doors: { here: string; there: string };
 
 /** On `date`, a job at 9 closed at 10, and the next checked in `took` minutes later, before the break's window. */
 async function aDayOfTwo(date: string, took: number): Promise<void> {
@@ -43,9 +45,9 @@ async function aDayOfTwo(date: string, took: number): Promise<void> {
     { id: first.id ?? "", technicianId: TECH },
     { id: next.id ?? "", technicianId: TECH },
   ];
-  await aCheckin(one, { at: at(date, "09:00") });
+  await aCheckin(one, { at: at(date, "09:00"), address_id: doors.here });
   await anOutcome(one, at(date, "10:00"));
-  await aCheckin(two, { at: plus(at(date, "10:00"), took) });
+  await aCheckin(two, { at: plus(at(date, "10:00"), took), address_id: doors.there });
   await anOutcome(two, at(date, "14:00"));
 }
 
@@ -71,9 +73,9 @@ beforeEach(async () => {
   captureLogs();
   await aTechnician({ id: TECH });
   const [here, there] = [(await aPerson()).id ?? "", (await aPerson()).id ?? ""];
-  await anAddress(here, HERE);
-  await anAddress(there, THERE);
+  const [hereDoor, thereDoor] = [await anAddress(here, HERE), await anAddress(there, THERE)];
   clients = { here, there };
+  doors = { here: hereDoor.id ?? "", there: thereDoor.id ?? "" };
 });
 
 describe("the night's learning", () => {

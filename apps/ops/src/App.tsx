@@ -61,6 +61,7 @@ const ReferralsScreen = lazyScreen(() =>
 const ActivityScreen = lazyScreen(() =>
   import("./activity/ActivityScreen.tsx").then((module) => module.ActivityScreen),
 );
+const DrivingScreen = lazyScreen(() => import("./driving/DrivingScreen.tsx").then((module) => module.DrivingScreen));
 const WaitlistScreen = lazyScreen(() => import("./areas/Waiting.tsx").then((module) => module.WaitlistPage));
 const MessagesScreen = lazyScreen(() => import("./care/MessagesScreen.tsx").then((module) => module.MessagesScreen));
 const ItemsScreen = lazyScreen(() => import("./items/ItemsScreen.tsx").then((module) => module.ItemsScreen));
@@ -117,6 +118,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   "campaign-links": CampaignLinksScreen,
   "care-numbers": CareNumbersScreen,
   activity: ActivityScreen,
+  driving: DrivingScreen,
 };
 
 /** The dispatch board fills the frame beneath its head to its edges, where every other page is padded. */

@@ -40,16 +40,18 @@ this map, or when the map names something that no longer exists.
   `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`, `site-today`, `site-notices`,
   `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
   `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each), `drive-check` (Google's drives either side of a start), `allotment-lock` (a visit's technician a draft until the evening's lock), `replan-day` (a city's drafts re-planned to cost least), `draft-moves` (which drafts may move, who may take each, and a draft's move written), `make-room` (a start freed at booking by moving one draft), `standings` (where a visit is, and where it stands for each technician's ring), `evening-check` (tomorrow's drives asked of Google, on the traffic when each sets off, before it is fixed), `public-booking-code` (a site booking's discount code), `made-to-order-asks` (a client's ask for a hair system made to their size, a Tasks row), `held-bookings` (a booking ops made, held on its payment link: shown, sent again, let go),
-  `day-plans` (each technician's days as booking plans them), `packages` (each package and its figures, and when its
+  `day-plans` (each technician's days as booking plans them), `learn-drives` (each city's drive times learned each
+  night from the drives done), `driving-report` (Reports › Driving: drives planned against taken), `packages` (each package and its figures, and when its
   visits fall due), `packages-console` (a package added, changed, ordered or deleted in the console), `client-prices`
   (a first fit priced by the hair system made to the client, and any visit's price from its parts)
 - **Rules** (`src/policy/`): `booking`, `slot-times`, `site-booking`, `moving-a-visit`, `prepayment`, `services`,
-  `visit-length`, `day-plan` (where a visit can start in a technician's day), `packages` (a visit's price from its
+  `visit-length`, `day-plan` (where a visit can start in a technician's day), `learned-drives` (which drives are
+  learned from, and the pace a day takes), `packages` (a visit's price from its
   parts, and a package's bounds)
 - **Data** (`src/config/`): `booking`, `scheduling`, `visit-types`
 - **Routes** (`src/routes/`): `client/booking`, `client/changes`, `public/consultations`, `public/forms`,
-  `ops/slot-times`, `ops/services`, `ops/packages`, `ops/client-package`, `ops/waitlist`
-- **Screens:** `apps/app/src/booking/`, `site/src/pages/book.astro`
+  `ops/slot-times`, `ops/services`, `ops/packages`, `ops/client-package`, `ops/waitlist`, `ops/driving`
+- **Screens:** `apps/app/src/booking/`, `site/src/pages/book.astro`, `apps/ops/src/driving/`
 - **Tests:** `test/worker/booking/`, `e2e/app/booking.e2e.ts`, `e2e/book.e2e.ts`, `e2e/ops/book-visit.e2e.ts`,
   `e2e/ops/waitlist.e2e.ts`
 

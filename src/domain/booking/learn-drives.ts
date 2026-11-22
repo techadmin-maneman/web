@@ -1,6 +1,6 @@
 // The night's learning of drive times (docs/decisions/0294-learned-drive-times.md): every technician's drives of the
 // weeks ops set, each from one job's close to their check-in at the next that day, against what the estimate gives for
-// the drive between the two clients' pins, as booking plans it; each city's slots learned afresh from them
+// the drive between the two addresses they checked in at; each city's slots learned afresh from them
 // (src/policy/learned-drives.ts), and the ones before them replaced.
 
 import { statusIn, VISIT_ON_THE_BOARD } from "../../config/statuses.ts";
@@ -10,7 +10,6 @@ import { minuteOf } from "../../policy/day-plan.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
 import { drivesOf, learn, type Away, type DoneJob, type DriveDone } from "../../policy/learned-drives.ts";
 import type { BookingRules } from "../../policy/start-times.ts";
-import { PIN, VISIT_PLACE } from "./day-plans.ts";
 
 interface JobRow {
   readonly technician_id: string;
@@ -73,16 +72,18 @@ export async function drivesDone(
 ): Promise<CityDrive[]> {
   const { from, to } = given;
   const [jobs, leave] = await db.batch([
-    // A job is where its client is as booking plans it; the first check-in that passed is its arrival, and its last
-    // outcome standing its close.
+    // A job's first check-in that passed is its arrival, at the address it was made at; its last outcome standing, its
+    // close.
     db
       .prepare(
-        `SELECT a.technician_id, t.name, t.city, a.window_start, ${PIN},
-           (SELECT MIN(c.at) FROM checkins c
-             WHERE c.appointment_id = a.id AND c.technician_id = a.technician_id AND c.passed = 1) AS arrived,
+        `SELECT a.technician_id, t.name, t.city, a.window_start, c.at AS arrived, d.lat, d.lng,
            (SELECT MAX(e.occurred_at) FROM job_events e
              WHERE e.appointment_id = a.id AND e.kind = 'outcome' AND e.superseded = 0) AS closed
-         FROM appointments a JOIN technicians t ON t.id = a.technician_id ${VISIT_PLACE}
+         FROM appointments a JOIN technicians t ON t.id = a.technician_id
+         LEFT JOIN checkins c ON c.id = (SELECT first.id FROM checkins first
+           WHERE first.appointment_id = a.id AND first.technician_id = a.technician_id AND first.passed = 1
+           ORDER BY first.at LIMIT 1)
+         LEFT JOIN addresses d ON d.id = c.address_id
          WHERE a.deleted_at IS NULL AND t.city IS NOT NULL AND ${statusIn("a.status", VISIT_ON_THE_BOARD)}
            AND a.window_start >= ?1 AND a.window_start < ?2
          ORDER BY a.technician_id, a.window_start`,
