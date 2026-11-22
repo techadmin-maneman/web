@@ -115,12 +115,12 @@ function loadOf(plans: DayPlans, technicianId: string, date: string): { day: num
 }
 
 /** Where the visit sits for a technician, and whether their home is known to measure it from. */
-interface Placing {
+export interface Placing {
   readonly standing: Standing;
   readonly homeKnown: boolean;
 }
 
-interface Radius {
+export interface Radius {
   readonly id: string;
   readonly home_lat: number | null;
   readonly home_lng: number | null;
@@ -141,7 +141,7 @@ async function radiiIn(db: D1Database, cityOf: CityOf): Promise<ReadonlyMap<stri
  * (docs/decisions/0289-who-takes-a-visit.md), those beyond both left out. A move's own technician, `keeping`, may keep
  * it wherever they are; anyone else is measured as for a new booking.
  */
-function standings(
+export function standings(
   technicians: readonly Technician[],
   rows: ReadonlyMap<string, Radius>,
   at: { readonly pin: Pin | null; readonly keeping: string | null; readonly inputs: OpsInputs },
