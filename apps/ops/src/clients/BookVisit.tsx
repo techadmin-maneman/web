@@ -70,7 +70,8 @@ function outcomeOf(booked: VisitBooked): string {
 }
 
 function Booked({ booked }: { booked: VisitBooked }) {
-  const technician = booked.technician.name;
+  const { name } = booked.technician;
+  const technician = booked.technician_draft ? copy.draftTechnician(name) : name;
   const summary = copy.summary(booked.service.name, shortDate(booked.date), indiaClock(booked.starts_at), technician);
   const outcome = outcomeOf(booked);
   return (

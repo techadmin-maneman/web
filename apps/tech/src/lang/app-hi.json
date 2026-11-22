@@ -8,6 +8,8 @@
     "Me": "प्रोफ़ाइल",
     "Day view": "पूरा दिन",
     "Nothing booked": "कोई बुकिंग नहीं",
+    "Jobs come the evening before": "जॉब एक शाम पहले मिलते हैं",
+    "Jobs come this evening": "जॉब आज शाम मिलेंगे",
     "Fix it and tap Next.": "ठीक करें और अगला दबाएँ।",
     "#1B": "#1B",
     "A 6-digit code is on its way.": "6 अंकों का कोड आ रहा है।",
@@ -552,6 +554,22 @@
     {
       "match": "^([^·]+) · ([^·]+)% grey$",
       "hi": "$1 · $2% सफ़ेद"
+    },
+    {
+      "match": "^(.+) so far, from (.+)$",
+      "hi": "अब तक $1, $2 से"
+    },
+    {
+      "match": "^(.+), jobs come the evening before$",
+      "hi": "$1, जॉब एक शाम पहले मिलते हैं"
+    },
+    {
+      "match": "^(.+), (.+) jobs? so far$",
+      "hi": "$1, अब तक $2 जॉब"
+    },
+    {
+      "match": "^(.+) jobs? so far$",
+      "hi": "अब तक $1 जॉब"
     },
     {
       "match": "^([^·,]+), nothing booked$",

@@ -290,6 +290,7 @@ export function VisitCard({
         )}
         {visit.place !== "" && <Fact icon={GLYPHS.pin}>{visit.place}</Fact>}
         {paidLine(visit) !== null && <Fact icon={CLIENT_ICONS.receipt}>{paidLine(visit)}</Fact>}
+        {visit.technician_pending && <Fact icon={CLIENT_ICONS.user}>{home.technicianPending}</Fact>}
       </ul>
       {oneVisit !== null && <OneVisitTerms price={oneVisit} />}
       {clientNote !== null && <p className={styles.place}>{note.shown(clientNote)}</p>}

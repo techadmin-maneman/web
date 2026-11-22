@@ -164,6 +164,20 @@ test("lists where visits go, and every visit to come and done", async ({ page })
     "/dispatch?from=2027-09-25&visit=33000000-0000-4000-8000-000000000002",
   );
   await expect(visitRow(page, "22 Aug 2027").getByRole("link", { name: /on the board/ })).toHaveCount(0);
+  // Fixed, the technician is named and no more.
+  await expect(coming).not.toContainText(opsCopy.clients.visits.draft);
+});
+
+// Who takes a visit is a draft until the evening before (docs/decisions/0290-allotted-the-evening-before.md).
+test("marks a visit whose technician is still a draft beneath the technician's name", async ({ page }) => {
+  const drafted = RECORD.visits.upcoming.map((visit) => ({ ...visit, technician_pending: true }));
+  await openClient(page, `/clients/${CLIENT.id}/visits`, {
+    [READ_RECORD]: json({ ...RECORD, visits: { ...RECORD.visits, upcoming: drafted } }),
+  });
+  const coming = visitRow(page, "25 Sep");
+  await expect(coming).toContainText("Imran Qureshi");
+  await expect(coming.getByText(opsCopy.clients.visits.draft, { exact: true })).toBeVisible();
+  await expect(visitRow(page, "22 Aug 2027").getByText(opsCopy.clients.visits.draft, { exact: true })).toHaveCount(0);
 });
 
 // A fit closed with "Can't fit today" said only "Partly done" (docs/decisions/0270-the-design-checks-api-side.md).

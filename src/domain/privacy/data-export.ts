@@ -29,7 +29,8 @@ export const EXPORT_QUERIES = {
     ORDER BY created_at, rowid`,
   visits: `SELECT a.type, (${HAIR_SYSTEM("a")}) AS hair_system, a.window_start, a.window_end, a.status, a.one_visit,
       a.asked_window,
-      t.name AS technician, a.service_city, a.service_pincode, a.client_note, a.client_note_at
+      CASE WHEN a.technician_draft = 1 THEN NULL ELSE t.name END AS technician, a.service_city, a.service_pincode,
+      a.client_note, a.client_note_at
     FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
     WHERE a.person_id = ?1 AND a.deleted_at IS NULL ORDER BY a.window_start`,
   visit_changes: `SELECT kind, was_start, now_start, notice, ops_terms, refund_amount, kept_amount, created_at

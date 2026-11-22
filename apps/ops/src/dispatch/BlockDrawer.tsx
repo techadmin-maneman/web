@@ -161,7 +161,11 @@ export function BlockDrawer(props: Props) {
     <Drawer
       titleId="drawer-title"
       title={person?.name ?? nameOf(job)}
-      sub={copy.when(shortDate(job.date), timeOf(job), job.technician.name)}
+      sub={copy.when(
+        shortDate(job.date),
+        timeOf(job),
+        block.draft ? copy.draft(job.technician.name) : job.technician.name,
+      )}
       aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge]}</span>}
       close={CLOSE}
       onDismiss={onClose}

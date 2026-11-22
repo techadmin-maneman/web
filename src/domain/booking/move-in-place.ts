@@ -3,6 +3,7 @@
 import { refundedMessage } from "../money/auto-refunds.ts";
 import { heldTimeFree } from "./hold-slot.ts";
 import { heldVisitTimes } from "../visits/visit-times.ts";
+import { bookedAsDraft, reminderHoursAt } from "./allotment-lock.ts";
 import { hasBegun, visitBegun } from "../visits/visit-begun.ts";
 import { visitPayment } from "../visits/visit-changes.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
@@ -17,6 +18,7 @@ interface VisitToMove {
   id: string;
   window_start: string;
   technician_id: string | null;
+  technician_draft: number;
 }
 
 /**
@@ -28,14 +30,18 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
   const options: ConfirmOptions = context;
   const visit = await db
     .prepare(
-      `SELECT a.id, a.window_start, a.technician_id FROM appointments a
+      `SELECT a.id, a.window_start, a.technician_id, a.technician_draft FROM appointments a
        WHERE a.id = ?1 AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.deleted_at IS NULL AND NOT ${visitBegun("a")}`,
     )
     .bind(hold.moves_appointment_id)
     .first<VisitToMove>();
   if (visit === null) return moveRefused(context, hold);
   if (!(await takesHeldTime(db, hold, visit, now))) return moveOvertaken(context, hold);
-  const { start, end } = await heldVisitTimes(db, hold);
+  const [{ start, end }, hours] = await Promise.all([heldVisitTimes(db, hold), reminderHoursAt(db, now)]);
+  // A draft stays one, the engine's to give to another (./allotment-lock.ts), unless it moves past its day's lock or
+  // ops chose who takes it. A fixed visit stays fixed: its technician already has it, and is told it moved.
+  const draft =
+    visit.technician_draft === 1 && hold.technician_chosen === 0 && bookedAsDraft(start, hold.city, now, hours) ? 1 : 0;
 
   const at = now.toISOString();
   const lateFee = "(SELECT id FROM payments WHERE razorpay_order_id = ?1)";
@@ -50,10 +56,10 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
       // The client chose this time, so their notice counts from it, however ops had moved the visit before.
       .prepare(
         `UPDATE appointments SET window_start = ?1, window_end = ?2, synced_at = ?3, start_before_move = NULL,
-           technician_id = ?5
+           technician_id = ?5, technician_draft = ?6
          WHERE id = ?4`,
       )
-      .bind(start.toISOString(), end.toISOString(), at, visit.id, hold.technician_id),
+      .bind(start.toISOString(), end.toISOString(), at, visit.id, hold.technician_id, draft),
     db
       .prepare("UPDATE slot_holds SET state = 'booked', appointment_id = ?1, updated_at = ?2 WHERE id = ?3")
       .bind(visit.id, at, hold.id),
@@ -91,11 +97,14 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
 
 /**
  * Whether the visit can still take the hold's time: ops have not moved it since the client chose it, and nothing else
- * has taken that time on the held technician's day.
+ * has taken that time on the held technician's day. The evening's re-plan giving a draft to another technician moves
+ * no time, so it does not count (src/domain/booking/replan-day.ts).
  */
 async function takesHeldTime(db: D1Database, hold: HoldRow, visit: VisitToMove, now: Date): Promise<boolean> {
   const movedSince = await db
-    .prepare("SELECT 1 FROM dispatch_moves WHERE appointment_id = ?1 AND created_at >= ?2 LIMIT 1")
+    .prepare(
+      "SELECT 1 FROM dispatch_moves WHERE appointment_id = ?1 AND created_at >= ?2 AND actor != 'allotment' LIMIT 1",
+    )
     .bind(visit.id, hold.created_at)
     .first();
   if (movedSince !== null) return false;

@@ -123,16 +123,27 @@ export function LaterToday(props: {
   );
 }
 
-/** Tomorrow's jobs in a line: how many and from when, which opens the Schedule; or that nothing is booked. */
-export function Tomorrow({ jobs, loaded }: { readonly jobs: readonly JobSummary[]; readonly loaded: boolean }) {
+/**
+ * Tomorrow's jobs in a line: how many and from when, which opens the Schedule; or that nothing is booked, or, before
+ * the evening's lock, that its jobs come then.
+ */
+export function Tomorrow(props: {
+  readonly jobs: readonly JobSummary[];
+  readonly loaded: boolean;
+  readonly settled: boolean;
+}) {
+  const { jobs, loaded } = props;
   if (!loaded) return null;
   const [first] = jobs;
+  const empty = props.settled ? copy.nothingBooked : copy.comeThisEvening;
   return (
     <Link className={styles.tomorrow} to={`/week/${dayAfter(todayInIndia())}`}>
       <span>
         <strong>{copy.tomorrow}</strong>
         {" · "}
-        {first === undefined ? copy.nothingBooked : copy.tomorrowJobs(jobs.length, clock(first.starts_at))}
+        {first === undefined
+          ? empty
+          : (props.settled ? copy.tomorrowJobs : copy.tomorrowSoFar)(jobs.length, clock(first.starts_at))}
       </span>
       <Chevron />
     </Link>

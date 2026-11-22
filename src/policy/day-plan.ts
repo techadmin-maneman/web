@@ -127,6 +127,25 @@ export function placedAt(day: PlanDay, visit: VisitToPlan, start: number, rules:
   return { start, addedDrive: arriving + leaving - saved };
 }
 
+/**
+ * The driving a day takes in all: from home to its first stop, between each two in turn, and home after its last, as
+ * a start's added driving counts it; nothing from or to a home not set, nor home from a last stop with no pin.
+ */
+export function dayDrive(day: PlanDay, rules: PlanRules): number {
+  const stops = [...day.stops].sort((a, b) => a.start - b.start);
+  let total = 0;
+  let before: Stop | undefined;
+  for (const stop of stops) {
+    total += driveIn(day, before, stop.pin, rules.drive);
+    before = stop;
+  }
+  const lastPin = before?.pin ?? null;
+  if (before !== undefined && lastPin !== null && day.home !== null) {
+    total += drive(lastPin, day.home, before.end + rules.booking.wrap_up, rules.drive);
+  }
+  return total;
+}
+
 /** Every start a step apart, from `earliest` on, where the visit fits the day. */
 export function placements(day: PlanDay, visit: VisitToPlan, rules: PlanRules, earliest: number): Placed[] {
   const { step } = rules.booking;

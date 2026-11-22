@@ -48,6 +48,7 @@ import { sendUnsentLinks } from "../domain/money/payment-links.ts";
 import type { OpsInputs } from "../domain/platform/ops-settings.ts";
 import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/platform/storage-meter.ts";
 import { queueReminders } from "../domain/messages/visit-messages.ts";
+import { eveningCheckJob, hoursOf, lockTomorrow, replanDraftsJob } from "./allotment-jobs.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { MeteredDatabase } from "../lib/d1-meter.ts";
@@ -82,7 +83,6 @@ import { runDueLaunches } from "../domain/clients/launch-runs.ts";
 import { tellOfUnreachedPincodes } from "../domain/clients/pincode-reach.ts";
 import { placePincodeCentres } from "../domain/cities/pincode-centres.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
-import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { techAlertsJob } from "./tech-alerts.ts";
 import { clientAlertsJob } from "./client-alerts.ts";
@@ -327,14 +327,11 @@ async function referralsJob({ env, deps, log, inputs }: CronContext): Promise<vo
   await queueMessages({ env, log }, messages, "referrals");
 }
 
-/** The reminder hour, with the hours of the cities that set their own (src/domain/cities/city-rules.ts). */
-async function hoursOf(db: D1Database, national: number): Promise<ReminderHours> {
-  return { national, cities: await cityReminderHours(db) };
-}
-
-async function remindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
-  const now = deps.now();
-  const reminders = await queueReminders(env.DB, now, await hoursOf(env.DB, (await inputs()).reminderHour));
+/** The evening's lock (./allotment-jobs.ts), then, where messaging is on, the reminders that name who is fixed. */
+async function remindersJob({ env, deps, log, config, inputs }: CronContext): Promise<void> {
+  const hours = await lockTomorrow({ env, deps, inputs });
+  if (!isSwitchedOn("messaging", config)) return;
+  const reminders = await queueReminders(env.DB, deps.now(), await hours());
   await queueMessages({ env, log }, reminders, "reminders");
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
@@ -461,12 +458,13 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "alerts_retold", needs: "nothing", every: 5, at: 4, run: alertsRetoldJob },
   // A technician's time to leave and running over, the day ahead in the hour ops set, and a push for each (ADR 0250).
   { name: "tech_alerts", needs: "nothing", every: 5, at: 0, run: techAlertsJob },
+  { name: "evening_check", needs: "nothing", every: 5, at: 1, run: eveningCheckJob },
   { name: "client_alerts", needs: "nothing", every: 5, at: 0, run: clientAlertsJob },
   // The conversions waiting for Meta and Google, to each that is on (docs/decisions/0288-attribution-and-conversions.md).
   { name: "conversions", needs: "nothing", every: 5, at: 1, run: conversionsJob },
 
   // Every fifteen minutes.
-  { name: "visit_reminders", needs: "messaging", every: 15, at: 1, run: remindersJob },
+  { name: "visit_reminders", needs: "nothing", every: 15, at: 1, run: remindersJob },
   // A finished job's invoice (ADRs 0055 and 0056), before the Books pass, which sets a client's advance against the
   // invoice once it is issued.
   { name: "invoices", needs: "books", every: 15, at: 3, run: invoicesJob },
@@ -512,6 +510,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "backup", needs: "nothing", every: 60, at: 33, slot: { hour: 3, weekday: 0 }, run: backupJob },
   // The nightly copy Zoho Analytics reports from (docs/decisions/0146-the-nightly-analytics-copy.md).
   { name: "analytics_nightly", needs: "nothing", every: 60, at: 31, slot: { hour: 3 }, run: analyticsJob },
+  { name: "replan_drafts", needs: "nothing", every: 60, at: 20, run: replanDraftsJob },
   // When each task opened and closed, for the reporting copy (docs/decisions/0147-task-spans.md).
   { name: "task_spans", needs: "nothing", every: 60, at: 26, slot: { hour: 23 }, run: taskSpansJob },
   // A kind of WhatsApp refused too often in the last day (src/domain/messages/refusal-rates.ts).

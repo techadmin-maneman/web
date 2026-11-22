@@ -34,7 +34,7 @@ import {
   request,
 } from "../helpers.ts";
 import { DAY_MS, AGO, IN_TWO_MONTHS, over, rowsReadBy } from "./cron-reads-fixtures.ts";
-import { aTechnician } from "../fixtures/index.ts";
+import { aPerson, aTechnician, aVisit } from "../fixtures/index.ts";
 
 const AGO_PLUS_HOUR = new Date(NOW.getTime() - 60 * DAY_MS + 60 * 60 * 1000).toISOString();
 /** Within the inbox's week, which the deletion of old alerts, in the day ahead's hour, leaves. */
@@ -467,8 +467,8 @@ describe("one cron run", () => {
 
 // A job that loops over a table sends D1 a statement a row, which a history long enough shows.
 describe("each minute's run", () => {
-  async function statementsAt(minute: number, config: StaticConfig): Promise<number> {
-    const scheduled = Date.UTC(2026, 8, 21, 6, minute);
+  async function statementsAt(minute: number, config: StaticConfig, hourUtc = 6): Promise<number> {
+    const scheduled = Date.UTC(2026, 8, 21, hourUtc, minute);
     const meter = meterDatabase(env.DB);
     await runCronJobs(jobsDue(CRON_JOBS, EVERY_MINUTE, scheduled), {
       env: { ...env, DB: meter.db, CRM_QUEUE: fakeQueue(), RENDER_QUEUE: fakeQueue(), MESSAGE_QUEUE: fakeQueue() },
@@ -489,6 +489,79 @@ describe("each minute's run", () => {
       if (statements > CRON_STATEMENTS_PER_RUN) overBudget.push(`minute ${String(minute)}: ${String(statements)}`);
     }
     expect(overBudget).toEqual([]);
+  });
+
+  /**
+   * A week of drafts in three cities, ten a day in each, three technicians to a city: the hourly re-plan's day ahead,
+   * and the evening's re-plan, Google's check and lock of tomorrow (docs/decisions/0290-allotted-the-evening-before.md).
+   */
+  async function draftsInThreeCities(): Promise<void> {
+    const cities = [
+      ["Gurgaon", "122018", 28.4595],
+      ["Noida", "201301", 28.5355],
+      ["Delhi", "110017", 28.5245],
+    ] as const;
+    for (const [at, [city, pincode, lat]] of cities.entries()) {
+      await env.DB.prepare(
+        `INSERT OR IGNORE INTO serviceable_pincodes (pincode, area, city, served, centre_lat, centre_lng)
+         VALUES (?1, ?2, ?2, 1, ?3, 77.0266)`,
+      )
+        .bind(pincode, city, lat)
+        .run();
+      for (const n of [0, 1, 2]) {
+        await aTechnician({
+          id: `crew-${String(at)}-${String(n)}`,
+          name: `Crew ${String(at)}${String(n)}`,
+          city,
+          home_lat: lat + n / 100,
+          home_lng: 77.0266,
+        });
+      }
+      const clients = Array.from({ length: 10 }, (_, n) => `client-${String(at)}-${String(n)}`);
+      await Promise.all(clients.map((id) => aPerson({ id })));
+      // Seven days from tomorrow, ten drafts a day, each technician's at 9, 11 and 1 o'clock.
+      await Promise.all(
+        Array.from({ length: 70 }, (_, i) => {
+          const start =
+            Date.parse("2026-09-22T03:30:00.000Z") +
+            Math.floor(i / 10) * DAY_MS +
+            Math.floor((i % 10) / 3) * 120 * 60_000;
+          return aVisit({
+            id: `draft-${String(at)}-${String(i)}`,
+            person_id: clients[i % 10],
+            type: "service",
+            tier: "standard",
+            status: "scheduled",
+            window_start: new Date(start).toISOString(),
+            window_end: new Date(start + 90 * 60_000).toISOString(),
+            technician_id: `crew-${String(at)}-${String(i % 3)}`,
+            service_city: city,
+            service_pincode: pincode,
+            technician_draft: 1,
+          });
+        }),
+      );
+    }
+  }
+
+  it("sends D1 no more than its budget re-planning a week of drafts in three cities, checking and locking tomorrow", async () => {
+    await history(1, 400);
+    await rowsReadByOneRun(); // the day's once-only work
+    await draftsInThreeCities();
+    // 11:50 am in India, the hour's re-plan of a day ahead; 5:31, 5:36 and 5:41 pm, a city's check each before the
+    // lock; and 6:01 pm, the lock.
+    const runs = [
+      await statementsAt(20, LOCAL_CONFIG),
+      await statementsAt(1, LOCAL_CONFIG, 12),
+      await statementsAt(6, LOCAL_CONFIG, 12),
+      await statementsAt(11, LOCAL_CONFIG, 12),
+      await statementsAt(31, LOCAL_CONFIG, 12),
+    ];
+    expect(runs.filter((statements) => statements > CRON_STATEMENTS_PER_RUN)).toEqual([]);
+    const left = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM appointments WHERE technician_draft = 1 AND window_start < '2026-09-22T18:30:00.000Z'",
+    ).first<{ n: number }>();
+    expect(left?.n).toBe(0);
   });
 });
 

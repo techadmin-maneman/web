@@ -15,25 +15,41 @@ export async function visitsOfClient(
   exceptVisitId: string | null = null,
 ): Promise<ClientVisit[]> {
   if (personId === null) return [];
+  return (await visitsOfClients(db, [personId]))(personId, exceptVisitId);
+}
+
+/**
+ * visitsOfClient for many clients in two reads, as a re-plan of a day's drafts needs them: each client's visits, but
+ * for the one being moved or replaced.
+ */
+export async function visitsOfClients(
+  db: D1Database,
+  personIds: readonly string[],
+): Promise<(personId: string | null, exceptVisitId: string | null) => ClientVisit[]> {
+  const whose = JSON.stringify([...new Set(personIds)]);
   const [visits, holds] = await Promise.all([
     db
       .prepare(
-        `SELECT window_start, technician_id FROM appointments
-         WHERE person_id = ?1 AND deleted_at IS NULL AND status != 'cancelled' AND technician_id IS NOT NULL
-           AND id IS NOT ?2`,
+        `SELECT person_id, id, window_start, technician_id FROM appointments
+         WHERE person_id IN (SELECT value FROM json_each(?1)) AND deleted_at IS NULL AND status != 'cancelled'
+           AND technician_id IS NOT NULL`,
       )
-      .bind(personId, exceptVisitId)
-      .all<{ window_start: string; technician_id: string }>(),
+      .bind(whose)
+      .all<{ person_id: string; id: string; window_start: string; technician_id: string }>(),
     db
       .prepare(
-        `SELECT date, technician_id FROM slot_holds
-         WHERE person_id = ?1 AND ${paidNotBooked("slot_holds")} AND moves_appointment_id IS NOT ?2`,
+        `SELECT person_id, moves_appointment_id, date, technician_id FROM slot_holds
+         WHERE person_id IN (SELECT value FROM json_each(?1)) AND ${paidNotBooked("slot_holds")}`,
       )
-      .bind(personId, exceptVisitId)
-      .all<{ date: string; technician_id: string }>(),
+      .bind(whose)
+      .all<{ person_id: string; moves_appointment_id: string | null; date: string; technician_id: string }>(),
   ]);
-  return [
-    ...visits.results.map((row) => ({ date: indiaDate(new Date(row.window_start)), technicianId: row.technician_id })),
-    ...holds.results.map((row) => ({ date: row.date, technicianId: row.technician_id })),
+  return (personId, exceptVisitId) => [
+    ...visits.results
+      .filter((row) => row.person_id === personId && row.id !== exceptVisitId)
+      .map((row) => ({ date: indiaDate(new Date(row.window_start)), technicianId: row.technician_id })),
+    ...holds.results
+      .filter((row) => row.person_id === personId && row.moves_appointment_id !== exceptVisitId)
+      .map((row) => ({ date: row.date, technicianId: row.technician_id })),
   ];
 }

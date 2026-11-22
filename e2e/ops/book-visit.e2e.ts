@@ -85,6 +85,7 @@ const LINK_SENT = {
   window: "afternoon",
   starts_at: "2027-09-23T06:30:00.000Z",
   technician: SANDEEP,
+  technician_draft: false,
   link: { url: "https://rzp.io/i/stub4417", open_until: "2027-09-23T04:30:00.000Z", texted: true },
 } satisfies OpsReply<"/api/visits", "post", 201>;
 
@@ -289,6 +290,8 @@ test("books a consultation asked for from its Tasks row, at the first start in t
           window: "morning",
           starts_at: "2027-09-24T03:30:00.000Z",
           technician: IMRAN,
+          // Nobody chosen: the engine's technician, fixed the evening before.
+          technician_draft: true,
           link: null,
         },
         201,
@@ -306,6 +309,7 @@ test("books a consultation asked for from its Tasks row, at the first start in t
   await expect(booking).toContainText(opsCopy.clients.visits.book.pays.nothing);
   await booking.getByRole("button", { name: /^Book Fri 24 Sep/ }).click();
   await expect(booking.getByRole("status")).toContainText(opsCopy.clients.visits.book.outcomes.booked);
+  await expect(booking.getByRole("status")).toContainText("with Imran Qureshi, a draft until the evening before.");
   expect(sent).toEqual([
     {
       client: CLIENT.id,

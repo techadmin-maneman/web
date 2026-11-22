@@ -4,7 +4,17 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { card, JOB_ID, jobsToday, NOTHING_DONE, ROHITS_PIECE, SECOND_JOB_ID, todayInIndia } from "./fixtures.ts";
+import {
+  card,
+  dayAfter,
+  JOB_ID,
+  jobsTomorrow,
+  jobsToday,
+  NOTHING_DONE,
+  ROHITS_PIECE,
+  SECOND_JOB_ID,
+  todayInIndia,
+} from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { keptOnPhone, leftOnPhone, queuedOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
@@ -97,13 +107,47 @@ test("says there are no more jobs under the title once every job has closed, the
   // Registered after the fake, so it answers first: today's three jobs, each closed.
   await page.route(
     (url) => url.pathname === "/api/tech/jobs" && url.searchParams.get("date") === today,
-    (route) => route.fulfill({ json: { date: today, jobs: closed, sent_back: [] } }),
+    (route) => route.fulfill({ json: { date: today, jobs: closed, settled: true, sent_back: [] } }),
   );
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: techCopy.today.allDone })).toBeVisible();
   await expect(page.getByText(techCopy.today.noMore, { exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: techCopy.today.title, exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: techCopy.today.later, exact: true })).toHaveCount(0);
+});
+
+// Tomorrow's visits are given out at the evening's lock (docs/decisions/0290-allotted-the-evening-before.md).
+test("says tomorrow's jobs come this evening until its list stands, and nothing booked once it does", async ({
+  page,
+}) => {
+  await fakeTech(page);
+  const tomorrow = dayAfter(todayInIndia());
+  let settled = false;
+  await page.route(
+    (url) => url.pathname === "/api/tech/jobs" && url.searchParams.get("date") === tomorrow,
+    (route) => route.fulfill({ json: { date: tomorrow, jobs: [], settled, sent_back: [] } }),
+  );
+  await page.goto("/");
+  const line = page.getByRole("link", { name: /^Tomorrow · / });
+  await expect(line).toHaveText(`${techCopy.today.tomorrow} · ${techCopy.today.comeThisEvening}`);
+  settled = true;
+  await page.reload();
+  await expect(line).toHaveText(`${techCopy.today.tomorrow} · ${techCopy.today.nothingBooked}`);
+});
+
+test("says tomorrow's jobs so far before its list stands, where ops have fixed some already", async ({ page }) => {
+  await fakeTech(page);
+  const today = todayInIndia();
+  const tomorrow = dayAfter(today);
+  const jobs = jobsTomorrow(today);
+  await page.route(
+    (url) => url.pathname === "/api/tech/jobs" && url.searchParams.get("date") === tomorrow,
+    (route) => route.fulfill({ json: { date: tomorrow, jobs, settled: false, sent_back: [] } }),
+  );
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /^Tomorrow · / })).toContainText(
+    techCopy.today.tomorrowSoFar(jobs.length, "").replace(/, from $/, ""),
+  );
 });
 
 test("says there are no jobs when the day is empty", async ({ page }) => {

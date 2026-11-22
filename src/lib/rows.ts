@@ -75,6 +75,7 @@ export interface Rows {
     readonly checkin_waived_by: string | null;
     readonly checkin_waived_reason: string | null;
     readonly books_invoice_id: string | null;
+    readonly technician_draft: number;
   };
   readonly audit_log: {
     readonly id: number;
@@ -1492,6 +1493,7 @@ export interface Rows {
     readonly pay_at_visit: number;
     readonly starts_at: string | null;
     readonly booked_from: string | null;
+    readonly technician_chosen: number;
   };
   readonly slot_times: {
     readonly id: string;

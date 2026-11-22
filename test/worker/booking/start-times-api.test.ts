@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
-import { IMRAN, SANA, client, technician, visit } from "./client-booking-fixtures.ts";
+import { IMRAN, SANA, client, technician, visit, fixedOnBooking } from "./client-booking-fixtures.ts";
 import { env } from "cloudflare:workers";
 
 interface Start {
@@ -33,6 +33,7 @@ const hold = (who: { cookie: string }, body: object) =>
 beforeEach(async () => {
   await markDatabase();
   app = appFor("local", fakeDependencies(), {}, "client");
+  await fixedOnBooking();
   await technician(IMRAN, "Imran Qureshi", "IQ");
   // Who each client's last visit was with, switched off since.
   await technician(SANA, "Sana Mirza", "SM");

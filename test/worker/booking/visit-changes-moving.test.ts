@@ -2,6 +2,7 @@
 // in confirmBooking). NOW is Monday 21 September 2026, 12 noon in India; the price book is at 0% from 22 September.
 // Every name and number here is made up.
 
+import { fixedOnBooking } from "./client-booking-fixtures.ts";
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { confirmBooking } from "../../../src/domain/booking/bookings.ts";
@@ -29,6 +30,7 @@ let cookie: string;
 
 beforeEach(async () => {
   await markDatabase();
+  await fixedOnBooking();
   for (const [id, name, initials] of [
     ["t1", "Imran Qureshi", "IQ"],
     ["t2", "Vikram Sethi", "VS"],
@@ -134,7 +136,8 @@ describe("moving a visit", () => {
     });
     const app = client();
     const held = await hold(app, "service", "2026-09-25", "evening");
-    expect(held).toMatchObject({ price: { amount: 0 }, technician: { name: "Vikram Sethi" } });
+    // A fixed visit moved stays fixed, with whoever takes the move (ADR 0290).
+    expect(held).toMatchObject({ price: { amount: 0 }, technician: { name: expect.any(String) as string } });
 
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     const moved = await env.DB.prepare("SELECT technician_id, window_start FROM appointments WHERE id = ?1")
@@ -147,7 +150,12 @@ describe("moving a visit", () => {
     await booked("service", THURSDAY_NOON, 200000);
     const app = client();
     const held = await hold(app, "service", "2026-09-25", "evening");
-    expect(held).toMatchObject({ price: { amount: 0 }, technician: { name: "Imran Qureshi" }, moves_visit_id: VISIT });
+    // A fixed visit moved stays fixed with its technician, who is told it moved (ADR 0290).
+    expect(held).toMatchObject({
+      price: { amount: 0 },
+      technician: { name: expect.any(String) as string },
+      moves_visit_id: VISIT,
+    });
 
     const started = await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     expect(await started.json()).toEqual({ hold_id: held.id, checkout: null });
@@ -158,6 +166,10 @@ describe("moving a visit", () => {
       window_start: "2026-09-25T10:30:00.000Z",
       window_end: "2026-09-25T12:00:00.000Z",
     });
+    const kept = await env.DB.prepare("SELECT technician_id, technician_draft FROM appointments WHERE id = ?1")
+      .bind(VISIT)
+      .first();
+    expect(kept).toEqual({ technician_id: "t1", technician_draft: 0 });
     expect((await changes()).results).toEqual([
       {
         kind: "moved",
@@ -170,6 +182,17 @@ describe("moving a visit", () => {
     ]);
     const polled = await (await get(app, `/api/holds/${held.id}`)).json();
     expect(polled).toMatchObject({ state: "booked", visit_id: VISIT });
+  });
+
+  it("keeps a draft a draft where it moves to a day its lock has not reached, its technician unnamed", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE id = ?1").bind(VISIT).run();
+    const app = client();
+    const held = await hold(app, "service", "2026-09-25", "evening");
+    expect(held).toMatchObject({ technician: null, moves_visit_id: VISIT });
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
+    const kept = await env.DB.prepare("SELECT technician_draft FROM appointments WHERE id = ?1").bind(VISIT).first();
+    expect(kept).toEqual({ technician_draft: 1 });
   });
 
   it("moves a first fit inside 24 hours once its late fee is paid, keeping the fee as a charge", async () => {
@@ -213,6 +236,8 @@ describe("moving a visit", () => {
     const app = client();
     const held = await hold(app, "service", "2026-09-26", "afternoon");
     expect(held.price.amount).toBe(200000);
+    // The visit it replaces is fixed, so the new one is too, its technician named (ADR 0290).
+    expect(held).toMatchObject({ technician: { name: expect.any(String) as string } });
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     await env.DB.prepare(
       `INSERT INTO payments (id, person_id, razorpay_order_id, razorpay_payment_id, amount, currency, method, status,
@@ -226,8 +251,13 @@ describe("moving a visit", () => {
     expect(
       await confirmBooking({ db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger() }, held.id),
     ).toBe("booked");
-    const visits = await env.DB.prepare("SELECT status FROM appointments ORDER BY window_start").all();
-    expect(visits.results).toEqual([{ status: "cancelled" }, { status: "scheduled" }]);
+    const visits = await env.DB.prepare(
+      "SELECT status, technician_draft FROM appointments ORDER BY window_start",
+    ).all();
+    expect(visits.results).toEqual([
+      { status: "cancelled", technician_draft: 0 },
+      { status: "scheduled", technician_draft: 0 },
+    ]);
     expect((await visitRow())?.status).toBe("cancelled");
     expect((await changes()).results).toEqual([
       expect.objectContaining({ kind: "replaced", notice: "late", kept_amount: 200000, payment_id: PAYMENT }),

@@ -35,6 +35,7 @@ const block = (overrides: Partial<Block> = {}): Block => ({
   untold: null,
   begun: null,
   proposal: null,
+  draft: false,
   ...overrides,
 });
 

@@ -188,6 +188,29 @@ describe("POST /api/visits: what is booked at once", () => {
     expect(await holdOf(body.hold_id)).toMatchObject({ use_credit: 1, confirmed_at: NOW.toISOString() });
     expect(payments.made.links).toEqual([]);
   });
+
+  it("fixes the technician ops chose at once, and leaves the engine's a draft until the evening before", async () => {
+    await rohit("fitted");
+    await grantCredits(env.DB, { personId: ROHIT, visits: 2, source: "ops", sourceId: "goodwill", now: NOW }).run();
+    // The visit as written, and as the console was told it.
+    const draftOf = async (answer: Response) => {
+      const { visit_id, technician_draft } = await answer.json<{ visit_id: string; technician_draft: boolean }>();
+      const row = await env.DB.prepare("SELECT technician_id, technician_draft FROM appointments WHERE id = ?1")
+        .bind(visit_id)
+        .first<{ technician_id: string; technician_draft: number }>();
+      return { ...row, told: technician_draft };
+    };
+    const chosen = await book({
+      client: ROHIT,
+      kind: "service",
+      date: WEDNESDAY,
+      window: "morning",
+      technician: SANDEEP,
+    });
+    expect(await draftOf(chosen)).toEqual({ technician_id: SANDEEP, technician_draft: 0, told: false });
+    const engines = await book({ client: ROHIT, kind: "service", date: WEDNESDAY, window: "evening" });
+    expect(await draftOf(engines)).toMatchObject({ technician_draft: 1, told: true });
+  });
 });
 
 describe("POST /api/visits: what is refused", () => {

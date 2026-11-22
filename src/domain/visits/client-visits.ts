@@ -72,7 +72,10 @@ interface VisitSummary {
   readonly stage: VisitStage | null;
   /** Paid for ahead, or covered by a credit: the visit's "Prepaid". */
   readonly prepaid: boolean;
+  /** Who is coming; null for the client while it is a draft (src/domain/booking/allotment-lock.ts). */
   readonly technician: { readonly name: string; readonly initials: string } | null;
+  /** Whether who is coming is still a draft, fixed and named the evening before. */
+  readonly technician_pending: boolean;
   readonly place: string;
   /** What is still to pay by UPI at the visit, in paise (ADR 0209); null where nothing is owed at the visit. */
   readonly pay_at_visit: number | null;
@@ -92,6 +95,7 @@ interface VisitSummary {
 
 interface AppointmentRow {
   id: string;
+  technician_draft: number;
   type: VisitType | null;
   /** Its service's tier; null where it names none, which is the standard tier's. */
   tier: string | null;
@@ -127,9 +131,10 @@ const PREPAID = `(EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id
     AND ${statusIn("p.status", PAYMENT_HELD)})
   OR ${creditSpentOn("a.id")})`;
 
+/** A visit's columns for its client; a draft technician is left out until the evening before (src/domain/booking/allotment-lock.ts). */
 const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.window_start, a.window_end, a.technician_id, a.service_city,
   a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
-  t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
+  t.name AS technician_name, t.initials AS technician_initials, a.technician_draft, ${PREPAID} AS prepaid,
   ${visitBegun("a")} AS begun, ${begunPastArrival("a")} AS started, ${landedOutcome("a")} AS landed_outcome, a.client_note,
   EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id AND n.closed_at IS NOT NULL) AS not_home,
   ${openProposalJson("a")} AS proposal,
@@ -145,6 +150,8 @@ const CANCELLED = `(a.status = 'cancelled' AND NOT EXISTS (SELECT 1 FROM visit_c
 
 /** What a visit's summary reads beyond its row: where it is, and the day's times its window is read by. */
 interface SummaryContext {
+  /** For staff, who see a draft's technician; a client is told only once it is fixed. */
+  readonly staff?: boolean;
   /** The client's saved address, else the visit's city and pincode. */
   readonly place: (row: AppointmentRow) => string;
   readonly schedule: SlotSchedule;
@@ -211,9 +218,10 @@ async function visitSummaryOf(
     stage: stageOf(row, now),
     prepaid: row.prepaid === 1,
     technician:
-      row.technician_name === null || row.technician_initials === null
+      row.technician_name === null || row.technician_initials === null || (row.technician_draft === 1 && !context.staff)
         ? null
         : { name: row.technician_name, initials: row.technician_initials },
+    technician_pending: row.technician_draft === 1,
     place: context.place(row),
     one_visit: await oneVisitOf(db, row),
     pay_at_visit: row.due_at_visit,
@@ -322,7 +330,7 @@ export async function listVisits(
   db: D1Database,
   personId: string,
   now: Date,
-  { clientsOwn = false }: { readonly clientsOwn?: boolean } = {},
+  { clientsOwn = false, staff = false }: { readonly clientsOwn?: boolean; readonly staff?: boolean } = {},
 ): Promise<{ upcoming: VisitSummary[]; past: VisitSummary[] }> {
   const ended = clientsOwn
     ? `(${statusIn("a.status", VISIT_ENDED)} OR ${CANCELLED})`
@@ -330,7 +338,7 @@ export async function listVisits(
   const missed = clientsOwn ? `(${statusIn("a.status", VISIT_LIVE)} AND ${missedDayOver("a", "?2")})` : "0";
   const binds = clientsOwn ? [personId, todayStartsOf(now)] : [personId];
   const [context, upcoming, past] = await Promise.all([
-    contextOf(db, personId, now),
+    contextOf(db, personId, now).then((context) => ({ ...context, staff })),
     db
       .prepare(
         `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id

@@ -97,7 +97,7 @@ export function staticMapQuery(routes: readonly MapRoute[]): URLSearchParams {
 
 export function createGoogleRoutes(apiKey: string, deps: VendorFetchDependencies): RoutesProvider {
   return {
-    async route(stops): Promise<RouteResult> {
+    async route(stops, departing): Promise<RouteResult> {
       const first = stops[0];
       const last = stops[stops.length - 1];
       if (first === undefined || last === undefined || stops.length < 2) return { ok: true, legs: [], polyline: null };
@@ -117,7 +117,10 @@ export function createGoogleRoutes(apiKey: string, deps: VendorFetchDependencies
             destination: waypoint(last),
             intermediates: stops.slice(1, -1).map(waypoint),
             travelMode: "DRIVE",
-            routingPreference: "TRAFFIC_UNAWARE",
+            // Traffic bills as Compute Routes Pro, so only a drive that names its departure asks for it.
+            ...(departing === undefined
+              ? { routingPreference: "TRAFFIC_UNAWARE" }
+              : { routingPreference: "TRAFFIC_AWARE", departureTime: departing.departAt.toISOString() }),
             polylineQuality: "OVERVIEW",
           }),
         },

@@ -37,6 +37,7 @@ import { loadBlackouts } from "../booking/occupancy.ts";
 import { visitsOfClient } from "../booking/technician-rotation.ts";
 import { allowedTechnicians, breaksRotation } from "../../policy/technician-rotation.ts";
 import { releaseDeadHolds } from "../booking/hold-slot.ts";
+import { CLIENT_MOVING } from "../booking/hold-stages.ts";
 import { begunPastArrival, visitBegun } from "../visits/visit-begun.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
 import { alertStatement } from "../clients/app-alerts.ts";
@@ -51,7 +52,6 @@ import {
   isWhereItIs,
   movesOntoBlackout,
   isUnderWay,
-  CLIENT_MOVING,
   timesAt,
   landingOf,
   moveDays,
@@ -335,8 +335,9 @@ function movedVisit(db: D1Database, move: PlannedMove, at: string): D1PreparedSt
   const { job } = move;
   return db
     .prepare(
+      // A visit ops place by hand is fixed where they place it: the evening's re-plan leaves it there.
       `UPDATE appointments SET technician_id = ?2, window_start = ?3, window_end = ?4, synced_at = ?5,
-         start_before_move = ?6
+         start_before_move = ?6, technician_draft = 0
        WHERE id = ?1`,
     )
     .bind(

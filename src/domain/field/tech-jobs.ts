@@ -195,7 +195,9 @@ export const SELECT_JOB = `
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
   LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
-  WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`;
+  WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL
+    -- A draft is not theirs until it is fixed, the evening before (src/domain/booking/allotment-lock.ts).
+    AND a.technician_draft = 0`;
 
 /**
  * "only time, type and sector": the area, never the street, whether the job is unlocked or not. The client's own

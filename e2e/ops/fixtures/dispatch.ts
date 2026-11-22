@@ -82,6 +82,7 @@ const job = (
   untold: null,
   begun: null,
   proposal: null,
+  draft: false,
 });
 
 /** One technician's row: their seven days, from the blocks given against the day each falls on. */

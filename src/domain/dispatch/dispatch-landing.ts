@@ -17,7 +17,7 @@ import {
   type VisitToPlan,
 } from "../../policy/day-plan.ts";
 import { windowAt, windowTimesOf } from "../../policy/slot-times.ts";
-import { paidNotBooked } from "../booking/hold-stages.ts";
+import { CLIENT_MOVING } from "../booking/hold-stages.ts";
 import { loadDayPlans } from "../booking/day-plans.ts";
 import { bookedMinutes, loadBlackouts } from "../booking/occupancy.ts";
 import { pinOfVisit, planRulesOf } from "../booking/start-offers.ts";
@@ -48,11 +48,6 @@ export interface LiveJob {
   client_moving: number;
 }
 
-/**
- * Whether a move the client has paid for, or booked free, waits to be booked onto visit `a`. It is booked onto the visit
- * as it was when the client chose the time, so ops' move waits for it.
- */
-export const CLIENT_MOVING = `EXISTS (SELECT 1 FROM slot_holds h WHERE h.moves_appointment_id = a.id AND ${paidNotBooked("h")})`;
 /** A job still to finish; null for one done, cancelled, deleted, or with no type or time. */
 export function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob | null> {
   return db

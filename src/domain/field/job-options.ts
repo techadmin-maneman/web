@@ -39,7 +39,8 @@ export async function optionsJob(
   const row = await db
     .prepare(
       `SELECT a.id, a.window_start, a.type, a.person_id, a.service_city FROM appointments a
-       WHERE a.technician_id = ?1 AND a.id = ?2 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`,
+       WHERE a.technician_id = ?1 AND a.id = ?2 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL
+         AND a.technician_draft = 0`,
     )
     .bind(options.technicianId, options.jobId)
     .first<{ id: string; window_start: string; type: string; person_id: string; service_city: string | null }>();

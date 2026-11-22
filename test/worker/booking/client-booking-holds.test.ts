@@ -17,6 +17,7 @@ import {
   visit,
   later,
   theFirstFit,
+  fixedOnBooking,
 } from "./client-booking-fixtures.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 import { holdAtCheckout } from "../../../src/domain/booking/holds.ts";
@@ -39,6 +40,7 @@ const hold = (who: { cookie: string }, body: object, on: App = app) =>
 beforeEach(async () => {
   await markDatabase();
   app = appFor("local", fakeDependencies(), {}, "client");
+  await fixedOnBooking();
   await technician(IMRAN, "Imran Qureshi", "IQ");
   await technician(SANDEEP, "Sandeep Rawat", "SR");
   await technician(SANA, "Sana Mirza", "SM");

@@ -259,7 +259,7 @@ const ErasedClientRecordSchema = z
  * going ahead, and its discount code.
  */
 async function recordVisits(db: D1Database, personId: string, now: Date, sheet: Promise<JobSheet>) {
-  const visits = await listVisits(db, personId, now);
+  const visits = await listVisits(db, personId, now, { staff: true });
   const visitIds = [...visits.upcoming, ...visits.past].map((visit) => visit.id);
   const [outcomes, closings, codes, lost, notFitted, { lostReasons, notFittedReasons }] = await Promise.all([
     visitOutcomes(db, visitIds),

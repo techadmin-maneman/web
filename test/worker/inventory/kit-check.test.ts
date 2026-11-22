@@ -85,6 +85,8 @@ beforeEach(async () => {
 
 describe("tomorrow's kits", () => {
   it("are checked from the evening, each shortfall proposed as a top-up from the city's stockroom, and ops told", async () => {
+    // Before the evening's lock, tomorrow's visits are still drafts (ADR 0290): they count with whoever has them now.
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1").run();
     expect(await checkTomorrowsKits(env.DB, NOW, alertOnce, KIT_CHECK)).toBe(0);
     expect(await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK)).toBe(1);
     expect(await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK)).toBe(1);
@@ -174,11 +176,12 @@ describe("tomorrow's kits", () => {
       ].map(([id, at]) =>
         env.DB.prepare(
           `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
-             service_city, synced_at)
-           VALUES (?1, ?1, ?4, 'service', 'standard', 'scheduled', ?2, ?2, ?3, 'Gurgaon', ?2)`,
+             service_city, synced_at, technician_draft)
+           VALUES (?1, ?1, ?4, 'service', 'standard', 'scheduled', ?2, ?2, ?3, 'Gurgaon', ?2, 1)`,
         ).bind(id, at, IMRAN, PERSON),
       ),
     );
+    // Both are drafts, fixed only the evening before (ADR 0290): each still counts with whoever has it now.
     // Monday's evening: the week's top-up day.
     await checkTomorrowsKits(env.DB, EVENING, alertOnce, { ...KIT_CHECK, top_up_weekday: 1 });
     const lines = await env.DB.prepare(

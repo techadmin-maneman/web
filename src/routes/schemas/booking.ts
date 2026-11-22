@@ -62,7 +62,9 @@ export const HoldSchema = z
     arrives_by: z.iso
       .datetime()
       .openapi({ description: "The latest the technician arrives: the start and its arrival window." }),
-    technician: TechnicianSchema,
+    technician: z.union([TechnicianSchema, z.null()]).openapi({
+      description: "Who is coming; null while it is a draft, fixed and named the evening before (ADR 0290).",
+    }),
     price: PriceSchema,
     late_fee: z.union([PriceSchema, z.null()]).openapi({
       description: "The late fee moving it inside the notice costs, where it is sold to charge one; else null.",

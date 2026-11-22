@@ -135,12 +135,14 @@ describe("the week ahead", () => {
       items: [{ code: "solvent", quantity: 10 }],
     });
     await job.opsPost("/api/stock/counts", { consumable_code: "solvent", place_id: IMRAN, counted: 4 });
-    // The fixture's service today, one six days on, and one a week on, past the forecast.
+    // The fixture's service today, one six days on, and one a week on, past the forecast. Those ahead are drafts,
+    // fixed only the evening before (ADR 0290), and still count with whoever has them now.
     for (const days of [6, 7]) {
       await aVisit({
         person_id: PERSON,
         technician_id: IMRAN,
         window_start: new Date(NOW.getTime() + days * 24 * 60 * 60_000).toISOString(),
+        technician_draft: 1,
       });
     }
     const { forecast } = await (await job.get("/api/tech/kit")).json<{ forecast: unknown[] }>();

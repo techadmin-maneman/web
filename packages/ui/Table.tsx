@@ -154,6 +154,11 @@ export function RowOpener({
   );
 }
 
+/** A line of detail beneath a cell's value, as a row opener's beneath its name: a step below, smaller and muted. */
+export function CellDetail({ children }: { readonly children: ReactNode }) {
+  return <span className={styles.openerMeta}>{children}</span>;
+}
+
 /** A column of figures, right aligned, as every board sets a count or an amount. */
 export const FIGURE = styles.figure;
 

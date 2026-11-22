@@ -39,7 +39,7 @@ this map, or when the map names something that no longer exists.
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
   `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`, `site-today`, `site-notices`,
   `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
-  `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each), `drive-check` (Google's drives either side of a start), `public-booking-code` (a site booking's discount code), `made-to-order-asks` (a client's ask for a hair system made to their size, a Tasks row), `held-bookings` (a booking ops made, held on its payment link: shown, sent again, let go),
+  `waitlist`, `services`, `remakes`, `start-offers` (the starts a visit may be booked at, and who can take each), `drive-check` (Google's drives either side of a start), `allotment-lock` (a visit's technician a draft until the evening's lock), `replan-day` (a city's drafts re-planned to cost least), `evening-check` (tomorrow's drives asked of Google, on the traffic when each sets off, before it is fixed), `public-booking-code` (a site booking's discount code), `made-to-order-asks` (a client's ask for a hair system made to their size, a Tasks row), `held-bookings` (a booking ops made, held on its payment link: shown, sent again, let go),
   `day-plans` (each technician's days as booking plans them), `packages` (each package and its figures, and when its
   visits fall due), `packages-console` (a package added, changed, ordered or deleted in the console), `client-prices`
   (a first fit priced by the hair system made to the client, and any visit's price from its parts)
@@ -57,7 +57,7 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`, `visit-paid`,
   `visit-begun`, `client-visits`, `ratings` (a client's stars for a visit done), `client-photo-keys`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
-  `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `finish-asks` (how a technician suggests finishing a visit), `open-proposals`, `visit-upkeep` (what a write to a
+  `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `finish-asks` (how a technician suggests finishing a visit), `open-proposals`, `technician-draft` (fixing drafts, and giving a draft to another technician), `visit-upkeep` (what a write to a
   visit keeps up beside it),
   `no-show-notes`, `visit-story` (a visit's steps, for its drawer), `live-visit` (the technician's word and step, for the client), `visit-photo-links` (a visit's photographs with their links)
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `follow-ups`, `one-visit`
