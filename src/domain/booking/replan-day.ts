@@ -75,7 +75,7 @@ export async function readDay(
     from: tieRange(date).from,
     to: tieRange(date).to,
     now,
-    hours: inputs.workingHours,
+    inputs,
   });
   const radii = new Map(crewRows.map((each) => [each.id, each]));
   const days = new Map<string, PlanDay>();

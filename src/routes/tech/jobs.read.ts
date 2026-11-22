@@ -88,7 +88,12 @@ export function registerTechJobReads(app: App): void {
     // Nothing before yesterday: paging back through every date read every past client's card.
     if (!listableDate(date, now)) return refuse(c, "invalid_request", ["date"]);
     const inputs = await opsInputs(c);
-    const rules = { booking: inputs.bookingRules, drive: inputs.driveEstimate };
+    const rules = {
+      booking: inputs.bookingRules,
+      drive: inputs.driveEstimate,
+      times: inputs.driveTimes,
+      learning: inputs.driveLearning,
+    };
     const unlockHour = inputs.addressUnlockHour;
     const [jobs, sentBack, settled] = await Promise.all([
       jobsOn({ db: c.env.DB, technicianId, date, now, unlockHour, rules }),

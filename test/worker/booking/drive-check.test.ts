@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { drivesFit, keptDrivesFit, type DriveCheck, type TooTight } from "../../../src/domain/booking/drive-check.ts";
 import { minuteOf, type PlanDay, type PlanRules } from "../../../src/policy/day-plan.ts";
-import { DRIVE_ESTIMATE, driveMinutes } from "../../../src/policy/drive-estimate.ts";
+import { atPace, DRIVE_ESTIMATE, driveMinutes } from "../../../src/policy/drive-estimate.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 import type { RoutesProvider } from "../../../src/providers/routes/index.ts";
 import { env } from "cloudflare:workers";
@@ -96,6 +96,16 @@ describe("Google's drives", () => {
     const visit = { minutes: 60, pin: { lat: 28.47, lng: 77.05 }, time: "11:30" };
     expect(await drivesFit(env.DB, check, { day, rules: RULES, now: NOW }, visit)).toBe(false);
     expect(tight[0]?.estimate_minutes).toBe(driveMinutes({ lat: 28.43, lng: 77.05 }, visit.pin, 10, DRIVE_ESTIMATE));
+  });
+
+  it("tell the estimate at the day's learned pace, as the start was offered on", async () => {
+    const { check, tight } = google(30);
+    const pace = Array.from({ length: 24 }, (_, hour) => (hour === 11 ? 150 : 100));
+    const plan = { day: { ...dayAt(28.48), pace }, rules: RULES, now: NOW };
+    const visit = { minutes: 60, pin: { lat: 28.5, lng: 77.05 }, time: "12:00" };
+    expect(await drivesFit(env.DB, check, plan, visit)).toBe(false);
+    const estimate = driveMinutes({ lat: 28.48, lng: 77.05 }, visit.pin, 11, DRIVE_ESTIMATE);
+    expect(tight[0]?.estimate_minutes).toBe(atPace(estimate, 150, DRIVE_ESTIMATE));
   });
 
   it("hold a start only where the drive on to the visit after it, and parking, reach that one", async () => {

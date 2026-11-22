@@ -65,6 +65,7 @@ export const shell = {
     "campaign-links": "Campaign links",
     "care-numbers": "Care numbers",
     activity: "Activity",
+    driving: "Driving",
   },
   /** The navigation's entries. */
   nav: {

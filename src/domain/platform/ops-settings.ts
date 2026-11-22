@@ -18,6 +18,7 @@ import type { Ratings } from "../../policy/ratings.ts";
 import type { DriveEstimate } from "../../policy/drive-estimate.ts";
 import type { Allotment } from "../../policy/allotment.ts";
 import type { Steering } from "../../policy/steering.ts";
+import type { DriveLearning, DriveTimes } from "../../policy/learned-drives.ts";
 import type { BookingRules, WorkingHours } from "../../policy/start-times.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import type { CareHours } from "../../policy/care-hours.ts";
@@ -68,6 +69,9 @@ export interface OpsInputs {
   readonly allotment: Allotment;
   /** How many of a day's times clients see marked Recommended, and the most driving a time shown to them adds. */
   readonly steering: Steering;
+  /** Whether learned drive times are used, and how many drives an hour needs and how far back they are learned from. */
+  readonly driveTimes: DriveTimes;
+  readonly driveLearning: DriveLearning;
   readonly checkinRadiusM: number;
   /** The check-in radius at a pin Google placed only roughly (src/policy/check-in.ts). */
   readonly checkinRadiusApproximateM: number;
@@ -164,6 +168,8 @@ function shape(values: OpsValues): OpsInputs {
     technicianRadiusKm: values.technician_radius_km,
     allotment: values.allotment,
     steering: values.steering,
+    driveTimes: values.drive_times,
+    driveLearning: values.drive_learning,
     checkinRadiusM: values.checkin_radius_m,
     checkinRadiusApproximateM: values.checkin_radius_approximate_m,
     noShowWaitMin: values.no_show_wait_min,

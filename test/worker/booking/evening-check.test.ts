@@ -9,6 +9,8 @@ import { EVENING_DRIVES, eveningCheck, type EveningCheck } from "../../../src/do
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
+import { minuteOf, timeOf } from "../../../src/policy/day-plan.ts";
+import { atPace, DRIVE_ESTIMATE, driveMinutes } from "../../../src/policy/drive-estimate.ts";
 import type { Point, RoutesProvider } from "../../../src/providers/routes/index.ts";
 import { fakeDependencies, fakeQueue, LOCAL_CONFIG, LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
 import { createLogger } from "../../../src/log.ts";
@@ -107,6 +109,24 @@ describe("tomorrow checked on Google", () => {
       expect(departure >= indiaInstant(TUESDAY, "09:00").toISOString()).toBe(true);
       expect(departure < indiaInstant(TUESDAY, "11:00").toISOString()).toBe(true);
     }
+  });
+
+  it("asks Google of the day's first drive from home setting off as early as its learned pace says", async () => {
+    // Sandeep's draft at 11 stays his: Imran, nearer, is away.
+    await booked(28.4597);
+    await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
+    // Gurgaon's weekday drives at 11 are learned to take twice the estimate.
+    await env.DB.prepare(
+      `INSERT INTO drive_factors (city, day_kind, hour, factor_pct, drives, learned_at)
+       VALUES ('Gurgaon', 'weekday', 11, 200, 20, ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const { check, departures } = google(() => 10);
+    await run(check);
+    const home = { lat: SANDEEPS_HOME, lng: 77.0266 };
+    const paced = atPace(driveMinutes(home, { lat: 28.4597, lng: 77.0266 }, 11, DRIVE_ESTIMATE), 200, DRIVE_ESTIMATE);
+    expect(departures).toEqual([indiaInstant(TUESDAY, timeOf(minuteOf("11:00") - paced)).toISOString()]);
   });
 
   it("leaves a draft as it stands where nobody's drive has room, and tells ops the drive", async () => {

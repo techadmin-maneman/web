@@ -8,4 +8,4 @@ export { aPayment, aPaymentLink, aRefund } from "./payments.ts";
 export { aGenericFirstFit, aHairSystemOf, aPackage } from "./packages.ts";
 export { aConsent, aHairProfile, anAddress, aPerson } from "./people.ts";
 export { aTechnician } from "./technicians.ts";
-export { aNoShow, aVisit, keepUpVisits } from "./visits.ts";
+export { aCheckin, anOutcome, aNoShow, aVisit, keepUpVisits } from "./visits.ts";

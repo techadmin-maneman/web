@@ -217,7 +217,7 @@ export async function moveDays(
       technicianIds: null,
       ...range,
       now,
-      hours: reading.then((read) => read.workingHours),
+      inputs: reading,
       leaving: { visitId: job.id },
     }),
     reading,

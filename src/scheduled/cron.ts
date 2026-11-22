@@ -48,7 +48,7 @@ import { sendUnsentLinks } from "../domain/money/payment-links.ts";
 import type { OpsInputs } from "../domain/platform/ops-settings.ts";
 import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/platform/storage-meter.ts";
 import { queueReminders } from "../domain/messages/visit-messages.ts";
-import { eveningCheckJob, hoursOf, lockTomorrow, replanDraftsJob } from "./allotment-jobs.ts";
+import { ALLOTMENT_HOURLY, eveningCheckJob, hoursOf, lockTomorrow } from "./allotment-jobs.ts";
 import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { MeteredDatabase } from "../lib/d1-meter.ts";
@@ -510,7 +510,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "backup", needs: "nothing", every: 60, at: 33, slot: { hour: 3, weekday: 0 }, run: backupJob },
   // The nightly copy Zoho Analytics reports from (docs/decisions/0146-the-nightly-analytics-copy.md).
   { name: "analytics_nightly", needs: "nothing", every: 60, at: 31, slot: { hour: 3 }, run: analyticsJob },
-  { name: "replan_drafts", needs: "nothing", every: 60, at: 20, run: replanDraftsJob },
+  ...ALLOTMENT_HOURLY,
   // When each task opened and closed, for the reporting copy (docs/decisions/0147-task-spans.md).
   { name: "task_spans", needs: "nothing", every: 60, at: 26, slot: { hour: 23 }, run: taskSpansJob },
   // A kind of WhatsApp refused too often in the last day (src/domain/messages/refusal-rates.ts).

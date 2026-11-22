@@ -13,9 +13,19 @@
     display: none;
   }
 
+  /* A bar with nothing for a desk, no search and no list: the phone's order alone, so a desk draws no bar at all. Two
+     classes, so it outranks the toolbar's own display whichever file the build sets first. */
+  .bar.phoneBar {
+    display: none;
+  }
+
   @media (max-width: 600px) {
     .phoneOnly {
       display: block;
+    }
+
+    .bar.phoneBar {
+      display: flex;
     }
   }
 

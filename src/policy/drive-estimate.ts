@@ -58,3 +58,10 @@ export function driveMinutes(from: Pin, to: Pin, hour: number, estimate: DriveEs
   const speed = inThePeak(hour, estimate) ? estimate.peak_kmh : estimate.offpeak_kmh;
   return Math.max(estimate.least, Math.ceil((km / speed) * 60 + estimate.parking));
 }
+
+/**
+ * A drive's minutes at the pace its city's drives at that hour are learned to take, a per cent of the estimate
+ * (./learned-drives.ts), never under the least drive.
+ */
+export const atPace = (minutes: number, pace: number, estimate: DriveEstimate): number =>
+  pace === 100 ? minutes : Math.max(estimate.least, Math.ceil((minutes * pace) / 100));

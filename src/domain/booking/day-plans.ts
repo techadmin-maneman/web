@@ -11,6 +11,8 @@ import { addDays, indiaInstant, indiaTime, weekdayOf } from "../../lib/india-tim
 import type { Pin } from "../../lib/geo.ts";
 import { minuteOf, type PlanDay, type Stop } from "../../policy/day-plan.ts";
 import { hoursOfCity, type WorkingHours } from "../../policy/start-times.ts";
+import { dayKindOf, paceOf, type DayKind, type DriveTimes, type Learned } from "../../policy/learned-drives.ts";
+import type { OpsInputs } from "../platform/ops-settings.ts";
 import { keepingItsTime, ownAtCheckout, ownUnpaid } from "./hold-stages.ts";
 import { bookedMinutes, bookingCity } from "./occupancy.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
@@ -121,7 +123,7 @@ function statements(
       )
       .bind(ids),
     db
-      .prepare(`SELECT id, home_lat AS lat, home_lng AS lng FROM technicians WHERE ${whoseRows("id", whose)}`)
+      .prepare(`SELECT id, home_lat AS lat, home_lng AS lng, city FROM technicians WHERE ${whoseRows("id", whose)}`)
       .bind(ids),
     db
       .prepare(
@@ -170,10 +172,23 @@ function statements(
          GROUP BY technician_id, date`,
       )
       .bind(ids, from, to),
+    // The cities' learned drive hours (src/policy/learned-drives.ts), for the pace each day takes.
+    db
+      .prepare(
+        `SELECT city, day_kind, hour, factor_pct, drives FROM drive_factors
+         WHERE city IN (SELECT city FROM technicians WHERE ${whoseRows("id", whose)})`,
+      )
+      .bind(ids),
   ] as const;
 }
 
-/** Each technician's days from `from` to `to`, India's dates, with the city's working hours for those without their own. */
+/** What a day plan reads of the inputs in force: the working hours, and whether and how drive times are learned. */
+export type PlanInputs = Pick<OpsInputs, "workingHours" | "driveTimes" | "driveLearning">;
+
+/**
+ * Each technician's days from `from` to `to`, India's dates, with the city's working hours for those without their own,
+ * and the pace the drives of their city are learned to take that kind of day (src/policy/learned-drives.ts).
+ */
 export async function loadDayPlans(input: {
   readonly db: D1Database;
   /** Whose days; null for every technician's, read alongside who may take the visit rather than after it. */
@@ -183,16 +198,16 @@ export async function loadDayPlans(input: {
   readonly from: string;
   readonly to: string;
   readonly now: Date;
-  /** The city's working hours, or the read of them still on its way. */
-  readonly hours: WorkingHours | Promise<WorkingHours>;
+  /** The inputs in force, or the read of them still on its way. */
+  readonly inputs: PlanInputs | Promise<PlanInputs>;
   readonly leaving?: Leaving;
 }): Promise<DayPlans> {
   const { db, from, to, now } = input;
   const whose = whoseOf(input.technicianIds, input.cityOf ?? null);
-  const [[weeks, homes, leave, visits, holds, revisions], schedule, hours] = await Promise.all([
+  const [[weeks, homes, leave, visits, holds, revisions, factors], schedule, inputs] = await Promise.all([
     db.batch([...statements(db, whose, { from, to, now, leaving: input.leaving ?? {} })]),
     loadSlotSchedule(db),
-    input.hours,
+    input.inputs,
   ]);
   const stops = new Map<string, Stop[]>();
   const add = (technicianId: string, date: string, stop: Stop) => {
@@ -224,12 +239,33 @@ export async function loadDayPlans(input: {
   }
   return plansOf({
     weeks: (weeks?.results ?? []) as WorkingDayRow[],
-    homes: (homes?.results ?? []) as ({ id: string } & Located)[],
+    homes: (homes?.results ?? []) as ({ id: string; city: string | null } & Located)[],
     leave: (leave?.results ?? []) as LeaveRow[],
     revisions: (revisions?.results ?? []) as { technician_id: string; date: string; revision: number }[],
     stops,
-    hours,
+    hours: inputs.workingHours,
+    learned: learnedOf((factors?.results ?? []) as FactorRow[]),
+    learning: { use: inputs.driveTimes.use, minDrives: inputs.driveLearning.min_drives },
   });
+}
+
+/** A city's learned hour, as the table holds it. */
+interface FactorRow {
+  readonly city: string;
+  readonly day_kind: DayKind;
+  readonly hour: number;
+  readonly factor_pct: number;
+  readonly drives: number;
+}
+
+/** Each city's learned hours. */
+function learnedOf(rows: readonly FactorRow[]): ReadonlyMap<string, Learned[]> {
+  const byCity = new Map<string, Learned[]>();
+  for (const row of rows) {
+    const slot = { dayKind: row.day_kind, hour: row.hour, factorPct: row.factor_pct, drives: row.drives };
+    byCity.set(row.city, [...(byCity.get(row.city) ?? []), slot]);
+  }
+  return byCity;
 }
 
 interface WorkingDayRow {
@@ -241,14 +277,21 @@ interface WorkingDayRow {
 
 function plansOf(read: {
   weeks: readonly WorkingDayRow[];
-  homes: readonly ({ id: string } & Located)[];
+  homes: readonly ({ id: string; city: string | null } & Located)[];
   leave: readonly LeaveRow[];
   revisions: readonly { technician_id: string; date: string; revision: number }[];
   stops: ReadonlyMap<string, Stop[]>;
   hours: WorkingHours;
+  learned: ReadonlyMap<string, Learned[]>;
+  learning: { readonly use: DriveTimes["use"]; readonly minDrives: number };
 }): DayPlans {
   const city = hoursOfCity(read.hours);
   const homes = new Map(read.homes.map((home) => [home.id, pinOf(home)]));
+  const cities = new Map(read.homes.map((home) => [home.id, home.city]));
+  const paceOn = (technicianId: string, date: string) => {
+    const learned = read.learned.get(cities.get(technicianId) ?? "") ?? [];
+    return paceOf(learned, { dayKind: dayKindOf(date), ...read.learning });
+  };
   const hoursOn = (technicianId: string, date: string): { starts: string; ends: string } | null => {
     const own = read.weeks.filter((day) => day.technician_id === technicianId);
     if (own.length === 0) return city;
@@ -271,6 +314,7 @@ function plansOf(read: {
           from: minuteOf(period.from_time ?? "00:00"),
           to: minuteOf(period.to_time ?? "00:00"),
         })),
+        pace: paceOn(technicianId, date),
       };
     },
     revision(technicianId, date) {

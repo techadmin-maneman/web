@@ -221,7 +221,7 @@ async function roadCheck(
       from: input.date,
       to: input.date,
       now,
-      hours: inputs.workingHours,
+      inputs,
       leaving: {
         visitId: input.moves?.kind === "move" ? input.moves.visit.visitId : null,
         ownUnpaidOf: (input.from ?? "app") === "app" ? input.personId : null,
@@ -425,7 +425,7 @@ async function heldTimeRoom(
     from: hold.date,
     to: hold.date,
     now,
-    hours: inputs.workingHours,
+    inputs,
     leaving: { visitId: exceptVisitId, holdId: hold.id },
   });
   const day = plans.day(hold.technician_id, hold.date);

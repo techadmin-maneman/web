@@ -33,6 +33,8 @@ export const RULE_GROUPS = [
       "technician_radius_km",
       "allotment",
       "steering",
+      "drive_times",
+      "drive_learning",
       "payment_hold",
       "booking_days",
       "payment_links",

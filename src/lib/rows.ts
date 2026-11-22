@@ -573,6 +573,14 @@ export interface Rows {
     readonly blackout_reason: string | null;
     readonly write_state: string | null;
   };
+  readonly drive_factors: {
+    readonly city: string;
+    readonly day_kind: string;
+    readonly hour: number;
+    readonly factor_pct: number;
+    readonly drives: number;
+    readonly learned_at: string;
+  };
   readonly erasure_follow_ups: {
     readonly person_id: string;
     readonly erased_at: string;

@@ -48,6 +48,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Recalls | `recalls`, `recall_pieces` | A recall raised since is gone though its lot stays blocked and its pieces stay due; one closed since is open again | Raising the recall again on the Quality page names the same lot, already blocked, so it is refused: ask the engineer |
 | Cycle counts | `count_tasks`, `count_lines` | A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning | Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought |
 | The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
+| Learned drive times | `drive_factors` | The drive times learned the night before `<T>` stand until the next night's run | Nothing: each night's run learns them afresh from the drives done |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | Demand looked up | `pincode_demand` | Lookups since are not counted, so a pincode looked up since ranks a little lower to open next | Nothing: the counts rank, they decide nothing |
 | Launches scheduled | `pincode_launches`, `pincode_launch_pincodes` | A launch scheduled or cancelled since is gone or back, and one the cron served since is scheduled again, though its pincodes stay served and those waiting told | Scheduling or cancelling it again in Areas; one served since, marking it live is the cron's next run |
@@ -105,6 +106,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [discount_code_uses](#discount_code_uses): Each time a discount code was entered on a booking, its hold or its visit: by whom, and what it took off before GST once the price was known. Never deleted: one taken off is marked removed (ADR 0108).
 - [discount_codes](#discount_codes): The discount codes ops make: a percentage with an optional cap or an amount, the kinds of visit each covers, its last day and limits, and whether it is switched off (ADR 0108).
 - [dispatch_moves](#dispatch_moves): Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
+- [drive_factors](#drive_factors): Each city's drive times learned from its technicians' drives, a row a weekday or the weekend and hour: the middle drive's time as a per cent of its estimate and how many drives stand behind it, written afresh each night (ADR 0294).
 - [erasure_follow_ups](#erasure_follow_ups): Each erasure Care still finish by hand in the CRM, which the Tasks board lists until they close it (ADR 0066).
 - [events](#events): What happened, for analysis, with no personal data in its payload.
 - [failure_reasons](#failure_reasons): Why a hair system failed, as ops set them, one they took off kept as retired; none means the committed list (ADR 0273).
@@ -1351,6 +1353,21 @@ Indexes:
 - `dispatch_moves_untold`: on (`now_start`), where `fsm_write_state = 'written' AND told_at IS NULL`
 
 Triggers: `dispatch_moves_board_added`, `dispatch_moves_board_changed`.
+
+## drive_factors
+
+Each city's drive times learned from its technicians' drives, a row a weekday or the weekend and hour: the middle drive's time as a per cent of its estimate and how many drives stand behind it, written afresh each night (ADR 0294).
+
+Made by `0231_drive_factors.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `city` | TEXT | no |  | primary key |  |
+| `day_kind` | TEXT | no |  | primary key |  |
+| `hour` | INTEGER | no |  | primary key |  |
+| `factor_pct` | INTEGER | no |  |  |  |
+| `drives` | INTEGER | no |  |  |  |
+| `learned_at` | TEXT | no |  |  |  |
 
 ## erasure_follow_ups
 
