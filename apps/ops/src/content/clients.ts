@@ -373,8 +373,8 @@ export const clients = {
       full: "Full",
       taken: "Taken",
       addCode: "Add a discount code",
-      /** The panel's main action, once a time is chosen: "Book Tue 3 Nov, 2 pm". */
-      bookAt: (day: string, time: string) => `Book ${day}, ${time}`,
+      /** The panel's main action, once a time is chosen: "Book Tue 3 Nov, 2 pm", the hour and its am or pm on one line. */
+      bookAt: (day: string, time: string) => `Book ${day}, ${time.replace(" ", "\u00a0")}`,
       chooseTime: "Choose a time",
       /** "Service visit, Wed 23 Sep, 11 am, with Sandeep Rawat." */
       summary: (visit: string, day: string, time: string, technician: string) =>
@@ -399,6 +399,8 @@ export const clients = {
         letGoAsk: "Let this booking go? Its payment link stops working.",
         /** A link the browser would not copy, where it is written out above to select. */
         notCopied: "Not copied. Select the link above.",
+        /** The same, where the link is written out nowhere else: it is given to copy by hand. */
+        notCopiedHere: (url: string) => `Not copied. Copy it by hand: ${url}`,
         /** "7 am that day": a hold ending on its visit's own day. */
         thatDay: (clock: string) => `${clock} that day`,
         lettingGo: "Letting go…",

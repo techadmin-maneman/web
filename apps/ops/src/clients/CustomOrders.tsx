@@ -16,7 +16,7 @@ import { FIGURE, Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import form from "@maneman/ui/forms.module.css";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { useAccess } from "../lib/access.ts";
@@ -100,12 +100,21 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
   );
 }
 
-/** Cancel, asked once more: the order's payment link stops working. */
+/** Cancel, asked once more: the order's payment link stops working. The ask opens on Keep, and Keep goes back. */
 function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
   const [asking, setAsking] = useState(false);
+  const keep = useRef<HTMLButtonElement>(null);
+  const opener = useRef<HTMLButtonElement>(null);
+  const asked = useRef(false);
+  useEffect(() => {
+    if (asking) keep.current?.focus();
+    else if (asked.current) opener.current?.focus();
+    asked.current = asking;
+  }, [asking]);
   if (!asking) {
     return (
       <Button
+        ref={opener}
         variant="outline"
         size="small"
         onClick={() => {
@@ -132,6 +141,7 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
           {copy.cancelYes}
         </Button>
         <CancelButton
+          ref={keep}
           keep
           onClick={() => {
             setAsking(false);

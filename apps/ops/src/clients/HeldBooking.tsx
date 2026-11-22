@@ -5,6 +5,7 @@
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
+import { classes } from "@maneman/ui/classes";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextButton } from "@maneman/ui/TextLink";
 import { Refusal } from "@maneman/ui/Refusal";
@@ -57,7 +58,7 @@ export function HeldLinkActions({
   lead?: ReactNode;
 }) {
   const [said, setSaid] = useState<{ readonly text: string; readonly count: number } | null>(null);
-  const [failed, setFailed] = useState<string | null>(null);
+  const [failed, setFailed] = useState<{ readonly text: string; readonly count: number } | null>(null);
   const [busy, once] = useOneAtATime();
   const line = useRef<HTMLSpanElement>(null);
   const refused = useRef<HTMLSpanElement>(null);
@@ -72,13 +73,17 @@ export function HeldLinkActions({
     setFailed(null);
     setSaid((last) => ({ text, count: (last?.count ?? 0) + 1 }));
   };
+  const refuse = (text: string) => {
+    setSaid(null);
+    setFailed((last) => ({ text, count: (last?.count ?? 0) + 1 }));
+  };
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(url);
       say(linkCopy.copied);
     } catch {
-      // The browser would not copy it: the link to copy by hand, or where it is written out above, that it was not.
-      say(shown ? copy.notCopied : url);
+      // The browser would not copy it: said so, with the link to copy by hand where it is not written out above.
+      refuse(shown ? copy.notCopied : copy.notCopiedHere(url));
     }
   };
   const send = () =>
@@ -87,7 +92,7 @@ export function HeldLinkActions({
       setFailed(null);
       const answer = await clientsApi.sendHeldLink(holdId);
       if (answer.ok) say(linkCopy.outcomes[answer.body.outcome]);
-      else setFailed(errorText({ ...copy.errors, ...linkCopy.errors }, { code: answer.code }));
+      else refuse(errorText({ ...copy.errors, ...linkCopy.errors }, { code: answer.code }));
     });
   const about = subject === "" ? null : <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>;
   return (
@@ -99,7 +104,7 @@ export function HeldLinkActions({
           {about}
         </TextButton>
         {maySend && (
-          <TextButton tone="muted" disabled={busy} onClick={() => void send()}>
+          <TextButton tone="muted" busy={busy} onClick={() => void send()}>
             {busy ? linkCopy.sending : linkCopy.resend}
             {about}
           </TextButton>
@@ -113,8 +118,8 @@ export function HeldLinkActions({
         )}
       </span>
       {failed !== null && (
-        <span ref={refused} className={styles.said}>
-          <Refusal inline said={failed} />
+        <span key={failed.count} ref={refused} className={classes(styles.said, styles.link)}>
+          <Refusal inline said={failed.text} />
         </span>
       )}
     </div>
@@ -130,6 +135,15 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
   const mayLetGo = useAccess().mayCall("POST /api/holds/{id}/let-go");
+  const keep = useRef<HTMLButtonElement>(null);
+  const opener = useRef<HTMLButtonElement>(null);
+  const asked = useRef(false);
+  // The ask opens on its safe answer, Keep; kept, or refused, the focus goes back to Let it go.
+  useEffect(() => {
+    if (asking) keep.current?.focus();
+    else if (asked.current) opener.current?.focus();
+    asked.current = asking;
+  }, [asking]);
   const when = whenOf(held.date, held.starts_at);
   if (held.paid) return <p>{copy.paid(named(held.type), when)}</p>;
   const subject = `${named(held.type)}, ${when}`;
@@ -146,6 +160,7 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
     });
   const letGoButton = mayLetGo ? (
     <TextButton
+      ref={opener}
       tone="muted"
       onClick={() => {
         setAsking(true);
@@ -173,6 +188,7 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
               {busy ? copy.lettingGo : copy.letGo}
             </Button>
             <CancelButton
+              ref={keep}
               keep
               disabled={busy}
               onClick={() => {
