@@ -14,7 +14,9 @@ import { hasOpenProposal } from "../visits/open-proposals.ts";
 import { reallottingDraft } from "../visits/technician-draft.ts";
 import { CLIENT_MOVING } from "./hold-stages.ts";
 import { fittingOf, techniciansFor } from "./occupancy.ts";
+import type { DayPlans } from "./day-plans.ts";
 import { pinColumns, standings, type Radius } from "./standings.ts";
+import { tieRange } from "./technician-choice.ts";
 
 export interface DraftRow {
   readonly id: string;
@@ -24,6 +26,8 @@ export interface DraftRow {
   readonly window_start: string;
   readonly technician_id: string;
   readonly service_pincode: string | null;
+  /** The city it is booked in, whose evening lock fixes it. */
+  readonly service_city: string | null;
   /** Where it is (./start-offers.ts pinColumns); null where neither the client nor the pincode has a pin. */
   readonly lat: number | null;
   readonly lng: number | null;
@@ -93,6 +97,7 @@ export function takersOf(
 
 /** A draft's columns, as DraftRow reads them, of the appointments `a`. */
 export const DRAFT_COLUMNS = `a.id, a.person_id, a.type, a.tier, a.window_start, a.technician_id, a.service_pincode,
+  a.service_city,
   ${pinColumns("a.person_id", "a.service_pincode")},
   (SELECT p.test_record FROM people p WHERE p.id = a.person_id) AS test_record`;
 
@@ -176,3 +181,12 @@ export function draftMove(
 /** Whether a batch failed for a draft or a day changed since it was read, which the next look tries again. */
 export const draftChanged = (error: unknown): boolean =>
   failedUniqueOn(error, "slot_claims") || failedNotNullOn(error, "dispatch_moves.appointment_id");
+
+/** Minutes booked on a technician's days over the week around `date`. */
+export function weekOf(plans: DayPlans, technicianId: string, date: string): number {
+  let minutes = 0;
+  for (let day = tieRange(date).from; day <= tieRange(date).to; day = addDays(day, 1)) {
+    for (const stop of plans.day(technicianId, day)?.stops ?? []) minutes += stop.end - stop.start;
+  }
+  return minutes;
+}

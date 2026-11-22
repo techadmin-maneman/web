@@ -232,15 +232,25 @@ async function roadCheck(
   };
 }
 
-/** The move of the draft that makes room for a hold (./make-room.ts), with the lock it takes let go and its upkeep. */
+/**
+ * The move of the draft that makes room for a hold (./make-room.ts), and its upkeep, written ahead of the hold; then
+ * the lock it takes on the day it goes to, written after it and kept with it, so a hold planned on that day before the
+ * move fails until this one is booked or let go.
+ */
 function roomMade(
   db: D1Database,
   made: { readonly room: Room; readonly date: string },
   at: string,
-): D1PreparedStatement[] {
+): { readonly before: D1PreparedStatement[]; readonly after: (holdId: string) => D1PreparedStatement } {
   const { room, date } = made;
-  const move = draftMove(db, { row: room.draft, to: room.to, date, revision: room.revision, lock: true }, at);
-  return [...move.statements, move.release, ...visitUpkeep(db, { visits: [room.draft.id] }, at)];
+  const move = draftMove(db, { row: room.draft, to: room.to, date, revision: room.revision, lock: false }, at);
+  return {
+    before: [...move.statements, ...visitUpkeep(db, { visits: [room.draft.id] }, at)],
+    after: (holdId) =>
+      db
+        .prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, ?3, ?4)")
+        .bind(room.to, date, `rev:${String(room.revision + 1)}`, holdId),
+  };
 }
 
 /** The hold's row: the service, the day, the technician and its start, the price, and the terms it is sold under. */
@@ -338,18 +348,19 @@ export async function holdSlot({
     // A hold is labelled with the window its start falls in, whatever window it was asked in.
     const held = { ...input, window: windowAt(time, schedule.on(date)) };
     const claims = claimsAt(time, service.minutes + inputs.bookingRules.wrap_up, revision);
-    const making = room === undefined ? [] : roomMade(db, { room, date }, at);
+    const making = room === undefined ? null : roomMade(db, { room, date }, at);
     try {
       await db.batch([
         ...(input.alongside ?? []),
         ...releaseDeadHolds(db, now, from === "app" ? personId : null),
-        ...making,
+        ...(making?.before ?? []),
         insertRow(db, "slot_holds", holdRow(held, { id, technician, start, startsAt, at, expiresAt, graceSeconds })),
         ...claims.map((claim) =>
           db
             .prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, ?3, ?4)")
             .bind(technician.id, date, claim, id),
         ),
+        ...(making === null ? [] : [making.after(id)]),
         ...(input.afterHold?.(id) ?? []),
       ]);
       return { id, service, date, window: held.window, technician, startUnit: start, startsAt, price, expiresAt };

@@ -19,6 +19,7 @@ import { loadDayPlans, type CityOf, type DayPlans, type Leaving } from "./day-pl
 import { bookingCity, loadBlackouts, techniciansFor, type Fitting, type Moving, type Technician } from "./occupancy.ts";
 import { visitsOfClient } from "./technician-rotation.ts";
 import { roomOn, type Room } from "./make-room.ts";
+import { leftToTheLock, reminderHoursAt } from "./allotment-lock.ts";
 import { pinColumns, standings, type Placing, type Radius } from "./standings.ts";
 import { draftsOf, type DraftRow } from "./draft-moves.ts";
 import { keptDrivesFit } from "./drive-check.ts";
@@ -186,6 +187,11 @@ interface Offering {
   readonly drafts: readonly DraftRow[];
   readonly radii: ReadonlyMap<string, Radius>;
   readonly kept: ReturnType<typeof keptOnce>;
+  /**
+   * Whether a start nobody can take may be freed by moving a draft: not where the days are read without a visit, as for
+   * a client's move, since the draft would be placed where that visit still stands.
+   */
+  readonly makesRoom: boolean;
 }
 
 /** A technician who can take a start on `date`, as the start's list carries them. */
@@ -229,7 +235,8 @@ async function startsOn(offering: Offering, date: string, earliest: number): Pro
       byStart.set(placed.start, [...(byStart.get(placed.start) ?? []), candidate]);
     }
   }
-  const city = { date, drafts: offering.drafts.filter((row) => onDay(row, date)), plans, radii: offering.radii, rules };
+  const drafts = offering.makesRoom ? offering.drafts.filter((row) => onDay(row, date)) : [];
+  const city = { date, drafts, plans, radii: offering.radii, rules };
   const booking = { technicians: offering.technicians, visit: toPlan, earliest, offered: new Set(byStart.keys()) };
   for (const [start, rooms] of await roomOn(db, { ...city, inputs }, { ...booking, drivesFit })) {
     byStart.set(
@@ -264,6 +271,15 @@ export async function startOffers(input: {
   const cityOf = { ...place, keeping: placing.moving?.technicianId ?? null };
   const reading = input.inputs === undefined ? readOpsInputs(db, now) : Promise.resolve(input.inputs);
   const homes = radiiIn(db, cityOf);
+  const makesRoom = (placing.moving?.visitId ?? placing.leaving?.visitId ?? null) === null;
+  // The city's drafts a booking may move: none for a client's move, and none the evening's check and lock now hold.
+  const movable = makesRoom
+    ? Promise.all([homes, reminderHoursAt(db, now)]).then(async ([rows, hours]) =>
+        (await draftsOf(db, { technicianIds: [...rows.keys()], from, to, now })).filter(
+          (row) => !leftToTheLock(hours, { city: row.service_city, date: indiaDate(new Date(row.window_start)) }, now),
+        ),
+      )
+    : Promise.resolve([]);
   // The city's technicians' days are read beside who may take the visit, so the plans wait on no trip of their own.
   const [able, closed, clientVisits, pin, plans, inputs, radii, drafts] = await Promise.all([
     techniciansFor(db, placing.moving ?? null, place, visit.fitting ?? null),
@@ -282,7 +298,7 @@ export async function startOffers(input: {
     }),
     reading,
     homes,
-    homes.then((rows) => draftsOf(db, { technicianIds: [...rows.keys()], from, to, now })),
+    movable,
   ]);
   const where = standings(able.technicians, radii, { pin, keeping: placing.moving?.technicianId ?? null, inputs });
   const offering: Offering = {
@@ -299,6 +315,7 @@ export async function startOffers(input: {
     drafts,
     radii,
     kept: keptOnce(),
+    makesRoom,
   };
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;
   return Promise.all(

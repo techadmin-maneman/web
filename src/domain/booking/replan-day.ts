@@ -18,6 +18,7 @@ import {
   draftOpen,
   startOf,
   takersOf,
+  weekOf,
   type DraftRow,
 } from "./draft-moves.ts";
 import { releaseDeadHolds } from "./hold-slot.ts";
@@ -31,15 +32,6 @@ interface Move {
   readonly row: DraftRow;
   readonly to: string;
   readonly minutes: number;
-}
-
-/** Minutes booked on a technician's days over the week around `date`. */
-function weekOf(plans: DayPlans, technicianId: string, date: string): number {
-  let minutes = 0;
-  for (let day = tieRange(date).from; day <= tieRange(date).to; day = addDays(day, 1)) {
-    for (const stop of plans.day(technicianId, day)?.stops ?? []) minutes += stop.end - stop.start;
-  }
-  return minutes;
 }
 
 /** A city's day as booking plans on it: its drafts, its technicians' days, drafts on them, and their homes. */

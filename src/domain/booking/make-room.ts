@@ -1,15 +1,17 @@
 // Room made at booking (docs/decisions/0292-room-made-at-booking.md): a start nobody can take is offered where a
 // technician could take it once one of their drafts went to another technician who may take that draft at its promised
-// time, as booking would offer it, and whose day still fits it. One draft moves, the one whose new technician drives
-// least for it; the evening's re-plan and lock go on from there. The hold writes the move in its own batch
-// (./hold-slot.ts), so a draft fixed or moved meanwhile fails the hold and nothing is written.
+// time, as booking would offer it, and whose day still fits it: whoever's home is known first, then whoever it costs
+// least, as booking weighs a taker (src/policy/allotment.ts). One draft moves for a start; the evening's re-plan and
+// lock go on from there. The hold writes the move in its own batch (./hold-slot.ts), so a draft fixed or moved
+// meanwhile fails the hold and nothing is written.
 
+import { costOf } from "../../policy/allotment.ts";
 import type { PlanDay, PlanRules, VisitToPlan } from "../../policy/day-plan.ts";
 import { placedAt, placements } from "../../policy/day-plan.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
 import type { DayPlans } from "./day-plans.ts";
 import type { Technician } from "./occupancy.ts";
-import { ableOnce, startOf, takersOf, type DraftRow } from "./draft-moves.ts";
+import { ableOnce, startOf, takersOf, weekOf, type DraftRow } from "./draft-moves.ts";
 import type { Radius } from "./standings.ts";
 import { visitsOfClients } from "./technician-rotation.ts";
 
@@ -50,14 +52,15 @@ export interface RoomFor {
 
 /**
  * Who a draft goes to where its technician gives it up: whoever else may take it, as booking would offer it, and whose
- * day fits it at its time, the least added driving first; null for nobody.
+ * day fits it at its time; whoever's home is known first, then whoever it costs least; null for nobody.
  */
 async function goesTo(
   day: RoomDay,
   draft: { readonly row: DraftRow; readonly stop: PlanDay["stops"][number] },
   read: {
     readonly able: ReturnType<typeof ableOnce>;
-    readonly visits: Awaited<ReturnType<typeof visitsOfClients>>;
+    /** The drafts' clients' visits, read once a draft is found to make room. */
+    readonly visits: () => ReturnType<typeof visitsOfClients>;
   },
 ): Promise<string | null> {
   const { row, stop } = draft;
@@ -65,31 +68,40 @@ async function goesTo(
   const takers = takersOf(
     row,
     { radii: day.radii, working, inputs: day.inputs, ruledOut: new Set([row.technician_id]) },
-    { able: await read.able(row), visits: read.visits(row.person_id, row.id), date: day.date },
+    { able: await read.able(row), visits: (await read.visits())(row.person_id, row.id), date: day.date },
   );
   const visit = { minutes: stop.end - stop.start, pin: stop.pin, fit: stop.fit };
-  let best: { readonly id: string; readonly drive: number } | null = null;
-  for (const id of takers.keys()) {
+  const options = [...takers].flatMap(([id, taking]) => {
     const theirs = day.plans.day(id, day.date);
     const placed = theirs === null ? null : placedAt(theirs, visit, stop.start, day.rules);
-    if (placed !== null && (best === null || placed.addedDrive < best.drive)) best = { id, drive: placed.addedDrive };
-  }
-  return best?.id ?? null;
+    if (placed === null) return [];
+    const weekMinutes = weekOf(day.plans, id, day.date);
+    return [{ id, homeKnown: taking.homeKnown, cost: { ...taking, addedDrive: placed.addedDrive, weekMinutes } }];
+  });
+  const leastWeek = Math.min(...options.map((option) => option.cost.weekMinutes));
+  const costs = new Map(options.map((option) => [option.id, costOf(option.cost, leastWeek, day.inputs.allotment)]));
+  options.sort((a, b) => Number(b.homeKnown) - Number(a.homeKnown) || (costs.get(a.id) ?? 0) - (costs.get(b.id) ?? 0));
+  return options[0]?.id ?? null;
 }
 
 /**
  * The starts nobody could take on a day that a technician could once one of their drafts went to another, by start:
- * each such technician, and the draft's move. A draft nobody else may take where it is promised makes no room.
+ * each such technician once, with the move that adds them least driving. A draft nobody else may take where it is
+ * promised makes no room.
  */
 export async function roomOn(db: D1Database, day: RoomDay, booking: RoomFor): Promise<Map<number, RoomTaker[]>> {
   const found = new Map<number, RoomTaker[]>();
   if (day.drafts.length === 0) return found;
+  let clientVisits: ReturnType<typeof visitsOfClients> | null = null;
   const read = {
     able: ableOnce(db),
-    visits: await visitsOfClients(
-      db,
-      day.drafts.flatMap((row) => row.person_id ?? []),
-    ),
+    visits: () => {
+      clientVisits ??= visitsOfClients(
+        db,
+        day.drafts.flatMap((row) => row.person_id ?? []),
+      );
+      return clientVisits;
+    },
   };
   const destination = new Map<string, Promise<string | null>>();
   for (const technician of booking.technicians) {
@@ -113,10 +125,10 @@ export async function roomOn(db: D1Database, day: RoomDay, booking: RoomFor): Pr
       const room: Room = { draft: row, to, revision: day.plans.revision(to, day.date) };
       for (const placed of freed) {
         if (!(await booking.drivesFit(without, placed.start))) continue;
-        found.set(placed.start, [
-          ...(found.get(placed.start) ?? []),
-          { technician, addedDrive: placed.addedDrive, room },
-        ]);
+        const others = (found.get(placed.start) ?? []).filter((each) => each.technician.id !== technician.id);
+        const theirs = found.get(placed.start)?.find((each) => each.technician.id === technician.id);
+        const kept = theirs !== undefined && theirs.addedDrive <= placed.addedDrive;
+        found.set(placed.start, [...others, kept ? theirs : { technician, addedDrive: placed.addedDrive, room }]);
       }
     }
   }
