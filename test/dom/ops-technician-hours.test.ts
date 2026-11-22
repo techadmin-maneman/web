@@ -70,11 +70,10 @@ beforeEach(() => {
       if (url.endsWith("/api/whoami")) {
         return Promise.resolve(Response.json({ error: { code: "internal_error", request_id: "r" } }, { status: 500 }));
       }
-      sent.push({
-        method: init?.method ?? "GET",
-        url,
-        body: typeof init?.body === "string" ? JSON.parse(init.body) : null,
-      });
+      const body: unknown = typeof init?.body === "string" ? JSON.parse(init.body) : null;
+      sent.push({ method: init?.method ?? "GET", url, body });
+      // The radius answers with what was set, as the route does; the week with its days.
+      if (url.endsWith("/reach")) return Promise.resolve(Response.json(body));
       return Promise.resolve(Response.json({ days: [] }));
     }),
   );
@@ -137,6 +136,48 @@ describe("a technician's week", () => {
       await answered();
     });
     expect(sent.map((each) => each.body)).toEqual([{ days: [] }]);
+  });
+});
+
+describe("how far they go from home", () => {
+  const openReach = () => {
+    act(() => {
+      page.querySelector<HTMLButtonElement>(`button[aria-label="${EDITING.change} ${copy.reach}"]`)?.click();
+    });
+  };
+  /** Types into the radius, as a person does, and saves. */
+  const saveReach = async (typed: string) => {
+    const input = page.querySelector<HTMLInputElement>("input[inputmode='numeric']");
+    act(() => {
+      if (input === null) return;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, typed);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      button(EDITING.save)?.click();
+      await answered();
+    });
+  };
+
+  it("sends their own radius, or none to go back to everyone's", async () => {
+    show(IMRAN);
+    openReach();
+    await saveReach("12");
+    show({ ...IMRAN, radius_km: 12 });
+    openReach();
+    await saveReach("");
+    expect(sent.map((each) => [each.url, each.body])).toEqual([
+      [`/api/technicians/${IMRAN.id}/reach`, { radius_km: 12 }],
+      [`/api/technicians/${IMRAN.id}/reach`, { radius_km: null }],
+    ]);
+  });
+
+  it("says what it takes, and sends nothing, for a radius past 60 km", async () => {
+    show(IMRAN);
+    openReach();
+    await saveReach("61");
+    expect(page.textContent).toContain(copy.errors.reach);
+    expect(sent).toEqual([]);
   });
 });
 

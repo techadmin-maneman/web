@@ -76,18 +76,23 @@ export function Chips<T extends string | number>({
   );
 }
 
-/** One figure, typed; the range it must be in is said beneath it only once it is outside it. */
+/**
+ * One figure, typed; the range it must be in is said beneath it only once it is outside it. `describedBy` names a line
+ * about it said elsewhere, as which way the base's figures run, which a screen reader reads with it.
+ */
 export function Figure({
   label,
   value,
   invalid,
   hint,
+  describedBy,
   onChange,
 }: {
   label: string;
   value: string;
   invalid: boolean;
   hint: string;
+  describedBy?: string;
   onChange: (text: string) => void;
 }) {
   return (
@@ -100,6 +105,7 @@ export function Figure({
       {(control) => (
         <TextInput
           {...control}
+          aria-describedby={[describedBy, control["aria-describedby"]].filter(Boolean).join(" ") || undefined}
           className={shared.box64}
           value={value}
           inputMode="decimal"

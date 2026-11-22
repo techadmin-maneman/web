@@ -147,10 +147,12 @@ function MeasureFields({
   const typed = typedFigures(form.figures);
   const headId = useId();
   const baseId = useId();
+  const howId = useId();
   const { choose, chosen } = choosing(form, onChange);
   const figure = (key: Measurement) => (
     <Figure
       key={key}
+      describedBy={BASE.includes(key) ? howId : undefined}
       label={copy.measurements[key]}
       value={form.figures[key]}
       invalid={typed[key] === "invalid"}
@@ -180,6 +182,9 @@ function MeasureFields({
         <h2 className={capsLook(shared.fieldTitle)} id={baseId}>
           {copy.sections.base}
         </h2>
+        <p className={styles.how} id={howId}>
+          {copy.sections.baseHow}
+        </p>
         <div className={styles.figures}>{BASE.map(figure)}</div>
       </section>
     </>

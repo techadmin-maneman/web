@@ -439,7 +439,9 @@
     "Number not registered?": "नंबर रजिस्टर नहीं है?",
     "Call ops.": "ऑप्स को कॉल करें।",
     "Type it instead": "इसके बजाय टाइप करें",
-    "the rest to come": "बाकी आने वाले हैं"
+    "the rest to come": "बाकी आने वाले हैं",
+    "Width runs side to side, length front to back.": "चौड़ाई एक ओर से दूसरी ओर, लंबाई आगे से पीछे।",
+    "Nothing in your kit can be fitted without a label now. Scan the piece’s label.": "अब आपकी किट में बिना लेबल वाला कुछ भी फ़िट नहीं हो सकता। पीस का लेबल स्कैन करें।"
   },
   "templates": {
     "{rejectBody} Fix it and tap Next.": "{rejectBody} ठीक करें और अगला दबाएँ।"
@@ -1106,10 +1108,6 @@
       "hi": "आख़िरी सिंक $1"
     },
     {
-      "match": "^Photo: ([^·]+)$",
-      "hi": "फ़ोटो: $1"
-    },
-    {
       "match": "^Request ([^·]+)$",
       "hi": "$1 मँगवाएँ"
     },
@@ -1176,6 +1174,10 @@
     {
       "match": "^After photos, ([^·]+)$",
       "hi": "बाद की फ़ोटो, $1"
+    },
+    {
+      "match": "^([^·]+)–([^·]+) in$",
+      "hi": "$1–$2 इंच"
     }
   ],
   "dateTokens": {

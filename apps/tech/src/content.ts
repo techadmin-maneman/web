@@ -695,8 +695,6 @@ export const visit = localised({
   /** A guided task (./visit/tasks.ts): one a screen. */
   task: (at: number, total: number) => `Task ${String(at)} of ${String(total)}`,
   nextTask: "Next task",
-  /** "Photo: solvent along the front edge": what the reference photograph shows, until there is one. */
-  reference: (what: string) => `Photo: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
   watchFor: "Watch for",
   taskDone: (title: string) => `Done: ${title}`,
   plan: {
@@ -811,6 +809,8 @@ export const steps = localised({
     other: "We couldn’t record this step as it was. Correct it and tap Next.",
     // Our words: a hair system picked with no label, none of whose pieces the kit may give.
     noneToFit: "That hair system can’t be fitted from your kit. Pick another.",
+    // Our words: as above, with nothing left in the kit to pick without a label.
+    noneLeft: "Nothing in your kit can be fitted without a label now. Scan the piece’s label.",
   },
   consumables: {
     less: (name: string, step: number, unit: string) =>
@@ -1150,6 +1150,8 @@ export const profile = localised({
     stage: "Norwood stage",
     head: "Head, inches",
     base: "Base, inches",
+    // Which way each runs, as a stock code reads them, width by length: 8×10 is 8 side to side and 10 front to back.
+    baseHow: "Width runs side to side, length front to back.",
     colour: "Colour",
     grey: "Grey (%)",
     density: "Density",
@@ -1195,7 +1197,8 @@ export const profile = localised({
     other_systems: "Other hair systems",
     other: "Other",
   } satisfies Record<History["remedies"][number], string>,
-  range: (min: number, max: number) => `${String(min)}–${String(max)}`,
+  /** "15.5–28 in" */
+  range: (min: number, max: number) => `${String(min)}–${String(max)} in`,
   greyRange: (min: number, max: number) => `${String(min)}–${String(max)}%`,
   yearRange: (first: number, last: number) => `${String(first)}–${String(last)}`,
   checkFigures: "Check the figures to continue",

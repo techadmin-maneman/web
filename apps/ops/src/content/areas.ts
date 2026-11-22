@@ -176,20 +176,28 @@ export const areas = {
   /** A city's map and its technicians' reach from home (docs/decisions/0223-reach-from-home.md). */
   reach: {
     title: "Reach",
-    mapAlt: (city: string) => `${city}: its pincodes, and each technician’s reach from home`,
-    key: "Green\u00a0served · Grey\u00a0not\u00a0served · Amber\u00a0paused · Red\u00a0served,\u00a0out\u00a0of\u00a0every\u00a0reach · Navy\u00a0a\u00a0technician’s\u00a0home\u00a0and\u00a0radius",
+    mapAlt: (city: string) => `${city}: its pincodes, and each technician’s home and radius`,
+    /** The map's colours, each kept whole on its line. */
+    key: [
+      "Green: served",
+      "Grey: not served",
+      "Amber: paused",
+      "Red: served, beyond every ring",
+      "Navy: a technician’s home and radius",
+    ],
     outOfReach: (count: number) =>
       count === 1
-        ? "1 served pincode no technician reaches:"
-        : `${String(count)} served pincodes no technician reaches:`,
+        ? "1\u00a0served pincode beyond every technician’s ring:"
+        : `${String(count)}\u00a0served pincodes beyond every technician’s ring:`,
     unreached: (pincode: string, area: string, nearest: string | null) =>
       nearest === null ? `${pincode} ${area}` : `${pincode} ${area} (nearest ${nearest})`,
     nearest: (name: string, km: number) => `${name}, ${String(km)}\u00a0km`,
-    allReached: "Every served pincode is in someone’s reach.",
+    allReached: "Every served pincode is within someone’s ring.",
     unmeasured: "Set your technicians’ homes to see their reach.",
     chooseUnreached: "Choose them",
     within: (name: string, km: number, ring: number, count: number) =>
-      `${name} · ${String(km)}\u00a0km, ring ${String(ring)}\u00a0km · ${count === 1 ? "1 pincode" : `${String(count)} pincodes`} within the radius`,
+      // No dot between its parts, which a narrow screen left hanging at a line's end.
+      `${name}: ${String(km)}\u00a0km, ring\u00a0${String(ring)}\u00a0km, ${count === 1 ? "1\u00a0pincode" : `${String(count)}\u00a0pincodes`} within the radius`,
     chooseWithin: (name: string) => `Choose the pincodes within ${name}’s radius`,
     choose: "Choose",
   },
@@ -208,7 +216,9 @@ export const areas = {
     figures: (waiting: number, looked: number) => `${String(waiting)} waiting · ${String(looked)} checked in 90 days`,
     recentTitle: "Last 30 days",
     recentNone: "Nothing launched in the last 30 days.",
-    recent: (pincode: string, area: string, city: string, day: string) => `${pincode} ${area} · ${city} · ${day}`,
+    /** Each "·" held to its neighbours, so a narrow screen never leaves one hanging at a line's end. */
+    recent: (pincode: string, area: string, city: string, day: string) =>
+      `${pincode} ${area}\u00a0·\u00a0${city}\u00a0·\u00a0${day}`,
     recentFigures: (told: number, booked: number) => `${String(told)} told · ${String(booked)} booked`,
   },
   /** A served pincode taking no new clients for a while; clients we already come to book as before. */

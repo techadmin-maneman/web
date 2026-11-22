@@ -5,8 +5,9 @@
 // (docs/prompts/phase2-frontend.md), what the first screen loads. The phone apps'
 // is 200 KB, for their redesigns: the technician app's
 // (docs/decisions/0247-the-steps-left.md) and the client's
-// (docs/decisions/0252-client-app-redesign.md); what their service workers keep
-// has a ceiling of its own (docs/decisions/0284-the-first-screen-and-the-precache.md).
+// (docs/decisions/0252-client-app-redesign.md); the console's is 175 KB
+// (docs/decisions/0295-the-consoles-first-load.md); what the phone apps' service
+// workers keep has a ceiling of its own (docs/decisions/0284-the-first-screen-and-the-precache.md).
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -41,7 +42,7 @@ export interface BuildOptions {
 
 /** Each app's first load, in gzipped bytes: the phone apps', the client's and the technician's, and the console's. */
 const PHONE_BUDGET_BYTES = 200 * 1024;
-const BUDGET_BYTES = 150 * 1024;
+const BUDGET_BYTES = 175 * 1024;
 
 /** Everything a phone app's service worker keeps, in gzipped bytes, which a first visit fetches after the first screen. */
 const PRECACHE_BUDGET_BYTES = 260 * 1024;
