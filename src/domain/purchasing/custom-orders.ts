@@ -36,6 +36,10 @@ export interface CustomOrder {
   readonly linkSentAt: string | null;
   readonly paidAt: string | null;
   readonly poNumber: number | null;
+  /** Its purchase order's ID, to open it on Purchasing; null until it is paid. */
+  readonly poId: string | null;
+  /** Where its piece is held once it has arrived, the warehouse or a kit; null before, or once fitted. */
+  readonly pieceAt: string | null;
   readonly refundReason: "not_ordered" | "late" | "failed_check" | null;
   readonly raisedAt: string;
 }
@@ -62,7 +66,9 @@ type OrderRow = {
   link_sent_at: string | null;
   paid_at: string | null;
   po_number: number | null;
+  po_id: string | null;
   po_state: string | null;
+  piece_at: string | null;
   refunded_at: string | null;
   refund_reason: CustomOrder["refundReason"];
   raised_at: string;
@@ -70,8 +76,11 @@ type OrderRow = {
 
 const ORDER_SQL = `SELECT k.id, k.number, k.person_id, k.product, k.base_width_in, k.base_length_in, k.colour,
     k.grey_percent, k.density_percent, k.wave, k.note, k.supplier_id, k.supplier_price, s.currency, k.amount,
-    k.promised_on, k.state, k.short_url, k.link_sent_at, k.paid_at, o.number AS po_number, o.state AS po_state,
-    k.refunded_at, k.refund_reason, k.raised_at
+    k.promised_on, k.state, k.short_url, k.link_sent_at, k.paid_at, o.number AS po_number, o.id AS po_id,
+    o.state AS po_state, k.refunded_at, k.refund_reason, k.raised_at,
+    (SELECT COALESCE(sp.name, u.place) FROM stock_units u INDEXED BY stock_units_reserved
+       LEFT JOIN stock_places sp ON sp.id = u.place
+      WHERE u.custom_order_id = k.id AND u.state IN ('held', 'in_transit') LIMIT 1) AS piece_at
   FROM custom_orders k JOIN suppliers s ON s.id = k.supplier_id LEFT JOIN purchase_orders o ON o.id = k.po_id`;
 
 function statusOf(row: OrderRow): CustomOrderStatus {
@@ -103,6 +112,8 @@ const orderOf = (row: OrderRow): CustomOrder => ({
   linkSentAt: row.link_sent_at,
   paidAt: row.paid_at,
   poNumber: row.po_number,
+  poId: row.po_id,
+  pieceAt: row.piece_at,
   refundReason: row.refund_reason,
   raisedAt: row.raised_at,
 });

@@ -40,6 +40,17 @@ export const TaskFactsSchema = z
       kind: z.enum(["first_fit", "replacement"]).openapi({ description: "The visit it was asked at." }),
       name: z.string().openapi({ description: "The hair system, by its package's name." }),
     }),
+    facts("custom_order_to_send", {
+      order: z.number().int().openapi({ description: "The custom order's number, CU-0042 as 42." }),
+      purchase_order: z.number().int().openapi({ description: "Its purchase order's number." }),
+      purchase_order_id: z.uuid().openapi({ description: "Its purchase order's ID, to open it on Purchasing." }),
+      approved: z.boolean().openapi({ description: "Approved already: only sending it is left." }),
+    }),
+    facts("custom_piece_to_fit", {
+      order: z.number().int().openapi({ description: "The custom order's number." }),
+      piece_code: z.string().openapi({ description: "The reserved piece's label." }),
+      held_at: z.string().openapi({ description: "Where the piece is held: the warehouse, a stockroom or a kit." }),
+    }),
     facts("recall_call", { piece_codes: z.array(z.string()) }),
     facts("stock_at_risk", { consumable_code: z.string().nullable(), name: z.string().nullable() }),
     facts("referral_review", { signal: z.string().nullable().openapi({ description: "The first fraud rule met." }) }),

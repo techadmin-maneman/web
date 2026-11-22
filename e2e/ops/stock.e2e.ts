@@ -109,6 +109,7 @@ test("past six places, shows the warehouse and one place, picked, saying above w
     quantity: index + 1,
     low: index === 4,
     counted_at: null,
+    reserved: 0,
     lots: [],
   }));
   const many = { ...STOCK, places: [STOCK.places[0], ...kits], holdings: [...STOCK.holdings, ...holdings] };

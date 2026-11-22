@@ -18,7 +18,14 @@ import { A_NUMBER, captureLogs, deliverRazorpay, markDatabase, NOW, request } fr
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
 interface Orders {
-  orders: { id: string; number: number; status: string; short_url: string | null; po_number: number | null }[];
+  orders: {
+    id: string;
+    number: number;
+    status: string;
+    short_url: string | null;
+    po_number: number | null;
+    piece_at?: string | null;
+  }[];
   suppliers: { id: string; name: string }[];
   profile_ready: boolean;
 }
@@ -248,7 +255,7 @@ describe("a custom order's money, wherever it goes", () => {
 describe("a custom order's piece", () => {
   const OTHER = "66666666-6666-4666-8666-666666666661";
 
-  it("arrives reserved to its client: out of free stock, and never offered at another client's fit", async () => {
+  it("arrives reserved to its client: held for them alone, and never offered at another client's fit", async () => {
     await env.DB.batch([
       env.DB.prepare(
         "INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, '+919810066661', 'Asha Verma')",
@@ -298,8 +305,14 @@ describe("a custom order's piece", () => {
       (await (await request(job.ops, `/api/clients/${OTHER}/custom-orders`)).json<Orders>()).orders[0]?.status,
     ).toBe("arrived");
 
-    const matched = await (await request(job.ops, `/api/clients/${OTHER}/stock-match`)).json<{ held: unknown[] }>();
-    expect(matched.held).toEqual([]);
+    // Their own reserved piece is held for them, where it waits; no one else's match counts it.
+    const matched = await (
+      await request(job.ops, `/api/clients/${OTHER}/stock-match`)
+    ).json<{ held: { place_id: string; pieces: number; reserved: number }[] }>();
+    expect(matched.held).toEqual([expect.objectContaining({ place_id: "central", pieces: 1, reserved: 1 })]);
+    // It is shown arrived, and where its piece is.
+    const arrived = (await (await request(job.ops, `/api/clients/${OTHER}/custom-orders`)).json<Orders>()).orders[0];
+    expect(arrived).toMatchObject({ status: "arrived", piece_at: "National warehouse" });
     await job.opsPost("/api/stock/transfers", {
       consumable_code: po?.code ?? "",
       quantity: 1,
@@ -327,6 +340,57 @@ describe("a paid custom order's refund", () => {
     return order?.id ?? "";
   }
   const refund = (id: string, reason: string) => job.opsPost(`/api/custom-orders/${id}/refund`, { reason });
+
+  /** The board's tasks of one group, by their ids. */
+  const tasksOf = async (group: string) => {
+    const board = await (
+      await request(job.ops, "/api/tasks")
+    ).json<{ groups: { group: string; tasks: { id: string; facts: Record<string, unknown> }[] }[] }>();
+    return board.groups.find((each) => each.group === group)?.tasks ?? [];
+  };
+
+  it("waits on ops as a task until its purchase order is sent, then its piece until a fit is booked", async () => {
+    const id = await paidOrder();
+    const po = await env.DB.prepare(
+      "SELECT o.id, o.number, l.id AS line FROM purchase_orders o JOIN po_lines l ON l.po_id = o.id",
+    ).first<{ id: string; number: number; line: string }>();
+    const [toSend] = await tasksOf("custom_order_to_send");
+    expect(toSend?.id).toBe(id);
+    expect(toSend?.facts).toMatchObject({ purchase_order: po?.number, purchase_order_id: po?.id, approved: false });
+
+    // The supplier's currency has no rate set, so the order needs a second approver: one approval leaves it drafted.
+    expect((await job.opsPost(`/api/purchase-orders/${po?.id ?? ""}/approve`, {})).status).toBe(200);
+    expect((await tasksOf("custom_order_to_send"))[0]?.facts).toMatchObject({ approved: false });
+    await env.DB.prepare(
+      "UPDATE purchase_orders SET second_approved_by = 'second@maneman.in', state = 'approved' WHERE id = ?1",
+    )
+      .bind(po?.id ?? "")
+      .run();
+    expect((await tasksOf("custom_order_to_send"))[0]?.facts).toMatchObject({ approved: true });
+    expect((await job.opsPost(`/api/purchase-orders/${po?.id ?? ""}/send`, {})).status).toBe(200);
+    expect(await tasksOf("custom_order_to_send")).toEqual([]);
+    expect(await tasksOf("custom_piece_to_fit")).toEqual([]);
+
+    // The fixture's first fit is behind them: nothing is booked to fit the piece at once it arrives.
+    await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(JOB).run();
+    const received = await job.opsPost(`/api/purchase-orders/${po?.id ?? ""}/receipts`, {
+      lines: [{ po_line_id: po?.line ?? "", received: 1, damaged: 0, qc_failed: 0, lot_code: null, expires_on: null }],
+      supplier_invoice: null,
+      rupee_rate: 8325,
+      freight_paise: 0,
+      duty_paise: 0,
+      clearing_paise: 0,
+      note: null,
+    });
+    expect(received.status).toBe(200);
+    const [toFit] = await tasksOf("custom_piece_to_fit");
+    expect(toFit?.id).toBe(id);
+    expect(toFit?.facts).toMatchObject({ held_at: "National warehouse" });
+
+    // A first fit booked for the client is where it goes: the task leaves.
+    await env.DB.prepare("UPDATE appointments SET status = 'scheduled' WHERE id = ?1").bind(JOB).run();
+    expect(await tasksOf("custom_piece_to_fit")).toEqual([]);
+  });
 
   it("is whole before its order goes out, and cancels the draft with it, once", async () => {
     const id = await paidOrder();

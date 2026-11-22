@@ -29,6 +29,10 @@ export const customOrders = {
     cancelled: "Cancelled",
   },
   link: "Payment link",
+  /** "PO-0042": its purchase order, linked to Purchasing, while it is being ordered. */
+  purchaseOrder: (number: number) => `PO-${String(number).padStart(4, "0")}`,
+  /** "At National warehouse": where its piece waits for the fit, once it has arrived. */
+  pieceAt: (place: string) => `At ${place}`,
   sendAgain: "Send link again",
   /** Asked before an order with its link out is cancelled: the link stops working. */
   cancelOrder: "Cancel order",

@@ -16,6 +16,10 @@ type Sub<G extends Group> = (facts: Extract<Facts, { group: G }>, task: Task, no
 
 const copy = tasks.subs;
 
+/** "CU-0042" and "PO-0042", as the Custom orders and Purchasing pages write them; their words load only with them. */
+const customOrderNumber = (number: number) => `CU-${String(number).padStart(4, "0")}`;
+const purchaseOrderNumber = (number: number) => `PO-${String(number).padStart(4, "0")}`;
+
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** The reason a fit closed with "Can't fit today" (NO_PIECE in src/policy/in-job-steps.ts). */
@@ -59,6 +63,15 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   recall_call: (facts) => copy.recall_call(facts.piece_codes.join(" ")),
   // The hair system to order in the client's size, and the visit it is for.
   made_to_order_ask: (facts) => copy.made_to_order_ask(facts.name, dispatch.typeNames[facts.kind]),
+  // A paid custom order's number and its purchase order's, and whether only sending it is left.
+  custom_order_to_send: (facts) =>
+    copy.custom_order_to_send(
+      customOrderNumber(facts.order),
+      purchaseOrderNumber(facts.purchase_order),
+      facts.approved,
+    ),
+  // The arrived piece's order, and where it is held, so ops know whether it must go to a kit first.
+  custom_piece_to_fit: (facts) => copy.custom_piece_to_fit(customOrderNumber(facts.order), facts.held_at),
   stock_at_risk: (facts) => copy.stock_at_risk(facts.name ?? facts.consumable_code ?? ""),
   referral_review: (facts) => SIGNALS[facts.signal ?? ""] ?? copy.unknown,
   grievance: () => copy.grievance,

@@ -52,6 +52,8 @@ export const stock = {
   byCity: "Totals by city",
   /** "12 strips", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => amountOf(quantity, unit),
+  /** "1 reserved": of a place's pieces, those kept for a client's custom order (never another client's fit). */
+  reserved: (pieces: number) => `${String(pieces)} reserved`,
   /** At or under the item's level for that kind of place. */
   low: "Low",
   /** None left. */

@@ -54,14 +54,15 @@ describe("the client’s match to stock", () => {
       name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density",
       city: "Gurgaon",
       held: [
-        { place_id: "kit-1", name: "Imran Qureshi", kind: "kit", city: "Gurgaon", pieces: 1 },
-        { place_id: "central", name: "National warehouse", kind: "warehouse", city: null, pieces: 4 },
+        { place_id: "kit-1", name: "Imran Qureshi", kind: "kit", city: "Gurgaon", pieces: 1, reserved: 0 },
+        { place_id: "central", name: "National warehouse", kind: "warehouse", city: null, pieces: 4, reserved: 1 },
       ],
       in_transit: 2,
     });
     expect(page.textContent).toContain(copy.matched("Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density"));
     expect(page.textContent).toContain("1 piece · Imran Qureshi, Gurgaon");
-    expect(page.textContent).toContain("4 pieces · National warehouse");
+    // The client's own custom piece among them is theirs, and says so.
+    expect(page.textContent).toContain("4 pieces · National warehouse · 1 reserved for them");
     expect(page.textContent).toContain(copy.inTransit(2));
   });
 

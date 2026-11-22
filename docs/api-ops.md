@@ -44958,6 +44958,10 @@ Request body:
           },
           "pieces": {
             "type": "integer"
+          },
+          "reserved": {
+            "type": "integer",
+            "description": "Of those, the pieces reserved to this client's own custom order."
           }
         },
         "required": [
@@ -44965,7 +44969,8 @@ Request body:
           "name",
           "kind",
           "city",
-          "pieces"
+          "pieces",
+          "reserved"
         ]
       }
     },
@@ -45098,6 +45103,20 @@ Request body:
               "null"
             ]
           },
+          "po_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its purchase order, to open on Purchasing; null until paid."
+          },
+          "piece_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where its piece is held once arrived: the warehouse, a stockroom or a kit; null otherwise."
+          },
           "raised_at": {
             "type": "string"
           }
@@ -45124,6 +45143,8 @@ Request body:
           "link_sent_at",
           "paid_at",
           "po_number",
+          "po_id",
+          "piece_at",
           "raised_at"
         ]
       }
@@ -54159,6 +54180,8 @@ Request body:
               "heard_from_missing",
               "replacement_order",
               "made_to_order_ask",
+              "custom_order_to_send",
+              "custom_piece_to_fit",
               "stock_at_risk",
               "at_risk_client",
               "partial_visit",
@@ -54576,6 +54599,72 @@ Request body:
         "group",
         "kind",
         "name"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "custom_order_to_send"
+          ]
+        },
+        "order": {
+          "type": "integer",
+          "description": "The custom order's number, CU-0042 as 42."
+        },
+        "purchase_order": {
+          "type": "integer",
+          "description": "Its purchase order's number."
+        },
+        "purchase_order_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Its purchase order's ID, to open it on Purchasing."
+        },
+        "approved": {
+          "type": "boolean",
+          "description": "Approved already: only sending it is left."
+        }
+      },
+      "required": [
+        "group",
+        "order",
+        "purchase_order",
+        "purchase_order_id",
+        "approved"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "custom_piece_to_fit"
+          ]
+        },
+        "order": {
+          "type": "integer",
+          "description": "The custom order's number."
+        },
+        "piece_code": {
+          "type": "string",
+          "description": "The reserved piece's label."
+        },
+        "held_at": {
+          "type": "string",
+          "description": "Where the piece is held: the warehouse, a stockroom or a kit."
+        }
+      },
+      "required": [
+        "group",
+        "order",
+        "piece_code",
+        "held_at"
       ],
       "additionalProperties": false
     },
@@ -61039,6 +61128,10 @@ Request body:
             ],
             "description": "When it was last counted there."
           },
+          "reserved": {
+            "type": "integer",
+            "description": "Of its pieces there, those reserved to a client's custom order."
+          },
           "lots": {
             "type": "array",
             "items": {
@@ -61083,6 +61176,7 @@ Request body:
           "quantity",
           "low",
           "counted_at",
+          "reserved",
           "lots"
         ],
         "additionalProperties": false
@@ -62416,6 +62510,42 @@ Request body:
           "needs_second_approval": {
             "type": "boolean"
           },
+          "custom_order": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer"
+              },
+              "person_id": {
+                "type": "string"
+              },
+              "person_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The client's name; null once they are erased."
+              }
+            },
+            "required": [
+              "id",
+              "number",
+              "person_id",
+              "person_name"
+            ],
+            "additionalProperties": false,
+            "description": "The custom order this was drafted for, and its client; null for an order of stock."
+          },
           "receipts": {
             "type": "array",
             "items": {
@@ -62526,6 +62656,7 @@ Request body:
           "sent_at",
           "cancel_reason",
           "needs_second_approval",
+          "custom_order",
           "receipts"
         ],
         "additionalProperties": false

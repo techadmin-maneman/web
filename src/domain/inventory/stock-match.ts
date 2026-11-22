@@ -1,7 +1,8 @@
 // A client matched to stock (docs/decisions/0173-matching-a-client-to-stock.md): their latest hair profile's product,
 // base size, colour, grey and density matched exactly to one stock code, never a near one or one cut down; then where
-// that code's free pieces are held, the client's city first, never one reserved to a custom order. With no stock code
-// made to their spec, theirs is a custom order.
+// that code's free pieces are held, the client's city first, never one reserved to another client's custom order. A
+// piece reserved to the client's own custom order is theirs, and counted as held for them. With no stock code made to
+// their spec, theirs is a custom order.
 
 import { latestFits } from "../clients/hair-profiles.ts";
 import { cityOf } from "../clients/places.ts";
@@ -28,6 +29,8 @@ interface HeldAt {
   readonly kind: string;
   readonly city: string | null;
   readonly pieces: number;
+  /** Of those, the pieces reserved to the client's own custom order. */
+  readonly reserved: number;
 }
 
 export type StockMatch =
@@ -44,7 +47,18 @@ export type StockMatch =
       readonly inTransit: number;
     };
 
-type HeldRow = { place_id: string; name: string | null; kind: string; city: string | null; pieces: number };
+type HeldRow = {
+  place_id: string;
+  name: string | null;
+  kind: string;
+  city: string | null;
+  pieces: number;
+  reserved: number;
+};
+
+/** A piece free to anyone, or reserved to one of the client's (?3) own custom orders. */
+const FREE_OR_THEIRS = `(u.custom_order_id IS NULL
+  OR u.custom_order_id IN (SELECT k.id FROM custom_orders k WHERE k.person_id = ?3))`;
 
 export async function stockMatch(db: D1Database, personId: string): Promise<StockMatch> {
   const fit = (await latestFits(db, [personId])).get(personId);
@@ -60,19 +74,20 @@ export async function stockMatch(db: D1Database, personId: string): Promise<Stoc
       db
         .prepare(
           `SELECT p.id AS place_id, COALESCE(p.name, t.name) AS name, p.kind, COALESCE(p.city, t.city) AS city,
-           COUNT(*) AS pieces
+           COUNT(*) AS pieces, COUNT(u.custom_order_id) AS reserved
          FROM stock_units u JOIN stock_places p ON p.id = u.place LEFT JOIN technicians t ON t.id = p.id
-         WHERE u.state = 'held' AND u.consumable_code = ?1 AND u.custom_order_id IS NULL
-         GROUP BY p.id ORDER BY COALESCE(p.city, t.city) IS ?2 DESC, pieces DESC`,
+         WHERE u.state = 'held' AND u.consumable_code = ?1 AND ${FREE_OR_THEIRS}
+         GROUP BY p.id ORDER BY reserved DESC, COALESCE(p.city, t.city) IS ?2 DESC, pieces DESC`,
         )
-        .bind(code.code, city),
+        .bind(code.code, city, personId),
     ),
     moving: read<{ pieces: number }>(
       db
         .prepare(
-          "SELECT COUNT(*) AS pieces FROM stock_units WHERE state = 'in_transit' AND consumable_code = ?1 AND custom_order_id IS NULL",
+          `SELECT COUNT(*) AS pieces FROM stock_units u
+           WHERE u.state = 'in_transit' AND u.consumable_code = ?1 AND ${FREE_OR_THEIRS}`,
         )
-        .bind(code.code),
+        .bind(code.code, null, personId),
     ),
   });
   return {
@@ -86,6 +101,7 @@ export async function stockMatch(db: D1Database, personId: string): Promise<Stoc
       kind: row.kind,
       city: row.city,
       pieces: row.pieces,
+      reserved: row.reserved,
     })),
     inTransit: moving[0]?.pieces ?? 0,
   };

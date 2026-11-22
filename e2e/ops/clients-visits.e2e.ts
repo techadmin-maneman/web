@@ -306,16 +306,16 @@ test.describe("the client’s match to stock", () => {
       name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density",
       city: "Gurgaon",
       held: [
-        { place_id: "imran", name: "Imran Qureshi", kind: "kit", city: "Gurgaon", pieces: 1 },
-        { place_id: "central", name: "National warehouse", kind: "warehouse", city: null, pieces: 4 },
+        { place_id: "imran", name: "Imran Qureshi", kind: "kit", city: "Gurgaon", pieces: 1, reserved: 0 },
+        { place_id: "central", name: "National warehouse", kind: "warehouse", city: null, pieces: 4, reserved: 1 },
       ],
       in_transit: 2,
     } satisfies OpsReply<"/api/clients/{id}/stock-match">;
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_STOCK_MATCH]: json(stocked) });
     const match = section(page);
     await expect(match).toContainText(matchCopy.matched(stocked.name));
-    await expect(match).toContainText(matchCopy.held(1, "Imran Qureshi", "Gurgaon"));
-    await expect(match).toContainText(matchCopy.held(4, "National warehouse", null));
+    await expect(match).toContainText(matchCopy.held(1, "Imran Qureshi", "Gurgaon", 0));
+    await expect(match).toContainText(matchCopy.held(4, "National warehouse", null, 1));
     await expect(match).toContainText(matchCopy.inTransit(2));
     expect(await axeViolations(page)).toEqual([]);
   });
@@ -358,6 +358,8 @@ test.describe("the client’s custom orders", () => {
           link_sent_at: "2027-09-22T05:12:00.000Z",
           paid_at: null,
           po_number: null,
+          po_id: null,
+          piece_at: null,
           refund_reason: null,
           raised_at: "2027-09-22T05:12:00.000Z",
         },

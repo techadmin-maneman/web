@@ -39,6 +39,9 @@
 //
 // So is a remedy above the limit ops set (docs/decisions/0143-remedies.md), until a Customer Care manager approves or
 // declines it.
+//
+// So is a custom order the client has paid for (docs/decisions/0174-custom-orders.md): its purchase order waits on ops to
+// approve and send it, and the piece, once it arrives, on a fit booked for the client. Each leaves as that is done.
 
 //
 // So is a job still booked on a day its technician is away: leave
@@ -94,6 +97,8 @@ export const TASK_GROUPS = [
   "heard_from_missing",
   "replacement_order",
   "made_to_order_ask",
+  "custom_order_to_send",
+  "custom_piece_to_fit",
   "stock_at_risk",
   "at_risk_client",
   "partial_visit",
@@ -172,6 +177,10 @@ export const TASK_SLA_HOURS: Slas = {
   replacement_order: 48,
   // A client told their size is made to order: ordered, and they are messaged, within the day.
   made_to_order_ask: 24,
+  // A custom order the client has paid for: its purchase order approved and sent within the day.
+  custom_order_to_send: 24,
+  // A custom piece arrived: its fit booked within two days, while the client waits for it.
+  custom_piece_to_fit: 48,
   // A fit with no hair system in reach: within the two days, and never later than the fit (ADR 0178).
   stock_at_risk: 48,
   at_risk_client: 48,

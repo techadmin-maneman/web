@@ -23,6 +23,11 @@ export const purchasing = {
     cancelled: "Cancelled",
   },
   awaitingSecond: "Awaiting a second approver",
+  /** "Custom order CU-0042 for Nitin Kumar": the client whose custom order it was drafted for (none once erased). */
+  customFor: (order: number, client: string | null) => {
+    const number = `CU-${String(order).padStart(4, "0")}`;
+    return client === null ? `Custom order ${number}` : `Custom order ${number} for ${client}`;
+  },
   open: (number: string) => `Open ${number}`,
   order: {
     lines: ["Item", "Quantity", "Price each", "Line total"],

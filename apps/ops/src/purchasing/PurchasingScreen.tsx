@@ -17,7 +17,8 @@ import { NoValue } from "@maneman/ui/NoValue";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { inCurrency } from "@maneman/web-kit/money";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useTargetRow } from "@maneman/ui/target";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "@maneman/ui/forms.module.css";
 import { useAccess } from "../lib/access.ts";
@@ -60,7 +61,10 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
     { label: expected, sort: (row) => row.expected_on ?? "" },
   ];
   const view = useTableView(orders.orders, columns, {
-    search: (row) => `${copy.number(row.number)} ${supplierOf(row.supplier_id)}`,
+    search: (row) =>
+      `${copy.number(row.number)} ${supplierOf(row.supplier_id)} ${
+        row.custom_order === null ? "" : copy.customFor(row.custom_order.number, row.custom_order.person_name)
+      }`,
   });
   if (orders.orders.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
@@ -75,7 +79,13 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
         <tbody>
           {view.shown.map((row) => (
             <tr key={row.id}>
-              <RowHead>
+              <RowHead
+                meta={
+                  row.custom_order === null
+                    ? undefined
+                    : copy.customFor(row.custom_order.number, row.custom_order.person_name)
+                }
+              >
                 <TextButton compact aria-label={copy.open(copy.number(row.number))} {...opener(row.id)}>
                   {copy.number(row.number)}
                 </TextButton>
@@ -96,6 +106,9 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
   );
 }
 
+/** The row kind an order's link names: "#order-<id>". */
+const ORDER_ROW = "order-";
+
 export function PurchasingScreen() {
   const [loaded, retry] = useLoad(loadOrders);
   const [orders, setOrders] = useState<Orders | null>(null);
@@ -108,6 +121,13 @@ export function PurchasingScreen() {
     setSaid(words);
   };
   const opened = current?.orders.find((each) => each.id === open) ?? null;
+  // A link to one order (a paid custom order's task, say: rowPath("/purchasing", "order", id)) opens it once loaded.
+  const loadedOrders = current !== null;
+  const target = useTargetRow(loadedOrders);
+  useEffect(() => {
+    if (!loadedOrders || !target?.startsWith(ORDER_ROW)) return;
+    setOpen(target.slice(ORDER_ROW.length));
+  }, [loadedOrders, target, setOpen]);
   return (
     <>
       {loaded.state === "loading" && <PanelLoading />}

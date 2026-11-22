@@ -38,6 +38,16 @@ export interface PurchaseOrder {
   readonly secondApprovedBy: string | null;
   readonly sentAt: string | null;
   readonly cancelReason: string | null;
+  /** The custom order it was drafted for, with its client (none once erased); null for an order of stock. */
+  readonly customOrder: CustomOrderOf | null;
+}
+
+/** A custom order a purchase order was drafted for (./custom-order-po.ts). */
+export interface CustomOrderOf {
+  readonly id: string;
+  readonly number: number;
+  readonly personId: string;
+  readonly personName: string | null;
 }
 
 type OrderRow = {
@@ -55,6 +65,7 @@ type OrderRow = {
   second_approved_by: string | null;
   sent_at: string | null;
   cancel_reason: string | null;
+  custom_order: string | null;
 };
 
 type LineRow = {
@@ -73,7 +84,17 @@ const SETTLED_SHOWN = 100;
 // The approver as a printed order names them: a service token by its label on the Staff list, a person by their email.
 const ORDER_COLUMNS = `id, number, supplier_id, currency, state, expected_on, note, drafted_by, drafted_at, approved_by,
   COALESCE((SELECT label FROM staff_service_tokens WHERE client_id = approved_by), approved_by) AS approver_name,
-  second_approved_by, sent_at, cancel_reason`;
+  second_approved_by, sent_at, cancel_reason,
+  (SELECT json_object('id', k.id, 'number', k.number, 'person_id', k.person_id,
+      'person_name', CASE WHEN pe.erased_at IS NULL THEN pe.name END)
+    FROM custom_orders k JOIN people pe ON pe.id = k.person_id WHERE k.po_id = purchase_orders.id) AS custom_order`;
+
+/** The custom order an order's row names, as SQLite wrote it. */
+function customOrderOf(written: string | null): CustomOrderOf | null {
+  if (written === null) return null;
+  const read = JSON.parse(written) as { id: string; number: number; person_id: string; person_name: string | null };
+  return { id: read.id, number: read.number, personId: read.person_id, personName: read.person_name };
+}
 
 /** Each order read with its lines. */
 async function withLines(db: D1Database, rows: readonly OrderRow[]): Promise<PurchaseOrder[]> {
@@ -113,6 +134,7 @@ async function withLines(db: D1Database, rows: readonly OrderRow[]): Promise<Pur
       secondApprovedBy: row.second_approved_by,
       sentAt: row.sent_at,
       cancelReason: row.cancel_reason,
+      customOrder: customOrderOf(row.custom_order),
     };
   });
 }

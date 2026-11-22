@@ -5,7 +5,9 @@
 import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Panel } from "@maneman/ui/Panel";
-import { TextLink } from "@maneman/ui/TextLink";
+import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
+import { rowPath } from "@maneman/ui/target";
+import { OpsLink } from "../frame/Shell.tsx";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -175,6 +177,20 @@ function OrdersTable({
                   </TextLink>
                 </>
               )}
+              {(order.status === "paid" || order.status === "ordered") &&
+                order.po_id !== null &&
+                order.po_number !== null && (
+                  <>
+                    {" · "}
+                    <OpsLink
+                      className={textLinkLook({ compact: true })}
+                      to={rowPath("/purchasing", "order", order.po_id)}
+                    >
+                      {copy.purchaseOrder(order.po_number)}
+                    </OpsLink>
+                  </>
+                )}
+              {order.status === "arrived" && order.piece_at !== null && ` · ${copy.pieceAt(order.piece_at)}`}
             </td>
             <td>
               <Steps order={order} onAnswer={onAnswer} />

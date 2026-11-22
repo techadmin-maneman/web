@@ -33,6 +33,21 @@ export type TaskFacts =
     }
   | { readonly group: "replacement_order"; readonly piece_code: string; readonly due_on: Day }
   | { readonly group: "made_to_order_ask"; readonly kind: "first_fit" | "replacement"; readonly name: string }
+  | {
+      readonly group: "custom_order_to_send";
+      /** The custom order's number, and its purchase order's, with that order's ID to open it by. */
+      readonly order: number;
+      readonly purchase_order: number;
+      readonly purchase_order_id: string;
+      /** Approved already, so only sending it to the supplier is left. */
+      readonly approved: boolean;
+    }
+  | {
+      readonly group: "custom_piece_to_fit";
+      readonly order: number;
+      readonly piece_code: string;
+      readonly held_at: string;
+    }
   | { readonly group: "recall_call"; readonly piece_codes: string[] }
   | { readonly group: "stock_at_risk"; readonly consumable_code: string | null; readonly name: string | null }
   | { readonly group: "referral_review"; readonly signal: string | null }

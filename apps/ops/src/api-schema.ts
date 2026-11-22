@@ -15047,7 +15047,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "custom_order_to_send" | "custom_piece_to_fit" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                     id: string;
                 };
                 cookie?: never;
@@ -29508,6 +29508,8 @@ export interface components {
                 kind: string;
                 city: string | null;
                 pieces: number;
+                /** @description Of those, the pieces reserved to this client's own custom order. */
+                reserved: number;
             }[];
             in_transit: number;
         };
@@ -29537,6 +29539,10 @@ export interface components {
                 link_sent_at: string | null;
                 paid_at: string | null;
                 po_number: number | null;
+                /** @description Its purchase order, to open on Purchasing; null until paid. */
+                po_id: string | null;
+                /** @description Where its piece is held once arrived: the warehouse, a stockroom or a kit; null otherwise. */
+                piece_at: string | null;
                 raised_at: string;
             }[];
             suppliers: {
@@ -31455,7 +31461,7 @@ export interface components {
             lapsed: number;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "custom_order_to_send" | "custom_piece_to_fit" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -31563,6 +31569,29 @@ export interface components {
             kind: "first_fit" | "replacement";
             /** @description The hair system, by its package's name. */
             name: string;
+        } | {
+            /** @enum {string} */
+            group: "custom_order_to_send";
+            /** @description The custom order's number, CU-0042 as 42. */
+            order: number;
+            /** @description Its purchase order's number. */
+            purchase_order: number;
+            /**
+             * Format: uuid
+             * @description Its purchase order's ID, to open it on Purchasing.
+             */
+            purchase_order_id: string;
+            /** @description Approved already: only sending it is left. */
+            approved: boolean;
+        } | {
+            /** @enum {string} */
+            group: "custom_piece_to_fit";
+            /** @description The custom order's number. */
+            order: number;
+            /** @description The reserved piece's label. */
+            piece_code: string;
+            /** @description Where the piece is held: the warehouse, a stockroom or a kit. */
+            held_at: string;
         } | {
             /** @enum {string} */
             group: "recall_call";
@@ -32993,6 +33022,8 @@ export interface components {
                 low: boolean;
                 /** @description When it was last counted there. */
                 counted_at: string | null;
+                /** @description Of its pieces there, those reserved to a client's custom order. */
+                reserved: number;
                 /** @description The lots the place holds some of, soonest to expire first. */
                 lots: {
                     id: string;
@@ -33270,6 +33301,14 @@ export interface components {
                 sent_at: string | null;
                 cancel_reason: string | null;
                 needs_second_approval: boolean;
+                /** @description The custom order this was drafted for, and its client; null for an order of stock. */
+                custom_order: {
+                    id: string;
+                    number: number;
+                    person_id: string;
+                    /** @description The client's name; null once they are erased. */
+                    person_name: string | null;
+                } | null;
                 receipts: {
                     id: string;
                     received_by: string;

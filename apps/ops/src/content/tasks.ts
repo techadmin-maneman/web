@@ -105,6 +105,8 @@ export const tasks = {
     heard_from_missing: "How they heard of us",
     replacement_order: "Replacement order",
     made_to_order_ask: "Made to order",
+    custom_order_to_send: "Custom order to send",
+    custom_piece_to_fit: "Custom fit to book",
     stock_at_risk: "Stock at risk",
     at_risk_client: "At-risk client",
     // A group the board does not draw.
@@ -259,6 +261,11 @@ export const tasks = {
       `${piece} · order by ${orderBy}, replace by ${due}`,
     /** "Mane Man Essential · Replacement": the hair system to order in the client's size, and the visit it is for. */
     made_to_order_ask: (hairSystem: string, visit: string) => `${hairSystem} · ${visit}`,
+    /** "CU-0042 · PO-0042 to approve and send": the client has paid; the order goes to the supplier. */
+    custom_order_to_send: (order: string, purchaseOrder: string, approved: boolean) =>
+      `${order} · ${purchaseOrder} ${approved ? "approved, to send" : "to approve and send"}`,
+    /** "CU-0042 · at National warehouse": the piece has arrived; book the fit it is for. */
+    custom_piece_to_fit: (order: string, heldAt: string) => `${order} · at ${heldAt}`,
     /**
      * "The piece was not ready · 20 Sep": book the visit that finishes it. The reason is in the
      * words the job sheet gives it, which ops set in Settings (docs/decisions/0087-consumables-and-stock.md).

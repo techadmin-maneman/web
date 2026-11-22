@@ -28,6 +28,7 @@ const ORDER = {
   sent_at: null,
   cancel_reason: null,
   needs_second_approval: true,
+  custom_order: null,
   receipts: [],
 };
 

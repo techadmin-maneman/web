@@ -22,6 +22,9 @@ import { FormRefusal } from "@maneman/ui/Refusal";
 import { RowHead } from "@maneman/ui/RowHead";
 import { FormActions } from "@maneman/ui/FormActions";
 import { purchasingApi } from "./purchasing-api.ts";
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { OpsLink } from "../frame/Shell.tsx";
+import { clientPath } from "../route.ts";
 
 type Answer = Awaited<ReturnType<typeof purchasingApi.sendOrder>>;
 
@@ -199,6 +202,13 @@ export function OrderPanel({
         {order.expected_on !== null && ` · ${copy.order.expected(plainDate(order.expected_on))}`}
         {order.cancel_reason !== null && ` · ${copy.order.cancelledWhy(order.cancel_reason)}`}
       </Note>
+      {order.custom_order !== null && (
+        <Note>
+          <OpsLink className={textLinkLook({ compact: true })} to={clientPath(order.custom_order.person_id, "pieces")}>
+            {copy.customFor(order.custom_order.number, order.custom_order.person_name)}
+          </OpsLink>
+        </Note>
+      )}
       <LinesTable order={order} named={named} />
       <Note>
         {copy.order.total}: {inCurrency(order.total, order.currency)}
