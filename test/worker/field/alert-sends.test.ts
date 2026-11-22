@@ -212,6 +212,8 @@ describe("the cron's alerts", () => {
     await appointment(AHEAD, IMRAN, "2026-09-22T05:30:00.000Z");
     await appointment("22222222-2222-4222-8222-222222222298", IMRAN, "2026-09-22T08:00:00.000Z");
     expect(await writeDayAhead(env.DB, { now: NOW, date: "2026-09-22" })).toBe(1);
+    // Told once: a later run counts nobody, and writes nothing again.
+    expect(await writeDayAhead(env.DB, { now: NOW, date: "2026-09-22" })).toBe(0);
     expect(await alerts()).toMatchObject([
       {
         technician_id: IMRAN,

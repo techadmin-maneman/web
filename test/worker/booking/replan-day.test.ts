@@ -14,6 +14,7 @@ import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
+import { aHold } from "../fixtures/index.ts";
 
 /** A home, as ops set one: 28.4775 is 2 km north of the client, 28.5674 12 km. */
 async function home(id: string, lat: number) {
@@ -64,6 +65,34 @@ describe("a day's drafts re-planned", () => {
       results: [{ was_technician_id: SANDEEP, now_technician_id: IMRAN, reason: "zone_rebalance", actor: "allotment" }],
     });
     expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims").first())?.n).toBe(0);
+  });
+
+  // A client's paid move waits to be booked onto the visit as it was; the rest of the day re-plans around it.
+  it("leaves a draft whose client's move waits on payment, and moves the day's others", async () => {
+    const other = (await client()).id;
+    await env.DB.prepare("UPDATE addresses SET lat = 28.4596, lng = 77.0266 WHERE person_id = ?1").bind(other).run();
+    const waiting = await visit(other, "service", "scheduled", indiaInstant(TUESDAY, "15:00").toISOString(), SANDEEP);
+    await env.DB.prepare(
+      "UPDATE appointments SET technician_draft = 1, service_city = 'Gurgaon', service_pincode = '122018' WHERE id = ?1",
+    )
+      .bind(waiting)
+      .run();
+    await aHold({
+      person_id: other,
+      technician_id: SANDEEP,
+      moves_appointment_id: waiting,
+      confirmed_at: NOW.toISOString(),
+    });
+    const moved = await replanDay(env.DB, {
+      city: "Gurgaon",
+      date: TUESDAY,
+      now: NOW,
+      inputs: await readOpsInputs(env.DB, NOW),
+    });
+    expect(moved).toBe(1);
+    expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+    const kept = await env.DB.prepare("SELECT technician_id FROM appointments WHERE id = ?1").bind(waiting).first();
+    expect(kept).toEqual({ technician_id: SANDEEP });
   });
 
   it("never gives a draft to whoever did the client's visit before it", async () => {
@@ -205,8 +234,12 @@ describe("each hour's re-plan", () => {
   });
 
   /** The cities one hour's run re-plans, with what the hours of the locks say. */
+  /** The cities a turn left out, as it warns of them. */
+  let left: string[] = [];
+
   async function turnAt(time: string, readHours = NATIONAL_SIX): Promise<string[]> {
     const replanned: string[] = [];
+    left = [];
     await replanAhead(env.DB, indiaInstant("2026-09-21", time), {
       readHours,
       replan: (city) => {
@@ -214,7 +247,9 @@ describe("each hour's re-plan", () => {
         return Promise.resolve(0);
       },
       failed: () => undefined,
-      left: () => undefined,
+      left: (cities) => {
+        left = [...cities];
+      },
     });
     return replanned;
   }
@@ -229,6 +264,21 @@ describe("each hour's re-plan", () => {
     // Tomorrow's turns are at midnight and 7 am, before any lock is near.
     expect(await turnAt("00:20")).toEqual(["Delhi", "Faridabad", "Gurgaon"]);
     expect(await turnAt("07:20")).toEqual(["Noida", "Delhi", "Faridabad"]);
+    // Four cities are well within a day's three turns: nothing to warn of.
+    expect(left).toEqual([]);
+  });
+
+  it("warns of the cities past what a day's three turns reach", async () => {
+    const cities = ["Agra", "Bhiwadi", "Delhi", "Faridabad", "Ghaziabad", "Jaipur", "Meerut", "Noida", "Panipat"];
+    for (const city of cities) {
+      const id = await visit(null, "service", "scheduled", indiaInstant(TUESDAY, "15:00").toISOString(), IMRAN);
+      await env.DB.prepare("UPDATE appointments SET technician_draft = 1, service_city = ?2 WHERE id = ?1")
+        .bind(id, city)
+        .run();
+    }
+    // Ten cities with Gurgaon: the tenth by name is past nine.
+    await turnAt("00:20");
+    expect(left).toEqual(["Panipat"]);
   });
 
   // Gurgaon locks at 3 pm: from 2:30 its tomorrow is the check's, which knows Google's word.

@@ -16,6 +16,9 @@ import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 
+/** A third technician, at home 28.6000, as far from the draft as Sandeep and busier. */
+const VIKRAM = "t9";
+
 const TUESDAY = "2026-09-22";
 /** Imran's home, 2 km north of the client; Sandeep's, 12 km. */
 const IMRANS_HOME = 28.4775;
@@ -113,6 +116,47 @@ describe("tomorrow checked on Google", () => {
     expect(await visitRow()).toMatchObject({ technician_draft: 1 });
     expect(told).toHaveLength(1);
     expect(told[0]).toMatch(/^leg_short:t[12]:2026-09-22:11:00$/);
+  });
+
+  // Imran's drive to the 1 pm draft is jammed for five hours, so it goes to Sandeep, whose 10 o'clock visit stays. Vikram's own fixed
+  // 10 o'clock visit, untouched by the re-plan, is jammed too. Vikram's home is 28.6000, his client's 28.6100, and
+  // Sandeep's 10 o'clock client's 28.5700.
+  it("keeps Google's word on a day the re-plan left alone, and asks nothing twice", async () => {
+    await technician(VIKRAM, "Vikram Sethi", "VS");
+    await env.DB.prepare(
+      "UPDATE technicians SET home_lat = 28.6, home_lng = 77.0266, home_label = 'Home' WHERE id = ?1",
+    )
+      .bind(VIKRAM)
+      .run();
+    await booked(28.46);
+    await env.DB.prepare("UPDATE appointments SET technician_id = ?2, window_start = ?3 WHERE id = ?1")
+      .bind(visitId, IMRAN, indiaInstant(TUESDAY, "13:00").toISOString())
+      .run();
+    for (const [lat, who, time] of [
+      [28.61, VIKRAM, "10:00"],
+      [28.57, SANDEEP, "10:00"],
+    ] as const) {
+      const someone = (await client()).id;
+      await env.DB.prepare("UPDATE addresses SET lat = ?2, lng = 77.0266 WHERE person_id = ?1")
+        .bind(someone, lat)
+        .run();
+      const fixed = await visit(someone, "service", "scheduled", indiaInstant(TUESDAY, time).toISOString(), who);
+      await env.DB.prepare("UPDATE appointments SET service_city = 'Gurgaon', service_pincode = '122018' WHERE id = ?1")
+        .bind(fixed)
+        .run();
+    }
+    const origins: number[] = [];
+    const { check, told } = google((from) => {
+      origins.push(from.lat);
+      return from.lat === IMRANS_HOME || from.lat === 28.6 ? 300 : 10;
+    });
+    // Three drives the first pass, and the one the moved draft adds; Sandeep's drive to 10 o'clock is asked already.
+    await run({ ...check, drives: createCallBudget(4) });
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
+    expect(told).toEqual([`leg_short:${VIKRAM}:${TUESDAY}:10:00`]);
+    expect(origins.filter((lat) => lat === 28.6)).toHaveLength(1);
+    // Sandeep's drive on from 10 o'clock to the draft is asked, on the drives left once his first is free.
+    expect(origins).toContain(28.57);
   });
 
   it("asks Google no more drives than the run has left, and leaves the rest on the estimate", async () => {

@@ -199,8 +199,7 @@ export async function weekVisitsOf(
     db
       .prepare(
         `SELECT a.person_id, a.type, a.tier, a.one_visit FROM appointments a INDEXED BY appointments_by_technician
-          WHERE a.technician_id = ?3 AND ${bookedAhead("a")}
-            AND a.type IN ('first_fit', 'replacement')`,
+          WHERE a.technician_id = ?3 AND ${bookedAhead("a")} AND a.type IN ('first_fit', 'replacement')`,
       )
       .bind(...window)
       .all<FitBooked>(),

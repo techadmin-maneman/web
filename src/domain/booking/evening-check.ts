@@ -106,14 +106,15 @@ async function shortsOf(
   return shorts;
 }
 
-/** Whether a technician's day has the same stops, each at the same start and pin, as before. */
-function sameStops(was: PlanDay | undefined, now: PlanDay): boolean {
+/** Whether a technician's day has the same stops, each at the same start and pin, as before; a day gone has not. */
+function sameStops(was: PlanDay | undefined, now: PlanDay | undefined): boolean {
+  if (was === undefined || now === undefined) return false;
   const key = (day: PlanDay) =>
     [...day.stops]
       .sort((a, b) => a.start - b.start)
       .map((stop) => `${String(stop.start)}@${String(stop.pin?.lat)},${String(stop.pin?.lng)}`)
       .join("|");
-  return was !== undefined && key(was) === key(now);
+  return key(was) === key(now);
 }
 
 /**
@@ -133,9 +134,8 @@ export async function eveningCheck(db: D1Database, check: EveningCheck, input: I
     await replanDay(db, { ...input, ruledOut });
     const again = await readDay(db, input);
     // Only the days the re-plan changed are driven again; the rest keep what Google said of them.
-    const changed = new Set(
-      [...(again?.days ?? [])].filter(([id, plan]) => !sameStops(first.days.get(id), plan)).map(([id]) => id),
-    );
+    const ids = new Set([...first.days.keys(), ...(again?.days.keys() ?? [])]);
+    const changed = new Set([...ids].filter((id) => !sameStops(first.days.get(id), again?.days.get(id))));
     shorts = [
       ...shorts.filter((short) => !changed.has(short.technicianId)),
       ...(again === null ? [] : await shortsOf(db, check, again, { ...input, only: changed })),
