@@ -186,15 +186,37 @@ test.describe("the hair system step", () => {
     await expect(page.getByRole("button", { name: techCopy.steps.piece.typeCode })).toBeVisible();
   });
 
-  test("offers no label only where the kit holds a hair system to pick in its place", async ({ page }) => {
+  test("offers no label only where the kit holds a hair system free to pick in its place", async ({ page }) => {
     const fake = await fakeTech(page);
     fake.type = "replacement";
     fake.pieces = [WORN];
-    fake.kitHairSystems = [];
+    startedThrough(fake, "before_photos");
+    // An empty kit, then one whose only piece is kept for another client.
+    for (const kit of [[], holding("standard", "MM-STD-5120-A").map((each) => ({ ...each, held: 0 }))]) {
+      fake.kitHairSystems = kit;
+      await page.goto(`/jobs/${JOB_ID}/piece`);
+      await expect(page.getByRole("button", { name: techCopy.steps.piece.typeCode })).toBeVisible();
+      await expect(page.getByRole("button", { name: techCopy.steps.piece.noLabel, exact: true })).toHaveCount(0);
+    }
+  });
+
+  test("warns of a hair system picked with no label that is not this fit's, and keeps no pick going back", async ({
+    page,
+  }) => {
+    const fake = await fakeTech(page);
+    fake.type = "replacement";
+    fake.pieces = [WORN];
+    fake.profile = ROHITS_PROFILE;
+    fake.kitHairSystems = holding("standard", "MM-STD-5120-A");
     startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
+    await page.getByRole("button", { name: techCopy.steps.piece.noLabel, exact: true }).click();
+    await page.getByRole("group", { name: techCopy.steps.piece.kit.title }).getByRole("radio").first().check();
+    const warning = page.getByRole("alert").filter({ hasText: techCopy.steps.piece.otherThanFitted });
+    await expect(warning).toBeVisible();
+    await page.getByRole("button", { name: techCopy.steps.piece.scanInstead }).click();
     await expect(page.getByRole("button", { name: techCopy.steps.piece.typeCode })).toBeVisible();
-    await expect(page.getByRole("button", { name: techCopy.steps.piece.noLabel, exact: true })).toHaveCount(0);
+    await expect(warning).toHaveCount(0);
   });
 
   test("confirms a label from the kit against the profile and the kit, and holds an expired one", async ({ page }) => {

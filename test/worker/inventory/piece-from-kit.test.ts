@@ -9,7 +9,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { madeLabel } from "../../../src/domain/inventory/made-labels.ts";
+import { madeLabel, ownLabelsBack } from "../../../src/domain/inventory/made-labels.ts";
 import { aPerson } from "../fixtures/index.ts";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
@@ -207,9 +207,8 @@ describe("a piece with no label", () => {
     expect(left).toBe(1);
   });
 
-  it("is never a piece kept for another client's made-to-order", async () => {
-    await inTheKit(code, { lot_code: "KEPT", expires_on: "2027-01-31" }, 1);
-    await inTheKit(code, { lot_code: "FREE", expires_on: "2028-03-31" }, 1);
+  /** The units of a lot kept for another client's made-to-order. */
+  async function keptForAnother(lot: string): Promise<void> {
     await aPerson({ id: "p-other", name: "Someone Else" });
     await env.DB.batch([
       env.DB.prepare(
@@ -223,11 +222,65 @@ describe("a piece with no label", () => {
       ).bind(NOW.toISOString()),
       env.DB.prepare(
         `UPDATE stock_units SET custom_order_id = 'co-1'
-         WHERE lot_id = (SELECT id FROM stock_lots WHERE lot_code = 'KEPT')`,
-      ),
+         WHERE lot_id = (SELECT id FROM stock_lots WHERE lot_code = ?1)`,
+      ).bind(lot),
     ]);
+  }
+
+  it("is never a piece kept for another client's made-to-order", async () => {
+    await inTheKit(code, { lot_code: "KEPT", expires_on: "2027-01-31" }, 1);
+    await inTheKit(code, { lot_code: "FREE", expires_on: "2028-03-31" }, 1);
+    await keptForAnother("KEPT");
     expect((await fit({ no_label: true, stock_code: code }, "event-piece-01")).status).toBe(202);
     expect(await fittedLot()).toBe("FREE");
+  });
+
+  it("is refused where every piece of the hair system the kit holds is kept for another client", async () => {
+    await inTheKit(code, { lot_code: "KEPT", expires_on: "2027-01-31" }, 1);
+    await keptForAnother("KEPT");
+    const refused = await fit({ no_label: true, stock_code: code }, "event-piece-01");
+    expect(refused.status).toBe(400);
+    expect((await refused.json<{ error: { fields?: string[] } }>()).error.fields).toEqual(["stock_code"]);
+  });
+
+  it("is a recalled lot's piece never labelled only after a sound lot's unit", async () => {
+    const recalled = await inTheKit(code, { lot_code: "RECALLED", expires_on: "2028-03-31" }, 1);
+    // The recalled lot's piece lost its unit, so it is a piece never labelled.
+    const lost = await env.DB.prepare("SELECT id FROM stock_units WHERE code = ?1")
+      .bind(recalled[0] ?? "")
+      .first<string>("id");
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM stock_unit_events WHERE unit_id = ?1").bind(lost),
+      env.DB.prepare("DELETE FROM stock_units WHERE id = ?1").bind(lost),
+      env.DB.prepare("UPDATE stock_lots SET recalled_at = ?1 WHERE lot_code = 'RECALLED'").bind(NOW.toISOString()),
+    ]);
+    await inTheKit(code, { lot_code: "SOUND", expires_on: "2028-03-31" }, 1);
+    expect((await fit({ no_label: true, stock_code: code }, "event-piece-01")).status).toBe(202);
+    expect(await fittedLot()).toBe("SOUND");
+  });
+
+  it("gives the made label to the unit a scanned step fitted, sent again with no label", async () => {
+    const [label = ""] = await inTheKit(code, {});
+    expect((await fit({ piece_code: label, stock_code: code }, "event-piece-01")).status).toBe(202);
+    const step = { no_label: true, stock_code: code };
+    expect((await job.post(`/api/tech/jobs/${JOB}/piece`, step, "event-piece-02")).status).toBe(202);
+    const made = (await recorded()).piece_code;
+    expect(made).toMatch(/^MM-NL-\d{7}-[A-Z]$/);
+    const fitted = await env.DB.prepare("SELECT code FROM stock_units WHERE state = 'fitted'").all<{ code: string }>();
+    expect(fitted.results).toEqual([{ code: made }]);
+  });
+
+  it("gives a unit its own label back only where it is back in the kit", async () => {
+    const [label = ""] = await inTheKit(code, {});
+    const made = await madeLabel(env.DB, JOB);
+    const unit = await env.DB.prepare("SELECT id FROM stock_units WHERE code = ?1").bind(label).first<string>("id");
+    await env.DB.prepare("UPDATE stock_units SET code = ?1, state = 'fitted' WHERE id = ?2").bind(made, unit).run();
+    await env.DB.batch(ownLabelsBack(env.DB, [unit ?? ""], "essential"));
+    const codeOf = () => env.DB.prepare("SELECT code FROM stock_units WHERE id = ?1").bind(unit).first<string>("code");
+    expect(await codeOf()).toBe(made);
+    await env.DB.prepare("UPDATE stock_units SET state = 'held' WHERE id = ?1").bind(unit).run();
+    await env.DB.batch(ownLabelsBack(env.DB, [unit ?? ""], "essential"));
+    expect(await codeOf()).toBe(label);
   });
 
   it("gives a unit put back by a correction its own label again, and the made one to the unit fitted", async () => {

@@ -167,8 +167,8 @@ describe("the piece step", () => {
     expect(stillMissing(picked, held("2026-09-20", 2), "none")).toBeNull();
   });
 
-  it("says a hair system picked with no label was refused for its pieces having expired", () => {
-    expect(noticeFor(["stock_code"], { no_label: true, stock_code: "hs_exact" })).toBe(copy.piece.expired);
+  it("says a hair system picked with no label was refused for none of it in the kit being fit to fit", () => {
+    expect(noticeFor(["stock_code"], { no_label: true, stock_code: "hs_exact" })).toBe(copy.corrected.noneToFit);
     expect(noticeFor(["stock_code"], { piece_code: LABEL, stock_code: "hs_exact" })).toBe(copy.corrected.other);
     expect(noticeFor(["piece_code"], { no_label: true })).toBe(copy.corrected.piece);
   });

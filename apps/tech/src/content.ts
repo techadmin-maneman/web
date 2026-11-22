@@ -809,6 +809,8 @@ export const steps = localised({
   corrected: {
     piece: "We couldn’t record the label you gave. Correct it and tap Next.",
     other: "We couldn’t record this step as it was. Correct it and tap Next.",
+    // Our words: a hair system picked with no label, none of whose pieces the kit may give.
+    noneToFit: "That hair system can’t be fitted from your kit. Pick another.",
   },
   consumables: {
     less: (name: string, step: number, unit: string) =>

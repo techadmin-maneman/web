@@ -71,23 +71,31 @@ async function pieceMove(
 }
 
 /**
- * A unit fitted where the piece had no label to read takes the label made for it, unless another unit carries that
- * label already, when the fit still lands and the unit keeps its own.
+ * The unit the visit fitted of the hair system a step with no label names takes the label made for its piece, taken
+ * by this step or an earlier one, while the step is still the visit's latest; unless another unit carries that label
+ * already, when the fit still lands and the unit keeps its own.
  */
 function relabelled(
   db: D1Database,
-  fit: { readonly moves: Iterable<PieceMove>; readonly label: string | null; readonly jobId: string },
+  fit: {
+    readonly label: string | null;
+    readonly stock: string | null;
+    readonly jobId: string;
+    readonly technicianId: string;
+    readonly eventId: string;
+  },
 ): D1PreparedStatement[] {
-  if (fit.label === null) return [];
-  const units = [...fit.moves].flatMap((move) => (move.state === "fitted" ? move.units : []));
-  return units.map((unit) =>
+  if (fit.label === null || fit.stock === null) return [];
+  return [
     db
       .prepare(
-        `UPDATE stock_units SET code = ?1 WHERE id = ?2 AND state = 'fitted' AND appointment_id = ?3
+        `UPDATE stock_units SET code = ?1
+         WHERE appointment_id = ?2 AND consumable_code = ?3 AND state = 'fitted' AND code IS NOT ?1
+           AND ?4 = (${latestStep({ job: "?2", technician: "?5" }, "piece")})
            AND NOT EXISTS (SELECT 1 FROM stock_units WHERE code = ?1)`,
       )
-      .bind(fit.label, unit, fit.jobId),
-  );
+      .bind(fit.label, fit.jobId, fit.stock, fit.eventId, fit.technicianId),
+  ];
 }
 
 /** The piece a replacement's step names as come off, with why where it failed; null for none. */
@@ -137,14 +145,17 @@ export async function recordPieceUse(
   const reason = oldPiece === null ? null : await returnReason(db, jobId, oldPiece);
   const returned =
     oldPiece === null ? [] : pieceReturnStatements(db, { jobId, technicianId, label: oldPiece.code, reason, at });
-  const owed = useStillToRecord(fitted, await takenFor(db, { jobId, technicianId, hairSystems: true }));
-  if (owed.size === 0) {
-    if (returned.length > 0) await db.batch(returned);
-    return { lowered: false };
-  }
   const label = pieceStepOf(body).fitted?.code ?? null;
   const fittedBody = pieceBodyOf(body);
   const noLabel = fittedBody !== null && !fitsNothing(fittedBody) && fittedBody.no_label === true;
+  const fit = { label, stock: code, jobId, technicianId, eventId: latest.id };
+  const labels = noLabel ? relabelled(db, fit) : [];
+  const owed = useStillToRecord(fitted, await takenFor(db, { jobId, technicianId, hairSystems: true }));
+  if (owed.size === 0) {
+    // A step naming the same hair system again moves nothing, but a piece it now says had no label takes the made one.
+    if (returned.length + labels.length > 0) await db.batch([...returned, ...labels]);
+    return { lowered: false };
+  }
   const moves = new Map<string, PieceMove>();
   for (const [stock, quantity] of owed) {
     const move = { code: stock, quantity, label, noLabel, jobId, day: input.day };
@@ -169,7 +180,6 @@ export async function recordPieceUse(
     const product = move.state === "held" && move.units.length > 0 ? await hairSystemProduct(db, stock) : null;
     if (product !== null) restored.push(...ownLabelsBack(db, move.units, product));
   }
-  const labels = noLabel ? relabelled(db, { moves: moves.values(), label, jobId }) : [];
   const results = await db.batch<{ quantity: number }>([
     ...taken.movements,
     ...taken.lots,

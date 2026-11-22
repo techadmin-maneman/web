@@ -152,9 +152,9 @@ export function choiceSent(sent: PieceSent | null): Choice {
 export function noticeFor(refusedFields: readonly string[], sent: unknown = null): string {
   const aLabel = refusedFields.some((field) => field === "piece_code" || field === "old_piece");
   if (aLabel) return copy.corrected.piece;
-  // A hair system picked with no label is refused only where every piece of it the kit could give has expired.
+  // A hair system picked with no label is refused only where the kit holds none of it that may be fitted.
   const noLabel = typeof sent === "object" && sent !== null && "no_label" in sent && sent.no_label === true;
-  return noLabel && refusedFields.includes("stock_code") ? copy.piece.expired : copy.corrected.other;
+  return noLabel && refusedFields.includes("stock_code") ? copy.corrected.noneToFit : copy.corrected.other;
 }
 
 /** The piece of the kit a label names, with the hair system it is; null for a label no piece in the kit carries. */

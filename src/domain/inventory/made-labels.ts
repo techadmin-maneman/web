@@ -4,15 +4,16 @@
 // or a unit of stock carries already is passed over for the next. Ops may write it on the piece, or print it, later.
 //
 // With no label to read its expiry or its owner from, the piece taken from the kit is one the job card would offer:
-// in date on the visit's day, never kept for another client's order or of a recalled lot, a piece never labelled first.
-// A unit so taken carries the made label while it is fitted, and its own again if a correction puts it back.
+// in date on the visit's day, never a unit kept for another client's order or of a recalled lot; a piece never labelled
+// first, and a recalled lot's last, as every deduction takes it. A unit so taken carries the made label while it is
+// fitted, and its own again if a correction puts it back.
 
 import { sha256Hex } from "../../lib/hash.ts";
 import { reservedForOthers } from "../purchasing/custom-orders.ts";
 import { piecesLabelled } from "./pieces.ts";
 import { recalledIn } from "./recalls.ts";
 import type { Place } from "./stock-places.ts";
-import { labelOf, labelSql, piecesAt, productSegment, takenOf, type Taken } from "./stock-units.ts";
+import { labelOf, labelSql, piecesAt, productSegment, takenOf, type Piece, type Taken } from "./stock-units.ts";
 
 /** What a made label says in place of a product's three letters: no label was on the piece. */
 const MADE = "NL";
@@ -44,43 +45,54 @@ export async function madeLabel(db: D1Database, visitId: string): Promise<string
 }
 
 /**
- * The pieces of a hair system a kit gives a fit with no label, and whether every one it could give has expired: the
- * kit holds some free to fit, and each is of a lot past its date on `day`.
+ * The pieces of a hair system a kit gives a fit with no label, and whether it holds some but none it may give: each is
+ * past its date on `day`, or a unit kept for another client or of a recalled lot.
  */
 export async function noLabelTake(
   db: D1Database,
   at: { readonly code: string; readonly kit: Place; readonly visitId: string; readonly day: string },
   quantity: number,
-): Promise<{ readonly taken: Taken; readonly expired: boolean }> {
-  const [pieces, past, kept, recalled] = await Promise.all([
+): Promise<{ readonly taken: Taken; readonly unfit: boolean }> {
+  const [pieces, lots, kept, recalled] = await Promise.all([
     piecesAt(db, at.code, at.kit),
     db
       .prepare(
-        `SELECT l.id FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
-         WHERE b.place = ?1 AND l.consumable_code = ?2 AND b.quantity > 0 AND l.expires_on < ?3`,
+        `SELECT l.id, l.expires_on < ?3 AS past, l.recalled_at IS NOT NULL AS recalled
+         FROM stock_lot_balances b JOIN stock_lots l ON l.id = b.lot_id
+         WHERE b.place = ?1 AND l.consumable_code = ?2 AND b.quantity > 0`,
       )
       .bind(at.kit, at.code, at.day)
-      .all<{ id: string }>(),
+      .all<{ id: string; past: number | null; recalled: number }>(),
     reservedForOthers(db, at.kit, at.visitId),
     recalledIn(db, at.kit),
   ]);
-  const pastLots = new Set(past.results.map((row) => row.id));
+  const pastLots = new Set(lots.results.filter((lot) => lot.past === 1).map((lot) => lot.id));
+  const recalledLots = new Set(lots.results.filter((lot) => lot.recalled === 1).map((lot) => lot.id));
   const free = pieces.filter(
     (piece) => piece.unit === null || !(kept.has(piece.unit.code) || recalled.has(piece.unit.code)),
   );
   const inDate = free.filter((piece) => piece.lotId === null || !pastLots.has(piece.lotId));
-  const line = [...inDate.filter((piece) => piece.unit === null), ...inDate.filter((piece) => piece.unit !== null)];
-  return { taken: takenOf(line.slice(0, quantity)), expired: free.length > 0 && inDate.length === 0 };
+  const ofRecalled = (piece: Piece) => piece.lotId !== null && recalledLots.has(piece.lotId);
+  const sound = inDate.filter((piece) => !ofRecalled(piece));
+  const line = [
+    ...sound.filter((piece) => piece.unit === null),
+    ...sound.filter((piece) => piece.unit !== null),
+    ...inDate.filter(ofRecalled),
+  ];
+  return { taken: takenOf(line.slice(0, quantity)), unfit: pieces.length > 0 && inDate.length === 0 };
 }
 
-/** Units back in the kit that carry a made label take their own again: their product's letters and their serial. */
+/**
+ * Units back in the kit that carry a made label take their own again, their product's letters and their serial: only
+ * those the same batch did put back, so a step another overtook changes nothing.
+ */
 export function ownLabelsBack(db: D1Database, units: readonly string[], product: string): D1PreparedStatement[] {
   if (units.length === 0) return [];
   return [
     db
       .prepare(
         `UPDATE stock_units SET code = ${labelSql("?1", "serial")}
-         WHERE id IN (SELECT value FROM json_each(?2)) AND code LIKE 'MM-${MADE}-%'`,
+         WHERE id IN (SELECT value FROM json_each(?2)) AND state = 'held' AND code LIKE 'MM-${MADE}-%'`,
       )
       .bind(productSegment(product), JSON.stringify(units)),
   ];

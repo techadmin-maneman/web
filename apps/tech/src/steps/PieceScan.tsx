@@ -229,7 +229,12 @@ export function Scanner(props: {
  * A piece with no label to read: the hair system picked from the kit, listed beneath, is what is fitted, and the label
  * is made for it; Scan the label instead to read one after all.
  */
-export function NoLabel(props: { readonly cannotFit: ReactNode; readonly onScan: () => void }) {
+export function NoLabel(props: {
+  /** What the pick warns of: a hair system not the one this fit is for (piece-form's labelWarning); null for none. */
+  readonly warning: string | null;
+  readonly cannotFit: ReactNode;
+  readonly onScan: () => void;
+}) {
   return (
     <div className={styles.scanner}>
       <div className={styles.links}>
@@ -238,6 +243,11 @@ export function NoLabel(props: { readonly cannotFit: ReactNode; readonly onScan:
         </TextButton>
         {props.cannotFit}
       </div>
+      {props.warning !== null && (
+        <p className={styles.warn} role="alert">
+          {props.warning}
+        </p>
+      )}
     </div>
   );
 }

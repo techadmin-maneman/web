@@ -129,9 +129,13 @@ const checkedOf = (looked: Looked): LabelChecked =>
 const unlabelledOf = (choices: ReturnType<typeof kitChoices>) =>
   choices.filter(({ hairSystem }) => hairSystem.units.length === 0);
 
+/** The kit's hair systems with a piece free to fit, one of which a piece with no label is picked as. */
+const freeOf = (choices: ReturnType<typeof kitChoices>) => choices.filter(({ hairSystem }) => hairSystem.held > 0);
+
 /**
  * The label as read so far: confirmed once it is known, with no signal to check it as typed, saying so; else the
- * scanner, which also says the piece has no label where the kit holds a hair system to pick in its place.
+ * scanner, which also says the piece has no label where the kit holds a hair system free to pick in its place; or,
+ * with no label, the pick, warning of one not this fit's.
  */
 function LabelRead(props: {
   readonly job: Job;
@@ -141,9 +145,20 @@ function LabelRead(props: {
   readonly cannotFit: ReactNode;
   readonly onCode: (code: string) => void;
   readonly onLook: () => void;
-  readonly onNoLabel: () => void;
+  readonly onNoLabel: (noLabel: boolean) => void;
 }) {
   const { job, matched, form, read } = props;
+  if (form.noLabel) {
+    return (
+      <NoLabel
+        warning={labelWarning(matched, form)}
+        cannotFit={props.cannotFit}
+        onScan={() => {
+          props.onNoLabel(false);
+        }}
+      />
+    );
+  }
   if (read.missing === null && isLabel(form.code) && read.looked.state !== "offline") {
     return (
       <Confirmed
@@ -166,7 +181,13 @@ function LabelRead(props: {
       cannotFit={props.cannotFit}
       onCode={props.onCode}
       onLook={props.onLook}
-      onNoLabel={kitChoices(matched, form.choice).length === 0 ? undefined : props.onNoLabel}
+      onNoLabel={
+        freeOf(kitChoices(matched, form.choice)).length === 0
+          ? undefined
+          : () => {
+              props.onNoLabel(true);
+            }
+      }
     />
   );
 }
@@ -245,35 +266,26 @@ function Fitting({
       {fitsToday && (
         <div className={styles.scan}>
           <Expected job={job} form={form} fit={matchTo?.fit ?? null} onFailure={setFailure} />
-          {/* With no label to read, the hair system is picked from the kit below. */}
-          {noLabel ? (
-            <NoLabel
-              cannotFit={cannotFit}
-              onScan={() => {
-                setNoLabel(false);
-              }}
-            />
-          ) : (
-            <LabelRead
-              job={job}
-              matched={matched}
-              form={form}
-              read={{ missing, looked, looking }}
-              cannotFit={cannotFit}
-              onCode={takeLabel}
-              onLook={() => void look()}
-              onNoLabel={() => {
-                takeLabel("");
-                setNoLabel(true);
-              }}
-            />
-          )}
+          {/* With no label to read, the hair system is picked from the kit below; either way, no pick is kept over. */}
+          <LabelRead
+            job={job}
+            matched={matched}
+            form={form}
+            read={{ missing, looked, looking }}
+            cannotFit={cannotFit}
+            onCode={takeLabel}
+            onLook={() => void look()}
+            onNoLabel={(none) => {
+              takeLabel("");
+              setNoLabel(none);
+            }}
+          />
         </div>
       )}
-      {/* Every hair system of the kit where the piece has no label; else only those whose pieces carry none. */}
+      {/* Every hair system the kit has free where the piece has no label; else only those whose pieces carry none. */}
       {fitsToday && (
         <KitPieces
-          choices={noLabel ? kitChoices(matched, choice) : unlabelledOf(kitChoices(matched, choice))}
+          choices={noLabel ? freeOf(kitChoices(matched, choice)) : unlabelledOf(kitChoices(matched, choice))}
           stock={stock}
           pick={noLabel}
           onStock={setStock}

@@ -41,8 +41,8 @@ async function asTheKitHoldsIt(c: Ctx, job: WorkableJob, sent: PieceBody): Promi
 /**
  * The piece's label: the one read; or, where the piece has none, one made from the visit, for a hair system picked
  * from the kit. Refused, by its field, with neither label nor no_label, or with both, or no_label and nothing picked,
- * or picked where every piece of it the kit could give has expired, as a label naming an expired one is; never where
- * the visit took that hair system already, as a step sent again or corrected has.
+ * or picked where the kit holds it but none it may give, past its date, kept for another client or recalled, as a label
+ * naming such a piece is; never where the visit took that hair system already, as a step sent again or corrected has.
  */
 async function labelledOf(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<PieceBody | { invalid: string[] }> {
   if (fitsNothing(sent)) return sent;
@@ -52,7 +52,7 @@ async function labelledOf(c: Ctx, job: WorkableJob, sent: PieceBody): Promise<Pi
   if (stockCode === null) return { invalid: ["stock_code"] };
   const { technicianId } = technicianOf(c);
   const at = { code: stockCode, kit: technicianId, visitId: job.id, day: indiaDate(job.windowStart) };
-  if ((await noLabelTake(c.env.DB, at, 1)).expired) {
+  if ((await noLabelTake(c.env.DB, at, 1)).unfit) {
     const took = (await takenFor(c.env.DB, { jobId: job.id, technicianId, hairSystems: true })).get(stockCode) ?? 0;
     if (took >= 0) return { invalid: ["stock_code"] };
   }
