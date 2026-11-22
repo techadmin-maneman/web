@@ -34,7 +34,7 @@ export const ALERT_WORDS = {
   city_uncovered: (a: { readonly city: string; readonly pincodes: number }) =>
     `Add a technician in ${a.city}, or stop serving its ${String(a.pincodes)} pincodes in Areas: nobody there can ` +
     "take a visit, so the site shows every day full.",
-  /** A drive on a technician's day that Google says has too little room, fixed as it stands (ADR 0290). */
+  /** A drive on a technician's day that Google says has too little room, fixed as it stands. */
   leg_short: (a: { readonly technician: string; readonly day: string; readonly to: string; readonly short: number }) =>
     `Shift a visit or call the client on Dispatch: ${a.technician}'s drive to the ${a.to} visit on ${fullDate(a.day)} ` +
     `runs ${String(a.short)} min past the time free before it, by Google's traffic.`,

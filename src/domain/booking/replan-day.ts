@@ -11,6 +11,7 @@ import { claimsAt, minuteOf, type PlanDay } from "../../policy/day-plan.ts";
 import { replan, type Draft, type Taking } from "../../policy/replan.ts";
 import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician-rotation.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
+import { reallottingDraft } from "../visits/technician-draft.ts";
 import { visitUpkeep } from "../visits/visit-upkeep.ts";
 import { loadDayPlans, type DayPlans } from "./day-plans.ts";
 import { fittingOf, techniciansFor } from "./occupancy.ts";
@@ -243,11 +244,7 @@ async function writeMoves(
       );
     }
     locked.add(to);
-    statements.push(
-      db
-        .prepare("UPDATE appointments SET technician_id = ?2, synced_at = ?3 WHERE id = ?1 AND technician_draft = 1")
-        .bind(row.id, to, at),
-    );
+    statements.push(reallottingDraft(db, { visitId: row.id, technicianId: to, at }));
   }
   for (const moveId of ids) {
     statements.push(db.prepare("DELETE FROM slot_claims WHERE move_id = ?1").bind(moveId));

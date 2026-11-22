@@ -7,6 +7,7 @@ import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { hourHasCome } from "../../policy/city-settings.ts";
 import { cityReminderHours, reminderHourCame, type ReminderHours } from "../cities/city-rules.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
+import { fixingDrafts } from "../visits/technician-draft.ts";
 
 /** The reminder hour in force, the nation's and each city's own, as the evening's lock and its reminders read it. */
 export async function reminderHoursAt(db: D1Database, now: Date): Promise<ReminderHours> {
@@ -35,16 +36,11 @@ export function bookedAsDraft(start: Date, city: string | null, now: Date, hours
  */
 export function lockDrafts(db: D1Database, now: Date, hours: ReminderHours): D1PreparedStatement {
   const today = indiaDate(now);
-  const tomorrow = indiaInstant(addDays(today, 1), "00:00").toISOString();
-  const after = indiaInstant(addDays(today, 2), "00:00").toISOString();
-  const came = reminderHourCame("service_city", 3, hours, now);
-  return db
-    .prepare(
-      `UPDATE appointments SET technician_draft = 0
-       WHERE technician_draft = 1 AND window_start < ?2
-         AND (window_start < ?1 OR ${came === null ? "0" : came.sql})`,
-    )
-    .bind(tomorrow, after, ...(came?.values ?? []));
+  return fixingDrafts(db, {
+    tomorrow: indiaInstant(addDays(today, 1), "00:00").toISOString(),
+    after: indiaInstant(addDays(today, 2), "00:00").toISOString(),
+    came: reminderHourCame("service_city", 3, hours, now),
+  });
 }
 
 /**
