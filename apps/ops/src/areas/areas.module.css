@@ -209,6 +209,23 @@
   color: var(--ui-text-soft);
 }
 
+/* The map's colours beneath it, each whole on its line, so a narrow screen breaks between them, never inside one. */
+.mapKey {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4) var(--sp-16);
+  margin: var(--sp-12) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--ui-text-soft);
+}
+
+.mapKey > li {
+  white-space: nowrap;
+}
+
 /* ---- Adding a pincode the service area does not hold --------------------- */
 
 .addForm .field:first-child {

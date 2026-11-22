@@ -113,7 +113,13 @@ function Reach({ city, onChoose }: { city: string; onChoose: (pincodes: Readonly
   return (
     <AreaSection id="area-reach" title={copy.title}>
       {map !== null && <img className={shared.areaMap} src={map} alt={copy.mapAlt(city)} width={640} height={400} />}
-      {map !== null && <p className={shared.note}>{copy.key}</p>}
+      {map !== null && (
+        <ul className={shared.mapKey}>
+          {copy.key.map((colour) => (
+            <li key={colour}>{colour}</li>
+          ))}
+        </ul>
+      )}
       {loaded.state === "loaded" && <Unreached reach={loaded.value} onChoose={onChoose} />}
       {loaded.state === "loaded" && <Within reach={loaded.value} onChoose={onChoose} />}
     </AreaSection>
