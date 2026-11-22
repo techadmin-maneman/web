@@ -11,7 +11,6 @@ import {
 } from "../../../src/domain/booking/allotment-lock.ts";
 import { replanDay } from "../../../src/domain/booking/replan-day.ts";
 import { loadDayPlans } from "../../../src/domain/booking/day-plans.ts";
-import { WORKING_HOURS } from "../../../src/policy/start-times.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
 import { fakeDependencies, markDatabase, NOW } from "../helpers.ts";
@@ -79,7 +78,7 @@ describe("a day's drafts re-planned", () => {
       from: TUESDAY,
       to: TUESDAY,
       now: NOW,
-      hours: WORKING_HOURS,
+      inputs: await readOpsInputs(env.DB, NOW),
     });
     expect(plans.revision(IMRAN, TUESDAY)).toBe(1);
   });
