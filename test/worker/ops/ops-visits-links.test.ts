@@ -415,6 +415,13 @@ describe("a booking held on its payment link", () => {
     const sent = await call(`/api/holds/${body.hold_id}/send-link`, "POST");
     expect(await sent.json()).toEqual({ outcome: "resent" });
     expect(payments.made.resent).toHaveLength(1);
+    // Who had it sent again is kept; a number messaging may not text sent nothing, so nothing is kept for it.
+    const kept = await env.DB.prepare(
+      "SELECT actor, subject_kind FROM audit_log WHERE action = 'booking.link_resend' AND subject_id = ?1",
+    )
+      .bind(body.hold_id)
+      .all<{ actor: string; subject_kind: string }>();
+    expect(kept.results).toEqual([expect.objectContaining({ subject_kind: "hold" })]);
   });
 
   it("is named when it stands in the way of another of its kind, and let go, frees the way", async () => {

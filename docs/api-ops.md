@@ -52038,6 +52038,7 @@ Request body:
         "alert.resolve",
         "alert.send_again",
         "booking.give_back",
+        "booking.link_resend",
         "visit.book",
         "visit.cancel",
         "visit.close",

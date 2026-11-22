@@ -255,8 +255,10 @@ export const AUDIT_ACTIONS = [
   // An alert on Tasks' "Needs a hand" marked done, and the message, lead or CRM erasure it gave up on sent again.
   "alert.resolve",
   "alert.send_again",
-  // A hold ops made and let go, since its booking could not go ahead.
+  // A hold ops made and let go, since its booking could not go ahead; and a held booking's payment link Razorpay was
+  // asked to text again.
   "booking.give_back",
+  "booking.link_resend",
   // A visit ops booked for a client from the console: its slot held, and booked at once or sent a payment link. One
   // they cancelled for the client, and one they closed by hand whose technician's phone was lost.
   "visit.book",
