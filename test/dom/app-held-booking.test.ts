@@ -51,12 +51,12 @@ describe("a booking held on its link, on Home", () => {
             starts_at: "2026-11-22T04:30:00.000Z",
             amount: 2150000,
             pay_url: "https://rzp.io/i/held",
-            open_until: "2026-11-22T01:32:00.000Z",
+            open_until: "2026-11-22T01:30:00.000Z",
           },
         ],
       }),
     );
-    expect(page.textContent).toContain(copy.line("first fit", "Sun 22 Nov at 10 am", "7:02 am Sun 22 Nov"));
+    expect(page.textContent).toContain(copy.line("first fit", "Sun 22 Nov at 10 am", "7 am Sun 22 Nov"));
     expect(page.querySelector("a")?.getAttribute("href")).toBe("https://rzp.io/i/held");
     expect(page.textContent).toContain(copy.pay("Rs. 21,500"));
   });

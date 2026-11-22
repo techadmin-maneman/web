@@ -29874,7 +29874,7 @@ export interface components {
                 amount: number;
                 /** @description The link to pay by. */
                 url: string;
-                /** @description The last moment a payment books it; then its time goes back. */
+                /** @description When it is held until; then its time goes back. */
                 open_until: string;
             }[];
         };

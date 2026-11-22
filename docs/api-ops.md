@@ -45539,7 +45539,7 @@ Request body:
           },
           "open_until": {
             "type": "string",
-            "description": "The last moment a payment books it; then its time goes back."
+            "description": "When it is held until; then its time goes back."
           }
         },
         "required": [

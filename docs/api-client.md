@@ -14499,7 +14499,7 @@ Request body:
           },
           "open_until": {
             "type": "string",
-            "description": "The last moment paying it books it."
+            "description": "When it is held until; then its time goes back."
           }
         },
         "required": [

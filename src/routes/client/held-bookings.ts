@@ -22,7 +22,7 @@ const HeldSchema = z
             .openapi({ description: "Its start; null for one held before starts." }),
           amount: z.number().int().openapi({ description: "What it costs them, in paise." }),
           pay_url: z.string().openapi({ description: "The link to pay by." }),
-          open_until: z.string().openapi({ description: "The last moment paying it books it." }),
+          open_until: z.string().openapi({ description: "When it is held until; then its time goes back." }),
         })
         .strict(),
     ),

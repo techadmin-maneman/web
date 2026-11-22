@@ -30,7 +30,7 @@ const HeldSchema = z
     starts_at: z.iso.datetime().nullable(),
     amount: z.number().int().openapi({ description: "What the client pays, in paise, GST included." }),
     url: z.string().openapi({ description: "The link to pay by." }),
-    open_until: z.string().openapi({ description: "The last moment a payment books it; then its time goes back." }),
+    open_until: z.string().openapi({ description: "When it is held until; then its time goes back." }),
   })
   .strict();
 

@@ -21,7 +21,7 @@ export interface HeldBooking {
   /** What the client pays, in paise, GST included. */
   readonly amount: number;
   readonly url: string;
-  /** The last moment a payment for it books it. */
+  /** When it is held until, as the client is told: a payment's grace past it is ours, never shown. */
   readonly openUntil: string;
 }
 
@@ -58,7 +58,7 @@ export async function heldBookingsOf(
 ): Promise<HeldBooking[]> {
   const { results } = await db
     .prepare(
-      `SELECT h.id, h.type, h.date, h.starts_at, h.amount, h.payment_link_url, ${graceEnds("h")} AS open_until
+      `SELECT h.id, h.type, h.date, h.starts_at, h.amount, h.payment_link_url, h.expires_at AS open_until
        FROM slot_holds h JOIN people pe ON pe.id = h.person_id
        WHERE h.person_id = ?1 AND ${OPEN} AND (?3 IS NULL OR h.type = ?3) AND pe.erased_at IS NULL
        ORDER BY h.date, h.starts_at`,
