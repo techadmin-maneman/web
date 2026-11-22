@@ -3,7 +3,7 @@
 /* The board's own column widths; the failure and its reason take the slack. */
 .code {
   /* The board's 148 px held its four-digit codes; a label's serial has seven, so the column holds MM-STD-0004417-B. */
-  --local-piece-code: 176px;
+  --local-piece-code: 172px;
   width: var(--local-piece-code);
   font-variant-numeric: tabular-nums;
   /* A label is read whole, never broken at its hyphens: the failure column gives way. */
