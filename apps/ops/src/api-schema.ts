@@ -4354,7 +4354,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description unavailable: Razorpay would not cancel its link, so it is kept; try again in a minute */
+                /** @description unavailable: Razorpay would not cancel its link or say it is shut, so it is kept; try again */
                 503: {
                     headers: {
                         [name: string]: unknown;

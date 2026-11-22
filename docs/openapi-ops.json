@@ -31935,7 +31935,7 @@
             }
           },
           "503": {
-            "description": "unavailable: Razorpay would not cancel its link, so it is kept; try again in a minute",
+            "description": "unavailable: Razorpay would not cancel its link or say it is shut, so it is kept; try again",
             "content": {
               "application/json": {
                 "schema": {

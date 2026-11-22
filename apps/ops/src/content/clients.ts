@@ -397,7 +397,7 @@ export const clients = {
           hold_expired: "That booking was paid, lapsed or let go already.",
           not_permitted: "Your access doesn’t include this. Ask an admin.",
           not_found: "That booking no longer exists.",
-          unavailable: "Razorpay didn’t answer, so it’s still held. Try again in a minute.",
+          unavailable: "Razorpay couldn’t cancel its link, so it’s still held. Try again in a minute.",
           offline: "You’re offline. Reconnect and try again.",
           unknown: "That didn’t work. Try again.",
         },

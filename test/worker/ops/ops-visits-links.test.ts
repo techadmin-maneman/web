@@ -480,11 +480,31 @@ describe("a booking held on its payment link", () => {
     expect(payments.made.cancelledLinks).toEqual([]);
     expect(payments.made.refunds).toEqual([]);
     expect((await holdOf(first.hold_id))?.state).toBe("held");
-    // Ops see it paid and being booked, as what refuses another first fit.
+    // Ops see it once, as the first fit still to come that refuses another.
     const found = await (
       await call(`/api/clients/${ROHIT}/held-bookings?kind=first_fit`)
-    ).json<{ held: { hold_id: string; paid: boolean }[] }>();
-    expect(found.held).toEqual([expect.objectContaining({ hold_id: first.hold_id, paid: true })]);
+    ).json<{ visit: { kind: string; date: string } | null; held: unknown[] }>();
+    expect(found.visit).toMatchObject({ kind: "first_fit", date: "2026-09-25" });
+    expect(found.held).toEqual([]);
+  });
+
+  it("is let go where Razorpay will not cancel its link because it is cancelled already, and kept where it was paid", async () => {
+    await rohit("consulted");
+    const first = await (await book(firstFit)).json<{ hold_id: string }>();
+    const linkId = (await holdOf(first.hold_id))?.payment_link_id ?? "";
+    // The cancel went through before, but its answer was lost: Razorpay now refuses to cancel it again.
+    const refusing: PaymentsProvider = {
+      ...payments,
+      cancelPaymentLink: () => Promise.reject(new ProviderError(400, "BAD_REQUEST_ERROR", "already cancelled")),
+    };
+    payments.linksNow.set(linkId, { id: linkId, status: "paid", reference_id: null, order_id: "order_1" });
+    expect((await call(`/api/holds/${first.hold_id}/let-go`, "POST", { payments: refusing })).status).toBe(409);
+    expect((await holdOf(first.hold_id))?.state).toBe("held");
+
+    payments.linksNow.set(linkId, { id: linkId, status: "cancelled", reference_id: null, order_id: null });
+    expect((await call(`/api/holds/${first.hold_id}/let-go`, "POST", { payments: refusing })).status).toBe(204);
+    expect((await holdOf(first.hold_id))?.state).toBe("released");
+    expect(payments.made.refunds).toEqual([]);
   });
 
   it("names a consultation still to come as what refuses a one visit", async () => {

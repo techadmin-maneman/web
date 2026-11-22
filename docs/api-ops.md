@@ -5915,7 +5915,7 @@ Let a booking held on its payment link go, its link cancelled and its time freed
 }
 ```
 
-**503**: unavailable: Razorpay would not cancel its link, so it is kept; try again in a minute
+**503**: unavailable: Razorpay would not cancel its link or say it is shut, so it is kept; try again
 
 ```json
 {

@@ -109,7 +109,8 @@ export async function inTheWay(
     oneVisit ? liveVisitOf(db, personId, { type: "consultation", now }) : null,
     heldBookingsOf(db, personId, now, kind),
   ]);
-  if (visit !== null) return { visit: { ...visit, kind }, held };
+  // A visit of the kind still to come counts one paid on its link too (liveVisitOf): it is named once, as the visit.
+  if (visit !== null) return { visit: { ...visit, kind }, held: held.filter((each) => !each.paid) };
   return { visit: consultation === null ? null : { ...consultation, kind: "consultation" }, held };
 }
 
@@ -174,9 +175,24 @@ async function leaseToLetGo(db: D1Database, holdId: string, now: Date): Promise<
 }
 
 /**
+ * Where Razorpay would not cancel a link, what it holds it as now: shut (cancelled, as when a cancel went through but
+ * its answer was lost, or expired), so it takes no payment; or paid. Null where it cannot say.
+ */
+async function linkNow(payments: PaymentsProvider, linkId: string): Promise<"shut" | "paid" | null> {
+  try {
+    const { status } = await payments.paymentLink(linkId);
+    if (status === "paid") return "paid";
+    return status === "cancelled" || status === "expired" ? "shut" : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Lets an unpaid booking held on its link go, its time freed, as ops ask. Its link is cancelled first, under the
  * booking lease: Razorpay will not cancel a link once paid, so a cancelled one takes no payment after, and nothing is
- * refunded. One paid, being booked, or whose link Razorpay will not cancel is kept, its link open.
+ * refunded. A link Razorpay will not cancel because it is cancelled or expired already is let go all the same; one
+ * paid, being booked, or whose link Razorpay will not cancel or say of is kept, its link open.
  */
 export async function letHeldBookingGo(
   db: D1Database,
@@ -195,8 +211,12 @@ export async function letHeldBookingGo(
       try {
         await deps.payments.cancelPaymentLink(hold.payment_link_id);
       } catch (error) {
-        deps.log.warn("hold_link_not_cancelled", { hold_id: holdId, reason: failureReason(error) });
-        return "unavailable";
+        const now = await linkNow(deps.payments, hold.payment_link_id);
+        if (now === "paid") return "closed";
+        if (now === null) {
+          deps.log.warn("hold_link_not_cancelled", { hold_id: holdId, reason: failureReason(error) });
+          return "unavailable";
+        }
       }
     }
     const given = await giveBack({ db, payments: deps.payments, now: written.now }, holdId, written.reason, {

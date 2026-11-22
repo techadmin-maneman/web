@@ -116,7 +116,7 @@ const letGoRoute = opsRoute({
     204: { description: "Let go: its link cancelled and its time freed" },
     404: errorResponse("not_found: no such held booking within the caller's places"),
     409: errorResponse("hold_expired: it was paid, is being booked, lapsed or was let go already"),
-    503: errorResponse("unavailable: Razorpay would not cancel its link, so it is kept; try again in a minute"),
+    503: errorResponse("unavailable: Razorpay would not cancel its link or say it is shut, so it is kept; try again"),
   },
 });
 
