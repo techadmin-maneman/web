@@ -67,6 +67,10 @@ test("keeps to the city picked in the header, with no list of cities of its own"
   await asked;
   await expect(page.getByRole("rowheader", { name: "Imran Qureshi" })).toBeVisible();
   await expect(cityLists).toHaveCount(0);
-  // With nothing left to narrow By city by on a desk, it draws no bar; a phone keeps its order there.
-  await expect(page.getByRole("search", { name: copy.narrow.cities })).toBeHidden();
+  // With nothing left to narrow By city by, a desk draws no bar at all; a phone keeps its order there.
+  const bar = page.getByRole("search", { name: copy.narrow.cities, includeHidden: true });
+  await expect(bar).toHaveCSS("display", "none");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(bar).toHaveCSS("display", "flex");
+  await expect(bar).toBeVisible();
 });
