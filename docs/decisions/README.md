@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0295. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0296. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -50,6 +50,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0284](0284-the-first-screen-and-the-precache.md) A phone app's budget counts its first screen, and its precache has a ceiling of its own
 - [0286](0286-the-icons-are-the-mark.md) The browser's and the home screen's icons are the mark
 - [0288](0288-attribution-and-conversions.md) Attribution and conversions
+- [0295](0295-the-consoles-first-load.md) The console's first load is held to 175 KB
 
 ### Booking and visits
 
@@ -624,3 +625,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0292](0292-room-made-at-booking.md) | Booking moves a draft to make room | 2026-11-22 | accepted |  |
 | [0293](0293-steering-booking-times.md) | Clients are steered to the times that drive least | 2026-11-22 | accepted |  |
 | [0294](0294-learned-drive-times.md) | Drive times are learned from our own drives | 2026-11-22 | accepted |  |
+| [0295](0295-the-consoles-first-load.md) | The console's first load is held to 175 KB | 2026-11-23 | accepted |  |

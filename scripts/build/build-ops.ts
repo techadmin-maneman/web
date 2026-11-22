@@ -1,7 +1,7 @@
 // Builds the ops console for one environment into apps/ops/dist/<environment>,
 // with its _headers (docs/decisions/0026-hosts-and-surfaces.md). Production is
-// refused while its copy is marked PLACEHOLDER, and any build whose JavaScript
-// is over the prompt's 150 KB gzipped fails, as the client app's does
+// refused while its copy is marked PLACEHOLDER, and any build whose first load
+// is over its 175 KB gzipped fails, as the client app's does over its own
 // (scripts/lib/spa-build.ts).
 //
 //   npm run build:ops -- --env staging
