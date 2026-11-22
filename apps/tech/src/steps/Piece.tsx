@@ -26,6 +26,7 @@ import {
   leftAfter,
   profileToMatch,
   noticeFor,
+  opensWithNoLabel,
   pieceBody,
   stillMissing,
   type Choice,
@@ -195,9 +196,9 @@ function LabelRead(props: {
  * The step's form as the technician fills it in, a refused piece's as it was sent; and a label read or typed taken with
  * what follows it (piece-form's labelTaken).
  */
-function usePieceForm(job: Job, sent: PieceSent | null) {
+function usePieceForm(job: Job, sent: PieceSent | null, freeToPick: (choice: Choice) => number) {
   const [code, setCode] = useState(sent?.code ?? "");
-  const [noLabel, setNoLabel] = useState(sent?.noLabel ?? false);
+  const [noLabel, setNoLabel] = useState(() => opensWithNoLabel(sent, freeToPick(choiceSent(sent))));
   const [base, setBase] = useState(sent?.base ?? "");
   const [lot, setLot] = useState(sent?.lot ?? "");
   const [stock, setStock] = useState<string | null>(sent?.stock ?? null);
@@ -233,12 +234,13 @@ function Fitting({
   onFinish: (finish: Finish) => void;
   onBack: () => void;
 }) {
-  const { form, lookup, decide, set, takeLabel } = usePieceForm(job, pieceSent(refused));
+  const matched = { ...job, profile: matchTo };
+  const freeToPick = (picked: Choice) => freeOf(kitChoices(matched, picked)).length;
+  const { form, lookup, decide, set, takeLabel } = usePieceForm(job, pieceSent(refused), freeToPick);
   const { noLabel, stock, choice, later } = form;
   const { looked, looking, look } = lookup;
   const missing = stillMissing(form, job, checkedOf(looked));
   const { noLabel: setNoLabel, stock: setStock, failure: setFailure } = set;
-  const matched = { ...job, profile: matchTo };
   const cannotFit = (
     <CannotFit
       reasons={job.not_fitted_reasons}
@@ -255,7 +257,7 @@ function Fitting({
       action={fitsNothingToday(form, job) ? visit.next(copy.checklistTitles.consultation) : undefined}
       ready={missing === null}
       unfinished={missing ?? undefined}
-      notice={refused === null ? null : noticeFor(refused.fields, refused.body)}
+      notice={refused === null ? null : noticeFor(refused.fields, refused.body, freeToPick(choice))}
       onBack={onBack}
       onAction={() => {
         onFinish({ piece: pieceBody(form, job) });

@@ -148,14 +148,21 @@ export function choiceSent(sent: PieceSent | null): Choice {
   return sent.declined ? DECLINED : sent.product;
 }
 
-/** Why the step is open again: the label the API refused, or the step as a whole. */
-export function noticeFor(refusedFields: readonly string[], sent: unknown = null): string {
+/**
+ * Why the step is open again: the label the API refused, or the step as a whole. A hair system picked with no label is
+ * refused only where the kit holds none of it that may be fitted: pick another, or, with nothing left to pick, scan.
+ */
+export function noticeFor(refusedFields: readonly string[], sent: unknown = null, freeToPick = 1): string {
   const aLabel = refusedFields.some((field) => field === "piece_code" || field === "old_piece");
   if (aLabel) return copy.corrected.piece;
-  // A hair system picked with no label is refused only where the kit holds none of it that may be fitted.
   const noLabel = typeof sent === "object" && sent !== null && "no_label" in sent && sent.no_label === true;
-  return noLabel && refusedFields.includes("stock_code") ? copy.corrected.noneToFit : copy.corrected.other;
+  if (!noLabel || !refusedFields.includes("stock_code")) return copy.corrected.other;
+  return freeToPick > 0 ? copy.corrected.noneToFit : copy.corrected.noneLeft;
 }
+
+/** Whether a step reopens picking a piece with no label: as it was sent, while the kit holds one free to pick. */
+export const opensWithNoLabel = (sent: { readonly noLabel: boolean } | null, freeToPick: number): boolean =>
+  sent?.noLabel === true && freeToPick > 0;
 
 /** The piece of the kit a label names, with the hair system it is; null for a label no piece in the kit carries. */
 function kitPieceOf(

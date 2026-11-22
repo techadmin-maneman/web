@@ -10,6 +10,7 @@ import {
   kitChoices,
   labelTaken,
   noticeFor,
+  opensWithNoLabel,
   pieceBody,
   profileToMatch,
   stillMissing,
@@ -173,6 +174,15 @@ describe("the piece step", () => {
     expect(noticeFor(["stock_code"], { no_label: true, stock_code: "hs_exact" })).toBe(copy.corrected.noneToFit);
     expect(noticeFor(["stock_code"], { piece_code: LABEL, stock_code: "hs_exact" })).toBe(copy.corrected.other);
     expect(noticeFor(["piece_code"], { no_label: true })).toBe(copy.corrected.piece);
+  });
+
+  it("reopens a refused pick on the scanner, saying so, once nothing in the kit is free to pick", () => {
+    const refused = { no_label: true, stock_code: "hs_exact" };
+    expect(noticeFor(["stock_code"], refused, 0)).toBe(copy.corrected.noneLeft);
+    expect(opensWithNoLabel({ noLabel: true }, 0)).toBe(false);
+    expect(opensWithNoLabel({ noLabel: true }, 2)).toBe(true);
+    expect(opensWithNoLabel({ noLabel: false }, 2)).toBe(false);
+    expect(opensWithNoLabel(null, 2)).toBe(false);
   });
 
   it("sends the hair system picked from the kit", () => {
