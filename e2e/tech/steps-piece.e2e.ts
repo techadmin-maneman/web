@@ -160,6 +160,7 @@ test.describe("the hair system step", () => {
   test("fits a piece with no label as the hair system picked from the kit, sending no label", async ({ page }) => {
     const fake = await onThePiece(page);
     await page.getByRole("button", { name: techCopy.steps.piece.noLabel, exact: true }).click();
+    await expect(page.getByRole("heading", { level: 2, name: techCopy.steps.piece.pickTitle })).toBeVisible();
     await expect(page.getByText(techCopy.steps.piece.noLabelNote)).toBeVisible();
     // The kit's labelled hair system is listed too, and Next waits for one to be picked.
     const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
@@ -181,6 +182,7 @@ test.describe("the hair system step", () => {
     await onThePiece(page);
     await page.getByRole("button", { name: techCopy.steps.piece.noLabel, exact: true }).click();
     await page.getByRole("button", { name: techCopy.steps.piece.scanInstead }).click();
+    await expect(page.getByRole("heading", { level: 2, name: techCopy.steps.piece.scanTitle })).toBeVisible();
     await expect(page.getByRole("button", { name: techCopy.steps.piece.typeCode })).toBeVisible();
   });
 

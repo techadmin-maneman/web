@@ -16,7 +16,7 @@ import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
 import type { Looked } from "./PieceFields.tsx";
-import { cameOff, cameOffEarly, given, type Choice } from "./piece-form.ts";
+import { cameOff, cameOffEarly, given, type Choice, type PieceForm } from "./piece-form.ts";
 import { CameOffEarly } from "./CameOffEarly.tsx";
 import styles from "./piece-scan.module.css";
 
@@ -62,23 +62,23 @@ function Row({ name, last = false, children }: { name: string; last?: boolean; c
 
 /**
  * What is expected: the product, the spec it is made to, and on a replacement the piece it replaces, with why it came
- * off where that was before it was due.
+ * off where that was before it was due. Headed to scan the piece, or to pick it where it has no label.
  */
 export function Expected(props: {
   job: Job;
+  form: Pick<PieceForm, "noLabel" | "choice" | "failure">;
   fit: MatchFit | null;
-  choice: Choice;
-  failure: string | null;
   onFailure: (reason: string | null) => void;
 }) {
-  const { job, fit, choice } = props;
+  const { job, fit } = props;
+  const { noLabel, choice, failure } = props.form;
   const product = productName(job, choice);
   const spec = fit === null ? "" : specOf(fit);
   const old = cameOff(job);
   const inProfile = profileNamesAnother(job);
   return (
     <>
-      <h2 className={styles.title}>{copy.scanTitle}</h2>
+      <h2 className={styles.title}>{noLabel ? copy.pickTitle : copy.scanTitle}</h2>
       <dl className={styles.rows}>
         {product !== null && <Row name={productKey(job)}>{sayKnown(product)}</Row>}
         {spec !== "" && <Row name={copy.expected.spec}>{spec}</Row>}
@@ -88,9 +88,7 @@ export function Expected(props: {
           </Row>
         )}
       </dl>
-      {cameOffEarly(job) && (
-        <CameOffEarly reasons={job.failure_reasons} picked={props.failure} onPick={props.onFailure} />
-      )}
+      {cameOffEarly(job) && <CameOffEarly reasons={job.failure_reasons} picked={failure} onPick={props.onFailure} />}
       {inProfile !== null && (
         <p className={styles.warn} role="alert">
           {jobCopy.piece.mismatch(inProfile)}

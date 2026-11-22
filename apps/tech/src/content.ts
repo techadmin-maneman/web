@@ -852,6 +852,7 @@ export const steps = localised({
     typeCode: "Type the code",
     // Our words: the prototype draws no piece without a label (docs/decisions/0291-pieces-without-labels.md).
     noLabel: "No label on it",
+    pickTitle: "Pick the hair system",
     noLabelNote: "Pick the hair system from your kit below. It gets a code of its own.",
     scanInstead: "Scan the label instead",
     pickFromKit: "Pick the hair system from your kit",

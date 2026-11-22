@@ -214,7 +214,7 @@ function Fitting({
   onBack: () => void;
 }) {
   const { form, lookup, decide, set, takeLabel } = usePieceForm(job, pieceSent(refused));
-  const { noLabel, stock, failure, choice, later } = form;
+  const { noLabel, stock, choice, later } = form;
   const { looked, looking, look } = lookup;
   const missing = stillMissing(form, job, checkedOf(looked));
   const setNoLabel = set.noLabel;
@@ -246,7 +246,7 @@ function Fitting({
       {job.one_visit && <Asked job={job} decided={{ choice, later }} decide={decide} />}
       {fitsToday && (
         <div className={styles.scan}>
-          <Expected job={job} fit={matchTo?.fit ?? null} choice={choice} failure={failure} onFailure={setFailure} />
+          <Expected job={job} form={form} fit={matchTo?.fit ?? null} onFailure={setFailure} />
           {/* With no label to read, the hair system is picked from the kit below. */}
           {noLabel ? (
             <NoLabel

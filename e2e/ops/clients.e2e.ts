@@ -323,10 +323,10 @@ test("marks a piece fitted with no label, under the label made for it", async ({
   await openClient(page, `/clients/${CLIENT.id}/pieces`, {
     [READ_PIECES]: json({ ...PIECES, pieces: [made, ...before] }),
   });
-  await expect(page.getByRole("row").filter({ hasText: made.piece_code })).toContainText(
-    opsCopy.clients.pieces.madeLabel(made.piece_code),
+  await expect(page.getByRole("rowheader", { name: made.piece_code })).toContainText(opsCopy.clients.pieces.noLabel);
+  await expect(page.getByRole("rowheader", { name: "MM-STD-4417-B" })).not.toContainText(
+    opsCopy.clients.pieces.noLabel,
   );
-  await expect(page.getByRole("row").filter({ hasText: "MM-STD-4417-B" })).not.toContainText("no label");
 });
 
 test("says so when the client has no piece yet", async ({ page }) => {

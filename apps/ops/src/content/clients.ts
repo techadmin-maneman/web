@@ -737,10 +737,10 @@ export const clients = {
     /** A piece another took the place of: "Replaced 24 Jun". */
     replaced: (date: string) => `Replaced ${date}`,
     /**
-     * A piece fitted with no label on it, under the code made for it, which can be written on it later
-     * (docs/decisions/0291-pieces-without-labels.md): "MM-NL-0004417-K · no label".
+     * Beneath a piece fitted with no label on it, under the code made for it, which can be written on it later
+     * (docs/decisions/0291-pieces-without-labels.md).
      */
-    madeLabel: (code: string) => `${code} · no label`,
+    noLabel: "No label",
     /** Marking one failed, and taking that back, for the reasons atFault offers. Our words. */
     failure: {
       mark: "Mark failed",
