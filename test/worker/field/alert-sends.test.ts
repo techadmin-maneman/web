@@ -148,7 +148,12 @@ describe("the cron's alerts", () => {
     const inputs = await createCachedOpsInputs()(env.DB, NOW);
     return {
       unlockHour: inputs.addressUnlockHour,
-      rules: { booking: inputs.bookingRules, drive: inputs.driveEstimate },
+      rules: {
+        booking: inputs.bookingRules,
+        drive: inputs.driveEstimate,
+        times: inputs.driveTimes,
+        learning: inputs.driveLearning,
+      },
       leaveNoticeMin: inputs.leaveNoticeMin,
     };
   };

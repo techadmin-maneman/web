@@ -10,6 +10,7 @@ import { jobsOn } from "../../../src/domain/field/tech-jobs.ts";
 import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
 import { DRIVE_ESTIMATE } from "../../../src/policy/drive-estimate.ts";
+import { DRIVE_LEARNING, DRIVE_TIMES } from "../../../src/policy/learned-drives.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 import { aConsent } from "../fixtures/index.ts";
 import { markDatabase, NOW } from "../helpers.ts";
@@ -107,7 +108,7 @@ describe("a draft's technician", () => {
       date: "2026-09-23",
       now: NOW,
       unlockHour: 18,
-      rules: { booking: BOOKING_RULES, drive: DRIVE_ESTIMATE },
+      rules: { booking: BOOKING_RULES, drive: DRIVE_ESTIMATE, times: DRIVE_TIMES, learning: DRIVE_LEARNING },
     });
 
   it("is not named to the client, nor on the technician's list, until it is fixed", async () => {

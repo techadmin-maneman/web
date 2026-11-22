@@ -31,7 +31,12 @@ export async function techAlertsJob(context: CronContext): Promise<void> {
     const given = await inputs();
     return {
       unlockHour: given.addressUnlockHour,
-      rules: { booking: given.bookingRules, drive: given.driveEstimate },
+      rules: {
+        booking: given.bookingRules,
+        drive: given.driveEstimate,
+        times: given.driveTimes,
+        learning: given.driveLearning,
+      },
       leaveNoticeMin: given.leaveNoticeMin,
     };
   };

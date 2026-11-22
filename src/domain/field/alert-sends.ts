@@ -8,12 +8,10 @@ import { statusIn, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts"
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
-import type { DriveEstimate } from "../../policy/drive-estimate.ts";
-import type { BookingRules } from "../../policy/start-times.ts";
 import { INBOX_DAYS, leaveDue, PUSH_TTL_SECONDS, runsOver, type AlertKind } from "../../policy/tech-alerts.ts";
 import type { Push } from "../../providers/web-push.ts";
 import { alertSettingsOf } from "./alert-settings.ts";
-import { jobsOn, type DayJob } from "./tech-jobs.ts";
+import { jobsOn, type DayJob, type JobRules } from "./tech-jobs.ts";
 
 /** A job still to do, as a query asks. */
 const toDo = (column: string): string => statusIn(column, VISIT_LIVE);
@@ -119,7 +117,7 @@ async function workingOn(db: D1Database, date: string): Promise<string[]> {
 /** What the day's list is read with, the hour a job unlocks and the booking and drive rules, and the leave notice. */
 export interface DayRules {
   readonly unlockHour: number;
-  readonly rules: { readonly booking: BookingRules; readonly drive: DriveEstimate };
+  readonly rules: JobRules;
   readonly leaveNoticeMin: number;
 }
 
