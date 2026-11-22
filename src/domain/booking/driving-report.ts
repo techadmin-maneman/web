@@ -12,7 +12,7 @@ import { drivesDone, type CityDrive } from "./learn-drives.ts";
 export type DrivingBy = "day" | "week";
 
 /** The drives of one technician, or one city, on a day or in a week. */
-export interface DrivingRow {
+interface DrivingRow {
   /** The day, or the Monday its week starts on. */
   readonly period: string;
   readonly drives: number;

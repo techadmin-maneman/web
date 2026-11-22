@@ -33,7 +33,7 @@ const failedIn =
   };
 
 /** One of the days ahead in turn, re-planned each hour to cut driving before its drafts are fixed. */
-export async function replanDraftsJob({ env, deps, log, inputs }: CronContext): Promise<void> {
+async function replanDraftsJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const now = deps.now();
   const given = await inputs();
   const moved = await replanAhead(env.DB, now, {
@@ -86,7 +86,7 @@ export async function eveningCheckJob({ env, deps, inputs, config, log }: CronCo
 }
 
 /** Each night, every city's drive times learned afresh from the weeks of drives ops set. */
-export async function learnDrivesJob({ env, deps, log, inputs }: CronContext): Promise<void> {
+async function learnDrivesJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const given = await inputs();
   const learned = await learnDrives(env.DB, {
     now: deps.now(),
