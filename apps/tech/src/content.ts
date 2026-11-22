@@ -1163,8 +1163,9 @@ export const profile = localised({
     front_to_nape_in: "Front to nape",
     ear_to_ear_in: "Ear to ear",
     temple_to_temple_in: "Temple to temple",
-    base_width_in: "Width",
-    base_length_in: "Length",
+    // Which way each runs, as a stock code reads them, width by length: 8×10 is 8 side to side and 10 front to back.
+    base_width_in: "Width (side to side)",
+    base_length_in: "Length (front to back)",
   },
   stages: { I: "I", II: "II", III: "III", IV: "IV", V: "V", VI: "VI", VII: "VII" } satisfies Words<"norwood_stage">,
   colours: {
@@ -1195,7 +1196,8 @@ export const profile = localised({
     other_systems: "Other hair systems",
     other: "Other",
   } satisfies Record<History["remedies"][number], string>,
-  range: (min: number, max: number) => `${String(min)}–${String(max)}`,
+  /** "15.5–28 in" */
+  range: (min: number, max: number) => `${String(min)}–${String(max)} in`,
   greyRange: (min: number, max: number) => `${String(min)}–${String(max)}%`,
   yearRange: (first: number, last: number) => `${String(first)}–${String(last)}`,
   checkFigures: "Check the figures to continue",

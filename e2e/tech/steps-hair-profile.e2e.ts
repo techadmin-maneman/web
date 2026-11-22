@@ -162,10 +162,12 @@ test.describe("the client’s hair profile", () => {
     await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
     const circumference = page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_in });
     // A figure says nothing beneath it until it is out of range.
+    // Inches, as the section's title says: "15.5–28 in".
+    const range = techCopy.profile.range(15.5, 28);
     await expect(circumference).toHaveAccessibleDescription("");
-    await expect(page.getByText("15.5–28")).toHaveCount(0);
+    await expect(page.getByText(range)).toHaveCount(0);
     await circumference.fill("90");
-    await expect(circumference).toHaveAccessibleDescription("15.5–28");
+    await expect(circumference).toHaveAccessibleDescription(range);
     const named = techCopy.profile.checkFigure(techCopy.profile.measurements.head_circumference_in);
     await expect(page.getByText(named, { exact: true })).toBeVisible();
     await expect(stepAction(page)).toBeDisabled();
