@@ -3,6 +3,7 @@
 // line names the custom order. It is drafted, and approved and sent as any order is (./purchase-orders.ts). Drafted
 // once: a second word of the same payment finds the order drafted already.
 
+import { failedUniqueOn } from "../../lib/d1-errors.ts";
 import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { addHairSystem, hairSystemSpecs, matchingCode } from "../inventory/hair-systems.ts";
 import type { Written } from "../platform/audit.ts";
@@ -22,26 +23,35 @@ type PaidRow = {
   po_id: string | null;
 };
 
-/** The stock code made exactly to the order's spec: the one ranged already, else one added for it. */
+/**
+ * The stock code made exactly to the order's spec: the one ranged already, else one added for it. Where another try
+ * added the same spec that moment, it is refused, or its write is, and the code that try added is this order's too.
+ */
 async function codeFor(db: D1Database, order: PaidRow, written: Written): Promise<string | null> {
   const found = matchingCode(await hairSystemSpecs(db), order);
   if (found !== null) return found;
-  const added = await addHairSystem(
-    db,
-    {
-      product: order.product,
-      baseWidthIn: order.base_width_in,
-      baseLengthIn: order.base_length_in,
-      colour: order.colour,
-      greyPercent: order.grey_percent,
-      densityPercent: order.density_percent,
-      unitCost: 0,
-      reorderKit: null,
-      reorderCentral: null,
-    },
-    written,
-  );
-  return added.ok ? added.code : null;
+  try {
+    const added = await addHairSystem(
+      db,
+      {
+        product: order.product,
+        baseWidthIn: order.base_width_in,
+        baseLengthIn: order.base_length_in,
+        colour: order.colour,
+        greyPercent: order.grey_percent,
+        densityPercent: order.density_percent,
+        unitCost: 0,
+        reorderKit: null,
+        reorderCentral: null,
+      },
+      written,
+    );
+    if (added.ok) return added.code;
+  } catch (error) {
+    // A stock code or name another try took first: its spec is this order's.
+    if (!failedUniqueOn(error, "consumables")) throw error;
+  }
+  return matchingCode(await hairSystemSpecs(db), order);
 }
 
 /** The paid order's purchase order, drafted where none is yet. Whether the order has one now. */

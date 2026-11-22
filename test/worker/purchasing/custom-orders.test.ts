@@ -13,6 +13,7 @@ import { createStubPayments, type StubPayments } from "../../../src/providers/pa
 import { catchUpWithRazorpay } from "../../../src/domain/money/razorpay-catch-up.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
+import { draftCustomOrderPo } from "../../../src/domain/purchasing/custom-order-po.ts";
 import { asClient, signedIn } from "../clients.ts";
 import { aHold } from "../fixtures/index.ts";
 import { A_NUMBER, captureLogs, deliverRazorpay, markDatabase, NOW, request } from "../helpers.ts";
@@ -207,6 +208,22 @@ describe("a custom order's money, wherever it goes", () => {
     expect((await orders()).orders[0]?.status).toBe("cancelled");
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM purchase_orders").first<number>("n")).toBe(0);
     expect(await alertKeys()).toContain("custom_order_payment_stranded:pay_custom_1");
+  });
+
+  it("paid, is drafted once however many tries race to draft it, its new stock code added once", async () => {
+    const [order] = (await (await raise()).json<Orders>()).orders;
+    const id = order?.id ?? "";
+    await env.DB.prepare("UPDATE custom_orders SET state = 'paid', paid_at = ?2 WHERE id = ?1")
+      .bind(id, NOW.toISOString())
+      .run();
+    const written = { actor: { kind: "system", id: "custom-order" }, requestId: "race", now: NOW } as const;
+    const drafted = await Promise.all([
+      draftCustomOrderPo(env.DB, id, written),
+      draftCustomOrderPo(env.DB, id, written),
+    ]);
+    expect(drafted).toEqual([true, true]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM purchase_orders").first<number>("n")).toBe(1);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM po_lines").first<number>("n")).toBe(1);
   });
 
   it("paid, tells ops to order its piece by hand where its purchase order could not be drafted", async () => {
