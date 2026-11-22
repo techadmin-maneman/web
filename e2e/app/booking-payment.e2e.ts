@@ -255,6 +255,20 @@ test("picks another time when one has just gone, and pays for that one", async (
   ).toBeVisible();
 });
 
+test("says a client has held all the times they may this hour, and keeps the time picked", async ({ page }) => {
+  await page.route("**/api/holds", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 429, json: { error: { code: "rate_limited", request_id: "e2e" } } })
+      : route.fallback(),
+  );
+  await toWindows(page);
+  const windows = page.getByRole("dialog", { name: appCopy.booking.when.title });
+  await windows.locator(OPEN_TIMES).first().click();
+  await windows.getByRole("button", { name: appCopy.booking.when.continue, exact: true }).click();
+  await expect(windows.getByRole("alert")).toHaveText(appCopy.booking.heldTooOften);
+  await expect(windows.getByRole("button", { name: appCopy.booking.when.continue, exact: true })).toBeEnabled();
+});
+
 test("keeps the time picked while the day’s times are still being asked for again", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);

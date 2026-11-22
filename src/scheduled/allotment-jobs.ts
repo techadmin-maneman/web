@@ -9,7 +9,6 @@ import { EVENING_DRIVES, eveningCheck } from "../domain/booking/evening-check.ts
 import { learnDrives } from "../domain/booking/learn-drives.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { createCallBudget } from "../lib/call-budget.ts";
-import { indiaDate } from "../lib/india-time.ts";
 import { replanDay } from "../domain/booking/replan-day.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import type { CronContext, CronJob } from "./cron.ts";
@@ -28,17 +27,14 @@ function once<T>(read: () => Promise<T>): () => Promise<T> {
 /** How long a check before the lock asks Google for drives, after which the estimate stands, as the cron's calls stop. */
 const EVENING_DRIVES_FOR_MS = 20_000;
 
-/**
- * A city whose drafts could not be re-planned: logged with why, and Admin told once that day, as its drafts keep their
- * technicians and the lock fixes them as they stand.
- */
+/** A city whose drafts on a day could not be re-planned: logged with why, and Operations told once for that day. */
 export const failedIn =
   ({ log, deps }: Pick<CronContext, "log" | "deps">) =>
-  async (city: string, error: unknown): Promise<void> => {
-    log.warn("replan_failed", { city, error: error instanceof Error ? error.message : String(error) });
+  async (city: string, date: string, error: unknown): Promise<void> => {
+    log.warn("replan_failed", { city, date, error: error instanceof Error ? error.message : String(error) });
     await deps.alertOnce({
-      key: `replan_failed:${city}:${indiaDate(deps.now())}`,
-      message: ALERT_WORDS.replan_failed({ city }),
+      key: `replan_failed:${city}:${date}`,
+      message: ALERT_WORDS.replan_failed({ city, day: date }),
       link: "/dispatch",
     });
   };

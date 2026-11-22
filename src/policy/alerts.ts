@@ -133,6 +133,8 @@ const OPERATIONS_KINDS = [
   "replaced_after_begun",
   // A drive Google's traffic leaves too little room for, fixed as it stands at the evening's lock.
   "leg_short",
+  // A city's drafts on a day not re-planned this hour, for ops to look over on Dispatch.
+  "replan_failed",
 ];
 
 const DEPARTMENT_OF_KIND: ReadonlyMap<string, Department> = new Map([

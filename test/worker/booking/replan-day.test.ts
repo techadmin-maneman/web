@@ -301,14 +301,14 @@ describe("each hour's re-plan", () => {
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
   });
 
-  it("tells Admin once a day of a city whose drafts could not be re-planned", async () => {
+  it("tells Operations once of a city whose drafts on a day could not be re-planned", async () => {
     const midnight = indiaInstant("2026-09-21", "00:20");
     const failed = failedIn({ log: createLogger(), deps: fakeDependencies({ now: () => midnight }) });
-    await failed("Noida", new Error("D1 overloaded"));
-    await failed("Noida", new Error("D1 overloaded"));
+    await failed("Noida", TUESDAY, new Error("D1 overloaded"));
+    await failed("Noida", TUESDAY, new Error("D1 overloaded"));
     const { results } = await env.DB.prepare("SELECT key, message FROM alerts WHERE key LIKE 'replan_failed:%'").all();
     expect(results).toEqual([
-      { key: "replan_failed:Noida:2026-09-21", message: ALERT_WORDS.replan_failed({ city: "Noida" }) },
+      { key: `replan_failed:Noida:${TUESDAY}`, message: ALERT_WORDS.replan_failed({ city: "Noida", day: TUESDAY }) },
     ]);
   });
 
