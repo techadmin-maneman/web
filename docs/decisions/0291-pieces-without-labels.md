@@ -18,11 +18,12 @@ hair system's top-up arriving in the kit was received only by scanning each of i
    from their kit, any of it, labelled or not, and Next goes. The step sends `no_label` and the stock code, no label.
 2. **The piece is recorded under a label made for it** (`src/domain/inventory/made-labels.ts`): MM, NL for no label, a
    seven-digit serial drawn from the visit and its check letter, as our labels are made. The same visit always makes
-   the same label, so a step sent again records one piece; one another visit's piece carries is passed over. Every
-   reader of a piece keeps working on a label: the client's pieces, a replacement's piece coming off, failures,
-   recalls and supplier claims. Ops can write it on the piece, or print it, later.
+   the same label, so a step sent again records one piece; one another visit's piece or a unit of stock carries is
+   passed over. Every reader of a piece keeps working on a label: the client's pieces, a replacement's piece coming
+   off, failures, recalls and supplier claims. Ops can write it on the piece, or print it, later.
 3. **The piece leaves the kit as fitted** (`src/domain/inventory/piece-use.ts`): one of the hair system's pieces,
-   unlabelled first, as a label we never made takes one, but fitted, not gone missing.
+   unlabelled first, as a label we never made takes one, but fitted, not gone missing. A unit so taken carries the
+   made label from then on, since a recall, a warranty and a supplier's failures find a unit's piece by its label.
 4. **A top-up is received whole without scanning** (`apps/tech/src/kit/Arriving.tsx`): "No labels? Receive all", as
    the API already allowed.
 5. **The console marks a made label** on the client's pieces: "MM-NL-0004417-K · no label".
@@ -30,5 +31,7 @@ hair system's top-up arriving in the kit was received only by scanning each of i
 ## Consequences
 
 - The pieces table keeps its label required, and no reader of it changes.
+- A piece never labelled, taken where the kit has one, has no unit, so a recall of its lot does not find it; that was
+  so before, for any piece fitted under a label we never made.
 - A fit with no label tells nobody: the piece is fitted and recorded. Whether ops want a task to label such a piece at
   its next visit is left for later.

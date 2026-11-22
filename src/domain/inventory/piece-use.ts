@@ -6,8 +6,10 @@
 // The piece is the unit its label names, where the kit holds it, and that unit is fitted
 // (docs/decisions/0161-pieces-as-units.md). A label we never made takes a piece never labelled, or failing one, a unit,
 // which has then gone missing. A piece with no label at all (docs/decisions/0291-pieces-without-labels.md) takes one the
-// same way, and it is fitted. A correction puts the units the visit took back in the kit. A piece that came off is
-// held in the kit as returned (src/domain/inventory/piece-returns.ts).
+// same way, and it is fitted; a unit so taken carries the label made for the piece from then on, so a recall, a
+// warranty or a supplier's failures, which find a unit's piece by its label, still find it. A correction puts the units
+// the visit took back in the kit. A piece that came off is held in the kit as returned
+// (src/domain/inventory/piece-returns.ts).
 
 import { useStillToRecord } from "../../policy/stock.ts";
 import { latestStep, takenFor, takenFromKit } from "../field/job-use.ts";
@@ -61,6 +63,26 @@ async function pieceMove(
       ? takesOf(results.map((row) => ({ lotId: row.lot_id })))
       : await givenBackToLots(db, { jobId: move.jobId, kit, code: move.code, quantity: move.quantity });
   return { units: results.map((row) => row.id), takes, state: "held" };
+}
+
+/**
+ * A unit fitted where the piece had no label to read takes the label made for it, unless another unit carries that
+ * label already, when the fit still lands and the unit keeps its own.
+ */
+function relabelled(
+  db: D1Database,
+  fit: { readonly moves: Iterable<PieceMove>; readonly label: string | null; readonly jobId: string },
+): D1PreparedStatement[] {
+  if (fit.label === null) return [];
+  const units = [...fit.moves].flatMap((move) => (move.state === "fitted" ? move.units : []));
+  return units.map((unit) =>
+    db
+      .prepare(
+        `UPDATE stock_units SET code = ?1 WHERE id = ?2 AND state = 'fitted' AND appointment_id = ?3
+           AND NOT EXISTS (SELECT 1 FROM stock_units WHERE code = ?1)`,
+      )
+      .bind(fit.label, unit, fit.jobId),
+  );
 }
 
 /** The piece a replacement's step names as come off, with why where it failed; null for none. */
@@ -136,7 +158,14 @@ export async function recordPieceUse(
       actor: technicianId,
     }),
   );
-  const results = await db.batch<{ quantity: number }>([...taken.movements, ...taken.lots, ...units, ...returned]);
+  const labels = noLabel ? relabelled(db, { moves: moves.values(), label, jobId }) : [];
+  const results = await db.batch<{ quantity: number }>([
+    ...taken.movements,
+    ...taken.lots,
+    ...units,
+    ...labels,
+    ...returned,
+  ]);
   const moved = results.slice(0, taken.movements.length).flatMap((result) => result.results);
   return { lowered: moved.some((row) => row.quantity < 0) };
 }

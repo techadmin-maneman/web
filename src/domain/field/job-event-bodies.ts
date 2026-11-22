@@ -233,8 +233,7 @@ export function pieceBodyOf(body: unknown): PieceBody | null {
 type NothingFitted = z.infer<typeof PieceDeclinedSchema> | z.infer<typeof PieceLaterSchema>;
 
 /** Whether a one visit's piece step fitted nothing that day: the client decided against it, or booked it for later. */
-export const fitsNothing = (piece: PieceBody): piece is NothingFitted =>
-  "declined" in piece || "fit_later" in piece;
+export const fitsNothing = (piece: PieceBody): piece is NothingFitted => "declined" in piece || "fit_later" in piece;
 
 /** The lines a stored consumables step names; none for a body that is not one. */
 export function usedLinesOf(body: unknown): UsedLine[] {

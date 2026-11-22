@@ -3,11 +3,13 @@
 // 2026, 12 noon in India.
 //
 // What these hold: the job card lists each kit hair system's labelled pieces; a label one of them carries names its
-// hair system and lot whatever the step said; an expired one is refused; and a piece that comes off at a replacement is
-// held in the kit as returned, its unit with it where it is one of ours.
+// hair system and lot whatever the step said; an expired one is refused; a piece with no label is fitted from the kit
+// under a label made for it, which its unit then carries (docs/decisions/0291-pieces-without-labels.md); and a piece
+// that comes off at a replacement is held in the kit as returned, its unit with it where it is one of ours.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { madeLabel } from "../../../src/domain/inventory/made-labels.ts";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
@@ -124,11 +126,27 @@ describe("a piece with no label", () => {
       { state: "fitted", n: 1 },
       { state: "held", n: 1 },
     ]);
+    // The unit fitted carries the made label, so a recall of its lot finds the piece by it.
+    const fitted = () =>
+      env.DB.prepare("SELECT code FROM stock_units WHERE consumable_code = ?1 AND state = 'fitted'")
+        .bind(code)
+        .first<string>("code");
+    expect(await fitted()).toBe(first.piece_code);
 
     expect(
       (await job.post(`/api/tech/jobs/${JOB}/piece`, { no_label: true, stock_code: code }, "event-piece-02")).status,
     ).toBe(202);
     expect((await recorded()).piece_code).toBe(first.piece_code);
+    expect(await fitted()).toBe(first.piece_code);
+  });
+
+  it("is made a label no unit of stock carries already", async () => {
+    const own = await madeLabel(env.DB, JOB);
+    const [label = ""] = await inTheKit(code, {});
+    await env.DB.prepare("UPDATE stock_units SET code = ?1 WHERE code = ?2").bind(own, label).run();
+    const made = await madeLabel(env.DB, JOB);
+    expect(made).not.toBe(own);
+    expect(made).toMatch(/^MM-NL-\d{7}-[A-Z]$/);
   });
 
   it("is refused with no hair system picked, with a label sent as well, or with neither label nor none", async () => {
