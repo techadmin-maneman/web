@@ -8,7 +8,9 @@ import { holdSlot } from "../../../src/domain/booking/hold-slot.ts";
 import { startOffers, type StartVisit } from "../../../src/domain/booking/start-offers.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
-import { markDatabase, NOW } from "../helpers.ts";
+import { LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
+import type { DriveCheck } from "../../../src/domain/booking/drive-check.ts";
+import type { RoutesProvider } from "../../../src/providers/routes/index.ts";
 import { aHold } from "../fixtures/index.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 
@@ -140,6 +142,52 @@ describe("room made at booking", () => {
     expect(await holdEleven([locked])).toBeNull();
     expect(await draftRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first("n")).toBe(0);
+  });
+
+  it("asks Google of the drives either side on the day without the draft it moves", async () => {
+    // Anjali's draft at 12:15 leaves Imran no time to reach her from Rohit's at 11, so it moves to make room. Every
+    // drive is five minutes but one to or from her door, three hours: the day with her draft still on it fails.
+    await env.DB.prepare("UPDATE appointments SET window_start = ?2, window_end = ?3 WHERE id = ?1")
+      .bind(draft, indiaInstant(TUESDAY, "12:15").toISOString(), indiaInstant(TUESDAY, "13:45").toISOString())
+      .run();
+    expect(await atEleven()).toEqual([{ technician: IMRAN, draft, to: SANDEEP }]);
+    const routes: RoutesProvider = {
+      route: (stops) =>
+        Promise.resolve({
+          ok: true,
+          legs: stops.slice(1).map((to, at) => {
+            const anjalis = to.lat === 28.55 || stops[at]?.lat === 28.55;
+            return { seconds: (anjalis ? 180 : 5) * 60, meters: 1000 };
+          }),
+          polyline: null,
+        }),
+      map: () => Promise.resolve({ ok: false, detail: "no map here" }),
+      areaMap: () => Promise.resolve({ ok: false, detail: "not drawn here" }),
+    };
+    const drives: DriveCheck = {
+      routes,
+      alert: () => Promise.resolve(),
+      settings: LOCAL_SETTINGS,
+      refused: () => Promise.resolve(),
+      answered: () => Promise.resolve(),
+    };
+    const hold = await holdSlot({
+      db: env.DB,
+      input: {
+        personId: rohit,
+        service: SERVICE,
+        date: TUESDAY,
+        window: "morning",
+        price: FREE,
+        pincode: "122018",
+        startsAt: indiaInstant(TUESDAY, "11:00"),
+      },
+      now: NOW,
+      holdSeconds: 600,
+      drives,
+    });
+    expect(hold?.technician.id).toBe(IMRAN);
+    expect(await draftRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
   });
 
   it("falls to the next technician's room where the first one's draft was fixed between the look and the write", async () => {
