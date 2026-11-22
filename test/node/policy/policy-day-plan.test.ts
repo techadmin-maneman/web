@@ -71,6 +71,9 @@ describe("a day's starts", () => {
     const near = { minutes: 60, pin: north(10), fit: false };
     expect(placedAt(empty, near, minuteOf("10:00"), RULES)?.addedDrive).toBe(20);
     expect(placedAt({ ...empty, home: null }, near, minuteOf("10:00"), RULES)?.addedDrive).toBe(0);
+    // A visit with no pin after a stop far from home: the drive home is left as it was, never taken below nought.
+    const far = { ...DAY, stops: [{ start: minuteOf("09:30"), end: minuteOf("11:00"), pin: north(40), fit: false }] };
+    expect(placedAt(far, { minutes: 60, pin: null, fit: false }, minuteOf("16:00"), RULES)?.addedDrive).toBe(10);
   });
 
   it("start no earlier than the earliest asked for, on the step", () => {

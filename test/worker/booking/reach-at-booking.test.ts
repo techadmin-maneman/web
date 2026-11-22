@@ -60,13 +60,15 @@ describe("reach at booking", () => {
     expect(await offered(rohit)).toEqual([IMRAN, SANDEEP].sort());
   });
 
-  it("sends someone into their ring only behind those whose radius takes the address in", async () => {
-    await home(IMRAN, 28.4955, 77.0266);
-    await home(SANDEEP, 28.5674, 77.0266);
-    const starts = await tuesday(rohit);
-    expect(starts.length).toBeGreaterThan(0);
-    for (const start of starts) expect(start.takers[0]?.technician.id).toBe(IMRAN);
-    expect(await offered(rohit)).toEqual([IMRAN, SANDEEP].sort());
+  it("sends someone into their ring only behind one inside their radius, though the ring one drives less", async () => {
+    // Imran lives 6 km away, inside his 10 km. Sandeep lives 4 km away but his own radius is 3 km, so the client is in
+    // his ring: he drives less, but less than the ring's half hour less.
+    await home(IMRAN, 28.5135, 77.0266);
+    await home(SANDEEP, 28.4955, 77.0266);
+    await env.DB.prepare("UPDATE technicians SET radius_km = 3 WHERE id = ?1").bind(SANDEEP).run();
+    const both = (await tuesday(rohit)).filter((start) => start.takers.length === 2);
+    expect(both.length).toBeGreaterThan(0);
+    for (const start of both) expect(start.takers[0]?.technician.id).toBe(IMRAN);
   });
 
   it("puts a technician with no home pin in the ring, so a city whose pins are not set still books", async () => {

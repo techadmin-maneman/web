@@ -177,19 +177,19 @@ export const areas = {
   reach: {
     title: "Reach",
     mapAlt: (city: string) => `${city}: its pincodes, and each technician’s reach from home`,
-    key: "Green served · Grey not served · Amber paused · Red served, out of every reach · Navy a technician’s home and radius",
+    key: "Green served · Grey not served · Amber paused · Red served, out of every reach · Navy a technician’s home and radius · Pale navy their overflow ring",
     outOfReach: (count: number) =>
       count === 1
         ? "1 served pincode no technician reaches:"
         : `${String(count)} served pincodes no technician reaches:`,
     unreached: (pincode: string, area: string, nearest: string | null) =>
       nearest === null ? `${pincode} ${area}` : `${pincode} ${area} (nearest ${nearest})`,
-    nearest: (name: string, km: number) => `${name}, ${String(km)} km`,
+    nearest: (name: string, km: number) => `${name}, ${String(km)}\u00a0km`,
     allReached: "Every served pincode is in someone’s reach.",
     unmeasured: "Set your technicians’ homes to see their reach.",
     chooseUnreached: "Choose them",
     within: (name: string, km: number, count: number) =>
-      `${name} · ${String(km)} km · ${count === 1 ? "1 pincode" : `${String(count)} pincodes`}`,
+      `${name} · ${String(km)}\u00a0km · ${count === 1 ? "1 pincode" : `${String(count)} pincodes`}`,
     chooseWithin: (name: string) => `Choose the pincodes within ${name}’s reach`,
     choose: "Choose",
   },

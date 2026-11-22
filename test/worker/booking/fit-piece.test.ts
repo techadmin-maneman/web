@@ -90,7 +90,8 @@ describe("a fit's technicians", () => {
   });
 
   it("send the fit to the one whose kit holds the piece first, at every start both can take", async () => {
-    await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: SAMEER, counted: 1 });
+    // Imran's week holds a visit more than Sameer's, which counts against him; the piece in his kit outweighs it.
+    await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: IMRAN, counted: 1 });
     const [day] = await startOffers({
       db: env.DB,
       placing: { personId: CLIENT, pincode: "122018" },
@@ -101,7 +102,7 @@ describe("a fit's technicians", () => {
     });
     const shared = (day?.starts ?? []).filter((start) => start.takers.length > 1);
     expect(shared.length).toBeGreaterThan(0);
-    for (const start of shared) expect(start.takers[0]?.technician.id).toBe(SAMEER);
+    for (const start of shared) expect(start.takers[0]?.technician.id).toBe(IMRAN);
   });
 
   it("carry no piece for a visit that fits nothing", async () => {

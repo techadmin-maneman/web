@@ -94,10 +94,10 @@ export const technicians = {
      * How far from home they are offered visits, in a straight line: their own, or everyone's from Settings
      * (docs/decisions/0289-who-takes-a-visit.md). An empty box returns them to everyone's.
      */
-    reach: "Takes visits within",
-    reachValue: (km: number) => `${String(km)} km of home`,
+    reach: "Radius",
+    reachValue: (km: number) => `${String(km)}\u00a0km of home`,
     reachUnit: "km",
-    everyonesReach: (km: number) => `${String(km)} km of home, the setting for everyone`,
+    everyonesReach: (km: number) => `${String(km)}\u00a0km of home, the setting for everyone`,
     /** Everyone's, before the roster that says how far it is has been read. */
     businessReach: "The setting for everyone",
     search: {

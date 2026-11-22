@@ -109,9 +109,9 @@ export function placedAt(day: PlanDay, visit: VisitToPlan, start: number, rules:
     leaving = drive(visit.pin, after.pin, end + wrap, rules.drive);
     if (end + wrap + leaving > after.start) return null;
     saved = driveIn(day, before, after.pin, rules.drive);
-  } else if (day.home !== null) {
+  } else if (day.home !== null && visit.pin !== null) {
     // The day's last visit: the drive home after it counts, in place of the one from the stop before, though it may
-    // end after the day closes.
+    // end after the day closes. A visit with no pin leaves the drive home as it was, since nobody can tell it.
     leaving = drive(visit.pin, day.home, end + wrap, rules.drive);
     saved = before === undefined ? 0 : drive(before.pin, day.home, before.end + wrap, rules.drive);
   }
