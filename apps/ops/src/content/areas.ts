@@ -196,7 +196,8 @@ export const areas = {
     unmeasured: "Set your technicians’ homes to see their reach.",
     chooseUnreached: "Choose them",
     within: (name: string, km: number, ring: number, count: number) =>
-      `${name} · ${String(km)}\u00a0km, ring\u00a0${String(ring)}\u00a0km · ${count === 1 ? "1\u00a0pincode" : `${String(count)}\u00a0pincodes`} within the radius`,
+      // No dot between its parts, which a narrow screen left hanging at a line's end.
+      `${name}: ${String(km)}\u00a0km, ring\u00a0${String(ring)}\u00a0km, ${count === 1 ? "1\u00a0pincode" : `${String(count)}\u00a0pincodes`} within the radius`,
     chooseWithin: (name: string) => `Choose the pincodes within ${name}’s radius`,
     choose: "Choose",
   },
