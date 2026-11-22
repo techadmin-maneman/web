@@ -66,6 +66,7 @@ export function HeldLinkActions({
       setDone(linkCopy.copied);
     } catch {
       setByHand(true);
+      setDone(url);
     }
   };
   const send = () =>

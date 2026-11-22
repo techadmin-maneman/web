@@ -32,7 +32,8 @@ export const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: st
 
 /**
  * Arrived: a piece reserved to it is held, in the warehouse or a kit, and no first fit or replacement is booked, under
- * way or paid for the client to fit it at. Read from the pieces reserved, never every order ever paid. Where it is held, so ops know whether it must first go to a technician's
+ * way or paid for the client to fit it at. Read from the pieces reserved to custom orders (one for each received),
+ * as Stock reads them, not from the orders. Where it is held, so ops know whether it must first go to a technician's
  * kit, and which fit to book.
  */
 export const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: string } = {

@@ -481,10 +481,23 @@ test("says a link that was not texted, and sends it again on asking", async ({ p
   await expect(panel(page).getByRole("status").first()).toContainText("Payment link made for Rs. 2,000, not texted.");
   await panel(page).getByRole("button", { name: opsCopy.tasks.link.resend }).click();
   await expect(panel(page)).toContainText(opsCopy.tasks.link.outcomes.not_texted);
+
+  // The browser will not copy it: the link is said, to copy from where it is written out.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+    });
+  });
+  await panel(page).getByRole("button", { name: opsCopy.tasks.link.copy, exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ })).toBeVisible();
 });
 
 test("names the booking held on its link that refuses another of its kind, and lets it go", async ({ page }) => {
   let letGo = false;
+  let answer: () => void = () => undefined;
+  const answered = new Promise<void>((resolve) => {
+    answer = resolve;
+  });
   await openVisits(page, {
     [BOOK]: json({ error: { code: "already_booked", request_id: "r-1" } }, 409),
     [`GET /api/clients/${CLIENT.id}/held-bookings`]: json({
@@ -504,6 +517,7 @@ test("names the booking held on its link that refuses another of its kind, and l
     }),
     "POST /api/holds/{id}/let-go": async (route) => {
       letGo = true;
+      await answered;
       await empty()(route);
     },
   });
@@ -532,6 +546,9 @@ test("names the booking held on its link that refuses another of its kind, and l
     .getByRole("button", { name: `${inTheWay.letGo} · service visit, Wed 22 Sep, 12 pm` })
     .click();
   await asked.getByRole("button", { name: inTheWay.letGo, exact: true }).click();
+  // While it is let go, keeping it is no longer a choice.
+  await expect(asked.getByRole("button", { name: DISMISS.keep, exact: true })).toBeDisabled();
+  answer();
   await expect(panel(page)).toContainText(inTheWay.letGone);
 
   // Said once: another try refused, then another time chosen, says nothing of the let-go again.
@@ -541,8 +558,8 @@ test("names the booking held on its link that refuses another of its kind, and l
   await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.already_booked);
   await panel(page).getByRole("radio", { name: "12:30 pm", exact: true }).check();
   await expect(panel(page).getByRole("alert")).toHaveCount(0);
-  await expect(panel(page)).not.toContainText(inTheWay.letGone);
-  await expect(panel(page).getByRole("alert")).toHaveCount(0);
+  // Read once, at once: the toast goes by itself in six seconds, so a retrying read could pass without the fix.
+  expect(await page.getByText(inTheWay.letGone).count()).toBe(0);
   expect(letGo).toBe(true);
 });
 
@@ -582,4 +599,21 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
   await expect(panel(page)).toContainText(inTheWay.errors.hold_expired);
   await expect(asked).toHaveCount(0);
   await expect(panel(page)).not.toContainText(inTheWay.letGone);
+
+  // The browser will not copy its link: it is shown beside the buttons, written out nowhere else.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+    });
+  });
+  await panel(page)
+    .getByRole("button", { name: `${opsCopy.tasks.link.copy} · service visit, Fri 24 Sep, 12 pm`, exact: true })
+    .click();
+  // Said, and shown beside the buttons to copy by hand.
+  await expect(
+    panel(page)
+      .getByRole("status")
+      .filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ }),
+  ).toBeVisible();
+  await expect(panel(page).getByText("https://rzp.io/i/stub4417", { exact: true })).toHaveCount(2);
 });
