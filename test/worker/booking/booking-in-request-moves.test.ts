@@ -73,6 +73,23 @@ describe("a visit moved by the client", () => {
     expect((await messagesOf(PERSON)).results).toEqual([{ kind: "reschedule_confirmation", subject_id: VISIT }]);
   });
 
+  it("moves it in place though the evening's re-plan moved the draft meanwhile, which moves no time", async () => {
+    await fittedClient();
+    await booked(THURSDAY_NOON);
+    const holdId = await moveHold("2026-09-25", "evening");
+    const { technician_id: imran } = (await visitOf(VISIT)) as { technician_id: string };
+    await env.DB.prepare(
+      `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
+         reason, actor, fsm_write_state, write_state, created_at, updated_at)
+       VALUES ('replan-1', ?1, ?2, ?2, ?3, ?3, 'zone_rebalance', 'allotment', 'written', 'written', ?4, ?4)`,
+    )
+      .bind(VISIT, imran, THURSDAY_NOON, NOW.toISOString())
+      .run();
+    await call(PERSON, `/api/appointments/${VISIT}/reschedule`, { method: "POST", body: { hold_id: holdId } });
+    expect(await visitOf(VISIT)).toMatchObject({ window_start: "2026-09-25T10:30:00.000Z" });
+    expect(await holdRow(holdId)).toEqual({ state: "booked", appointment_id: VISIT });
+  });
+
   it("books a new visit for a late move once paid, and cancels and charges the old one", async () => {
     await fittedClient();
     await booked(TUESDAY_MORNING);
