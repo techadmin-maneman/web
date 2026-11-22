@@ -14,6 +14,7 @@ import { catchUpWithRazorpay } from "../../../src/domain/money/razorpay-catch-up
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { asClient, signedIn } from "../clients.ts";
+import { aHold } from "../fixtures/index.ts";
 import { A_NUMBER, captureLogs, deliverRazorpay, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
@@ -420,13 +421,14 @@ describe("a paid custom order's refund", () => {
     }
     // Nor while a fit is paid for and waits to be booked.
     await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(JOB).run();
-    await env.DB.prepare(
-      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
-         gst_percent, state, expires_at, created_at, updated_at, confirmed_at)
-       VALUES ('hold-paid', ?1, 'first_fit', '2026-09-25', 'morning', ?2, 0, 100, 100, 0, 'held', ?3, ?3, ?3, ?3)`,
-    )
-      .bind(PERSON, IMRAN, NOW.toISOString())
-      .run();
+    await aHold({
+      id: "hold-paid",
+      person_id: PERSON,
+      technician_id: IMRAN,
+      type: "first_fit",
+      date: "2026-09-25",
+      confirmed_at: NOW.toISOString(),
+    });
     expect(await tasksOf("custom_piece_to_fit")).toEqual([]);
     await env.DB.prepare("UPDATE slot_holds SET state = 'released' WHERE id = 'hold-paid'").run();
     expect((await tasksOf("custom_piece_to_fit"))[0]?.facts).toMatchObject({ fit: "first_fit" });

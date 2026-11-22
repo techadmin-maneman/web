@@ -43,6 +43,7 @@ export const SENSITIVE_PATHS = [
   "src/domain/booking/book-paid-hold",
   "src/domain/booking/give-back",
   "src/domain/booking/visit-booking",
+  "src/domain/booking/held-bookings",
   "src/domain/visits/one-visit",
   "src/policy/upi",
   "src/domain/referrals/referral-grants",
