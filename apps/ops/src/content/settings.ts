@@ -251,6 +251,8 @@ export const settings = {
         recommended: "Marked Recommended",
         drive_cap: "Extra driving allowed",
       },
+      drive_times: { use: "Used for booking and the plan" },
+      drive_learning: { min_drives: "Drives before an hour is used", weeks: "Weeks learned from" },
       no_show_charge: dispatch.typeNames,
       // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
       no_show_waiver: { payment: "The visit’s payment", credit: "The free service visit used" },
@@ -363,6 +365,7 @@ export const settings = {
       no_show_charge: { nothing: "Nothing", late_fee: "Late fee", visit: "The full visit" },
       no_show_waiver: { refunded: "Refunded", kept: "Kept", returned: "Returned", spent: "Spent" },
       same_day_booking: { yes: "Yes", no: "No" },
+      drive_times: { learned: "Learned, where enough drives", estimate: "The estimate only" },
       po_own_approval: { alone: "Approved", second: "Waits for a second manager" },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /** The check before a rule is sent: each figure that moves, the old beside the new. */

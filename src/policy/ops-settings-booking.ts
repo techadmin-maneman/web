@@ -7,6 +7,13 @@ import { DRIVE_ESTIMATE, DRIVE_ESTIMATE_KEYS, driveEstimateConflicts } from "./d
 import { TECHNICIAN_RADIUS_KM } from "./reach.ts";
 import { ALLOTMENT, ALLOTMENT_KEYS } from "./allotment.ts";
 import { STEERING, STEERING_KEYS } from "./steering.ts";
+import {
+  DRIVE_LEARNING,
+  DRIVE_LEARNING_KEYS,
+  DRIVE_TIMES,
+  DRIVE_TIMES_CHOICES,
+  DRIVE_TIMES_KEYS,
+} from "./learned-drives.ts";
 import type { OpsSetting } from "./ops-settings.ts";
 import {
   BOOKING_RULE_KEYS,
@@ -126,5 +133,27 @@ export const BOOKING_SETTINGS = [
       drive_cap: { min: 5, max: 240, unit: "minutes beyond the day’s best" },
     },
     fallback: STEERING,
+  },
+  {
+    name: "drive_times",
+    title: "Drive times",
+    note: "Whether booking and the evening’s plan use the drive times learned from our own drives, each city’s hour by hour where enough drives stand behind them, or the estimate only.",
+    keys: DRIVE_TIMES_KEYS,
+    choices: { use: DRIVE_TIMES_CHOICES },
+    fallback: DRIVE_TIMES,
+  },
+  {
+    name: "drive_learning",
+    title: "Learning drive times",
+    note: "How many of a city’s drives an hour needs before its learned time is used, and how many weeks back drives are learned from, each night.",
+    unit: "drives",
+    min: 2,
+    max: 200,
+    keys: DRIVE_LEARNING_KEYS,
+    bounds: {
+      min_drives: { min: 5, max: 200, unit: "drives" },
+      weeks: { min: 2, max: 26, unit: "weeks" },
+    },
+    fallback: DRIVE_LEARNING,
   },
 ] as const satisfies readonly OpsSetting[];

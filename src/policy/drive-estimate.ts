@@ -52,9 +52,19 @@ export function driveKm(from: Pin, to: Pin, estimate: DriveEstimate = DRIVE_ESTI
   return Math.round((kmBetween(from, to) * estimate.road_factor) / 10) / 10;
 }
 
-/** The minutes a drive from one pin to another takes, setting off in `hour` (0 to 23, India's clock). */
-export function driveMinutes(from: Pin, to: Pin, hour: number, estimate: DriveEstimate = DRIVE_ESTIMATE): number {
+/**
+ * The minutes a drive from one pin to another takes, setting off in `hour` (0 to 23, India's clock): the estimate, at
+ * `pace` per cent of it where the city's drives at that hour have been learned to take more or less
+ * (./learned-drives.ts).
+ */
+export function driveMinutes(
+  from: Pin,
+  to: Pin,
+  hour: number,
+  estimate: DriveEstimate = DRIVE_ESTIMATE,
+  pace = 100,
+): number {
   const km = (kmBetween(from, to) * estimate.road_factor) / 100;
   const speed = inThePeak(hour, estimate) ? estimate.peak_kmh : estimate.offpeak_kmh;
-  return Math.max(estimate.least, Math.ceil((km / speed) * 60 + estimate.parking));
+  return Math.max(estimate.least, Math.ceil((((km / speed) * 60 + estimate.parking) * pace) / 100));
 }
