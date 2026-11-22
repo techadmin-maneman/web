@@ -18,10 +18,10 @@ import { driveThrough } from "../platform/road-drives.ts";
 import { readDay, replanDay, startOf, type CityDay } from "./replan-day.ts";
 
 /**
- * The drives one evening's run may ask Google for, across its cities: each takes a few of the 1,000 calls an
- * invocation may make (docs/decisions/0112-workers-paid.md). A drive past them stands on the estimate.
+ * The drives one city's check may ask Google for: each takes a few of the 1,000 calls an invocation may make
+ * (docs/decisions/0112-workers-paid.md). A drive past them stands on the estimate.
  */
-export const EVENING_DRIVES = 120;
+export const EVENING_DRIVES = 60;
 
 /** What the check asks Google through, and tells ops by. */
 export interface EveningCheck {

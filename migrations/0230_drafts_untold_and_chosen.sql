@@ -1,7 +1,6 @@
 -- A technician is told of a job moved, given to another or called off only where it was theirs to know of: fixed, not
--- a draft the evening's re-plan may still change, which their phone does not list
--- (docs/decisions/0290-allotted-the-evening-before.md).
--- The three triggers of 0209 are made again, each with that one condition more.
+-- a draft their phone does not list (docs/decisions/0290-allotted-the-evening-before.md). The three triggers of 0209
+-- are made again with that condition, a move's also with the visit still fixed after it.
 -- backfill: none. The triggers change; no row is written.
 
 DROP TRIGGER tech_alerts_job_moved;
@@ -11,6 +10,7 @@ DROP TRIGGER tech_alerts_job_cancelled;
 CREATE TRIGGER tech_alerts_job_moved AFTER UPDATE OF window_start ON appointments
 WHEN NEW.window_start IS NOT OLD.window_start
   AND OLD.technician_draft = 0
+  AND NEW.technician_draft = 0
   AND NEW.technician_id IS NOT NULL
   AND NEW.technician_id IS OLD.technician_id
   AND NEW.status IN ('scheduled', 'dispatched')

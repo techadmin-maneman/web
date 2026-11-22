@@ -5,7 +5,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderMessage } from "../../../src/config/message-templates.ts";
-import { bookedAsDraft, lockDrafts } from "../../../src/domain/booking/allotment-lock.ts";
+import { bookedAsDraft, daySettled, lockDrafts } from "../../../src/domain/booking/allotment-lock.ts";
 import { jobsOn } from "../../../src/domain/field/tech-jobs.ts";
 import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
@@ -63,6 +63,17 @@ describe("the evening's lock", () => {
   it("fixes tomorrow's at the reminder hour, and leaves the day after a draft", async () => {
     await lockDrafts(env.DB, at("2026-09-21", "18:00"), HOURS).run();
     expect(await drafts()).toEqual([later]);
+  });
+
+  it("counts tomorrow as settled for a technician only once their city's drafts are fixed, not when the hour comes", async () => {
+    await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon' WHERE id = ?1").bind(IMRAN).run();
+    const settled = (now: Date) =>
+      daySettled(env.DB, { technicianId: IMRAN, date: "2026-09-22", now, nationalHour: 18 });
+    expect(await settled(at("2026-09-21", "17:59"))).toBe(false);
+    // 6 pm has come, and the lock, a minute into the hour, has not yet run.
+    expect(await settled(at("2026-09-21", "18:00"))).toBe(false);
+    await lockDrafts(env.DB, at("2026-09-21", "18:01"), HOURS).run();
+    expect(await settled(at("2026-09-21", "18:01"))).toBe(true);
   });
 
   it("fixes tomorrow's in a city whose own reminder hour has come, before the nation's", async () => {

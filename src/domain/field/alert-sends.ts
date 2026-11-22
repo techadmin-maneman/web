@@ -145,18 +145,25 @@ export async function writeTimedAlerts(
   return written;
 }
 
-/** The next day's jobs, for each technician with any who has the day ahead on: how many, from when, and the first. */
+/**
+ * The next day's jobs, for each technician with any who has the day ahead on: how many, from when, and the first. Only
+ * once their city's evening lock has fixed the day (docs/decisions/0290-allotted-the-evening-before.md): while a
+ * draft is left there, the re-plan may still give them one, so they are told on a later run.
+ */
 export async function writeDayAhead(db: D1Database, { now, date }: { readonly now: Date; readonly date: string }) {
   const from = indiaInstant(date, "00:00").toISOString();
   const to = indiaInstant(addDays(date, 1), "00:00").toISOString();
   // The first job is the least of each start with its ID beside it: one pass over the day.
   const days = await db
     .prepare(
-      `SELECT technician_id, COUNT(*) AS jobs, MIN(window_start || ' ' || id) AS first
-         FROM appointments
-        WHERE technician_id IS NOT NULL AND technician_draft = 0 AND deleted_at IS NULL AND ${toDo("status")}
-          AND window_start >= ?1 AND window_start < ?2
-        GROUP BY technician_id`,
+      `SELECT a.technician_id, COUNT(*) AS jobs, MIN(a.window_start || ' ' || a.id) AS first
+         FROM appointments a JOIN technicians t ON t.id = a.technician_id
+        WHERE a.technician_draft = 0 AND a.deleted_at IS NULL AND ${toDo("a.status")}
+          AND a.window_start >= ?1 AND a.window_start < ?2
+          AND NOT EXISTS (SELECT 1 FROM appointments d
+                           WHERE d.technician_draft = 1 AND d.window_start >= ?1 AND d.window_start < ?2
+                             AND d.service_city IS t.city)
+        GROUP BY a.technician_id`,
     )
     .bind(from, to)
     .all<{ technician_id: string; jobs: number; first: string }>();

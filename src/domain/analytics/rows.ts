@@ -188,7 +188,7 @@ export async function visitRows(
            AND c.at <= strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '+' || ?1 || ' minutes')) AS on_time,
          EXISTS (SELECT 1 FROM checkins c WHERE c.appointment_id = a.id AND c.passed = 0) AS failed,
          a.checkin_waived_at IS NOT NULL AS waived,
-         (SELECT COUNT(*) FROM dispatch_moves m WHERE m.appointment_id = a.id)
+         (SELECT COUNT(*) FROM dispatch_moves m WHERE m.appointment_id = a.id AND m.actor != 'allotment')
            + (SELECT COUNT(*) FROM visit_changes x WHERE x.appointment_id = a.id AND x.kind = 'moved') AS moves,
          n.id IS NOT NULL AS no_show, n.kept_amount AS charge
        FROM appointments a JOIN people p ON p.id = a.person_id

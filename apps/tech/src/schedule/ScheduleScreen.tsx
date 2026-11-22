@@ -29,7 +29,7 @@ import { wayTo } from "../lib/navigate.ts";
 import { apiDate, clock, dayMonth, spanEnds, todayInIndia } from "../lib/when.ts";
 import { redirect } from "../route.ts";
 import { useSession } from "../session.ts";
-import { keptDay } from "../store/jobs.ts";
+import { keptDay, keptDaySettled } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
 import styles from "./schedule.module.css";
 
@@ -67,7 +67,8 @@ async function readWeek(today: string, known: Map<string, Pick<Day, "jobs" | "se
       }
       const requestId = answer === undefined ? null : answer.requestId;
       const kept = await keptDay(date).catch(() => null);
-      return { date, jobs: kept, settled: true, ...known.get(date), requestId };
+      const settled = kept === null ? true : await keptDaySettled(date).catch(() => true);
+      return { date, jobs: kept, settled, ...known.get(date), requestId };
     }),
   );
   const failed = answers.find((answer) => !answer.ok);

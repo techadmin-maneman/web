@@ -16,12 +16,17 @@ import { all, clear, get, put, remove } from "./db.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import { synced } from "./last-sync.ts";
 
-export async function keepDay(date: string, jobs: readonly JobSummary[]): Promise<void> {
-  await put("days", { date, jobs });
+export async function keepDay(date: string, jobs: readonly JobSummary[], settled = true): Promise<void> {
+  await put("days", { date, jobs, settled });
 }
 
 export async function keptDay(date: string): Promise<readonly JobSummary[] | null> {
   return (await get("days", date))?.jobs ?? null;
+}
+
+/** Whether a kept day's list stood when kept; a day kept before this was known, or none kept, as it did. */
+export async function keptDaySettled(date: string): Promise<boolean> {
+  return (await get("days", date))?.settled ?? true;
 }
 
 /**

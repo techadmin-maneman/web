@@ -3,7 +3,12 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { lockDueDrafts, replanAhead } from "../../../src/domain/booking/allotment-lock.ts";
+import {
+  checkBeforeLock,
+  lockDueDrafts,
+  replanAhead,
+  replanDateAt,
+} from "../../../src/domain/booking/allotment-lock.ts";
 import { replanDay } from "../../../src/domain/booking/replan-day.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
@@ -85,51 +90,121 @@ describe("a day's drafts re-planned", () => {
     expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 0 });
   });
 
-  it("re-plans tomorrow in the evening's lock before fixing it", async () => {
-    const evening = indiaInstant("2026-09-21", "18:05");
-    const inputs = await readOpsInputs(env.DB, evening);
-    await lockDueDrafts(env.DB, evening, {
-      readHours: () => Promise.resolve({ national: 18, cities: new Map<string, number>() }),
-      replan: (city, date) => replanDay(env.DB, { city, date, now: evening, inputs }),
+  it("re-plans tomorrow in the half hour before the lock, once a city, and the lock fixes it", async () => {
+    const half = indiaInstant("2026-09-21", "17:31");
+    const inputs = await readOpsInputs(env.DB, half);
+    const readHours = () => Promise.resolve({ national: 18, cities: new Map<string, number>() });
+    const taken = new Set<string>();
+    const before = {
+      readHours,
+      firstToday: (city: string) => {
+        const first = !taken.has(city);
+        taken.add(city);
+        return Promise.resolve(first);
+      },
+      check: (city: string, date: string) => replanDay(env.DB, { city, date, now: half, inputs }),
       failed: () => undefined,
-    });
+    };
+    // Earlier in the hour no lock is near, and nothing is read.
+    expect(await checkBeforeLock(env.DB, indiaInstant("2026-09-21", "17:25"), before)).toBeNull();
+    expect(await checkBeforeLock(env.DB, half, before)).toBe("Gurgaon");
+    expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+    // Once a day: the next run takes no city.
+    expect(await checkBeforeLock(env.DB, indiaInstant("2026-09-21", "17:36"), before)).toBeNull();
+    await lockDueDrafts(env.DB, indiaInstant("2026-09-21", "18:01"), { readHours });
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 0 });
   });
 
-  it("fixes tomorrow as it stands where its re-plan fails, and says which city failed", async () => {
+  it("fixes tomorrow as it stands where its check fails, and says which city failed", async () => {
     const failed: string[] = [];
-    await lockDueDrafts(env.DB, indiaInstant("2026-09-21", "18:05"), {
-      readHours: () => Promise.resolve({ national: 18, cities: new Map<string, number>() }),
-      replan: () => Promise.reject(new Error("D1 overloaded")),
+    const readHours = () => Promise.resolve({ national: 18, cities: new Map<string, number>() });
+    await checkBeforeLock(env.DB, indiaInstant("2026-09-21", "17:31"), {
+      readHours,
+      firstToday: () => Promise.resolve(true),
+      check: () => Promise.reject(new Error("D1 overloaded")),
       failed: (city) => failed.push(city),
     });
     expect(failed).toEqual(["Gurgaon"]);
+    await lockDueDrafts(env.DB, indiaInstant("2026-09-21", "18:01"), { readHours });
     expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 0 });
+  });
+
+  it("writes nothing, the board's version included, before any of tomorrow's drafts is due", async () => {
+    const version = () => env.DB.prepare("SELECT version FROM board_version").first<{ version: number }>();
+    const before = await version();
+    await lockDueDrafts(env.DB, indiaInstant("2026-09-21", "17:45"), {
+      readHours: () => Promise.resolve({ national: 18, cities: new Map<string, number>() }),
+    });
+    expect(await version()).toEqual(before);
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
+  });
+
+  it("leaves a draft with a move proposal still open as it stands, for the client to answer", async () => {
+    await env.DB.prepare(
+      `INSERT INTO move_proposals (id, appointment_id, technician_id, date, window_label, reason, proposed_by,
+         expected_technician_id, expected_start, created_at, expires_at)
+       SELECT 'mp1', id, technician_id, '2026-09-23', 'morning', 'zone_rebalance', 'ops@maneman.test', technician_id,
+         window_start, ?1, '2026-09-22T12:30:00.000Z' FROM appointments WHERE id = ?2`,
+    )
+      .bind(NOW.toISOString(), visitId)
+      .run();
+    const moved = await replanDay(env.DB, {
+      city: "Gurgaon",
+      date: TUESDAY,
+      now: NOW,
+      inputs: await readOpsInputs(env.DB, NOW),
+    });
+    expect(moved).toBe(0);
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
   });
 });
 
-describe("the night's re-plan", () => {
-  it("re-plans each city's days ahead, leaves them drafts, and goes on past a day that fails", async () => {
-    const inputs = await readOpsInputs(env.DB, NOW);
-    const thursday = await visit(
-      null,
-      "service",
-      "scheduled",
-      indiaInstant("2026-09-24", "11:00").toISOString(),
-      IMRAN,
-    );
+describe("each hour's re-plan", () => {
+  // Midnight takes tomorrow, 1 am the day after, and so on round the week.
+  it("re-plans the hour's day ahead in each city, leaves them drafts, and goes on past a city that fails", async () => {
+    const midnight = indiaInstant("2026-09-21", "00:20");
+    const inputs = await readOpsInputs(env.DB, midnight);
+    const noida = await visit(null, "service", "scheduled", indiaInstant(TUESDAY, "15:00").toISOString(), IMRAN);
     await env.DB.prepare("UPDATE appointments SET technician_draft = 1, service_city = 'Noida' WHERE id = ?1")
-      .bind(thursday)
+      .bind(noida)
       .run();
     const failed: string[] = [];
-    const moved = await replanAhead(env.DB, NOW, {
+    const moved = await replanAhead(env.DB, midnight, {
       replan: (city, date) =>
         city === "Noida"
           ? Promise.reject(new Error("D1 overloaded"))
-          : replanDay(env.DB, { city, date, now: NOW, inputs }),
+          : replanDay(env.DB, { city, date, now: midnight, inputs }),
       failed: (city) => failed.push(city),
+      left: () => undefined,
     });
     expect({ moved, failed }).toEqual({ moved: 1, failed: ["Noida"] });
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+  });
+
+  it("takes on no more cities than a run's share, and names the rest", async () => {
+    for (const city of ["Delhi", "Faridabad", "Noida"]) {
+      const id = await visit(null, "service", "scheduled", indiaInstant(TUESDAY, "15:00").toISOString(), IMRAN);
+      await env.DB.prepare("UPDATE appointments SET technician_draft = 1, service_city = ?2 WHERE id = ?1")
+        .bind(id, city)
+        .run();
+    }
+    const replanned: string[] = [];
+    const left: string[] = [];
+    await replanAhead(env.DB, indiaInstant("2026-09-21", "00:20"), {
+      replan: (city) => {
+        replanned.push(city);
+        return Promise.resolve(0);
+      },
+      failed: () => undefined,
+      left: (cities) => left.push(...cities),
+    });
+    expect({ replanned, left }).toEqual({ replanned: ["Delhi", "Faridabad", "Gurgaon"], left: ["Noida"] });
+  });
+
+  it("takes tomorrow at midnight, the day after at 1 am, and the seventh day at 6 am", () => {
+    expect(replanDateAt(indiaInstant("2026-09-21", "00:20"))).toBe("2026-09-22");
+    expect(replanDateAt(indiaInstant("2026-09-21", "01:20"))).toBe("2026-09-23");
+    expect(replanDateAt(indiaInstant("2026-09-21", "06:20"))).toBe("2026-09-28");
+    expect(replanDateAt(indiaInstant("2026-09-21", "07:20"))).toBe("2026-09-22");
   });
 });

@@ -1,6 +1,8 @@
 // The week's top-up (docs/decisions/0181-tomorrows-kits.md): on the evening ops set, the kit check looks a week ahead
 // for consumables, at what each kit's visits over the next seven days are expected to use and its kit level on top,
 // so a kit ends the week no lower than its level. Hair systems stay with tomorrow's check, which knows each client's.
+// A visit whose technician is still a draft (docs/decisions/0290-allotted-the-evening-before.md) counts with them: it
+// uses consumables whoever goes, and whoever has it now is the best guess of whose kit it draws on.
 
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { tierOf } from "../../config/visit-types.ts";
@@ -19,7 +21,7 @@ async function weeksUse(db: D1Database, tomorrow: string): Promise<WeekRow[]> {
       `WITH used AS (
          SELECT a.technician_id AS kit, u.consumable_code AS code, SUM(u.quantity) AS quantity
          FROM appointments a JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
-         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL AND a.technician_draft = 0 GROUP BY 1, 2)
+         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL GROUP BY 1, 2)
        SELECT p.id AS kit, c.code, COALESCE(used.quantity, 0) AS quantity, COALESCE(c.reorder_kit, 0) AS level
        FROM stock_places p CROSS JOIN consumables c LEFT JOIN used ON used.kit = p.id AND used.code = c.code
        WHERE p.kind = 'kit' AND p.active = 1 AND (c.retired_date IS NULL OR c.retired_date > ?3)
@@ -117,7 +119,7 @@ async function weekNeedOf(db: D1Database, kit: string, today: string): Promise<W
          FROM appointments a INDEXED BY appointments_by_technician
          JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
          JOIN consumables c ON c.code = u.consumable_code
-        WHERE a.technician_id = ?3 AND a.technician_draft = 0 AND ${bookedAhead("a")}
+        WHERE a.technician_id = ?3 AND ${bookedAhead("a")}
           AND NOT EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = u.consumable_code)
         GROUP BY u.consumable_code, c.name, c.unit
         ORDER BY c.name COLLATE NOCASE`,
@@ -190,14 +192,14 @@ export async function weekVisitsOf(
     db
       .prepare(
         `SELECT COUNT(*) AS visits FROM appointments a INDEXED BY appointments_by_technician
-          WHERE a.technician_id = ?3 AND a.technician_draft = 0 AND ${bookedAhead("a")}`,
+          WHERE a.technician_id = ?3 AND ${bookedAhead("a")}`,
       )
       .bind(...window)
       .first<{ visits: number }>(),
     db
       .prepare(
         `SELECT a.person_id, a.type, a.tier, a.one_visit FROM appointments a INDEXED BY appointments_by_technician
-          WHERE a.technician_id = ?3 AND a.technician_draft = 0 AND ${bookedAhead("a")}
+          WHERE a.technician_id = ?3 AND ${bookedAhead("a")}
             AND a.type IN ('first_fit', 'replacement')`,
       )
       .bind(...window)

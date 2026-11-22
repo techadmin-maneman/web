@@ -8,6 +8,7 @@ import {
   card,
   dayAfter,
   JOB_ID,
+  jobsTomorrow,
   jobsToday,
   NOTHING_DONE,
   ROHITS_PIECE,
@@ -132,6 +133,21 @@ test("says tomorrow's jobs come this evening until its list stands, and nothing 
   settled = true;
   await page.reload();
   await expect(line).toHaveText(`${techCopy.today.tomorrow} · ${techCopy.today.nothingBooked}`);
+});
+
+test("says tomorrow's jobs so far before its list stands, where ops have fixed some already", async ({ page }) => {
+  await fakeTech(page);
+  const today = todayInIndia();
+  const tomorrow = dayAfter(today);
+  const jobs = jobsTomorrow(today);
+  await page.route(
+    (url) => url.pathname === "/api/tech/jobs" && url.searchParams.get("date") === tomorrow,
+    (route) => route.fulfill({ json: { date: tomorrow, jobs, settled: false, sent_back: [] } }),
+  );
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /^Tomorrow · / })).toContainText(
+    techCopy.today.tomorrowSoFar(jobs.length, "").replace(/, from $/, ""),
+  );
 });
 
 test("says there are no jobs when the day is empty", async ({ page }) => {

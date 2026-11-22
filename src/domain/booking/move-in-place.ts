@@ -18,6 +18,7 @@ interface VisitToMove {
   id: string;
   window_start: string;
   technician_id: string | null;
+  technician_draft: number;
 }
 
 /**
@@ -29,7 +30,7 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
   const options: ConfirmOptions = context;
   const visit = await db
     .prepare(
-      `SELECT a.id, a.window_start, a.technician_id FROM appointments a
+      `SELECT a.id, a.window_start, a.technician_id, a.technician_draft FROM appointments a
        WHERE a.id = ?1 AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND a.deleted_at IS NULL AND NOT ${visitBegun("a")}`,
     )
     .bind(hold.moves_appointment_id)
@@ -37,9 +38,10 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
   if (visit === null) return moveRefused(context, hold);
   if (!(await takesHeldTime(db, hold, visit, now))) return moveOvertaken(context, hold);
   const [{ start, end }, hours] = await Promise.all([heldVisitTimes(db, hold), reminderHoursAt(db, now)]);
-  // A visit moved past its day's lock is a draft again, its technician the engine's to change (./allotment-lock.ts),
-  // unless ops chose them.
-  const draft = hold.technician_chosen === 0 && bookedAsDraft(start, hold.city, now, hours) ? 1 : 0;
+  // A draft stays one, the engine's to give to another (./allotment-lock.ts), unless it moves past its day's lock or
+  // ops chose who takes it. A fixed visit stays fixed: its technician already has it, and is told it moved.
+  const draft =
+    visit.technician_draft === 1 && hold.technician_chosen === 0 && bookedAsDraft(start, hold.city, now, hours) ? 1 : 0;
 
   const at = now.toISOString();
   const lateFee = "(SELECT id FROM payments WHERE razorpay_order_id = ?1)";

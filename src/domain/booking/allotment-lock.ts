@@ -3,7 +3,7 @@
 // client is told who is coming and the technician's card opens. A visit booked for today, or for tomorrow once that
 // hour has come in its city, is fixed at once.
 
-import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaInstant, indiaTime } from "../../lib/india-time.ts";
 import { hourHasCome } from "../../policy/city-settings.ts";
 import { cityReminderHours, reminderHourCame, type ReminderHours } from "../cities/city-rules.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
@@ -33,21 +33,28 @@ export function bookedAsDraft(start: Date, city: string | null, now: Date, hours
 
 /**
  * Whether a hold's visit is with a draft technician: as its visit stands once booked; before, by when it starts,
- * unless ops chose who.
+ * unless ops chose who or it moves a visit already fixed (./move-in-place.ts).
  */
 export async function holdDraft(db: D1Database, holdId: string, now: Date): Promise<boolean> {
   const row = await db
     .prepare(
       `SELECT h.technician_chosen, h.starts_at, sp.city,
-              (SELECT a.technician_draft FROM appointments a WHERE a.id = h.appointment_id) AS visit_draft
+              (SELECT a.technician_draft FROM appointments a WHERE a.id = h.appointment_id) AS visit_draft,
+              (SELECT m.technician_draft FROM appointments m WHERE m.id = h.moves_appointment_id) AS moving_draft
        FROM slot_holds h LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
        WHERE h.id = ?1`,
     )
     .bind(holdId)
-    .first<{ technician_chosen: number; starts_at: string | null; city: string | null; visit_draft: number | null }>();
+    .first<{
+      technician_chosen: number;
+      starts_at: string | null;
+      city: string | null;
+      visit_draft: number | null;
+      moving_draft: number | null;
+    }>();
   if (row === null) return false;
   if (row.visit_draft !== null) return row.visit_draft === 1;
-  if (row.technician_chosen === 1 || row.starts_at === null) return false;
+  if (row.technician_chosen === 1 || row.moving_draft === 0 || row.starts_at === null) return false;
   return bookedAsDraft(new Date(row.starts_at), row.city, now, await reminderHoursAt(db, now));
 }
 
@@ -66,7 +73,29 @@ export async function daySettled(
     cityReminderHours(db),
     db.prepare("SELECT city FROM technicians WHERE id = ?1").bind(day.technicianId).first<{ city: string | null }>(),
   ]);
-  return hourHasCome(lockHourOf({ national: day.nationalHour, cities }, technician?.city ?? null), day.now);
+  const city = technician?.city ?? null;
+  if (!hourHasCome(lockHourOf({ national: day.nationalHour, cities }, city), day.now)) return false;
+  // The hour has come, but the lock runs a minute into it, after the day's re-plan and Google's check.
+  return !(await draftsLeftIn(db, { city, date: day.date }));
+}
+
+/** Whether a city's day still has a draft: the evening's lock has not yet run for it. */
+export async function draftsLeftIn(
+  db: D1Database,
+  day: { readonly city: string | null; readonly date: string },
+): Promise<boolean> {
+  const left = await db
+    .prepare(
+      `SELECT 1 AS left FROM appointments
+       WHERE technician_draft = 1 AND window_start >= ?1 AND window_start < ?2 AND service_city IS ?3 LIMIT 1`,
+    )
+    .bind(
+      indiaInstant(day.date, "00:00").toISOString(),
+      indiaInstant(addDays(day.date, 1), "00:00").toISOString(),
+      day.city,
+    )
+    .first();
+  return left !== null;
 }
 
 /**
@@ -84,74 +113,121 @@ export function lockDrafts(db: D1Database, now: Date, hours: ReminderHours): D1P
 
 /**
  * The evening's lock as the cron runs it: nothing read but the drafts' index while no draft falls before the day after
- * tomorrow, and the reminder hours only when one does. Each city whose hour has come has tomorrow re-planned first, so
- * what is fixed is the plan that costs least (./replan-day.ts).
+ * tomorrow, the reminder hours only when one does, and nothing written until one is due. What it fixes is the plan as
+ * the half hour before left it (checkBeforeLock), however much of that was done.
  */
 export async function lockDueDrafts(
   db: D1Database,
   now: Date,
-  deps: {
-    readonly readHours: () => Promise<ReminderHours>;
-    readonly replan: (city: string, date: string) => Promise<unknown>;
-    /** A city whose re-plan failed: told, and left as it stands, so the lock still fixes it. */
-    readonly failed: (city: string, error: unknown) => void;
-  },
+  deps: { readonly readHours: () => Promise<ReminderHours> },
 ): Promise<void> {
   const today = indiaDate(now);
-  const tomorrow = addDays(today, 1);
   const { results: due } = await db
     .prepare(
       `SELECT DISTINCT service_city AS city, window_start >= ?1 AS tomorrow FROM appointments
        WHERE technician_draft = 1 AND window_start < ?2`,
     )
-    .bind(indiaInstant(tomorrow, "00:00").toISOString(), indiaInstant(addDays(today, 2), "00:00").toISOString())
+    .bind(
+      indiaInstant(addDays(today, 1), "00:00").toISOString(),
+      indiaInstant(addDays(today, 2), "00:00").toISOString(),
+    )
     .all<{ city: string | null; tomorrow: number }>();
   if (due.length === 0) return;
   const hours = await deps.readHours();
-  for (const city of new Set(due.flatMap((row) => (row.tomorrow === 1 && row.city !== null ? [row.city] : [])))) {
-    if (!hourHasCome(lockHourOf(hours, city), now)) continue;
-    try {
-      await deps.replan(city, tomorrow);
-    } catch (error) {
-      deps.failed(city, error);
-    }
-  }
+  // Due: one already today, its evening's lock missed, or tomorrow's in a city whose hour has come.
+  if (!due.some((row) => row.tomorrow === 0 || hourHasCome(lockHourOf(hours, row.city), now))) return;
   // The board's version goes up with it, so an open board stops calling the visits drafts.
   await db.batch([lockDrafts(db, now, hours), boardMoved(db)]);
 }
 
-/** The days ahead the night's re-plan looks over: tomorrow and the week after it. */
+/** How long before a city's lock its tomorrow is re-planned and checked on Google, a city at a time. */
+export const CHECK_BEFORE_LOCK_MINUTES = 30;
+
+/**
+ * Tomorrow in the next city whose lock is due within CHECK_BEFORE_LOCK_MINUTES, re-planned and checked on Google
+ * (./evening-check.ts), each city once a day: one city a run, so a run's statements stay few; the city checked, or
+ * null. Nothing is read outside the last half hour before an hour, when no lock is near.
+ */
+export async function checkBeforeLock(
+  db: D1Database,
+  now: Date,
+  deps: {
+    readonly readHours: () => Promise<ReminderHours>;
+    /** Whether this is the city's first check today; true takes it. */
+    readonly firstToday: (city: string) => Promise<boolean>;
+    readonly check: (city: string, date: string) => Promise<unknown>;
+    /** A city whose check failed: told, and left as the hourly re-plan planned it, which the lock then fixes. */
+    readonly failed: (city: string, error: unknown) => void;
+  },
+): Promise<string | null> {
+  if (Number(indiaTime(now).slice(3, 5)) < 60 - CHECK_BEFORE_LOCK_MINUTES) return null;
+  const tomorrow = addDays(indiaDate(now), 1);
+  const { results } = await db
+    .prepare(
+      `SELECT DISTINCT service_city AS city FROM appointments
+       WHERE technician_draft = 1 AND window_start >= ?1 AND window_start < ?2 AND service_city IS NOT NULL
+       ORDER BY service_city`,
+    )
+    .bind(indiaInstant(tomorrow, "00:00").toISOString(), indiaInstant(addDays(tomorrow, 1), "00:00").toISOString())
+    .all<{ city: string }>();
+  if (results.length === 0) return null;
+  const hours = await deps.readHours();
+  const soon = new Date(now.getTime() + CHECK_BEFORE_LOCK_MINUTES * 60_000);
+  for (const { city } of results) {
+    const hour = lockHourOf(hours, city);
+    if (hourHasCome(hour, now) || !hourHasCome(hour, soon)) continue;
+    if (!(await deps.firstToday(city))) continue;
+    try {
+      await deps.check(city, tomorrow);
+    } catch (error) {
+      deps.failed(city, error);
+    }
+    return city;
+  }
+  return null;
+}
+
+/** The days ahead the hourly re-plan looks over, one in turn: tomorrow and the six after it. */
 const REPLAN_DAYS = 7;
 
-/** Every city and day with drafts in the days ahead, each re-planned (./replan-day.ts); how many drafts moved. */
+/** The most cities one hour's re-plan takes on, each costing tens of statements; any more wait for the day's next turn. */
+export const REPLAN_CITIES = 3;
+
+/**
+ * The day ahead this hour re-plans: tomorrow at midnight, the day after at 1 am, and so on round the week, so each day
+ * is re-planned three or four times a day and a run's statements stay few.
+ */
+export const replanDateAt = (now: Date): string =>
+  addDays(indiaDate(now), 1 + (Number(indiaTime(now).slice(0, 2)) % REPLAN_DAYS));
+
+/** This hour's day ahead in each city with drafts on it, up to REPLAN_CITIES, re-planned; how many drafts moved. */
 export async function replanAhead(
   db: D1Database,
   now: Date,
   deps: {
     readonly replan: (city: string, date: string) => Promise<number>;
     readonly failed: (city: string, error: unknown) => void;
+    /** The cities past REPLAN_CITIES, left for the day's next turn. */
+    readonly left: (cities: readonly string[]) => void;
   },
 ): Promise<number> {
-  const today = indiaDate(now);
+  const date = replanDateAt(now);
   const { results } = await db
     .prepare(
-      `SELECT DISTINCT service_city AS city, window_start FROM appointments
-       WHERE technician_draft = 1 AND window_start >= ?1 AND window_start < ?2 AND service_city IS NOT NULL`,
+      `SELECT DISTINCT service_city AS city FROM appointments
+       WHERE technician_draft = 1 AND window_start >= ?1 AND window_start < ?2 AND service_city IS NOT NULL
+       ORDER BY service_city`,
     )
-    .bind(
-      indiaInstant(addDays(today, 1), "00:00").toISOString(),
-      indiaInstant(addDays(today, REPLAN_DAYS + 1), "00:00").toISOString(),
-    )
-    .all<{ city: string; window_start: string }>();
-  const cityDays = new Set(results.map((row) => `${row.city}|${indiaDate(new Date(row.window_start))}`));
+    .bind(indiaInstant(date, "00:00").toISOString(), indiaInstant(addDays(date, 1), "00:00").toISOString())
+    .all<{ city: string }>();
   let moved = 0;
-  for (const key of cityDays) {
-    const [city = "", date = ""] = key.split("|");
+  for (const { city } of results.slice(0, REPLAN_CITIES)) {
     try {
       moved += await deps.replan(city, date);
     } catch (error) {
       deps.failed(city, error);
     }
   }
+  if (results.length > REPLAN_CITIES) deps.left(results.slice(REPLAN_CITIES).map((row) => row.city));
   return moved;
 }

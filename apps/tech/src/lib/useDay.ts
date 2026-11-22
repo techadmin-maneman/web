@@ -17,6 +17,7 @@ import {
   keepJob,
   keepToFix,
   keptDay,
+  keptDaySettled,
   keptJob,
   keptJobs,
   keptNames,
@@ -37,8 +38,8 @@ export type KeptLoad<T> =
   | { readonly state: "loading" }
   | Failed
   /**
-   * `fromPhone` is true when this is what the phone kept, not what the API just said. `settled`, for a day the API
-   * just answered, is false while its visits may still be given to the technician the evening before.
+   * `fromPhone` is true when this is what the phone kept, not what the API just said. `settled`, for a day, is false
+   * while its visits may still be given to the technician the evening before, as the API said when last asked.
    */
   | { readonly state: "loaded"; readonly value: T; readonly fromPhone: boolean; readonly settled?: boolean };
 
@@ -55,14 +56,16 @@ async function forgetStale(): Promise<void> {
 export async function loadDay(date: string): Promise<KeptLoad<readonly JobSummary[]>> {
   const answer = await api.jobs(date);
   if (answer.ok) {
-    await keepDay(date, answer.body.jobs).catch(() => undefined);
+    await keepDay(date, answer.body.jobs, answer.body.settled).catch(() => undefined);
     await keepToFix(answer.body.sent_back).catch(() => undefined);
     await forgetStale().catch(() => undefined);
     return { state: "loaded", value: answer.body.jobs, fromPhone: false, settled: answer.body.settled };
   }
   if (!unreachable(answer)) return failed(answer.requestId);
   const kept = await keptDay(date).catch(() => null);
-  return kept === null ? failed(answer.requestId) : { state: "loaded", value: kept, fromPhone: true };
+  if (kept === null) return failed(answer.requestId);
+  const settled = await keptDaySettled(date).catch(() => true);
+  return { state: "loaded", value: kept, fromPhone: true, settled };
 }
 
 /** How long a card just fetched counts as fresh to keep: going back to Today does not fetch every card again. */

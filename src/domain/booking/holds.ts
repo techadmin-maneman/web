@@ -59,6 +59,8 @@ interface HoldRow {
   visit_draft: number | null;
   /** 1 where ops chose the technician, who is then fixed, never a draft. */
   technician_chosen: number;
+  /** For a move, whether the visit it moves is still a draft; null for a new visit. */
+  moving_draft: number | null;
   appointment_id: string | null;
   moves_appointment_id: string | null;
   use_credit: number;
@@ -73,6 +75,7 @@ const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_na
     h.late_fee_gst_percent, h.change_notice_hours, h.late_change_charge, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
     h.moves_appointment_id, h.use_credit, h.person_id, h.pincode, h.one_visit, h.technician_chosen,
     (SELECT a.technician_draft FROM appointments a WHERE a.id = h.appointment_id) AS visit_draft,
+    (SELECT m.technician_draft FROM appointments m WHERE m.id = h.moves_appointment_id) AS moving_draft,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
   FROM slot_holds h
   -- Once booked, whoever its visit is with now, which the evening's re-plan may have changed.
@@ -123,10 +126,10 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
   const hours = windowTimesOf(schedule.on(row.date))[row.window_label];
   const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
   // Named only once fixed, the evening before (./allotment-lock.ts): as its visit stands once booked; before, unless
-  // ops chose who.
+  // ops chose who or it moves a visit already fixed (./move-in-place.ts).
   const draft =
     row.visit_draft === null
-      ? row.technician_chosen === 0 && bookedAsDraft(start, city, now, lockHours)
+      ? row.technician_chosen === 0 && row.moving_draft !== 0 && bookedAsDraft(start, city, now, lockHours)
       : row.visit_draft === 1;
   return {
     id: row.id,

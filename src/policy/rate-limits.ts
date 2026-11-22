@@ -100,6 +100,9 @@ export const RATE_LIMITS = {
   "ceiling:route": { per: "day", limit: 1000 },
   "ceiling:route_map": { per: "day", limit: 300 },
   "alert:ceiling": { per: "day", limit: 1 },
+  // Each city's tomorrow, re-planned and checked on Google once in the half hour before its lock
+  // (src/domain/booking/allotment-lock.ts).
+  evening_check: { per: "day", limit: 1 },
 } as const satisfies Readonly<Record<string, RateLimit>>;
 
 export type RateLimitScope = keyof typeof RATE_LIMITS;

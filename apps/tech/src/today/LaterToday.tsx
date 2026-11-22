@@ -141,7 +141,9 @@ export function Tomorrow(props: {
       <span>
         <strong>{copy.tomorrow}</strong>
         {" · "}
-        {first === undefined ? empty : copy.tomorrowJobs(jobs.length, clock(first.starts_at))}
+        {first === undefined
+          ? empty
+          : (props.settled ? copy.tomorrowJobs : copy.tomorrowSoFar)(jobs.length, clock(first.starts_at))}
       </span>
       <Chevron />
     </Link>

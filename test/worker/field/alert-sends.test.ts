@@ -134,6 +134,13 @@ describe("a job in the coming week, changed", () => {
     await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(AHEAD).run();
     expect(await alerts()).toEqual([]);
   });
+
+  it("tells nothing of a job moved where the move leaves it a draft, off the technician's list", async () => {
+    await env.DB.prepare("UPDATE appointments SET window_start = ?2, technician_draft = 1 WHERE id = ?1")
+      .bind(AHEAD, later)
+      .run();
+    expect(await alerts()).toEqual([]);
+  });
 });
 
 describe("the cron's alerts", () => {
@@ -218,6 +225,22 @@ describe("the cron's alerts", () => {
     await env.DB.prepare("DELETE FROM tech_alerts").run();
     await turnOff("day_ahead");
     expect(await writeDayAhead(env.DB, { now: NOW, date: "2026-09-22" })).toBe(0);
+  });
+
+  // The evening's lock may give a technician a draft of their city's, so the day ahead waits for it (ADR 0290).
+  it("waits to send the next day's jobs while a draft is left in the technician's city", async () => {
+    await appointment(AHEAD, IMRAN, "2026-09-22T05:30:00.000Z");
+    await appointment("22222222-2222-4222-8222-222222222298", SAMEER, "2026-09-22T08:00:00.000Z");
+    const city = await env.DB.prepare("SELECT city FROM technicians WHERE id = ?1")
+      .bind(IMRAN)
+      .first<{ city: string | null }>();
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1, service_city = ?2 WHERE id = ?1")
+      .bind("22222222-2222-4222-8222-222222222298", city?.city ?? null)
+      .run();
+    expect(await writeDayAhead(env.DB, { now: NOW, date: "2026-09-22" })).toBe(0);
+
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 0").run();
+    expect(await writeDayAhead(env.DB, { now: NOW, date: "2026-09-22" })).toBe(2);
   });
 
   it("sends the next day's jobs in the hour ops set for it, and only then", async () => {

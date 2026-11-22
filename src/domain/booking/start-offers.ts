@@ -66,7 +66,19 @@ export interface DayStarts {
 }
 
 /** The pincode a visit is at: the one it is booked at, else its client's current address's. */
-const PINCODE = `COALESCE(?2, (SELECT d.pincode FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL))`;
+const pincodeOf = (person: string, pincode: string) =>
+  `COALESCE(${pincode}, (SELECT d.pincode FROM addresses d WHERE d.person_id = ${person} AND d.replaced_at IS NULL))`;
+
+/**
+ * Where a visit is, as two columns, `lat` and `lng`, of a query that names its client's ID and its booked pincode: its
+ * client's current pin, else the centre of the pincode it is booked at or the client's.
+ */
+export const pinColumns = (person: string, pincode: string): string => `COALESCE(
+    (SELECT d.lat FROM addresses d WHERE d.person_id = ${person} AND d.replaced_at IS NULL AND d.lng IS NOT NULL),
+    (SELECT sp.centre_lat FROM serviceable_pincodes sp WHERE sp.pincode = ${pincodeOf(person, pincode)})) AS lat,
+  COALESCE(
+    (SELECT d.lng FROM addresses d WHERE d.person_id = ${person} AND d.replaced_at IS NULL AND d.lat IS NOT NULL),
+    (SELECT sp.centre_lng FROM serviceable_pincodes sp WHERE sp.pincode = ${pincodeOf(person, pincode)})) AS lng`;
 
 /** Where the visit is: its client's current pin, else the centre of the pincode it is booked at or the client's. */
 export async function pinOfVisit(
@@ -74,14 +86,7 @@ export async function pinOfVisit(
   placing: Pick<StartPlacing, "personId" | "pincode">,
 ): Promise<Pin | null> {
   const row = await db
-    .prepare(
-      `SELECT COALESCE(
-           (SELECT d.lat FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL AND d.lng IS NOT NULL),
-           (SELECT sp.centre_lat FROM serviceable_pincodes sp WHERE sp.pincode = ${PINCODE})) AS lat,
-         COALESCE(
-           (SELECT d.lng FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL AND d.lat IS NOT NULL),
-           (SELECT sp.centre_lng FROM serviceable_pincodes sp WHERE sp.pincode = ${PINCODE})) AS lng`,
-    )
+    .prepare(`SELECT ${pinColumns("?1", "?2")}`)
     .bind(placing.personId, placing.pincode ?? null)
     .first<{ lat: number | null; lng: number | null }>();
   const lat = row?.lat ?? null;

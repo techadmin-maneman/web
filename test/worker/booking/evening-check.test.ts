@@ -10,7 +10,10 @@ import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
 import type { Point, RoutesProvider } from "../../../src/providers/routes/index.ts";
-import { LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
+import { fakeDependencies, fakeQueue, LOCAL_CONFIG, LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
+import { createLogger } from "../../../src/log.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 
 const TUESDAY = "2026-09-22";
@@ -119,6 +122,34 @@ describe("tomorrow checked on Google", () => {
     expect(departures).toEqual([]);
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
     expect(told).toEqual([]);
+  });
+
+  it("runs in the cron: checked on Google half an hour before, then fixed with messaging off, every board told", async () => {
+    await booked(28.4599);
+    const { check, departures } = google(() => 10);
+    const version = async () =>
+      (await env.DB.prepare("SELECT version FROM board_version").first<{ version: number }>())?.version ?? 0;
+    const before = await version();
+    const messagingOff = {
+      ...LOCAL_CONFIG,
+      settings: { ...LOCAL_CONFIG.settings, messaging: { ...LOCAL_CONFIG.settings.messaging, enabled: false } },
+    };
+    const run = (job: string, time: string) =>
+      runCronJobs(
+        CRON_JOBS.filter((each) => each.name === job),
+        {
+          env: { ...env, MESSAGE_QUEUE: fakeQueue() },
+          deps: fakeDependencies({ now: () => indiaInstant("2026-09-21", time), routes: check.routes }),
+          config: messagingOff,
+          log: createLogger(),
+        },
+      );
+    await run("evening_check", "17:31");
+    expect(departures.length).toBeGreaterThan(0);
+    expect(await visitRow()).toMatchObject({ technician_draft: 1 });
+    await run("visit_reminders", "18:01");
+    expect(await visitRow()).toMatchObject({ technician_draft: 0 });
+    expect(await version()).toBeGreaterThan(before);
   });
 
   it("asks Google nothing where the routes provider is off, and re-plans on the estimate alone", async () => {

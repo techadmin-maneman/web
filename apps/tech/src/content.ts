@@ -90,6 +90,9 @@ export const today = localised({
   noJobs: "No jobs today",
   tomorrow: "Tomorrow",
   tomorrowJobs: (count: number, time: string) => `${String(count)} ${count === 1 ? "job" : "jobs"} from ${time}`,
+  /** Tomorrow's jobs before the evening's lock, which may give out more. */
+  tomorrowSoFar: (count: number, time: string) =>
+    `${String(count)} ${count === 1 ? "job" : "jobs"} so far, from ${time}`,
   nothingBooked: "Nothing booked",
   /** Tomorrow, before the evening's lock gives out its visits. */
   comeThisEvening: "Jobs come this evening",

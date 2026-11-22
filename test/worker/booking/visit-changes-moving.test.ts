@@ -136,8 +136,8 @@ describe("moving a visit", () => {
     });
     const app = client();
     const held = await hold(app, "service", "2026-09-25", "evening");
-    // Four days ahead, its technician is a draft, named the evening before (ADR 0290); who it is is checked below.
-    expect(held).toMatchObject({ price: { amount: 0 }, technician: null });
+    // A fixed visit moved stays fixed, with whoever takes the move (ADR 0290).
+    expect(held).toMatchObject({ price: { amount: 0 }, technician: { name: expect.any(String) as string } });
 
     await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     const moved = await env.DB.prepare("SELECT technician_id, window_start FROM appointments WHERE id = ?1")
@@ -150,8 +150,12 @@ describe("moving a visit", () => {
     await booked("service", THURSDAY_NOON, 200000);
     const app = client();
     const held = await hold(app, "service", "2026-09-25", "evening");
-    // Four days ahead, its technician is a draft again, named the evening before (ADR 0290).
-    expect(held).toMatchObject({ price: { amount: 0 }, technician: null, moves_visit_id: VISIT });
+    // A fixed visit moved stays fixed with its technician, who is told it moved (ADR 0290).
+    expect(held).toMatchObject({
+      price: { amount: 0 },
+      technician: { name: expect.any(String) as string },
+      moves_visit_id: VISIT,
+    });
 
     const started = await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
     expect(await started.json()).toEqual({ hold_id: held.id, checkout: null });
@@ -165,7 +169,7 @@ describe("moving a visit", () => {
     const kept = await env.DB.prepare("SELECT technician_id, technician_draft FROM appointments WHERE id = ?1")
       .bind(VISIT)
       .first();
-    expect(kept).toEqual({ technician_id: "t1", technician_draft: 1 });
+    expect(kept).toEqual({ technician_id: "t1", technician_draft: 0 });
     expect((await changes()).results).toEqual([
       {
         kind: "moved",
@@ -178,6 +182,17 @@ describe("moving a visit", () => {
     ]);
     const polled = await (await get(app, `/api/holds/${held.id}`)).json();
     expect(polled).toMatchObject({ state: "booked", visit_id: VISIT });
+  });
+
+  it("keeps a draft a draft where it moves to a day its lock has not reached, its technician unnamed", async () => {
+    await booked("service", THURSDAY_NOON, 200000);
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE id = ?1").bind(VISIT).run();
+    const app = client();
+    const held = await hold(app, "service", "2026-09-25", "evening");
+    expect(held).toMatchObject({ technician: null, moves_visit_id: VISIT });
+    await post(app, `/api/appointments/${VISIT}/reschedule`, { hold_id: held.id });
+    const kept = await env.DB.prepare("SELECT technician_draft FROM appointments WHERE id = ?1").bind(VISIT).first();
+    expect(kept).toEqual({ technician_draft: 1 });
   });
 
   it("moves a first fit inside 24 hours once its late fee is paid, keeping the fee as a charge", async () => {

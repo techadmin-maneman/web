@@ -18,9 +18,11 @@ import { reallottingDraft } from "../visits/technician-draft.ts";
 import { visitUpkeep } from "../visits/visit-upkeep.ts";
 import { loadDayPlans, type DayPlans } from "./day-plans.ts";
 import { fittingOf, techniciansFor } from "./occupancy.ts";
-import { pinOfVisit, planRulesOf, standings, type Radius } from "./start-offers.ts";
+import { pinColumns, planRulesOf, standings, type Radius } from "./start-offers.ts";
 import { tieRange } from "./technician-choice.ts";
-import { visitsOfClient } from "./technician-rotation.ts";
+import { visitsOfClients } from "./technician-rotation.ts";
+import type { ClientVisit } from "../../policy/technician-rotation.ts";
+import { hasOpenProposal } from "../visits/open-proposals.ts";
 
 export interface DraftRow {
   readonly id: string;
@@ -30,7 +32,15 @@ export interface DraftRow {
   readonly window_start: string;
   readonly technician_id: string;
   readonly service_pincode: string | null;
+  /** Where it is (./start-offers.ts pinColumns); null where neither the client nor the pincode has a pin. */
+  readonly lat: number | null;
+  readonly lng: number | null;
+  /** Whether its client is one of staging's test records, who is booked only with a test technician. */
+  readonly test_record: number | null;
 }
+
+/** Who a draft could go to, as booking reads it (./occupancy.ts). */
+type Able = Awaited<ReturnType<typeof techniciansFor>>;
 
 /** A draft the plan gives to another technician. */
 interface Move {
@@ -48,9 +58,25 @@ function weekOf(plans: DayPlans, technicianId: string, date: string): number {
   return minutes;
 }
 
+/**
+ * Who could take each draft, read once for each pincode and kind of client among the drafts that fit nothing, which
+ * nothing else of the client's changes; and for each fit, by its client's piece.
+ */
+function ableOnce(db: D1Database): (row: DraftRow) => Promise<Able> {
+  const read = new Map<string, Promise<Able>>();
+  return (row) => {
+    const fitting = fittingOf(row.type, row.tier);
+    const place = { pincode: row.service_pincode, personId: row.person_id };
+    if (fitting !== null) return techniciansFor(db, null, place, fitting);
+    const key = `${row.service_pincode ?? ""}|${String(row.test_record)}`;
+    const known = read.get(key) ?? techniciansFor(db, null, place);
+    read.set(key, known);
+    return known;
+  };
+}
+
 /** Who may take a draft, as booking would offer it: in the city, trained, in their ring, allowed by the rotation. */
-async function takersOf(
-  db: D1Database,
+function takersOf(
   row: DraftRow,
   read: {
     readonly radii: ReadonlyMap<string, Radius>;
@@ -59,14 +85,10 @@ async function takersOf(
     /** Who may no longer take it, Google's drive having left their day no room for it (./evening-check.ts). */
     readonly ruledOut: ReadonlySet<string>;
   },
-  date: string,
-): Promise<Map<string, Taking>> {
-  const place = { pincode: row.service_pincode, personId: row.person_id };
-  const [able, pin, visits] = await Promise.all([
-    techniciansFor(db, null, place, fittingOf(row.type, row.tier)),
-    pinOfVisit(db, place),
-    visitsOfClient(db, row.person_id, row.id),
-  ]);
+  found: { readonly able: Able; readonly visits: readonly ClientVisit[]; readonly date: string },
+): Map<string, Taking> {
+  const { able, visits, date } = found;
+  const pin = row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng };
   const where = standings(able.technicians, read.radii, { pin, keeping: null, inputs: read.inputs });
   const barred = techniciansBarredOn(visits, date);
   const allowed = allowedTechnicians(
@@ -109,10 +131,13 @@ export async function readDay(
   const { city, date, now, inputs } = input;
   const { results: rows } = await db
     .prepare(
-      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.technician_id, a.service_pincode
+      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.technician_id, a.service_pincode,
+         ${pinColumns("a.person_id", "a.service_pincode")},
+         (SELECT p.test_record FROM people p WHERE p.id = a.person_id) AS test_record
        FROM appointments a
        WHERE a.technician_draft = 1 AND a.window_start >= ?1 AND a.window_start < ?2 AND a.service_city = ?3
-         AND a.deleted_at IS NULL AND a.technician_id IS NOT NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}`,
+         AND a.deleted_at IS NULL AND a.technician_id IS NOT NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
+         AND NOT ${hasOpenProposal("a")}`,
     )
     .bind(indiaInstant(date, "00:00").toISOString(), indiaInstant(addDays(date, 1), "00:00").toISOString(), city)
     .all<DraftRow>();
@@ -160,6 +185,11 @@ export async function replanDay(
   if (read === null) return 0;
   const { rows, plans, days, radii } = read;
   const working = new Set(days.keys());
+  const able = ableOnce(db);
+  const visitsOf = await visitsOfClients(
+    db,
+    rows.flatMap((row) => row.person_id ?? []),
+  );
 
   const drafts: Draft[] = [];
   for (const row of rows) {
@@ -167,16 +197,13 @@ export async function replanDay(
     const day = days.get(row.technician_id);
     const stop = day?.stops.find((each) => each.start === start);
     if (day === undefined || stop === undefined) continue;
+    const found = { able: await able(row), visits: visitsOf(row.person_id, row.id), date };
+    const ruledOut = input.ruledOut?.get(row.id) ?? new Set<string>();
     drafts.push({
       id: row.id,
       stop,
       technicianId: row.technician_id,
-      takers: await takersOf(
-        db,
-        row,
-        { radii, working, inputs, ruledOut: input.ruledOut?.get(row.id) ?? new Set() },
-        date,
-      ),
+      takers: takersOf(row, { radii, working, inputs, ruledOut }, found),
     });
   }
   // Each day without its drafts: what is fixed on it, which the plan places the drafts around.
@@ -234,7 +261,8 @@ async function writeMoves(
            VALUES (?1,
              (SELECT a.id FROM appointments a
               WHERE a.id = ?2 AND a.technician_id IS ?3 AND a.window_start = ?5 AND a.technician_draft = 1
-                AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND NOT ${CLIENT_MOVING}),
+                AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)} AND NOT ${CLIENT_MOVING}
+                AND NOT ${hasOpenProposal("a")}),
              ?3, ?4, ?5, ?5, 'zone_rebalance', 'allotment', 'written', 'written', ?6, ?6)`,
         )
         .bind(moveId, row.id, row.technician_id, to, row.window_start, at),
