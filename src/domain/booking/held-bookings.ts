@@ -68,6 +68,15 @@ export async function heldBookingsOf(
   return results.map(heldOf);
 }
 
+/** The client a booking held on its link is for; null for no such hold. */
+export async function heldBookingPerson(db: D1Database, holdId: string): Promise<string | null> {
+  const hold = await db
+    .prepare("SELECT person_id FROM slot_holds WHERE id = ?1 AND pay_by_link = 1")
+    .bind(holdId)
+    .first<{ person_id: string }>();
+  return hold?.person_id ?? null;
+}
+
 /** What stands in the way of booking the client another visit of a kind: one still to come, or one held on its link. */
 export interface InTheWay {
   readonly visit: LiveVisit | null;

@@ -7,6 +7,7 @@ import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import {
+  heldBookingPerson,
   heldBookingsOf,
   inTheWay,
   letHeldBookingGo,
@@ -113,11 +114,9 @@ const letGoRoute = opsRoute({
 
 /** The client a hold is for, where the caller may reach them; null for none. */
 async function holdInReach(c: Context<AppEnv>, holdId: string): Promise<string | null> {
-  const hold = await c.env.DB.prepare("SELECT person_id FROM slot_holds WHERE id = ?1 AND pay_by_link = 1")
-    .bind(holdId)
-    .first<{ person_id: string }>();
-  if (hold === null) return null;
-  return (await clientInReach(c, hold.person_id)) === null ? null : hold.person_id;
+  const personId = await heldBookingPerson(c.env.DB, holdId);
+  if (personId === null) return null;
+  return (await clientInReach(c, personId)) === null ? null : personId;
 }
 
 export function registerOpsHeldBookings(app: App): void {
