@@ -6,6 +6,14 @@
 }
 
 /* Two to a row, each box the prototype's 48 px. */
+/* Which way the base's figures run, beneath its title, before them. */
+.how {
+  margin: 0 0 var(--sp-12);
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
 .figures {
   --field-height: var(--tech-min);
 

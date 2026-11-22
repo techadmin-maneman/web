@@ -180,6 +180,7 @@ function MeasureFields({
         <h2 className={capsLook(shared.fieldTitle)} id={baseId}>
           {copy.sections.base}
         </h2>
+        <p className={styles.how}>{copy.sections.baseHow}</p>
         <div className={styles.figures}>{BASE.map(figure)}</div>
       </section>
     </>

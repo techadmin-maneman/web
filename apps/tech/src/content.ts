@@ -1150,6 +1150,8 @@ export const profile = localised({
     stage: "Norwood stage",
     head: "Head, inches",
     base: "Base, inches",
+    // Which way each runs, as a stock code reads them, width by length: 8×10 is 8 side to side and 10 front to back.
+    baseHow: "Width runs side to side, length front to back.",
     colour: "Colour",
     grey: "Grey (%)",
     density: "Density",
@@ -1163,9 +1165,8 @@ export const profile = localised({
     front_to_nape_in: "Front to nape",
     ear_to_ear_in: "Ear to ear",
     temple_to_temple_in: "Temple to temple",
-    // Which way each runs, as a stock code reads them, width by length: 8×10 is 8 side to side and 10 front to back.
-    base_width_in: "Width (side to side)",
-    base_length_in: "Length (front to back)",
+    base_width_in: "Width",
+    base_length_in: "Length",
   },
   stages: { I: "I", II: "II", III: "III", IV: "IV", V: "V", VI: "VI", VII: "VII" } satisfies Words<"norwood_stage">,
   colours: {
