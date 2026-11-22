@@ -69,7 +69,9 @@ export function registerTechPieces(app: App): void {
     const client =
       job === undefined
         ? null
-        : await c.env.DB.prepare("SELECT person_id FROM appointments WHERE id = ?1 AND technician_id = ?2")
+        : await c.env.DB.prepare(
+            "SELECT person_id FROM appointments WHERE id = ?1 AND technician_id = ?2 AND technician_draft = 0",
+          )
             .bind(job, technicianOf(c).technicianId)
             .first<{ person_id: string | null }>();
     return c.json(

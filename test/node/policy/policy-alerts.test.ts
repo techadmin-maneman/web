@@ -40,6 +40,9 @@ describe("the department that acts on an alert", () => {
     expect(alertDepartment("razorpay_payment_unheard")).toBe("finance");
     expect(alertDepartment("razorpay_catch_up_not_booked")).toBe("finance");
     expect(alertDepartment("low_stock")).toBe("operations");
+    // A drive too short for tomorrow, and a city's drafts not re-planned, are ops' to look over on Dispatch.
+    expect(alertDepartment("leg_short")).toBe("operations");
+    expect(alertDepartment("replan_failed")).toBe("operations");
   });
 
   it("gives anything about the system itself, or unknown, to Admin", () => {

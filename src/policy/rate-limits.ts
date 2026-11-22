@@ -23,6 +23,9 @@ interface RateLimit {
 /** Address suggestions one asker may have in a day, so no one asker can spend the day's geocode ceiling. */
 const SUGGESTIONS_PER_DAY = 120;
 
+/** The times one client may hold in an hour. */
+export const HOLDS_PER_HOUR = 30;
+
 export const RATE_LIMITS = {
   // A page's report of its visitor's landing (docs/decisions/0288-attribution-and-conversions.md): a mobile network
   // puts many people behind one address, so the hour allows many; past it the page is answered with nothing kept.
@@ -50,6 +53,9 @@ export const RATE_LIMITS = {
 
   // What one client may ask of us in a day.
   "grievance:person": { per: "day", limit: GRIEVANCES_PER_DAY },
+  // The times a client holds in an hour, each one in place of the last: enough to change their mind many times over,
+  // and no more, as a hold may move a technician's draft to make room (docs/decisions/0292-room-made-at-booking.md).
+  "hold:person": { per: "hour", limit: HOLDS_PER_HOUR },
   "number_change:person": { per: "day", limit: 3 },
   // Something wrong with their hair system or a visit, told to Care from the app.
   "problem:person": { per: "day", limit: PROBLEMS_PER_DAY },

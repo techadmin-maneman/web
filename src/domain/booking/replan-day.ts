@@ -42,16 +42,24 @@ export interface CityDay {
   readonly radii: ReadonlyMap<string, Radius>;
 }
 
+type DayInput = { readonly city: string; readonly date: string; readonly now: Date; readonly inputs: OpsInputs };
+
+/** A city's day, India's, as booking plans on it; null where it has no draft to re-plan. */
+export async function readDay(db: D1Database, input: DayInput): Promise<CityDay | null> {
+  const rows = await draftsOf(db, input);
+  return rows.length === 0 ? null : dayOf(db, input, rows);
+}
+
 /**
- * A city's day, India's, as booking plans on it; null where it has no draft to re-plan, unless `evenWithoutDrafts`
- * asks for its technicians' days all the same (./evening-check.ts, once drafts may have been fixed meanwhile).
+ * A city's day with its technicians' days, even with no draft left (./evening-check.ts, once drafts may have been
+ * fixed meanwhile).
  */
-export async function readDay(
-  db: D1Database,
-  input: { readonly city: string; readonly date: string; readonly now: Date; readonly inputs: OpsInputs },
-  { evenWithoutDrafts = false }: { readonly evenWithoutDrafts?: boolean } = {},
-): Promise<CityDay | null> {
-  const { city, date, now, inputs } = input;
+export async function readWholeDay(db: D1Database, input: DayInput): Promise<CityDay> {
+  return dayOf(db, input, await draftsOf(db, input));
+}
+
+/** The city's drafts on the day still open to a re-plan. */
+async function draftsOf(db: D1Database, { city, date, now }: DayInput): Promise<DraftRow[]> {
   const { results: rows } = await db
     .prepare(
       `SELECT ${DRAFT_COLUMNS} FROM appointments a
@@ -64,7 +72,11 @@ export async function readDay(
       now.toISOString(),
     )
     .all<DraftRow>();
-  if (rows.length === 0 && !evenWithoutDrafts) return null;
+  return rows;
+}
+
+/** The day around its drafts: the city's active technicians, and each one's day as booking plans it. */
+async function dayOf(db: D1Database, { city, date, now, inputs }: DayInput, rows: DraftRow[]): Promise<CityDay> {
   const { results: crewRows } = await db
     .prepare("SELECT id, home_lat, home_lng, radius_km FROM technicians WHERE city = ?1 AND active = 1")
     .bind(city)
@@ -168,15 +180,13 @@ async function writeMoves(
   const at = now.toISOString();
   const locked = new Set<string>();
   const statements: D1PreparedStatement[] = [...releaseDeadHolds(db, now)];
-  const releases: D1PreparedStatement[] = [];
   for (const { row, to } of work.moves) {
     const revision = work.plans.revision(to, work.date);
     const move = draftMove(db, { row, to, date: work.date, revision, lock: !locked.has(to) }, at);
     locked.add(to);
     statements.push(...move.statements);
-    releases.push(move.release);
   }
-  statements.push(...releases, ...visitUpkeep(db, { visits: work.moves.map((each) => each.row.id) }, at));
+  statements.push(...visitUpkeep(db, { visits: work.moves.map((each) => each.row.id) }, at));
   try {
     await db.batch(statements);
     return true;

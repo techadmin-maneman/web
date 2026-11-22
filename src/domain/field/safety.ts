@@ -28,7 +28,9 @@ async function ownVisit(
       `SELECT a.technician_id, a.status,
               EXISTS (SELECT 1 FROM job_events e
                        WHERE e.appointment_id = a.id AND e.kind = 'check_in' AND e.superseded = 0) AS checked_in
-         FROM appointments a WHERE a.id = ?1 AND a.deleted_at IS NULL`,
+         FROM appointments a
+        -- A draft is no technician's yet, whoever it is with (src/domain/booking/allotment-lock.ts).
+        WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.technician_draft = 0`,
     )
     .bind(appointmentId)
     .first<{ technician_id: string | null; status: string; checked_in: number }>();

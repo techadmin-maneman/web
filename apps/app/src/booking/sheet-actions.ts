@@ -5,7 +5,10 @@ import { booking } from "../content.ts";
 import type { BookingEvent } from "./flow.ts";
 import type { Days } from "./useDays.ts";
 
-/** Holding the start chosen, and what is said when it cannot be: taken, no address, not served, or made to order. */
+/**
+ * Holding the start chosen, and what is said when it cannot be: taken, no address, not served, made to order, or held
+ * too often this hour.
+ */
 export function useHoldStart(sheet: {
   once: (work: () => Promise<void>) => Promise<void>;
   wanted: Wanted | null;
@@ -30,6 +33,7 @@ export function useHoldStart(sheet: {
       } else if (answer.code === "address_required") sheet.askForAddress(true);
       else if (answer.code === "not_served") sheet.showNotServed();
       else if (answer.code === "made_to_order") sheet.dispatch({ kind: "madeToOrder" });
+      else if (answer.code === "rate_limited") sheet.setProblem(booking.heldTooOften);
       else sheet.setProblem(booking.failedToStart);
     });
 }

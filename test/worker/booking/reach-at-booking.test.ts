@@ -103,10 +103,11 @@ describe("reach at booking", () => {
     const starts = day?.starts ?? [];
     const takers = [...new Set(starts.flatMap((start) => start.takers.map((taker) => taker.technician.id)))].sort();
     expect(takers).toEqual([IMRAN, SANDEEP, "t4"].sort());
-    for (const start of starts) {
-      const ids = start.takers.map((taker) => taker.technician.id);
-      if (ids.includes(IMRAN) && ids.includes("t4")) expect(ids.indexOf(IMRAN)).toBeLessThan(ids.indexOf("t4"));
-    }
+    const shared = starts.map((start) => start.takers.map((taker) => taker.technician.id));
+    const both = shared.filter((ids) => ids.includes(IMRAN) && ids.includes("t4"));
+    // Some start both can take, so the order between them is tested at all.
+    expect(both.length).toBeGreaterThan(0);
+    for (const ids of both) expect(ids.indexOf(IMRAN)).toBeLessThan(ids.indexOf("t4"));
   });
 
   it("gives a start to the one with less booked that week, though the other drives a little less", async () => {

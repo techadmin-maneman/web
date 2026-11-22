@@ -172,7 +172,7 @@ export async function checkBeforeLock(
     readonly firstToday: (city: string) => Promise<boolean>;
     readonly check: (city: string, date: string) => Promise<unknown>;
     /** A city whose check failed: told, and left as the hourly re-plan planned it, which the lock then fixes. */
-    readonly failed: (city: string, error: unknown) => void;
+    readonly failed: (city: string, date: string, error: unknown) => Promise<void> | void;
   },
 ): Promise<string | null> {
   if (Number(indiaTime(now).slice(3, 5)) < 60 - CHECK_BEFORE_LOCK_MINUTES) return null;
@@ -195,7 +195,7 @@ export async function checkBeforeLock(
     try {
       await deps.check(city, tomorrow);
     } catch (error) {
-      deps.failed(city, error);
+      await deps.failed(city, tomorrow, error);
     }
     return city;
   }
@@ -241,7 +241,7 @@ export async function replanAhead(
   deps: {
     readonly readHours: () => Promise<ReminderHours>;
     readonly replan: (city: string, date: string) => Promise<number>;
-    readonly failed: (city: string, error: unknown) => void;
+    readonly failed: (city: string, date: string, error: unknown) => Promise<void> | void;
     /** More cities than a day's turns take: some are never re-planned that day. */
     readonly left: (cities: readonly string[]) => void;
   },
@@ -266,7 +266,7 @@ export async function replanAhead(
     try {
       moved += await deps.replan(city, date);
     } catch (error) {
-      deps.failed(city, error);
+      await deps.failed(city, date, error);
     }
   }
   if (cities.length > REPLAN_CITIES * TURNS_A_DAY) deps.left(cities.slice(REPLAN_CITIES * TURNS_A_DAY));

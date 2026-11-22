@@ -73,6 +73,23 @@ describe("a visit moved by the client", () => {
     expect((await messagesOf(PERSON)).results).toEqual([{ kind: "reschedule_confirmation", subject_id: VISIT }]);
   });
 
+  it("moves it in place though the evening's re-plan moved the draft meanwhile, which moves no time", async () => {
+    await fittedClient();
+    await booked(THURSDAY_NOON);
+    const holdId = await moveHold("2026-09-25", "evening");
+    const { technician_id: imran } = (await visitOf(VISIT)) as { technician_id: string };
+    await env.DB.prepare(
+      `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
+         reason, actor, fsm_write_state, write_state, created_at, updated_at)
+       VALUES ('replan-1', ?1, ?2, ?2, ?3, ?3, 'zone_rebalance', 'allotment', 'written', 'written', ?4, ?4)`,
+    )
+      .bind(VISIT, imran, THURSDAY_NOON, NOW.toISOString())
+      .run();
+    await call(PERSON, `/api/appointments/${VISIT}/reschedule`, { method: "POST", body: { hold_id: holdId } });
+    expect(await visitOf(VISIT)).toMatchObject({ window_start: "2026-09-25T10:30:00.000Z" });
+    expect(await holdRow(holdId)).toEqual({ state: "booked", appointment_id: VISIT });
+  });
+
   it("books a new visit for a late move once paid, and cancels and charges the old one", async () => {
     await fittedClient();
     await booked(TUESDAY_MORNING);
@@ -138,7 +155,9 @@ describe("a client's move in place, when ops change the visit before it is booke
     expect((await changes()).results).toEqual([]);
     expect((await messagesOf(PERSON)).results).toEqual([{ kind: "booking_refunded", subject_id: holdId }]);
     expect(messageQueue.sent).toHaveLength(1);
-    expect(await countOf("slot_claims")).toBe(0);
+    // Nothing holds a time; the board's move keeps only its lock on Sameer's day.
+    const { results: claims } = await env.DB.prepare("SELECT claim, move_id FROM slot_claims").all();
+    expect(claims).toMatchObject([{ claim: "rev:1", move_id: expect.any(String) as unknown }]);
   });
 
   it("refunds a late fee paid after ops gave the visit to another technician, and tells the client", async () => {

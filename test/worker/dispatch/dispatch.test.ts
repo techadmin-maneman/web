@@ -222,7 +222,8 @@ describe("a visit with no room", () => {
 
     expect(answer.status).toBe(200);
     expect(await shown(FIT)).toEqual({ technician_id: SAMEER, window_start: "2026-09-23T08:30:00.000Z" });
-    expect((await claims()).results).toEqual([]);
+    // Its claims on the time let go, as the visit holds it; its lock on the day kept, so a stale hold fails.
+    expect((await claims()).results).toMatchObject([{ technician_id: SAMEER, date: "2026-09-23", claim: "rev:1" }]);
   });
 });
 

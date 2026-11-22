@@ -86,6 +86,12 @@ describe("an ask to reschedule", () => {
     expect(task?.visit).toMatchObject({ id: JOB });
   });
 
+  it("is refused for a visit still a draft, no technician's until the evening's lock", async () => {
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE id = ?1").bind(JOB).run();
+    expect((await ask()).status).toBe(404);
+    expect(await tasksOf("reschedule_request")).toEqual([]);
+  });
+
   it("is settled once ops move the visit, or close the task", async () => {
     await ask();
     await env.DB.prepare("UPDATE appointments SET window_start = '2026-09-22T05:00:00.000Z' WHERE id = ?1")

@@ -321,6 +321,8 @@ export const booking = {
     line: "We’re refunding your payment in full.",
   },
   failedToStart: "That didn’t go through. Try again.",
+  /** The times a client may hold in an hour are spent. */
+  heldTooOften: "That’s all the times we can hold for you this hour. Try again later, or message us on WhatsApp.",
   creditGone: "Your free service visit is already used, so this visit is charged at the price below.",
   close: "Close",
 } as const;

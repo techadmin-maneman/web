@@ -10,9 +10,13 @@ import {
   replanDateAt,
 } from "../../../src/domain/booking/allotment-lock.ts";
 import { replanDay } from "../../../src/domain/booking/replan-day.ts";
+import { loadDayPlans } from "../../../src/domain/booking/day-plans.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
-import { markDatabase, NOW } from "../helpers.ts";
+import { fakeDependencies, markDatabase, NOW } from "../helpers.ts";
+import { ALERT_WORDS } from "../../../src/config/alert-words.ts";
+import { createLogger } from "../../../src/log.ts";
+import { failedIn } from "../../../src/scheduled/allotment-jobs.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 import { aHold } from "../fixtures/index.ts";
 
@@ -49,8 +53,38 @@ beforeEach(async () => {
 const visitRow = () =>
   env.DB.prepare("SELECT technician_id, technician_draft FROM appointments WHERE id = ?1").bind(visitId).first();
 
+/**
+ * The database, with `raced` done just before the re-plan writes its moves, after it read the day: as a hold, or ops,
+ * can change the day between the two.
+ */
+function racedBy(raced: () => Promise<unknown>): D1Database {
+  let writing = false;
+  let done = false;
+  return new Proxy(env.DB, {
+    get(target, key) {
+      if (key === "prepare") {
+        return (sql: string) => {
+          if (sql.includes("INSERT INTO dispatch_moves")) writing = true;
+          return target.prepare(sql);
+        };
+      }
+      if (key === "batch") {
+        return async (statements: D1PreparedStatement[]) => {
+          if (writing && !done) {
+            done = true;
+            await raced();
+          }
+          return target.batch(statements);
+        };
+      }
+      const value: unknown = Reflect.get(target, key);
+      return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+    },
+  });
+}
+
 describe("a day's drafts re-planned", () => {
-  it("gives a draft to whoever it costs least, keeps it a draft, and records the move with no claim left", async () => {
+  it("gives a draft to whoever it costs least, keeps it a draft, records the move, and keeps the day locked", async () => {
     const moved = await replanDay(env.DB, {
       city: "Gurgaon",
       date: TUESDAY,
@@ -64,7 +98,37 @@ describe("a day's drafts re-planned", () => {
     ).toMatchObject({
       results: [{ was_technician_id: SANDEEP, now_technician_id: IMRAN, reason: "zone_rebalance", actor: "allotment" }],
     });
-    expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims").first())?.n).toBe(0);
+    // The lock on Imran's day is kept, so a hold planned on it before the move fails rather than miss the draft.
+    expect((await env.DB.prepare("SELECT technician_id, date, claim FROM slot_claims").all()).results).toEqual([
+      { technician_id: IMRAN, date: TUESDAY, claim: "rev:1" },
+    ]);
+    const plans = await loadDayPlans({
+      db: env.DB,
+      technicianIds: [IMRAN],
+      from: TUESDAY,
+      to: TUESDAY,
+      now: NOW,
+      inputs: await readOpsInputs(env.DB, NOW),
+    });
+    expect(plans.revision(IMRAN, TUESDAY)).toBe(1);
+  });
+
+  it("writes nothing where a hold locked the day it would go to, or the draft was fixed, after it was read", async () => {
+    const inputs = await readOpsInputs(env.DB, NOW);
+    const replan = (raced: () => Promise<unknown>) =>
+      replanDay(racedBy(raced), { city: "Gurgaon", date: TUESDAY, now: NOW, inputs });
+    const rival = await aHold({ person_id: (await client()).id, technician_id: IMRAN });
+    const holdLocks = () =>
+      env.DB.prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, 'rev:1', ?3)")
+        .bind(IMRAN, TUESDAY, rival.id)
+        .run();
+    expect(await replan(holdLocks)).toBe(0);
+    await env.DB.prepare("DELETE FROM slot_claims").run();
+    const opsFix = () =>
+      env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(visitId).run();
+    expect(await replan(opsFix)).toBe(0);
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 0 });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first("n")).toBe(0);
   });
 
   // A client's paid move waits to be booked onto the visit as it was; the rest of the day re-plans around it.
@@ -151,7 +215,9 @@ describe("a day's drafts re-planned", () => {
       readHours,
       firstToday: () => Promise.resolve(true),
       check: () => Promise.reject(new Error("D1 overloaded")),
-      failed: (city) => failed.push(city),
+      failed: (city) => {
+        failed.push(city);
+      },
     });
     expect(failed).toEqual(["Gurgaon"]);
     await lockDueDrafts(env.DB, indiaInstant("2026-09-21", "18:01"), { readHours });
@@ -226,11 +292,24 @@ describe("each hour's re-plan", () => {
         city === "Noida"
           ? Promise.reject(new Error("D1 overloaded"))
           : replanDay(env.DB, { city, date, now: midnight, inputs }),
-      failed: (city) => failed.push(city),
+      failed: (city) => {
+        failed.push(city);
+      },
       left: () => undefined,
     });
     expect({ moved, failed }).toEqual({ moved: 1, failed: ["Noida"] });
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+  });
+
+  it("tells Operations once of a city whose drafts on a day could not be re-planned", async () => {
+    const midnight = indiaInstant("2026-09-21", "00:20");
+    const failed = failedIn({ log: createLogger(), deps: fakeDependencies({ now: () => midnight }) });
+    await failed("Noida", TUESDAY, new Error("D1 overloaded"));
+    await failed("Noida", TUESDAY, new Error("D1 overloaded"));
+    const { results } = await env.DB.prepare("SELECT key, message FROM alerts WHERE key LIKE 'replan_failed:%'").all();
+    expect(results).toEqual([
+      { key: `replan_failed:Noida:${TUESDAY}`, message: ALERT_WORDS.replan_failed({ city: "Noida", day: TUESDAY }) },
+    ]);
   });
 
   /** The cities a turn left out, as it warns of them. */

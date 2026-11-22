@@ -1,8 +1,7 @@
 // Clients steered to the times that drive least (src/policy/steering.ts, ADR 0293): the app's and the site's times
 // leave out a start that adds more driving than the day's best by more than ops allow, never the day's last, and mark
-// the cheapest; a client's
-// hold takes only a start offered; ops see and may hold every start. NOW is Monday 21 September 2026, 12 noon in
-// India. Every name and number is made up.
+// the cheapest; a client's move is weighed by its own technician; a client's hold takes only a start offered; ops see
+// and may hold every start. NOW is Monday 21 September 2026, 12 noon in India. Every name and number is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -10,8 +9,10 @@ import { availability, freeTechnicians } from "../../../src/domain/booking/avail
 import { holdSlot } from "../../../src/domain/booking/hold-slot.ts";
 import { startOffers } from "../../../src/domain/booking/start-offers.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
+import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
+import { steer } from "../../../src/policy/steering.ts";
 import { markDatabase, NOW } from "../helpers.ts";
-import { client, IMRAN, SANA, technician, visit } from "./client-booking-fixtures.ts";
+import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 
 const TUESDAY = "2026-09-22";
 const SERVICE = { type: "service", tier: "standard", minutes: 60 } as const;
@@ -105,6 +106,40 @@ describe("times steered for clients", () => {
     expect(offered.filter((start) => start.recommended).map((start) => start.time)).toEqual(
       cheapest.sort((a, b) => (a ?? "").localeCompare(b ?? "")),
     );
+  });
+
+  it("weighs a client's move by its own technician, wherever they can take a start", async () => {
+    // Sandeep lives beside Rohit, so he is every start's best; Rohit's 10 o'clock visit, moved, is Imran's.
+    await technician(SANDEEP, "Sandeep Rawat", "SR");
+    await env.DB.prepare("UPDATE technicians SET home_lat = 28.46, home_lng = 77.0266 WHERE id = ?1")
+      .bind(SANDEEP)
+      .run();
+    const own = await visit(rohit, "service", "scheduled", indiaInstant(TUESDAY, "10:00").toISOString(), IMRAN);
+    await env.DB.prepare("UPDATE appointments SET service_city = 'Gurgaon', service_pincode = '122018' WHERE id = ?1")
+      .bind(own)
+      .run();
+    const moving = { visitId: own, technicianId: IMRAN };
+    const visitToPlace = { type: "service", minutes: SERVICE.minutes } as const;
+    const range = { from: TUESDAY, days: 1, now: NOW };
+    const [offers] = await startOffers({
+      db: env.DB,
+      placing: { ...placing(), moving },
+      visit: visitToPlace,
+      ...range,
+    });
+    const { steering } = await readOpsInputs(env.DB, NOW);
+    const shown = (starts: readonly { time: string; recommended: boolean }[]) =>
+      starts.map((start) => `${start.time}${start.recommended ? " recommended" : ""}`);
+    const byImran = shown(steer(offers?.starts ?? [], steering, IMRAN));
+    // Weighed by the day's best technician instead, the times differ: the test tells the two apart.
+    expect(byImran).not.toEqual(shown(steer(offers?.starts ?? [], steering)));
+    const [moved] = await availability({
+      db: env.DB,
+      placing: { ...placing(), moving },
+      visit: visitToPlace,
+      ...range,
+    });
+    expect(shown(moved?.starts ?? [])).toEqual(byImran);
   });
 
   it("shows ops every start", async () => {

@@ -8,7 +8,9 @@ import { holdSlot } from "../../../src/domain/booking/hold-slot.ts";
 import { startOffers, type StartVisit } from "../../../src/domain/booking/start-offers.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
-import { markDatabase, NOW } from "../helpers.ts";
+import { LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
+import type { DriveCheck } from "../../../src/domain/booking/drive-check.ts";
+import type { RoutesProvider } from "../../../src/providers/routes/index.ts";
 import { aHold } from "../fixtures/index.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 
@@ -142,6 +144,68 @@ describe("room made at booking", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first("n")).toBe(0);
   });
 
+  it("asks Google of the drives either side on the day without the draft it moves", async () => {
+    // Anjali's draft at 12:15 leaves Imran no time to reach her from Rohit's at 11, so it moves to make room. Every
+    // drive is five minutes but one to or from her door, three hours: the day with her draft still on it fails.
+    await env.DB.prepare("UPDATE appointments SET window_start = ?2, window_end = ?3 WHERE id = ?1")
+      .bind(draft, indiaInstant(TUESDAY, "12:15").toISOString(), indiaInstant(TUESDAY, "13:45").toISOString())
+      .run();
+    expect(await atEleven()).toEqual([{ technician: IMRAN, draft, to: SANDEEP }]);
+    const routes: RoutesProvider = {
+      route: (stops) =>
+        Promise.resolve({
+          ok: true,
+          legs: stops.slice(1).map((to, at) => {
+            const anjalis = to.lat === 28.55 || stops[at]?.lat === 28.55;
+            return { seconds: (anjalis ? 180 : 5) * 60, meters: 1000 };
+          }),
+          polyline: null,
+        }),
+      map: () => Promise.resolve({ ok: false, detail: "no map here" }),
+      areaMap: () => Promise.resolve({ ok: false, detail: "not drawn here" }),
+    };
+    const drives: DriveCheck = {
+      routes,
+      alert: () => Promise.resolve(),
+      settings: LOCAL_SETTINGS,
+      refused: () => Promise.resolve(),
+      answered: () => Promise.resolve(),
+    };
+    const hold = await holdSlot({
+      db: env.DB,
+      input: {
+        personId: rohit,
+        service: SERVICE,
+        date: TUESDAY,
+        window: "morning",
+        price: FREE,
+        pincode: "122018",
+        startsAt: indiaInstant(TUESDAY, "11:00"),
+      },
+      now: NOW,
+      holdSeconds: 600,
+      drives,
+    });
+    expect(hold?.technician.id).toBe(IMRAN);
+    expect(await draftRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
+  });
+
+  it("falls to the next technician's room where the first one's draft was fixed between the look and the write", async () => {
+    // Farhan lives 3 km from Rohit, and his draft at 11:00 is Priya's, who lives near Sandeep: either move makes room.
+    await technician("t4", "Farhan Ali", "FA");
+    await home("t4", 28.4865);
+    const priya = (await client()).id;
+    await livesAt(priya, 28.56);
+    await elevenOClock(priya, "t4");
+    const [first, second] = (await atEleven()) ?? [];
+    expect([first?.to, second?.to]).toEqual([SANDEEP, SANDEEP]);
+    const fixed = env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(first?.draft);
+    const hold = await holdEleven([fixed]);
+    expect(hold?.technician.id).toBe(second?.technician);
+    const moved = await env.DB.prepare("SELECT appointment_id, now_technician_id FROM dispatch_moves").all();
+    expect(moved.results).toEqual([{ appointment_id: second?.draft, now_technician_id: SANDEEP }]);
+  });
+
   it("holds a start that moves nothing, where the window asked for has one, though moving a draft costs less", async () => {
     // Imran's fixed 16:30 is far north, so Rohit at 13:30 means a long way round; at 12:00, with the draft gone, less.
     const north = (await client()).id;
@@ -217,6 +281,18 @@ describe("room made at booking", () => {
   it("leaves tomorrow's drafts to the evening's check once its half hour before the lock has begun", async () => {
     // 5:45 pm on Monday, a quarter of an hour before the 6 pm lock.
     expect(await atEleven({ now: indiaInstant("2026-09-21", "17:45") })).toBeUndefined();
+  });
+
+  it("keeps to the city's own lock: Gurgaon's at 8 pm leaves its drafts to a booking at 5:45", async () => {
+    await env.DB.prepare(
+      "INSERT INTO city_settings (city, key, value, updated_by, updated_at) VALUES ('Gurgaon', 'reminder_hour', '20', 'ops', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    expect(await atEleven({ now: indiaInstant("2026-09-21", "17:45") })).toEqual([
+      { technician: IMRAN, draft, to: SANDEEP },
+    ]);
+    expect(await atEleven({ now: indiaInstant("2026-09-21", "19:45") })).toBeUndefined();
   });
 
   it("makes no room by moving a visit whose technician is fixed", async () => {

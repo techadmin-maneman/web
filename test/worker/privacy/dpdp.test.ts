@@ -22,6 +22,7 @@ import {
   request,
 } from "../helpers.ts";
 import { PERSON, MOBILE } from "./dpdp-fixtures.ts";
+import { aTechnician, aVisit } from "../fixtures/index.ts";
 
 const VISIT = "22222222-2222-4222-8222-222222222222";
 
@@ -231,6 +232,20 @@ describe("GET /api/me/export", () => {
     });
     const audit = await env.DB.prepare("SELECT action FROM audit_log WHERE action = 'data.export'").first();
     expect(audit).toEqual({ action: "data.export" });
+  });
+
+  it("names a visit's technician only once fixed, not while the visit is a draft", async () => {
+    await aTechnician({ id: "t-imran", name: "Imran Qureshi", initials: "IQ" });
+    await aVisit({ person_id: PERSON, technician_id: "t-imran", technician_draft: 1 });
+    await aVisit({ person_id: PERSON, technician_id: "t-imran", window_start: "2026-09-24T05:00:00.000Z" });
+    const answer = await request(appFor("local", fakeDependencies(), {}, "client"), "/api/me/export", {
+      headers: { Cookie: cookie },
+    });
+    const { visits } = await answer.json<{ visits: { window_start: string; technician: string | null }[] }>();
+    expect(visits.map((each) => [each.window_start, each.technician]).sort()).toEqual([
+      ["2026-09-22T05:00:00.000Z", null],
+      ["2026-09-24T05:00:00.000Z", "Imran Qureshi"],
+    ]);
   });
 
   // What the export left out.

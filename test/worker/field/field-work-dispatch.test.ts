@@ -152,8 +152,9 @@ describe("dispatch", () => {
       write_state: "written",
     });
     expect(move?.message_id).not.toBeNull();
-    const claims = await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims").first<{ n: number }>();
-    expect(claims?.n).toBe(0);
+    // Its claims on the time let go, as the visit holds it; its lock on the day kept.
+    const { results: claims } = await env.DB.prepare("SELECT claim FROM slot_claims").all<{ claim: string }>();
+    expect(claims.map((each) => each.claim)).toEqual(["rev:1"]);
     expect(messageQueue.sent).toHaveLength(1);
   });
 

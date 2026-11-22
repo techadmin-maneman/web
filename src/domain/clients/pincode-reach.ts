@@ -98,7 +98,11 @@ export async function cityReach(
       centre,
       nearest:
         nearest === undefined ? null : { technician_id: nearest.technician.id, km: Math.round(nearest.km * 10) / 10 },
-      reached: measured.length === 0 ? null : measured.some((each) => each.km <= each.technician.ring_km),
+      // The ring as booking reaches it, not as it is shown, rounded to a tenth.
+      reached:
+        measured.length === 0
+          ? null
+          : measured.some((each) => each.km <= ringKm(each.technician.radius_km, inputs.allotment.overflow)),
       reached_by: measured.filter((each) => each.km <= each.technician.radius_km).map((each) => each.technician.id),
     };
   });
