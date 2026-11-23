@@ -123,6 +123,15 @@ describe("a custom order", () => {
         notes: { custom_order_id: order?.id, person_id: PERSON },
       }),
     ]);
+    // On WhatsApp too, under a token of ours (docs/decisions/0300-payment-links-on-whatsapp.md).
+    const whatsApp = await env.DB.prepare(
+      `SELECT l.amount, l.what, m.kind FROM pay_links l JOIN outbound_messages m ON m.subject_id = l.id
+       WHERE l.subject_kind = 'custom_order' AND l.subject_id = ?1`,
+    )
+      .bind(order?.id ?? "")
+      .all<{ amount: number; what: string; kind: string }>();
+    expect(whatsApp.results.map((row) => [row.amount, row.kind])).toEqual([[4_500_000, "payment_link"]]);
+    expect(whatsApp.results[0]?.what).toMatch(/^custom hair system, order /);
   });
 
   it("once paid, is the client's payment and a purchase order of its own, however often Razorpay says so", async () => {

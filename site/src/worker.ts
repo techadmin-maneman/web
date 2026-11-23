@@ -73,7 +73,7 @@ const KEPT_MS = 60_000;
 const FAILURE_KEPT_MS = 10_000;
 
 /** What the Worker asks mm-api for, as its log line names it. */
-type Asked = "invite" | "reward" | "cities" | "guarantee" | "link";
+type Asked = "invite" | "reward" | "cities" | "guarantee" | "link" | "pay link";
 
 /** A page's policy with a nonce of this request's own for its scripts; anything but a page is passed on as it is. */
 export function withNonce(answer: Response): Response {
@@ -145,6 +145,28 @@ const isLanding = (body: unknown): body is { readonly landing: string } =>
   "landing" in body &&
   typeof body.landing === "string" &&
   body.landing.startsWith("/book?");
+
+/** maneman.in/pay/<token>: a payment link's WhatsApp button (docs/decisions/0300-payment-links-on-whatsapp.md). */
+const PAY_LINK = /^\/pay\/([A-Za-z0-9_-]{22})\/?$/;
+
+/** Razorpay's own hosts: the only places a payment link's button sends anyone on to. */
+const RAZORPAY = /^https:\/\/(?:rzp\.io|(?:[a-z0-9-]+\.)?razorpay\.com)\//;
+
+const isOpenPayLink = (body: unknown): body is { readonly url: string } =>
+  typeof body === "object" && body !== null && "url" in body && typeof body.url === "string" && RAZORPAY.test(body.url);
+
+/**
+ * On to Razorpay's link while it is open; else the page that says it has closed. The visitor's address goes along, as
+ * an invite's does, since mm-api counts tokens that are not open against it.
+ */
+async function payLink(env: SiteEnv, visit: Request, origin: string, token: string): Promise<Response> {
+  const headers = new Headers();
+  const address = visit.headers.get("CF-Connecting-IP");
+  if (address !== null) headers.set("CF-Connecting-IP", address);
+  const found = await fetchJson(env, new Request(`${origin}/api/pay/${token}`, { headers }), "pay link", isOpenPayLink);
+  if (found !== null) return Response.redirect(found.url, 302);
+  return withNonce(await env.ASSETS.fetch(builtFile(visit, `${origin}/pay`)));
+}
 
 /**
  * Where a campaign link sends the visitor: /book with its tags and code, or plain /book for a link that is retired, is
@@ -408,6 +430,8 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
     const url = new URL(request.url);
     if (FILM.test(url.pathname)) return partOf(request, await env.ASSETS.fetch(request));
     if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
+    const token = PAY_LINK.exec(url.pathname)?.[1];
+    if (token !== undefined) return payLink(env, request, url.origin, token);
     const link = CAMPAIGN_LINK.exec(url.pathname);
     if (link !== null) {
       const [, kind = "", slug = ""] = link;

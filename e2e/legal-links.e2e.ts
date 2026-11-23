@@ -23,6 +23,7 @@ for (const path of [
   "/areas",
   "/r/ROHIT123",
   "/stop",
+  "/pay",
 ]) {
   test(`${path} links the privacy notice and the terms`, async ({ page }) => {
     await page.goto(path);

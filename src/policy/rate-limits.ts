@@ -82,6 +82,9 @@ export const RATE_LIMITS = {
   // Invites (docs/decisions/0048-referrals.md): codes that are not there, and an open counted once a day per address.
   "invite_miss:ip": { per: "hour", limit: INVITE_MISSES_PER_ADDRESS_HOURLY },
   invite_open: { per: "day", limit: 1 },
+  // Payment link tokens that are not there or have closed, so none is found by guessing
+  // (docs/decisions/0300-payment-links-on-whatsapp.md).
+  "pay_link_miss:ip": { per: "hour", limit: INVITE_MISSES_PER_ADDRESS_HOURLY },
 
   // The apps' error reports: per address, and from every address together.
   "client_error:ip": { per: "hour", limit: 20 },

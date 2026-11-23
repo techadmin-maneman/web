@@ -1681,6 +1681,20 @@
         ],
         "additionalProperties": false
       },
+      "OpenPayLink": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Razorpay's address for the link."
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false
+      },
       "UploadUrlResponse": {
         "type": "object",
         "properties": {
@@ -5088,6 +5102,148 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FitGuarantee"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pay/{token}": {
+      "get": {
+        "summary": "Razorpay's address for a payment link sent on WhatsApp, while it is open.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{22}$"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenPayLink"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: not a token we make",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: closed, paid for or never made",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: this address asked for too many tokens that are not open this hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "rate_limited"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
                 }
               }
             }

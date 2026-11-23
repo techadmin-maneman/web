@@ -45,6 +45,13 @@ export const notFound = {
   home: "Back to the site",
 };
 
+/** Where a payment link's WhatsApp button lands once the link has closed, been paid, or was never ours. */
+export const payClosed = {
+  title: "This payment link has closed.",
+  body: "It may already be paid. For a new link, message us on WhatsApp.",
+  home: "Back to the site",
+};
+
 /**
  * The page the link at the foot of a reminder or the launch alert opens. "Done" names what
  * stopped. "{whatsapp}" is the business number, as a chat link.
@@ -79,6 +86,7 @@ export const pageTitles = {
   offers: "Offer terms — Mane Man",
   notices: "Notices — Mane Man",
   notFound: "Not found — Mane Man",
+  payClosed: "Payment link closed — Mane Man",
   stop: "Stop messages — Mane Man",
 };
 

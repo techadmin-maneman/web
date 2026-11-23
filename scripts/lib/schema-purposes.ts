@@ -178,6 +178,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   partial_reasons:
     "The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).",
   outbound_messages: "Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).",
+  pay_links:
+    "Each payment link sent on WhatsApp, under the random token maneman.in/pay/<token> sends on to Razorpay by while it is open: the link, its amount, what it pays for and until when (ADR 0300).",
   payment_links:
     "The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).",
   payments: "The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).",

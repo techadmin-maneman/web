@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0300. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0301. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -195,6 +195,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0261](0261-razorpay-money-in-books.md) Razorpay's money in Books, from payment to the bank
 - [0274](0274-gst-on.md) GST on: prices with their GST, and every invoice line and fee carrying its tax
 - [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) One rule for paying, and the tagline as written
+- [0300](0300-payment-links-on-whatsapp.md) Payment links on WhatsApp, through our own address
 
 ### Privacy and accounts
 
@@ -634,3 +635,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0297](0297-drafts-off-a-day-that-no-longer-fits.md) | A draft its day no longer fits is moved, and two cities are checked a run | 2026-11-23 | accepted |  |
 | [0298](0298-past-weeks-on-schedule.md) | Schedule goes back to past weeks, and never past this one | 2026-11-23 | accepted |  |
 | [0299](0299-fit-today.md) | Fit today: a consultation becomes the fit at the door | 2026-11-23 | accepted |  |
+| [0300](0300-payment-links-on-whatsapp.md) | Payment links on WhatsApp, through our own address | 2026-11-23 | accepted |  |

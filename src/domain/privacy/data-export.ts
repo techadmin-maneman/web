@@ -69,6 +69,8 @@ export const EXPORT_QUERIES = {
     amount, promised_on, state, short_url, link_sent_at, paid_at, refund_reason, refunded_at, raised_at, updated_at
     FROM custom_orders
     WHERE person_id = ?1 ORDER BY raised_at, rowid`,
+  // Each payment link sent to them on WhatsApp: Razorpay's address, what it was for and until when; never the token.
+  pay_links: `SELECT url, amount, what, open_until, made_at FROM pay_links WHERE person_id = ?1 ORDER BY made_at`,
   // Free visits Care gave them, and why; never Care's note.
   remedies: `SELECT visits, reason, state, given_at, decided_at FROM remedies WHERE person_id = ?1
     ORDER BY given_at`,

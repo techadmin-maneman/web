@@ -445,6 +445,12 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "Our, Razorpay's and Books' keys, the currency (always rupees), and a one-way hash of the UPI ID, which reads as nothing.",
     erasure: { why: "Kept for eight years, as the law asks of payments and invoices." },
   },
+  pay_links: {
+    leftOut: ["id", "person_id", "subject_kind", "subject_id"],
+    whyLeftOut:
+      "The token, which opens the link from our address and so is a key, not about them; and our keys for what it pays for, which `what` says in words.",
+    erasure: { deletes: true, why: "The tokens go: a link of theirs no longer opens from our address." },
+  },
   pieces: {
     leftOut: [
       "id",

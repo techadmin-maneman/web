@@ -11,6 +11,7 @@ import { liveVisitOf, type LiveVisit } from "./availability.ts";
 import { BOOKING_LEASE_MS } from "./bookings.ts";
 import { giveBack } from "./give-back.ts";
 import { graceEnds, heldOnLink } from "./hold-stages.ts";
+import { payLinkSentAgain } from "../money/pay-links.ts";
 
 /** A booking held on its payment link. */
 export interface HeldBooking {
@@ -152,6 +153,7 @@ export async function resendHeldLink(
     return "unavailable";
   }
   deps.log.info("hold_link_resent", { hold_id: holdId });
+  await payLinkSentAgain(db, { kind: "hold", id: holdId }, now);
   return "resent";
 }
 

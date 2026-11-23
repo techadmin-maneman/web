@@ -28,6 +28,9 @@ export const TEMPLATES = {
   // The receipt once ops have recorded a UPI payment: {{6}} for the visit {{2}}, under reference {{7}}.
   upi_received_v1:
     "Hi {{1}}, thank you: payment received.\n{{6}} by UPI for your {{2}} (ref {{7}}). It's in the Mane Man app.",
+  // A payment link ops made (docs/decisions/0300-payment-links-on-whatsapp.md): {{2}} the amount, {{3}} what it pays
+  // for, {{4}} until when, {{5}} our address for it, which the approved template draws as its button.
+  payment_link_v1: "Hi {{1}}, here's your payment link.\n{{2}} for your {{3}}. Pay by {{4}}: {{5}}",
   // The receipt for a one visit paid by its link once the client is fitted: {{2}} the hair system.
   link_paid_v1:
     "Hi {{1}}, thank you: payment received.\n{{6}} for your {{2}} (ref {{7}}). Welcome to Mane Man. Your receipt will be in the app shortly.",
@@ -284,6 +287,7 @@ export const MESSAGE_CLASSES: Readonly<Record<MessageKind, MessageClass>> = {
   nothing_to_pay: "automatic", // the technician's close of a one visit, not the client's own action
   link_paid: "answering", // the client's own payment
   upi_received: "automatic", // ops recorded the client's UPI payment, in the console
+  payment_link: "automatic", // a link ops made, in the console or at the visit's close
   reschedule_confirmation: "answering", // the client's own move
   cancel_confirmation: "answering", // the client's own cancel
   visit_cancelled: "automatic", // ops cancelled it, in the console

@@ -11984,6 +11984,7 @@ Request body:
         "nothing_to_pay",
         "link_paid",
         "upi_received",
+        "payment_link",
         "reschedule_confirmation",
         "cancel_confirmation",
         "visit_cancelled",

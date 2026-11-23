@@ -59,6 +59,8 @@ import { composeFollowUp } from "../domain/visits/follow-ups.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { hasNumber } from "../lib/mobile.ts";
 import { composeUpiReceived } from "../domain/money/upi-payments.ts";
+import { composePaymentLink } from "../domain/money/pay-links.ts";
+import { AWAITING_APPROVAL } from "../config/approved-templates.ts";
 
 const RETRY_DELAY_SECONDS = 30;
 /** A send claimed longer ago than this is taken to have died, and may be claimed again. */
@@ -223,6 +225,12 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
       return composeLinkPaid(db, row.subject_id, row.person_id);
     case "upi_received":
       return composeUpiReceived(db, row.subject_id, row.person_id);
+    case "payment_link":
+      return composePaymentLink(
+        db,
+        { token: row.subject_id, personId: row.person_id, origin: PUBLIC_ORIGIN[config.environment] },
+        now,
+      );
     case "friend_fitted":
       return composeFriendFitted(db, row.subject_id, row.person_id);
     case "friend_credited":
@@ -309,6 +317,7 @@ export async function sendMessage({
   if (messageHeldBack(messaging, row)) return skip("number not on the allowlist");
   const content = await contentOf(db, config, row, now);
   if ("skip" in content) return skip(content.skip);
+  if (messaging.msg91 !== null && AWAITING_APPROVAL.has(content.template)) return skip("template awaits approval");
   const stopLink = await stopLinkOf(config, row, now);
 
   const claim = await claimSend(db, messageId, now);

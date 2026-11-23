@@ -1990,6 +1990,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pay/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Razorpay's address for a payment link sent on WhatsApp, while it is open. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    token: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Open */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OpenPayLink"];
+                    };
+                };
+                /** @description invalid_request: not a token we make */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: closed, paid for or never made */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description rate_limited: this address asked for too many tokens that are not open this hour */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "rate_limited";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tryon/upload-url": {
         parameters: {
             query?: never;
@@ -3748,6 +3840,13 @@ export interface components {
         FitGuarantee: {
             /** @description Days after a first fit in which the client may ask for a refit or a refund. */
             days: number;
+        };
+        OpenPayLink: {
+            /**
+             * Format: uri
+             * @description Razorpay's address for the link.
+             */
+            url: string;
         };
         UploadUrlResponse: {
             /** Format: uuid */

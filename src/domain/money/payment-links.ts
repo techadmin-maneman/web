@@ -18,6 +18,7 @@
 // the visit by its reference, the visit's ID. A link paid is ./payment-links-paid.ts.
 
 import { shortDate } from "@maneman/web-kit/dates";
+import { payLinkSentAgain, payLinkStatements } from "./pay-links.ts";
 import { onAllowlist, type MessagingSettings } from "../../config/settings.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -318,6 +319,7 @@ export async function resendLink(db: D1Database, deps: LinkDeps, linkId: string,
     return "unavailable";
   }
   deps.log.info("payment_link_resent", { appointment_id: row.appointment_id });
+  await payLinkSentAgain(db, { kind: "payment_link", id: row.id }, now);
   return "resent";
 }
 
@@ -356,6 +358,19 @@ async function askRazorpay({
     });
     if (!notify) deps.log.info("payment_link_not_texted", { appointment_id: visit.appointmentId });
     await keepLink(db, deps, { link, visit, made, closesAt }, now);
+    // Beside Razorpay's SMS, the link on WhatsApp (docs/decisions/0300-payment-links-on-whatsapp.md).
+    const paidFor = {
+      personId: visit.personId,
+      subject: { kind: "payment_link", id: link.id },
+      amount: link.amount,
+    } as const;
+    await db.batch(
+      payLinkStatements(
+        db,
+        { ...paidFor, url: made.shortUrl, what: `visit of ${shortDate(visit.day)}`, openUntil: closesAt },
+        now,
+      ),
+    );
     return "sent";
   } catch (error) {
     const reason = failureReason(error);

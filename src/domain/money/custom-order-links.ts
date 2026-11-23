@@ -15,6 +15,7 @@ import type { LinkDeps } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
+import { payLinkStatements } from "./pay-links.ts";
 
 export type CustomLinkSent = "sent" | "already_sent" | "unavailable";
 
@@ -62,6 +63,7 @@ export async function sendCustomOrderLink(
   if (order?.state !== "awaiting_payment") return "unavailable";
   if (order.link_sent_at !== null) return "already_sent";
   const notify = onAllowlist(deps.messagingSettings, order.mobile_e164);
+  const closesAt = paymentLinkClosesAt(now, (await readOpsInputs(db, now)).paymentLinks.pay_within_days);
   try {
     const made = await deps.payments.createPaymentLink({
       amount: order.amount,
@@ -69,10 +71,16 @@ export async function sendCustomOrderLink(
       description: `Mane Man · order ${numberOf(order.number)}`,
       customer: { name: order.name, contact: order.mobile_e164 },
       notes: { custom_order_id: order.id, person_id: order.person_id },
-      closesAt: paymentLinkClosesAt(now, (await readOpsInputs(db, now)).paymentLinks.pay_within_days),
+      closesAt,
       notify,
     });
     await keep(db, order.id, made, now);
+    // Beside Razorpay's SMS, the link on WhatsApp (docs/decisions/0300-payment-links-on-whatsapp.md).
+    const what = `custom hair system, order ${numberOf(order.number)}`;
+    const paidFor = { personId: order.person_id, subject: { kind: "custom_order", id: order.id } } as const;
+    await db.batch(
+      payLinkStatements(db, { ...paidFor, url: made.shortUrl, amount: order.amount, what, openUntil: closesAt }, now),
+    );
     await resolveAlertStatement(db, `custom_order_link:${order.id}`, now).run();
     return "sent";
   } catch (error) {

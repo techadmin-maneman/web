@@ -237,6 +237,17 @@ describe("POST /api/payment-links/:id/resend", () => {
       .first<{ short_url: string | null; sent_at: string | null }>();
     expect(kept?.short_url).toMatch(/^https:\/\/rzp\.io\/i\//);
     expect(kept?.sent_at).not.toBeNull();
+    // On WhatsApp too, under a token of ours (docs/decisions/0300-payment-links-on-whatsapp.md).
+    const whatsApp = await env.DB.prepare(
+      `SELECT l.subject_kind, l.url = ?2 AS same, l.what, m.kind FROM pay_links l
+       JOIN outbound_messages m ON m.subject_id = l.id WHERE l.subject_id = ?1`,
+    )
+      .bind(LINK, kept?.short_url ?? "")
+      .all<{ subject_kind: string; same: number; what: string; kind: string }>();
+    expect(whatsApp.results.map((row) => [row.subject_kind, row.same, row.kind])).toEqual([
+      ["payment_link", 1, "payment_link"],
+    ]);
+    expect(whatsApp.results[0]?.what).toMatch(/^visit of /);
   });
 
   it("sends nothing for a link already paid, or one Razorpay refused", async () => {
