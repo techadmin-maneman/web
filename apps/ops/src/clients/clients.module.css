@@ -198,7 +198,7 @@
   min-width: 0;
 }
 
-/* A long name runs on to a second line, broken between its words, rather than being cut short. */
+/* A long name runs on to a second line, broken between its words; a word too long for the card ends in an ellipsis. */
 .recentName {
   display: -webkit-box;
   max-width: 100%;
@@ -207,6 +207,15 @@
   font-weight: var(--weight-semibold);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.recentWord {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
 }
 
 @media (hover: hover) {
@@ -303,6 +312,20 @@
 
 .quietCell {
   color: var(--ui-text-muted);
+}
+
+/* A visit's discount code, beneath the visit's name; on a phone's card, on a line of its own at the card's right. */
+.visitCode {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+@media (max-width: 600px) {
+  .visitCode {
+    flex-basis: 100%;
+    align-items: flex-end;
+  }
 }
 
 /* A visit's day, and its time from and to, each on one line. */

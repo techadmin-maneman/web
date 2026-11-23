@@ -1,7 +1,7 @@
 // A discount code on one of the client's visits, beneath the visit in the Visits tab's Visit column, as the redesign has
-// no column of its own for it (docs/decisions/0108-discount-codes.md). A code goes on or comes off only while the visit's price is open
-// (`price_open`), and a consultation takes none. A code the client typed on the site shows under None and starts the
-// box.
+// no column of its own for it (docs/decisions/0108-discount-codes.md). A code goes on or comes off only while the
+// visit's price is open (`price_open`), and a consultation takes none. A code the client typed on the site shows
+// beneath the visit and starts the box.
 
 import { Field, TextInput } from "@maneman/ui/Field";
 import { plainDate } from "@maneman/web-kit/plain-date";
@@ -32,6 +32,46 @@ function Shown({ code }: { code: VisitDiscountCode | null }) {
   return (
     <span className={shared.closedLine}>
       {copy.applied(code.code, off)} · {copy.givenBy[code.given_by]}
+    </span>
+  );
+}
+
+/**
+ * A visit's code lines together, apart from its name: beneath it, or on a phone's card on a line of their own. Nothing
+ * where there is no code and none can be entered.
+ */
+function CodeLines(props: {
+  code: VisitDiscountCode | null;
+  requested: string | null;
+  when: string;
+  mayEnter: boolean;
+  mayRemove: boolean;
+  removing: boolean;
+  onEnter: () => void;
+  onRemove: () => void;
+}) {
+  const { code, requested, when, mayEnter, mayRemove } = props;
+  if (code === null && requested === null && !mayEnter) return null;
+  return (
+    <span className={shared.visitCode}>
+      {!(mayEnter && code === null) && <Shown code={code} />}
+      {requested !== null && <span className={shared.closedLine}>{copy.requested(requested)}</span>}
+      {mayEnter && code === null && (
+        <TextButton compact className={shared.rowAction} aria-label={copy.enterLabel(when)} onClick={props.onEnter}>
+          {copy.enter}
+        </TextButton>
+      )}
+      {mayRemove && code !== null && (
+        <TextButton
+          compact
+          className={shared.rowAction}
+          aria-label={copy.removeLabel(when)}
+          disabled={props.removing}
+          onClick={props.onRemove}
+        >
+          {props.removing ? copy.removing : copy.remove}
+        </TextButton>
+      )}
     </span>
   );
 }
@@ -114,32 +154,19 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
   const requested = code === null ? visit.requested_code : null;
   return (
     <>
-      {!(mayEnter && code === null) && <Shown code={code} />}
-      {requested !== null && <span className={shared.closedLine}>{copy.requested(requested)}</span>}
-      {mayEnter && code === null && (
-        <TextButton
-          compact
-          className={shared.rowAction}
-          aria-label={copy.enterLabel(when)}
-          onClick={() => {
-            setTyped(requested ?? "");
-            setStep("entering");
-          }}
-        >
-          {copy.enter}
-        </TextButton>
-      )}
-      {mayRemove && code !== null && (
-        <TextButton
-          compact
-          className={shared.rowAction}
-          aria-label={copy.removeLabel(when)}
-          disabled={step === "removing"}
-          onClick={() => void remove()}
-        >
-          {step === "removing" ? copy.removing : copy.remove}
-        </TextButton>
-      )}
+      <CodeLines
+        code={code}
+        requested={requested}
+        when={when}
+        mayEnter={mayEnter}
+        mayRemove={mayRemove}
+        removing={step === "removing"}
+        onEnter={() => {
+          setTyped(requested ?? "");
+          setStep("entering");
+        }}
+        onRemove={() => void remove()}
+      />
       {problem}
       {entering}
     </>

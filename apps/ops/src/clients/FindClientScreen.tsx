@@ -9,7 +9,7 @@ import { Initials } from "@maneman/ui/Initials";
 import { tileLook } from "@maneman/ui/Tile";
 import { errorText } from "@maneman/web-kit/refusal";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { clients } from "../content.ts";
@@ -95,7 +95,14 @@ function Recent() {
             <OpsLink className={tileLook(styles.recentCard)} to={clientPath(client.id, "visits")}>
               <Initials name={client.name} small />
               <span className={styles.recentWho}>
-                <span className={styles.recentName}>{client.name}</span>
+                <span className={styles.recentName}>
+                  {client.name.split(/\s+/).map((word, index) => (
+                    <Fragment key={index}>
+                      {index > 0 && " "}
+                      <span className={styles.recentWord}>{word}</span>
+                    </Fragment>
+                  ))}
+                </span>
                 {client.state !== undefined && (
                   <Badge tone={STATE_TONES[client.state]}>{clients.states[client.state]}</Badge>
                 )}

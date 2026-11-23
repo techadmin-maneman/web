@@ -278,10 +278,11 @@ export const clients = {
     code: {
       none: "None",
       /** "TENOFF, Rs. 1,234 off": what it takes off before GST, once the visit's price is known. */
-      applied: (code: string, off: string | null) => (off === null ? code : `${code}, ${off} off`),
+      /** Beneath the visit, with no column to name it: "Code FIRSTFIT300, Rs. 300 off". */
+      applied: (code: string, off: string | null) => (off === null ? `Code ${code}` : `Code ${code}, ${off} off`),
       givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" },
       /** A one visit's code the client typed when booking on the site, which "Enter a code" starts from. */
-      requested: (code: string) => `Client entered ${code} when booking`,
+      requested: (code: string) => `Client entered code ${code} when booking`,
       enter: "Enter a code",
       drawerTitle: (visit: string) => `Discount code · visit of ${visit}`,
       /** The button's whole name, since every row's says the same. */

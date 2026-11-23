@@ -67,7 +67,7 @@ test("shows the code the client gave when booking, and starts the box from it", 
   } satisfies OpsReply<"/api/clients/{id}">;
   await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(asked) });
   const row = visitRow(page, "25 Sep");
-  await expect(row).toContainText("Client entered TENPC when booking");
+  await expect(row).toContainText(opsCopy.clients.visits.code.requested("TENPC"));
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
   const drawer = page.getByRole("dialog", { name: opsCopy.clients.visits.code.drawerTitle("25 Sep 2027") });
   await expect(drawer.getByLabel(opsCopy.clients.visits.code.label, { exact: true })).toHaveValue("TENPC");

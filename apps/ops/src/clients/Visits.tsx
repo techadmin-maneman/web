@@ -9,7 +9,7 @@ import { NoValue } from "@maneman/ui/NoValue";
 import { Badge } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Button, buttonLook, RowButton } from "@maneman/ui/Button";
-import { ACTIONS, CellDetail, RowActions, rowRule, Table } from "@maneman/ui/Table";
+import { ACTIONS, CellDetail, RowActions, rowRule, Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { indiaClock, longDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
@@ -293,25 +293,27 @@ export function VisitRecords({
   if (rows.length === 0) return null;
   return (
     <Panel titleId="client-visits" title={clients.tabs[0].label}>
-      <Table className={styles.visitTable}>
-        <thead>
-          <tr>
-            {copy.columns.map((column) => (
-              <th key={column} scope="col">
-                {column}
+      <TableScroll labelledBy="client-visits">
+        <Table className={styles.visitTable}>
+          <thead>
+            <tr>
+              {copy.columns.map((column) => (
+                <th key={column} scope="col">
+                  {column}
+                </th>
+              ))}
+              <th scope="col">
+                <VisuallyHidden>{copy.actionsColumn}</VisuallyHidden>
               </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((listed) => (
+              <VisitRow key={listed.visit.id} listed={listed} changing={{ name, onChanged }} lost={lostReasons} />
             ))}
-            <th scope="col">
-              <VisuallyHidden>{copy.actionsColumn}</VisuallyHidden>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((listed) => (
-            <VisitRow key={listed.visit.id} listed={listed} changing={{ name, onChanged }} lost={lostReasons} />
-          ))}
-        </tbody>
-      </Table>
+          </tbody>
+        </Table>
+      </TableScroll>
     </Panel>
   );
 }
