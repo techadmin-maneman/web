@@ -159,7 +159,10 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   await page.goto("/clients");
   const recent = page.getByRole("region", { name: opsCopy.clients.find.recent });
-  await expect(recent.getByRole("link", NAME)).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
+  // A card each: their name, and where they stood when opened.
+  const card = recent.getByRole("link", { name: new RegExp(`^${CLIENT.name}`) });
+  await expect(card).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
+  await expect(card).toContainText(opsCopy.clients.states[RECORD.state]);
 
   await page.route("**/cdn-cgi/access/logout", (route) => route.fulfill({ contentType: "text/html", body: "" }));
   await page.getByRole("button", { name: opsCopy.shell.account.named("") }).click();

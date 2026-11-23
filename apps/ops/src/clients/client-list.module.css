@@ -30,13 +30,12 @@
   color: var(--ui-text-muted);
 }
 
-/* What waits on Tasks for the client, in brass; past its day, in the error's red. */
-.listNeed {
-  color: var(--ui-attention);
-}
-
-.listLate {
-  color: var(--ui-error);
+/* The package a client is on, beneath where they stand. */
+.listPackage {
+  display: block;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
 }
 
 /* What they have paid, at the right, its figures in line. */

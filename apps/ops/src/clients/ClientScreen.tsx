@@ -38,6 +38,7 @@ import { Payments } from "./Payments.tsx";
 import { Photos, usePhotos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
 import { Visits } from "./Visits.tsx";
+import { STATE_TONES } from "./client-states.ts";
 
 type Credits = ClientRecord["credits"];
 type Address = ClientRecord["address"];
@@ -47,9 +48,6 @@ interface Attached {
   readonly invite: ClientInvite;
   readonly news: InviteNews;
 }
-
-/** Fitted is done; Booked is under way; nothing booked is a client to win back, said plainly. */
-const STATE_TONES = { fitted: "done", lead: "attention", nothing_booked: "neutral" } as const;
 
 /** The head's badges and facts: where they stand, a replacement past its day; their number, city, since and package. */
 function headOf(record: ClientRecord): RecordHead {
@@ -264,10 +262,13 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   const photos = usePhotos(clientId);
   const [erasedId, setErasedId] = useState<string | null>(null);
   // Offered again on the Clients page, for the rest of the session.
-  const opened = loaded.state === "loaded" && !isErased(loaded.value) ? loaded.value.name : null;
+  const opened = loaded.state === "loaded" && !isErased(loaded.value) ? loaded.value : null;
+  const openedName = opened?.name ?? null;
+  const openedState = opened?.state ?? null;
   useEffect(() => {
-    if (opened !== null) rememberClient({ id: clientId, name: opened });
-  }, [clientId, opened]);
+    if (openedName !== null && openedState !== null)
+      rememberClient({ id: clientId, name: openedName, state: openedState });
+  }, [clientId, openedName, openedState]);
 
   if (erasedId === clientId) return <Erased />;
   return whenLoaded(loaded, {

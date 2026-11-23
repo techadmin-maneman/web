@@ -118,11 +118,11 @@ export interface CallTaken {
   readonly known: boolean;
 }
 
-/** The Clients page's action, for those who may take one. */
+/** The Clients page's one action, filled, for those who may take one. */
 export function CallLead(props: { onTaken: (taken: CallTaken) => void }) {
   if (!useAccess().mayCall("POST /api/leads/call")) return null;
   return (
-    <DrawerButton label={copy.open}>
+    <DrawerButton label={copy.open} primary>
       {(close) => (
         <CallForm
           onTaken={(done) => {

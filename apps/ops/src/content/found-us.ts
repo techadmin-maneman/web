@@ -31,12 +31,12 @@ export const foundUs = {
   },
   none: "Nothing recorded of how they found us.",
   call: {
-    open: "Lead from a call",
-    name: "Their name",
-    mobile: "Their mobile",
-    channel: "Where they came from",
+    open: "Add a client",
+    name: "Name",
+    mobile: "Mobile number",
+    channel: "How they heard of us",
     choose: "Choose",
-    save: "Save lead",
+    save: "Add client",
     saving: "Saving…",
     /** Their channels, as ops pick them on a call: the codes are src/policy/channels.ts's. */
     channels: {
@@ -53,9 +53,9 @@ export const foundUs = {
     missing: {
       name: "Type their name.",
       mobile: "Type their ten-digit mobile.",
-      channel: "Pick where they came from.",
+      channel: "Pick how they heard of us.",
     },
-    saved: "Lead saved.",
+    saved: "Client added.",
     known: "They are a client already: the call is on their record.",
     open_client: "Open their record",
   },

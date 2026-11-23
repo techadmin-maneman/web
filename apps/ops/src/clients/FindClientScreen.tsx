@@ -4,6 +4,9 @@
 // (./ClientList.tsx).
 
 import { SearchInput } from "@maneman/ui/SearchInput";
+import { Badge } from "@maneman/ui/Badge";
+import { Initials } from "@maneman/ui/Initials";
+import { tileLook } from "@maneman/ui/Tile";
 import { errorText } from "@maneman/web-kit/refusal";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,6 +20,7 @@ import { PageActions } from "../frame/PageHead.tsx";
 import { CallLead, CallTakenLine, type CallTaken } from "./CallLead.tsx";
 import { ClientList } from "./ClientList.tsx";
 import styles from "./clients.module.css";
+import { STATE_TONES } from "./client-states.ts";
 import { Refusal } from "@maneman/ui/Refusal";
 
 const copy = clients.find;
@@ -76,19 +80,26 @@ function Found({ text, found }: { text: string; found: ClientsFound }) {
   );
 }
 
+/** The clients opened this session, a card each with where they stood, in a row that scrolls sideways on a phone. */
 function Recent() {
   const [recent] = useState(recentClients);
   if (recent.length === 0) return null;
   return (
-    <section className={styles.found} aria-labelledby="recent-clients">
-      <h2 className={styles.foundTitle} id="recent-clients">
+    <section className={styles.recent} aria-labelledby="recent-clients">
+      <h2 className={styles.recentTitle} id="recent-clients">
         {copy.recent}
       </h2>
-      <ul className={styles.foundList}>
+      <ul className={styles.recentList}>
         {recent.map((client) => (
-          <li className={styles.foundRow} key={client.id}>
-            <OpsLink className={styles.foundName} to={clientPath(client.id, "visits")}>
-              {client.name}
+          <li key={client.id}>
+            <OpsLink className={tileLook(styles.recentCard)} to={clientPath(client.id, "visits")}>
+              <Initials name={client.name} small />
+              <span className={styles.recentWho}>
+                <span className={styles.recentName}>{client.name}</span>
+                {client.state !== undefined && (
+                  <Badge tone={STATE_TONES[client.state]}>{clients.states[client.state]}</Badge>
+                )}
+              </span>
             </OpsLink>
           </li>
         ))}

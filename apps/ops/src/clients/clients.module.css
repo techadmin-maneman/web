@@ -153,11 +153,71 @@
   text-underline-offset: var(--sp-4);
 }
 
-.foundTitle {
+/* ---- The clients opened this session: a card each, six to a row, scrolling sideways where six do not fit ---- */
+
+.recent {
+  margin-bottom: var(--sp-20);
+}
+
+.recentTitle {
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-14);
   font-weight: var(--weight-regular);
   color: var(--ui-text-muted);
+}
+
+.recentList {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--sp-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recentCard {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  min-width: 0;
+  padding: var(--sp-12);
+  border: var(--hairline) solid var(--ui-line);
+  border-radius: var(--ui-radius-box);
+  background: var(--ui-raised);
+  color: var(--ui-text);
+  text-decoration: none;
+}
+
+.recentWho {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.recentName {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .recentCard:hover {
+    border-color: var(--ui-line-control);
+  }
+}
+
+@media (max-width: 1279px) {
+  .recentList {
+    grid-auto-columns: calc(var(--sp-8) * 21);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    overflow-x: auto;
+  }
 }
 
 .foundWho {

@@ -28,7 +28,7 @@ export const clients = {
     underWay: "Visit under way",
     noVisit: "No visit booked",
     /** The clients opened this session, offered before anything is searched for. */
-    recent: "Recent",
+    recent: "Recently opened",
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "Type 2+ letters of a name, or 4+ digits.",
