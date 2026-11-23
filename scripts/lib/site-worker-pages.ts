@@ -14,7 +14,7 @@ export const SITE_WORKER_PAGES = [
   "/offer-terms",
   // A payment link's button, and the pages it lands on (docs/decisions/0300-payment-links-on-whatsapp.md).
   "/pay",
-  "/pay/again",
+  "/pay-again",
   "/pay/*",
   "/r",
   "/r/*",

@@ -161,7 +161,7 @@ const STOP_PATH = "/stop";
  * A payment link's pages, whose address the site's Worker never lets hold its token: no tag starts as they open, as on
  * /stop, a client's own link (docs/decisions/0300-payment-links-on-whatsapp.md). An Accept there starts them, as there.
  */
-const PAY_PATH = /^\/pay(?:\/|$)/;
+const PAY_PATH = /^\/pay(?:-again)?(?:\/|$)/;
 
 /** What an event says of the person, which no tag is given as a parameter: the area, and the hashed number. */
 const PERSONAL_PARAMETERS = new Set(["area", "phone_hash"]);

@@ -144,7 +144,7 @@ describe("the sitemap", () => {
       "r.html",
       "stop.html",
       "pay.html",
-      "pay/again.html",
+      "pay-again.html",
     ];
     const paths = files.map(pagePath).filter((path) => path !== null);
     expect(paths).toEqual(["/", "/try", "/privacy"]);

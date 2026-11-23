@@ -22,9 +22,9 @@ have approved is our site's origin followed by a path.
    texted it.
 2. **`maneman.in/pay/<token>` sends the client on to Razorpay** while the link is open. Otherwise mm-site's Worker
    sends them to a page of ours by an address without the token, so no page's tags, history or error report ever
-   holds it: `/pay`, that the link has closed, where mm-api says it is not open; `/pay/again`, that it could not be
+   holds it: `/pay`, that the link has closed, where mm-api says it is not open; `/pay-again`, that it could not be
    opened just now, where mm-api could not say, since it may still be open. Both offer a chat with us, opened with
-   their own words. A page the Worker failed on at a token's address goes to `/pay/again`. A token is 128 random
+   their own words. A page the Worker failed on at a token's address goes to `/pay-again`. A token is 128 random
    bits, which is what keeps it from being guessed. An open one is always answered, so clients behind one carrier's
    address are never kept from theirs; a miss is counted against the address, which past its misses for the hour is
    answered 429 rather than 404, as an invite code's are. A link paid, or cancelled at Razorpay, still opens while it

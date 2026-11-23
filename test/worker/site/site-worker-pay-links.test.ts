@@ -39,20 +39,20 @@ describe("a payment link's button", () => {
   });
 
   // The link may still be open: never told it has closed.
-  it("sends the client to /pay/again when mm-api could not say", async () => {
+  it("sends the client to /pay-again when mm-api could not say", async () => {
     for (const api of [
       () => Response.json({ error: { code: "internal_error" } }, { status: 500 }),
       () => Promise.reject(new Error("unreachable")),
     ] satisfies Api[]) {
       const { response } = await open(`/pay/${TOKEN}`, api);
-      expect(response.headers.get("Location")).toBe("https://maneman.in/pay/again");
+      expect(response.headers.get("Location")).toBe("https://maneman.in/pay-again");
     }
   });
 
   it("never sends anyone anywhere but Razorpay", async () => {
     const { response } = await open(`/pay/${TOKEN}`, () => Response.json({ url: "https://evil.example/rzp.io/" }));
 
-    expect(response.headers.get("Location")).toBe("https://maneman.in/pay/again");
+    expect(response.headers.get("Location")).toBe("https://maneman.in/pay-again");
   });
 
   it("asks mm-api nothing for an address that is no token of ours", async () => {

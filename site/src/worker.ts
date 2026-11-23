@@ -157,7 +157,7 @@ const isOpenPayLink = (body: unknown): body is { readonly url: string } =>
 
 /** A payment link's pages of our own: it has closed, or it could not be looked up just now. Never the token. */
 const PAY_CLOSED = "/pay";
-const PAY_AGAIN = "/pay/again";
+const PAY_AGAIN = "/pay-again";
 
 /**
  * On to Razorpay's link while it is open. Otherwise to a page of ours by an address without the token, so no page's
