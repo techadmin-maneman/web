@@ -17,6 +17,7 @@ import type { SigningSecret } from "../../lib/signed-token.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import { namesMoreThanItsKind } from "../../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
+import { NOT_CLOSED, SIGN_OFF_PENDING, stageOf, type VisitStage } from "./visit-stage.ts";
 import { tickedItemsOf } from "../field/job-event-bodies.ts";
 import { jobSheet } from "../field/job-sheet-settings.ts";
 import { noShowNotes, type NoShowNote } from "./no-show-notes.ts";
@@ -41,14 +42,6 @@ import { readOpsInputs } from "../platform/ops-settings.ts";
 
 /** The three windows the client app offers, by the hour a visit starts in India. */
 type VisitWindowLabel = "morning" | "afternoon" | "evening";
-
-/**
- * Where a visit not yet closed stands for the client: still to come, under
- * way, closed as done from the technician's phone, or otherwise over and waiting
- * to be closed. A visit stays the client's until it is closed, so it
- * never drops out of both lists.
- */
-type VisitStage = "booked" | "arrived" | "in_progress" | "done" | "closing" | "missed";
 
 interface VisitSummary {
   readonly id: string;
@@ -117,6 +110,8 @@ interface AppointmentRow {
   /** 1 once the technician has started the work, past checking in at the door. */
   started: number;
   landed_outcome: VisitOutcome | null;
+  /** 1 while the client's sign-off of a fit is asked for, or flagged for the technician to put right. */
+  sign_off_pending: number;
   client_note: string | null;
   not_home: number;
   /** The open move proposal, as openProposalJson writes it; null for none. */
@@ -136,14 +131,13 @@ const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.wind
   a.service_pincode, (SELECT s.name FROM services s WHERE s.kind = a.type AND s.tier = a.tier) AS service_name,
   t.name AS technician_name, t.initials AS technician_initials, a.technician_draft, ${PREPAID} AS prepaid,
   ${visitBegun("a")} AS begun, ${begunPastArrival("a")} AS started, ${landedOutcome("a")} AS landed_outcome, a.client_note,
+  ${SIGN_OFF_PENDING} AS sign_off_pending,
   EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id AND n.closed_at IS NOT NULL) AS not_home,
   ${openProposalJson("a")} AS proposal,
   (SELECT h.amount FROM slot_holds h WHERE h.appointment_id = a.id AND h.pay_at_visit = 1 AND h.state = 'booked'
      AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id AND p.kind = 'visit'
                        AND ${statusIn("p.status", PAYMENT_HELD)})) AS due_at_visit`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
-/** The statuses of a visit not yet closed. */
-const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
 /** A visit cancelled outright, not one a charged move replaced with a new visit, which stands in its place. */
 const CANCELLED = `(a.status = 'cancelled' AND NOT EXISTS (SELECT 1 FROM visit_changes c
     WHERE c.appointment_id = a.id AND c.kind = 'replaced'))`;
@@ -172,21 +166,6 @@ async function contextOf(db: D1Database, personId: string, now: Date): Promise<S
       ? `${address.locality}, ${address.city} ${address.pincode}`
       : [row.service_city, row.service_pincode].filter((part) => part !== null).join(" ");
   return { place, schedule, arrivalMinutes: inputs.bookingRules.arrival, waits: inputs.noShowWaitMin };
-}
-
-/**
- * The technician's steps come before the visit's status, which follows them: a visit they closed as done is done; one
- * they closed otherwise, or whose window has ended after they arrived, is being closed; one whose window ended with
- * nobody arriving was missed; one they have started is in progress, and one they have only checked in at is arrived.
- */
-function stageOf(row: AppointmentRow, now: Date): VisitStage | null {
-  if (!NOT_CLOSED.includes(row.status)) return null;
-  if (row.landed_outcome === "done") return "done";
-  if (row.landed_outcome !== null) return "closing";
-  if (Date.parse(row.window_end) < now.getTime()) return row.begun === 1 ? "closing" : "missed";
-  if (row.started === 1 || row.status === "in_progress") return "in_progress";
-  if (row.begun === 1) return "arrived";
-  return "booked";
 }
 
 /** What a one visit not yet closed costs once fitted; null for any other visit. */
@@ -264,7 +243,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
       .prepare(
         `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
          WHERE ${LIVE} AND ${statusIn("a.status", VISIT_LIVE)} AND NOT ${missedDayOver("a", "?3")}
-         ORDER BY a.window_end < ?2 OR landed_outcome IS NOT NULL, a.window_start LIMIT 1`,
+         ORDER BY (a.window_end < ?2 AND NOT sign_off_pending) OR landed_outcome IS NOT NULL, a.window_start LIMIT 1`,
       )
       .bind(personId, now.toISOString(), todayStartsOf(now))
       .first<AppointmentRow>(),
