@@ -88,8 +88,9 @@
     --title-font: var(--font-serif);
     --title-weight: var(--weight-regular);
     /* A page's title, a drawer's and a section's (./type.module.css): the scale's sizes, unless an app sets its own. */
-    /* A toggle's corner (./ToggleButton.tsx): a box's, unless the app's look rounds its chips into pills. */
-    --toggle-radius: var(--ui-radius-box);
+    /* A toggle's corner (./ToggleButton.tsx): unset, so it is a box's where it stands, as the technician app sets
+       its box's corner on a screen rather than the page; an app's look may round its chips into pills. */
+    --toggle-radius: initial;
     --title1-size: var(--fs-34);
     --title3-size: var(--fs-22);
     --title4-size: var(--fs-18);
