@@ -42,9 +42,10 @@ type Search = readonly Found[] | "failed" | "short" | null;
 function Results(props: { found: Search; onChoose: (client: Found) => void }) {
   const { found } = props;
   if (found === null) return null;
-  if (found === "short") return <Note>{copy.tooShort}</Note>;
-  if (found === "failed") return <Note>{copy.searchFailed}</Note>;
-  if (found.length === 0) return <Note>{copy.noneFound}</Note>;
+  // Said once the search is pressed, so a screen reader reads it out.
+  if (found === "short") return <Note role="status">{copy.tooShort}</Note>;
+  if (found === "failed") return <Note role="status">{copy.searchFailed}</Note>;
+  if (found.length === 0) return <Note role="status">{copy.noneFound}</Note>;
   return (
     <ul className={styles.found}>
       {found.map((client) => (

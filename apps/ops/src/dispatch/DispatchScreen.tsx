@@ -4,7 +4,6 @@
 // 0069-dispatch-under-concurrency.md). The address keeps the week, city, search and visit (./address.ts).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { Note } from "@maneman/ui/Note";
 import { indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Board, BoardQuery, BoardRow } from "../api.ts";
@@ -167,7 +166,7 @@ function BoardBody(props: {
             <EmptyState look="panel" line={dispatch.tools.nothingFound(search.settled.trim())} />
           )}
           {rows.length > 0 && !anyOfKind(board, rows, search.kind, view === "day" ? dayShown : undefined) && (
-            <Note>{dispatch.kinds.none}</Note>
+            <EmptyState look="panel" line={dispatch.kinds.none} />
           )}
           {!phone && rows.length > 0 && view === "day" && dayShown !== undefined && (
             <DayBoard
