@@ -11,9 +11,6 @@ import { tasksApi } from "./tasks-api.ts";
 
 const copy = tasks.write;
 
-/** Whether a group is a department's tasks written by hand. */
-export const isWrittenTask = (group: string): boolean => group.startsWith("staff_task_");
-
 export function StaffTaskDone({
   task,
   onDone,

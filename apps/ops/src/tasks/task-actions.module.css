@@ -49,3 +49,9 @@
   flex-wrap: wrap;
   gap: var(--sp-12);
 }
+
+/* The panel's one action, at its foot's right. */
+.footEnd {
+  display: flex;
+  margin-left: auto;
+}

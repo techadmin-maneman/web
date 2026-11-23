@@ -17,7 +17,8 @@ export function SnoozeButton(props: {
   readonly task: Task;
   /** Whether their access reaches it: Act in the department that decides its group. */
   readonly mayAct: boolean;
-  readonly onSnoozed: () => void;
+  /** Snoozed, until when. */
+  readonly onSnoozed: (until: string) => void;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
@@ -26,7 +27,7 @@ export function SnoozeButton(props: {
     once(async () => {
       setFailed(null);
       const answer = await tasksApi.snoozeTask(props.group, props.task.id);
-      if (answer.ok) props.onSnoozed();
+      if (answer.ok) props.onSnoozed(answer.body.until);
       else setFailed(answer.code);
     });
   return (

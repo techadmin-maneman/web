@@ -203,6 +203,10 @@ export const tasks = {
     noClient: "No client",
     find: "Find",
     noneFound: "No client found.",
+    findHint: "Two letters of a name, or four digits of a number.",
+    searchFailed: "Couldn’t search just now. Try again.",
+    city: "City",
+    chooseCity: "Choose a city",
     choose: "Choose",
     chooseLabel: (name: string) => `Choose ${name}`,
     chosen: (name: string, mobile: string) => `${name}, ${mobile}`,
@@ -220,9 +224,9 @@ export const tasks = {
     errors: {
       what: "Say what needs doing.",
       due: "Choose a time from now on.",
-      owner: "Choose someone who uses the console.",
+      owner: "Choose someone in that department who uses the console.",
       client: "Choose a client in your cities.",
-      city: "Choose a city in the header first.",
+      city: "Choose a city.",
       not_found: changed("This task is done or gone."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
@@ -233,7 +237,7 @@ export const tasks = {
   /** A task snoozed until the next morning (docs/decisions/0303-snoozing-a-task.md). */
   snooze: {
     button: "Snooze",
-    done: "Snoozed until tomorrow, 10 am.",
+    done: (when: string) => `Snoozed until ${when}.`,
     errors: {
       not_found: changed("This task is done or gone."),
       not_permitted: NOT_PERMITTED,

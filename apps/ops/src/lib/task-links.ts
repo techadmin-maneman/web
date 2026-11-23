@@ -1,6 +1,7 @@
 // Where a task leads: the client's page on the tab the task is about, and the place it is decided. A task the
 // dispatch board settles opens its visit's drawer there.
 
+import { isWrittenTask } from "@rules/policy/tasks.ts";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import type { Task, TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
@@ -60,5 +61,6 @@ export function subjectOf(group: Group, task: Task): string {
   if (task.facts.group === "kit_request") return task.facts.technician;
   if (group === "no_show_dispute") return tasks.disputeErased;
   if (task.facts.group === "unanswered_chat") return task.facts.mobile;
+  if (isWrittenTask(group)) return tasks.write.noClient;
   return tasks.visit(shortDate(indiaDate(task.since)));
 }

@@ -197,7 +197,7 @@ export function Thread({
       <header className={styles.head}>
         <div className={styles.headWords}>
           <h3 className={typeLook("title-4", styles.name)}>
-            {/* A client's name opens their page (the redesign's A5); a technician's or a stranger's is words alone. */}
+            {/* A client's name opens their page; a technician's or a stranger's is words alone. */}
             {conversation.person !== null && conversation.technician === null ? (
               <OpsLink to={clientPath(conversation.person.id, "visits")}>{who}</OpsLink>
             ) : (

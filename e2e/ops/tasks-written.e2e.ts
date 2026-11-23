@@ -119,7 +119,76 @@ test("snoozes a task from its panel until tomorrow morning, which leaves the lis
   });
   const panel = await detail(page, "Kunal Mehta");
   await panel.getByRole("button", { name: opsCopy.tasks.snooze.button }).click();
-  await expect(page.getByText(opsCopy.tasks.snooze.done)).toBeVisible();
+  // Until the moment the API says, in the console's words: 10 am on Tuesday the 21st, in India.
+  await expect(page.getByText(opsCopy.tasks.snooze.done("Tue 21 Sep, 10 am"))).toBeVisible();
   await expect(row(page, "Kunal Mehta")).toHaveCount(0);
   expect(snoozed).toHaveLength(1);
+});
+
+test("searches for a client on Enter in its box, rather than adding the task without them", async ({ page }) => {
+  const written: Request[] = [];
+  await open(page, TASKS, undefined, {
+    "POST /api/clients/find": json(FOUND),
+    "POST /api/tasks": (route) => {
+      written.push(route.request());
+      return json({ id: WRITTEN }, 201)(route);
+    },
+  });
+  await page.getByRole("button", { name: copy.open }).click();
+  const panel = page.getByRole("dialog", { name: copy.title });
+  await panel.getByLabel(copy.what, { exact: true }).fill("Call back about the evening slot");
+  await panel.getByLabel(copy.client, { exact: true }).fill("Rohit");
+  await panel.getByLabel(copy.client, { exact: true }).press("Enter");
+  await expect(panel.getByRole("button", { name: copy.chooseLabel(ROHIT.name) })).toBeVisible();
+  expect(written).toEqual([]);
+  // Chosen, the keyboard is on Change, which takes the place of the button pressed.
+  await panel.getByRole("button", { name: copy.chooseLabel(ROHIT.name) }).click();
+  await expect(panel.getByRole("button", { name: copy.change })).toBeFocused();
+});
+
+test("reads the board again once a task is added", async ({ page }) => {
+  let reads = 0;
+  page.on("request", (request) => {
+    if (request.method() === "GET" && new URL(request.url()).pathname === "/api/tasks") reads += 1;
+  });
+  await open(page, TASKS, undefined, { "POST /api/tasks": json({ id: WRITTEN }, 201) });
+  const before = reads;
+  await page.getByRole("button", { name: copy.open }).click();
+  const panel = page.getByRole("dialog", { name: copy.title });
+  await panel.getByLabel(copy.what, { exact: true }).fill("Check the kit count");
+  await panel.getByRole("button", { name: copy.add }).click();
+  await expect(page.getByText(copy.added)).toBeVisible();
+  await expect.poll(() => reads).toBeGreaterThan(before);
+});
+
+// Someone in Finance with View alone: they may write a task, but not look clients up, nor finish or snooze Care's.
+test("offers no client search, and no Mark done or Snooze, where the person's access does not reach them", async ({
+  page,
+}) => {
+  await open(page, WITH_WRITTEN, undefined, {
+    "GET /api/whoami": json({
+      signed_in_as: "finance@maneman.in",
+      sign_out: "/cdn-cgi/access/logout",
+      cities: [],
+      every_city: true,
+      staff: {
+        enforced: true,
+        listed: true,
+        grants: [{ department: "finance", level: "view", geography: "national", place: null }],
+        may_call: ["GET /api/health", "GET /api/whoami", "GET /api/tasks", "GET /api/alerts", "POST /api/tasks"],
+      },
+    } satisfies OpsReply<"/api/whoami">),
+  });
+  const written = row(page, "Call back about the evening slot");
+  await expect(written).toBeVisible();
+  await expect(written.getByRole("button", { name: /^Mark done/ })).toHaveCount(0);
+  const panel = await detail(page, "Call back about the evening slot");
+  await expect(panel.getByRole("button", { name: opsCopy.tasks.snooze.button })).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: /^Mark done/ })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("button", { name: copy.open }).click();
+  const writing = page.getByRole("dialog", { name: copy.title });
+  await expect(writing.getByLabel(copy.what, { exact: true })).toBeVisible();
+  await expect(writing.getByLabel(copy.client, { exact: true })).toHaveCount(0);
 });

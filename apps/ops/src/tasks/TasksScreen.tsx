@@ -13,6 +13,7 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { Toast } from "@maneman/ui/Toast";
 import { useLoad } from "@maneman/ui/useLoad";
 import { apiNow } from "@maneman/web-kit/clock";
+import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Tasks } from "../api.ts";
 import { needsAHand, tasks } from "../content.ts";
@@ -137,6 +138,9 @@ interface QueueProps {
   readonly onFilter: (filter: TaskFilter) => void;
 }
 
+/** "Tue 24 Nov, 10 am": when a snoozed task comes back. */
+const snoozedUntil = (until: string): string => `${shortDate(indiaDate(until))}, ${indiaClock(until)}`;
+
 /** What a person may do to each row, and what follows: its owner changed, it closed, or it snoozed. */
 function actingOnRows(on: {
   me: string | null;
@@ -144,7 +148,7 @@ function actingOnRows(on: {
   access: ReturnType<typeof useAccess>;
   onOwner: (row: Row, owner: string | null) => void;
   onClosed: (row: Row) => void;
-  onSnoozed: (row: Row) => void;
+  onSnoozed: (row: Row, until: string) => void;
 }) {
   return (row: Row): Acting => ({
     me: on.me,
@@ -160,8 +164,8 @@ function actingOnRows(on: {
     onClosed: () => {
       on.onClosed(row);
     },
-    onSnoozed: () => {
-      on.onSnoozed(row);
+    onSnoozed: (until) => {
+      on.onSnoozed(row, until);
     },
   });
 }
@@ -174,7 +178,7 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
   const [owners, setOwners] = useState<ReadonlyMap<string, string | null>>(new Map());
   const [closed, setClosed] = useState<readonly string[]>([]);
   const [opened, setOpened] = useState<string | null>(null);
-  const [snoozed, setSnoozed] = useState(0);
+  const [snoozed, setSnoozed] = useState<{ until: string; count: number } | null>(null);
   const [all, setAll] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const board = loaded.state === "loaded" ? loaded.value : null;
@@ -205,9 +209,9 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
       setOwners((was) => new Map(was).set(keyOf(row), owner));
     },
     onClosed: closeRow,
-    onSnoozed: (row) => {
+    onSnoozed: (row, until) => {
       closeRow(row);
-      setSnoozed((count) => count + 1);
+      setSnoozed((was) => ({ until, count: (was?.count ?? 0) + 1 }));
     },
   });
 
@@ -227,7 +231,7 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
   return (
     <>
       <WriteTask me={me} staff={board.staff} />
-      {snoozed > 0 && <Toast key={snoozed}>{tasks.snooze.done}</Toast>}
+      {snoozed !== null && <Toast key={snoozed.count}>{tasks.snooze.done(snoozedUntil(snoozed.until))}</Toast>}
       <TaskFilters filter={filter} counts={found.counts} onFilter={onFilter} />
       <BoardNotes truncated={board.truncated} lapsed={board.lapsed} shown={lapsed.shown} onToggle={lapsed.toggle} />
       {chooses && <BulkActions rows={chosen} actingOn={actingOn} onClear={selection.clear} onKeep={selection.only} />}

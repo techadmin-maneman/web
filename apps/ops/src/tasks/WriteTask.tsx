@@ -40,6 +40,8 @@ export function WriteTask({ me, staff }: { readonly me: string | null; readonly 
         <NewTask
           department={department}
           city={city}
+          cities={signedIn.state === "loaded" && !signedIn.value.every_city ? signedIn.value.cities : null}
+          mayFind={access.mayCall("POST /api/clients/find")}
           me={me}
           staff={staff}
           onAdded={() => {
