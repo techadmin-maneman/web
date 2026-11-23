@@ -91,6 +91,11 @@
    * main action, and each state in its own colour on its own wash. Every console screen draws in these roles, and the
    * dark theme sets them again (./theme.css).
    */
+  /* Titles in Plex's semibold, at the redesign's sizes: a page's 24 px, a drawer's 18, a card's or a section's 15. */
+  --title-weight: var(--weight-semibold);
+  --title1-size: var(--fs-24);
+  --title3-size: var(--fs-18);
+  --title4-size: var(--fs-15);
   --ui-ground: var(--console-canvas);
   --ui-raised: var(--white);
   --ui-tint: var(--console-sunk);

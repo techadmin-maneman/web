@@ -84,6 +84,10 @@
        Plex's semibold. */
     --title-font: var(--font-serif);
     --title-weight: var(--weight-regular);
+    /* A page's title, a drawer's and a section's (./type.module.css): the scale's sizes, unless an app sets its own. */
+    --title1-size: var(--fs-34);
+    --title3-size: var(--fs-22);
+    --title4-size: var(--fs-18);
     --action-weight: var(--weight-medium);
     --radio-size: var(--sp-16);
     --check-text: var(--fs-14);

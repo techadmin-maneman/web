@@ -21,7 +21,7 @@
   }
 
   .title1 {
-    font-size: var(--fs-34);
+    font-size: var(--title1-size);
     line-height: var(--lh-115);
     letter-spacing: var(--tracking-title);
   }
@@ -33,12 +33,12 @@
   }
 
   .title3 {
-    font-size: var(--fs-22);
+    font-size: var(--title3-size);
     line-height: var(--lh-130);
   }
 
   .title4 {
-    font-size: var(--fs-18);
+    font-size: var(--title4-size);
     line-height: var(--lh-130);
   }
 
