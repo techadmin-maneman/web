@@ -4242,7 +4242,7 @@ Whether the consultation just closed may become the client's fit on the spot, an
 
 Books the client's fit on the spot, with this technician, as a consultation and fit in one visit
 
-**201**: Booked
+**201**: Booked, or booked already at this door today: the visit's ID, or null where its visit is still being booked
 
 ```json
 {
@@ -4324,7 +4324,7 @@ Books the client's fit on the spot, with this technician, as a consultation and 
 }
 ```
 
-**404**: not_found: not this technician's plain consultation closed as done today
+**404**: not_found: not this technician's plain consultation closed as done today, the client going ahead, within the hour they may check in ahead of a start
 
 ```json
 {
@@ -4360,7 +4360,7 @@ Books the client's fit on the spot, with this technician, as a consultation and 
 }
 ```
 
-**409**: already_booked: the client has a first fit to come; taken: no room on the day from now
+**409**: already_booked: the client has a first fit, consultation or first fit's link to come; taken: no room on the day from now
 
 ```json
 {
@@ -4397,7 +4397,7 @@ Books the client's fit on the spot, with this technician, as a consultation and 
 }
 ```
 
-**422**: not_bookable: no piece in the kit made to the profile, or the client has not agreed to today's terms; no_product: none on sale today
+**422**: not_bookable: no piece in the kit made to the profile or of the product the client picked, or the client has not agreed to today's terms; no_product: none on sale today
 
 ```json
 {
@@ -11899,7 +11899,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "null"
         }
       ],
-      "description": "Why it is not offered: not_offered (not this technician's plain consultation closed done today), fit_booked, terms_needed (the client has not agreed to today's terms on the site or in the app), not_in_kit (no piece made exactly to the profile), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer."
+      "description": "Why it is not offered: not_offered (not this technician's plain consultation closed done today, the client going ahead, within the hour they may check in ahead of a start), fit_booked (a first fit, a consultation and fit, a consultation or a first fit's payment link to come), terms_needed (the client has not agreed to today's terms on the site or in the app), not_in_kit (no piece made exactly to the profile, or the client picked another product), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer."
     }
   },
   "required": [

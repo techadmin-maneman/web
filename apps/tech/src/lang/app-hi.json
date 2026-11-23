@@ -451,11 +451,14 @@
     "Book the fit": "फ़िट बुक करें",
     "Booking…": "बुक हो रहा है…",
     "No signal. Try again once there is.": "नेटवर्क नहीं है। नेटवर्क आने पर फिर से कोशिश करें।",
-    "Your day has no room for it now.": "आज आपके दिन में अब इसकी जगह नहीं है।",
     "The fit wasn’t booked. Try again.": "फ़िट बुक नहीं हुआ। फिर से कोशिश करें।",
     "Nothing to pay now. The client pays by UPI once fitted.": "अभी कोई पेमेंट नहीं। फ़िट होने के बाद क्लाइंट UPI से पेमेंट करेंगे।",
     "Booked. It shows on Today in a few minutes.": "बुक हो गया। कुछ मिनट में आज में दिखेगा।",
-    "It can’t be booked now. Ops can book the fit.": "अब बुक नहीं हो सकता। ऑप्स फ़िट बुक कर सकते हैं।"
+    "It can’t be booked now. Ops can book the fit.": "अब बुक नहीं हो सकता। ऑप्स फ़िट बुक कर सकते हैं।",
+    "Booked. It’s on Today.": "बुक हो गया। यह आज में है।",
+    "The client’s fit is already booked.": "क्लाइंट का फ़िट पहले से बुक है।",
+    "Your day has no room for it now. Ops can book the fit.": "आज आपके दिन में अब इसकी जगह नहीं है। ऑप्स फ़िट बुक कर सकते हैं।",
+    "fit booked": "फ़िट बुक है"
   },
   "templates": {
     "{rejectBody} Fix it and tap Next.": "{rejectBody} ठीक करें और अगला दबाएँ।"

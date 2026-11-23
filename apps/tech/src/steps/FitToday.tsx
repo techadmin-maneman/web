@@ -1,14 +1,15 @@
 // Fit today on a plain consultation's Closed screen (docs/decisions/0299-fit-today.md): where the client said they are
 // going ahead, the kit holds a piece made exactly to their profile and the day has room, the fit is offered, with when it
 // would start and how the client pays, and booked with signal; the new job's card opens at once. Nothing shows where it
-// is not offered, or with no signal to ask. A booking refused for good takes the button away and says why.
+// is not offered, or with no signal to ask. How a booking ended stays while the app is open, as the section and the
+// close's Fit row both say it, so a read again after it never undoes what was said.
 
 import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { SectionHead } from "@maneman/ui/SectionHead";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { api, type FitTodayOffer, type Job } from "../api.ts";
 import { closeOut } from "../content.ts";
 import { keptWhole } from "../lib/today.ts";
@@ -43,62 +44,125 @@ function readOf(jobId: string): Read {
   return read;
 }
 
-/** Fit today's offer for a consultation the client is going ahead from; null where there is none, or none to ask. */
-export function useFitToday(job: Job, goingAhead: boolean): FitTodayOffer | null {
-  const asks = goingAhead && job.type === "consultation" && !job.one_visit;
-  const [loaded] = useLoad(asks ? readOf(job.id) : NONE);
-  return loaded.state === "loaded" ? loaded.value.offer : null;
+/** How a booking at a close ended: booked, booked with its job on its way, or refused for good, and in what words. */
+interface Ending {
+  readonly kind: "booked" | "soon" | "refused";
+  readonly words: string;
 }
 
-/** What a booking refused for good says: the day full, or nothing to book now. */
-const settledBy = (code: string): string => (code === "taken" ? copy.failed.taken : copy.failed.gone);
+/** Each close's ending, while the app is open, and who is showing one. */
+const endings = new Map<string, Ending>();
+const showing = new Set<() => void>();
+function end(jobId: string, ending: Ending): void {
+  endings.set(jobId, ending);
+  for (const tell of showing) tell();
+}
+function hear(tell: () => void): () => void {
+  showing.add(tell);
+  return () => showing.delete(tell);
+}
+
+/** Fit today at a close: whether its offer has been answered, the offer, and whether a fit is booked or was refused. */
+export interface FitTodayAt {
+  readonly answered: boolean;
+  readonly offer: FitTodayOffer | null;
+  /** A fit booked: at this close, or already, as the API says of a client's fit to come. */
+  readonly booked: boolean;
+  readonly ending: Ending | null;
+}
+
+/** Fit today's state for a consultation the client is going ahead from; nothing asked for any other close. */
+export function useFitToday(job: Job, goingAhead: boolean): FitTodayAt {
+  const asks = goingAhead && job.type === "consultation" && !job.one_visit;
+  const [loaded] = useLoad(asks ? readOf(job.id) : NONE);
+  const ending = useSyncExternalStore(hear, () => endings.get(job.id) ?? null);
+  const answer = loaded.state === "loaded" ? loaded.value : null;
+  const booked = ending?.kind === "booked" || ending?.kind === "soon" || answer?.refusal === "fit_booked";
+  return { answered: loaded.state !== "loading", offer: answer?.offer ?? null, booked, ending };
+}
+
+/** How a booking the API refused ended: already booked, the day full, or nothing to book now; null to try again. */
+function endingOf(answer: { readonly status: number; readonly code: string }): Ending | null {
+  if (answer.code === "offline" || answer.status >= 500) return null;
+  if (answer.code === "already_booked") return { kind: "booked", words: copy.alreadyBooked };
+  return { kind: "refused", words: answer.code === "taken" ? copy.failed.taken : copy.failed.gone };
+}
+
+/** How it ended, with the focus moved to it where it ended on this screen, so a reader hears it. */
+function Ended({ ending, focus }: { readonly ending: Ending; readonly focus: boolean }) {
+  const said = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (focus) said.current?.focus();
+  }, [focus]);
+  return (
+    <div ref={said} tabIndex={-1} className={styles.fitEnded}>
+      {ending.kind === "refused" ? (
+        <InlineMessage tone="error">{ending.words}</InlineMessage>
+      ) : (
+        <p className={styles.said} role="status">
+          {ending.words}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function FitToday({ job }: { readonly job: Job }) {
-  const offer = useFitToday(job, true);
-  const [said, setSaid] = useState<{ readonly words: string; readonly done: boolean } | null>(null);
+  const { offer, ending } = useFitToday(job, true);
+  const [ended, setEnded] = useState(false);
+  const [retry, setRetry] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
-  if (offer === null) return null;
   const book = () =>
     once(async () => {
       const answer = await api.bookFitToday(job.id);
-      if (answer.ok && answer.body.visit_id !== null) {
-        go(`/jobs/${answer.body.visit_id}`);
+      if (answer.ok) {
+        const visitId = answer.body.visit_id;
+        end(
+          job.id,
+          visitId === null ? { kind: "soon", words: copy.bookedSoon } : { kind: "booked", words: copy.booked },
+        );
+        if (visitId !== null) go(`/jobs/${visitId}`);
+        else setEnded(true);
         return;
       }
-      // Booked, its visit on its way: the half-hour pass books what this request could not.
-      if (answer.ok) setSaid({ words: copy.bookedSoon, done: true });
-      else if (answer.code === "offline") setSaid({ words: copy.failed.offline, done: false });
-      else if (answer.status >= 500) setSaid({ words: copy.failed.unknown, done: false });
-      else setSaid({ words: settledBy(answer.code), done: true });
+      const ending = endingOf(answer);
+      if (ending === null) {
+        setRetry(answer.code === "offline" ? copy.failed.offline : copy.failed.unknown);
+        return;
+      }
+      end(job.id, ending);
+      setEnded(true);
     });
+  if (ending !== null) {
+    return (
+      <section className={styles.section} aria-labelledby="closed-fit-today">
+        <SectionHead id="closed-fit-today" title={copy.title} />
+        <Ended ending={ending} focus={ended} />
+      </section>
+    );
+  }
+  if (offer === null) return null;
   return (
     <section className={styles.section} aria-labelledby="closed-fit-today">
       <SectionHead id="closed-fit-today" title={copy.title} />
       <p className={styles.fitLine}>{copy.line(offer.stock_name, keptWhole(clock(offer.starts_at)))}</p>
       <p className={styles.fitPays}>{offer.pays_by === "link" ? copy.paysLink : copy.paysAtVisit}</p>
-      {said?.done !== true && (
-        <Button
-          variant="outline"
-          size="action"
-          busy={busy}
-          onClick={() => {
-            setSaid(null);
-            void book();
-          }}
-        >
-          {busy ? copy.booking : copy.action}
-        </Button>
+      <Button
+        variant="outline"
+        size="action"
+        busy={busy}
+        onClick={() => {
+          setRetry(null);
+          void book();
+        }}
+      >
+        {busy ? copy.booking : copy.action}
+      </Button>
+      {retry !== null && (
+        <InlineMessage tone="error" className={styles.fitRefused}>
+          {retry}
+        </InlineMessage>
       )}
-      {said !== null &&
-        (said.done && said.words === copy.bookedSoon ? (
-          <p className={styles.said} role="status">
-            {said.words}
-          </p>
-        ) : (
-          <InlineMessage tone="error" className={styles.fitRefused}>
-            {said.words}
-          </InlineMessage>
-        ))}
     </section>
   );
 }

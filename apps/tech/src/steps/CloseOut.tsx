@@ -19,7 +19,7 @@ import { clock, dayAfter, lengthOf, metres, todayInIndia, where } from "../lib/w
 import { NO_PIECE } from "@rules/policy/in-job-steps.ts";
 import { go } from "../route.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
-import { FitToday, useFitToday } from "./FitToday.tsx";
+import { FitToday, useFitToday, type FitTodayAt } from "./FitToday.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import {
   type Heard,
@@ -149,7 +149,7 @@ function Decided({ job }: { job: Job }) {
   const said = valueOr(useAsync(readOutcome)[0], null);
   // In English ops' reason reads mid-line, "Not now · the price"; inside Hindi it stays exactly as they wrote it.
   const english = useLanguage() === "en";
-  // Fit today, offered beneath, may book the fit now: the row then names the product alone, not ops to book it.
+  // Fit today beneath may book the fit now, or have booked it: the row says so once its offer is answered.
   const fitToday = useFitToday(job, said?.outcome === "done" && said.going_ahead === true);
   if (said === null) return null;
   // Ops' reasons, in Hindi where a catalog holds the whole of one, as they wrote it otherwise.
@@ -164,11 +164,19 @@ function Decided({ job }: { job: Job }) {
   if (said.going_ahead === undefined) return null;
   if (said.going_ahead) {
     const product = job.products.find((one) => one.tier === said.product)?.name ?? null;
+    if (!fitToday.answered) return null;
     const named = product === null ? null : theirs(product);
-    return <Row name={copy.fit} value={fitToday === null ? copy.goingAhead(named) : copy.goingAheadToday(named)} />;
+    return <Row name={copy.fit} value={fitRow(fitToday, named)} />;
   }
   const lost = label(job.lost_reasons, said.lost_reason);
   return <Row name={copy.fit} value={copy.notNow(lost === null ? null : theirs(english ? midLine(lost) : lost))} />;
+}
+
+/** A yes as the Fit row says it: the fit booked, Fit today offered beneath, or ops to book it. */
+function fitRow(fitToday: FitTodayAt, product: string | null): string {
+  if (fitToday.booked) return copy.goingAheadBooked(product);
+  const offered = fitToday.offer !== null && fitToday.ending?.kind !== "refused";
+  return offered ? copy.goingAheadToday(product) : copy.goingAhead(product);
 }
 
 /** How long the visit took, from the check-in to its close: as this phone kept the close, else when it was queued. */

@@ -32,7 +32,7 @@ export type FitTodayRefusal =
   | "fit_booked"
   /** The client has not agreed to today's terms in their own app or on the site, as a fit sold to them needs. */
   | "terms_needed"
-  /** No piece in the technician's kit made exactly to the client's profile. */
+  /** No piece in the technician's kit made exactly to the client's profile, or of the product they picked. */
   | "not_in_kit"
   /** No first fit of the profile's product on sale today. */
   | "no_product"
@@ -56,23 +56,32 @@ interface Asked {
   readonly now: Date;
 }
 
-/** How the consultation's close landed: its result, and whether the client is going ahead. */
+/** How the consultation's close landed: its result, whether the client is going ahead, and what they picked. */
 interface Close {
   readonly outcome?: unknown;
   readonly going_ahead?: unknown;
   readonly lost_reason?: unknown;
+  /** The product the client picked on Options, by its tier, where they picked one (ADR 0247). */
+  readonly product?: unknown;
+}
+
+/** The consultation's client, and the product they picked on Options, where they did. */
+interface Consulted {
+  readonly personId: string;
+  readonly picked: string | null;
 }
 
 /**
- * The client of the technician's plain consultation today, closed as done with the client going ahead, its close
- * reaching us no longer ago than the technician may check in ahead of a start (the phone clock's before_start), so they
- * are still at the door; null for any other job.
+ * The client of the technician's plain consultation today, closed as done with the client going ahead, its close made
+ * on the phone and reaching us no longer ago than the technician may check in ahead of a start (the phone clock's
+ * before_start), so they are still at the door: a close sent late, once signal came back, is not; null for any other
+ * job.
  */
-async function consultedToday(db: D1Database, asked: Asked, inputs: OpsInputs): Promise<string | null> {
+async function consultedToday(db: D1Database, asked: Asked, inputs: OpsInputs): Promise<Consulted | null> {
   const { technicianId, jobId, now } = asked;
   const row = await db
     .prepare(
-      `SELECT a.person_id, a.window_start, e.body, e.received_at FROM appointments a
+      `SELECT a.person_id, a.window_start, e.body, e.occurred_at, e.received_at FROM appointments a
        JOIN job_events e ON e.id = (SELECT je.id FROM job_events je
          WHERE je.appointment_id = a.id AND je.kind = 'outcome' AND je.superseded = 0
          ORDER BY je.received_at DESC, je.rowid DESC LIMIT 1)
@@ -80,12 +89,13 @@ async function consultedToday(db: D1Database, asked: Asked, inputs: OpsInputs): 
          AND a.one_visit IS NULL AND a.person_id IS NOT NULL`,
     )
     .bind(jobId, technicianId)
-    .first<{ person_id: string; window_start: string; body: string; received_at: string }>();
+    .first<{ person_id: string; window_start: string; body: string; occurred_at: string; received_at: string }>();
   if (row === null || indiaDate(new Date(row.window_start)) !== indiaDate(now)) return null;
   const close = JSON.parse(row.body) as Close;
   if (close.outcome !== "done" || close.going_ahead !== true || close.lost_reason !== undefined) return null;
-  const since = now.getTime() - Date.parse(row.received_at);
-  return since <= inputs.phoneClock.before_start * 60_000 ? row.person_id : null;
+  const since = now.getTime() - Math.min(Date.parse(row.occurred_at), Date.parse(row.received_at));
+  if (since > inputs.phoneClock.before_start * 60_000) return null;
+  return { personId: row.person_id, picked: typeof close.product === "string" ? close.product : null };
 }
 
 /** Whether the client has a fit, or a consultation, to come, or a first fit's link still open, which a fit would double. */
@@ -151,12 +161,16 @@ async function startFromNow(
 /** Fit today, offered where the consultation, the client, the kit and the day allow it; else why not. */
 export async function fitTodayOf(db: D1Database, asked: Asked): Promise<Offered> {
   const inputs = await readOpsInputs(db, asked.now);
-  const personId = await consultedToday(db, asked, inputs);
-  if (personId === null) return { ok: false, refusal: "not_offered" };
+  const consulted = await consultedToday(db, asked, inputs);
+  if (consulted === null) return { ok: false, refusal: "not_offered" };
+  const { personId } = consulted;
   if (await fitToCome(db, personId, asked.now)) return { ok: false, refusal: "fit_booked" };
   if (!(await agreedToToday(db, personId))) return { ok: false, refusal: "terms_needed" };
   const stock = await inTheKit(db, personId, asked.technicianId);
-  if (stock === null) return { ok: false, refusal: "not_in_kit" };
+  // The piece is the profile's product's; a client who picked another on Options is fitted with theirs, by ops.
+  if (stock === null || (consulted.picked !== null && consulted.picked !== stock.product)) {
+    return { ok: false, refusal: "not_in_kit" };
+  }
   const city = await cityOfPerson(db, personId);
   const service = await bookableService(db, { kind: "first_fit", tier: stock.product, on: indiaDate(asked.now), city });
   if (service === null) return { ok: false, refusal: "no_product" };
@@ -205,16 +219,22 @@ export async function holdFitToday(
 
 /**
  * The fit this technician booked at the door today for the consultation's client, where they did: a booking asked again,
- * as a tap after the phone stopped waiting for the first, is answered with it.
+ * as a tap after the phone stopped waiting for the first, or after the hour, is answered with it. Its visit's ID, or
+ * null for a hold confirmed whose visit the half-hour pass has still to book; undefined where there is none.
  */
-export async function bookedAtTheDoor(db: D1Database, asked: Asked): Promise<string | null> {
+export async function bookedAtTheDoor(db: D1Database, asked: Asked): Promise<string | null | undefined> {
   const today = indiaDate(asked.now);
   const row = await db
     .prepare(
       `SELECT f.id FROM appointments f
        WHERE f.person_id = (SELECT c.person_id FROM appointments c WHERE c.id = ?1 AND c.technician_id = ?2)
-         AND f.technician_id = ?2 AND f.type = 'first_fit' AND f.one_visit = 'booked' AND f.deleted_at IS NULL
+         AND f.technician_id = ?2 AND f.type = 'first_fit' AND f.one_visit IS NOT NULL AND f.deleted_at IS NULL
          AND f.window_start >= ?3 AND f.window_start < ?4
+       UNION ALL
+       SELECT NULL FROM slot_holds h
+       WHERE h.person_id = (SELECT c.person_id FROM appointments c WHERE c.id = ?1 AND c.technician_id = ?2)
+         AND h.technician_id = ?2 AND h.type = 'first_fit' AND h.one_visit = 1 AND h.date = ?5 AND h.state = 'held'
+         AND h.confirmed_at IS NOT NULL AND h.appointment_id IS NULL
        LIMIT 1`,
     )
     .bind(
@@ -222,7 +242,8 @@ export async function bookedAtTheDoor(db: D1Database, asked: Asked): Promise<str
       asked.technicianId,
       indiaInstant(today, "00:00").toISOString(),
       indiaInstant(addDays(today, 1), "00:00").toISOString(),
+      today,
     )
-    .first<{ id: string }>();
-  return row?.id ?? null;
+    .first<{ id: string | null }>();
+  return row === null ? undefined : row.id;
 }

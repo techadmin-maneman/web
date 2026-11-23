@@ -7,6 +7,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { LEGAL_VERSIONS } from "../../../src/config/legal-versions.ts";
+import type { Dependencies } from "../../../src/dependencies.ts";
+import { createLogger } from "../../../src/log.ts";
+import { createPaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { markDatabase } from "../helpers.ts";
 import { aHold, aPackage, aVisit } from "../fixtures/index.ts";
 import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
@@ -21,13 +24,23 @@ let job: Working;
 let stockCode: string;
 let now: Date;
 
-/** The consultation closed as done from the phone at `at`, the client going ahead unless `close` says otherwise. */
-async function closedDone(close: object = { going_ahead: true }, at = now) {
+/**
+ * The consultation closed as done on the phone at `made`, reaching us at `at`, the client going ahead unless `close`
+ * says otherwise.
+ */
+async function closedDone(close: object = { going_ahead: true }, at = now, made = at) {
   await env.DB.prepare(
     `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
-       superseded, updated_at) VALUES (?4, ?1, ?4, ?2, 'outcome', ?5, ?3, ?3, 0, ?3)`,
+       superseded, updated_at) VALUES (?4, ?1, ?4, ?2, 'outcome', ?5, ?6, ?3, 0, ?3)`,
   )
-    .bind(JOB, IMRAN, at.toISOString(), crypto.randomUUID(), JSON.stringify({ outcome: "done", ...close }))
+    .bind(
+      JOB,
+      IMRAN,
+      at.toISOString(),
+      crypto.randomUUID(),
+      JSON.stringify({ outcome: "done", ...close }),
+      made.toISOString(),
+    )
     .run();
   // As the close moves it (src/domain/field/job-record.ts).
   await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(JOB).run();
@@ -71,10 +84,11 @@ async function ready() {
   await inKitOf(IMRAN);
 }
 
-beforeEach(async () => {
+/** Imran's consultation today, with the vendors a test gives: the client's pincode served, Natural on sale. */
+async function setUp(vendors: Partial<Dependencies> = {}) {
   await markDatabase();
   now = TWO_PM;
-  job = await working("consultation", { now: () => now });
+  job = await working("consultation", { now: () => now, ...vendors });
   // Both in Gurgaon, where the client's pincode is served, and trained to fit (ADR 0117).
   await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon', fits_trained = 1").run();
   await env.DB.prepare(
@@ -82,13 +96,17 @@ beforeEach(async () => {
      VALUES ('122018', 'Sector 65', 'Gurgaon', 1, 28.398, 77.07)`,
   ).run();
   stockCode = (await aPackage({ ...NATURAL, validFrom: "2026-09-01" })).hairSystem;
-});
+}
 
 const offered = async () =>
   (await job.get(`/api/tech/jobs/${JOB}/fit-today`)).json<{ offer: Record<string, unknown> | null; refusal: string }>();
 const booked = (event = "event-fit-today-01") => job.post(`/api/tech/jobs/${JOB}/fit-today`, undefined, event);
 
 describe("Fit today", () => {
+  beforeEach(async () => {
+    await setUp();
+  });
+
   it("is offered with the piece in the kit and a start to begin now, and books a fixed one visit with this technician", async () => {
     await ready();
     const offer = await offered();
@@ -168,6 +186,47 @@ describe("Fit today", () => {
     expect(await offered()).toEqual({ offer: null, refusal: "not_offered" });
   });
 
+  it("books it once more after the hour: a tap again is answered with the fit booked, not a refusal", async () => {
+    await ready();
+    const first = await (await booked()).json<{ visit_id: string }>();
+    now = new Date(TWO_PM.getTime() + 66 * 60_000);
+    expect(await (await booked("event-fit-today-03")).json()).toEqual({ visit_id: first.visit_id });
+  });
+
+  it("is not offered where the close was made over an hour ago and sent once signal came back", async () => {
+    await agreed();
+    await profiled();
+    await inKitOf(IMRAN);
+    // Closed at 12:55 with no signal, and sent at 2.
+    await closedDone({ going_ahead: true }, TWO_PM, new Date(TWO_PM.getTime() - 65 * 60_000));
+    expect(await offered()).toEqual({ offer: null, refusal: "not_offered" });
+  });
+
+  it("is not offered where the client picked another product on Options than the piece in the kit", async () => {
+    await agreed();
+    await profiled();
+    await inKitOf(IMRAN);
+    await closedDone({ going_ahead: true, product: "pro" });
+    expect(await offered()).toEqual({ offer: null, refusal: "not_in_kit" });
+    await closedDone({ going_ahead: true, product: NATURAL.code }, new Date(TWO_PM.getTime() + 1));
+    expect((await offered()).refusal).toBeNull();
+  });
+
+  it("is not offered where the client has a consultation to come", async () => {
+    await ready();
+    await aVisit({
+      person_id: PERSON,
+      type: "consultation",
+      status: "scheduled",
+      window_start: "2026-09-24T05:30:00.000Z",
+      window_end: "2026-09-24T06:30:00.000Z",
+      technician_id: SAMEER,
+      service_city: "Gurgaon",
+      service_pincode: "122018",
+    });
+    expect(await offered()).toEqual({ offer: null, refusal: "fit_booked" });
+  });
+
   it("is not offered to a client who has not agreed to today's terms", async () => {
     // Booked by phone, the client has agreed to nothing in their own app or on the site.
     await closedDone();
@@ -241,5 +300,16 @@ describe("Fit today", () => {
       .run();
     await ready();
     expect(await offered()).toEqual({ offer: null, refusal: "no_room" });
+  });
+});
+
+describe("Fit today, while online payment is off", () => {
+  beforeEach(async () => {
+    await setUp({ payments: createPaymentsProvider("none", null, { fetch, log: createLogger() }) });
+  });
+
+  it("says the client pays by UPI once fitted", async () => {
+    await ready();
+    expect(await offered()).toMatchObject({ offer: { pays_by: "at_visit" } });
   });
 });

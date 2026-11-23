@@ -91,6 +91,12 @@
   margin: var(--sp-8) 0 0;
 }
 
+/* How a booking ended, under the head, taking the focus once it ends so a reader hears it. */
+.fitEnded {
+  margin-top: var(--sp-8);
+  outline-offset: var(--sp-2);
+}
+
 .linkLine {
   display: flex;
   gap: var(--sp-16);

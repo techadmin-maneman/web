@@ -178,6 +178,48 @@ test("a consultation closed going ahead offers nothing where Fit today is refuse
   const fit = page.getByRole("region", { name: closeOut.fitToday.title });
   await fit.getByRole("button", { name: closeOut.fitToday.action }).click();
   await expect(fit.getByRole("alert")).toHaveText(closeOut.fitToday.failed.taken);
-  // Refused for good: no button to try again with.
+  // Refused for good: no button to try again with, no start to go by, and the row back to ops booking it.
   await expect(fit.getByRole("button", { name: closeOut.fitToday.action })).toHaveCount(0);
+  await expect(fit).not.toContainText(OFFER.stock_name);
+  await expect(page.getByText(closeOut.goingAhead(null), { exact: true })).toBeVisible();
+});
+
+test("a fit booked whose job is still on its way stays said, and the row says the fit is booked", async ({ page }) => {
+  const fake = await fakeTech(page);
+  let booked = false;
+  await page.route(`**/api/tech/jobs/${JOB_ID}/fit-today`, (route) => {
+    if (route.request().method() === "POST") {
+      booked = true;
+      return route.fulfill({ status: 201, json: { visit_id: null } });
+    }
+    const starts = new Date(Date.now() + 30 * 60_000).toISOString();
+    // Once booked, the API offers it no more.
+    return route.fulfill({
+      json: booked ? { offer: null, refusal: "fit_booked" } : { offer: { ...OFFER, starts_at: starts }, refusal: null },
+    });
+  });
+  await closedGoingAhead(page, fake);
+  const fit = page.getByRole("region", { name: closeOut.fitToday.title });
+  await fit.getByRole("button", { name: closeOut.fitToday.action }).click();
+  await expect(fit.getByRole("status")).toHaveText(closeOut.fitToday.bookedSoon);
+  // The write reads the offer again, which is gone: what was said stays.
+  await page.waitForTimeout(800);
+  await expect(fit.getByRole("status")).toHaveText(closeOut.fitToday.bookedSoon);
+  await expect(page.getByText(closeOut.goingAheadBooked(null), { exact: true })).toBeVisible();
+});
+
+test("a fit already booked says so, and the row says the fit is booked", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await page.route(`**/api/tech/jobs/${JOB_ID}/fit-today`, (route) => {
+    if (route.request().method() === "POST") {
+      return route.fulfill({ status: 409, json: { error: { code: "already_booked", request_id: "req-fit-2" } } });
+    }
+    const starts = new Date(Date.now() + 30 * 60_000).toISOString();
+    return route.fulfill({ json: { offer: { ...OFFER, starts_at: starts }, refusal: null } });
+  });
+  await closedGoingAhead(page, fake);
+  const fit = page.getByRole("region", { name: closeOut.fitToday.title });
+  await fit.getByRole("button", { name: closeOut.fitToday.action }).click();
+  await expect(fit.getByRole("status")).toHaveText(closeOut.fitToday.alreadyBooked);
+  await expect(page.getByText(closeOut.goingAheadBooked(null), { exact: true })).toBeVisible();
 });

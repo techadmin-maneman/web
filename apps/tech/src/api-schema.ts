@@ -3112,7 +3112,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Booked */
+                /** @description Booked, or booked already at this door today: the visit's ID, or null where its visit is still being booked */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -3157,7 +3157,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description not_found: not this technician's plain consultation closed as done today */
+                /** @description not_found: not this technician's plain consultation closed as done today, the client going ahead, within the hour they may check in ahead of a start */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3175,7 +3175,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description already_booked: the client has a first fit to come; taken: no room on the day from now */
+                /** @description already_booked: the client has a first fit, consultation or first fit's link to come; taken: no room on the day from now */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -3193,7 +3193,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description not_bookable: no piece in the kit made to the profile, or the client has not agreed to today's terms; no_product: none on sale today */
+                /** @description not_bookable: no piece in the kit made to the profile or of the product the client picked, or the client has not agreed to today's terms; no_product: none on sale today */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -6311,7 +6311,7 @@ export interface components {
                  */
                 pays_by: "link" | "at_visit";
             } | null;
-            /** @description Why it is not offered: not_offered (not this technician's plain consultation closed done today), fit_booked, terms_needed (the client has not agreed to today's terms on the site or in the app), not_in_kit (no piece made exactly to the profile), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer. */
+            /** @description Why it is not offered: not_offered (not this technician's plain consultation closed done today, the client going ahead, within the hour they may check in ahead of a start), fit_booked (a first fit, a consultation and fit, a consultation or a first fit's payment link to come), terms_needed (the client has not agreed to today's terms on the site or in the app), not_in_kit (no piece made exactly to the profile, or the client picked another product), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer. */
             refusal: ("not_offered" | "fit_booked" | "terms_needed" | "not_in_kit" | "no_product" | "no_room") | null;
         };
         TechnicianFitTodayBooked: {
