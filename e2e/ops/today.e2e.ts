@@ -80,6 +80,8 @@ test("opens on Dispatch's home: today's visits, those running late, and the visi
   const road = page.getByRole("region", { name: copy.road.title });
   await expect(road.getByRole("listitem")).toHaveCount(4);
   await expect(road.getByRole("listitem").first()).toContainText(copy.road.late);
+  // Every visit on its pill: one running late, the rest booked.
+  await expect(road.getByRole("listitem").last()).toContainText(copy.road.booked);
   // Needs you lists the person's whole board: stock's replacements too, as no other home takes them.
   await expect(page.getByRole("region", { name: copy.needs })).toContainText(tasks.groups.replacement_order);
 });

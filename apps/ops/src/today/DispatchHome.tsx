@@ -61,12 +61,12 @@ export function roadFigures(road: Road | null, pending: boolean): { visits: Show
 const kindOf = (block: Pick<Block, "type">): string | null =>
   block.type === null ? null : dispatch.typeNames[block.type];
 
-/** A visit's state, where it says more than booked: late, or the technician there. */
-function stateOf(block: Block, now: number): { words: string; tone: BadgeTone } | undefined {
+/** A visit's state, each on its pill as the redesign draws them: late, the technician there, or booked. */
+function stateOf(block: Block, now: number): { words: string; tone: BadgeTone } {
   if (isLate(block, now)) return { words: copy.road.late, tone: "warning" };
   if (block.begun === "arrived" || block.begun === "started")
     return { words: dispatch.board.begun[block.begun], tone: "attention" };
-  return undefined;
+  return { words: copy.road.booked, tone: "neutral" };
 }
 
 /** Today's visits not yet done, and those with no technician, in the order they start. */

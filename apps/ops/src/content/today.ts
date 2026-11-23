@@ -49,6 +49,7 @@ export const today = {
   road: {
     title: "On the road today",
     late: "Running late",
+    booked: "Booked",
   },
   care: {
     median: "Median first reply",
