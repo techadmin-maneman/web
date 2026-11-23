@@ -45,6 +45,11 @@
   --nav-ground: var(--ink);
   --nav-current: var(--console-navy-3);
   --link-underline: var(--console-dark-control);
+  --visit-service-edge: var(--console-dark-ink);
+  --visit-service-ground: var(--console-dark-surface);
+  --visit-consultation-edge: var(--console-dark-blue);
+  --visit-consultation-ground: var(--console-dark-blue-wash);
+  --visit-replacement-ground: var(--console-dark-amber-wash);
   --pick-edge: var(--console-dark-control);
   --choice-edge: var(--console-dark-control);
   --time-name-colour: var(--console-dark-muted);
@@ -90,6 +95,11 @@
     --nav-ground: var(--ink);
     --nav-current: var(--console-navy-3);
     --link-underline: var(--console-dark-control);
+    --visit-service-edge: var(--console-dark-ink);
+    --visit-service-ground: var(--console-dark-surface);
+    --visit-consultation-edge: var(--console-dark-blue);
+    --visit-consultation-ground: var(--console-dark-blue-wash);
+    --visit-replacement-ground: var(--console-dark-amber-wash);
     --pick-edge: var(--console-dark-control);
     --choice-edge: var(--console-dark-control);
     --time-name-colour: var(--console-dark-muted);

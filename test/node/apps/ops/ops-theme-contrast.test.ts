@@ -63,6 +63,11 @@ const PAIRS = [
   // The product's name beside the lockup, and a count with some overdue on its pill.
   ["--nav-product", "--nav-ground"] as const,
   ["--nav-urgent-text", "--nav-urgent-ground"] as const,
+  // A visit's words on its kind's fill on the board (packages/ui/day-timeline.module.css, dispatch/grid.module.css).
+  ...["--visit-consultation-ground", "--visit-replacement-ground", "--visit-service-ground"].flatMap((ground) => [
+    ["--ui-text", ground] as const,
+    ["--ui-text-muted", ground] as const,
+  ]),
   // A chosen day, and a time's name beside its slot (packages/ui/date-strip.module.css, time-choice.module.css).
   ["--pick-on-text", "--pick-on"] as const,
   ["--time-name-colour", "--ui-raised"] as const,

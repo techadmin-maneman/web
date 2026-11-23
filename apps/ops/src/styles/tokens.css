@@ -25,6 +25,8 @@
   --console-ink-2: #3c4450;
   --console-faint: #8a919b;
   --console-amber-wash: #f7f1e4;
+  --console-blue: #3d5a85; /* a consultation's edge on the board */
+  --console-blue-wash: #eaf0f7;
   /* Its dark theme's. */
   --console-dark-canvas: #0f1521;
   --console-dark-surface: #161e2c;
@@ -39,6 +41,8 @@
   --console-dark-red: #f08b73;
   --console-dark-amber: #d8b271;
   --console-dark-amber-wash: #33291a;
+  --console-dark-blue: #8daad6;
+  --console-dark-blue-wash: #1a2840;
 
   --ops-row: 34px; /* a table row: dense but not cramped */
   --ops-figure: 76px; /* a column of figures, right aligned */
@@ -100,6 +104,13 @@
   --stat-size: var(--fs-26);
   --stat-weight: var(--weight-semibold);
   --stat-min: var(--ops-tile-phone);
+  /* Each kind of visit on the board, as the redesign draws it: a service visit on white on the navy's edge, a
+     consultation on a blue wash and edge, a replacement on the amber wash on the brand's brass edge. */
+  --visit-service-edge: var(--ink);
+  --visit-service-ground: var(--ui-raised);
+  --visit-consultation-edge: var(--console-blue);
+  --visit-consultation-ground: var(--console-blue-wash);
+  --visit-replacement-ground: var(--console-amber-wash);
   /* A state's badge is a pill 22 px high, its words 12 px after a dot in its colour. */
   --badge-height: calc(var(--sp-20) + var(--sp-2));
   --badge-text: var(--ops-caption);

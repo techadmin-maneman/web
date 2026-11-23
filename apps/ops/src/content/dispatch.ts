@@ -39,6 +39,16 @@ export const dispatch = {
     service: "Service visit",
     replacement: "Replacement",
   },
+  /** The board's visits by kind, a chip each, a consultation and fit in one visit a kind of its own (the redesign's C1). */
+  kinds: {
+    label: "Visit type",
+    all: "All types",
+    service: "Service visit",
+    consultation: "Consultation",
+    one_visit: "Consultation and first fit",
+    first_fit: "First fit",
+    replacement: "Replacement",
+  },
   windows: { morning: "morning", afternoon: "afternoon", evening: "evening" },
   /**
    * The week and the city the board shows, and a way to find a row among many.

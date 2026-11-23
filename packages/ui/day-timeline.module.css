@@ -118,34 +118,41 @@
     outline-offset: calc(var(--hairline) * -1);
   }
 
-  /* A visit by its kind: a consultation raised on a line, a service visit set back on the control's line, a
-     replacement shaded on the accent, a first fit in the strong fill. */
+  /* A visit by its kind, each its edge and its fill (./base.css's visit roles, which the console sets to the
+     redesign's): a first fit in the strong fill, and a consultation and fit in one visit the same on the
+     consultation's edge. */
   .consultation {
-    border-left-color: var(--ui-line);
-    background: var(--ui-raised);
+    border-left-color: var(--visit-consultation-edge);
+    background: var(--visit-consultation-ground);
   }
 
   .service {
-    border-left-color: var(--ui-line-control);
-    background: var(--ui-box-off);
+    border-left-color: var(--visit-service-edge);
+    background: var(--visit-service-ground);
   }
 
   .replacement {
-    border-left-color: var(--ui-accent);
-    background: var(--ui-shade);
+    border-left-color: var(--visit-replacement-edge);
+    background: var(--visit-replacement-ground);
   }
 
-  .fit {
+  .fit,
+  .oneVisit {
     border-left-color: var(--ink-line-strong);
     background: var(--ui-strong);
     color: var(--ui-on-strong);
+  }
+
+  .oneVisit {
+    border-left-color: var(--visit-consultation-edge);
   }
 
   /* Done, whatever its kind: set back. A late one keeps its kind's fill on the warning's rule. */
   .done.consultation,
   .done.service,
   .done.replacement,
-  .done.fit {
+  .done.fit,
+  .done.oneVisit {
     border-left-color: var(--status-done);
     background: var(--ui-ground);
     color: var(--ui-text-muted);
@@ -154,7 +161,8 @@
   .late.consultation,
   .late.service,
   .late.replacement,
-  .late.fit {
+  .late.fit,
+  .late.oneVisit {
     border-left-color: var(--status-warning);
   }
 

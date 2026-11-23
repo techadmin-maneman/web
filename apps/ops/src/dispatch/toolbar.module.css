@@ -3,3 +3,16 @@
 .tools {
   padding: var(--sp-12) var(--sp-32);
 }
+
+/* The visits by kind, a chip each, its swatch before its name. */
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+}

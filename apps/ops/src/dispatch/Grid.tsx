@@ -3,6 +3,7 @@
 // (./MoveBar.tsx), not dragged. A search outlines what it found. A row, a day and a block draw again only when what they
 // show changes.
 
+import { kindOfBlock } from "./kinds.ts";
 import { TextButton } from "@maneman/ui/TextLink";
 import { Table } from "@maneman/ui/Table";
 import { Tile } from "@maneman/ui/Tile";
@@ -32,12 +33,16 @@ const whatOf = (block: Block) =>
 /** "10:30 am", "4 pm": when a block starts, as every surface writes a time. */
 const startOf = (block: Block): string => indiaClock(block.starts_at);
 
-/** The board's three inks: a first fit on ink, a replacement shaded, everything else on light paper. */
-function inkOf(block: Block): string | undefined {
-  if (block.type === "first_fit") return styles.fit;
-  if (block.type === "replacement") return styles.repl;
-  return styles.svc;
-}
+/** Each kind's ink, as the redesign draws it: a first fit, alone or with its consultation, on ink; the rest edged. */
+const INKS = {
+  service: styles.svc,
+  consultation: styles.con,
+  one_visit: styles.oneVisit,
+  first_fit: styles.fit,
+  replacement: styles.repl,
+} as const;
+
+const inkOf = (block: Block): string | undefined => INKS[kindOfBlock(block) ?? "service"];
 
 /** "Blocks are sized by slot: consultation and service 1, replacement 1.5, first fit 2." */
 function sizeOf(block: Block): string | undefined {
@@ -304,14 +309,18 @@ interface GridProps {
   readonly onRoutes: ((date: string) => void) | null;
 }
 
+const KEYS = ["service", "consultation", "one_visit", "first_fit", "replacement"] as const;
+
 /** Beneath the board: what each block's edge and each state on a block says. */
 function Legend() {
   const words = dispatch.legend;
   return (
     <caption className={styles.legend}>
-      <span className={classes(styles.key, styles.svc)}>{words.service}</span>
-      <span className={classes(styles.key, styles.repl)}>{words.replacement}</span>
-      <span className={classes(styles.key, styles.fit)}>{words.fit}</span>
+      {KEYS.map((kind) => (
+        <span key={kind} className={classes(styles.key, INKS[kind])}>
+          {dispatch.kinds[kind]}
+        </span>
+      ))}
       <span className={classes(styles.key, styles.ghost)}>{words.ghost}</span>
       <Badge tone="done">{dispatch.chips.completed}</Badge>
       <Badge tone="warning">{dispatch.chips.terminated}</Badge>

@@ -2,6 +2,7 @@
 // on top, then one technician's visits at a time in the order they start, chips to change technician. Each visit opens
 // the drawer it opens on a desk.
 
+import { kindOfBlock } from "./kinds.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
@@ -21,7 +22,10 @@ interface Props {
   readonly onOpen: (job: Job, from: HTMLElement) => void;
 }
 
-const kindOf = (type: Block["type"]) => (type === null ? dispatch.unknown : dispatch.typeNames[type]);
+const kindOf = (block: Pick<Block, "type" | "one_visit">) => {
+  const kind = kindOfBlock(block);
+  return kind === null ? dispatch.unknown : dispatch.kinds[kind];
+};
 
 /** How a visit stands, where it says more than booked: done, begun, or past its start with nobody there. */
 function stateOf(block: Block, now: number): { words: string; tone: "muted" | "warning" } | null {
@@ -58,7 +62,7 @@ function TechnicianVisits(props: {
                 key={block.appointment_id}
                 lead={indiaClock(block.starts_at)}
                 title={block.client ?? dispatch.unknown}
-                meta={[kindOf(block.type), block.sector].filter((part) => part !== null).join(" · ")}
+                meta={[kindOf(block), block.sector].filter((part) => part !== null).join(" · ")}
                 end={state?.words}
                 endTone={state?.tone}
                 rule={state?.tone === "warning" ? "warning" : undefined}
@@ -116,7 +120,7 @@ export function PhoneDay({ board, rows, date, now, onOpen }: Props) {
                 key={job.appointment_id}
                 lead={indiaClock(job.starts_at)}
                 title={job.client ?? dispatch.unknown}
-                meta={kindOf(job.type)}
+                meta={kindOf(job)}
                 rule="error"
                 onClick={() => {
                   onOpen({ kind: "unassigned", job }, openerOf());

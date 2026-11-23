@@ -41,6 +41,22 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
   await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, 9 am" })).toContainText("Sec 43 · first fit");
 });
 
+// The redesign's C1: the visits by kind, a chip each, a consultation and fit in one visit a kind of its own.
+test("shows one kind of visit alone from its chip, and every kind again from All types", async ({ page }) => {
+  await open(page);
+  const kinds = page.getByRole("radiogroup", { name: opsCopy.dispatch.kinds.label });
+  await expect(kinds.getByRole("radio")).toHaveText(Object.values(opsCopy.dispatch.kinds).slice(1));
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeVisible();
+
+  await kinds.getByRole("radio", { name: opsCopy.dispatch.kinds.first_fit, exact: true }).click();
+  await expect(kinds.getByRole("radio", { name: opsCopy.dispatch.kinds.first_fit, exact: true })).toBeChecked();
+  await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, 9 am" })).toBeVisible();
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toHaveCount(0);
+
+  await kinds.getByRole("radio", { name: opsCopy.dispatch.kinds.all, exact: true }).click();
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeVisible();
+});
+
 // "Block heights follow their slots, about 42, 63 and 84 px".
 test("draws each job as tall as the slots it takes, so its size reads from its height", async ({ page }) => {
   await open(page);

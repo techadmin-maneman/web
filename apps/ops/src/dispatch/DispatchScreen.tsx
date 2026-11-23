@@ -23,6 +23,7 @@ import { Toolbar } from "./Toolbar.tsx";
 import { Tray } from "./Tray.tsx";
 import { useBoard } from "./useBoard.ts";
 import { useSearch, weekOf } from "./board-view.ts";
+import { boardOfKind, rowsOfKind, type BoardKind } from "./kinds.ts";
 import { ChangePanel, changedNotice } from "./ChangePanel.tsx";
 import { NoticeLine } from "./NoticeLine.tsx";
 import { useOver, type Over } from "./over.ts";
@@ -211,14 +212,15 @@ function useAsked() {
   const [query, setQuery] = useBoardQuery(asked);
   const [find, setFind] = useState(asked.find);
   const [view, setView] = useState<BoardView>(() => firstView(asked));
+  const [kind, setKind] = useState<BoardKind>("all");
   const onWeek = (from: string | null) => {
     setQuery({ ...query, from });
   };
-  return { asked, query, setQuery, onWeek, find, setFind, view, setView };
+  return { asked, query, setQuery, onWeek, find, setFind, view, setView, kind, setKind };
 }
 
 export function DispatchScreen() {
-  const { asked, query, onWeek, find, setFind, view, setView } = useAsked();
+  const { asked, query, onWeek, find, setFind, view, setView, kind, setKind } = useAsked();
   const [over, set] = useOver();
   const { opened, changing, notice } = over;
   const [move, setMove] = useState<Move | null>(null);
@@ -292,7 +294,7 @@ export function DispatchScreen() {
     <>
       <div className={styles.area} ref={area} tabIndex={-1}>
         <div className={styles.main}>
-          <Toolbar day={view === "day"} find={find} onFind={setFind} />
+          <Toolbar day={view === "day"} find={find} onFind={setFind} kind={kind} onKind={setKind} />
           {inHand !== null && (
             <MoveBar
               ref={bar}
@@ -309,8 +311,8 @@ export function DispatchScreen() {
           {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
           {board !== null && (
             <BoardBody
-              board={board}
-              search={{ settled, rows, found }}
+              board={boardOfKind(board, kind)}
+              search={{ settled, rows: rowsOfKind(rows, kind), found }}
               view={view}
               onView={setView}
               onWeek={onWeek}
@@ -320,7 +322,7 @@ export function DispatchScreen() {
               onRoutes={access.mayCall("GET /api/dispatch/day") ? set.routesOn : null}
             />
           )}
-          {board !== null && <Tray unassigned={board.unassigned} onOpen={open} />}
+          {board !== null && <Tray unassigned={boardOfKind(board, kind).unassigned} onOpen={open} />}
         </div>
       </div>
 

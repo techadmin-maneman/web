@@ -31603,6 +31603,8 @@ export interface components {
                 pincode: string | null;
                 /** @description Null for a client who has been erased. */
                 person: components["schemas"]["DispatchClient"] | null;
+                /** @description A consultation and fit in one visit, its own kind on the board (ADR 0105). */
+                one_visit: boolean;
                 /**
                  * @description Never an amount: prepaid, credit, or free.
                  * @enum {string}
@@ -31658,6 +31660,8 @@ export interface components {
             pincode: string | null;
             /** @description Null for a client who has been erased. */
             person: components["schemas"]["DispatchClient"] | null;
+            /** @description A consultation and fit in one visit, its own kind on the board (ADR 0105). */
+            one_visit: boolean;
             /**
              * @description Never an amount: prepaid, credit, or free.
              * @enum {string}

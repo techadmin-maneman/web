@@ -52817,6 +52817,10 @@ Request body:
             ],
             "description": "Null for a client who has been erased."
           },
+          "one_visit": {
+            "type": "boolean",
+            "description": "A consultation and fit in one visit, its own kind on the board (ADR 0105)."
+          },
           "badge": {
             "type": "string",
             "enum": [
@@ -52922,6 +52926,7 @@ Request body:
           "sector",
           "pincode",
           "person",
+          "one_visit",
           "badge",
           "slots",
           "client_note",
@@ -53112,6 +53117,10 @@ Request body:
       ],
       "description": "Null for a client who has been erased."
     },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit, its own kind on the board (ADR 0105)."
+    },
     "badge": {
       "type": "string",
       "enum": [
@@ -53242,6 +53251,7 @@ Request body:
     "sector",
     "pincode",
     "person",
+    "one_visit",
     "badge",
     "slots",
     "client_note",

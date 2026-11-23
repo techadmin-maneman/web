@@ -142,23 +142,36 @@
   min-height: calc(2 * var(--ops-slot));
 }
 
+/* Each kind's edge and fill (packages/ui/base.css's visit roles, which the console sets to the redesign's). */
 .svc {
-  border-left-color: var(--ui-line);
-  background: var(--ui-raised);
+  border-left-color: var(--visit-service-edge);
+  background: var(--visit-service-ground);
+  color: var(--ui-text);
+}
+
+.con {
+  border-left-color: var(--visit-consultation-edge);
+  background: var(--visit-consultation-ground);
   color: var(--ui-text);
 }
 
 .repl {
-  border-left-color: var(--ui-accent);
-  background: var(--ui-shade);
+  border-left-color: var(--visit-replacement-edge);
+  background: var(--visit-replacement-ground);
   color: var(--ui-text);
 }
 
-/* The board's rule is gilt; gold marks only the one primary action (ADR 0025, item 59), so it is the ink's own line. */
-.fit {
+/* The board's rule is gilt; gold marks only the one primary action (ADR 0025, item 59), so it is the ink's own line.
+   A consultation and fit in one visit is the same, on the consultation's edge. */
+.fit,
+.oneVisit {
   border-left-color: var(--ink-line-strong);
   background: var(--ink);
   color: var(--paper);
+}
+
+.oneVisit {
+  border-left-color: var(--visit-consultation-edge);
 }
 
 .who,
@@ -188,11 +201,13 @@
 }
 
 .svc .what,
+.con .what,
 .repl .what {
   color: var(--ui-text-muted);
 }
 
-.fit .what {
+.fit .what,
+.oneVisit .what {
   color: var(--ink-soft);
 }
 
@@ -217,7 +232,8 @@
   outline-offset: var(--focus-inset);
 }
 
-.fit:focus-visible {
+.fit:focus-visible,
+.oneVisit:focus-visible {
   outline-color: var(--paper);
 }
 

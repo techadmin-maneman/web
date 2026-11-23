@@ -92,6 +92,14 @@
     --stat-size: var(--fs-34);
     --stat-weight: var(--weight-regular);
     --stat-min: calc(var(--sp-8) * 17);
+    /* A visit's edge and fill by its kind, on the dispatch board's day and week (./DayTimeline.tsx): a consultation
+       raised on a line, a service visit set back on the control's line, a replacement shaded on the accent. */
+    --visit-consultation-edge: var(--ui-line);
+    --visit-consultation-ground: var(--ui-raised);
+    --visit-service-edge: var(--ui-line-control);
+    --visit-service-ground: var(--ui-box-off);
+    --visit-replacement-edge: var(--ui-accent);
+    --visit-replacement-ground: var(--ui-shade);
     /* A state's badge (./Badge.tsx): square, with no dot, unless the app's look draws a pill. */
     --badge-height: var(--sp-20);
     --badge-text: var(--fs-13);
