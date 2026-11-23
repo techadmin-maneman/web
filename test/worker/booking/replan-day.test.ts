@@ -21,6 +21,7 @@ import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 import { aHold } from "../fixtures/index.ts";
+import { racedBy } from "./raced-db.ts";
 
 /** A home, as ops set one: 28.4775 is 2 km north of the client, 28.5674 12 km. */
 async function home(id: string, lat: number) {
@@ -69,36 +70,6 @@ async function leave(technicianId: string, from: string | null = null, to: strin
 const withImran = () =>
   env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(visitId, IMRAN).run();
 
-/**
- * The database, with `raced` done just before the re-plan writes its moves, after it read the day: as a hold, or ops,
- * can change the day between the two.
- */
-function racedBy(raced: () => Promise<unknown>): D1Database {
-  let writing = false;
-  let done = false;
-  return new Proxy(env.DB, {
-    get(target, key) {
-      if (key === "prepare") {
-        return (sql: string) => {
-          if (sql.includes("INSERT INTO dispatch_moves")) writing = true;
-          return target.prepare(sql);
-        };
-      }
-      if (key === "batch") {
-        return async (statements: D1PreparedStatement[]) => {
-          if (writing && !done) {
-            done = true;
-            await raced();
-          }
-          return target.batch(statements);
-        };
-      }
-      const value: unknown = Reflect.get(target, key);
-      return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
-    },
-  });
-}
-
 describe("a day's drafts re-planned", () => {
   it("gives a draft to whoever it costs least, keeps it a draft, records the move, and keeps the day locked", async () => {
     const { moved } = await replanDay(env.DB, {
@@ -136,6 +107,7 @@ describe("a day's drafts re-planned", () => {
     expect(await replanDay(env.DB, { city: "Gurgaon", date: TUESDAY, now: NOW, inputs })).toEqual({
       moved: 1,
       stranded: [],
+      unmoved: [],
     });
     expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
 
@@ -157,9 +129,25 @@ describe("a day's drafts re-planned", () => {
     const inputs = await readOpsInputs(env.DB, NOW);
     expect(await replanDay(racedBy(holdLocks), { city: "Gurgaon", date: TUESDAY, now: NOW, inputs })).toEqual({
       moved: 0,
-      stranded: [{ visitId, technicianId: IMRAN, start: 11 * 60 }],
+      stranded: [],
+      unmoved: [{ visitId, technicianId: IMRAN, start: 11 * 60 }],
     });
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+  });
+
+  it("names no draft ops fixed, or gave to another, while its move off a day that no longer fits was written", async () => {
+    await withImran();
+    await leave(IMRAN);
+    const inputs = await readOpsInputs(env.DB, NOW);
+    const opsFix = () =>
+      env.DB.prepare("UPDATE appointments SET technician_draft = 0, technician_id = ?2 WHERE id = ?1")
+        .bind(visitId, SANDEEP)
+        .run();
+    expect(await replanDay(racedBy(opsFix), { city: "Gurgaon", date: TUESDAY, now: NOW, inputs })).toEqual({
+      moved: 0,
+      stranded: [],
+      unmoved: [],
+    });
   });
 
   it("leaves a draft nobody else can take with its technician, and tells Operations of it once", async () => {

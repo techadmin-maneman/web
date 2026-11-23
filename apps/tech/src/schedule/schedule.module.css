@@ -38,13 +38,14 @@
   row-gap: 0;
 }
 
-/* The week's range between a step back and a step on, each the technician's tap; the step back's edge lines up with
-   the title above it, and the step on keeps its place at the row's end however long the range. */
+/* The week's range between a step back and a step on, each the technician's tap, the row drawn out into the gutter
+   either side so each chevron lines up with what is above it: the step back with the title, the step on with the sync.
+   The step on keeps its place at the row's end however long the range. */
 .weeks {
   display: flex;
-  flex-basis: 100%;
+  flex-basis: calc(100% + 2 * var(--sp-12));
   align-items: center;
-  margin-left: calc(-1 * var(--sp-12));
+  margin-inline: calc(-1 * var(--sp-12));
 }
 
 .weeks .range {
