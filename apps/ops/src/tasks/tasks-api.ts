@@ -3,6 +3,7 @@
 // place.
 
 import { client, type TaskGroup, type ClosableGroup } from "../api.ts";
+import type { Department } from "@rules/policy/access.ts";
 
 export const tasksApi = {
   /** A task made a member of staff's, by their Access e-mail, or nobody's with null (ADR 0092). */
@@ -17,6 +18,17 @@ export const tasksApi = {
       path: { group, id },
       body: failure === null ? { reason } : { reason, failure_reason: failure },
     }),
+  /** A task written by hand for a department, about a client or the city chosen (ADR 0302). */
+  writeTask: (task: {
+    what: string;
+    department: Department;
+    client: string | null;
+    city: string | null;
+    due: string;
+    owner: string | null;
+  }) => client.post("/api/tasks", { body: task }),
+  /** A task written by hand marked done; it leaves the board. */
+  markTaskDone: (id: string) => client.post("/api/tasks/staff/{id}/done", { path: { id } }),
   /** A one visit's payment link, texted to the client again by Razorpay, or made now where it never was. */
   resendPaymentLink: (linkId: string) => client.post("/api/payment-links/{id}/resend", { path: { id: linkId } }),
   /** A UPI payment taken at the visit, recorded under its UTR once it is in the account; the client is sent a receipt. */

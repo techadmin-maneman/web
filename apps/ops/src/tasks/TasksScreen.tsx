@@ -28,6 +28,7 @@ import { BulkActions } from "./BulkActions.tsx";
 import { keyOf, TaskTable, type Listed } from "./TaskTable.tsx";
 import { TaskDrawer, type Acting } from "./TaskDetail.tsx";
 import { TaskFilters } from "./TaskFilters.tsx";
+import { WriteTask } from "./WriteTask.tsx";
 import { filterOf, narrowed, type Row, type TaskFilter } from "./task-views.ts";
 import { subOf } from "./task-subs.ts";
 import styles from "./tasks-screen.module.css";
@@ -196,6 +197,7 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
   };
   return (
     <>
+      <WriteTask me={me} staff={board.staff} />
       <TaskFilters filter={filter} counts={found.counts} onFilter={onFilter} />
       <BoardNotes truncated={board.truncated} lapsed={board.lapsed} shown={lapsed.shown} onToggle={lapsed.toggle} />
       {chooses && <BulkActions rows={chosen} actingOn={actingOn} onClear={selection.clear} onKeep={selection.only} />}
