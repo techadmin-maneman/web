@@ -227,6 +227,35 @@ describe("Fit today", () => {
     expect(await offered()).toEqual({ offer: null, refusal: "fit_booked" });
   });
 
+  it("answers a tap again with the fit booked whose visit the half-hour pass has still to book", async () => {
+    await ready();
+    // Confirmed with Imran, nothing paid, its visit not yet written.
+    await aHold({
+      person_id: PERSON,
+      technician_id: IMRAN,
+      type: "first_fit",
+      date: "2026-09-21",
+      one_visit: 1,
+      confirmed_at: TWO_PM.toISOString(),
+      expires_at: new Date(TWO_PM.getTime() + 60 * 60_000).toISOString(),
+    });
+    expect(await offered()).toEqual({ offer: null, refusal: "fit_booked" });
+    const again = await booked();
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual({ visit_id: null });
+  });
+
+  it("never answers a tap again with a fit cancelled since", async () => {
+    await ready();
+    const first = await (await booked()).json<{ visit_id: string }>();
+    await env.DB.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?1").bind(first.visit_id).run();
+    await env.DB.prepare("UPDATE slot_holds SET state = 'released' WHERE appointment_id = ?1")
+      .bind(first.visit_id)
+      .run();
+    now = new Date(TWO_PM.getTime() + 66 * 60_000);
+    expect((await booked("event-fit-today-04")).status).toBe(404);
+  });
+
   it("is not offered to a client who has not agreed to today's terms", async () => {
     // Booked by phone, the client has agreed to nothing in their own app or on the site.
     await closedDone();

@@ -178,6 +178,8 @@ test("a consultation closed going ahead offers nothing where Fit today is refuse
   const fit = page.getByRole("region", { name: closeOut.fitToday.title });
   await fit.getByRole("button", { name: closeOut.fitToday.action }).click();
   await expect(fit.getByRole("alert")).toHaveText(closeOut.fitToday.failed.taken);
+  // The ending takes the focus from the button it took away, so a reader hears it.
+  await expect(fit.locator("[tabindex='-1']")).toBeFocused();
   // Refused for good: no button to try again with, no start to go by, and the row back to ops booking it.
   await expect(fit.getByRole("button", { name: closeOut.fitToday.action })).toHaveCount(0);
   await expect(fit).not.toContainText(OFFER.stock_name);
@@ -222,4 +224,23 @@ test("a fit already booked says so, and the row says the fit is booked", async (
   await fit.getByRole("button", { name: closeOut.fitToday.action }).click();
   await expect(fit.getByRole("status")).toHaveText(closeOut.fitToday.alreadyBooked);
   await expect(page.getByText(closeOut.goingAheadBooked(null), { exact: true })).toBeVisible();
+});
+
+test("the Fit row waits for the offer rather than say ops book a fit it may book now", async ({ page }) => {
+  const fake = await fakeTech(page);
+  // The offer answers a second and a half late, as on a slow line at the door.
+  await page.route(`**/api/tech/jobs/${JOB_ID}/fit-today`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const starts = new Date(Date.now() + 30 * 60_000).toISOString();
+    return route.fulfill({ json: { offer: { ...OFFER, starts_at: starts }, refusal: null } });
+  });
+  await closedGoingAhead(page, fake);
+  // Looked at every fifth of a second while the offer is on its way: never ops to book.
+  const opsToBook = page.getByText(closeOut.goingAhead(null), { exact: true });
+  for (let look = 0; look < 6; look += 1) {
+    expect(await opsToBook.count()).toBe(0);
+    await page.waitForTimeout(200);
+  }
+  await expect(page.getByText(closeOut.goingAheadToday(null), { exact: true })).toBeVisible();
+  await expect(page.getByText(closeOut.goingAhead(null), { exact: true })).toHaveCount(0);
 });

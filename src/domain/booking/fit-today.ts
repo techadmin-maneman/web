@@ -5,6 +5,7 @@
 // start, its drives checked on Google, and refused where its checks refuse it.
 
 import { HOLD_SECONDS } from "../../config/scheduling.ts";
+import { statusNotIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS } from "../../policy/one-visit.ts";
 import { windowAt } from "../../policy/slot-times.ts";
@@ -217,6 +218,10 @@ export async function holdFitToday(
   return { ok: true, holdId: hold.id };
 }
 
+/** The client of the consultation ?1, this technician's (?2). */
+const CONSULTED = `SELECT c.person_id FROM appointments c
+  WHERE c.id = ?1 AND c.technician_id = ?2 AND c.type = 'consultation' AND c.deleted_at IS NULL`;
+
 /**
  * The fit this technician booked at the door today for the consultation's client, where they did: a booking asked again,
  * as a tap after the phone stopped waiting for the first, or after the hour, is answered with it. Its visit's ID, or
@@ -227,12 +232,12 @@ export async function bookedAtTheDoor(db: D1Database, asked: Asked): Promise<str
   const row = await db
     .prepare(
       `SELECT f.id FROM appointments f
-       WHERE f.person_id = (SELECT c.person_id FROM appointments c WHERE c.id = ?1 AND c.technician_id = ?2)
+       WHERE f.person_id = (${CONSULTED})
          AND f.technician_id = ?2 AND f.type = 'first_fit' AND f.one_visit IS NOT NULL AND f.deleted_at IS NULL
-         AND f.window_start >= ?3 AND f.window_start < ?4
+         AND ${statusNotIn("f.status", VISIT_CALLED_OFF)} AND f.window_start >= ?3 AND f.window_start < ?4
        UNION ALL
        SELECT NULL FROM slot_holds h
-       WHERE h.person_id = (SELECT c.person_id FROM appointments c WHERE c.id = ?1 AND c.technician_id = ?2)
+       WHERE h.person_id = (${CONSULTED})
          AND h.technician_id = ?2 AND h.type = 'first_fit' AND h.one_visit = 1 AND h.date = ?5 AND h.state = 'held'
          AND h.confirmed_at IS NOT NULL AND h.appointment_id IS NULL
        LIMIT 1`,

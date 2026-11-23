@@ -19,15 +19,16 @@ fit, and Fit today is not offered where the client has a first fit booked alread
 
 1. **Offered at a plain consultation the technician has closed as done today** (`fitTodayOf`,
    `src/domain/booking/fit-today.ts`; `GET /api/tech/jobs/{id}/fit-today`), where all of these hold:
-   - the close says the client is going ahead with a fit, with no reason not to, and reached us no longer ago than
-     the technician may check in ahead of a start (the phone clock's `before_start`), so they are still at the door;
+   - the close says the client is going ahead with a fit, with no reason not to, and was made on the phone and reached
+     us no longer ago than the technician may check in ahead of a start (the phone clock's `before_start`), so they are
+     still at the door: a close sent late, once signal came back, is not;
    - the client has no first fit, consultation and fit, or consultation to come, nor a first fit's payment link ops
      sent still open (`liveVisitOf`, `linkStillOpen`), as ops booking one would refuse;
    - the client has agreed to today's terms in their own channel, on the site or in the app, as they booked
      (`agreedToToday`, `src/domain/privacy/terms-acceptances.ts`; ADR 0191): the owner's default that the client agrees
      in their own app, not the technician for them;
    - the technician's kit holds a piece of the stock code made exactly to the client's latest profile, free or kept
-     for them (`stockMatch`, ADR 0173);
+     for them (`stockMatch`, ADR 0173), of the product the client picked on Options where they picked one (ADR 0247);
    - the profile's product has a first fit on sale today;
    - the technician's day has a start for the fit's length from now, near enough to begin at once (no later than they
      may check in ahead of a start, the phone clock's `before_start`), in the morning or the afternoon, as a one

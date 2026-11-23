@@ -149,8 +149,6 @@ function Decided({ job }: { job: Job }) {
   const said = valueOr(useAsync(readOutcome)[0], null);
   // In English ops' reason reads mid-line, "Not now · the price"; inside Hindi it stays exactly as they wrote it.
   const english = useLanguage() === "en";
-  // Fit today beneath may book the fit now, or have booked it: the row says so once its offer is answered.
-  const fitToday = useFitToday(job, said?.outcome === "done" && said.going_ahead === true);
   if (said === null) return null;
   // Ops' reasons, in Hindi where a catalog holds the whole of one, as they wrote it otherwise.
   const label = (reasons: Job["partial_reasons"], id: string | undefined) => {
@@ -164,12 +162,20 @@ function Decided({ job }: { job: Job }) {
   if (said.going_ahead === undefined) return null;
   if (said.going_ahead) {
     const product = job.products.find((one) => one.tier === said.product)?.name ?? null;
-    if (!fitToday.answered) return null;
-    const named = product === null ? null : theirs(product);
-    return <Row name={copy.fit} value={fitRow(fitToday, named)} />;
+    return <GoingAhead job={job} product={product === null ? null : theirs(product)} />;
   }
   const lost = label(job.lost_reasons, said.lost_reason);
   return <Row name={copy.fit} value={copy.notNow(lost === null ? null : theirs(english ? midLine(lost) : lost))} />;
+}
+
+/**
+ * The Fit row for a client going ahead, drawn once Fit today's offer beneath is answered, which may book the fit now or
+ * have booked it. Its own part, mounted once the close is known, so its read is the offer's from its first draw.
+ */
+function GoingAhead({ job, product }: { job: Job; product: string | null }) {
+  const fitToday = useFitToday(job, true);
+  if (!fitToday.answered) return null;
+  return <Row name={copy.fit} value={fitRow(fitToday, product)} />;
 }
 
 /** A yes as the Fit row says it: the fit booked, Fit today offered beneath, or ops to book it. */
