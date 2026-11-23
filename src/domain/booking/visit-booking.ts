@@ -111,7 +111,7 @@ export function bookableRange(now: Date, inputs: Pick<OpsInputs, "nextVisitDays"
  * A payment link ops sent for a consultation or first fit of the client's that can still be paid: until its hold's
  * grace is over, since Razorpay may still be taking the payment.
  */
-async function linkStillOpen(db: D1Database, personId: string, kind: VisitType, now: Date): Promise<boolean> {
+export async function linkStillOpen(db: D1Database, personId: string, kind: VisitType, now: Date): Promise<boolean> {
   // A replacement is one at a time too, once due (ADR 0253).
   if (!ONE_AT_A_TIME.includes(kind) && kind !== "replacement") return false;
   const open = await db

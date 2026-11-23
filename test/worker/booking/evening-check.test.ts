@@ -17,6 +17,8 @@ import { createLogger } from "../../../src/log.ts";
 import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
+import { aHold } from "../fixtures/index.ts";
+import { racedBy } from "./raced-db.ts";
 
 /** A third technician, at home 28.6000: farther from the draft than Sandeep, so not the one it moves to. */
 const VIKRAM = "t9";
@@ -316,6 +318,27 @@ describe("tomorrow checked on Google", () => {
     expect([...told].sort()).toEqual(
       [`draft_stranded:${visitId}:${TUESDAY}`, `leg_short:${IMRAN}:${TUESDAY}:15:00`].sort(),
     );
+  });
+
+  // The lock comes before another pass, so a move a hold stopped is told, where it leaves the draft on a day it no
+  // longer fits.
+  it("tells ops of a draft a hold stopped from leaving a day that no longer fits", async () => {
+    await booked(28.4589);
+    await awayTuesday(SANDEEP);
+    const rival = await aHold({ person_id: (await client()).id, technician_id: IMRAN });
+    const holdLocks = () =>
+      env.DB.prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, 'rev:1', ?3)")
+        .bind(IMRAN, TUESDAY, rival.id)
+        .run();
+    const { check, told } = google(() => 10);
+    await eveningCheck(racedBy(holdLocks), check, {
+      city: "Gurgaon",
+      date: TUESDAY,
+      now: NOW,
+      inputs: await readOpsInputs(env.DB, NOW),
+    });
+    expect(told).toEqual([`draft_stranded:${visitId}:${TUESDAY}`]);
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
   });
 
   it("asks Google nothing where the routes provider is off, and re-plans on the estimate alone", async () => {

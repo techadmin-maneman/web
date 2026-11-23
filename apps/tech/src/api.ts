@@ -37,6 +37,8 @@ export type Me = Schema["TechnicianMe"];
 export type Challenge = Schema["TechnicianChallenge"];
 /** A job on the day's list: its address once unlocked, and the next job still to do from it. */
 export type JobSummary = Schema["TechnicianDayJob"];
+/** Fit today's offer at a consultation's close: the piece in the kit, when the fit would start, how it is paid. */
+export type FitTodayOffer = NonNullable<Schema["TechnicianFitToday"]["offer"]>;
 /** A job of a past week on Schedule: its time, length, kind and how it closed, and nothing of its client. */
 export type PastJob = Schema["TechnicianPastJob"];
 /** A job's card. One an earlier build kept on the phone carries no check-in radius. */
@@ -208,6 +210,12 @@ export const api = {
       patience: PATIENCE_MS.write,
     }),
 
+  /** Whether the consultation just closed may become the client's fit on the spot (ADR 0299). Asked with signal. */
+  fitToday: (jobId: string) =>
+    client.get("/api/tech/jobs/{id}/fit-today", { path: { id: jobId }, patience: PATIENCE_MS.read }),
+  /** Books it, with this technician, as a consultation and fit in one visit. Asked straight, with signal. */
+  bookFitToday: (jobId: string) =>
+    client.post("/api/tech/jobs/{id}/fit-today", { path: { id: jobId }, patience: PATIENCE_MS.write }),
   /** A one visit's payment link texted to the client again, from the close. Asked straight, with signal. */
   resendLink: (jobId: string) =>
     client.post("/api/tech/jobs/{id}/payment-link/resend", { path: { id: jobId }, patience: PATIENCE_MS.write }),

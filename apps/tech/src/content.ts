@@ -976,6 +976,10 @@ export const closeOut = localised({
   fit: "Fit",
   /** A consultation's yes, as the prototype writes it: "Mane Man Natural · ops to book"; ops book the fit. */
   goingAhead: (product: string | null) => `${product ?? "Going ahead"} · ops to book`,
+  /** The same while Fit today is offered beneath it, which may book it now. */
+  goingAheadToday: (product: string | null) => product ?? "Going ahead",
+  /** The same once the fit is booked, at this close or before it. */
+  goingAheadBooked: (product: string | null) => `${product ?? "Going ahead"} · fit booked`,
   /** "Not now · the price": ops' reason, as it reads mid-line. */
   notNow: (why: string | null) => (why === null ? "Not now" : `Not now · ${why}`),
   // The board writes "1 h 22 m"; the phone times it from Start job (open point 60).
@@ -983,6 +987,30 @@ export const closeOut = localised({
   photos: "Photos",
   queued: (count: number) => `${String(count)} queued`,
   sent: (count: number) => `${String(count)} sent`,
+  /** Fit today, after a plain consultation, where the kit holds the client's piece (ADR 0299). */
+  fitToday: {
+    title: "Fit today",
+    /** "Mane Man Natural 8×10 1B is in your kit. Fit from 2:30 pm." */
+    line: (piece: string, time: string) => `${piece} is in your kit. Fit from ${time}.`,
+    paysLink: "Nothing to pay now. The client pays by link once fitted.",
+    /** While online payment is off (ADR 0209): paid by UPI at the visit. */
+    paysAtVisit: "Nothing to pay now. The client pays by UPI once fitted.",
+    action: "Book the fit",
+    booking: "Booking…",
+    /** Booked, its job opened at once; said on coming back to this close. */
+    booked: "Booked. It’s on Today.",
+    /** Booked, its job on its way to the day's list. */
+    bookedSoon: "Booked. It shows on Today in a few minutes.",
+    /** The client's fit was booked already, as a second tap or ops found. */
+    alreadyBooked: "The client’s fit is already booked.",
+    failed: {
+      offline: "No signal. Try again once there is.",
+      taken: "Your day has no room for it now. Ops can book the fit.",
+      /** Refused for good: the client, the kit or the price changed since it was offered. */
+      gone: "It can’t be booked now. Ops can book the fit.",
+      unknown: "The fit wasn’t booked. Try again.",
+    },
+  },
   /** A one visit's link: whether it is paid, and texting it again. */
   payment: {
     title: "Payment link",

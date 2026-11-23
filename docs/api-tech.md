@@ -4152,6 +4152,288 @@ Request body:
 }
 ```
 
+### GET /api/tech/jobs/{id}/fit-today
+
+Whether the consultation just closed may become the client's fit on the spot, and with which piece
+
+**200**: The offer, or why there is none
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianFitToday"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked: ops revoked this phone; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tech/jobs/{id}/fit-today
+
+Books the client's fit on the spot, with this technician, as a consultation and fit in one visit
+
+**201**: Booked, or booked already at this door today: the visit's ID, or null where its visit is still being booked
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianFitTodayBooked"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked: ops revoked this phone; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: not this technician's plain consultation closed as done today, the client going ahead, within the hour they may check in ahead of a start
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: already_booked: the client has a first fit, consultation or first fit's link to come; taken: no room on the day from now
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "taken",
+                "already_booked"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**422**: not_bookable: no piece in the kit made to the profile or of the product the client picked, or the client has not agreed to today's terms; no_product: none on sale today
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_bookable",
+                "no_product"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/tech/pieces/lookup
 
 The piece a label names
@@ -11542,6 +11824,112 @@ One of the client's try-on looks, under the card's own unlock, never cached
   },
   "required": [
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianFitToday
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "offer": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "product": {
+              "type": "string",
+              "description": "The first fit's service, the client's profile's product."
+            },
+            "stock_code": {
+              "type": "string",
+              "description": "The hair system in the kit made exactly to the profile."
+            },
+            "stock_name": {
+              "type": "string"
+            },
+            "starts_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "minutes": {
+              "type": "integer"
+            },
+            "pays_by": {
+              "type": "string",
+              "enum": [
+                "link",
+                "at_visit"
+              ],
+              "description": "How the client pays once fitted: by the link the close asks for, or by UPI at the visit while online payment is off (ADR 0209)."
+            }
+          },
+          "required": [
+            "product",
+            "stock_code",
+            "stock_name",
+            "starts_at",
+            "minutes",
+            "pays_by"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refusal": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "not_offered",
+            "fit_booked",
+            "terms_needed",
+            "not_in_kit",
+            "no_product",
+            "no_room"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Why it is not offered: not_offered (not this technician's plain consultation closed done today, the client going ahead, within the hour they may check in ahead of a start), fit_booked (a first fit, a consultation and fit, a consultation or a first fit's payment link to come), terms_needed (the client has not agreed to today's terms on the site or in the app), not_in_kit (no piece made exactly to the profile, or the client picked another product), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer."
+    }
+  },
+  "required": [
+    "offer",
+    "refusal"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianFitTodayBooked
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "visit_id"
   ],
   "additionalProperties": false
 }

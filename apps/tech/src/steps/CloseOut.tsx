@@ -19,6 +19,7 @@ import { clock, dayAfter, lengthOf, metres, todayInIndia, where } from "../lib/w
 import { NO_PIECE } from "@rules/policy/in-job-steps.ts";
 import { go } from "../route.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
+import { FitToday, useFitToday, type FitTodayAt } from "./FitToday.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import {
   type Heard,
@@ -161,10 +162,27 @@ function Decided({ job }: { job: Job }) {
   if (said.going_ahead === undefined) return null;
   if (said.going_ahead) {
     const product = job.products.find((one) => one.tier === said.product)?.name ?? null;
-    return <Row name={copy.fit} value={copy.goingAhead(product === null ? null : theirs(product))} />;
+    return <GoingAhead job={job} product={product === null ? null : theirs(product)} />;
   }
   const lost = label(job.lost_reasons, said.lost_reason);
   return <Row name={copy.fit} value={copy.notNow(lost === null ? null : theirs(english ? midLine(lost) : lost))} />;
+}
+
+/**
+ * The Fit row for a client going ahead, drawn once Fit today's offer beneath is answered, which may book the fit now or
+ * have booked it. Its own part, mounted once the close is known, so its read is the offer's from its first draw.
+ */
+function GoingAhead({ job, product }: { job: Job; product: string | null }) {
+  const fitToday = useFitToday(job, true);
+  if (!fitToday.answered) return null;
+  return <Row name={copy.fit} value={fitRow(fitToday, product)} />;
+}
+
+/** A yes as the Fit row says it: the fit booked, Fit today offered beneath, or ops to book it. */
+function fitRow(fitToday: FitTodayAt, product: string | null): string {
+  if (fitToday.booked) return copy.goingAheadBooked(product);
+  const offered = fitToday.offer !== null && fitToday.ending?.kind !== "refused";
+  return offered ? copy.goingAheadToday(product) : copy.goingAhead(product);
 }
 
 /** How long the visit took, from the check-in to its close: as this phone kept the close, else when it was queued. */
@@ -342,6 +360,8 @@ export function CloseOut({ id }: { id: string }) {
         {/* A card the phone kept from before one visits names no link. */}
         {job.one_visit && job.payment_link !== null && <PaymentLink job={job} link={job.payment_link} />}
         {outcome === "partial" && <FinishTheWork job={job} closing={closing} />}
+        {/* Asked once the close has reached us, which the offer reads. */}
+        {outcome === "done" && !closing && job.type === "consultation" && !job.one_visit && <FitToday job={job} />}
         <WhatsNext later={later} todayLoaded={day.state === "loaded"} names={names} />
       </section>
 

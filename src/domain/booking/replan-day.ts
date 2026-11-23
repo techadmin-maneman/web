@@ -3,7 +3,8 @@
 // technician is moved in one batch under the lock a move takes on the day it goes to, so a hold placed there since
 // fails the batch and nothing is written; the next pass tries again. Nobody is told: the time is the client's own,
 // and who is coming is named only once the evening's lock fixes it. A draft its own technician's day no longer has
-// room for, and nobody else can take, is told to Operations once, to move by hand.
+// room for is told to Operations once, to move by hand, where nobody else can take it, and, at the evening's check,
+// which has no next pass, where a failed batch left it there (ADR 0297).
 
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
@@ -45,10 +46,16 @@ export interface Stranded {
   readonly start: number;
 }
 
-/** What a day's re-plan did: how many drafts it moved, and those it could place nowhere. */
+/** What a day's re-plan did. */
 export interface Replanned {
   readonly moved: number;
+  /** The drafts it could place nowhere. */
   readonly stranded: readonly Stranded[];
+  /**
+   * The drafts it placed off a day that no longer fits whose batch failed, read again and still drafts there: the next
+   * pass may move them, but the evening's check has none.
+   */
+  readonly unmoved: readonly Stranded[];
 }
 
 /** A city's day as booking plans on it: its drafts, its technicians' days, drafts on them, and their homes. */
@@ -131,7 +138,7 @@ export async function replanDay(
 ): Promise<Replanned> {
   const { date, now, inputs } = input;
   const read = await readDay(db, input);
-  if (read === null) return { moved: 0, stranded: [] };
+  if (read === null) return { moved: 0, stranded: [], unmoved: [] };
   const { rows, plans, days, radii } = read;
   const working = new Set(days.keys());
   const able = ableOnce(db);
@@ -187,12 +194,28 @@ export async function replanDay(
       ? []
       : [{ row, to, minutes: draft.stop.end - draft.stop.start }];
   });
-  if (moves.length === 0) return { moved: 0, stranded };
-  if (await writeMoves(db, { moves, plans, date }, now)) return { moved: moves.length, stranded };
-  // Nothing was written: a draft that was to leave a day that no longer fits is still on it, which ops are told, as the
-  // evening's check has no next pass to try again.
-  const unmoved = drafts.filter((draft) => offUnfit.has(draft.id) && moves.some((move) => move.row.id === draft.id));
-  return { moved: 0, stranded: [...stranded, ...unmoved.map(strandedOf)] };
+  if (moves.length === 0) return { moved: 0, stranded, unmoved: [] };
+  if (await writeMoves(db, { moves, plans, date }, now)) return { moved: moves.length, stranded, unmoved: [] };
+  const leaving = drafts.filter((draft) => offUnfit.has(draft.id) && moves.some((move) => move.row.id === draft.id));
+  return { moved: 0, stranded, unmoved: (await stillOn(db, leaving, now)).map(strandedOf) };
+}
+
+/**
+ * The drafts still open with the technician they were read with: not fixed, moved or proposed by ops or the client
+ * since, which a failed batch can be for as well as a hold.
+ */
+async function stillOn(db: D1Database, drafts: readonly Draft[], now: Date): Promise<Draft[]> {
+  if (drafts.length === 0) return [];
+  const { results } = await db
+    .prepare(
+      `SELECT a.id, a.technician_id FROM appointments a
+       WHERE a.id IN (SELECT value FROM json_each(?1)) AND ${draftOpen("?2")}`,
+    )
+    .bind(JSON.stringify(drafts.map((draft) => draft.id)), now.toISOString())
+    .all<{ id: string; technician_id: string }>();
+  return drafts.filter((draft) =>
+    results.some((row) => row.id === draft.id && row.technician_id === draft.technicianId),
+  );
 }
 
 /** Each stranded draft told to Operations once, naming the technician whose day no longer has room for it. */

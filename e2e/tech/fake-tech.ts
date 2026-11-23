@@ -608,6 +608,8 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
         return reply(route, 200, { outcome: "resent" });
       }
       if (path.endsWith("/finish-ask")) return reply(route, 204);
+      // Fit today (ADR 0299): a test that books it answers the call itself; here, nothing to book.
+      if (path.endsWith("/fit-today")) return refuse(route, 404, "not_found");
       if (path.endsWith("/no-show")) {
         fake.progress = { ...fake.progress, outcome: "no_show" };
         return reply(route, 200, {
@@ -707,6 +709,9 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       });
     }
     if (path === `/api/tech/jobs/${JOB_ID}/options`) return reply(route, 200, fake.options);
+    // Fit today's offer at a consultation's close (ADR 0299): none, unless a test answers the call itself.
+    if (path === `/api/tech/jobs/${JOB_ID}/fit-today`)
+      return reply(route, 200, { offer: null, refusal: "not_offered" });
     if (path === `/api/tech/jobs/${JOB_ID}/looks/${LOOK_ID}`) {
       assertInContract("tech", method, path, 200);
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });

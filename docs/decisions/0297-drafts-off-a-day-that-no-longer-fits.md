@@ -1,6 +1,8 @@
 # 0297. A draft its day no longer fits is moved, and two cities are checked a run
 
-- Status: accepted
+- Status: accepted; decision 2 amended 23 November 2026, on the review of #958: the hourly re-plan leaves a draft a
+  failed batch left on its day to its next pass, and the check before the lock tells it only while it is still a draft
+  there
 - Date: 2026-11-23
 - Topic: Booking and visits
 - Amends [0290](0290-allotted-the-evening-before.md), decisions 5 and 6
@@ -23,15 +25,16 @@ can take it; and check two cities a run, so every city is checked.
    drafts; then every draft is re-planned as before. A technician away all day is re-planned too: their drafts are read
    from what is booked on the day (`DayPlans.booked`), not from a day they no longer work.
 2. **A draft the re-plan could give to nobody is told to Operations once** (`draft_stranded:<visit>:<date>`,
-   `tellStranded` in `src/domain/booking/replan-day.ts`), by the hourly re-plan and by the check before the lock: one
-   nobody else may take, and one whose move a hold placed since the read stopped from being written, as the check has
-   no next pass. It stays with its technician, and the lock fixes it there unless ops move it by hand. Like `leg_short`,
-   the alert stays until ops close it.
+   `tellStranded` in `src/domain/booking/replan-day.ts`), by the hourly re-plan and by the check before the lock. The
+   check also tells one whose move a failed batch left on that day, read again and still a draft with that technician,
+   as the lock comes before another pass; the hourly re-plan leaves that one to its next pass. It stays with its
+   technician, and the lock fixes it there unless ops move it by hand. Like `leg_short`, the alert stays until ops close
+   it.
 3. **The check before the lock takes two cities a run where more than six share a lock hour** (`CHECKS_A_RUN`,
    `src/domain/booking/allotment-lock.ts`), one after the other, each with its own 60 drives and 20 seconds of Google,
    so twelve cities may share one. Six or fewer are still checked one a run, as the half hour has six runs: two cities'
-   work in one run, ten drafts a day each, measured 220 statements (`test/worker/jobs/cron-reads.test.ts`), past the
-   cron's 200 (`CRON_STATEMENTS_PER_RUN`).
+   work in one run measured 220 statements, past the cron's 200 (`CRON_STATEMENTS_PER_RUN`): the run at 5:31 pm in
+   `test/worker/jobs/cron-reads.test.ts`, its three cities of ten drafts a day, while every run took two cities.
 
 ## Consequences
 

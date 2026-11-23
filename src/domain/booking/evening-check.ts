@@ -125,10 +125,11 @@ function sameStops(was: PlanDay | undefined, now: PlanDay | undefined): boolean 
 
 /**
  * Tomorrow in a city re-planned on the estimate, checked on Google, re-planned once more without the technicians whose
- * drive left no room, and ops told of each drive still too long, and of each draft nobody can take.
+ * drive left no room, and ops told of each drive still too long, and of each draft left on a day that no longer
+ * fits: one nobody else can take, and one whose move a failed batch left there, as the lock comes before another pass.
  */
 export async function eveningCheck(db: D1Database, check: EveningCheck, input: Input): Promise<void> {
-  let { stranded } = await replanDay(db, input);
+  let { stranded, unmoved } = await replanDay(db, input);
   const first = await readDay(db, input);
   if (first === null) return;
   let shorts = await shortsOf(db, check, first, input);
@@ -137,7 +138,7 @@ export async function eveningCheck(db: D1Database, check: EveningCheck, input: I
     if (draftId !== null) ruledOut.set(draftId, (ruledOut.get(draftId) ?? new Set()).add(technicianId));
   }
   if (ruledOut.size > 0) {
-    ({ stranded } = await replanDay(db, { ...input, ruledOut }));
+    ({ stranded, unmoved } = await replanDay(db, { ...input, ruledOut }));
     // Read even with no draft left, fixed or gone meanwhile: only the days that changed are driven again, and the rest
     // keep what Google said of them.
     const again = await readWholeDay(db, input);
@@ -148,7 +149,7 @@ export async function eveningCheck(db: D1Database, check: EveningCheck, input: I
       ...(await shortsOf(db, check, again, { ...input, only: changed })),
     ];
   }
-  await tellStranded(db, check.alertOnce, { date: input.date, stranded });
+  await tellStranded(db, check.alertOnce, { date: input.date, stranded: [...stranded, ...unmoved] });
   for (const short of shorts) {
     const named = await db
       .prepare("SELECT name FROM technicians WHERE id = ?1")
