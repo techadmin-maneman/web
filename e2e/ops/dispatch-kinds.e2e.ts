@@ -1,5 +1,6 @@
-// Dispatch's visits by kind (docs/decisions/0304-the-work-screens.md): the chips narrow the tray and a phone's day as
-// they do the week, and a consultation and fit in one visit is a kind of its own. Every name here is made up.
+// Dispatch's visits by kind (docs/decisions/0304-the-work-screens-to-the-22-november-redesign.md): the chips
+// narrow the tray and a phone's day as they do the week, and a consultation and fit in one visit is a kind of its
+// own. Every name here is made up.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
