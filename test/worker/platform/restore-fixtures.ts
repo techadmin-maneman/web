@@ -36,6 +36,8 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES (1, '${AT}', 'ops', 'staff', 'ops@example.com', 'ops.call', 'person', 'p1')`,
   `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state)
      VALUES ('m1', '${AT}', 'p1', 'visit_reminder', 'appointment', 'ap1', 'queued')`,
+  `INSERT INTO pay_links (id, person_id, subject_kind, subject_id, url, amount, what, open_until, made_at)
+     VALUES ('pl1', 'p1', 'hold', 'h1', 'https://rzp.io/rzp/pl1', 200000, 'service visit', '${LATER}', '${AT}')`,
   `INSERT INTO otp_challenges (id, created_at, person_id, purpose, channel, last_sent_at, expires_at)
      VALUES ('o1', '${AT}', 'p1', 'login', 'whatsapp', '${AT}', '${LATER}')`,
   `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, expires_at)
