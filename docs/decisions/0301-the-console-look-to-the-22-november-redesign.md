@@ -26,7 +26,8 @@ test/node/apps/ops/ops-theme-roles.test.ts), so a new look is new values for the
 3. **IBM Plex Sans throughout on screen**, titles and figures too. A printed order sheet or label keeps the brand's
    faces, so the fonts change under `@media screen` alone.
 4. **The prototype's sizes**: buttons and boxes 34 px high, small ones 28; a panel's head at least 52 px; corners 6 px,
-   on a button and a box alike.
+   on a button and a box alike. The prototype's 4 px corner on an item inside a control, a segment or a menu's entry,
+   comes with the screens' own PRs, which draw those.
 5. **Where the prototype falls short of WCAG AA, the role keeps its hue a shade deeper.** The console's contrast test
    (test/node/apps/ops/ops-theme-contrast.test.ts) holds words on each ground and a control's edges, in both themes:
    - a control's edge, a day's and a time's, a choice card's, and a text link's underline are `#858C96`, 3.1:1 on the
