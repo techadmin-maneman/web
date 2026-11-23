@@ -35,6 +35,7 @@ import {
   CLOSABLE_TASK_GROUPS,
   hasLapsed,
   isClosable,
+  lapsesFrom,
   mayOwnTasks,
   STAFF_SEEN_WITHIN_DAYS,
   TASK_GROUPS,
@@ -329,7 +330,7 @@ function splitLapsed(
   all: readonly Task[],
   look: { seen: readonly TaskGroup[]; asked: "include" | undefined; now: Date; lapseDays: number },
 ) {
-  const lapsedOf = (task: Task) => look.asked !== "include" && hasLapsed(task.since, look.now, look.lapseDays);
+  const lapsedOf = (task: Task) => look.asked !== "include" && hasLapsed(lapsesFrom(task), look.now, look.lapseDays);
   const seen = all.filter((task) => look.seen.includes(task.group));
   return { tasks: seen.filter((task) => !lapsedOf(task)), lapsed: seen.filter(lapsedOf) };
 }

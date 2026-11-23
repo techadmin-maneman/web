@@ -143,6 +143,10 @@ export const TASK_LAPSE_DAYS = 60;
 export const hasLapsed = (since: string, now: Date, lapseDays: number): boolean =>
   Date.parse(since) < now.getTime() - lapseDays * DAY_MS;
 
+/** When a task's lapse days count from: when it began waiting, but a task written by hand from when it is due. */
+export const lapsesFrom = (task: { readonly group: string; readonly since: string; readonly due: string }): string =>
+  isWrittenTask(task.group) ? task.due : task.since;
+
 /**
  * How long a task may wait before it is overdue, and the one deadline its own
  * queue counts down to as well. The board writes "2 days", "1 day", "Today"

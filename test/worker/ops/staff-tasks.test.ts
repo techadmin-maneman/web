@@ -90,6 +90,24 @@ describe("a task written by hand", () => {
     expect(row).toBe(CARE);
   });
 
+  it("lapses off the board counting from when it is due, not from when it was written", async () => {
+    const farAhead = new Date(NOW.getTime() + 90 * DAY_MS).toISOString();
+    const { id } = await (await write(CARE, { due: farAhead })).json<{ id: string }>();
+    // Written 70 days ago, past the 60 lapse days, and still not due.
+    const longAgo = new Date(NOW.getTime() - 70 * DAY_MS).toISOString();
+    await env.DB.prepare("UPDATE staff_tasks SET created_at = ?2 WHERE id = ?1").bind(id, longAgo).run();
+    const board = await (await request(as(CARE), "/api/tasks")).json<Board & { lapsed: number }>();
+    expect(tasksIn(board, "staff_task_customer_care").map((task) => task.id)).toEqual([id]);
+    expect(board.lapsed).toBe(0);
+
+    // Due 61 days ago, it has lapsed.
+    const pastDue = new Date(NOW.getTime() - 61 * DAY_MS).toISOString();
+    await env.DB.prepare("UPDATE staff_tasks SET due_at = ?2 WHERE id = ?1").bind(id, pastDue).run();
+    const later = await (await request(as(CARE), "/api/tasks")).json<Board & { lapsed: number }>();
+    expect(tasksIn(later, "staff_task_customer_care")).toEqual([]);
+    expect(later.lapsed).toBe(1);
+  });
+
   it("is gone with an erased client", async () => {
     await write(CARE, {});
     await env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(PERSON, NOW.toISOString()).run();
@@ -119,6 +137,14 @@ describe("once the Staff list is enforced", () => {
     const refused = await write(CARE, { owner: MONEY });
     expect(refused.status).toBe(400);
     expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["owner"] } });
+  });
+
+  it("refuses an owner whose Act in the department does not reach the task's city", async () => {
+    await listStaff("delhi.care@maneman.in", ["customer_care:act:city:Delhi"]);
+    await boardOf("delhi.care@maneman.in");
+    const elsewhere = await write(CARE, { client: null, city: "Gurgaon", owner: "delhi.care@maneman.in" });
+    expect(await elsewhere.json()).toMatchObject({ error: { code: "invalid_request", fields: ["owner"] } });
+    expect((await write(CARE, { client: null, city: "Delhi", owner: "delhi.care@maneman.in" })).status).toBe(201);
   });
 
   it("shows a task about nobody only where it was written for", async () => {

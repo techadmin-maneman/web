@@ -27,7 +27,7 @@ import {
   type Department,
   type PlacesReached,
 } from "../../policy/access.ts";
-import { callerMeetsNeed, taskNeed } from "../../policy/console-routes.ts";
+import { taskNeed } from "../../policy/console-routes.ts";
 import { mayOwnTasks } from "../../policy/tasks.ts";
 import { noMemberOfStaff, OwnerSchema, staffNow, taskOnTheBoard } from "./tasks.ts";
 
@@ -96,29 +96,36 @@ async function anyDepartmentReach(c: Context<AppEnv>): Promise<PlacesReached> {
   };
 }
 
-/** Where a task about this client, or in this city, is; the field refused where the writer's work does not reach it. */
+/**
+ * Where a task about this client, or in this city, is: the city it is kept with (none for a client's, which is where the
+ * client is) and the city it is in. The field is refused where the writer's work does not reach it.
+ */
 async function placeOf(
   c: Context<AppEnv>,
   asked: { client: string | null; city: string | null },
-): Promise<{ city: string | null } | { refused: "client" | "city" }> {
+): Promise<{ city: string | null; at: string | null } | { refused: "client" | "city" }> {
   const reach = await anyDepartmentReach(c);
   if (asked.client !== null) {
-    const city = await cityOf(c.env.DB, "client", asked.client);
-    return (await clientToWriteAbout(c.env.DB, asked.client)) && reachesCity(reach, city)
-      ? { city: null }
+    const at = await cityOf(c.env.DB, "client", asked.client);
+    return (await clientToWriteAbout(c.env.DB, asked.client)) && reachesCity(reach, at)
+      ? { city: null, at }
       : { refused: "client" };
   }
-  if (asked.city === null) return reach.kind === "everywhere" ? { city: null } : { refused: "city" };
+  if (asked.city === null) return reach.kind === "everywhere" ? { city: null, at: null } : { refused: "city" };
   return (await cityKnown(c.env.DB, asked.city)) && reachesCity(reach, asked.city)
-    ? { city: asked.city }
+    ? { city: asked.city, at: asked.city }
     : { refused: "city" };
 }
 
 /**
- * Whether the member of staff a task is written for may take it: Act in the department it is for, once the Staff list
- * is enforced. One outside it could not see it, and the department's people would find it taken.
+ * Whether the member of staff a task is written for may take it: Act in the department it is for, in the city it is in,
+ * once the Staff list is enforced. One outside either could not see it, and the department's people would find it taken.
  */
-async function ownerActsIn(c: Context<AppEnv>, owner: string, department: Department): Promise<boolean> {
+async function ownerActsIn(
+  c: Context<AppEnv>,
+  owner: string,
+  task: { department: Department; at: string | null },
+): Promise<boolean> {
   if (!(await callerAccess(c)).enforced) return true;
   const { staffBootstrapAdmins, serviceTokenActsAs } = c.var.config.settings;
   const theirs = await callerAccessOf(
@@ -127,7 +134,7 @@ async function ownerActsIn(c: Context<AppEnv>, owner: string, department: Depart
     staffBootstrapAdmins,
     serviceTokenActsAs,
   );
-  return callerMeetsNeed(theirs.caller, taskNeed(staffTaskGroup(department), "act"), theirs.zoneOf);
+  return reachesCity(placesReached(theirs, task.department, "act"), task.at);
 }
 
 export function registerOpsStaffTasks(app: App): void {
@@ -141,7 +148,13 @@ export function registerOpsStaffTasks(app: App): void {
     if ("refused" in place) return refuse(c, "invalid_request", [place.refused]);
     // Access gives every e-mail in lower case, and the log keeps it so.
     const owner = asked.owner === null ? null : asked.owner.toLowerCase();
-    if (owner !== null && !(mayOwnTasks(owner, await staffNow(c)) && (await ownerActsIn(c, owner, asked.department)))) {
+    if (
+      owner !== null &&
+      !(
+        mayOwnTasks(owner, await staffNow(c)) &&
+        (await ownerActsIn(c, owner, { department: asked.department, at: place.at }))
+      )
+    ) {
       return refuse(c, "invalid_request", ["owner"]);
     }
 
