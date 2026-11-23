@@ -193,7 +193,7 @@ export const tasks = {
     staff_task_growth: "Written by the team",
     staff_task_admin: "Written by the team",
   } satisfies Readonly<Record<Group, string>>,
-  /** A task written by hand on Tasks (docs/decisions/0302-tasks-written-by-hand.md). */
+  /** A task written by hand on Tasks, and one marked done. */
   write: {
     open: "New task",
     title: "New task",
@@ -223,8 +223,12 @@ export const tasks = {
       owner: "Choose someone who uses the console.",
       client: "Choose a client in your cities.",
       city: "Choose a city in the header first.",
-      not_found: "This task is done or gone.",
-    } as Readonly<Record<string, string>>,
+      not_found: changed("This task is done or gone."),
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
   },
   /** When a kind's first task is due, on its pill. */
   due: { overdue: "Overdue", today: "Today", week: "This week", later: "Later" },

@@ -93,3 +93,13 @@ export async function markStaffTaskDone(
   ]);
   return (done?.meta.changes ?? 0) === 1;
 }
+
+/** Whether the client is one a task may be about: there, and not erased. */
+export async function clientToWriteAbout(db: D1Database, id: string): Promise<boolean> {
+  return (await db.prepare("SELECT 1 FROM people WHERE id = ?1 AND erased_at IS NULL").bind(id).first()) !== null;
+}
+
+/** Whether a city of that name is one the business has. */
+export async function cityKnown(db: D1Database, name: string): Promise<boolean> {
+  return (await db.prepare("SELECT 1 FROM cities WHERE name = ?1").bind(name).first()) !== null;
+}

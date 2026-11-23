@@ -86,7 +86,7 @@ test("says under its box why a task was refused, and keeps the panel open", asyn
   const panel = page.getByRole("dialog", { name: copy.title });
   await panel.getByLabel(copy.what, { exact: true }).fill("Check the kit count");
   await panel.getByRole("button", { name: copy.add }).click();
-  await expect(panel.getByText(copy.errors.due ?? "").first()).toBeVisible();
+  await expect(panel.getByText(copy.errors.due).first()).toBeVisible();
   await expect(panel).toBeVisible();
 });
 

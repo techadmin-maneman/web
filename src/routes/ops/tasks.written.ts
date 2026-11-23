@@ -10,7 +10,14 @@ import { json } from "../../http/openapi.ts";
 import { callerAccess, permits } from "../../http/staff-access.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { cityOf } from "../../domain/clients/places.ts";
-import { markStaffTaskDone, openStaffTask, staffTaskGroup, writeStaffTask } from "../../domain/ops/staff-tasks.ts";
+import {
+  cityKnown,
+  clientToWriteAbout,
+  markStaffTaskDone,
+  openStaffTask,
+  staffTaskGroup,
+  writeStaffTask,
+} from "../../domain/ops/staff-tasks.ts";
 import { DEPARTMENTS, EVERYWHERE, placesReached, reachesCity, type PlacesReached } from "../../policy/access.ts";
 import { taskNeed } from "../../policy/console-routes.ts";
 import { mayOwnTasks } from "../../policy/tasks.ts";
@@ -88,15 +95,15 @@ async function placeOf(
 ): Promise<{ city: string | null } | { refused: "client" | "city" }> {
   const reach = await anyDepartmentReach(c);
   if (asked.client !== null) {
-    const person = await c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?1 AND erased_at IS NULL")
-      .bind(asked.client)
-      .first();
     const city = await cityOf(c.env.DB, "client", asked.client);
-    return person !== null && reachesCity(reach, city) ? { city: null } : { refused: "client" };
+    return (await clientToWriteAbout(c.env.DB, asked.client)) && reachesCity(reach, city)
+      ? { city: null }
+      : { refused: "client" };
   }
   if (asked.city === null) return reach.kind === "everywhere" ? { city: null } : { refused: "city" };
-  const known = await c.env.DB.prepare("SELECT 1 FROM cities WHERE name = ?1").bind(asked.city).first();
-  return known !== null && reachesCity(reach, asked.city) ? { city: asked.city } : { refused: "city" };
+  return (await cityKnown(c.env.DB, asked.city)) && reachesCity(reach, asked.city)
+    ? { city: asked.city }
+    : { refused: "city" };
 }
 
 export function registerOpsStaffTasks(app: App): void {
