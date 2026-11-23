@@ -127,6 +127,12 @@ export const TASK_GROUPS = [
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
 
+/** Whether a group is a department's tasks written by hand. */
+export const isWrittenTask = (group: string): boolean => group.startsWith("staff_task_");
+
+/** When a task snoozed now comes back: the next morning at ten, in India (docs/decisions/0303-snoozing-a-task.md). */
+export const SNOOZE_UNTIL = "10:00";
+
 /**
  * How many days a task may wait before it leaves the board for the lapsed list, so the board shows what can still be
  * done. A lapsed task is still there to open and close, and is counted beside the board. Ops set it in Settings.
@@ -221,8 +227,7 @@ export const TASK_SLA_HOURS: Slas = {
   upi_due: 12,
   // Money owed back to a client: refunded within the day.
   payment_to_refund: 24,
-  // A task written by hand is due when its writer said: the board reads that as its start and its latest, so this
-  // allowance never comes first (src/domain/ops/staff-tasks.ts).
+  // A task written by hand is due when its writer said, whatever this allowance (src/domain/ops/tasks.ts' dueOf).
   staff_task_operations: 48,
   staff_task_customer_care: 48,
   staff_task_finance: 48,

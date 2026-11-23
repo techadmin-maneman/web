@@ -17,7 +17,7 @@ const TOMORROW = new Date(NOW.getTime() + DAY_MS).toISOString();
 interface Board {
   readonly groups: readonly {
     readonly group: string;
-    readonly tasks: readonly { id: string; detail: string | null; due: string; owner: string | null }[];
+    readonly tasks: readonly { id: string; detail: string | null; since: string; due: string; owner: string | null }[];
   }[];
 }
 
@@ -53,6 +53,8 @@ describe("a task written by hand", () => {
 
     const [task] = tasksIn(await boardOf(CARE), "staff_task_customer_care");
     expect(task).toMatchObject({ id, detail: "Call back about the evening slot", due: TOMORROW, owner: null });
+    // It waits from when it was written, which the night's spans open it at.
+    expect(task?.since).toBe(NOW.toISOString());
     const logged = await env.DB.prepare("SELECT action, detail FROM audit_log WHERE action = 'task.write'").all();
     expect(logged.results).toEqual([
       { action: "task.write", detail: JSON.stringify({ group: "staff_task_customer_care" }) },
@@ -110,6 +112,22 @@ describe("once the Staff list is enforced", () => {
     const refused = await done(MONEY, id);
     expect(refused.status).toBe(403);
     expect((await done(CARE, id)).status).toBe(204);
+  });
+
+  it("refuses an owner who has no Act in the department the task is for", async () => {
+    await boardOf(MONEY);
+    const refused = await write(CARE, { owner: MONEY });
+    expect(refused.status).toBe(400);
+    expect(await refused.json()).toMatchObject({ error: { code: "invalid_request", fields: ["owner"] } });
+  });
+
+  it("shows a task about nobody only where it was written for", async () => {
+    await listStaff("city.head@maneman.in", ["customer_care:act:city:Gurgaon"]);
+    const gurgaon = await (await write(CARE, { client: null, city: "Gurgaon" })).json<{ id: string }>();
+    await write(CARE, { client: null, city: "Delhi", what: "Call the Delhi kit back" });
+    expect(tasksIn(await boardOf("city.head@maneman.in"), "staff_task_customer_care").map((task) => task.id)).toEqual([
+      gurgaon.id,
+    ]);
   });
 
   it("asks a city or a client of someone whose work reaches only some cities", async () => {

@@ -61,6 +61,14 @@ describe("a task snoozed", () => {
     expect(await idsOnBoard(CARE)).toEqual([id]);
   });
 
+  it("leaves a new task about the same row on the board, as one that started waiting since", async () => {
+    const id = await written();
+    await snooze(CARE, id);
+    // As a chat the client wrote to again: the same row, waiting from another moment.
+    await env.DB.prepare("UPDATE task_snoozes SET task_since = ?1").bind("2000-01-01T00:00:00.000Z").run();
+    expect(await idsOnBoard(CARE)).toEqual([id]);
+  });
+
   it("is still open for the night's spans, which read the board whole", async () => {
     const id = await written();
     await snooze(CARE, id);

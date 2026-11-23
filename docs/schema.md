@@ -3844,9 +3844,14 @@ Made by `0235_task_snoozes.sql`.
 | `task_group` | TEXT | no |  | primary key |  |
 | `subject_id` | TEXT | no |  | primary key |  |
 | `episode` | TEXT | no |  |  |  |
+| `task_since` | TEXT | no |  |  |  |
 | `until` | TEXT | no |  |  |  |
 | `snoozed_by` | TEXT | no |  |  |  |
 | `snoozed_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `task_snoozes_until`: on (`until`)
 
 ## task_spans
 

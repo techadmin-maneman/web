@@ -12,14 +12,14 @@ import type { Queue } from "./task-queues.ts";
 export const staffTaskGroup = (department: Department): TaskGroup => `staff_task_${department}`;
 
 /**
- * Each department's open tasks, the words as written as the task's detail, due when its writer said: that is read as
- * its start, as the moment it lapses from, and as its latest, so no group's allowance comes before it. One about a
- * client since erased is gone with them; one about nobody stays.
+ * Each department's open tasks, the words as written as the task's detail, waiting since they were written and due
+ * when their writer said (./tasks.ts' dueOf). One about a client since erased is gone with them; one about nobody
+ * stays.
  */
 export const STAFF_TASK_QUEUES: readonly Queue[] = DEPARTMENTS.map((department) => ({
   group: staffTaskGroup(department),
   sql: `SELECT '${staffTaskGroup(department)}' AS "group", st.id AS id, st.person_id AS person_id,
-       pe.name AS person_name, st.what AS detail, json_object() AS facts, st.due_at AS since,
+       pe.name AS person_name, st.what AS detail, json_object() AS facts, st.created_at AS since,
        st.due_at AS due_by, '' AS episode
     FROM staff_tasks st LEFT JOIN people pe ON pe.id = st.person_id
    WHERE st.done_at IS NULL AND st.department = '${department}' AND (st.person_id IS NULL OR pe.erased_at IS NULL)`,

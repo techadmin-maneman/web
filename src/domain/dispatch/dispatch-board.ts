@@ -359,7 +359,8 @@ function visitOf(job: BoardJobRow): Visit {
   return {
     appointment_id: job.id,
     type: job.type,
-    one_visit: job.one_visit !== null,
+    // A declined one visit makes it a consultation (src/policy/one-visit.ts).
+    one_visit: job.one_visit !== null && job.one_visit !== "declined",
     service: namesMoreThanItsKind(job.tier, job.one_visit) ? job.service_name : null,
     client: shortName(job.client_name),
     sector: job.locality ?? job.area ?? job.service_city,

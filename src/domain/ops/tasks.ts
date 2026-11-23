@@ -37,8 +37,10 @@ import { EVERYWHERE, type PlacesReached } from "../../policy/access.ts";
 import { LOST_AFTER_DAYS, lostIfDoneBy } from "../../policy/client-standing.ts";
 import { factsOf, type TaskFacts } from "./task-facts.ts";
 import { taskWithinReach } from "./task-reach.ts";
+import { isWrittenTask } from "../../policy/tasks.ts";
 import { QUEUES as KEPT_QUEUES, type Queue, type ReadAt } from "./task-queues.ts";
 import { STAFF_TASK_QUEUES } from "./staff-tasks.ts";
+import { snoozedNow, snoozeKey } from "./task-snoozes.ts";
 
 /** Every queue the board reads: those the database keeps, and the tasks written by hand. */
 const QUEUES: readonly Queue[] = [...KEPT_QUEUES, ...STAFF_TASK_QUEUES];
@@ -230,14 +232,9 @@ function statementOf(
   const binds = queue.binds?.(at) ?? [];
   const reach = `?${String(binds.length + 1)}`;
   const person = `?${String(binds.length + 2)}`;
-  const awake = `?${String(binds.length + 3)}`;
-  const kept = `${taskWithinReach(queue.group, "t.id", reach)} AND (${person} IS NULL OR t.person_id = ${person})
-    AND (${awake} IS NULL OR NOT EXISTS (SELECT 1 FROM task_snoozes sn WHERE sn.task_group = t."group"
-      AND sn.subject_id = t.id AND sn.episode = t.episode AND sn.until > ${awake}))`;
+  const kept = `${taskWithinReach(queue.group, "t.id", reach)} AND (${person} IS NULL OR t.person_id = ${person})`;
   const reached = scope.reach?.(queue.group) ?? EVERYWHERE;
-  return db
-    .prepare(read(queue.sql, kept))
-    .bind(...binds, reachBinding(reached), scope.person ?? null, scope.awake === true ? at.now : null);
+  return db.prepare(read(queue.sql, kept)).bind(...binds, reachBinding(reached), scope.person ?? null);
 }
 
 /**
@@ -317,11 +314,23 @@ export async function outstandingTasks(
   const read = answers.flatMap((answer) => answer.results).map((row) => nextVisitDays(row, days));
   const results = overdueChats(read, hours, now).sort((a, b) => a.since.localeCompare(b.since));
   const counts = await countsOf(db, answers, { kept: results, at, scope });
-  return { tasks: results.map((row) => taskOf(row, sla, schedule)), counts, truncated };
+  const tasks = results.map((row) => taskOf(row, sla, schedule));
+  if (scope.awake !== true) return { tasks, counts, truncated };
+  // A task snoozed until later is left out of the board people read, and its group's count.
+  const asleep = await snoozedNow(db, now);
+  const awake = tasks.filter((task) => !asleep.has(snoozeKey(task)));
+  for (const task of tasks) {
+    if (asleep.has(snoozeKey(task))) counts.set(task.group, (counts.get(task.group) ?? 1) - 1);
+  }
+  return { tasks: awake, counts, truncated };
 }
 
-/** The group's allowance from when it started waiting, or the visit it is about, whichever comes first. */
+/**
+ * The group's allowance from when it started waiting, or the visit it is about, whichever comes first; a task written
+ * by hand, when its writer said.
+ */
 function dueOf(row: Row, since: string, sla: Slas): Date {
+  if (isWrittenTask(row.group) && row.due_by !== null) return new Date(row.due_by);
   const allowed = dueAt(new Date(since), row.group, sla);
   if (row.due_by === null) return allowed;
   const visit = new Date(row.due_by);

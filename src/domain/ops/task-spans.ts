@@ -13,10 +13,15 @@ const COUNTED_ELSEWHERE: ReadonlySet<string> = new Set(["grievance"]);
 
 const field = (name: string) => `json_extract(t.value, '$.${name}')`;
 
-/** Each new task, as a JSON list, with the client's city; none for a record marked as a test. */
+/**
+ * Each new task, as a JSON list, with the client's city, or a task written by hand about nobody the city it was written
+ * for; none for a record marked as a test.
+ */
 const OPEN = `INSERT INTO task_spans (id, task_group, subject_id, episode, city, opened_at)
   SELECT ${field("id")}, ${field("group")}, ${field("subject")}, ${field("episode")},
-    (SELECT ${clientCityOf("client")} FROM people client WHERE client.id = ${field("person")}), ${field("since")}
+    COALESCE((SELECT ${clientCityOf("client")} FROM people client WHERE client.id = ${field("person")}),
+      (SELECT written.city FROM staff_tasks written WHERE written.id = ${field("subject")}
+        AND ${field("group")} LIKE 'staff_task_%')), ${field("since")}
   FROM json_each(?1) t
   WHERE NOT EXISTS (SELECT 1 FROM people tester WHERE tester.id = ${field("person")} AND tester.test_record = 1)
   ON CONFLICT DO NOTHING`;

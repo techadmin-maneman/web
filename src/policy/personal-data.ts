@@ -600,7 +600,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     erasure: { why: "Kept: which member of staff looks after a task, nothing about them." },
   },
   task_snoozes: {
-    leftOut: ["task_group", "subject_id", "episode", "until", "snoozed_by", "snoozed_at"],
+    leftOut: ["task_group", "subject_id", "episode", "task_since", "until", "snoozed_by", "snoozed_at"],
     whyLeftOut: "Ops' own to-do list.",
     erasure: { why: "Kept: when a task comes back to the board, nothing about them." },
   },

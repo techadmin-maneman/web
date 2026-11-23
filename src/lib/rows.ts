@@ -1822,6 +1822,7 @@ export interface Rows {
     readonly task_group: string;
     readonly subject_id: string;
     readonly episode: string;
+    readonly task_since: string;
     readonly until: string;
     readonly snoozed_by: string;
     readonly snoozed_at: string;

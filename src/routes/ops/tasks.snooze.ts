@@ -11,11 +11,8 @@ import { opsRoute } from "../../http/session-routes.ts";
 import { snoozeTask } from "../../domain/ops/task-snoozes.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { taskNeed } from "../../policy/console-routes.ts";
-import { TASK_GROUPS } from "../../policy/tasks.ts";
+import { SNOOZE_UNTIL, TASK_GROUPS } from "../../policy/tasks.ts";
 import { noMemberOfStaff, taskOnTheBoard } from "./tasks.ts";
-
-/** When a task snoozed now comes back: the next morning at ten, in India. */
-const SNOOZE_UNTIL = "10:00";
 
 const snoozeRoute = opsRoute({
   method: "post",

@@ -10,6 +10,7 @@ import { json } from "../../http/openapi.ts";
 import { callerAccess, permits } from "../../http/staff-access.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { cityOf } from "../../domain/clients/places.ts";
+import { callerAccessOf } from "../../domain/ops/staff.ts";
 import {
   cityKnown,
   clientToWriteAbout,
@@ -18,8 +19,15 @@ import {
   staffTaskGroup,
   writeStaffTask,
 } from "../../domain/ops/staff-tasks.ts";
-import { DEPARTMENTS, EVERYWHERE, placesReached, reachesCity, type PlacesReached } from "../../policy/access.ts";
-import { taskNeed } from "../../policy/console-routes.ts";
+import {
+  DEPARTMENTS,
+  EVERYWHERE,
+  placesReached,
+  reachesCity,
+  type Department,
+  type PlacesReached,
+} from "../../policy/access.ts";
+import { callerMeetsNeed, taskNeed } from "../../policy/console-routes.ts";
 import { mayOwnTasks } from "../../policy/tasks.ts";
 import { noMemberOfStaff, OwnerSchema, staffNow, taskOnTheBoard } from "./tasks.ts";
 
@@ -57,7 +65,7 @@ const writeRoute = opsRoute({
     },
     400: errorResponse(
       "invalid_request: a due time past, a client or a city the writer's work does not reach, or an owner who has not " +
-        "used the console lately",
+        "used the console lately or, once the Staff list is enforced, has no Act in the department it is for",
     ),
     403: errorResponse("access_required: a service token, which names no member of staff; or not_permitted"),
   },
@@ -106,6 +114,22 @@ async function placeOf(
     : { refused: "city" };
 }
 
+/**
+ * Whether the member of staff a task is written for may take it: Act in the department it is for, once the Staff list
+ * is enforced. One outside it could not see it, and the department's people would find it taken.
+ */
+async function ownerActsIn(c: Context<AppEnv>, owner: string, department: Department): Promise<boolean> {
+  if (!(await callerAccess(c)).enforced) return true;
+  const { staffBootstrapAdmins, serviceTokenActsAs } = c.var.config.settings;
+  const theirs = await callerAccessOf(
+    c.env.DB,
+    { kind: "staff", email: owner },
+    staffBootstrapAdmins,
+    serviceTokenActsAs,
+  );
+  return callerMeetsNeed(theirs.caller, taskNeed(staffTaskGroup(department), "act"), theirs.zoneOf);
+}
+
 export function registerOpsStaffTasks(app: App): void {
   app.openapi(writeRoute, async (c) => {
     const asked = c.req.valid("json");
@@ -117,7 +141,9 @@ export function registerOpsStaffTasks(app: App): void {
     if ("refused" in place) return refuse(c, "invalid_request", [place.refused]);
     // Access gives every e-mail in lower case, and the log keeps it so.
     const owner = asked.owner === null ? null : asked.owner.toLowerCase();
-    if (owner !== null && !mayOwnTasks(owner, await staffNow(c))) return refuse(c, "invalid_request", ["owner"]);
+    if (owner !== null && !(mayOwnTasks(owner, await staffNow(c)) && (await ownerActsIn(c, owner, asked.department)))) {
+      return refuse(c, "invalid_request", ["owner"]);
+    }
 
     const id = await writeStaffTask(
       c.env.DB,

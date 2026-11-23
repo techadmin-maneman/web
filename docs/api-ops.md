@@ -20949,7 +20949,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: a due time past, a client or a city the writer's work does not reach, or an owner who has not used the console lately
+**400**: invalid_request: a due time past, a client or a city the writer's work does not reach, or an owner who has not used the console lately or, once the Staff list is enforced, has no Act in the department it is for
 
 ```json
 {

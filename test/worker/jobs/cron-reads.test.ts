@@ -92,8 +92,8 @@ const HISTORY = [
    SELECT 'pl-' || i, 'p-' || i, 'hold', 'h-' || i, 'https://rzp.io/rzp/x' || i, 200000, 'service visit',
      '${AGO}', '${AGO}' FROM n`,
   // A task snoozed each, long woken (docs/decisions/0303-snoozing-a-task.md).
-  `INSERT INTO task_snoozes (task_group, subject_id, episode, until, snoozed_by, snoozed_at)
-   SELECT 'staff_task_operations', 'st-' || i, '', '${AGO}', 'ops@maneman.in', '${AGO}' FROM n`,
+  `INSERT INTO task_snoozes (task_group, subject_id, episode, task_since, until, snoozed_by, snoozed_at)
+   SELECT 'staff_task_operations', 'st-' || i, '', '${AGO}', '${AGO}', 'ops@maneman.in', '${AGO}' FROM n`,
   // A task written by hand each, long done, and given to someone (docs/decisions/0302-tasks-written-by-hand.md).
   `INSERT INTO task_owners (task_group, subject_id, episode, owner, assigned_by, assigned_at)
    SELECT 'staff_task_operations', 'st-' || i, '', 'ops@maneman.in', 'ops@maneman.in', '${AGO}' FROM n`,
