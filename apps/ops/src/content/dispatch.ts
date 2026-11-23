@@ -274,7 +274,6 @@ export const dispatch = {
     /** The drawer's two buttons: "WhatsApp Rohit" and "Open client". */
     whatsapp: (firstName: string) => `WhatsApp ${firstName}`,
     call: (firstName: string) => `Call ${firstName}`,
-    openClient: "Open client",
     /** Who could take a visit nobody is on, and the way to put it on the one chosen. */
     suggest: {
       title: "Free to take it",

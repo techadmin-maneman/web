@@ -146,7 +146,7 @@ test("lists the tray’s jobs with their client, the window asked beside the one
 });
 
 // A tray click picked the job up at once, so it could not be read before it was assigned.
-test("opens a tray job’s drawer, with the client, Assign and Open client", async ({ page }) => {
+test("opens a tray job’s drawer, the client’s name a link, with Assign", async ({ page }) => {
   await open(page);
   const job = page.getByRole("complementary", { name: opsCopy.dispatch.tray.title }).getByRole("button").first();
   await job.click();
@@ -161,10 +161,7 @@ test("opens a tray job’s drawer, with the client, Assign and Open client", asy
     "href",
     "https://wa.me/919810000002",
   );
-  await expect(drawer.getByRole("link", { name: opsCopy.dispatch.drawer.openClient })).toHaveAttribute(
-    "href",
-    `/clients/${VIKRAM.id}/visits`,
-  );
+  await expect(drawer.getByRole("heading").getByRole("link")).toHaveAttribute("href", `/clients/${VIKRAM.id}/visits`);
   // Nothing is in hand until Assign is pressed.
   await expect(page.getByLabel(opsCopy.dispatch.landing.list)).toHaveCount(0);
 
@@ -188,10 +185,7 @@ test("opens a block’s drawer with the client, the badge, and both ways to reac
     "href",
     "https://wa.me/919810000001",
   );
-  await expect(drawer.getByRole("link", { name: opsCopy.dispatch.drawer.openClient })).toHaveAttribute(
-    "href",
-    `/clients/${ROHIT.id}/visits`,
-  );
+  await expect(drawer.getByRole("heading").getByRole("link")).toHaveAttribute("href", `/clients/${ROHIT.id}/visits`);
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();

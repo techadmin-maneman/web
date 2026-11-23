@@ -69,7 +69,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   const kept = `?from=2025-09-26&city=Delhi&find=Rohit&visit=${ROHIT_JOB?.appointment_id ?? ""}`;
   await expect.poll(() => new URL(page.url()).search).toBe(kept);
 
-  await page.getByRole("dialog").getByRole("link", { name: opsCopy.dispatch.drawer.openClient }).click();
+  await page.getByRole("dialog").getByRole("heading").getByRole("link").click();
   await expect(page).toHaveURL(new RegExp(`/clients/${ROHIT.id}/visits$`));
   await page.goBack();
 

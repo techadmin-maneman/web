@@ -32,11 +32,28 @@
   line-height: var(--lh-160);
 }
 
+/* The visit panel's foot: cancelling at its left, the steps at its right, the primary last. */
 .drawerActions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-8);
+  align-items: center;
   margin-top: var(--sp-16);
+}
+
+.drawerSteps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  margin-left: auto;
+}
+
+/* The ways to the client, beneath the panel's head. */
+.contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  margin-bottom: var(--sp-16);
 }
 
 .icon {
@@ -144,10 +161,6 @@
 }
 
 /* Cancelling a visit: the drawer's last word, at the end of its row. */
-.cancel {
-  margin-left: auto;
-}
-
 /* Who could take a visit nobody is on (./Suggestions.tsx): the choices one over another in from the panel's edges,
    then Assign. */
 .suggest {

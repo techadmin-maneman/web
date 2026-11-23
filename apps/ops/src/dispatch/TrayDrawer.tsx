@@ -6,7 +6,7 @@
 import { badgeLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
-import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
+import { Button, ButtonLink } from "@maneman/ui/Button";
 import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Suggestions } from "./Suggestions.tsx";
 import type { Target } from "./job.ts";
@@ -46,7 +46,13 @@ export function TrayDrawer({ each, onAssign, onAssignTo, technicians, onClose }:
   return (
     <Drawer
       titleId="tray-drawer-title"
-      title={person?.name ?? nameOf({ kind: "unassigned", job: each })}
+      title={
+        person === null ? (
+          nameOf({ kind: "unassigned", job: each })
+        ) : (
+          <OpsLink to={clientPath(person.id, "visits")}>{person.name}</OpsLink>
+        )
+      }
       sub={
         <>
           {askedWord(each)} · {dispatch.tray.offered(offeredWord(each.date, each.offered_window))}
@@ -74,12 +80,6 @@ export function TrayDrawer({ each, onAssign, onAssignTo, technicians, onClose }:
                 <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
                 {copy.whatsapp(firstNameOf(person.name))}
               </ButtonLink>
-              <OpsLink
-                className={buttonLook({ variant: "outline", size: "small" })}
-                to={clientPath(person.id, "visits")}
-              >
-                {copy.openClient}
-              </OpsLink>
             </>
           )}
         </div>
