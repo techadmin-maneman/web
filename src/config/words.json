@@ -1696,6 +1696,14 @@
     "reviewed": false
   },
   {
+    "key": "site:pages/payClosed.greeting",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payClosed",
+    "text": "Hi, my payment link has closed. Please send me a new one.",
+    "reviewed": false
+  },
+  {
     "key": "site:pages/payAgain.title",
     "surface": "site",
     "group": "Pages",
@@ -1708,7 +1716,7 @@
     "surface": "site",
     "group": "Pages",
     "where": "payAgain",
-    "text": "Tap the button in our WhatsApp message again in a minute. If it still won’t open, message us.",
+    "text": "Tap Pay now in our WhatsApp message again in a minute. If it still won’t open, message us.",
     "reviewed": false
   },
   {
@@ -1717,6 +1725,14 @@
     "group": "Pages",
     "where": "payAgain",
     "text": "Message us on WhatsApp",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payAgain.greeting",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payAgain",
+    "text": "Hi, my payment link won’t open.",
     "reviewed": false
   },
   {

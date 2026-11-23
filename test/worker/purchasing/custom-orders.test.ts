@@ -135,8 +135,6 @@ describe("a custom order", () => {
     expect(whatsApp.results[0]?.what).toMatch(/^custom hair system, order /);
   });
 
-  // Razorpay made and texted the link, and its answer never came: the next ask is refused for the same reference, and
-  // the link found under it is kept, and sent on WhatsApp too (docs/decisions/0300-payment-links-on-whatsapp.md).
   // Razorpay made and texted the link: a message we could not queue beside it is ours, and fails nothing.
   it("stands sent, and tells ops of no failure, where its WhatsApp message could not be queued", async () => {
     const logs = captureLogs();
@@ -162,6 +160,8 @@ describe("a custom order", () => {
     }
   });
 
+  // Razorpay made and texted the link, and its answer never came: the next ask is refused for the same reference, and
+  // the link found under it is kept, and sent on WhatsApp too (docs/decisions/0300-payment-links-on-whatsapp.md).
   it("keeps the link a try whose answer never came made, and sends it on WhatsApp", async () => {
     const stub = { ...payments };
     let answerLost = true;

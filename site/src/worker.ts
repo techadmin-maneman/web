@@ -181,7 +181,7 @@ async function payLink(env: SiteEnv, visit: Request, origin: string, token: stri
   return Response.redirect(`${origin}${PAY_AGAIN}`, 302);
 }
 
-/** A path as a report or the fallback names it: an invite's without its code, a payment link's without its token. */
+/** A path as a failure's report names it: an invite's without its code, a payment link's without its token. */
 const withoutKeys = (path: string): string =>
   PAY_LINK.test(path) ? PAY_CLOSED : path.replace(INVITE_PATH_IN_URL, "/r/");
 

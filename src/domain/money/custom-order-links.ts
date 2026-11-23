@@ -32,7 +32,6 @@ type LinkRow = {
 
 const numberOf = (number: number) => `CU-${String(number).padStart(4, "0")}`;
 
-/** The link kept on the order. */
 /** The order's link kept, just made or made by a try whose answer never came, and sent on WhatsApp too (ADR 0300). */
 async function keep(
   db: D1Database,

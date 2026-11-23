@@ -8,7 +8,8 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { visitorOf } from "../../http/visitor.ts";
-import { countPayLinkMiss, openPayLink, payLinkMissesSpent } from "../../domain/money/pay-links.ts";
+import { openPayLink } from "../../domain/money/pay-links.ts";
+import { isSpent, takeOne } from "../../domain/sign-in/rate-limit.ts";
 
 const OpenPayLinkSchema = z
   .object({ url: z.url().openapi({ description: "Razorpay's address for the link." }) })
@@ -35,8 +36,8 @@ export function registerPayLinks(app: App): void {
     const { ipHash } = await visitorOf(c);
     const url = await openPayLink(c.env.DB, token, at.now);
     if (url !== null) return c.json({ url }, 200, { "Cache-Control": "no-store" });
-    if (await payLinkMissesSpent(c.env.DB, ipHash, at)) return refuse(c, "rate_limited");
-    await countPayLinkMiss(c.env.DB, ipHash, at);
+    if (await isSpent(c.env.DB, "pay_link_miss:ip", ipHash, at)) return refuse(c, "rate_limited");
+    await takeOne(c.env.DB, "pay_link_miss:ip", ipHash, at);
     return refuse(c, "not_found");
   });
 }

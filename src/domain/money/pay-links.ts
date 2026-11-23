@@ -10,7 +10,6 @@ import { firstNameOf } from "../../lib/names.ts";
 import { insertRow } from "../../lib/sql.ts";
 import type { Logger } from "../../log.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
-import { isSpent, takeOne, type CountedAt } from "../sign-in/rate-limit.ts";
 
 /** What a link pays for, by our key for it. */
 export interface PayLinkSubject {
@@ -95,14 +94,6 @@ export async function payLinkSentAgain(db: D1Database, subject: PayLinkSubject, 
   if (sent === null) return false;
   await messageOf(db, sent.person_id, sent.id, now.toISOString()).run();
   return true;
-}
-
-/** Whether this address has used up its misses this hour: tokens closed or never made. Counts nothing. */
-export const payLinkMissesSpent = (db: D1Database, ipHash: string, at: CountedAt): Promise<boolean> =>
-  isSpent(db, "pay_link_miss:ip", ipHash, at);
-
-export async function countPayLinkMiss(db: D1Database, ipHash: string, at: CountedAt): Promise<void> {
-  await takeOne(db, "pay_link_miss:ip", ipHash, at);
 }
 
 /** Razorpay's address a token sends the client on to, while its link is open; null for a token closed or never made. */
