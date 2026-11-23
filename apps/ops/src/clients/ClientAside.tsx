@@ -8,7 +8,6 @@ import { todayInIndia } from "@maneman/web-kit/dates";
 import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import type { ClientRecord } from "../api.ts";
-import { CarePersonLine } from "../care/index.ts";
 import { clients } from "../content.ts";
 import styles from "./client-screen.module.css";
 import { replacementDueOf } from "./History.tsx";
@@ -60,7 +59,6 @@ export function ClientAside(props: {
       <VisitAddress clientId={clientId} address={props.address} onAddress={props.onAddress} />
       <ClientAlerts clientId={clientId} />
       <StaffNotes clientId={clientId} />
-      <CarePersonLine clientId={clientId} mobile={record.mobile} />
     </aside>
   );
 }

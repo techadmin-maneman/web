@@ -53,12 +53,6 @@
   gap: var(--sp-8);
 }
 
-.openNone {
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
-}
-
 /* Staff's notes on the client (./StaffNotes.tsx) and the alerts for technicians (./ClientAlerts.tsx), in their
    panels at the right of the page, as far in as each panel's head. */
 .notes {
@@ -102,15 +96,11 @@
   max-width: var(--skeleton-card);
 }
 
-/* The box to add a note, across its panel, as far in as the notes above it. */
+/* A take-off refused, beneath the alerts, as far in as they are. */
 .addNote {
   box-sizing: border-box;
   padding: 0 var(--note-inset) var(--sp-16);
   max-width: none;
-}
-
-.addNote textarea {
-  width: 100%;
 }
 
 .noteActions {
@@ -310,17 +300,9 @@
   color: var(--ui-text-muted);
 }
 
-/* A visit to come's way to the dispatch board, beneath its date, on a target 24 px tall (WCAG 2.5.8). */
-.boardLink {
-  display: flex;
-  align-items: center;
-  width: fit-content;
-  min-height: var(--sp-24);
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
-  text-decoration: underline;
-  text-decoration-color: var(--ui-line);
-  text-underline-offset: var(--sp-4);
+/* A visit's time, from and to on one line. */
+.visitTime {
+  white-space: nowrap;
 }
 
 /* A visit's own action, beneath where it stands in its row. */
@@ -542,11 +524,11 @@
 
 /* Every list of a client's visits at the same widths, so overdue, to come and done line up one under another. */
 .visitTable th:nth-child(1) {
-  width: 16%;
+  width: 10%;
 }
 
 .visitTable th:nth-child(2) {
-  width: 13%;
+  width: 14%;
 }
 
 .visitTable th:nth-child(3) {
@@ -554,17 +536,17 @@
 }
 
 .visitTable th:nth-child(4) {
-  width: 13%;
+  width: 17%;
 }
 
 .visitTable th:nth-child(5) {
-  width: 14%;
-}
-
-.visitTable th:nth-child(6) {
   width: 12%;
 }
 
+.visitTable th:nth-child(6) {
+  width: 13%;
+}
+
 .visitTable th:nth-child(7) {
-  width: 17%;
+  width: 19%;
 }

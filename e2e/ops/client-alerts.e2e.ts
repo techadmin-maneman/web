@@ -48,9 +48,15 @@ test("raises an alert for the technicians and takes it off, each saying who and 
   });
   const strip = page.getByRole("region", { name: copy.title });
   await expect(strip).toContainText(copy.by(copy.atVisit("Imran"), "18 Sep 2027"));
-  await expect(strip.getByRole("button", { name: copy.save })).toHaveCount(0);
-  await strip.getByLabel(copy.add).fill("Allergic to latex.");
-  await strip.getByRole("button", { name: copy.save }).click();
+  // Add, in the card's head, opens a drawer to write it in; once added, the keyboard is back on Add.
+  const add = strip.getByRole("button", { name: copy.add });
+  await add.click();
+  const drawer = page.getByRole("dialog", { name: copy.formTitle });
+  await drawer.getByLabel(copy.label, { exact: true }).fill("Allergic to latex.");
+  await drawer.getByRole("button", { name: copy.save }).click();
+  await expect(drawer).toHaveCount(0);
+  await expect(page.getByText(copy.added)).toBeVisible();
+  await expect(add).toBeFocused();
   await expect(strip.getByRole("listitem")).toHaveText([/^Allergic to latex\./, /^Dog at the gate\./]);
   await expect(strip).toContainText(copy.by("Priya", "20 Sep 2027"));
   expect(await axeViolations(page)).toEqual([]);
@@ -69,4 +75,11 @@ test("says when an alert could not be taken off, and keeps it in the list", asyn
   await strip.getByRole("button", { name: copy.takeOff }).click();
   await expect(strip.getByRole("alert")).toHaveText(copy.errors.not_permitted);
   await expect(strip.getByRole("listitem")).toHaveText([/^Dog at the gate\./]);
+});
+
+test("says None. where the client has no alerts, and offers Add only to those who may raise one", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}`, { "GET /api/clients/{id}/alerts": json({ alerts: [] }) });
+  const strip = page.getByRole("region", { name: copy.title });
+  await expect(strip).toContainText(copy.none);
+  await expect(strip.getByRole("button", { name: copy.add })).toBeVisible();
 });

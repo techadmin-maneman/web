@@ -41,17 +41,23 @@ test("writes a note on the client, changes it where it stands and takes it off, 
     },
   });
   const strip = page.getByRole("region", { name: copy.title });
-  // Save waits for something to save.
-  await expect(strip.getByRole("button", { name: copy.save })).toHaveCount(0);
-  await strip.getByLabel(copy.add).fill(NOTE.body);
-  await strip.getByRole("button", { name: copy.save }).click();
+  await expect(strip).toContainText(copy.none);
+  // Add, in the card's head, opens a drawer to write it in; once added, the keyboard is back on Add.
+  const add = strip.getByRole("button", { name: copy.add });
+  await add.click();
+  const drawer = page.getByRole("dialog", { name: copy.formTitle });
+  await drawer.getByLabel(copy.label, { exact: true }).fill(NOTE.body);
+  await drawer.getByRole("button", { name: copy.save }).click();
+  await expect(drawer).toHaveCount(0);
+  await expect(page.getByText(copy.added)).toBeVisible();
+  await expect(add).toBeFocused();
   await expect(strip.getByRole("listitem")).toHaveText([new RegExp(`^${NOTE.body}`)]);
   await expect(strip).toContainText(copy.by("Priya", "20 Sep 2027"));
   expect(await axeViolations(page)).toEqual([]);
 
   await strip.getByRole("button", { name: copy.change }).click();
-  await expect(strip.getByLabel(copy.label)).toHaveValue(NOTE.body);
-  await strip.getByLabel(copy.label).fill("Prefers early mornings.");
+  await expect(strip.getByLabel(copy.label, { exact: true })).toHaveValue(NOTE.body);
+  await strip.getByLabel(copy.label, { exact: true }).fill("Prefers early mornings.");
   await strip.getByRole("button", { name: copy.save }).click();
   await expect(strip.getByRole("listitem")).toHaveText([/^Prefers early mornings\./]);
 

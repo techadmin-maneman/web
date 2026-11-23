@@ -176,13 +176,6 @@
   margin-top: var(--sp-16);
 }
 
-/* A client's Care person, beneath the notes at the right of their page (./ClientChat.tsx). */
-.careLine {
-  margin: 0;
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
-}
-
 /* A chat's foot (./Composer.tsx): quick replies, a chip each, running on to a second line rather than out of sight,
    over the box; then reply or note, and Send. */
 .quickChips {

@@ -9,7 +9,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { GLYPHS, ICONS } from "@maneman/brand/icons";
 import { PageTitle } from "@maneman/ui/PageHeader";
 import { Stack } from "@maneman/ui/Layout";
-import { Tabs, TAB } from "@maneman/ui/Tabs";
+import { Tabs, TAB, TAB_COUNT } from "@maneman/ui/Tabs";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, shortMonth, todayInIndia } from "@maneman/web-kit/dates";
@@ -17,7 +17,7 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
-import { ClientChat } from "../care/index.ts";
+import { ClientChat, useCarePerson } from "../care/index.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { PageActions, PageAside, useRecordHead, useRecordTitle, type RecordHead } from "../frame/PageHead.tsx";
 import { clients } from "../content.ts";
@@ -49,8 +49,11 @@ interface Attached {
   readonly news: InviteNews;
 }
 
-/** The head's badges and facts: where they stand, a replacement past its day; their number, city, since and package. */
-function headOf(record: ClientRecord): RecordHead {
+/**
+ * The head's badges and facts: where they stand, a replacement past its day; their number, city, since, package and
+ * Care person, once read.
+ */
+function headOf(record: ClientRecord, care: string | null): RecordHead {
   const due = record.history.replacement_due;
   const late = due !== null && due.on < todayInIndia(apiNow());
   return {
@@ -63,6 +66,7 @@ function headOf(record: ClientRecord): RecordHead {
       ...(record.address === null ? [] : [record.address.city]),
       clients.head.since(shortMonth(indiaDate(record.known_since).slice(0, 7))),
       ...(record.package === null ? [] : [record.package.name]),
+      ...(care === null ? [] : [clients.head.care(care)]),
     ],
   };
 }
@@ -87,7 +91,8 @@ function WhatsApp({ record }: { record: ClientRecord }) {
 /** The client's name, badges and facts as the page's head, with Call, WhatsApp and Book a visit at its right. */
 function Head({ record, booking }: { record: ClientRecord; booking: Booking }) {
   useRecordTitle(record.name);
-  useRecordHead(useMemo(() => headOf(record), [record]));
+  const care = useCarePerson(record.id, record.mobile);
+  useRecordHead(useMemo(() => headOf(record, care), [record, care]));
   const mobile = phoneWords(record.mobile);
   return (
     <PageActions>
@@ -176,6 +181,10 @@ function Tab(props: TabProps) {
 /** The tabs, one row that scrolls on a phone, and the tab chosen beneath, its panel unheaded where it is titled so. */
 function TabBody(props: TabProps) {
   const label = clients.tabs.find((each) => each.tab === props.tab)?.label ?? null;
+  // The visits the Visits tab lists, to come and gone.
+  const counts: Partial<Record<ClientTab, number>> = {
+    visits: props.record.visits.upcoming.length + props.record.visits.past.length,
+  };
   return (
     <div className={styles.main}>
       <Tabs label={props.record.name}>
@@ -187,6 +196,7 @@ function TabBody(props: TabProps) {
             current={each.tab === props.tab}
           >
             {each.label}
+            {counts[each.tab] !== undefined && <span className={TAB_COUNT}>{counts[each.tab]}</span>}
           </OpsLink>
         ))}
       </Tabs>

@@ -92,9 +92,12 @@ export async function openClient(page: Page, path: string, over: Answers = {}): 
   await page.goto(path);
 }
 
-/** One of the client's tabs, apart from the navigation's section of the same name. */
+/** One of the client's tabs, apart from the navigation's section of the same name: its name, and how many it holds. */
 export const clientTab = (page: Page, name: string) =>
-  page.getByRole("navigation", { name: CLIENT.name }).getByRole("link", { name, exact: true });
+  page
+    .getByRole("navigation", { name: CLIENT.name })
+    .getByRole("link")
+    .filter({ hasText: new RegExp(`^${name}( ?\\d+)?$`) });
 
 /** Who invited the client, in the head. */
 export const invitedBy = (page: Page) =>
