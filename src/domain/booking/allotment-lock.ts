@@ -158,10 +158,20 @@ export async function lockDueDrafts(
 /** How long before a city's lock its tomorrow is re-planned and checked on Google, a city at a time. */
 const CHECK_BEFORE_LOCK_MINUTES = 30;
 
+/** The check's runs in the half hour before a lock: one every five minutes (src/scheduled/cron.ts). */
+const RUNS_BEFORE_LOCK = CHECK_BEFORE_LOCK_MINUTES / 5;
+
 /**
- * Tomorrow in the next city whose lock is due within CHECK_BEFORE_LOCK_MINUTES, re-planned and checked on Google
- * (./evening-check.ts), each city once a day: one city a run, so a run's statements stay few; the city checked, or
- * null. Nothing is read outside the last half hour before an hour, when no lock is near.
+ * The most cities a run checks, one after the other: two, so the half hour's six runs check twelve cities that share a
+ * lock hour. A run takes the second only where more cities share it than the runs can take one at a time, so a run's
+ * statements stay within the cron's budget while six or fewer do.
+ */
+const CHECKS_A_RUN = 2;
+
+/**
+ * Tomorrow in the next cities whose lock is due within CHECK_BEFORE_LOCK_MINUTES, re-planned and checked on Google
+ * (./evening-check.ts), each city once a day: one a run, or two where more than RUNS_BEFORE_LOCK cities' locks are due;
+ * the cities checked. Nothing is read outside the last half hour before an hour, when no lock is near.
  */
 export async function checkBeforeLock(
   db: D1Database,
@@ -174,8 +184,8 @@ export async function checkBeforeLock(
     /** A city whose check failed: told, and left as the hourly re-plan planned it, which the lock then fixes. */
     readonly failed: (city: string, date: string, error: unknown) => Promise<void> | void;
   },
-): Promise<string | null> {
-  if (Number(indiaTime(now).slice(3, 5)) < 60 - CHECK_BEFORE_LOCK_MINUTES) return null;
+): Promise<string[]> {
+  if (Number(indiaTime(now).slice(3, 5)) < 60 - CHECK_BEFORE_LOCK_MINUTES) return [];
   const tomorrow = addDays(indiaDate(now), 1);
   const { results } = await db
     .prepare(
@@ -185,21 +195,25 @@ export async function checkBeforeLock(
     )
     .bind(indiaInstant(tomorrow, "00:00").toISOString(), indiaInstant(addDays(tomorrow, 1), "00:00").toISOString())
     .all<{ city: string }>();
-  if (results.length === 0) return null;
+  if (results.length === 0) return [];
   const hours = await deps.readHours();
   const soon = new Date(now.getTime() + CHECK_BEFORE_LOCK_MINUTES * 60_000);
-  for (const { city } of results) {
-    const hour = lockHourOf(hours, city);
-    if (hourHasCome(hour, now) || !hourHasCome(hour, soon)) continue;
+  const due = results
+    .map(({ city }) => city)
+    .filter((city) => !hourHasCome(lockHourOf(hours, city), now) && hourHasCome(lockHourOf(hours, city), soon));
+  const take = Math.min(CHECKS_A_RUN, Math.ceil(due.length / RUNS_BEFORE_LOCK));
+  const checked: string[] = [];
+  for (const city of due) {
+    if (checked.length === take) break;
     if (!(await deps.firstToday(city))) continue;
     try {
       await deps.check(city, tomorrow);
     } catch (error) {
       await deps.failed(city, tomorrow, error);
     }
-    return city;
+    checked.push(city);
   }
-  return null;
+  return checked;
 }
 
 /** The days ahead the hourly re-plan looks over, one in turn: tomorrow and the six after it. */

@@ -135,8 +135,9 @@ describe("a day's re-plan", () => {
     expect(plan.get("d1")).toBe("A");
   });
 
-  it("still re-plans the other days where one technician's day no longer fits as it stands", () => {
-    // Chetan's leave now covers his draft, so his day is left as it is; Aman's draft still goes to Bhavesh.
+  it("moves a draft off a day that no longer fits it, to whoever it costs least, and re-plans the rest", () => {
+    // Chetan's leave now covers his draft. Aman's goes to Bhavesh; Chetan's to Aman, 20 km out and back, rather than
+    // Bhavesh, whose day it would lengthen by 50.
     const away = { ...day(20), away: [{ from: minuteOf("09:00"), to: minuteOf("20:00") }] };
     const plan = replan({
       drafts: [
@@ -147,7 +148,44 @@ describe("a day's re-plan", () => {
       rules: RULES,
       allotment: ALLOT,
     });
-    expect([plan.get("d1"), plan.get("d2")]).toEqual(["B", "C"]);
+    expect([plan.get("d1"), plan.get("d2")]).toEqual(["B", "A"]);
+  });
+
+  it("moves only the drafts a day no longer fits, and keeps the rest where they cost least", () => {
+    // Chetan's leave from 2:30 covers his 3 o'clock draft alone. His 10 o'clock one, 10 km from his home and 50 from
+    // Aman's, stays his: Aman taking both would drive 100 against their 76.
+    const partly = { ...day(10), away: [{ from: minuteOf("14:30"), to: minuteOf("16:30") }] };
+    const plan = replan({
+      drafts: [
+        draft("d1", "10:00", 0, "C", { A: inside, C: inside }),
+        draft("d2", "15:00", 22, "C", { A: inside, C: inside }),
+      ],
+      crew: crewOf({ A: day(50), C: partly }),
+      rules: RULES,
+      allotment: ALLOT,
+    });
+    expect([plan.get("d1"), plan.get("d2")]).toEqual(["C", "A"]);
+  });
+
+  it("moves the drafts of a technician away all day, who has no day to plan", () => {
+    const plan = replan({
+      drafts: [draft("d1", "10:00", 20, "C", { A: inside, C: inside })],
+      crew: crewOf({ A: day(50) }),
+      rules: RULES,
+      allotment: ALLOT,
+    });
+    expect(plan.get("d1")).toBe("A");
+  });
+
+  it("places nobody on a draft its day no longer fits that nobody else can take", () => {
+    const busy = [{ start: minuteOf("09:30"), end: minuteOf("12:00"), pin: north(50), fit: false }];
+    const plan = replan({
+      drafts: [draft("d1", "10:00", 20, "C", { A: inside, C: inside })],
+      crew: crewOf({ A: day(50, busy) }),
+      rules: RULES,
+      allotment: ALLOT,
+    });
+    expect(plan.get("d1")).toBeNull();
   });
 
   it("evens out the week where the driving is the same", () => {

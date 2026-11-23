@@ -1,6 +1,6 @@
 // Schedule (docs/prompts/tech-redesign.md, "Schedule"): today and the six days after it as a strip, the day chosen down
 // the hours with each job and the drive before it; a later job opens a read-only preview, and a job today opens its
-// card, whose way back is Schedule.
+// card, whose way back is Schedule. A step back shows the seven days before, and on again comes back to this week.
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -143,4 +143,57 @@ test("a job on now opened from Schedule goes back to Schedule", async ({ page })
   await expect(page).toHaveURL(new RegExp(`/jobs/${JOB_ID}$`));
   await page.getByRole("button", { name: techCopy.job.back }).click();
   await expect(page).toHaveURL(/\/week$/);
+});
+
+/** The date `days` from `date`. */
+const daysFrom = (date: string, days: number) =>
+  new Date(new Date(`${date}T00:00:00Z`).getTime() + days * 86_400_000).toISOString().slice(0, 10);
+
+// Back only (ADR 0298): a past week's jobs say how they closed and open nothing, and nothing of the client is asked for.
+test("steps back to the week before, its jobs as they closed, and on again to this week, never past it", async ({
+  page,
+}) => {
+  await fakeTech(page);
+  const today = todayInIndia();
+  const from = daysFrom(today, -7);
+  const asked: string[] = [];
+  // Registered after the fake, so it answers first.
+  await page.route("**/api/tech/past-week?**", (route) => {
+    const start = new URL(route.request().url()).searchParams.get("from") ?? "";
+    asked.push(start);
+    const days = Array.from({ length: 7 }, (_, at) => ({
+      date: daysFrom(start, at),
+      jobs:
+        at === 2
+          ? [
+              {
+                id: "22222222-2222-4222-8222-222222222231",
+                starts_at: `${daysFrom(start, 2)}T05:30:00.000Z`,
+                minutes: 90,
+                type: "service",
+                one_visit: false,
+                status: "completed",
+                progress: { started_at: null, outcome: null },
+              },
+            ]
+          : [],
+    }));
+    return route.fulfill({ json: { from: start, days } });
+  });
+  await page.goto("/week");
+  const later = page.getByRole("button", { name: copy.later });
+  await expect(later).toBeDisabled();
+  await page.getByRole("button", { name: copy.earlier }).click();
+  await expect(page).toHaveURL(new RegExp(`/week/${from}$`));
+  await expect(page.getByRole("radiogroup", { name: copy.title }).getByRole("radio")).toHaveCount(7);
+  await expect(page.getByText(copy.noneThen)).toBeVisible();
+  await page.getByRole("radio").nth(2).check();
+  await expect(page.getByText("Done · 1 h 30 min")).toBeVisible();
+  await expect(page.locator('main a[href^="/jobs/"], main a[href^="/week/"]')).toHaveCount(0);
+  expect(await axeViolations(page)).toEqual([]);
+  await later.click();
+  await expect(page).toHaveURL(/\/week$/);
+  await expect(later).toBeDisabled();
+  // Only that week was asked for: each day chosen reads it again, as this week's days are read.
+  expect(new Set(asked)).toEqual(new Set([from]));
 });

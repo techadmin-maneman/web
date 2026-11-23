@@ -38,6 +38,15 @@ export const ALERT_WORDS = {
   replan_failed: (a: { readonly city: string; readonly day: string }) =>
     `Look at ${a.city}'s drafts for ${fullDate(a.day)} on Dispatch: they were not re-planned this hour, so each ` +
     "keeps its technician for now.",
+  /** A draft its technician's day no longer has room for, as after leave laid over it, and nobody else can take. */
+  draft_stranded: (a: {
+    readonly technician: string;
+    readonly day: string;
+    readonly start: string;
+    readonly visit: string;
+  }) =>
+    `Give the ${a.start} visit on ${fullDate(a.day)} another technician on Dispatch, or call the client to move it: ` +
+    `${a.technician}'s day no longer has room for it, and nobody else in the city can take it. Visit ${a.visit}.`,
   /** A drive on a technician's day that Google says has too little room, fixed as it stands. */
   leg_short: (a: { readonly technician: string; readonly day: string; readonly to: string; readonly short: number }) =>
     `Shift a visit or call the client on Dispatch: ${a.technician}'s drive to the ${a.to} visit on ${fullDate(a.day)} ` +

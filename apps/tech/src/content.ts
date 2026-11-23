@@ -1288,6 +1288,12 @@ export const schedule = localised({
   drive: (minutes: number, leave: string) => `${String(minutes)} min · leave ${leave}`,
   failed: "Your week didn’t load.",
   retry: "Try again",
+  earlier: "Earlier week",
+  later: "Later week",
+  /** A past day with no job on it. */
+  noneThen: "No jobs",
+  /** A past job nobody closed. */
+  notClosed: "Not closed",
   preview: {
     back: "Back to Schedule",
     /** "Thu, 12 Nov · 11:30 am" */

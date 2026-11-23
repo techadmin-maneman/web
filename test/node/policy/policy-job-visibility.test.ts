@@ -7,6 +7,7 @@ import {
   jobDay,
   listableDate,
   namesTheOtherTechnician,
+  pastWeekFrom,
   PAYMENT_BADGES,
   paymentBadge,
   UNLOCK_HOUR,
@@ -115,6 +116,14 @@ describe("a card after its visit", () => {
     expect(listableDate("2026-09-20", NOW)).toBe(true);
     expect(listableDate("2026-09-19", NOW)).toBe(false);
     expect(listableDate("2026-09-25", NOW)).toBe(true);
+  });
+
+  // Schedule pages back a week at a time from the week that starts today (src/domain/field/past-jobs.ts).
+  it("reads a past week only where it ends before today, however far back", () => {
+    expect(pastWeekFrom("2026-09-14", NOW)).toBe(true);
+    expect(pastWeekFrom("2025-01-06", NOW)).toBe(true);
+    expect(pastWeekFrom("2026-09-15", NOW)).toBe(false);
+    expect(pastWeekFrom("2026-09-21", NOW)).toBe(false);
   });
 
   it("is on the past day, not today, once its date has gone", () => {

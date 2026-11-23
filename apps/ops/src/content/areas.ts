@@ -216,9 +216,9 @@ export const areas = {
     figures: (waiting: number, looked: number) => `${String(waiting)} waiting · ${String(looked)} checked in 90 days`,
     recentTitle: "Last 30 days",
     recentNone: "Nothing launched in the last 30 days.",
-    /** Each "·" held to its neighbours, so a narrow screen never leaves one hanging at a line's end. */
+    /** Each "·" held to its neighbours and the date kept whole, so a narrow screen breaks neither. */
     recent: (pincode: string, area: string, city: string, day: string) =>
-      `${pincode} ${area}\u00a0·\u00a0${city}\u00a0·\u00a0${day}`,
+      `${pincode} ${area}\u00a0·\u00a0${city}\u00a0·\u00a0${day.replaceAll(" ", "\u00a0")}`,
     recentFigures: (told: number, booked: number) => `${String(told)} told · ${String(booked)} booked`,
   },
   /** A served pincode taking no new clients for a while; clients we already come to book as before. */

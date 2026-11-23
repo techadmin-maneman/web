@@ -36,6 +36,8 @@ export interface Leaving {
 export interface DayPlans {
   /** The technician's day; null where they do not work it, or are away all of it. */
   day(technicianId: string, date: string): PlanDay | null;
+  /** What is booked on the technician's day, whether or not they still work it: the stops its day would hold. */
+  booked(technicianId: string, date: string): readonly Stop[];
   /** The last lock a hold took on the technician's day; the next hold on it takes the one after. */
   revision(technicianId: string, date: string): number;
 }
@@ -297,6 +299,7 @@ function plansOf(read: {
     if (own.length === 0) return city;
     return own.find((day) => day.weekday === weekdayOf(date)) ?? null;
   };
+  const bookedOn = (technicianId: string, date: string) => read.stops.get(`${technicianId}/${date}`) ?? [];
   return {
     day(technicianId, date) {
       const hours = hoursOn(technicianId, date);
@@ -309,7 +312,7 @@ function plansOf(read: {
         opens: minuteOf(hours.starts),
         closes: minuteOf(hours.ends),
         home: homes.get(technicianId) ?? null,
-        stops: read.stops.get(`${technicianId}/${date}`) ?? [],
+        stops: bookedOn(technicianId, date),
         away: leave.map((period) => ({
           from: minuteOf(period.from_time ?? "00:00"),
           to: minuteOf(period.to_time ?? "00:00"),
@@ -317,6 +320,7 @@ function plansOf(read: {
         pace: paceOn(technicianId, date),
       };
     },
+    booked: bookedOn,
     revision(technicianId, date) {
       return read.revisions.find((row) => row.technician_id === technicianId && row.date === date)?.revision ?? 0;
     },

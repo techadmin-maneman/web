@@ -2,11 +2,14 @@
 // plan (src/policy/replan.ts) is read from the same days booking plans on, and each draft it gives to another
 // technician is moved in one batch under the lock a move takes on the day it goes to, so a hold placed there since
 // fails the batch and nothing is written; the next pass tries again. Nobody is told: the time is the client's own,
-// and who is coming is named only once the evening's lock fixes it.
+// and who is coming is named only once the evening's lock fixes it. A draft its own technician's day no longer has
+// room for, and nobody else can take, is told to Operations once, to move by hand.
 
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
-import type { PlanDay } from "../../policy/day-plan.ts";
+import { timeOf, type PlanDay } from "../../policy/day-plan.ts";
 import { replan, type Draft } from "../../policy/replan.ts";
+import type { AlertOnce } from "../platform/alerts.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
 import { visitUpkeep } from "../visits/visit-upkeep.ts";
 import { loadDayPlans, type DayPlans } from "./day-plans.ts";
@@ -32,6 +35,20 @@ interface Move {
   readonly row: DraftRow;
   readonly to: string;
   readonly minutes: number;
+}
+
+/** A draft its own technician's day no longer has room for, which nobody else in the city can take. */
+export interface Stranded {
+  readonly visitId: string;
+  readonly technicianId: string;
+  /** Its start on the day, in minutes from midnight. */
+  readonly start: number;
+}
+
+/** What a day's re-plan did: how many drafts it moved, and those it could place nowhere. */
+export interface Replanned {
+  readonly moved: number;
+  readonly stranded: readonly Stranded[];
 }
 
 /** A city's day as booking plans on it: its drafts, its technicians' days, drafts on them, and their homes. */
@@ -99,8 +116,8 @@ async function dayOf(db: D1Database, { city, date, now, inputs }: DayInput, rows
 }
 
 /**
- * Re-plans a city's drafts on `date`, India's, and writes what changed; how many drafts moved. `ruledOut` names, by
- * draft, the technicians who may not keep or take it.
+ * Re-plans a city's drafts on `date`, India's, and writes what changed. `ruledOut` names, by draft, the technicians who
+ * may not keep or take it.
  */
 export async function replanDay(
   db: D1Database,
@@ -111,10 +128,10 @@ export async function replanDay(
     readonly inputs: OpsInputs;
     readonly ruledOut?: ReadonlyMap<string, ReadonlySet<string>>;
   },
-): Promise<number> {
+): Promise<Replanned> {
   const { date, now, inputs } = input;
   const read = await readDay(db, input);
-  if (read === null) return 0;
+  if (read === null) return { moved: 0, stranded: [] };
   const { rows, plans, days, radii } = read;
   const working = new Set(days.keys());
   const able = ableOnce(db);
@@ -126,9 +143,9 @@ export async function replanDay(
   const drafts: Draft[] = [];
   for (const row of rows) {
     const start = startOf(row);
-    const day = days.get(row.technician_id);
-    const stop = day?.stops.find((each) => each.start === start);
-    if (day === undefined || stop === undefined) continue;
+    // Found among what is booked, so a draft on a day its technician no longer works is placed too.
+    const stop = plans.booked(row.technician_id, date).find((each) => each.start === start);
+    if (stop === undefined) continue;
     const found = { able: await able(row), visits: visitsOf(row.person_id, row.id), date };
     const ruledOut = input.ruledOut?.get(row.id) ?? new Set<string>();
     drafts.push({
@@ -156,15 +173,42 @@ export async function replanDay(
     allotment: inputs.allotment,
   });
 
+  const stranded = drafts
+    .filter((draft) => plan.get(draft.id) === null)
+    .map((draft) => ({ visitId: draft.id, technicianId: draft.technicianId, start: draft.stop.start }));
   const moves: Move[] = drafts.flatMap((draft) => {
     const to = plan.get(draft.id);
     const row = rows.find((each) => each.id === draft.id);
-    return to === undefined || to === draft.technicianId || row === undefined
+    return to === undefined || to === null || to === draft.technicianId || row === undefined
       ? []
       : [{ row, to, minutes: draft.stop.end - draft.stop.start }];
   });
-  if (moves.length === 0) return 0;
-  return (await writeMoves(db, { moves, plans, date }, now)) ? moves.length : 0;
+  if (moves.length === 0) return { moved: 0, stranded };
+  return { moved: (await writeMoves(db, { moves, plans, date }, now)) ? moves.length : 0, stranded };
+}
+
+/** Each stranded draft told to Operations once, naming the technician whose day no longer has room for it. */
+export async function tellStranded(
+  db: D1Database,
+  alertOnce: AlertOnce,
+  day: { readonly date: string; readonly stranded: readonly Stranded[] },
+): Promise<void> {
+  for (const each of day.stranded) {
+    const named = await db
+      .prepare("SELECT name FROM technicians WHERE id = ?1")
+      .bind(each.technicianId)
+      .first<{ name: string }>();
+    await alertOnce({
+      key: `draft_stranded:${each.visitId}:${day.date}`,
+      message: ALERT_WORDS.draft_stranded({
+        technician: named?.name ?? each.technicianId,
+        day: day.date,
+        start: timeOf(each.start),
+        visit: each.visitId,
+      }),
+      link: "/dispatch",
+    });
+  }
 }
 
 /**

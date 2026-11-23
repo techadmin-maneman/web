@@ -291,6 +291,28 @@ describe("a piece with no label", () => {
     expect(later).not.toBe(made);
   });
 
+  it("never gives the made label to a unit another technician fitted on the visit, even one fitted later", async () => {
+    const [theirs = ""] = await inTheKit(code, {});
+    // Another technician's fit of this visit, recorded after Imran's step as a phone with no signal sends it late.
+    await env.DB.batch([
+      env.DB.prepare(
+        `UPDATE stock_units SET state = 'fitted', place = NULL, appointment_id = ?1, moved_at = '2026-09-21T09:00:00.000Z'
+         WHERE code = ?2`,
+      ).bind(JOB, theirs),
+      env.DB.prepare(
+        `INSERT INTO stock_unit_events (unit_id, at, state, place, appointment_id, actor)
+         SELECT id, '2026-09-21T09:00:00.000Z', 'fitted', NULL, ?1, 'another-technician' FROM stock_units WHERE code = ?2`,
+      ).bind(JOB, theirs),
+      env.DB.prepare(
+        "UPDATE stock_balances SET quantity = quantity - 1 WHERE consumable_code = ?1 AND place = ?2",
+      ).bind(code, IMRAN),
+    ]);
+    expect((await fit({ no_label: true, stock_code: code }, "event-piece-01")).status).toBe(202);
+    const made = (await recorded()).piece_code;
+    const fitted = await env.DB.prepare("SELECT code FROM stock_units WHERE state = 'fitted'").all<{ code: string }>();
+    expect(fitted.results.map((unit) => unit.code).sort()).toEqual([theirs, made].sort());
+  });
+
   it("gives a unit its own label back only where it is back in the kit", async () => {
     const [label = ""] = await inTheKit(code, {});
     const made = await madeLabel(env.DB, JOB);

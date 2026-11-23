@@ -1071,6 +1071,92 @@ The photograph an angle is compared with as it is taken, under the card's own un
 }
 ```
 
+### GET /api/tech/past-week
+
+The technician's own jobs over a past week: time, length, kind and how each closed, nothing of the client
+
+**200**: The week's seven days from `from`, each with its jobs in time order
+
+```json
+{
+  "$ref": "#/components/schemas/TechnicianPastWeek"
+}
+```
+
+**400**: invalid_request: a week that does not end before today
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/tech/jobs/{id}/checkin
 
 I have arrived: the time and the phone's position, inside the geofence
@@ -10267,6 +10353,114 @@ One of the client's try-on looks, under the card's own unlock, never cached
     "photos",
     "consumables",
     "piece"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianPastWeek
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string",
+      "format": "date"
+    },
+    "days": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TechnicianPastJob"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "jobs"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "from",
+    "days"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TechnicianPastJob
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "minutes": {
+      "type": "integer",
+      "description": "How long the visit was booked for, in minutes."
+    },
+    "type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "one_visit": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "dispatched",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "terminated"
+      ],
+      "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
+    },
+    "progress": {
+      "$ref": "#/components/schemas/TechnicianJobState"
+    }
+  },
+  "required": [
+    "id",
+    "starts_at",
+    "minutes",
+    "type",
+    "one_visit",
+    "status",
+    "progress"
   ],
   "additionalProperties": false
 }

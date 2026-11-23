@@ -16,6 +16,17 @@ const ServiceSchema = z
   .strict()
   .openapi("TechnicianService");
 
+const JobStateSchema = z
+  .object({
+    started_at: z.union([z.iso.datetime(), z.null()]),
+    outcome: z.union([z.string(), z.null()]),
+  })
+  .strict()
+  .openapi("TechnicianJobState", {
+    description:
+      "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet.",
+  });
+
 export const JobSummarySchema = z
   .object({
     id: z.uuid(),
@@ -60,16 +71,7 @@ export const JobSummarySchema = z
     client_name: z.union([z.string(), z.null()]).openapi({
       description: "The client's name, from the day before the visit as the card's client is; null until then.",
     }),
-    progress: z
-      .object({
-        started_at: z.union([z.iso.datetime(), z.null()]),
-        outcome: z.union([z.string(), z.null()]),
-      })
-      .strict()
-      .openapi("TechnicianJobState", {
-        description:
-          "When the job began and how it closed, from the steps that reached us, whatever the visit's status says yet.",
-      }),
+    progress: JobStateSchema,
   })
   .strict()
   .openapi("TechnicianJob");
@@ -130,6 +132,28 @@ const DayJobSchema = JobSummarySchema.extend({
       "home has no pin.",
   }),
 }).openapi("TechnicianDayJob");
+
+/** A job of a past week (src/domain/field/past-jobs.ts): what it was and how it closed, and nothing of its client. */
+const PastJobSchema = z
+  .object({
+    id: z.uuid(),
+    starts_at: z.iso.datetime(),
+    minutes: z.number().int().openapi({ description: "How long the visit was booked for, in minutes." }),
+    type: z.union([z.enum(VISIT_TYPES), z.null()]),
+    one_visit: z.boolean(),
+    status: z.enum(APPOINTMENT_STATUSES).openapi({ description: STATUS_MEANINGS }),
+    progress: JobStateSchema,
+  })
+  .strict()
+  .openapi("TechnicianPastJob");
+
+export const PastWeekSchema = z
+  .object({
+    from: z.iso.date(),
+    days: z.array(z.object({ date: z.iso.date(), jobs: z.array(PastJobSchema) }).strict()),
+  })
+  .strict()
+  .openapi("TechnicianPastWeek");
 
 export const JobsSchema = z
   .object({
