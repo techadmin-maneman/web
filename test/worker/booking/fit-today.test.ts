@@ -224,7 +224,23 @@ describe("Fit today", () => {
       service_city: "Gurgaon",
       service_pincode: "122018",
     });
+    expect(await offered()).toEqual({ offer: null, refusal: "visit_to_come" });
+  });
+
+  it("says the fit booked at this door is booked, the hour since its close gone", async () => {
+    await ready();
+    await booked();
+    now = new Date(TWO_PM.getTime() + 66 * 60_000);
     expect(await offered()).toEqual({ offer: null, refusal: "fit_booked" });
+  });
+
+  it("is not offered where the profile's product has no first fit on sale today", async () => {
+    await ready();
+    await env.DB.prepare("UPDATE services SET retired_date = '2026-09-01' WHERE kind = 'first_fit' AND tier = ?1")
+      .bind(NATURAL.code)
+      .run();
+    expect(await offered()).toEqual({ offer: null, refusal: "no_product" });
+    expect((await booked()).status).toBe(422);
   });
 
   it("answers a tap again with the fit booked whose visit the half-hour pass has still to book", async () => {
@@ -274,7 +290,8 @@ describe("Fit today", () => {
       pay_by_link: 1,
       expires_at: new Date(TWO_PM.getTime() + 60 * 60_000).toISOString(),
     });
-    expect(await offered()).toEqual({ offer: null, refusal: "fit_booked" });
+    expect(await offered()).toEqual({ offer: null, refusal: "visit_to_come" });
+    expect((await booked()).status).toBe(422);
   });
 
   it("is not offered where no piece in this technician's kit is made exactly to the profile", async () => {

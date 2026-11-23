@@ -29,8 +29,10 @@ import { linkStillOpen } from "./visit-booking.ts";
 export type FitTodayRefusal =
   /** Not this technician's plain consultation, closed as done today within the hour, the client going ahead. */
   | "not_offered"
-  /** The client has a first fit, a consultation and fit, a consultation or a first fit's payment link to come. */
+  /** The client has a first fit, or a consultation and fit, to come: booked at this door, or before. */
   | "fit_booked"
+  /** The client has a consultation, or a first fit's payment link ops sent, to come, which a fit would double. */
+  | "visit_to_come"
   /** The client has not agreed to today's terms in their own app or on the site, as a fit sold to them needs. */
   | "terms_needed"
   /** No piece in the technician's kit made exactly to the client's profile, or of the product they picked. */
@@ -99,14 +101,15 @@ async function consultedToday(db: D1Database, asked: Asked, inputs: OpsInputs): 
   return { personId: row.person_id, picked: typeof close.product === "string" ? close.product : null };
 }
 
-/** Whether the client has a fit, or a consultation, to come, or a first fit's link still open, which a fit would double. */
-async function fitToCome(db: D1Database, personId: string, now: Date): Promise<boolean> {
+/** What the client has to come that a fit would double: a fit, a consultation or a first fit's open link; null for none. */
+async function toCome(db: D1Database, personId: string, now: Date): Promise<"fit_booked" | "visit_to_come" | null> {
   const [fit, consultation, link] = await Promise.all([
     liveVisitOf(db, personId, { type: "first_fit", now }),
     liveVisitOf(db, personId, { type: "consultation", now }),
     linkStillOpen(db, personId, "first_fit", now),
   ]);
-  return fit !== null || consultation !== null || link;
+  if (fit !== null) return "fit_booked";
+  return consultation !== null || link ? "visit_to_come" : null;
 }
 
 /**
@@ -163,9 +166,14 @@ async function startFromNow(
 export async function fitTodayOf(db: D1Database, asked: Asked): Promise<Offered> {
   const inputs = await readOpsInputs(db, asked.now);
   const consulted = await consultedToday(db, asked, inputs);
-  if (consulted === null) return { ok: false, refusal: "not_offered" };
+  if (consulted === null) {
+    // Past the hour, a fit booked at this door is still booked.
+    const booked = (await bookedAtTheDoor(db, asked)) !== undefined;
+    return { ok: false, refusal: booked ? "fit_booked" : "not_offered" };
+  }
   const { personId } = consulted;
-  if (await fitToCome(db, personId, asked.now)) return { ok: false, refusal: "fit_booked" };
+  const coming = await toCome(db, personId, asked.now);
+  if (coming !== null) return { ok: false, refusal: coming };
   if (!(await agreedToToday(db, personId))) return { ok: false, refusal: "terms_needed" };
   const stock = await inTheKit(db, personId, asked.technicianId);
   // The piece is the profile's product's; a client who picked another on Options is fitted with theirs, by ops.
