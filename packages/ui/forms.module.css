@@ -161,12 +161,21 @@
     margin: var(--sp-16) var(--form-inset) 0;
   }
 
+  /* In a table's cell the cell's own padding is the inset. */
   .rule .actions,
   .group .actions,
   .check .actions,
-  .actions .actions {
+  .actions .actions,
+  td .actions {
     margin-left: 0;
     margin-right: 0;
+  }
+
+  /* On a phone's card a row's buttons end at its edge, as its values do (./table.module.css). */
+  @media (max-width: 600px) {
+    [data-cards] td .actions {
+      justify-content: flex-end;
+    }
   }
 
   .saved {

@@ -300,15 +300,16 @@ const isClose = (event: Queued, jobId: string) =>
  * How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed.
  *
  * A close that lands is kept as the API heard it and then leaves the outbox, but what the phone heard is read again
- * only once the outbox has changed: until that read comes back, the close is in neither, and the outcome it was sent
- * with stands. One the API refused stays in the outbox, refused, and the job is not closed.
+ * only once the outbox has changed, and a day the phone no longer keeps is not kept with it: the close may be in
+ * neither, so the outcome it was sent with stands. While the close-out is open only a landing takes a close out of the
+ * outbox; one the API refused stays there, refused, and the job is not closed.
  */
 function useOutcome(
   job: Job | null,
   queued: readonly Queued[],
   states: ReadonlyMap<string, Heard> | null,
 ): Outcome | null {
-  const [sent, setSent] = useState<{ readonly outcome: Outcome; readonly states: typeof states } | null>(null);
+  const [sent, setSent] = useState<{ readonly jobId: string; readonly outcome: Outcome } | null>(null);
   const heard = states?.get(job?.id ?? "")?.outcome ?? null;
   if (job === null) return null;
   const outcome = outcomeOf(
@@ -318,10 +319,10 @@ function useOutcome(
   const queuedHere = queued.filter((event) => isClose(event, job.id));
   if (outcome !== null) {
     const sending = queuedHere.some((event) => event.state === "waiting");
-    if (sending && (sent?.outcome !== outcome || sent.states !== states)) setSent({ outcome, states });
+    if (sending && (sent?.jobId !== job.id || sent.outcome !== outcome)) setSent({ jobId: job.id, outcome });
     return outcome;
   }
-  return sent !== null && queuedHere.length === 0 && sent.states === states ? sent.outcome : null;
+  return sent?.jobId === job.id && queuedHere.length === 0 ? sent.outcome : null;
 }
 
 export function CloseOut({ id }: { id: string }) {
@@ -340,9 +341,9 @@ export function CloseOut({ id }: { id: string }) {
   const readSaid = useCallback(() => keptOutcome(id), [id]);
   const said = valueOr(useAsync(readSaid)[0], null);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading") return <Loading onPaper />;
   if (loaded.state === "failed") {
-    return <JobFailed failed={loaded} onRetry={retry} />;
+    return <JobFailed failed={loaded} onRetry={retry} onPaper />;
   }
 
   const job = loaded.value;
