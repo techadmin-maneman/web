@@ -445,7 +445,14 @@
     "Earlier week": "पिछला हफ़्ता",
     "Later week": "अगला हफ़्ता",
     "No jobs": "कोई जॉब नहीं",
-    "Not closed": "बंद नहीं हुआ"
+    "Not closed": "बंद नहीं हुआ",
+    "Fit today": "आज फ़िट करें",
+    "Nothing to pay now. The client pays by link once fitted.": "अभी कोई पेमेंट नहीं। फ़िट होने के बाद क्लाइंट लिंक से पेमेंट करेंगे।",
+    "Book the fit": "फ़िट बुक करें",
+    "Booking…": "बुक हो रहा है…",
+    "No signal. Try again once there is.": "नेटवर्क नहीं है। नेटवर्क आने पर फिर से कोशिश करें।",
+    "Your day has no room for it now.": "आज आपके दिन में अब इसकी जगह नहीं है।",
+    "The fit wasn’t booked. Try again.": "फ़िट बुक नहीं हुआ। फिर से कोशिश करें।"
   },
   "templates": {
     "{rejectBody} Fix it and tap Next.": "{rejectBody} ठीक करें और अगला दबाएँ।"
@@ -1186,6 +1193,10 @@
     {
       "match": "^([^·]+)–([^·]+) in$",
       "hi": "$1–$2 इंच"
+    },
+    {
+      "match": "^(.+) is in your kit\\. Fit from ([^·]+)\\.$",
+      "hi": "$1 आपकी किट में है। $2 से फ़िट करें।"
     }
   ],
   "dateTokens": {

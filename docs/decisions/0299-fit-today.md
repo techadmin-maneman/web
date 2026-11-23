@@ -20,6 +20,9 @@ fit, and Fit today is not offered where the client has a first fit booked alread
 1. **Offered at a plain consultation the technician has closed as done today** (`fitTodayOf`,
    `src/domain/booking/fit-today.ts`; `GET /api/tech/jobs/{id}/fit-today`), where all of these hold:
    - the client has no first fit, nor consultation and fit, to come (`liveVisitOf`);
+   - the client has agreed to today's terms in their own channel, on the site or in the app, as they booked
+     (`agreedToToday`, `src/domain/privacy/terms-acceptances.ts`; ADR 0191): the owner's default that the client agrees
+     in their own app, not the technician for them;
    - the technician's kit holds a piece of the stock code made exactly to the client's latest profile, free or kept
      for them (`stockMatch`, ADR 0173);
    - the profile's product has a first fit on sale today;
@@ -39,4 +42,6 @@ fit, and Fit today is not offered where the client has a first fit booked alread
 - The client's booking message for a one visit goes, as for any booked by ops: it says nothing is paid until they are
   fitted. Sending none would need a new value of `slot_holds.booked_from`, which its constraint refuses.
 - A consultation that runs into the evening cannot become the fit, as a one visit is not booked in the evening.
+- A client ops booked by phone, who has agreed to no terms in their own app or on the site, is not offered Fit today:
+  asking them to agree in their app at the door is a change of its own.
 - The technician's card for the fit opens at once, as any visit today's does.

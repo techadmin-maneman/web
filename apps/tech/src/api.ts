@@ -208,6 +208,12 @@ export const api = {
       patience: PATIENCE_MS.write,
     }),
 
+  /** Whether the consultation just closed may become the client's fit on the spot (ADR 0299). Asked with signal. */
+  fitToday: (jobId: string) =>
+    client.get("/api/tech/jobs/{id}/fit-today", { path: { id: jobId }, patience: PATIENCE_MS.read }),
+  /** Books it, with this technician, as a consultation and fit in one visit. Asked straight, with signal. */
+  bookFitToday: (jobId: string) =>
+    client.post("/api/tech/jobs/{id}/fit-today", { path: { id: jobId }, patience: PATIENCE_MS.write }),
   /** A one visit's payment link texted to the client again, from the close. Asked straight, with signal. */
   resendLink: (jobId: string) =>
     client.post("/api/tech/jobs/{id}/payment-link/resend", { path: { id: jobId }, patience: PATIENCE_MS.write }),

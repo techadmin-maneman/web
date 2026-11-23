@@ -13,6 +13,7 @@ import { cityOfPerson } from "../cities/cities.ts";
 import { currentAddress } from "../clients/profile.ts";
 import { hairSystemSpecs } from "../inventory/hair-systems.ts";
 import { stockMatch } from "../inventory/stock-match.ts";
+import { agreedToToday } from "../privacy/terms-acceptances.ts";
 import { landedOutcome } from "../visits/visit-begun.ts";
 import { liveVisitOf } from "./availability.ts";
 import { confirmUnpaid } from "./bookings.ts";
@@ -28,6 +29,8 @@ export type FitTodayRefusal =
   | "not_offered"
   /** The client has a first fit, or a consultation and fit, to come. */
   | "fit_booked"
+  /** The client has not agreed to today's terms in their own app or on the site, as a fit sold to them needs. */
+  | "terms_needed"
   /** No piece in the technician's kit made exactly to the client's profile. */
   | "not_in_kit"
   /** No first fit of the profile's product on sale today. */
@@ -118,6 +121,7 @@ export async function fitTodayOf(db: D1Database, asked: Asked): Promise<Offered>
   if ((await liveVisitOf(db, personId, { type: "first_fit", now: asked.now })) !== null) {
     return { ok: false, refusal: "fit_booked" };
   }
+  if (!(await agreedToToday(db, personId))) return { ok: false, refusal: "terms_needed" };
   const stock = await inTheKit(db, personId, asked.technicianId);
   if (stock === null) return { ok: false, refusal: "not_in_kit" };
   const city = await cityOfPerson(db, personId);

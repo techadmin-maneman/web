@@ -16,6 +16,7 @@ import { jobId } from "./jobs.schemas.ts";
 const REFUSALS = [
   "not_offered",
   "fit_booked",
+  "terms_needed",
   "not_in_kit",
   "no_product",
   "no_room",
@@ -38,6 +39,7 @@ const FitTodaySchema = z
     refusal: z.union([z.enum(REFUSALS), z.null()]).openapi({
       description:
         "Why it is not offered: not_offered (not this technician's plain consultation closed done today), fit_booked, " +
+        "terms_needed (the client has not agreed to today's terms on the site or in the app), " +
         "not_in_kit (no piece made exactly to the profile), no_product, no_room (no start near enough to begin now, " +
         "or too late in the day for a one visit). Null with an offer.",
     }),
@@ -75,7 +77,10 @@ const bookFitTodayRoute = techRoute({
     401: SIGNED_IN,
     404: errorResponse("not_found: not this technician's plain consultation closed as done today"),
     409: errorResponse("already_booked: the client has a first fit to come; taken: no room on the day from now"),
-    422: errorResponse("not_bookable: no piece in the kit made to the profile; no_product: none on sale today"),
+    422: errorResponse(
+      "not_bookable: no piece in the kit made to the profile, or the client has not agreed to today's terms; " +
+        "no_product: none on sale today",
+    ),
   },
 });
 
@@ -83,6 +88,7 @@ const bookFitTodayRoute = techRoute({
 const CODE_OF = {
   not_offered: "not_found",
   fit_booked: "already_booked",
+  terms_needed: "not_bookable",
   not_in_kit: "not_bookable",
   no_product: "no_product",
   no_room: "taken",

@@ -4397,7 +4397,7 @@ Books the client's fit on the spot, with this technician, as a consultation and 
 }
 ```
 
-**422**: not_bookable: no piece in the kit made to the profile; no_product: none on sale today
+**422**: not_bookable: no piece in the kit made to the profile, or the client has not agreed to today's terms; no_product: none on sale today
 
 ```json
 {
@@ -11880,6 +11880,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "enum": [
             "not_offered",
             "fit_booked",
+            "terms_needed",
             "not_in_kit",
             "no_product",
             "no_room"
@@ -11889,7 +11890,7 @@ One of the client's try-on looks, under the card's own unlock, never cached
           "type": "null"
         }
       ],
-      "description": "Why it is not offered: not_offered (not this technician's plain consultation closed done today), fit_booked, not_in_kit (no piece made exactly to the profile), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer."
+      "description": "Why it is not offered: not_offered (not this technician's plain consultation closed done today), fit_booked, terms_needed (the client has not agreed to today's terms on the site or in the app), not_in_kit (no piece made exactly to the profile), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer."
     }
   },
   "required": [

@@ -5,6 +5,15 @@ import { LEGAL_VERSIONS } from "../../config/legal-versions.ts";
 
 export type TermsSource = "site_booking" | "referral_landing" | "app_booking";
 
+/** Whether the person has agreed to today's terms, on whichever of their own channels they booked through. */
+export async function agreedToToday(db: D1Database, personId: string): Promise<boolean> {
+  const agreed = await db
+    .prepare("SELECT 1 FROM terms_acceptances WHERE person_id = ?1 AND terms_version = ?2 LIMIT 1")
+    .bind(personId, LEGAL_VERSIONS.terms)
+    .first();
+  return agreed !== null;
+}
+
 /** The write that records an acceptance of today's versions, to run in one batch with what it was given for. */
 export function acceptTerms(
   db: D1Database,

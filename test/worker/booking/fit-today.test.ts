@@ -6,6 +6,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { LEGAL_VERSIONS } from "../../../src/config/legal-versions.ts";
 import { markDatabase } from "../helpers.ts";
 import { aPackage, aVisit } from "../fixtures/index.ts";
 import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
@@ -38,6 +39,15 @@ const profiled = (colour = "1B", at = TWO_PM) =>
     .bind(PERSON, at.toISOString(), colour, crypto.randomUUID())
     .run();
 
+/** The client agreed to today's terms as they booked the consultation on the site. */
+const agreed = () =>
+  env.DB.prepare(
+    `INSERT INTO terms_acceptances (id, person_id, terms_version, privacy_version, source, ip_hash, created_at)
+     VALUES ('ta-1', ?1, ?2, ?3, 'site_booking', 'hash', ?4)`,
+  )
+    .bind(PERSON, LEGAL_VERSIONS.terms, LEGAL_VERSIONS.privacy, TWO_PM.toISOString())
+    .run();
+
 /** A piece of the hair system delivered and handed to `technician`'s kit. */
 async function inKitOf(technician: string) {
   await job.opsPost("/api/stock/deliveries", { consumable_code: stockCode, quantity: 1 });
@@ -68,6 +78,7 @@ const booked = () => job.post(`/api/tech/jobs/${JOB}/fit-today`, undefined, "eve
 describe("Fit today", () => {
   it("is offered with the piece in the kit and a start to begin now, and books a fixed one visit with this technician", async () => {
     await closedDone();
+    await agreed();
     await profiled();
     await inKitOf(IMRAN);
     const offer = await offered();
@@ -114,6 +125,7 @@ describe("Fit today", () => {
 
   it("books it once: the client's fit to come refuses a second", async () => {
     await closedDone();
+    await agreed();
     await profiled();
     await inKitOf(IMRAN);
     expect((await booked()).status).toBe(201);
@@ -127,12 +139,23 @@ describe("Fit today", () => {
     expect(await offered()).toEqual({ offer: null, refusal: "not_offered" });
     expect((await booked()).status).toBe(404);
     await closedDone();
+    await agreed();
     await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
     expect(await offered()).toEqual({ offer: null, refusal: "not_offered" });
   });
 
+  // Booked by phone, the client has agreed to nothing in their own app or on the site.
+  it("is not offered to a client who has not agreed to today's terms", async () => {
+    await closedDone();
+    await profiled();
+    await inKitOf(IMRAN);
+    expect(await offered()).toEqual({ offer: null, refusal: "terms_needed" });
+    expect((await booked()).status).toBe(422);
+  });
+
   it("is not offered where no piece in this technician's kit is made exactly to the profile", async () => {
     await closedDone();
+    await agreed();
     await profiled("2");
     await inKitOf(IMRAN);
     expect(await offered()).toEqual({ offer: null, refusal: "not_in_kit" });
@@ -145,6 +168,7 @@ describe("Fit today", () => {
 
   it("is not offered where the technician's day has no room to begin now", async () => {
     await closedDone();
+    await agreed();
     await profiled();
     await inKitOf(IMRAN);
     // Imran's next visit, at 4 pm, leaves no two hours.

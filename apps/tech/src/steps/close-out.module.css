@@ -70,6 +70,22 @@
   color: var(--ui-text-soft);
 }
 
+/* Fit today's lines under its head (./FitToday.tsx): the piece in the kit and when the fit would start, then what the
+   client pays, in the note's grey, above the button. */
+.fitLine {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-145);
+  color: var(--ui-text);
+}
+
+.fitPays {
+  margin: var(--sp-4) 0 var(--sp-12);
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+  color: var(--ui-text-soft);
+}
+
 .linkLine {
   display: flex;
   gap: var(--sp-16);

@@ -19,6 +19,7 @@ import { clock, dayAfter, lengthOf, metres, todayInIndia, where } from "../lib/w
 import { NO_PIECE } from "@rules/policy/in-job-steps.ts";
 import { go } from "../route.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
+import { FitToday } from "./FitToday.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import {
   type Heard,
@@ -342,6 +343,8 @@ export function CloseOut({ id }: { id: string }) {
         {/* A card the phone kept from before one visits names no link. */}
         {job.one_visit && job.payment_link !== null && <PaymentLink job={job} link={job.payment_link} />}
         {outcome === "partial" && <FinishTheWork job={job} closing={closing} />}
+        {/* Asked once the close has reached us, which the offer reads. */}
+        {outcome === "done" && !closing && job.type === "consultation" && !job.one_visit && <FitToday job={job} />}
         <WhatsNext later={later} todayLoaded={day.state === "loaded"} names={names} />
       </section>
 

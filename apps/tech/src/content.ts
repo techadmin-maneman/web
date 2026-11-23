@@ -983,6 +983,20 @@ export const closeOut = localised({
   photos: "Photos",
   queued: (count: number) => `${String(count)} queued`,
   sent: (count: number) => `${String(count)} sent`,
+  /** Fit today, after a plain consultation, where the kit holds the client's piece (ADR 0299). */
+  fitToday: {
+    title: "Fit today",
+    /** "Mane Man Natural 8×10 1B is in your kit. Fit from 2:30 pm." */
+    line: (piece: string, time: string) => `${piece} is in your kit. Fit from ${time}.`,
+    pays: "Nothing to pay now. The client pays by link once fitted.",
+    action: "Book the fit",
+    booking: "Booking…",
+    failed: {
+      offline: "No signal. Try again once there is.",
+      taken: "Your day has no room for it now.",
+      unknown: "The fit wasn’t booked. Try again.",
+    },
+  },
   /** A one visit's link: whether it is paid, and texting it again. */
   payment: {
     title: "Payment link",

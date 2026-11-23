@@ -3193,7 +3193,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description not_bookable: no piece in the kit made to the profile; no_product: none on sale today */
+                /** @description not_bookable: no piece in the kit made to the profile, or the client has not agreed to today's terms; no_product: none on sale today */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -6306,8 +6306,8 @@ export interface components {
                 starts_at: string;
                 minutes: number;
             } | null;
-            /** @description Why it is not offered: not_offered (not this technician's plain consultation closed done today), fit_booked, not_in_kit (no piece made exactly to the profile), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer. */
-            refusal: ("not_offered" | "fit_booked" | "not_in_kit" | "no_product" | "no_room") | null;
+            /** @description Why it is not offered: not_offered (not this technician's plain consultation closed done today), fit_booked, terms_needed (the client has not agreed to today's terms on the site or in the app), not_in_kit (no piece made exactly to the profile), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer. */
+            refusal: ("not_offered" | "fit_booked" | "terms_needed" | "not_in_kit" | "no_product" | "no_room") | null;
         };
         TechnicianFitTodayBooked: {
             visit_id: string | null;

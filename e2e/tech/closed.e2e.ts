@@ -102,3 +102,70 @@ test("a way to finish the work chosen with no signal is kept, and goes to ops on
   await context.setOffline(false);
   await expect.poll(() => writesTo(fake, "finish-ask").at(-1)?.body, { timeout: 20_000 }).toEqual({ ask: "ops_call" });
 });
+
+// Fit today (ADR 0299): at a plain consultation closed as done, where the kit holds the client's piece.
+const FIT_ID = "44444444-4444-4444-8444-444444444441";
+const OFFER = {
+  product: "Mane Man Natural",
+  stock_code: "hs_natural_8x10_1b",
+  stock_name: "Mane Man Natural 8×10 1B",
+  minutes: 120,
+};
+
+test("a consultation closed done offers Fit today with the piece in the kit and what the client pays, and opens the fit", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.type = "consultation";
+  startedThrough(fake, "before_photos", "checklist", "outcome");
+  fake.progress = { ...fake.progress, outcome: "done" };
+  const startsAt = new Date(Date.now() + 30 * 60_000).toISOString();
+  const posted: string[] = [];
+  // Registered after the fake, so it answers first.
+  await page.route(`**/api/tech/jobs/${JOB_ID}/fit-today`, (route) => {
+    if (route.request().method() === "POST") {
+      posted.push(route.request().url());
+      return route.fulfill({ status: 201, json: { visit_id: FIT_ID } });
+    }
+    return route.fulfill({ json: { offer: { ...OFFER, starts_at: startsAt }, refusal: null } });
+  });
+  await page.goto(`/jobs/${JOB_ID}/done`);
+
+  const fit = page.getByRole("region", { name: closeOut.fitToday.title });
+  await expect(fit).toContainText(OFFER.stock_name);
+  expect(await axeViolations(page)).toEqual([]);
+  await expect(fit).toContainText(closeOut.fitToday.pays);
+  await fit.getByRole("button", { name: closeOut.fitToday.action }).click();
+  await expect(page).toHaveURL(new RegExp(`/jobs/${FIT_ID}$`));
+  expect(posted).toHaveLength(1);
+});
+
+test("a consultation closed done offers nothing where Fit today is refused, and says why a booking failed", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  fake.type = "consultation";
+  startedThrough(fake, "before_photos", "checklist", "outcome");
+  fake.progress = { ...fake.progress, outcome: "done" };
+  let offered = false;
+  await page.route(`**/api/tech/jobs/${JOB_ID}/fit-today`, (route) => {
+    if (route.request().method() === "POST") {
+      return route.fulfill({ status: 409, json: { error: { code: "taken", request_id: "req-fit-1" } } });
+    }
+    const starts = new Date(Date.now() + 30 * 60_000).toISOString();
+    return route.fulfill({
+      json: offered
+        ? { offer: { ...OFFER, starts_at: starts }, refusal: null }
+        : { offer: null, refusal: "not_in_kit" },
+    });
+  });
+  await page.goto(`/jobs/${JOB_ID}/done`);
+  await expect(page.getByRole("heading", { level: 1, name: closeOut.titles.closed })).toBeVisible();
+  await expect(page.getByRole("region", { name: closeOut.fitToday.title })).toHaveCount(0);
+
+  offered = true;
+  await page.reload();
+  const fit = page.getByRole("region", { name: closeOut.fitToday.title });
+  await fit.getByRole("button", { name: closeOut.fitToday.action }).click();
+  await expect(fit.getByRole("status")).toHaveText(closeOut.fitToday.failed.taken);
+});
