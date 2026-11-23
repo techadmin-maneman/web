@@ -44,12 +44,13 @@ test("sorts the roster by a column, and narrows it by the header's city or a sea
   await expect(rows).toHaveCount(2);
 });
 
-// Each technician took some 270 px with their phones and leave beneath them: 34,000 px for 168.
-test("gives each technician one row of the board’s height, however many phones and days off", async ({ page }) => {
+// Each technician took some 270 px with their phones and leave beneath them: 34,000 px for 168. The redesign draws a
+// row in two lines, the name over whether they fit, and no more however many phones and days off.
+test("gives each technician one row of two lines, however many phones and days off", async ({ page }) => {
   await open(page);
   for (const name of ["Imran Qureshi", "Sandeep Yadav", "Faizan Ali"]) {
     const box = await page.getByRole("row").filter({ hasText: name }).boundingBox();
-    expect(box?.height, name).toBeLessThanOrEqual(35);
+    expect(box?.height, name).toBeLessThanOrEqual(64);
   }
   await expect(page.getByText("Chrome on Android")).toBeHidden();
 });
@@ -77,10 +78,10 @@ test("counts the jobs each has finished, and how long those took", async ({ page
 // The figures counted a fixed 90 days, and nothing on the page could change that.
 test("counts over the period chosen, ops’s own until then", async ({ page }) => {
   await open(page);
-  const period = page.getByLabel(opsCopy.technicians.work.over, { exact: true });
-  await expect(period).toHaveValue("91");
+  const period = page.getByRole("radiogroup", { name: opsCopy.technicians.work.over, exact: true });
+  await expect(period.getByRole("radio", { name: opsCopy.technicians.work.days(91) })).toBeChecked();
   const asked = page.waitForRequest((request) => request.url().includes("/api/technicians/work?from="));
-  await period.selectOption({ label: opsCopy.technicians.work.days(30) });
+  await period.getByRole("radio", { name: opsCopy.technicians.work.days(30) }).click();
   expect(new URL((await asked).url()).searchParams.get("from")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 });
 

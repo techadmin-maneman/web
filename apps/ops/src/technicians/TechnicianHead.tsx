@@ -9,7 +9,7 @@ import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { useLoad } from "@maneman/ui/useLoad";
 import { GLYPHS } from "@maneman/brand/icons";
 import { apiNow } from "@maneman/web-kit/clock";
-import { shortDate, todayInIndia } from "@maneman/web-kit/dates";
+import { longDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { useCallback, useMemo, type ReactNode } from "react";
 import { api, type Technician, type TechnicianSummary } from "../api.ts";
@@ -46,6 +46,7 @@ function headOf(summary: TechnicianSummary, active: Technician | null): RecordHe
       ...(summary.mobile === null ? [] : [phoneWords(summary.mobile)]),
       ...(summary.city === null ? [] : [summary.city]),
       summary.fits_trained ? copy.trained : copy.notTrained,
+      ...(summary.started_on === null ? [] : [copy.started(longDate(summary.started_on))]),
       ...(active === null ? [] : weekLines(active.hours)),
     ],
   };

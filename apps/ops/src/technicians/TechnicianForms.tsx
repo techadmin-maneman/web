@@ -22,6 +22,7 @@ import styles from "./technicians.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 import { SwitchOff, SwitchOn } from "./TechnicianSwitch.tsx";
+import { StartedField, StartedRow } from "./Started.tsx";
 import { TrainingField, TrainingRow } from "./Training.tsx";
 import { refusal } from "./refusal.ts";
 
@@ -143,6 +144,7 @@ export function AddTechnician({
   const firstCity = useAccess().reaches(GIVING_NO_CITY) ? "" : (cities[0] ?? "");
   const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: firstCity, fitsTrained: false });
   const [trainingEndDate, setTrainingEndsOn] = useState("");
+  const [startedOn, setStartedOn] = useState("");
   const [sending, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -162,6 +164,7 @@ export function AddTechnician({
         city: cityOf(typed.city),
         fits_trained: typed.fitsTrained,
         ...(trainingEndDate === "" ? {} : { training_end_date: trainingEndDate }),
+        ...(startedOn === "" ? {} : { started_on: startedOn }),
       });
       if (!answer.ok) {
         setFailed(refusal(answer.code));
@@ -182,6 +185,7 @@ export function AddTechnician({
       }}
     >
       <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
+      <StartedField value={startedOn} onChange={setStartedOn} />
       <TrainingField value={trainingEndDate} onChange={setTrainingEndsOn} />
       <div className={styles.actions}>
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
@@ -264,6 +268,11 @@ function DetailRows({
         ]}
         mayChange={mayChange}
         save={(fitting) => save({ fits_trained: fitting === "trained" })}
+      />
+      <StartedRow
+        startedOn={technician.started_on}
+        mayChange={mayChange}
+        save={(started) => save({ started_on: started })}
       />
       <TrainingRow
         endsOn={technician.training_end_date}

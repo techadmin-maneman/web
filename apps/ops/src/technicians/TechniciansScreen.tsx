@@ -17,7 +17,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { addDays, listDate, todayInIndia } from "@maneman/web-kit/dates";
-import { Field, Select } from "@maneman/ui/Field";
+import { Segmented } from "@maneman/ui/Segmented";
 import { useCallback, useState, type ReactNode } from "react";
 import {
   type Leave,
@@ -27,6 +27,8 @@ import {
   type TechnicianWork,
 } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
+import { Initials } from "@maneman/ui/Initials";
+import { RowHead } from "@maneman/ui/RowHead";
 import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -169,11 +171,14 @@ function TechnicianTable({ view, figures }: { view: TableView<Listed>; figures: 
       <tbody>
         {view.shown.map((technician) => (
           <tr key={technician.id}>
-            <th scope="row" className={shared.name}>
+            <RowHead
+              mark={<Initials name={technician.name} small />}
+              meta={technician.fits_trained ? technicians.head.trained : technicians.head.notTrained}
+            >
               <OpsLink className={textLinkLook({ compact: true })} to={technicianPath(technician.id)}>
                 {technician.name}
               </OpsLink>
-            </th>
+            </RowHead>
             <td className={classes(shared.city, technician.city === null && shared.noCity)}>
               {technician.city ?? technicians.noCity}
             </td>
@@ -229,11 +234,11 @@ function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
           <tbody>
             {view.shown.map((technician) => (
               <tr key={technician.id}>
-                <th scope="row" className={shared.name}>
+                <RowHead mark={<Initials name={technician.name} small />}>
                   <OpsLink className={textLinkLook({ compact: true })} to={technicianPath(technician.id)}>
                     {technician.name}
                   </OpsLink>
-                </th>
+                </RowHead>
                 <td>{technician.city ?? <None />}</td>
               </tr>
             ))}
@@ -251,30 +256,20 @@ const None = () => <span className={shared.none}>{technicians.unknown}</span>;
 /** The periods offered beside the one shown: a month, a quarter and a year. */
 const PERIODS = [30, 90, 365];
 
-/** Over how many days back the figures count, ops's own period until another is chosen. */
+/** Over how many days back the figures count, a segment each, ops's own period until another is chosen. */
 function PeriodChoice({ counted, onFrom }: { counted: { from: string; to: string }; onFrom: (from: string) => void }) {
   const days = Math.round((Date.parse(counted.to) - Date.parse(counted.from)) / DAY_MS);
   const offered = [...new Set([...PERIODS, days])].sort((one, other) => one - other);
   return (
-    <Field label={technicians.work.over} labelHidden>
-      {(control) => (
-        <Select
-          {...control}
-          width="choice"
-          value={String(days)}
-          onChange={(event) => {
-            // The route counts to tomorrow, so the last N days start N - 1 days before today.
-            onFrom(addDays(todayInIndia(apiNow()), 1 - Number(event.target.value)));
-          }}
-        >
-          {offered.map((each) => (
-            <option key={each} value={each}>
-              {technicians.work.days(each)}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
+    <Segmented
+      label={technicians.work.over}
+      options={offered.map((each) => [String(each), technicians.work.days(each)] as const)}
+      value={String(days)}
+      onChange={(chosen) => {
+        // The route counts to tomorrow, so the last N days start N - 1 days before today.
+        onFrom(addDays(todayInIndia(apiNow()), 1 - Number(chosen)));
+      }}
+    />
   );
 }
 
