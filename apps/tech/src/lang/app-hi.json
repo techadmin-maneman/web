@@ -441,7 +441,11 @@
     "Type it instead": "इसके बजाय टाइप करें",
     "the rest to come": "बाकी आने वाले हैं",
     "Width runs side to side, length front to back.": "चौड़ाई एक ओर से दूसरी ओर, लंबाई आगे से पीछे।",
-    "Nothing in your kit can be fitted without a label now. Scan the piece’s label.": "अब आपकी किट में बिना लेबल वाला कुछ भी फ़िट नहीं हो सकता। पीस का लेबल स्कैन करें।"
+    "Nothing in your kit can be fitted without a label now. Scan the piece’s label.": "अब आपकी किट में बिना लेबल वाला कुछ भी फ़िट नहीं हो सकता। पीस का लेबल स्कैन करें।",
+    "Earlier week": "पिछला हफ़्ता",
+    "Later week": "अगला हफ़्ता",
+    "No jobs": "कोई जॉब नहीं",
+    "Not closed": "बंद नहीं हुआ"
   },
   "templates": {
     "{rejectBody} Fix it and tap Next.": "{rejectBody} ठीक करें और अगला दबाएँ।"
@@ -582,6 +586,10 @@
     {
       "match": "^([^·,]+), nothing booked$",
       "hi": "$1, कोई बुकिंग नहीं"
+    },
+    {
+      "match": "^([^·,]+), no jobs$",
+      "hi": "$1, कोई जॉब नहीं"
     },
     {
       "match": "^([^·,]+), didn’t load$",

@@ -37,6 +37,8 @@ export type Me = Schema["TechnicianMe"];
 export type Challenge = Schema["TechnicianChallenge"];
 /** A job on the day's list: its address once unlocked, and the next job still to do from it. */
 export type JobSummary = Schema["TechnicianDayJob"];
+/** A job of a past week on Schedule: its time, length, kind and how it closed, and nothing of its client. */
+export type PastJob = Schema["TechnicianPastJob"];
 /** A job's card. One an earlier build kept on the phone carries no check-in radius. */
 export type Job = Omit<Schema["TechnicianJobDetail"], "checkin_radius_m"> & {
   readonly checkin_radius_m: Schema["TechnicianJobDetail"]["checkin_radius_m"] | null;
@@ -187,6 +189,8 @@ export const api = {
 
   /** Today and tomorrow in full; later dates carry time, type and sector only. */
   jobs: (date: string) => client.get("/api/tech/jobs", { query: { date }, patience: PATIENCE_MS.read }),
+  /** A past week of the technician's own jobs, from its first day, with nothing of the clients. */
+  pastWeek: (from: string) => client.get("/api/tech/past-week", { query: { from }, patience: PATIENCE_MS.read }),
   /** The card, which respects the day-before unlock: the API withholds it, not the screen. */
   job: (id: string) => client.get("/api/tech/jobs/{id}", { path: { id }, patience: PATIENCE_MS.read }),
   /** The piece a label names, and whether it is one of this job's client's. */

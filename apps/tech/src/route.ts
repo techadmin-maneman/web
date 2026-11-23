@@ -5,7 +5,7 @@
 //   /waiting                 what has not reached us: the photo sets and the queued writes
 //   /kit                     the technician's kit (docs/decisions/0164-the-kit-screen.md; a tab)
 //   /week                    Schedule: today and the six days after it, today down the hours (a tab)
-//   /week/:date              Schedule on another of those days
+//   /week/:date              Schedule on another of those days, or a day of a past week (ADR 0298)
 //   /week/:date/:id          a later day's job, read-only
 //   /alerts                  Alerts: the inbox and the kinds on, from Today's bell and from Me
 //   /guides                  Guides: each kind of visit's steps, from Me

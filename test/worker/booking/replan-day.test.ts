@@ -13,10 +13,12 @@ import { replanDay } from "../../../src/domain/booking/replan-day.ts";
 import { loadDayPlans } from "../../../src/domain/booking/day-plans.ts";
 import { readOpsInputs } from "../../../src/domain/platform/ops-settings.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
-import { fakeDependencies, markDatabase, NOW } from "../helpers.ts";
+import { fakeDependencies, fakeQueue, LOCAL_CONFIG, markDatabase, NOW } from "../helpers.ts";
 import { ALERT_WORDS } from "../../../src/config/alert-words.ts";
 import { createLogger } from "../../../src/log.ts";
 import { failedIn } from "../../../src/scheduled/allotment-jobs.ts";
+import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
+import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { client, IMRAN, SANA, SANDEEP, technician, visit } from "./client-booking-fixtures.ts";
 import { aHold } from "../fixtures/index.ts";
 
@@ -53,6 +55,20 @@ beforeEach(async () => {
 const visitRow = () =>
   env.DB.prepare("SELECT technician_id, technician_draft FROM appointments WHERE id = ?1").bind(visitId).first();
 
+/** Leave on Tuesday, all day or `from` to `to`. */
+async function leave(technicianId: string, from: string | null = null, to: string | null = null) {
+  await env.DB.prepare(
+    `INSERT INTO technician_leave (id, technician_id, from_date, to_date, from_time, to_time, actor, created_at)
+     VALUES (?1, ?2, ?3, ?3, ?4, ?5, 'ops@maneman.test', ?6)`,
+  )
+    .bind(crypto.randomUUID(), technicianId, TUESDAY, from, to, NOW.toISOString())
+    .run();
+}
+
+/** The draft given to Imran, who lives 2 km from the client, so only his day stops it staying with him. */
+const withImran = () =>
+  env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(visitId, IMRAN).run();
+
 /**
  * The database, with `raced` done just before the re-plan writes its moves, after it read the day: as a hold, or ops,
  * can change the day between the two.
@@ -85,7 +101,7 @@ function racedBy(raced: () => Promise<unknown>): D1Database {
 
 describe("a day's drafts re-planned", () => {
   it("gives a draft to whoever it costs least, keeps it a draft, records the move, and keeps the day locked", async () => {
-    const moved = await replanDay(env.DB, {
+    const { moved } = await replanDay(env.DB, {
       city: "Gurgaon",
       date: TUESDAY,
       now: NOW,
@@ -113,6 +129,81 @@ describe("a day's drafts re-planned", () => {
     expect(plans.revision(IMRAN, TUESDAY)).toBe(1);
   });
 
+  it("moves a draft off a technician since away all day, or on leave over it, to whoever else can take it", async () => {
+    await withImran();
+    await leave(IMRAN);
+    const inputs = await readOpsInputs(env.DB, NOW);
+    expect(await replanDay(env.DB, { city: "Gurgaon", date: TUESDAY, now: NOW, inputs })).toEqual({
+      moved: 1,
+      stranded: [],
+    });
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
+
+    await env.DB.prepare("DELETE FROM technician_leave").run();
+    await withImran();
+    await leave(IMRAN, "10:30", "12:30");
+    expect((await replanDay(env.DB, { city: "Gurgaon", date: TUESDAY, now: NOW, inputs })).moved).toBe(1);
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
+  });
+
+  it("tells of a draft that was to leave a day that no longer fits where a hold stopped its move being written", async () => {
+    await withImran();
+    await leave(IMRAN);
+    const rival = await aHold({ person_id: (await client()).id, technician_id: SANDEEP });
+    const holdLocks = () =>
+      env.DB.prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, 'rev:1', ?3)")
+        .bind(SANDEEP, TUESDAY, rival.id)
+        .run();
+    const inputs = await readOpsInputs(env.DB, NOW);
+    expect(await replanDay(racedBy(holdLocks), { city: "Gurgaon", date: TUESDAY, now: NOW, inputs })).toEqual({
+      moved: 0,
+      stranded: [{ visitId, technicianId: IMRAN, start: 11 * 60 }],
+    });
+    expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+  });
+
+  it("leaves a draft nobody else can take with its technician, and tells Operations of it once", async () => {
+    await withImran();
+    await leave(IMRAN);
+    await leave(SANDEEP);
+    const { moved, stranded } = await replanDay(env.DB, {
+      city: "Gurgaon",
+      date: TUESDAY,
+      now: NOW,
+      inputs: await readOpsInputs(env.DB, NOW),
+    });
+    expect({ moved, stranded }).toEqual({
+      moved: 0,
+      stranded: [{ visitId, technicianId: IMRAN, start: 11 * 60 }],
+    });
+    expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+    // The hourly re-plan at 12:20 am takes Tuesday, and tells it once however often it runs.
+    const hourly = () =>
+      runCronJobs(
+        CRON_JOBS.filter((each) => each.name === "replan_drafts"),
+        {
+          env: { ...env, MESSAGE_QUEUE: fakeQueue() },
+          deps: fakeDependencies({ now: () => indiaInstant("2026-09-21", "00:20") }),
+          config: LOCAL_CONFIG,
+          log: createLogger(),
+        },
+      );
+    await hourly();
+    await hourly();
+    const { results } = await env.DB.prepare("SELECT key, message FROM alerts WHERE key LIKE 'draft_stranded:%'").all();
+    expect(results).toEqual([
+      {
+        key: `draft_stranded:${visitId}:${TUESDAY}`,
+        message: ALERT_WORDS.draft_stranded({
+          technician: "Imran Qureshi",
+          day: TUESDAY,
+          start: "11:00",
+          visit: visitId,
+        }),
+      },
+    ]);
+  });
+
   it("writes nothing where a hold locked the day it would go to, or the draft was fixed, after it was read", async () => {
     const inputs = await readOpsInputs(env.DB, NOW);
     const replan = (raced: () => Promise<unknown>) =>
@@ -122,11 +213,11 @@ describe("a day's drafts re-planned", () => {
       env.DB.prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, 'rev:1', ?3)")
         .bind(IMRAN, TUESDAY, rival.id)
         .run();
-    expect(await replan(holdLocks)).toBe(0);
+    expect((await replan(holdLocks)).moved).toBe(0);
     await env.DB.prepare("DELETE FROM slot_claims").run();
     const opsFix = () =>
       env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(visitId).run();
-    expect(await replan(opsFix)).toBe(0);
+    expect((await replan(opsFix)).moved).toBe(0);
     expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 0 });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first("n")).toBe(0);
   });
@@ -147,7 +238,7 @@ describe("a day's drafts re-planned", () => {
       moves_appointment_id: waiting,
       confirmed_at: NOW.toISOString(),
     });
-    const moved = await replanDay(env.DB, {
+    const { moved } = await replanDay(env.DB, {
       city: "Gurgaon",
       date: TUESDAY,
       now: NOW,
@@ -161,7 +252,7 @@ describe("a day's drafts re-planned", () => {
 
   it("never gives a draft to whoever did the client's visit before it", async () => {
     await env.DB.prepare("UPDATE appointments SET technician_id = ?1 WHERE status = 'completed'").bind(IMRAN).run();
-    const moved = await replanDay(env.DB, {
+    const { moved } = await replanDay(env.DB, {
       city: "Gurgaon",
       date: TUESDAY,
       now: NOW,
@@ -173,7 +264,7 @@ describe("a day's drafts re-planned", () => {
 
   it("never moves a visit already fixed", async () => {
     await env.DB.prepare("UPDATE appointments SET technician_draft = 0 WHERE id = ?1").bind(visitId).run();
-    const moved = await replanDay(env.DB, {
+    const { moved } = await replanDay(env.DB, {
       city: "Gurgaon",
       date: TUESDAY,
       now: NOW,
@@ -183,7 +274,13 @@ describe("a day's drafts re-planned", () => {
     expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 0 });
   });
 
-  it("re-plans tomorrow in the half hour before the lock, once a city, and the lock fixes it", async () => {
+  it("re-plans tomorrow in the half hour before the lock, a city a run, once each, and the lock fixes it", async () => {
+    for (const city of ["Delhi", "Noida"]) {
+      const id = await visit(null, "service", "scheduled", indiaInstant(TUESDAY, "15:00").toISOString(), IMRAN);
+      await env.DB.prepare("UPDATE appointments SET technician_draft = 1, service_city = ?2 WHERE id = ?1")
+        .bind(id, city)
+        .run();
+    }
     const half = indiaInstant("2026-09-21", "17:31");
     const inputs = await readOpsInputs(env.DB, half);
     const readHours = () => Promise.resolve({ national: 18, cities: new Map<string, number>() });
@@ -199,13 +296,40 @@ describe("a day's drafts re-planned", () => {
       failed: () => undefined,
     };
     // Earlier in the hour no lock is near, and nothing is read.
-    expect(await checkBeforeLock(env.DB, indiaInstant("2026-09-21", "17:25"), before)).toBeNull();
-    expect(await checkBeforeLock(env.DB, half, before)).toBe("Gurgaon");
+    expect(await checkBeforeLock(env.DB, indiaInstant("2026-09-21", "17:25"), before)).toEqual([]);
+    expect(await checkBeforeLock(env.DB, half, before)).toEqual(["Delhi"]);
+    expect(await checkBeforeLock(env.DB, indiaInstant("2026-09-21", "17:36"), before)).toEqual(["Gurgaon"]);
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
-    // Once a day: the next run takes no city.
-    expect(await checkBeforeLock(env.DB, indiaInstant("2026-09-21", "17:36"), before)).toBeNull();
+    // The next run takes the city left, and once a day: the one after takes none.
+    expect(await checkBeforeLock(env.DB, indiaInstant("2026-09-21", "17:41"), before)).toEqual(["Noida"]);
+    expect(await checkBeforeLock(env.DB, indiaInstant("2026-09-21", "17:46"), before)).toEqual([]);
     await lockDueDrafts(env.DB, indiaInstant("2026-09-21", "18:01"), { readHours });
     expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 0 });
+  });
+
+  it("checks two cities a run where more than the half hour's six share a lock hour, so every one is checked", async () => {
+    for (const city of ["Agra", "Bhiwadi", "Delhi", "Faridabad", "Jaipur", "Noida"]) {
+      const id = await visit(null, "service", "scheduled", indiaInstant(TUESDAY, "15:00").toISOString(), IMRAN);
+      await env.DB.prepare("UPDATE appointments SET technician_draft = 1, service_city = ?2 WHERE id = ?1")
+        .bind(id, city)
+        .run();
+    }
+    const taken = new Set<string>();
+    const before = {
+      readHours: () => Promise.resolve({ national: 18, cities: new Map<string, number>() }),
+      firstToday: (city: string) => {
+        const first = !taken.has(city);
+        taken.add(city);
+        return Promise.resolve(first);
+      },
+      check: () => Promise.resolve(),
+      failed: () => undefined,
+    };
+    const runs = [];
+    for (const time of ["17:31", "17:36", "17:41", "17:46", "17:51"]) {
+      runs.push(await checkBeforeLock(env.DB, indiaInstant("2026-09-21", time), before));
+    }
+    expect(runs).toEqual([["Agra", "Bhiwadi"], ["Delhi", "Faridabad"], ["Gurgaon", "Jaipur"], ["Noida"], []]);
   });
 
   it("fixes tomorrow as it stands where its check fails, and says which city failed", async () => {
@@ -243,7 +367,7 @@ describe("a day's drafts re-planned", () => {
     )
       .bind(NOW.toISOString(), visitId)
       .run();
-    const moved = await replanDay(env.DB, {
+    const { moved } = await replanDay(env.DB, {
       city: "Gurgaon",
       date: TUESDAY,
       now: NOW,
@@ -262,7 +386,7 @@ describe("a day's drafts re-planned", () => {
     )
       .bind(NOW.toISOString(), visitId)
       .run();
-    const moved = await replanDay(env.DB, {
+    const { moved } = await replanDay(env.DB, {
       city: "Gurgaon",
       date: TUESDAY,
       now: NOW,
@@ -291,7 +415,7 @@ describe("each hour's re-plan", () => {
       replan: (city, date) =>
         city === "Noida"
           ? Promise.reject(new Error("D1 overloaded"))
-          : replanDay(env.DB, { city, date, now: midnight, inputs }),
+          : replanDay(env.DB, { city, date, now: midnight, inputs }).then((done) => done.moved),
       failed: (city) => {
         failed.push(city);
       },

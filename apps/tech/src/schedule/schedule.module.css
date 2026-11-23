@@ -31,6 +31,36 @@
   color: var(--ui-text-soft);
 }
 
+/* Schedule's head: the title and the sync on one line, the week on its own beneath them, the whole width, so its range
+   stays on one line with larger text. */
+.weekHead {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+
+/* The week's range between a step back and a step on, each the technician's tap; the step back's edge lines up with
+   the title above it, and the step on keeps its place at the row's end however long the range. */
+.weeks {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  margin-left: calc(-1 * var(--sp-12));
+}
+
+.weeks .range {
+  flex: 1;
+}
+
+/* The button's own colour, and its fade while disabled, are the shared part's. */
+.week {
+  --icon-button-size: var(--tech-min);
+}
+
+/* The one chevron, turned to point back. */
+.earlier svg {
+  transform: scaleX(-1);
+}
+
 /* Seven squares across at 360 px, each a thumb's 44 px or wider: a narrower gutter and gap than the page's. */
 .strip {
   gap: var(--sp-4);

@@ -92,6 +92,16 @@ beforeEach(async () => {
 const visitRow = () =>
   env.DB.prepare("SELECT technician_id, technician_draft FROM appointments WHERE id = ?1").bind(visitId).first();
 
+/** Leave all of Tuesday. */
+async function awayTuesday(technicianId: string) {
+  await env.DB.prepare(
+    `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
+     VALUES (?1, ?2, ?3, ?3, 'ops@maneman.test', ?4)`,
+  )
+    .bind(crypto.randomUUID(), technicianId, TUESDAY, NOW.toISOString())
+    .run();
+}
+
 const run = async (check: EveningCheck) =>
   eveningCheck(env.DB, check, { city: "Gurgaon", date: TUESDAY, now: NOW, inputs: await readOpsInputs(env.DB, NOW) });
 
@@ -274,6 +284,38 @@ describe("tomorrow checked on Google", () => {
     await run("visit_reminders", "18:01");
     expect(await visitRow()).toMatchObject({ technician_draft: 0 });
     expect(await version()).toBeGreaterThan(before);
+  });
+
+  // ADR 0297: the lock fixes the draft minutes later, so ops are told before it.
+  it("tells ops of a draft whose technician is away all day where nobody else may take it", async () => {
+    await booked(28.4591);
+    await awayTuesday(SANDEEP);
+    await awayTuesday(IMRAN);
+    const { check, told } = google(() => 10);
+    await run(check);
+    expect(told).toEqual([`draft_stranded:${visitId}:${TUESDAY}`]);
+    expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
+  });
+
+  // Imran's radius is a kilometre, so Sandeep's draft 2 km from his home is beyond his ring; his own 3 o'clock draft is
+  // jammed from home for ten hours, which re-plans the day a second time, and the draft nobody may take is told once, from that pass.
+  it("tells ops once of a draft nobody may take, from the day's last re-plan after Google's", async () => {
+    await booked(28.4592);
+    await awayTuesday(SANDEEP);
+    await env.DB.prepare("UPDATE technicians SET radius_km = 1 WHERE id = ?1").bind(IMRAN).run();
+    const someone = (await client()).id;
+    await env.DB.prepare("UPDATE addresses SET lat = 28.4612, lng = 77.0266 WHERE person_id = ?1").bind(someone).run();
+    const imrans = await visit(someone, "service", "scheduled", indiaInstant(TUESDAY, "15:00").toISOString(), IMRAN);
+    await env.DB.prepare(
+      "UPDATE appointments SET technician_draft = 1, service_city = 'Gurgaon', service_pincode = '122018' WHERE id = ?1",
+    )
+      .bind(imrans)
+      .run();
+    const { check, told } = google((from) => (from.lat === IMRANS_HOME ? 600 : 10));
+    await run(check);
+    expect([...told].sort()).toEqual(
+      [`draft_stranded:${visitId}:${TUESDAY}`, `leg_short:${IMRAN}:${TUESDAY}:15:00`].sort(),
+    );
   });
 
   it("asks Google nothing where the routes provider is off, and re-plans on the estimate alone", async () => {

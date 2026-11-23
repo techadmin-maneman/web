@@ -1,5 +1,6 @@
 // A city's reach under Areas › Served (apps/ops/src/areas/Reach.tsx, ADRs 0223 and 0289): the served pincodes no reach
-// takes in, and each technician's radius as a way to choose its pincodes. Every name and number is made up.
+// takes in, and each technician's radius as a way to choose its pincodes; a reach that will not load says so, with a
+// way to try again. Every name and number is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -9,6 +10,7 @@ import { areas } from "../../apps/ops/src/content/areas.ts";
 import { CityTools } from "../../apps/ops/src/areas/Reach.tsx";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+import { states } from "../../packages/ui/words.ts";
 
 const copy = areas.reach;
 
@@ -50,9 +52,12 @@ const REACH: CityReach = {
 let page: HTMLDivElement;
 let root: Root;
 let chosen: ReadonlySet<string>[];
+/** Whether a city's reach reaches the API; with no signal, the call never does. */
+let online: boolean;
 
 beforeEach(() => {
   chosen = [];
+  online = true;
   vi.stubGlobal(
     "fetch",
     contractChecked("ops", (url: string) => {
@@ -60,7 +65,9 @@ beforeEach(() => {
       if (path === "/api/whoami") {
         return Promise.resolve(Response.json({ error: { code: "internal_error", request_id: "r" } }, { status: 500 }));
       }
-      if (path === "/api/service-area/reach") return Promise.resolve(Response.json(REACH));
+      if (path === "/api/service-area/reach") {
+        return online ? Promise.resolve(Response.json(REACH)) : Promise.reject(new TypeError("Failed to fetch"));
+      }
       if (path === "/api/service-area/map") {
         return Promise.resolve(new Response("<svg/>", { headers: { "Content-Type": "image/svg+xml" } }));
       }
@@ -118,5 +125,24 @@ describe("a city's reach", () => {
       button(copy.chooseWithin("Imran Qureshi"))?.click();
     });
     expect([...(chosen[0] ?? [])]).toEqual(["122018"]);
+  });
+
+  it("says another city's reach did not load, and Try again reads it afresh", async () => {
+    await answered();
+    online = false;
+    act(() => {
+      root.render(createElement(CityTools, { city: "Noida", onChoose: () => undefined }));
+    });
+    await answered();
+    expect(page.textContent).toContain(states.failed);
+    expect(page.textContent).not.toContain(copy.outOfReach(1));
+
+    online = true;
+    act(() => {
+      button(states.retry)?.click();
+    });
+    await answered();
+    expect(page.textContent).not.toContain(states.failed);
+    expect(page.textContent).toContain(copy.outOfReach(1));
   });
 });

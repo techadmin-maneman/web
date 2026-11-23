@@ -16,7 +16,7 @@ import type { AlertOnce } from "../platform/alerts.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
 import { driveThrough, keptDriveThrough } from "../platform/road-drives.ts";
 import { startOf } from "./draft-moves.ts";
-import { readDay, readWholeDay, replanDay, type CityDay } from "./replan-day.ts";
+import { readDay, readWholeDay, replanDay, tellStranded, type CityDay } from "./replan-day.ts";
 
 /**
  * The drives one city's check may ask Google for: each takes a few of the 1,000 calls an invocation may make
@@ -125,10 +125,10 @@ function sameStops(was: PlanDay | undefined, now: PlanDay | undefined): boolean 
 
 /**
  * Tomorrow in a city re-planned on the estimate, checked on Google, re-planned once more without the technicians whose
- * drive left no room, and ops told of each drive still too long.
+ * drive left no room, and ops told of each drive still too long, and of each draft nobody can take.
  */
 export async function eveningCheck(db: D1Database, check: EveningCheck, input: Input): Promise<void> {
-  await replanDay(db, input);
+  let { stranded } = await replanDay(db, input);
   const first = await readDay(db, input);
   if (first === null) return;
   let shorts = await shortsOf(db, check, first, input);
@@ -137,7 +137,7 @@ export async function eveningCheck(db: D1Database, check: EveningCheck, input: I
     if (draftId !== null) ruledOut.set(draftId, (ruledOut.get(draftId) ?? new Set()).add(technicianId));
   }
   if (ruledOut.size > 0) {
-    await replanDay(db, { ...input, ruledOut });
+    ({ stranded } = await replanDay(db, { ...input, ruledOut }));
     // Read even with no draft left, fixed or gone meanwhile: only the days that changed are driven again, and the rest
     // keep what Google said of them.
     const again = await readWholeDay(db, input);
@@ -148,6 +148,7 @@ export async function eveningCheck(db: D1Database, check: EveningCheck, input: I
       ...(await shortsOf(db, check, again, { ...input, only: changed })),
     ];
   }
+  await tellStranded(db, check.alertOnce, { date: input.date, stranded });
   for (const short of shorts) {
     const named = await db
       .prepare("SELECT name FROM technicians WHERE id = ?1")

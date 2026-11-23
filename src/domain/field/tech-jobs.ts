@@ -56,7 +56,7 @@ import { creditSpentOn } from "../visits/visit-facts.ts";
 import { tierOf } from "../../config/visit-types.ts";
 
 /** The statuses of a job in the list: still live, or closed today so the technician can see what they did. */
-const SHOWN = ["scheduled", "dispatched", "in_progress", "completed", "terminated"] as const;
+export const SHOWN = ["scheduled", "dispatched", "in_progress", "completed", "terminated"] as const;
 
 export interface JobSummary {
   readonly id: string;
@@ -299,7 +299,7 @@ interface LandedEvent {
 }
 
 /** Each of the technician's jobs between two instants: the starts and outcomes that landed, in the order they did. */
-async function startsAndOutcomesOn(
+export async function startsAndOutcomesOn(
   db: D1Database,
   technicianId: string,
   from: string,

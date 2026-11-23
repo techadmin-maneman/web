@@ -9,7 +9,7 @@ import { EVENING_DRIVES, eveningCheck } from "../domain/booking/evening-check.ts
 import { learnDrives } from "../domain/booking/learn-drives.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { createCallBudget } from "../lib/call-budget.ts";
-import { replanDay } from "../domain/booking/replan-day.ts";
+import { replanDay, tellStranded } from "../domain/booking/replan-day.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import type { CronContext, CronJob } from "./cron.ts";
 
@@ -45,7 +45,11 @@ async function replanDraftsJob({ env, deps, log, inputs }: CronContext): Promise
   const given = await inputs();
   const moved = await replanAhead(env.DB, now, {
     readHours: () => hoursOf(env.DB, given.reminderHour),
-    replan: (city, date) => replanDay(env.DB, { city, date, now, inputs: given }),
+    replan: async (city, date) => {
+      const { moved, stranded } = await replanDay(env.DB, { city, date, now, inputs: given });
+      await tellStranded(env.DB, deps.alertOnce, { date, stranded });
+      return moved;
+    },
     failed: failedIn({ log, deps }),
     left: (cities) => {
       log.warn("replan_cities_left", { cities });
@@ -68,28 +72,34 @@ export async function lockTomorrow({
   return readHours;
 }
 
-/** In the half hour before a city's lock, its tomorrow re-planned, checked on Google's traffic, and re-planned again. */
+/**
+ * In the half hour before a city's lock, its tomorrow re-planned, checked on Google's traffic, and re-planned again;
+ * each city with its own drives to ask, however many a run checks.
+ */
 export async function eveningCheckJob({ env, deps, inputs, config, log }: CronContext): Promise<void> {
   const now = deps.now();
-  const drives = createCallBudget(EVENING_DRIVES, {
-    until: now.getTime() + EVENING_DRIVES_FOR_MS,
-    now: () => deps.now().getTime(),
-  });
-  const check = {
-    routes: deps.routes,
-    drives,
-    alert: deps.alert,
-    alertOnce: deps.alertOnce,
-    settings: config.settings,
+  const checkCity = async (city: string, date: string) => {
+    const drives = createCallBudget(EVENING_DRIVES, {
+      until: deps.now().getTime() + EVENING_DRIVES_FOR_MS,
+      now: () => deps.now().getTime(),
+    });
+    const check = {
+      routes: deps.routes,
+      drives,
+      alert: deps.alert,
+      alertOnce: deps.alertOnce,
+      settings: config.settings,
+    };
+    await eveningCheck(env.DB, check, { city, date, now, inputs: await inputs() });
+    if (drives.ranOut()) log.warn("evening_drives_spent", { city, drives: EVENING_DRIVES });
   };
-  const city = await checkBeforeLock(env.DB, now, {
+  const cities = await checkBeforeLock(env.DB, now, {
     readHours: async () => hoursOf(env.DB, (await inputs()).reminderHour),
     firstToday: (each) => takeOne(env.DB, "evening_check", each, { now, settings: config.settings }),
-    check: async (each, date) => eveningCheck(env.DB, check, { city: each, date, now, inputs: await inputs() }),
+    check: checkCity,
     failed: failedIn({ log, deps }),
   });
-  if (city !== null) log.info("evening_checked", { city });
-  if (drives.ranOut()) log.warn("evening_drives_spent", { drives: EVENING_DRIVES });
+  if (cities.length > 0) log.info("evening_checked", { cities });
 }
 
 /** Each night, every city's drive times learned afresh from the weeks of drives ops set. */

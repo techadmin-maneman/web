@@ -3390,6 +3390,104 @@
         ],
         "additionalProperties": false
       },
+      "TechnicianPastWeek": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "jobs": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TechnicianPastJob"
+                  }
+                }
+              },
+              "required": [
+                "date",
+                "jobs"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "from",
+          "days"
+        ],
+        "additionalProperties": false
+      },
+      "TechnicianPastJob": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "minutes": {
+            "type": "integer",
+            "description": "How long the visit was booked for, in minutes."
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "consultation",
+                  "first_fit",
+                  "service",
+                  "replacement"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "one_visit": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "dispatched",
+              "in_progress",
+              "completed",
+              "cancelled",
+              "terminated"
+            ],
+            "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/TechnicianJobState"
+          }
+        },
+        "required": [
+          "id",
+          "starts_at",
+          "minutes",
+          "type",
+          "one_visit",
+          "status",
+          "progress"
+        ],
+        "additionalProperties": false
+      },
       "CheckIn": {
         "type": "object",
         "properties": {
@@ -6858,6 +6956,112 @@
                               "type": "string",
                               "enum": [
                                 "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tech/past-week": {
+      "get": {
+        "summary": "The technician's own jobs over a past week: time, length, kind and how each closed, nothing of the client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": true,
+            "name": "from",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The week's seven days from `from`, each with its jobs in time order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TechnicianPastWeek"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: a week that does not end before today",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "session_required; device_revoked; technician_inactive: ops switched the technician off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "session_required",
+                                "device_revoked",
+                                "technician_inactive"
                               ]
                             }
                           },

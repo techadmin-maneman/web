@@ -885,6 +885,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tech/past-week": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The technician's own jobs over a past week: time, length, kind and how each closed, nothing of the client */
+        get: {
+            parameters: {
+                query: {
+                    from: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The week's seven days from `from`, each with its jobs in time order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TechnicianPastWeek"];
+                    };
+                };
+                /** @description invalid_request: a week that does not end before today */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description session_required; device_revoked; technician_inactive: ops switched the technician off */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "session_required" | "device_revoked" | "technician_inactive";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/jobs/{id}/checkin": {
         parameters: {
             query?: never;
@@ -5757,6 +5831,31 @@ export interface components {
             }[];
             /** @description The label of the piece fitted at it. */
             piece: string | null;
+        };
+        TechnicianPastWeek: {
+            /** Format: date */
+            from: string;
+            days: {
+                /** Format: date */
+                date: string;
+                jobs: components["schemas"]["TechnicianPastJob"][];
+            }[];
+        };
+        TechnicianPastJob: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            starts_at: string;
+            /** @description How long the visit was booked for, in minutes. */
+            minutes: number;
+            type: ("consultation" | "first_fit" | "service" | "replacement") | null;
+            one_visit: boolean;
+            /**
+             * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
+             * @enum {string}
+             */
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
+            progress: components["schemas"]["TechnicianJobState"];
         };
         CheckIn: {
             passed: boolean;

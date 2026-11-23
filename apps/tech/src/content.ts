@@ -1264,12 +1264,17 @@ export const schedule = localised({
   title: "Schedule",
   /** "12 to 18 Nov · 12 jobs" */
   range: (from: string, to: string, jobs: number) => `${from} to ${to} · ${counted(jobs, "job", "jobs")}`,
+  /** "12 to 18 Nov": the week while its jobs are still being read. */
+  span: (from: string, to: string) => `${from} to ${to}`,
   /** What a screen reader hears for a day in the strip: "Thursday 12 Nov, 4 jobs"; null for a day that did not load. */
   dayLabel: (weekday: string, date: string, jobs: number | null, settled: boolean) => {
     if (jobs === null) return `${weekday} ${date}, didn’t load`;
     if (jobs === 0) return `${weekday} ${date}, ${settled ? "nothing booked" : "jobs come the evening before"}`;
     return `${weekday} ${date}, ${counted(jobs, "job", "jobs")}${settled ? "" : " so far"}`;
   },
+  /** What a screen reader hears for a past day in the strip: "Monday 16 Nov, no jobs". */
+  pastDayLabel: (weekday: string, date: string, jobs: number) =>
+    `${weekday} ${date}, ${jobs === 0 ? "no jobs" : counted(jobs, "job", "jobs")}`,
   dayFailed: "This day didn’t load. It shows once there’s signal.",
   dayNotLoaded: "This day didn’t load.",
   noJobs: "–",
@@ -1288,6 +1293,12 @@ export const schedule = localised({
   drive: (minutes: number, leave: string) => `${String(minutes)} min · leave ${leave}`,
   failed: "Your week didn’t load.",
   retry: "Try again",
+  earlier: "Earlier week",
+  later: "Later week",
+  /** A past day with no job on it. */
+  noneThen: "No jobs",
+  /** A past job nobody closed. */
+  notClosed: "Not closed",
   preview: {
     back: "Back to Schedule",
     /** "Thu, 12 Nov · 11:30 am" */

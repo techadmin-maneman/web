@@ -16,11 +16,19 @@ import { jobDetail } from "../../domain/field/job-card.ts";
 import { refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { listableDate } from "../../policy/job-visibility.ts";
+import { listableDate, pastWeekFrom } from "../../policy/job-visibility.ts";
+import { pastWeek } from "../../domain/field/past-jobs.ts";
 import { inputsIn, rulesOfVisit } from "../../domain/cities/city-rules.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 
-import { clientHistoryRoute, comparePhotoRoute, historyPhotoRoute, jobsRoute, jobRoute } from "./jobs.routes.ts";
+import {
+  clientHistoryRoute,
+  comparePhotoRoute,
+  historyPhotoRoute,
+  jobsRoute,
+  jobRoute,
+  pastWeekRoute,
+} from "./jobs.routes.ts";
 import { clientHistory, comparePhoto, historyPhoto } from "../../domain/field/client-history.ts";
 import { alertsForTechnician } from "../../domain/clients/client-alerts.ts";
 import { workableJob } from "../../domain/field/workable-job.ts";
@@ -161,6 +169,17 @@ export function registerTechJobReads(app: App): void {
   });
 
   registerPhotoReads(app);
+  registerPastWeek(app);
+}
+
+/** A past week on Schedule, the technician's own jobs in it and nothing of their clients (src/domain/field/past-jobs.ts). */
+function registerPastWeek(app: App): void {
+  app.openapi(pastWeekRoute, async (c) => {
+    const { technicianId } = technicianOf(c);
+    const { from } = c.req.valid("query");
+    if (!pastWeekFrom(from, c.var.deps.now())) return refuse(c, "invalid_request", ["from"]);
+    return c.json({ from, days: await pastWeek(c.env.DB, { technicianId, from }) }, 200);
+  });
 }
 
 /**

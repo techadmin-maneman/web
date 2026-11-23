@@ -298,8 +298,8 @@
   color: inherit;
 }
 
-/* A guided task (./Checklist.tsx): how far through, its title, the client's alerts, where its reference photograph
-   goes, the instructions each numbered on a ruled row, and what to watch for in a ruled block. */
+/* A guided task (./Checklist.tsx): how far through, its title, the client's alerts, the instructions each numbered on a
+   ruled row, and what to watch for in a ruled block. */
 .alerts {
   margin-top: var(--sp-16);
 }

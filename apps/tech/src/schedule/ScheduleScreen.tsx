@@ -2,18 +2,21 @@
 // jobs; the day chosen down the hours, from 8 am to 8 pm or wider where a job lies outside them, each job a block as
 // long as it lasts with the drive before it hatched, and the minute it is now on today. A job today, or one whose card
 // has opened, opens its card; a later one still locked, its preview. With no signal, today's and tomorrow's lists come
-// from the phone, and a day neither has says so.
+// from the phone, and a day neither has says so. A step back shows the seven days before, and so on back; a step on
+// comes back to this week, and no further (./past-week.ts).
 
 import { DateStrip, type StripDate } from "@maneman/ui/DateStrip";
 import { type DayBlock, DayColumn } from "@maneman/ui/DayColumn";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
+import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
+import { IconButton } from "@maneman/ui/IconButton";
 import { GLYPHS } from "@maneman/brand/icons";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, dayClock, indiaTimeOf, minutesBetween, weekdayName } from "@maneman/web-kit/dates";
 import { useCallback, useId, useRef } from "react";
-import { api, type JobSummary } from "../api.ts";
+import { api, type JobSummary, type PastJob } from "../api.ts";
 import { Failed, Loading } from "../frame/States.tsx";
 import { SyncLabel } from "../frame/SyncLabel.tsx";
 import { job as jobCopy, reference, schedule as copy } from "../content.ts";
@@ -31,6 +34,7 @@ import { redirect } from "../route.ts";
 import { useSession } from "../session.ts";
 import { keptDay, keptDaySettled } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
+import { pastBlocksOf, readPast, weekStartOf } from "./past-week.ts";
 import styles from "./schedule.module.css";
 
 /** The days the strip shows, today's included. */
@@ -39,7 +43,8 @@ const SCHEDULE_DAYS = 7;
 const FIRST_HOUR = 8 * 60;
 const LAST_HOUR = 20 * 60;
 
-interface Day {
+interface DayAhead {
+  readonly past: false;
   readonly date: string;
   /** Null for a day that would not load and that the phone does not keep. */
   readonly jobs: readonly JobSummary[] | null;
@@ -49,13 +54,29 @@ interface Day {
   readonly settled: boolean;
 }
 
+/** A day of a past week, its jobs opening nothing. */
+interface DayPast {
+  readonly past: true;
+  readonly date: string;
+  readonly jobs: readonly PastJob[];
+}
+
+type Day = DayAhead | DayPast;
+
+/** A past week's days, from its first. */
+async function readPastWeek(from: string) {
+  const answer = await readPast(from);
+  if (!answer.ok) return answer;
+  return { ok: true as const, body: answer.body.map((day): Day => ({ past: true, ...day })) };
+}
+
 /**
  * Each day of the strip with its jobs. A day that will not load is read from the phone where it keeps that day, as it
  * keeps today's and tomorrow's (../lib/useDay.ts), this screen's own last read of it first, which is the newer while it
  * is open; the week fails only where no day can be shown. `known` keeps each day as last read, so a read again with no
  * signal leaves what showed.
  */
-async function readWeek(today: string, known: Map<string, Pick<Day, "jobs" | "settled">>) {
+async function readWeek(today: string, known: Map<string, Pick<DayAhead, "jobs" | "settled">>) {
   const dates = Array.from({ length: SCHEDULE_DAYS }, (_, at) => addDays(today, at));
   const answers = await Promise.all(dates.map((date) => api.jobs(date)));
   const days = await Promise.all(
@@ -63,12 +84,12 @@ async function readWeek(today: string, known: Map<string, Pick<Day, "jobs" | "se
       const answer = answers[at];
       if (answer?.ok === true) {
         known.set(date, { jobs: answer.body.jobs, settled: answer.body.settled });
-        return { date, jobs: answer.body.jobs, requestId: null, settled: answer.body.settled };
+        return { past: false, date, jobs: answer.body.jobs, requestId: null, settled: answer.body.settled };
       }
       const requestId = answer === undefined ? null : answer.requestId;
       const kept = await keptDay(date).catch(() => null);
       const settled = kept === null ? true : await keptDaySettled(date).catch(() => true);
-      return { date, jobs: kept, settled, ...known.get(date), requestId };
+      return { past: false, date, jobs: kept, settled, ...known.get(date), requestId };
     }),
   );
   const failed = answers.find((answer) => !answer.ok);
@@ -123,7 +144,7 @@ function dayTitle(date: string, today: string): string {
 }
 
 /** A day's jobs as blocks: one whose card has opened by the client's name, a locked one by the visit, as previews. */
-function blocksOf(day: Day, today: boolean, names: ReadonlyMap<string, string>, queued: readonly Queued[]) {
+function blocksOf(day: DayAhead, today: boolean, names: ReadonlyMap<string, string>, queued: readonly Queued[]) {
   return (day.jobs ?? []).flatMap((job): DayBlock[] => {
     const start = minuteOf(job.starts_at);
     const opens = today || job.unlocked;
@@ -169,19 +190,22 @@ const stripDay = (day: Day): StripDate => ({
   date: day.date,
   weekday: sayNow(weekdayName(day.date).slice(0, 3)),
   number: String(Number(day.date.slice(8, 10))),
-  label: copy.dayLabel(weekdayName(day.date), dayMonth(day.date), day.jobs?.length ?? null, day.settled),
+  label: day.past
+    ? copy.pastDayLabel(weekdayName(day.date), dayMonth(day.date), day.jobs.length)
+    : copy.dayLabel(weekdayName(day.date), dayMonth(day.date), day.jobs?.length ?? null, day.settled),
   open: true,
   note: noteOf(day),
 });
 
 /** Under a day's title: how many jobs, or none; and, before the evening that gives its visits out, so far. */
-function daySub(jobs: number, settled: boolean): string {
-  if (jobs === 0) return settled ? copy.nothing : copy.comeEveningBefore;
-  return settled ? copy.jobs(jobs) : copy.jobsSoFar(jobs);
+function daySub(day: Day, jobs: number): string {
+  if (day.past) return jobs === 0 ? copy.noneThen : copy.jobs(jobs);
+  if (jobs === 0) return day.settled ? copy.nothing : copy.comeEveningBefore;
+  return day.settled ? copy.jobs(jobs) : copy.jobsSoFar(jobs);
 }
 
 /** A day that would not load: with no signal, that it shows once there is some; with signal, Try again. */
-function DayFailed({ day, onRetry }: { readonly day: Day; readonly onRetry: () => void }) {
+function DayFailed({ day, onRetry }: { readonly day: DayAhead; readonly onRetry: () => void }) {
   const { offline } = useSession();
   if (offline) return <p className={styles.daySub}>{copy.dayFailed}</p>;
   return (
@@ -202,7 +226,7 @@ function DayView(props: {
   const { day, today, stripId } = props;
   const { events } = useOutbox();
   const names = useNames(0);
-  const blocks = blocksOf(day, day.date === today, names, events);
+  const blocks = day.past ? pastBlocksOf(day.jobs) : blocksOf(day, day.date === today, names, events);
   const hours = hoursOf(blocks);
   const jobs = day.jobs;
   return (
@@ -211,10 +235,10 @@ function DayView(props: {
         {dayTitle(day.date, today)}
       </h2>
       {jobs === null ? (
-        <DayFailed day={day} onRetry={props.onRetry} />
+        !day.past && <DayFailed day={day} onRetry={props.onRetry} />
       ) : (
         <>
-          <p className={styles.daySub}>{daySub(jobs.length, day.settled)}</p>
+          <p className={styles.daySub}>{daySub(day, jobs.length)}</p>
           <DayColumn
             label={copy.dayView}
             from={hours.from}
@@ -230,31 +254,64 @@ function DayView(props: {
   );
 }
 
+/** The week shown, from its first day, with a step to the week before and, from a past week, to the one after. */
+function Weeks({ from, today, jobs }: { readonly from: string; readonly today: string; readonly jobs: number | null }) {
+  const after = addDays(from, SCHEDULE_DAYS);
+  // Known before the week is read, so the steps keep their places while it loads.
+  const ends = spanEnds(from, addDays(from, SCHEDULE_DAYS - 1));
+  return (
+    <div className={styles.weeks}>
+      <IconButton
+        className={classes(styles.week, styles.earlier)}
+        d={GLYPHS.chevron}
+        size="md"
+        label={copy.earlier}
+        onClick={() => {
+          redirect(`/week/${addDays(from, -SCHEDULE_DAYS)}`);
+        }}
+      />
+      <p className={styles.range} aria-live="polite">
+        {jobs === null ? copy.span(...ends) : copy.range(...ends, jobs)}
+      </p>
+      <IconButton
+        className={styles.week}
+        d={GLYPHS.chevron}
+        size="md"
+        label={copy.later}
+        disabled={from === today}
+        onClick={() => {
+          redirect(after >= today ? "/week" : `/week/${after}`);
+        }}
+      />
+    </div>
+  );
+}
+
 export function ScheduleScreen({ date }: { readonly date: string | null }) {
   const today = todayInIndia();
+  const from = weekStartOf(date, today);
   const heading = useScreen(copy.title);
   const stripId = useId();
   // Read again as Today is: the app back in front, the phone finding signal, and every few minutes.
   const tick = useRefreshTick();
-  const known = useRef(new Map<string, Pick<Day, "jobs" | "settled">>());
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- the tick is what asks for the read again
-  const read = useCallback(() => readWeek(today, known.current), [today, tick]);
+  const known = useRef(new Map<string, Pick<DayAhead, "jobs" | "settled">>());
+  const read = useCallback(
+    () => (from === today ? readWeek(today, known.current) : readPastWeek(from)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the tick is what asks for the read again
+    [today, from, tick],
+  );
   const [loaded, retry] = useLoad(read);
   const days = loaded.state === "loaded" ? loaded.value : [];
   const shown = days.find((day) => day.date === date) ?? days[0];
   const jobs = days.reduce((count, day) => count + (day.jobs?.length ?? 0), 0);
   return (
     <main className={styles.screen} data-look="light">
-      <header className={styles.head}>
-        <div>
-          <h1 className={styles.title} id={stripId} ref={heading} tabIndex={-1}>
-            {copy.title}
-          </h1>
-          {days.length > 0 && (
-            <p className={styles.range}>{copy.range(...spanEnds(today, addDays(today, SCHEDULE_DAYS - 1)), jobs)}</p>
-          )}
-        </div>
+      <header className={classes(styles.head, styles.weekHead)}>
+        <h1 className={styles.title} id={stripId} ref={heading} tabIndex={-1}>
+          {copy.title}
+        </h1>
         <SyncLabel />
+        <Weeks from={from} today={today} jobs={days.length > 0 ? jobs : null} />
       </header>
       {loaded.state === "loading" && <Loading onPaper />}
       {loaded.state === "failed" && (

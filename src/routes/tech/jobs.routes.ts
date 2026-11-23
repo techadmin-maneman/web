@@ -25,7 +25,7 @@ import {
   ProfileRequestSchema,
   ProfileRecordedSchema,
 } from "./jobs.schemas.ts";
-import { JobsSchema } from "../schemas/tech-jobs.ts";
+import { JobsSchema, PastWeekSchema } from "../schemas/tech-jobs.ts";
 import { ClientHistorySchema } from "../schemas/client-record.ts";
 
 const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
@@ -59,6 +59,21 @@ export const jobsRoute = techRoute({
   responses: {
     200: { description: "The day's jobs, in time order", ...json(JobsSchema) },
     400: errorResponse("invalid_request: a date before yesterday"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
+  },
+});
+
+export const pastWeekRoute = techRoute({
+  method: "get",
+  path: "/api/tech/past-week",
+  summary: "The technician's own jobs over a past week: time, length, kind and how each closed, nothing of the client",
+  request: { query: z.object({ from: z.iso.date() }) },
+  responses: {
+    200: {
+      description: "The week's seven days from `from`, each with its jobs in time order",
+      ...json(PastWeekSchema),
+    },
+    400: errorResponse("invalid_request: a week that does not end before today"),
     401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
   },
 });
