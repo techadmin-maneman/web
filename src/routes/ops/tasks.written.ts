@@ -17,7 +17,7 @@ import { mayOwnTasks } from "../../policy/tasks.ts";
 import { noMemberOfStaff, OwnerSchema, staffNow, taskOnTheBoard } from "./tasks.ts";
 
 /** The most a task written by hand says. */
-export const STAFF_TASK_MAX_CHARS = 200;
+const STAFF_TASK_MAX_CHARS = 200;
 
 const writeRoute = opsRoute({
   method: "post",
