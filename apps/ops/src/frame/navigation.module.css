@@ -13,16 +13,20 @@
   gap: var(--sp-8);
 }
 
-/* The wordmark's small cut, white on the navigation's ink, as the brand kit draws it there. */
+/* The wordmark's small cut, gilt on the navigation's ink beside the mark, as the brand kit's lockup is drawn there. */
 .wordmark {
   flex-shrink: 0;
   width: calc(var(--sp-12) * 6);
   height: var(--sp-12);
-  fill: var(--nav-text-current);
+  fill: var(--nav-mark);
 }
 
+/* The product's name, set off from the lockup by a rule. */
 .product {
+  padding-left: var(--sp-8);
+  border-left: var(--hairline) solid var(--nav-divider);
   font-size: var(--fs-13);
   font-weight: var(--weight-medium);
-  color: var(--nav-text);
+  line-height: var(--lh-115);
+  color: var(--nav-product);
 }

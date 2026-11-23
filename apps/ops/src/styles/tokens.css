@@ -15,6 +15,8 @@
   --console-nav-text: #c8d0dc; /* the frame's names on navy */
   --console-nav-label: #8592a8; /* a group's name in the frame */
   --console-nav-count: #9aa6b9; /* a count beside an entry's name, on its own navy and the chosen entry's */
+  --console-nav-product: #aab5c6; /* "Ops" beside the lockup */
+  --console-navy-4: #3a4c6c; /* the rule between the lockup and "Ops" */
   --console-canvas: #f2f3f5;
   --console-sunk: #f7f8fa;
   --console-line: #e1e4e9;
@@ -60,7 +62,8 @@
   --ops-tray: 236px; /* a job in the dispatch board's unassigned tray, beneath the board */
   --ops-filter: 176px; /* a list's narrowest filter, and a date with its time */
   --ops-measure: 560px; /* the widest a line of words runs, and the narrowest a list of people goes */
-  --ops-nav: 224px; /* the navigation column */
+  --ops-nav: 236px; /* the navigation column */
+  --ops-caption: 12px; /* the navigation's group names */
   --ops-nav-folded: var(--header-h); /* the navigation folded to its icons, as wide as the header is tall */
   --ops-tile: 208px; /* the narrowest a figure's tile goes on Today */
   --ops-pair: 420px; /* the narrowest one of two parts side by side on Today goes */
@@ -126,6 +129,11 @@
   --nav-text-current: var(--white);
   --nav-label: var(--console-nav-label);
   --nav-count-text: var(--console-nav-count);
+  --nav-product: var(--console-nav-product);
+  --nav-divider: var(--console-navy-4);
+  --nav-group-size: var(--ops-caption);
+  --nav-urgent-ground: var(--nav-mark); /* the redesign's gilt pill for what waits too long */
+  --nav-urgent-text: var(--ink);
   --nav-rule: var(--console-navy-3);
   --link-underline: var(--console-control); /* a text link's rule, at a control edge's 3:1 */
   --pick-on: var(--ink);

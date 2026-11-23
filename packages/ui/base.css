@@ -131,6 +131,12 @@
     --nav-label: var(--ink-muted);
     --nav-rule: var(--ink-rule);
     --nav-mark: var(--gilt);
+    /* The product named beside the mark, and the rule between them; a group's name; a count with some overdue. */
+    --nav-product: var(--nav-text);
+    --nav-divider: var(--nav-rule);
+    --nav-group-size: var(--fs-14);
+    --nav-urgent-ground: var(--error-on-ink);
+    --nav-urgent-text: var(--ink);
     /* The tab bar's mark on its current tab (./TabBar.tsx): none, unless the app draws one. Its counts in the label's
        tone on the bar's ground, unless the app boxes them. */
     --tab-mark: transparent;

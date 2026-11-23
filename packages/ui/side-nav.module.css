@@ -50,7 +50,7 @@
   .groupLabel {
     display: block;
     padding: 0 var(--sp-12) var(--sp-4);
-    font-size: var(--fs-14);
+    font-size: var(--nav-group-size);
     line-height: var(--lh-130);
     color: var(--nav-label);
     white-space: nowrap;
@@ -175,9 +175,12 @@
     color: var(--nav-count-text);
   }
 
+  /* A pill, as wide as its figure, in its own colour. */
   .urgent {
-    background: var(--error-on-ink);
-    color: var(--ink);
+    border-radius: calc(var(--sp-20) / 2);
+    background: var(--nav-urgent-ground);
+    color: var(--nav-urgent-text);
+    font-weight: var(--weight-semibold);
   }
 
   @media (hover: hover) {
