@@ -167,7 +167,7 @@ function Bubble({ state, card }: { state: Refer; card: Shown }) {
           <p className={referSheet.bubbleDomain}>{refer.preview.domain}</p>
         </div>
       </div>
-      <p className={referSheet.bubbleMessage}>{refer.preview.message(state.link)}</p>
+      <p className={referSheet.bubbleMessage}>{refer.preview.message(state.link, rewardOf(me))}</p>
     </div>
   );
 }

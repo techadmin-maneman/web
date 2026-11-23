@@ -10,8 +10,10 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useRef, useState } from "react";
 import { api, cardUrl, makeCard, storedCard, type Refer } from "../api.ts";
 import { refer } from "../content.ts";
+import { useSession } from "../session.ts";
 import { firstFitPhotos, type FirstFitPair } from "./card.ts";
 import { houseCard, type Shown } from "./CardPreview.tsx";
+import { rewardOf } from "./reward.ts";
 import { forOtherApps, inviteFile } from "./share.ts";
 
 type Step = "choice" | "consent" | "composing" | "share";
@@ -116,7 +118,7 @@ export function useShareFlow(opened: Refer) {
     [made],
   );
 
-  const message = refer.preview.message(state.link);
+  const message = refer.preview.message(state.link, rewardOf(useSession().me));
 
   /** The share step, once the card it sends is a file. */
   async function toShare(card: "house" | "theirs", line: string | null, justMade: Made | null = made) {

@@ -133,8 +133,13 @@ export const refer = {
       return `Home-fitted hair systems across ${SERVICE_AREA}. ${serviceVisits(friend)} free when you’re fitted.`;
     },
     domain: "maneman.in",
-    // A first line that says nothing of the sender's own hair: the landing page says what Mane Man does.
-    message: (link: string) => `Thought you’d like this: Mane Man, at home. ${link}`,
+    // A first line that says nothing of the sender's own hair: the landing page says what Mane Man does. What the
+    // friend gets is said in the message too, since a card sent as a photograph comes without the link's preview.
+    message: (link: string, reward: Reward | null) => {
+      const friend = reward?.friend_visits ?? 0;
+      if (friend === 0) return `Thought you’d like this: Mane Man, at home. ${link}`;
+      return `Thought you’d like this: Mane Man, at home. You get ${freeServiceVisits(friend)} when you’re fitted. ${link}`;
+    },
     via: "Share via",
     whatsapp: "WhatsApp",
     other: "Other apps",

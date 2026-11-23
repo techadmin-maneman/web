@@ -442,6 +442,12 @@ test("says what ops set each side gets, and beside each friend what the client e
   await expect(
     preview.getByText("Home-fitted hair systems across Delhi NCR. 4 service visits free when you’re fitted."),
   ).toBeVisible();
+  // The message says it too, since a card sent as a photograph comes without the link's preview.
+  const message =
+    /^Thought you’d like this: Mane Man, at home\. You get 4 free service visits when you’re fitted\. \S+\/r\/[A-Z0-9]{8}$/;
+  await expect(preview.getByText(message)).toBeVisible();
+  const whatsapp = await preview.getByRole("link", { name: appCopy.refer.preview.whatsapp }).getAttribute("href");
+  expect(new URL(whatsapp ?? "").searchParams.get("text")).toMatch(message);
   await preview.getByRole("button", { name: appCopy.refer.close }).click();
 
   await page.getByRole("link", { name: appCopy.refer.tracker }).click();
@@ -483,6 +489,7 @@ test("draws Refer, its preview and its tracker, with no count, where the answers
   await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
   const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(preview.getByText("Home-fitted hair systems across Delhi NCR.", { exact: true })).toBeVisible();
+  await expect(preview.getByText(/^Thought you’d like this: Mane Man, at home\. \S+\/r\/[A-Z0-9]{8}$/)).toBeVisible();
   await preview.getByRole("button", { name: appCopy.refer.close }).click();
 
   await page.getByRole("link", { name: appCopy.refer.tracker }).click();
