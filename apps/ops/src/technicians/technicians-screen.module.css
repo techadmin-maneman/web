@@ -31,3 +31,16 @@
 .table td:nth-child(6) {
   padding-left: var(--sp-24);
 }
+
+/* The period's segments on a phone: one row, sharing it, each in fewer words. */
+@media (max-width: 600px) {
+  .period {
+    flex-wrap: nowrap;
+  }
+
+  .period > * {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: var(--sp-8);
+  }
+}

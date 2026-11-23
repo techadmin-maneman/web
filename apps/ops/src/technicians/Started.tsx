@@ -13,7 +13,7 @@ const copy = technicians.started;
 /** The day a new technician started; left blank, it is not given. */
 export function StartedField({ value, onChange }: { value: string; onChange: (day: string) => void }) {
   return (
-    <Field label={copy.label} className={styles.formField}>
+    <Field label={copy.optional} className={styles.formField}>
       {(control) => (
         <DateInput
           {...control}
@@ -29,21 +29,21 @@ export function StartedField({ value, onChange }: { value: string; onChange: (da
 
 /** Their start date on their details: given, changed, or cleared. */
 export function StartedRow({
-  startedOn,
+  startDate,
   mayChange,
   save,
 }: {
-  startedOn: string | null;
+  startDate: string | null;
   mayChange: boolean;
-  save: (startedOn: string | null) => Promise<string | null>;
+  save: (startDate: string | null) => Promise<string | null>;
 }) {
   return (
     <EditableRow<string>
       label={copy.label}
       words={EDITING}
       mayChange={mayChange}
-      value={startedOn === null ? copy.none : longDate(startedOn)}
-      start={() => startedOn ?? ""}
+      value={startDate === null ? copy.none : longDate(startDate)}
+      start={() => startDate ?? ""}
       save={(typed) => save(typed === "" ? null : typed)}
     >
       {(control, typed, type) => (

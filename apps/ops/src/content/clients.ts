@@ -133,7 +133,8 @@ export const clients = {
   glance: {
     title: "At a glance",
     paid: "Paid to date",
-    visits: "Visits",
+    /** The visits done, apart from the Visits tab's count of those to come as well. */
+    visits: "Visits done",
     replaceBy: "Replace by",
     freeVisits: "Free visits left",
   },
@@ -149,6 +150,7 @@ export const clients = {
     open: "Add",
     add: "Add a note",
     formTitle: "Add a note",
+    addNote: "Add note",
     added: "Note added.",
     label: "Note",
     change: "Change",
@@ -161,6 +163,8 @@ export const clients = {
       not_permitted: NOT_PERMITTED,
       superseded: changed("Someone changed this note first."),
       invalid_request: "Write the note first.",
+      /** Said on the box an empty note was refused on. */
+      body: "Write the note first.",
       offline: OFFLINE,
       unknown: FAILED,
     },
@@ -183,6 +187,8 @@ export const clients = {
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "Write the alert first.",
+      /** Said on the box an empty alert was refused on. */
+      body: "Write the alert first.",
       offline: OFFLINE,
       unknown: FAILED,
     },
@@ -831,9 +837,8 @@ export const clients = {
       other_systems: "Other hair systems",
       other: "Other",
     },
+    /** Beneath the Hair profile heading, which says what it corrects. */
     correct: "Correct it",
-    /** Correct it, named in full to a screen reader. */
-    correctLabel: "Correct the hair profile",
     record: "Add a profile",
     formTitle: "Correct hair profile",
     notRecorded: "Not recorded",

@@ -2,7 +2,7 @@
 // changed or taken off where it stands. Add, in the card's head, opens a drawer to write one. A change made over
 // someone else's reads the page again (src/routes/ops/staff-notes.ts).
 
-import { classes } from "@maneman/ui/classes";
+import { AddForm } from "@maneman/ui/AddForm";
 import { Panel } from "@maneman/ui/Panel";
 import { STAFF_NOTE_MAX_CHARS } from "@rules/policy/staff-notes.ts";
 import { plainDate } from "@maneman/web-kit/plain-date";
@@ -23,6 +23,7 @@ import { Refusal } from "@maneman/ui/Refusal";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { staffName } from "../lib/who.ts";
+import form from "@maneman/ui/forms.module.css";
 import styles from "./clients.module.css";
 import { clientsApi } from "./clients-api.ts";
 
@@ -40,13 +41,10 @@ function NoteForm({
   initial,
   onSave,
   onCancel,
-  inDrawer = false,
 }: {
   initial: string;
   onSave: (body: string) => Promise<string | null>;
   onCancel: () => void;
-  /** Written in Add's drawer, across it, rather than in place in the card. */
-  inDrawer?: boolean;
 }) {
   const [body, setBody] = useState(initial);
   const [refused, setRefused] = useState<string | null>(null);
@@ -56,7 +54,7 @@ function NoteForm({
       setRefused(await onSave(body.trim()));
     });
   return (
-    <div className={classes(styles.noteForm, inDrawer && styles.drawerForm)}>
+    <div className={styles.noteForm}>
       <Field label={copy.label}>
         {(control) => (
           <TextArea
@@ -81,6 +79,41 @@ function NoteForm({
   );
 }
 
+/** The drawer's form a note is written in, with Add note and Cancel; an empty one is refused on its box. */
+function AddNoteForm(props: { clientId: string; onAdded: (notes: readonly Note[]) => void; onCancel: () => void }) {
+  const [body, setBody] = useState("");
+  return (
+    <AddForm
+      title={copy.formTitle}
+      words={{ add: copy.addNote }}
+      errors={copy.errors}
+      boxes={["body"]}
+      send={() => clientsApi.writeStaffNote(props.clientId, body.trim(), null)}
+      onAdded={(read) => {
+        props.onAdded(read.notes);
+      }}
+      onCancel={props.onCancel}
+    >
+      <div className={form.fields}>
+        <Field label={copy.label} className={form.field} box="body">
+          {(control) => (
+            <TextArea
+              {...control}
+              autoFocus
+              rows={3}
+              value={body}
+              maxLength={STAFF_NOTE_MAX_CHARS}
+              onChange={(event) => {
+                setBody(event.currentTarget.value);
+              }}
+            />
+          )}
+        </Field>
+      </div>
+    </AddForm>
+  );
+}
+
 /** The notes as last read or written, the note being changed if any, and the box to add one. */
 function NoteList(props: {
   clientId: string;
@@ -98,8 +131,7 @@ function NoteList(props: {
     const answer = await clientsApi.writeStaffNote(clientId, body, replaces);
     if (!answer.ok) return errorText(copy.errors, answer);
     setNotes(answer.body.notes);
-    if (replaces === null) props.onAdded();
-    else setOpen(null);
+    setOpen(null);
     return null;
   };
   const takeOff = async (note: string) => {
@@ -142,7 +174,14 @@ function NoteList(props: {
       </ul>
       {props.adding && (
         <FormDrawer title={copy.formTitle} onClose={props.onCancel}>
-          <NoteForm initial="" onSave={(body) => write(body, null)} onCancel={props.onCancel} inDrawer />
+          <AddNoteForm
+            clientId={clientId}
+            onAdded={(read) => {
+              setNotes(read);
+              props.onAdded();
+            }}
+            onCancel={props.onCancel}
+          />
         </FormDrawer>
       )}
     </>

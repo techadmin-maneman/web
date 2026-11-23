@@ -46,7 +46,7 @@ function headOf(summary: TechnicianSummary, active: Technician | null): RecordHe
       ...(summary.mobile === null ? [] : [phoneWords(summary.mobile)]),
       ...(summary.city === null ? [] : [summary.city]),
       summary.fits_trained ? copy.trained : copy.notTrained,
-      ...(summary.started_on === null ? [] : [copy.started(longDate(summary.started_on))]),
+      ...(summary.start_date === null ? [] : [copy.started(longDate(summary.start_date))]),
       ...(active === null ? [] : weekLines(active.hours)),
     ],
   };

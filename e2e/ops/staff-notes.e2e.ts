@@ -47,7 +47,7 @@ test("writes a note on the client, changes it where it stands and takes it off, 
   await add.click();
   const drawer = page.getByRole("dialog", { name: copy.formTitle });
   await drawer.getByLabel(copy.label, { exact: true }).fill(NOTE.body);
-  await drawer.getByRole("button", { name: copy.save }).click();
+  await drawer.getByRole("button", { name: copy.addNote }).click();
   await expect(drawer).toHaveCount(0);
   await expect(page.getByText(copy.added)).toBeVisible();
   await expect(add).toBeFocused();

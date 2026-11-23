@@ -126,7 +126,10 @@ function leaveWords(leave: readonly Leave[], today: string): string | null {
     : technicians.phone.leaveFrom(listDate(next.from, year));
 }
 
-/** On a phone, a technician a row: their name over their city, how often on time and any leave, their jobs at the end. */
+/**
+ * On a phone, a technician a row, led by their initials: their name over their city, whether they fit, how often on
+ * time and any leave, their jobs at the end.
+ */
 function TechnicianRows({ view, figures }: { view: TableView<Listed>; figures: ReadonlyMap<string, TechnicianWork> }) {
   const today = todayInIndia(apiNow());
   return (
@@ -138,6 +141,7 @@ function TechnicianRows({ view, figures }: { view: TableView<Listed>; figures: R
         const share = onTimeShare(work);
         const meta = [
           technician.city ?? technicians.noCity,
+          technician.fits_trained ? technicians.head.trained : technicians.head.notTrained,
           share === null || work === undefined
             ? null
             : technicians.phone.onTime(technicians.work.onTime(work.on_time_jobs, work.jobs)),
@@ -145,6 +149,7 @@ function TechnicianRows({ view, figures }: { view: TableView<Listed>; figures: R
         ].filter((part) => part !== null);
         return {
           key: technician.id,
+          mark: <Initials name={technician.name} small />,
           title: technician.name,
           meta: meta.join(" · "),
           end: work === undefined ? undefined : technicians.figures.jobCount(work.jobs),
@@ -219,6 +224,7 @@ function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
           label={technicians.switchedOff}
           row={(technician) => ({
             key: technician.id,
+            mark: <Initials name={technician.name} small />,
             title: technician.name,
             meta: technician.city ?? technicians.noCity,
             to: technicianPath(technician.id),
@@ -256,14 +262,19 @@ const None = () => <span className={shared.none}>{technicians.unknown}</span>;
 /** The periods offered beside the one shown: a month, a quarter and a year. */
 const PERIODS = [30, 90, 365];
 
-/** Over how many days back the figures count, a segment each, ops's own period until another is chosen. */
+/**
+ * Over how many days back the figures count, a segment each, ops's own period until another is chosen; on a phone, in
+ * one row of fewer words.
+ */
 function PeriodChoice({ counted, onFrom }: { counted: { from: string; to: string }; onFrom: (from: string) => void }) {
   const days = Math.round((Date.parse(counted.to) - Date.parse(counted.from)) / DAY_MS);
   const offered = [...new Set([...PERIODS, days])].sort((one, other) => one - other);
+  const words = useIsPhone() ? technicians.work.shortDays : technicians.work.days;
   return (
     <Segmented
       label={technicians.work.over}
-      options={offered.map((each) => [String(each), technicians.work.days(each)] as const)}
+      className={styles.period}
+      options={offered.map((each) => [String(each), words(each)] as const)}
       value={String(days)}
       onChange={(chosen) => {
         // The route counts to tomorrow, so the last N days start N - 1 days before today.

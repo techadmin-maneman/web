@@ -175,17 +175,17 @@ test("adds a technician with the day they started, said in their head, and chang
   const form = page.getByRole("dialog", { name: opsCopy.technicians.add.open });
   await form.getByRole("textbox", { name: opsCopy.technicians.fields.name }).fill("Naveen Rao");
   await form.getByRole("textbox", { name: opsCopy.technicians.fields.mobile }).fill("9810000007");
-  await form.getByLabel(opsCopy.technicians.started.label).fill("2026-03-03");
+  await form.getByLabel(opsCopy.technicians.started.optional).fill("2026-03-03");
   const added = page.waitForRequest((request) => request.method() === "POST" && request.url().endsWith("/technicians"));
   await form.getByRole("button", { name: opsCopy.technicians.add.save }).click();
-  expect((await added).postDataJSON()).toMatchObject({ name: "Naveen Rao", started_on: "2026-03-03" });
+  expect((await added).postDataJSON()).toMatchObject({ name: "Naveen Rao", start_date: "2026-03-03" });
 });
 
 test("says in a technician's head the day they started, and changes it on their details", async ({ page }) => {
   const started = {
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.map((each) =>
-      each.id === IMRAN ? { ...each, started_on: "2026-03-03" } : each,
+      each.id === IMRAN ? { ...each, start_date: "2026-03-03" } : each,
     ),
   };
   const { roster, reply } = rosterOf(started);
@@ -204,11 +204,20 @@ test("says in a technician's head the day they started, and changes it on their 
   roster.current = {
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.map((each) =>
-      each.id === IMRAN ? { ...each, started_on: "2026-04-01" } : each,
+      each.id === IMRAN ? { ...each, start_date: "2026-04-01" } : each,
     ),
   };
   await main.getByRole("button", { name: EDITING.save }).click();
-  expect((await sent).postDataJSON()).toEqual({ started_on: "2026-04-01" });
+  expect((await sent).postDataJSON()).toEqual({ start_date: "2026-04-01" });
+
+  // Cleared, it is not known: the day goes, and the row says so.
+  await main.getByRole("button", { name: `${EDITING.change} ${words.label}` }).click();
+  await main.getByLabel(words.label).fill("");
+  const cleared = page.waitForRequest((request) => request.method() === "PATCH");
+  roster.current = TECHNICIANS;
+  await main.getByRole("button", { name: EDITING.save }).click();
+  expect((await cleared).postDataJSON()).toEqual({ start_date: null });
+  await expect(main.getByRole("button", { name: `${EDITING.change} ${words.label}` })).toContainText(words.none);
 });
 
 test("shows the day a technician's training ends, and marks it done on their details", async ({ page }) => {
@@ -261,7 +270,7 @@ test("switches a technician off only once asked, and lists the visits they no lo
         mobile: "+919810000001",
         fits_trained: true,
         training_end_date: null,
-        started_on: null,
+        start_date: null,
         visits_to_come: 0,
       },
     ],

@@ -433,7 +433,6 @@ export function HairProfile({ clientId }: { clientId: string }) {
           <Button
             variant="outline"
             size="small"
-            aria-label={page.latest === null ? undefined : copy.correctLabel}
             onClick={() => {
               setCorrecting(true);
             }}

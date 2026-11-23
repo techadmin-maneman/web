@@ -57,7 +57,7 @@ test.describe("the client’s hair profile", () => {
     };
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(at130) });
     await expect(section(page).locator("dl").first()).toContainText("Density130%");
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correctLabel }).click();
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
     await expect(page.getByRole("combobox", { name: opsCopy.clients.profile.rows.density_percent })).toHaveValue("130");
   });
 
@@ -70,7 +70,7 @@ test.describe("the client’s hair profile", () => {
       [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
       [CORRECT_HAIR_PROFILE]: json(corrected),
     });
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correctLabel }).click();
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
     const colour = page.getByRole("combobox", { name: opsCopy.clients.profile.rows.colour });
     await expect(colour).toHaveValue("2");
     expect(await axeViolations(page)).toEqual([]);
@@ -107,7 +107,7 @@ test.describe("the client’s hair profile", () => {
       },
       [CORRECT_HAIR_PROFILE]: fails(409, "superseded"),
     });
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correctLabel }).click();
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
     await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
 
     await expect(section(page).getByRole("alert")).toContainText("The profile changed while you were editing.");
@@ -120,7 +120,7 @@ test.describe("the client’s hair profile", () => {
       if (request.method() === "POST" && request.url().endsWith("/hair-profile")) sent += 1;
     });
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correctLabel }).click();
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
     await page.getByRole("textbox", { name: opsCopy.clients.profile.rows.grey_percent }).fill("twenty");
     await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
     await expect(page.getByRole("textbox", { name: opsCopy.clients.profile.rows.grey_percent })).toHaveAttribute(
@@ -136,7 +136,7 @@ test.describe("the client’s hair profile", () => {
       [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
       [CORRECT_HAIR_PROFILE]: fails(400, "invalid_request", ["fit.base_width_in"]),
     });
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correctLabel }).click();
+    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
     await page.getByRole("textbox", { name: opsCopy.clients.profile.rows.base_width_in }).fill("80");
     await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
     await expect(page.getByRole("alert")).toHaveText(opsCopy.clients.profile.refused);

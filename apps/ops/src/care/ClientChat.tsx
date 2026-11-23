@@ -7,7 +7,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, type ReactNode } from "react";
 import { care as copy } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
-import { careApi, type Conversation } from "./care-api.ts";
+import { careApi } from "./care-api.ts";
 import { Thread } from "./Thread.tsx";
 
 /**
@@ -39,12 +39,13 @@ export function ClientChat(props: { clientId: string; mobile: string; none: Reac
   return mayRead ? <Chat {...props} /> : <EmptyState look="next" line={copy.clientChat.none} action={props.none} />;
 }
 
-const carePersonOf = (chat: Conversation | null): string =>
-  chat === null ? copy.carePerson.none : (chat.care_name ?? chat.care_person ?? copy.carePerson.none);
-
-/** The client's Care person, for the page's head: null until read, and where the person may not read the inbox. */
+/**
+ * The client's Care person, for the page's head: null until read, where the person may not read the inbox, and where
+ * the client has none yet.
+ */
 export function useCarePerson(clientId: string, mobile: string): string | null {
   const mayRead = useAccess().mayCall("GET /api/conversations");
   const [loaded] = useChat(clientId, mobile, mayRead);
-  return mayRead && loaded.state === "loaded" ? carePersonOf(loaded.value) : null;
+  if (!mayRead || loaded.state !== "loaded" || loaded.value === null) return null;
+  return loaded.value.care_name ?? loaded.value.care_person;
 }
