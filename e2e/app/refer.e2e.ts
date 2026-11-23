@@ -444,7 +444,7 @@ test("says what ops set each side gets, and beside each friend what the client e
   ).toBeVisible();
   // The message says it too, since a card sent as a photograph comes without the link's preview.
   const message =
-    /^Thought you’d like this: Mane Man, at home\. You get 4 free service visits when you’re fitted\. \S+\/r\/[A-Z0-9]{8}$/;
+    /^Thought you’d like this: Mane Man, at home\. 4 service visits free when you’re fitted\. \S+\/r\/[A-Z0-9]{8}$/;
   await expect(preview.getByText(message)).toBeVisible();
   const whatsapp = await preview.getByRole("link", { name: appCopy.refer.preview.whatsapp }).getAttribute("href");
   expect(new URL(whatsapp ?? "").searchParams.get("text")).toMatch(message);

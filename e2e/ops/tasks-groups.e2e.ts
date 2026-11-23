@@ -286,8 +286,11 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
   const nikhil = await detail(page, "Nikhil Suri");
   await expect(nikhil.getByRole("button", { name: "Copy link · Nikhil Suri" })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
-  await nikhil.getByRole("button", { name: "Send again · Nikhil Suri" }).click();
+  const sendAgain = nikhil.getByRole("button", { name: "Send again · Nikhil Suri" });
+  await sendAgain.click();
   await expect(nikhil.getByRole("status")).toHaveText(opsCopy.tasks.link.outcomes.resent);
+  // Busy while it sends, never disabled, so the focus stays on it.
+  await expect(sendAgain).toBeFocused();
 });
 
 // Money owed back that no refund reached waited nowhere.

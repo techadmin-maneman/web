@@ -267,15 +267,66 @@ test("the Fit row says the yes alone while the close is on its way, never ops to
   const yes = page.getByText(closeOut.goingAheadToday(null), { exact: true });
   const opsToBook = page.getByText(closeOut.goingAhead(null), { exact: true });
   await expect(yes).toBeVisible();
-  // The yes stays on screen, alone, through the close landing and the offer coming: the screen redraws for a moment
-  // as the close lands, but the row is never gone for the offer's read.
-  for (let look = 0; look < 15; look += 1) {
-    await expect(yes).toBeVisible({ timeout: 100 });
-    expect(await opsToBook.count()).toBe(0);
-    await page.waitForTimeout(200);
-  }
-  await expect(page.getByRole("region", { name: closeOut.fitToday.title })).toBeVisible();
+  // The yes stays on screen, alone, through the close landing and the offer coming: not for one redraw is it gone,
+  // or ops asked to book.
+  await page.evaluate(
+    ([alone, ops]) => {
+      const missed: string[] = [];
+      Object.assign(window, { missed });
+      new MutationObserver(() => {
+        const text = document.body.innerText;
+        if (!text.includes(alone)) missed.push("yes gone");
+        if (text.includes(ops)) missed.push("ops to book");
+      }).observe(document.body, { childList: true, subtree: true, characterData: true });
+    },
+    [closeOut.goingAheadToday(null), closeOut.goingAhead(null)] as const,
+  );
+  await expect(page.getByRole("region", { name: closeOut.fitToday.title })).toBeVisible({ timeout: 5000 });
+  expect(await page.evaluate(() => (window as unknown as { missed: string[] }).missed)).toEqual([]);
+  expect(await opsToBook.count()).toBe(0);
   await expect(page.getByText(closeOut.goingAheadToday(null), { exact: true })).toBeVisible();
+});
+
+// As a close left the outbox, for one render nothing the screen read had it yet: the close-out said the job wasn't
+// closed, then drew itself again.
+test("never says the job isn't closed while its close lands", async ({ page }) => {
+  const fake = await fakeTech(page);
+  let landed = false;
+  await page.route(`**/api/tech/jobs/${JOB_ID}/outcome`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.fallback();
+    landed = true;
+  });
+  await closedGoingAhead(page, fake);
+  // Every line the screen draws from the close on, however briefly.
+  await page.evaluate((line) => {
+    const seen: string[] = [];
+    Object.assign(window, { seen });
+    new MutationObserver(() => {
+      if (document.body.innerText.includes(line)) seen.push(line);
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }, closeOut.notClosed);
+  await expect.poll(() => landed, { timeout: 5000 }).toBe(true);
+  // The phone reads again what it keeps once the close has left the outbox; a moment covers those reads.
+  await page.waitForTimeout(1000);
+  await expect(page.getByRole("heading", { level: 1, name: closeOut.titles.closed })).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).toEqual([]);
+});
+
+// A close the API refuses stays on the phone, refused: the close-out says the job is not closed.
+test("says the job isn't closed once its close is refused", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await page.route(`**/api/tech/jobs/${JOB_ID}/outcome`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.fulfill({
+      status: 400,
+      json: { error: { code: "invalid_request", request_id: "r-1", fields: ["client_alert"] } },
+    });
+  });
+  await closedGoingAhead(page, fake);
+  await expect(page.getByText(closeOut.notClosed)).toBeVisible({ timeout: 5000 });
+  // Drawn on the close-out's paper, in the paper's ink: readable, as every check of contrast holds it.
+  expect(await axeViolations(page)).toEqual([]);
 });
 
 test("a one visit's fit booked for later says ops book it while its close is still on its way", async ({ page }) => {

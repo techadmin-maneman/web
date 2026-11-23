@@ -7,7 +7,7 @@ import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { Job, JobSummary, OutcomeRequest } from "../api.ts";
 import { badges, closeOut as copy, titles } from "../content.ts";
 import { kindNameLower } from "../lib/kind.ts";
@@ -292,15 +292,36 @@ function WhatsNext(props: {
   return first === null ? null : <DoneForToday first={first} />;
 }
 
-/** How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed. */
+/** A close-out's own close: its outcome, or its no-show. */
+const isClose = (event: Queued, jobId: string) =>
+  event.job_id === jobId && (event.kind === "outcome" || event.kind === "no_show");
+
+/**
+ * How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed.
+ *
+ * A close that lands is kept as the API heard it and then leaves the outbox, but what the phone heard is read again
+ * only once the outbox has changed: until that read comes back, the close is in neither, and the outcome it was sent
+ * with stands. One the API refused stays in the outbox, refused, and the job is not closed.
+ */
 function useOutcome(
   job: Job | null,
   queued: readonly Queued[],
   states: ReadonlyMap<string, Heard> | null,
 ): Outcome | null {
+  const [sent, setSent] = useState<{ readonly outcome: Outcome; readonly states: typeof states } | null>(null);
   const heard = states?.get(job?.id ?? "")?.outcome ?? null;
   if (job === null) return null;
-  return outcomeOf({ id: job.id, progress: { ...job.progress, outcome: job.progress.outcome ?? heard } }, queued);
+  const outcome = outcomeOf(
+    { id: job.id, progress: { ...job.progress, outcome: job.progress.outcome ?? heard } },
+    queued,
+  );
+  const queuedHere = queued.filter((event) => isClose(event, job.id));
+  if (outcome !== null) {
+    const sending = queuedHere.some((event) => event.state === "waiting");
+    if (sending && (sent?.outcome !== outcome || sent.states !== states)) setSent({ outcome, states });
+    return outcome;
+  }
+  return sent !== null && queuedHere.length === 0 && sent.states === states ? sent.outcome : null;
 }
 
 export function CloseOut({ id }: { id: string }) {
@@ -334,6 +355,7 @@ export function CloseOut({ id }: { id: string }) {
           onRetry={() => {
             go(`/jobs/${id}`);
           }}
+          onPaper
         />
       </main>
     );

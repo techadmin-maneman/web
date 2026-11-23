@@ -11,7 +11,8 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { useCallback, useState } from "react";
+import { focusIfLost } from "@maneman/ui/arrival";
+import { useCallback, useEffect, useState } from "react";
 import { type BookingWindow, type VisitAvailability, type VisitBooked, type VisitToBook } from "../api.ts";
 import shared from "./visit-dialog.module.css";
 import styles from "./book-visit.module.css";
@@ -35,6 +36,9 @@ export interface Prefill {
   /** The label of the hair system in wear, which a replacement replaces. */
   readonly replacing?: string;
 }
+
+/** The panel's heading, where the focus lands when what had it goes. */
+const TITLE_ID = "book-visit-title";
 
 /** A replacement's "Replaces MM-ESS-0000061-R.", where the hair system in wear is known; nothing for any other visit. */
 const replacesLine = (choice: Choice, prefill: Prefill): string =>
@@ -105,6 +109,10 @@ function BookingRefusal({
   const [letGo, setLetGo] = useState(false);
   // A refusal after it, from another try, ends what was said of the let-go.
   if (letGo && refused !== null) setLetGo(false);
+  // Let go, the ask goes with the refusal: the focus lands on the panel's heading rather than on nothing.
+  useEffect(() => {
+    if (letGo) focusIfLost(document.getElementById(TITLE_ID));
+  }, [letGo]);
   return (
     <>
       {refused !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: refused })} />}
@@ -307,7 +315,7 @@ function BookingDrawer({
   const [busy, once] = useOneAtATime();
   const [loaded, retry] = useAvailability(clientId, choice, picked.tier, from);
   const [refusedStarts, refuseStart] = useRefusedStarts(retry);
-  const frame = { titleId: "book-visit-title", title: copy.title(name), close: CLOSE, onDismiss };
+  const frame = { titleId: TITLE_ID, title: copy.title(name), close: CLOSE, onDismiss };
 
   const choose = (next: Partial<Picked>) => {
     setFailed(null);
