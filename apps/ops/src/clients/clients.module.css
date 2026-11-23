@@ -156,18 +156,29 @@
   color: var(--ui-text-muted);
 }
 
-/* As many to a row as fit with room for a name and its pill, six on a wide screen. */
+/* One row of six, each with room for a name and its pill, scrolling sideways where six do not fit. */
 .recentList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(calc(var(--sp-8) * 22), 1fr));
+  grid-template-columns: repeat(6, minmax(calc(var(--sp-8) * 22), 1fr));
+  overflow-x: auto;
   gap: var(--sp-8);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* On a phone, where the row scrolls anyway, each card has room for a long first name whole. */
+@media (max-width: 600px) {
+  .recentList {
+    grid-template-columns: repeat(6, calc(var(--sp-8) * 26));
+  }
+}
+
+/* Each card as tall as the row's tallest, so their edges line up. */
 .recentCard {
+  box-sizing: border-box;
   display: flex;
+  height: 100%;
   align-items: center;
   gap: var(--sp-12);
   min-width: 0;
@@ -187,14 +198,13 @@
   min-width: 0;
 }
 
-/* A long name runs on to a second line rather than being cut short. */
+/* A long name runs on to a second line, broken between its words, rather than being cut short. */
 .recentName {
   display: -webkit-box;
   max-width: 100%;
   overflow: hidden;
   font-size: var(--fs-14);
   font-weight: var(--weight-semibold);
-  overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -202,15 +212,6 @@
 @media (hover: hover) {
   .recentCard:hover {
     border-color: var(--ui-line-control);
-  }
-}
-
-@media (max-width: 1279px) {
-  .recentList {
-    grid-auto-columns: calc(var(--sp-8) * 22);
-    grid-auto-flow: column;
-    grid-template-columns: none;
-    overflow-x: auto;
   }
 }
 
@@ -527,28 +528,19 @@
   margin-top: var(--sp-16);
 }
 
-/* Every list of a client's visits at the same widths, so overdue, to come and done line up one under another, and no
-   narrower than its columns' words: on a narrow window it scrolls in its panel, a phone's cards apart. */
-.visitTable {
-  min-width: calc(var(--sp-8) * 100);
-}
-
-@media (max-width: 600px) {
-  .visitTable {
-    min-width: 0;
-  }
-}
-
+/* A client's visits, one table, each column as wide as its words need: the day, the time and the state keep one line,
+   and on a narrow window a visit's name, its technician and its buttons take a second rather than any being cut. A
+   visit's discount code sits beneath it. The widths below are what each column takes where there is room. */
 .visitTable th:nth-child(1) {
   width: 13%;
 }
 
 .visitTable th:nth-child(2) {
-  width: 13%;
+  width: 20%;
 }
 
 .visitTable th:nth-child(3) {
-  width: 13%;
+  width: 15%;
 }
 
 .visitTable th:nth-child(4) {
@@ -556,13 +548,9 @@
 }
 
 .visitTable th:nth-child(5) {
-  width: 15%;
+  width: 17%;
 }
 
 .visitTable th:nth-child(6) {
-  width: 11%;
-}
-
-.visitTable th:nth-child(7) {
   width: 18%;
 }

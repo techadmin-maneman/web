@@ -265,7 +265,7 @@ export const clients = {
     /** Visits whose day has passed and nobody has closed: each waits to be closed by hand. */
     overdue: "Overdue",
     past: "Done",
-    columns: ["Date", "Visit", "Technician", "Time", "Status", "Discount code"],
+    columns: ["Date", "Visit", "Technician", "Time", "Status"],
     /** The column of a visit's own buttons, named aloud only. */
     actionsColumn: "Change",
     onBoard: "Move",
