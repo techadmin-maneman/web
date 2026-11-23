@@ -143,8 +143,11 @@ function Evidence({ job }: { job: Job }) {
   );
 }
 
-/** What was decided, as the outcome step took it: why it was partly done, or whether the client goes ahead with a fit. */
-function Decided({ job }: { job: Job }) {
+/**
+ * What was decided, as the outcome step took it: why it was partly done, or whether the client goes ahead with a fit.
+ * `closing`: the close still on its way from this phone, which Fit today's offer is read from once it has landed.
+ */
+function Decided({ job, closing }: { job: Job; closing: boolean }) {
   const readOutcome = useCallback(() => keptOutcome(job.id), [job.id]);
   const said = valueOr(useAsync(readOutcome)[0], null);
   // In English ops' reason reads mid-line, "Not now · the price"; inside Hindi it stays exactly as they wrote it.
@@ -162,7 +165,10 @@ function Decided({ job }: { job: Job }) {
   if (said.going_ahead === undefined) return null;
   if (said.going_ahead) {
     const product = job.products.find((one) => one.tier === said.product)?.name ?? null;
-    return <GoingAhead job={job} product={product === null ? null : theirs(product)} />;
+    const named = product === null ? null : theirs(product);
+    // The yes alone until the close has landed: only then can Fit today say who books the fit.
+    if (closing) return <Row name={copy.fit} value={copy.goingAheadToday(named)} />;
+    return <GoingAhead job={job} product={named} />;
   }
   const lost = label(job.lost_reasons, said.lost_reason);
   return <Row name={copy.fit} value={copy.notNow(lost === null ? null : theirs(english ? midLine(lost) : lost))} />;
@@ -205,6 +211,7 @@ function Rows(props: {
   took: { hours: number; minutes: number } | null;
   photos: string;
   piece: string | null;
+  closing: boolean;
 }) {
   const consultation = props.job.type === "consultation" && !props.job.one_visit;
   const took =
@@ -214,14 +221,14 @@ function Rows(props: {
       <dl className={classes(shared.rows, styles.rows)}>
         {took}
         <Row name={copy.photos} value={props.photos} />
-        <Decided job={props.job} />
+        <Decided job={props.job} closing={props.closing} />
         {props.job.badge === "at_visit" && <Row name={copy.paymentRow} value={badges[props.job.badge]} />}
       </dl>
     );
   }
   return (
     <dl className={classes(shared.rows, styles.rows)}>
-      <Decided job={props.job} />
+      <Decided job={props.job} closing={props.closing} />
       {took}
       <Row name={copy.photos} value={props.photos} />
       {props.piece !== null && <Row name={copy.hairSystem} value={props.piece} />}
@@ -355,7 +362,7 @@ export function CloseOut({ id }: { id: string }) {
         {outcome === "no_show" && <Evidence job={job} />}
         {notFitted && <NotFittedRows job={job} said={said} photos={photos} />}
         {outcome !== "no_show" && !notFitted && (
-          <Rows job={job} took={took} photos={photos} piece={fittedPiece(job, waiting.events)} />
+          <Rows job={job} took={took} photos={photos} piece={fittedPiece(job, waiting.events)} closing={closing} />
         )}
         {/* A card the phone kept from before one visits names no link. */}
         {job.one_visit && job.payment_link !== null && <PaymentLink job={job} link={job.payment_link} />}

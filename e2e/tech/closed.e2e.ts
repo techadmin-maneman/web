@@ -244,3 +244,30 @@ test("the Fit row waits for the offer rather than say ops book a fit it may book
   await expect(page.getByText(closeOut.goingAheadToday(null), { exact: true })).toBeVisible();
   await expect(page.getByText(closeOut.goingAhead(null), { exact: true })).toHaveCount(0);
 });
+
+test("the Fit row says the yes alone while the close is on its way, never ops to book", async ({ page }) => {
+  const fake = await fakeTech(page);
+  let landed = false;
+  // The close reaches the API a second and a half late, as on a slow line; the offer is read from it.
+  await page.route(`**/api/tech/jobs/${JOB_ID}/outcome`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.fallback();
+    landed = true;
+  });
+  await page.route(`**/api/tech/jobs/${JOB_ID}/fit-today`, (route) => {
+    const starts = new Date(Date.now() + 30 * 60_000).toISOString();
+    return route.fulfill({
+      json: landed
+        ? { offer: { ...OFFER, starts_at: starts }, refusal: null }
+        : { offer: null, refusal: "not_offered" },
+    });
+  });
+  await closedGoingAhead(page, fake);
+  const opsToBook = page.getByText(closeOut.goingAhead(null), { exact: true });
+  for (let look = 0; look < 8; look += 1) {
+    expect(await opsToBook.count()).toBe(0);
+    await page.waitForTimeout(200);
+  }
+  await expect(page.getByRole("region", { name: closeOut.fitToday.title })).toBeVisible();
+  await expect(page.getByText(closeOut.goingAheadToday(null), { exact: true })).toBeVisible();
+});
