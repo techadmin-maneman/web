@@ -1922,7 +1922,7 @@ export interface Rows {
     readonly reach_min: number | null;
     readonly training_end_date: string | null;
     readonly radius_km: number | null;
-    readonly started_on: string | null;
+    readonly start_date: string | null;
   };
   readonly terms_acceptances: {
     readonly id: string;

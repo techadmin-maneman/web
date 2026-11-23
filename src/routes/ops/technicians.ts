@@ -140,7 +140,7 @@ const StartedSchema = z.iso
   .optional()
   .openapi({
     description:
-      "The day they started with us, shown as \"Started ...\" in their head (ADR 0305); null says it is not known. " +
+      'The day they started with us, shown as "Started ..." in their head (ADR 0305); null says it is not known. ' +
       "Left out on adding: not given.",
   });
 
@@ -152,7 +152,7 @@ const NewTechnicianSchema = z
     city: CitySchema.optional(),
     fits_trained: FitsTrainedSchema,
     training_end_date: TrainingSchema,
-    started_on: StartedSchema,
+    start_date: StartedSchema,
   })
   .strict()
   .openapi("NewTechnician");
@@ -165,7 +165,7 @@ const TechnicianChangeSchema = z
     city: CitySchema.optional(),
     fits_trained: FitsTrainedSchema,
     training_end_date: TrainingSchema,
-    started_on: StartedSchema,
+    start_date: StartedSchema,
   })
   .strict()
   .refine((change) => Object.keys(change).length > 0, { message: "nothing to change" })
@@ -293,7 +293,7 @@ async function technicianToChange(c: Context<AppEnv>, id: string): Promise<Roste
 }
 
 /** The fields a change names, in a fixed order, for its audit entry: never their values. */
-const CHANGEABLE = ["name", "mobile", "zone", "city", "fits_trained", "training_end_date", "started_on"] as const;
+const CHANGEABLE = ["name", "mobile", "zone", "city", "fits_trained", "training_end_date", "start_date"] as const;
 
 /**
  * Whether the caller may give a technician this city: one of ours that their grants reach, or none (GIVING_NO_CITY).
@@ -342,7 +342,7 @@ export function registerOpsTechnicians(app: App): void {
         city: change.city,
         fitsTrained: change.fits_trained,
         trainingEndDate: change.training_end_date,
-        startedOn: change.started_on,
+        startDate: change.start_date,
       },
       audit: auditOf(c, "technician.change", id, { fields }),
       now: c.var.deps.now(),
@@ -410,7 +410,7 @@ function registerTechnicianAdd(app: App): void {
       city,
       fits_trained: fitsTrained,
       training_end_date: trainingEndDate,
-      started_on: startedOn,
+      start_date: startDate,
     } = c.req.valid("json");
     const mobileE164 = toE164(mobile);
     if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
@@ -424,7 +424,7 @@ function registerTechnicianAdd(app: App): void {
     const marks = {
       fitsTrained: fitsTrained ?? false,
       trainingEndDate: trainingEndDate ?? null,
-      startedOn: startedOn ?? null,
+      startDate: startDate ?? null,
       testRecord: testRecordAtCreation(c.var.config.environment, name),
     };
     const technician = { id, name, mobileE164, zone: zone ?? null, city: city ?? null, ...marks };

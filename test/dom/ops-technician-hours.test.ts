@@ -23,7 +23,7 @@ const IMRAN: Technician = {
   mobile: "+919810000009",
   fits_trained: true,
   training_end_date: null,
-  started_on: null,
+  start_date: null,
   visits_to_come: 0,
   sign_in_stopped_at: null,
   out_of_codes: false,

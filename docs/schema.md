@@ -4030,7 +4030,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `reach_min` | INTEGER | yes |  |  | How far a technician goes from home, in minutes of driving by the estimate booking plans with (docs/decisions/0223-reach-from-home.md). Null takes the ops setting's. |
 | `training_end_date` | TEXT | yes |  |  | The day the training is expected to end, which the console shows; null once ops mark it done, or never in training. |
 | `radius_km` | INTEGER | yes |  |  | How far a technician goes from home, in straight-line km (docs/decisions/0289-who-takes-a-visit.md); null takes the ops setting's. It replaces reach_min, minutes of driving, which stays until the release before it has gone. A technician's own reach becomes the km it covered, the drive estimate's defaults run backwards: (minutes less ten to park) at 24 km/h, over a road 40% longer than the straight line, so 45 minutes is 10 km. |
-| `started_on` | TEXT | yes |  |  | The day they started with us; null where it was never given. |
+| `start_date` | TEXT | yes |  |  | The day they started with us; null where it was never given. |
 
 Indexes:
 

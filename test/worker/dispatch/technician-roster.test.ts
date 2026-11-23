@@ -260,22 +260,22 @@ describe("changing a technician", () => {
     const added = await send(ops, "POST", "/api/technicians", {
       name: "Naveen Rao",
       mobile: "9810000007",
-      started_on: "2026-03-03",
+      start_date: "2026-03-03",
     });
     const { id } = await added.json<{ id: string }>();
     const listed = async () =>
       (
         await (
           await send(ops, "GET", "/api/technicians")
-        ).json<{ technicians: { id: string; started_on: string | null }[] }>()
+        ).json<{ technicians: { id: string; start_date: string | null }[] }>()
       ).technicians.find((each) => each.id === id);
-    expect(await listed()).toMatchObject({ started_on: "2026-03-03" });
+    expect(await listed()).toMatchObject({ start_date: "2026-03-03" });
 
-    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { started_on: "2026-04-01" })).status).toBe(200);
-    expect(await listed()).toMatchObject({ started_on: "2026-04-01" });
-    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { started_on: null })).status).toBe(200);
-    expect(await listed()).toMatchObject({ started_on: null });
-    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { started_on: "3 March" })).status).toBe(400);
+    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { start_date: "2026-04-01" })).status).toBe(200);
+    expect(await listed()).toMatchObject({ start_date: "2026-04-01" });
+    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { start_date: null })).status).toBe(200);
+    expect(await listed()).toMatchObject({ start_date: null });
+    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { start_date: "3 March" })).status).toBe(400);
   });
 
   it("changes only what was sent", async () => {
@@ -546,7 +546,7 @@ describe("the roster", () => {
         mobile: "+919810000008",
         fits_trained: false,
         training_end_date: null,
-        started_on: null,
+        start_date: null,
         visits_to_come: 0,
       },
     ]);

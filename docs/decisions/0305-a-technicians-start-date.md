@@ -12,7 +12,7 @@ for a start date on Add and Edit, and "Started ..." in a technician's head (its 
 
 ## Decision
 
-1. **A technician has a start date, the day they started with us** (`technicians.started_on`, migration 0236). It is
+1. **A technician has a start date, the day they started with us** (`technicians.start_date`, migration 0236). It is
    given on Add and Edit, may be left out, and may be taken off; null says it is not known.
 2. **The head says "Started 3 Mar 2026"** where it is given, and nothing where it is not.
 3. **It decides nothing else**: what a technician is offered, their pay and their training are as before.

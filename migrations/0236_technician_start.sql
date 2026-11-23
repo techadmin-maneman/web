@@ -3,6 +3,6 @@
 -- "Started ..." in their head. A new column: the Worker already deployed reads and writes none of it.
 
 -- The day they started with us; null where it was never given.
-ALTER TABLE technicians ADD COLUMN started_on TEXT;
+ALTER TABLE technicians ADD COLUMN start_date TEXT;
 
 -- backfill: none. No technician's start was recorded before this migration, so each stays null until ops give it.

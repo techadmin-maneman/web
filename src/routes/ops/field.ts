@@ -46,7 +46,7 @@ const TRAINING_END_DATE = z.union([z.iso.date(), z.null()]).openapi({
     "The day their training is expected to end; null when not in training. In training, no visits (ADR 0278).",
 });
 
-const STARTED_ON = z.union([z.iso.date(), z.null()]).openapi({
+const START_DATE = z.union([z.iso.date(), z.null()]).openapi({
   description: "The day they started with us; null where it was never given (ADR 0305).",
 });
 
@@ -68,7 +68,7 @@ const TechniciansSchema = z
           mobile: MOBILE,
           fits_trained: FITS_TRAINED,
           training_end_date: TRAINING_END_DATE,
-          started_on: STARTED_ON,
+          start_date: START_DATE,
           visits_to_come: VISITS_TO_COME,
           sign_in_stopped_at: z.union([z.iso.datetime(), z.null()]).openapi({
             description:
@@ -117,7 +117,7 @@ const TechniciansSchema = z
             mobile: MOBILE,
             fits_trained: FITS_TRAINED,
             training_end_date: TRAINING_END_DATE,
-            started_on: STARTED_ON,
+            start_date: START_DATE,
             visits_to_come: VISITS_TO_COME,
           })
           .strict(),
@@ -178,7 +178,7 @@ export function registerOpsField(app: App): void {
       mobile: technician.mobile,
       fits_trained: technician.fitsTrained,
       training_end_date: technician.trainingEndDate,
-      started_on: technician.startedOn,
+      start_date: technician.startDate,
       visits_to_come: toCome.get(technician.id) ?? 0,
     });
     const homeOf = (id: string) => {
