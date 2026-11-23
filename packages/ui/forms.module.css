@@ -207,6 +207,13 @@
     white-space: nowrap;
   }
 
+  /* A mark before the name and its line, centred on the two. */
+  .rowHeadMarked {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-12);
+  }
+
   /* The line beneath a row's name at the body's leading, a step below the name, so the two lines read as two. */
   .rowHeadMeta {
     display: block;

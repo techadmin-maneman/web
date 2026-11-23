@@ -27,6 +27,7 @@
   --console-amber-wash: #f7f1e4;
   --console-blue: #3d5a85; /* a consultation's edge on the board */
   --console-blue-wash: #eaf0f7;
+  --console-sel: #eef1f6; /* a person's initials, and what is chosen, on white */
   /* Its dark theme's. */
   --console-dark-canvas: #0f1521;
   --console-dark-surface: #161e2c;
@@ -43,6 +44,7 @@
   --console-dark-amber-wash: #33291a;
   --console-dark-blue: #8daad6;
   --console-dark-blue-wash: #1a2840;
+  --console-dark-sel: #1e2a40;
 
   --ops-row: 34px; /* a table row: dense but not cramped */
   --ops-figure: 76px; /* a column of figures, right aligned */
@@ -114,6 +116,16 @@
   --visit-consultation-ground: var(--console-blue-wash);
   /* A consultation and fit in one visit: the first fit's ink, on the light blue edge that sets it apart. */
   --visit-one-visit-edge: var(--console-dark-blue);
+  /* A person's initials: a circle in Plex's semibold on the chosen tint, 30 px in a list and 52 px heading a page. */
+  --initials-radius: 50%;
+  --initials-ground: var(--console-sel);
+  --initials-text: var(--ink);
+  --initials-font: var(--font-plex);
+  --initials-weight: var(--weight-semibold);
+  --initials-size: calc(var(--sp-4) * 13);
+  --initials-type: var(--fs-17);
+  --initials-small-size: 30px;
+  --initials-small-type: var(--ops-caption);
   --visit-replacement-ground: var(--console-amber-wash);
   /* A state's badge is a pill 22 px high, its words 12 px after a dot in its colour. */
   --badge-height: calc(var(--sp-20) + var(--sp-2));

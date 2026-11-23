@@ -1,4 +1,4 @@
-/* A person's initials in a square (./Initials.tsx), in the serif, on the shade. */
+/* A person's initials (./Initials.tsx): a square in the serif on the shade, or the app's own look (./base.css). */
 
 @layer base, ui;
 
@@ -7,17 +7,19 @@
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    width: var(--sp-48);
-    height: var(--sp-48);
-    background: var(--ui-shade);
-    font-family: var(--font-serif);
-    font-size: var(--fs-24);
-    color: var(--ui-text);
+    width: var(--initials-size);
+    height: var(--initials-size);
+    border-radius: var(--initials-radius);
+    background: var(--initials-ground, var(--ui-shade));
+    font-family: var(--initials-font, var(--font-serif));
+    font-size: var(--initials-type);
+    font-weight: var(--initials-weight, normal);
+    color: var(--initials-text, var(--ui-text));
   }
 
   .small {
-    width: var(--sp-36);
-    height: var(--sp-36);
-    font-size: var(--fs-14);
+    width: var(--initials-small-size);
+    height: var(--initials-small-size);
+    font-size: var(--initials-small-type);
   }
 }
