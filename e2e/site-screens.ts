@@ -13,6 +13,8 @@ export const PAGES = [
   "/aftercare",
   "/offer-terms",
   "/stop",
+  "/pay",
+  "/pay-again",
   "/guides",
   "/guides/what-is-a-hair-system",
   "/areas",

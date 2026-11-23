@@ -35,7 +35,10 @@ function cookie(cookies: string, name: string): string | undefined {
 
 /** What this page view says about where the visit came from, and Meta's cookies as the browser holds them. */
 export function attributionFrom(url: URL, referrer: string, cookies: string): Attribution {
-  const found: Attribution = { landing_path: url.pathname.slice(0, MAX.path) };
+  // A payment link's address is kept as /pay alone: its token is the client's
+  // (docs/decisions/0300-payment-links-on-whatsapp.md).
+  const path = url.pathname.startsWith("/pay/") ? "/pay" : url.pathname;
+  const found: Attribution = { landing_path: path.slice(0, MAX.path) };
   for (const tag of TAGS) {
     const value = url.searchParams.get(tag);
     const longest = tag.startsWith("utm_") ? MAX.tag : MAX.clickId;

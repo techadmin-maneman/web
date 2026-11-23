@@ -31,7 +31,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links`, `razorpay_settlements` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A settlement since is read again from Razorpay within the week; one older is not. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
 | Discount codes | `discount_codes`, `discount_code_uses` | A code made or switched off since goes back, and a use since is forgotten, so a single-use code works again | Making or switching off the code again in the console. `discount_code_uses` is only ever added to |
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again | The rows since `<T>`, before the switch is turned off |
-| Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
+| Messages | `outbound_messages`, `pay_links` | The sweeper sends again what was sent since; a payment link sent since opens the closed page until it is sent again | The rows since `<T>`, before the switch is turned off |
 | The Care inbox | `conversations`, `chat_messages`, `client_reports`, `client_report_photos`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
 | Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visit_outcomes`, `consumables_used`, `consumable_shortfalls`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
@@ -145,6 +145,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [partial_reasons](#partial_reasons): The reasons a job may be left partly done, as ops set them, one they took off kept as retired; none means the committed list (ADR 0087).
 - [partner_payouts](#partner_payouts): Each month's payment to a partner, as Finance made it from the payout tool, with its reference (ADR 0124).
 - [pay_grades](#pay_grades): The seniority grades Finance names for technicians' pay per visit (ADR 0122).
+- [pay_links](#pay_links): Each payment link sent on WhatsApp, under the random token maneman.in/pay/<token> sends on to Razorpay by while it is open: the link, its amount, what it pays for and until when (ADR 0300).
 - [payment_links](#payment_links): The Razorpay payment link a consultation and fit in one visit is paid by once the client is fitted: one a visit, the product and its price, when Razorpay made and texted it, and the payment that paid it (ADR 0105).
 - [payments](#payments): The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 - [people](#people): One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).
@@ -2098,7 +2099,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`, `0221_refused_messages.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`, `0221_refused_messages.sql`, `0233_pay_links.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2196,6 +2197,29 @@ Made by `0108_technician_pay.sql`.
 Indexes:
 
 - A `UNIQUE` constraint: unique on (`name`)
+
+## pay_links
+
+Each payment link sent on WhatsApp, under the random token maneman.in/pay/<token> sends on to Razorpay by while it is open: the link, its amount, what it pays for and until when (ADR 0300).
+
+Made by `0233_pay_links.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `subject_kind` | TEXT | no |  |  |  |
+| `subject_id` | TEXT | no |  |  |  |
+| `url` | TEXT | no |  |  |  |
+| `amount` | INTEGER | no |  |  |  |
+| `what` | TEXT | no |  |  |  |
+| `open_until` | TEXT | no |  |  |  |
+| `made_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `pay_links_by_person`: on (`person_id`)
+- `pay_links_by_subject`: on (`subject_kind`, `subject_id`, `made_at`)
 
 ## payment_links
 

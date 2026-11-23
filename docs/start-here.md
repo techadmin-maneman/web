@@ -158,13 +158,14 @@ this map, or when the map names something that no longer exists.
   `day-money`, `payment-ledger` (Finance's ledger of payments and unpaid links), `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `hair-system-prices` (what each hair system sells for), `city-prices`,
   `razorpay-catch-up`, `razorpay-events` (Razorpay's events, applied from their queue), `razorpay-settlements`
   (Razorpay's payouts to the bank), `custom-order-links`,
-  `custom-order-refunds`, `payment-refunds`, `upi-payments` (a visit paid by UPI at the visit, recorded by ops)
+  `custom-order-refunds`, `payment-refunds`, `upi-payments` (a visit paid by UPI at the visit, recorded by ops),
+  `pay-links` (a payment link sent on WhatsApp under a token of ours, ADR 0300)
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
   `fraud-holds`
 - **Data** (`src/config/`): `gst`
 - **Vendor** (`src/providers/`): `payments/`
 - **Routes** (`src/routes/`): `client/payments`, `client/discount-codes`, `ops/payments`, `ops/payment-links`,
-  `ops/credits`, `ops/discount-codes`, `hooks/razorpay`
+  `ops/credits`, `ops/discount-codes`, `hooks/razorpay`, `public/pay-links`
 - **Screens:** `apps/app/src/payments/`
 - **Tests:** `test/worker/money/`, `e2e/app/checkout-policy.e2e.ts`
 

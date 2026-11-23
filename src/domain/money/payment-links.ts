@@ -18,6 +18,7 @@
 // the visit by its reference, the visit's ID. A link paid is ./payment-links-paid.ts.
 
 import { shortDate } from "@maneman/web-kit/dates";
+import { payLinkSentAgain, queuePayLink } from "./pay-links.ts";
 import { onAllowlist, type MessagingSettings } from "../../config/settings.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -318,6 +319,7 @@ export async function resendLink(db: D1Database, deps: LinkDeps, linkId: string,
     return "unavailable";
   }
   deps.log.info("payment_link_resent", { appointment_id: row.appointment_id });
+  await payLinkSentAgain(db, { kind: "payment_link", id: row.id }, now);
   return "resent";
 }
 
@@ -422,6 +424,11 @@ async function keepLink(
     .run();
   await deps.resolveAlert(failedKey(kept.visit.appointmentId));
   deps.log.info("payment_link_sent", { appointment_id: kept.visit.appointmentId });
+  // Beside Razorpay's SMS, the link on WhatsApp (docs/decisions/0300-payment-links-on-whatsapp.md).
+  const what = `visit of ${shortDate(kept.visit.day)}`;
+  const subject = { kind: "payment_link", id: kept.link.id } as const;
+  const paidFor = { personId: kept.visit.personId, subject, amount: kept.link.amount, what };
+  await queuePayLink(db, { ...paidFor, url: kept.made.shortUrl, openUntil: kept.closesAt }, now, deps.log);
 }
 
 /** A failure on the way, which the cron tries again: ops are told once it has happened three times. */

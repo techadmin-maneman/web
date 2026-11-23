@@ -51,7 +51,17 @@ const DIFFERS: Partial<Record<TemplateName, { readonly text?: string; readonly b
     visit_reminder_v1: { buttons: [STOP] },
     next_visit_due_v1: { buttons: [STOP] },
     credits_expiring_v2: { buttons: [STOP] },
+    payment_link_v1: {
+      text: "Hi {{1}}, here's your payment link.\n{{2}} for your {{3}}. Pay by {{4}} with the button below.",
+      buttons: [{ kind: "link", label: "Pay now", param: 5 }],
+    },
   };
+
+/**
+ * Submitted and not yet approved: MSG91 is not asked to send them, and their messages are skipped rather than failed
+ * (docs/decisions/0300-payment-links-on-whatsapp.md). A template leaves the list once WhatsApp approves it.
+ */
+export const AWAITING_APPROVAL: ReadonlySet<TemplateName> = new Set(["payment_link_v1"]);
 
 /**
  * Never submitted: the stop line is a button, and the answer to STOP and the after-hours answer go as replies while

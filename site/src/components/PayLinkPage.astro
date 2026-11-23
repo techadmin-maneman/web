@@ -1,0 +1,44 @@
+---
+// Where a payment link's WhatsApp button lands when it does not open Razorpay's page: the link has closed, or mm-api
+// could not be asked (docs/decisions/0300-payment-links-on-whatsapp.md). mm-site's Worker sends the client here from
+// /pay/<token>, so the address never holds the token. Its one action is a chat with us.
+import { buttonLook } from "@maneman/ui/Button";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import { whatsapp } from "../content/site.ts";
+import Site from "../layouts/Site.astro";
+
+interface Props {
+  readonly title: string;
+  readonly heading: string;
+  readonly body: string;
+  readonly chat: string;
+  /** What the chat opens with: the page's own words, never the site's greeting to a new visitor. */
+  readonly greeting: string;
+}
+const { title, heading, body, chat, greeting } = Astro.props;
+---
+
+<Site title={title} noindex>
+  <section class="text-page short">
+    <h1 class="page-title">{heading}</h1>
+    <p class="page-lede">{body}</p>
+    <a
+      class={buttonLook({ variant: "primary", size: "action", className: "chat" })}
+      href={whatsappChat(whatsapp.number, greeting)}
+    >
+      {chat}
+    </a>
+  </section>
+</Site>
+
+<style>
+  .chat {
+    margin-top: var(--sp-28);
+  }
+  /* Across a phone; on a laptop, as wide as its words. */
+  @media (min-width: 761px) {
+    .chat {
+      width: fit-content;
+    }
+  }
+</style>

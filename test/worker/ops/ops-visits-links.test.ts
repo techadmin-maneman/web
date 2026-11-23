@@ -422,6 +422,15 @@ describe("a booking held on its payment link", () => {
       .bind(body.hold_id)
       .all<{ actor: string; subject_kind: string }>();
     expect(kept.results).toEqual([{ actor: "ops@localhost", subject_kind: "hold" }]);
+    // On WhatsApp too, when made and when sent again, under one token (docs/decisions/0300-payment-links-on-whatsapp.md).
+    const whatsApp = await env.DB.prepare(
+      `SELECT l.what, COUNT(m.id) AS sent FROM pay_links l JOIN outbound_messages m ON m.subject_id = l.id
+       WHERE l.subject_kind = 'hold' AND l.subject_id = ?1 GROUP BY l.id`,
+    )
+      .bind(body.hold_id)
+      .all<{ what: string; sent: number }>();
+    expect(whatsApp.results.map((row) => row.sent)).toEqual([2]);
+    expect(whatsApp.results[0]?.what).toMatch(/^first fit on /);
   });
 
   it("answers that the link was sent again even where the log cannot keep who sent it", async () => {

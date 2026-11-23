@@ -87,6 +87,10 @@ const HISTORY = [
   `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at, sent_at)
    SELECT 'm-' || i, '${AGO}', 'p-' || i, 'visit_reminder', 'appointment', 'a-' || i, 'sent', '${AGO}', '${AGO}'
    FROM n`,
+  // A payment link each sent on WhatsApp, long closed (docs/decisions/0300-payment-links-on-whatsapp.md).
+  `INSERT INTO pay_links (id, person_id, subject_kind, subject_id, url, amount, what, open_until, made_at)
+   SELECT 'pl-' || i, 'p-' || i, 'hold', 'h-' || i, 'https://rzp.io/rzp/x' || i, 200000, 'service visit',
+     '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO tryon_jobs (id, created_at, upload_key, uploaded_at, upload_deleted_at, state, expires_at, person_id,
      photo_consent_version, photo_consent_at, ip_hash, request_id, copy_key, kept_at)
    SELECT 'j-' || i, '${AGO}', 'uploads/j-' || i, '${AGO}', '${AGO}', 'expired', '${AGO}', 'p-' || i, 'photo-v2',

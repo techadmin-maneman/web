@@ -994,6 +994,17 @@ export interface Rows {
     readonly created_by: string;
     readonly created_at: string;
   };
+  readonly pay_links: {
+    readonly id: string;
+    readonly person_id: string;
+    readonly subject_kind: string;
+    readonly subject_id: string;
+    readonly url: string;
+    readonly amount: number;
+    readonly what: string;
+    readonly open_until: string;
+    readonly made_at: string;
+  };
   readonly payment_links: {
     readonly id: string;
     readonly appointment_id: string;
