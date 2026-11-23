@@ -277,8 +277,10 @@ export const clients = {
      */
     code: {
       none: "None",
-      /** "TENOFF, Rs. 1,234 off": what it takes off before GST, once the visit's price is known. */
-      /** Beneath the visit, with no column to name it: "Code FIRSTFIT300, Rs. 300 off". */
+      /**
+       * Beneath the visit, with no column to name it: "Code TENOFF, Rs. 1,234 off", what it takes off before GST, once
+       * the visit's price is known.
+       */
       applied: (code: string, off: string | null) => (off === null ? `Code ${code}` : `Code ${code}, ${off} off`),
       givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" },
       /** A one visit's code the client typed when booking on the site, which "Enter a code" starts from. */
