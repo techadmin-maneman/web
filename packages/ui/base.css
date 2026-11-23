@@ -70,6 +70,12 @@
     --initials-type: var(--fs-24);
     --initials-small-size: var(--sp-36);
     --initials-small-type: var(--fs-14);
+    /* A panel's figures (./FigureGrid.tsx): each in the serif over its name, unless the app's look names it first. */
+    --figure-direction: initial;
+    --figure-font: initial;
+    --figure-weight: initial;
+    --figure-size: var(--fs-24);
+    --figure-label-size: var(--fs-13);
     /* A field's box: the tap's height, which the technician app raises on its body. */
     --field-height: var(--tap);
     --field-text: var(--fs-15);

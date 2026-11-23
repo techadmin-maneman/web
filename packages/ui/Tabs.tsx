@@ -21,6 +21,9 @@ export function Tabs({ label, className, children }: { label: string; className?
 /** One tab's look; the chosen tab carries aria-current="page". */
 export const TAB = styles.tab;
 
+/** How many a tab holds, after its name: "Visits 7". */
+export const TAB_COUNT = styles.tabCount;
+
 /** A tab that changes what is shown in place, rather than going to a page: the chosen one is `current`. */
 export function TabButton({
   current,

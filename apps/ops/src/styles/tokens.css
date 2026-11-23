@@ -126,6 +126,12 @@
   --initials-type: var(--fs-17);
   --initials-small-size: 30px;
   --initials-small-type: var(--ops-caption);
+  /* A panel's figures: the name first in 12 px, then the figure in Plex's semibold at 18 px. */
+  --figure-direction: column;
+  --figure-font: var(--font-plex);
+  --figure-weight: var(--weight-semibold);
+  --figure-size: var(--fs-18);
+  --figure-label-size: var(--ops-caption);
   --visit-replacement-ground: var(--console-amber-wash);
   /* A state's badge is a pill 22 px high, its words 12 px after a dot in its colour. */
   --badge-height: calc(var(--sp-20) + var(--sp-2));

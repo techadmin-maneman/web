@@ -1,4 +1,5 @@
-/* Figures two to a row inside a panel (./FigureGrid.tsx): each in the serif, its name beneath. */
+/* Figures two to a row inside a panel (./FigureGrid.tsx): each in the serif, its name beneath, or as the app's look
+   draws them (./base.css). */
 
 @layer base, ui;
 
@@ -14,20 +15,21 @@
 
   .figure {
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: var(--figure-direction, column-reverse);
     gap: var(--sp-4);
     min-width: 0;
   }
 
   .label {
-    font-size: var(--fs-13);
+    font-size: var(--figure-label-size);
     color: var(--ui-text-muted);
   }
 
   .value {
     margin: 0;
-    font-family: var(--font-serif);
-    font-size: var(--fs-24);
+    font-family: var(--figure-font, var(--font-serif));
+    font-size: var(--figure-size);
+    font-weight: var(--figure-weight, normal);
     font-variant-numeric: tabular-nums;
     line-height: var(--lh-115);
     color: var(--ui-text);
@@ -37,6 +39,7 @@
   .words {
     font-family: inherit;
     font-size: var(--fs-14);
+    font-weight: inherit;
     line-height: var(--lh-145);
   }
 
