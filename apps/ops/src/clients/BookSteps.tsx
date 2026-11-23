@@ -8,6 +8,7 @@ import { DateStrip } from "@maneman/ui/DateStrip";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TimeChoice, type TimePeriod } from "@maneman/ui/TimeChoice";
 import { typeLook } from "@maneman/ui/type";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { addDays, dayClock, shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { type VisitAvailability } from "../api.ts";
 import styles from "./visit-dialog.module.css";
@@ -125,6 +126,7 @@ export function WhenAndWho({
   slot,
   chosen,
   busy,
+  finding,
   onPick,
 }: {
   offered: VisitAvailability;
@@ -132,11 +134,17 @@ export function WhenAndWho({
   /** The start chosen, or the first in the window asked for; null until one is. */
   chosen: string | null;
   busy: boolean;
+  /**
+   * The days and times drawn are for other choices while the read for these runs: they stay where they are, so
+   * nothing jumps, but none can be chosen, as none may be free for these.
+   */
+  finding: boolean;
   onPick: (next: Partial<Picked>) => void;
 }) {
   const { day, technicians, technician } = slot;
   return (
-    <>
+    <div inert={finding} className={finding ? styles.finding : undefined}>
+      <VisuallyHidden role="status">{finding ? copy.loading : ""}</VisuallyHidden>
       <section className={styles.section} aria-labelledby="book-day">
         <Step id="book-day" number={2} name={copy.day} />
         <DateStrip
@@ -191,6 +199,6 @@ export function WhenAndWho({
           </>
         )}
       </section>
-    </>
+    </div>
   );
 }

@@ -199,19 +199,27 @@ function useRefusedStarts(retry: () => void) {
   return [refused, refuse] as const;
 }
 
-/** The fortnight's windows for what is being booked, read again as any of it changes. */
+/**
+ * The fortnight's windows for what is being booked, read again as any of it changes. While a read runs the last
+ * answer stays drawn, so nothing jumps; each answer is marked with what it was asked for, and `finding` says the one
+ * drawn is for other choices, whose times must not be taken for these.
+ */
 function useAvailability(clientId: string, choice: Choice, tier: string | undefined, from: string | undefined) {
+  const asked = `${kindOf(choice)}|${tier ?? ""}|${from ?? ""}`;
   const load = useCallback(
     () =>
-      clientsApi.visitAvailability({
-        client: clientId,
-        kind: kindOf(choice),
-        ...(tier === undefined ? {} : { tier }),
-        ...(from === undefined ? {} : { from }),
-      }),
-    [clientId, choice, tier, from],
+      clientsApi
+        .visitAvailability({
+          client: clientId,
+          kind: kindOf(choice),
+          ...(tier === undefined ? {} : { tier }),
+          ...(from === undefined ? {} : { from }),
+        })
+        .then((answer) => (answer.ok ? { ...answer, body: { ...answer.body, asked } } : answer)),
+    [clientId, choice, tier, from, asked],
   );
-  return useLoad(load);
+  const [loaded, retry] = useLoad(load);
+  return { loaded, retry, finding: loaded.state === "loaded" && loaded.value.asked !== asked };
 }
 
 /** A discount code for the visit, where it takes one. */
@@ -313,7 +321,7 @@ function BookingDrawer({
   const { choice, setChoice, from, setFrom, picked, setPicked, code, setCode, covers, setCovers } = useAsked(prefill);
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
-  const [loaded, retry] = useAvailability(clientId, choice, picked.tier, from);
+  const { loaded, retry, finding } = useAvailability(clientId, choice, picked.tier, from);
   const [refusedStarts, refuseStart] = useRefusedStarts(retry);
   const frame = { titleId: TITLE_ID, title: copy.title(name), close: CLOSE, onDismiss };
 
@@ -371,9 +379,9 @@ function BookingDrawer({
       }}
       foot={
         <BookFoot
-          line={replacesLine(choice, prefill) + payLine(choice, offered, cover !== "")}
+          line={finding ? copy.loading : replacesLine(choice, prefill) + payLine(choice, offered, cover !== "")}
           day={day?.date}
-          chosen={chosen}
+          chosen={finding ? null : chosen}
           busy={busy}
           blocked={refused === "no_profile"}
         />
@@ -391,7 +399,7 @@ function BookingDrawer({
           choose({ tier });
         }}
       />
-      <WhenAndWho offered={offered} slot={slot} chosen={chosen} busy={busy} onPick={choose} />
+      <WhenAndWho offered={offered} slot={slot} chosen={chosen} busy={busy} finding={finding} onPick={choose} />
       <StripButtons busy={busy} from={from} firstDay={offered.days[0]?.date} onFrom={setFrom} />
       <CoverChoice owed={offered.owed} value={cover} busy={busy} onChoose={setCovers} />
       {takesCode && <CodeOrAdd code={code} given={prefill.code !== undefined} busy={busy} onCode={setCode} />}
