@@ -144,6 +144,12 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
     copy.no_show_dispute(facts.kept !== null && facts.kept > 0 ? rupees(facts.kept) : copy.disputedCredit),
   // What is owed back, the Razorpay payment to refund it from, and why.
   payment_to_refund: (facts) => copy.payment_to_refund(rupees(facts.amount), facts.payment, facts.why),
+  // What needs doing, as it was written.
+  staff_task_operations: (_, task) => task.detail ?? tasks.unknown,
+  staff_task_customer_care: (_, task) => task.detail ?? tasks.unknown,
+  staff_task_finance: (_, task) => task.detail ?? tasks.unknown,
+  staff_task_growth: (_, task) => task.detail ?? tasks.unknown,
+  staff_task_admin: (_, task) => task.detail ?? tasks.unknown,
 };
 
 /** The second line of a task. */

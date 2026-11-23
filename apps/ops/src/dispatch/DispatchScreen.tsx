@@ -23,6 +23,7 @@ import { Toolbar } from "./Toolbar.tsx";
 import { Tray } from "./Tray.tsx";
 import { useBoard } from "./useBoard.ts";
 import { useSearch, weekOf } from "./board-view.ts";
+import { anyOfKind, boardOfKind, rowsOfKind, type BoardKind } from "./kinds.ts";
 import { ChangePanel, changedNotice } from "./ChangePanel.tsx";
 import { NoticeLine } from "./NoticeLine.tsx";
 import { useOver, type Over } from "./over.ts";
@@ -120,7 +121,7 @@ function daySub(board: Board, date: string): string {
 /** The board itself, by the day or the week, the head's controls at its right; what the search keeps of it, or why none. */
 function BoardBody(props: {
   board: Board;
-  search: ReturnType<typeof useSearch>;
+  search: ReturnType<typeof useSearch> & { readonly kind: BoardKind };
   view: BoardView;
   onView: (view: BoardView) => void;
   onWeek: (from: string | null) => void;
@@ -150,17 +151,28 @@ function BoardBody(props: {
         />
       </PageActions>
       {phone && rows.length > 0 && view === "day" && dayShown !== undefined ? (
-        <PhoneDay board={board} rows={rows} date={dayShown} now={apiNow()} onOpen={onOpen} />
+        <PhoneDay
+          board={boardOfKind(board, search.kind)}
+          rows={rowsOfKind(rows, search.kind)}
+          narrowed={search.kind !== "all"}
+          date={dayShown}
+          now={apiNow()}
+          onOpen={onOpen}
+        />
       ) : (
         <div className={styles.scroll}>
           {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
           {board.technicians.length > 0 && rows.length === 0 && (
             <EmptyState look="panel" line={dispatch.tools.nothingFound(search.settled.trim())} />
           )}
+          {rows.length > 0 && !anyOfKind(board, rows, search.kind, view === "day" ? dayShown : undefined) && (
+            <EmptyState look="panel" line={dispatch.kinds.none} />
+          )}
           {!phone && rows.length > 0 && view === "day" && dayShown !== undefined && (
             <DayBoard
               board={board}
               rows={rows}
+              kind={search.kind}
               date={dayShown}
               inHand={inHand}
               now={apiNow()}
@@ -169,7 +181,13 @@ function BoardBody(props: {
             />
           )}
           {rows.length > 0 && view === "week" && (
-            <Grid board={board} rows={rows} found={search.found} onOpen={onOpen} onRoutes={props.onRoutes} />
+            <Grid
+              board={boardOfKind(board, search.kind)}
+              rows={rowsOfKind(rows, search.kind)}
+              found={search.found}
+              onOpen={onOpen}
+              onRoutes={props.onRoutes}
+            />
           )}
         </div>
       )}
@@ -211,14 +229,15 @@ function useAsked() {
   const [query, setQuery] = useBoardQuery(asked);
   const [find, setFind] = useState(asked.find);
   const [view, setView] = useState<BoardView>(() => firstView(asked));
+  const [kind, setKind] = useState<BoardKind>("all");
   const onWeek = (from: string | null) => {
     setQuery({ ...query, from });
   };
-  return { asked, query, setQuery, onWeek, find, setFind, view, setView };
+  return { asked, query, setQuery, onWeek, find, setFind, view, setView, kind, setKind };
 }
 
 export function DispatchScreen() {
-  const { asked, query, onWeek, find, setFind, view, setView } = useAsked();
+  const { asked, query, onWeek, find, setFind, view, setView, kind, setKind } = useAsked();
   const [over, set] = useOver();
   const { opened, changing, notice } = over;
   const [move, setMove] = useState<Move | null>(null);
@@ -292,7 +311,7 @@ export function DispatchScreen() {
     <>
       <div className={styles.area} ref={area} tabIndex={-1}>
         <div className={styles.main}>
-          <Toolbar day={view === "day"} find={find} onFind={setFind} />
+          <Toolbar day={view === "day"} find={find} onFind={setFind} kind={kind} onKind={setKind} />
           {inHand !== null && (
             <MoveBar
               ref={bar}
@@ -310,7 +329,7 @@ export function DispatchScreen() {
           {board !== null && (
             <BoardBody
               board={board}
-              search={{ settled, rows, found }}
+              search={{ settled, rows, found, kind }}
               view={view}
               onView={setView}
               onWeek={onWeek}
@@ -320,7 +339,7 @@ export function DispatchScreen() {
               onRoutes={access.mayCall("GET /api/dispatch/day") ? set.routesOn : null}
             />
           )}
-          {board !== null && <Tray unassigned={board.unassigned} onOpen={open} />}
+          {board !== null && <Tray unassigned={boardOfKind(board, kind).unassigned} onOpen={open} />}
         </div>
       </div>
 

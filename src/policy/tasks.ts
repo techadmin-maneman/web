@@ -118,8 +118,20 @@ export const TASK_GROUPS = [
   "payment_owed",
   "upi_due",
   "payment_to_refund",
+  // A task ops wrote themselves, one group for each department it can be for (docs/decisions/0302-tasks-written-by-hand.md).
+  "staff_task_operations",
+  "staff_task_customer_care",
+  "staff_task_finance",
+  "staff_task_growth",
+  "staff_task_admin",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
+
+/** Whether a group is a department's tasks written by hand. */
+export const isWrittenTask = (group: string): boolean => group.startsWith("staff_task_");
+
+/** When a task snoozed now comes back: the next morning at ten, in India (docs/decisions/0303-snoozing-a-task.md). */
+export const SNOOZE_UNTIL = "10:00";
 
 /**
  * How many days a task may wait before it leaves the board for the lapsed list, so the board shows what can still be
@@ -130,6 +142,10 @@ export const TASK_LAPSE_DAYS = 60;
 /** Whether a task that began waiting `since` has waited past the lapse days at `now`. */
 export const hasLapsed = (since: string, now: Date, lapseDays: number): boolean =>
   Date.parse(since) < now.getTime() - lapseDays * DAY_MS;
+
+/** When a task's lapse days count from: when it began waiting, but a task written by hand from when it is due. */
+export const lapsesFrom = (task: { readonly group: string; readonly since: string; readonly due: string }): string =>
+  isWrittenTask(task.group) ? task.due : task.since;
 
 /**
  * How long a task may wait before it is overdue, and the one deadline its own
@@ -215,6 +231,12 @@ export const TASK_SLA_HOURS: Slas = {
   upi_due: 12,
   // Money owed back to a client: refunded within the day.
   payment_to_refund: 24,
+  // A task written by hand is due when its writer said, whatever this allowance (src/domain/ops/tasks.ts' dueOf).
+  staff_task_operations: 48,
+  staff_task_customer_care: 48,
+  staff_task_finance: 48,
+  staff_task_growth: 48,
+  staff_task_admin: 48,
 };
 
 /**

@@ -66,6 +66,7 @@ const job = (
 ): Block => ({
   appointment_id: `77000000-0000-4000-8000-${String(++jobs).padStart(12, "0")}`,
   type,
+  one_visit: false,
   service: null,
   client,
   sector,
@@ -113,6 +114,7 @@ const tray = (
 ): TrayJob => ({
   appointment_id: `78000000-0000-4000-8000-${String(id).padStart(12, "0")}`,
   type,
+  one_visit: false,
   service: null,
   client:
     person === null ? null : `${person.name.split(" ")[0] ?? ""} ${(person.name.split(" ")[1] ?? "").slice(0, 1)}.`,

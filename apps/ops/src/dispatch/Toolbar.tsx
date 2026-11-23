@@ -1,38 +1,55 @@
-// Beneath the board's head (./DispatchScreen.tsx): the key to the day's visits, and a search for one row among many at
-// its end, which the design does not draw. The search narrows the rows only: each day's figures stay the day's own.
+// Beneath the board's head (./DispatchScreen.tsx): the visits by kind, a chip each with its look, and at a desk the key
+// to a visit nobody is on and a search for one row among many. The chips and the search narrow what is drawn only:
+// each day's figures stay the day's own.
 
+import { KindSwatch, TimelineLegend } from "@maneman/ui/DayTimeline";
 import { SearchInput } from "@maneman/ui/SearchInput";
-import { TimelineLegend } from "@maneman/ui/DayTimeline";
+import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Toolbar as SharedToolbar } from "@maneman/ui/Toolbar";
 import { dispatch, tasks } from "../content.ts";
 import { useIsPhone } from "../lib/media.ts";
+import { BOARD_KINDS, TIMELINE_KINDS, type BoardKind } from "./kinds.ts";
 import styles from "./toolbar.module.css";
 
-const KINDS = [
-  { kind: "consultation", name: dispatch.typeNames.consultation },
-  { kind: "service", name: dispatch.typeNames.service },
-  { kind: "replacement", name: dispatch.typeNames.replacement },
-  { kind: "fit", name: dispatch.typeNames.first_fit },
-] as const;
-
 interface Props {
-  /** Whether the day is shown, which the key is to; the week has its own beneath it. */
+  /** Whether the day is shown, whose visits a nobody's key is to. */
   readonly day: boolean;
   readonly find: string;
   readonly onFind: (text: string) => void;
+  /** The kind of visit shown, or all. */
+  readonly kind: BoardKind;
+  readonly onKind: (kind: BoardKind) => void;
 }
 
-export function Toolbar({ day, find, onFind }: Props) {
+export function Toolbar({ day, find, onFind, kind, onKind }: Props) {
   const copy = dispatch.tools;
-  // A phone has neither: one technician's visits, a list, need no key, and the chips find the technician.
-  if (useIsPhone()) return null;
+  // A phone has the chips alone: one technician's visits, a list, need no key, and the chips find the technician.
+  const phone = useIsPhone();
   return (
     <SharedToolbar
       label={copy.label}
       className={styles.tools}
-      end={<SearchInput label={copy.find} value={find} onChange={onFind} />}
+      end={phone ? undefined : <SearchInput label={copy.find} value={find} onChange={onFind} />}
     >
-      {day && <TimelineLegend label={copy.key} kinds={KINDS} nobody={tasks.groups.unassigned_visit} />}
+      <div className={styles.kinds} role="radiogroup" aria-label={dispatch.kinds.label}>
+        {BOARD_KINDS.map((each) => (
+          <ToggleButton
+            key={each}
+            asRadio
+            filled
+            pressed={kind === each}
+            onClick={() => {
+              onKind(each);
+            }}
+          >
+            <span className={styles.kind}>
+              {each !== "all" && <KindSwatch kind={TIMELINE_KINDS[each]} />}
+              {dispatch.kinds[each]}
+            </span>
+          </ToggleButton>
+        ))}
+      </div>
+      {day && !phone && <TimelineLegend label={copy.key} kinds={[]} nobody={tasks.groups.unassigned_visit} />}
     </SharedToolbar>
   );
 }

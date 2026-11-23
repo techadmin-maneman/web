@@ -46,4 +46,9 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   payment_owed: "finance",
   upi_due: "finance",
   payment_to_refund: "finance",
+  staff_task_operations: "operations",
+  staff_task_customer_care: "customer_care",
+  staff_task_finance: "finance",
+  staff_task_growth: "growth",
+  staff_task_admin: "admin",
 };

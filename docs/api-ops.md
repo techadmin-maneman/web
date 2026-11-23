@@ -20929,6 +20929,99 @@ What ops still have to do, by group, the longest wait first
 }
 ```
 
+### POST /api/tasks
+
+Write a task by hand, for a department, about a client or a city, due when it is due
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/StaffTaskWritten"
+}
+```
+
+**201**: Written, and on the board of the department it is for
+
+```json
+{
+  "$ref": "#/components/schemas/StaffTaskId"
+}
+```
+
+**400**: invalid_request: a due time past, a client or a city the writer's work does not reach, or an owner who has not used the console lately or, once the Staff list is enforced, has no Act in the department it is for
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: a service token, which names no member of staff; or not_permitted
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### PUT /api/tasks/{group}/{id}/owner
 
 Make a task a member of staff's, or hand it back to nobody
@@ -21145,6 +21238,242 @@ Request body:
 ```
 
 **404**: not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tasks/staff/{id}/done
+
+Mark a task written by hand done; it leaves the board
+
+**204**: Done
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: a service token; or not_permitted: it asks Act in the department the task is for
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such task open on the board in the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/tasks/{group}/{id}/snooze
+
+Snooze a task until 10 am tomorrow in India; it leaves the board and its counts until then
+
+**200**: Snoozed, and until when
+
+```json
+{
+  "$ref": "#/components/schemas/TaskSnoozed"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: a service token; or not_permitted: it asks Act in the department that decides the task's group
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such task on the board now in the caller's cities
 
 ```json
 {
@@ -52034,6 +52363,9 @@ Request body:
         "task.assign",
         "task.hand_back",
         "task.close",
+        "task.write",
+        "task.done",
+        "task.snooze",
         "address.given_to_ops",
         "alert.resolve",
         "alert.send_again",
@@ -52485,6 +52817,10 @@ Request body:
             ],
             "description": "Null for a client who has been erased."
           },
+          "one_visit": {
+            "type": "boolean",
+            "description": "A consultation and fit in one visit, its own kind on the board (ADR 0105)."
+          },
           "badge": {
             "type": "string",
             "enum": [
@@ -52590,6 +52926,7 @@ Request body:
           "sector",
           "pincode",
           "person",
+          "one_visit",
           "badge",
           "slots",
           "client_note",
@@ -52780,6 +53117,10 @@ Request body:
       ],
       "description": "Null for a client who has been erased."
     },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit, its own kind on the board (ADR 0105)."
+    },
     "badge": {
       "type": "string",
       "enum": [
@@ -52910,6 +53251,7 @@ Request body:
     "sector",
     "pincode",
     "person",
+    "one_visit",
     "badge",
     "slots",
     "client_note",
@@ -55123,7 +55465,12 @@ Request body:
               "draft_invoice",
               "payment_owed",
               "upi_due",
-              "payment_to_refund"
+              "payment_to_refund",
+              "staff_task_operations",
+              "staff_task_customer_care",
+              "staff_task_finance",
+              "staff_task_growth",
+              "staff_task_admin"
             ]
           },
           "count": {
@@ -55711,6 +56058,81 @@ Request body:
           "type": "string",
           "enum": [
             "erasure_request"
+          ]
+        }
+      },
+      "required": [
+        "group"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "staff_task_operations"
+          ]
+        }
+      },
+      "required": [
+        "group"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "staff_task_customer_care"
+          ]
+        }
+      },
+      "required": [
+        "group"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "staff_task_finance"
+          ]
+        }
+      },
+      "required": [
+        "group"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "staff_task_growth"
+          ]
+        }
+      },
+      "required": [
+        "group"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "staff_task_admin"
           ]
         }
       },
@@ -56647,6 +57069,113 @@ Request body:
   },
   "required": [
     "reason"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffTaskId
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StaffTaskWritten
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "what": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "What needs doing."
+    },
+    "department": {
+      "type": "string",
+      "enum": [
+        "operations",
+        "customer_care",
+        "finance",
+        "growth",
+        "admin"
+      ],
+      "description": "The department it is for, whose people see it."
+    },
+    "client": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid",
+      "description": "The client it is about; null for none."
+    },
+    "city": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 60,
+      "description": "Where a task about no client is: a city the writer's work reaches; null for every city."
+    },
+    "due": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When it is due; not before now."
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 254
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The Access e-mail of the member of staff it is theirs; null while it is nobody's."
+    }
+  },
+  "required": [
+    "what",
+    "department",
+    "client",
+    "city",
+    "due",
+    "owner"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TaskSnoozed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "until": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "until"
   ],
   "additionalProperties": false
 }

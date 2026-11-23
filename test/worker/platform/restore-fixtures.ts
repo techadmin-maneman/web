@@ -38,6 +38,10 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES ('m1', '${AT}', 'p1', 'visit_reminder', 'appointment', 'ap1', 'queued')`,
   `INSERT INTO pay_links (id, person_id, subject_kind, subject_id, url, amount, what, open_until, made_at)
      VALUES ('pl1', 'p1', 'hold', 'h1', 'https://rzp.io/rzp/pl1', 200000, 'service visit', '${LATER}', '${AT}')`,
+  `INSERT INTO staff_tasks (id, department, what, person_id, city, due_at, created_by, created_at)
+     VALUES ('st1', 'customer_care', 'Call back about the evening slot', 'p1', NULL, '${LATER}', 'ops@example.com', '${AT}')`,
+  `INSERT INTO task_snoozes (task_group, subject_id, episode, task_since, until, snoozed_by, snoozed_at)
+     VALUES ('staff_task_customer_care', 'st1', '', '${AT}', '${LATER}', 'ops@example.com', '${AT}')`,
   `INSERT INTO otp_challenges (id, created_at, person_id, purpose, channel, last_sent_at, expires_at)
      VALUES ('o1', '${AT}', 'p1', 'login', 'whatsapp', '${AT}', '${LATER}')`,
   `INSERT INTO number_codes (id, created_at, mobile_hash, code_hash, expires_at)

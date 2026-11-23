@@ -19,6 +19,7 @@ const ROHIT = {
 const block = (overrides: Partial<Block> = {}): Block => ({
   appointment_id: "a1",
   type: "service",
+  one_visit: false,
   service: null,
   client: "Rohit M.",
   sector: "Sec 65",

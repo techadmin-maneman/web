@@ -3,3 +3,28 @@
 .tools {
   padding: var(--sp-12) var(--sp-32);
 }
+
+/* On a phone, in line with the city's chips above and the technicians' below. */
+@media (max-width: 600px) {
+  .tools {
+    padding-inline: var(--sp-16);
+  }
+}
+
+/* The visits by kind, a chip each, its swatch before its name. */
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+}
+
+/* A chosen chip is filled in the strong colour: its swatch is edged in the chip's words' colour, so it still shows. */
+.kinds [aria-checked="true"] .kind > span:first-child {
+  border-color: var(--ui-on-strong);
+}

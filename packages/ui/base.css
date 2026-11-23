@@ -56,6 +56,9 @@
     /* A text link's underline (./text-link.module.css): unset, so each link draws the line's colour where it
        stands, as the technician app's looks set theirs on a screen rather than the page; an app may set one. */
     --link-underline: initial;
+    /* A consultation and fit in one visit's edge (./DayTimeline.tsx): unset, so it is a consultation's, unless the
+       app's look gives the kind its own. */
+    --visit-one-visit-edge: initial;
     /* A field's box: the tap's height, which the technician app raises on its body. */
     --field-height: var(--tap);
     --field-text: var(--fs-15);
@@ -84,6 +87,31 @@
        Plex's semibold. */
     --title-font: var(--font-serif);
     --title-weight: var(--weight-regular);
+    /* A page's title, a drawer's and a section's (./type.module.css): the scale's sizes, unless an app sets its own. */
+    /* A toggle's corner (./ToggleButton.tsx): unset, so it is a box's where it stands, as the technician app sets
+       its box's corner on a screen rather than the page; an app's look may round its chips into pills. */
+    --toggle-radius: initial;
+    --title1-size: var(--fs-34);
+    --title3-size: var(--fs-22);
+    --title4-size: var(--fs-18);
+    /* A figure's tile (./StatTile.tsx): its figure's size and weight, and the narrowest a tile in a strip goes. */
+    --stat-size: var(--fs-34);
+    --stat-weight: var(--weight-regular);
+    --stat-min: calc(var(--sp-8) * 17);
+    /* A visit's edge and fill by its kind, on the dispatch board's day and week (./DayTimeline.tsx): a consultation
+       raised on a line, a service visit set back on the control's line, a replacement shaded on the accent. */
+    --visit-consultation-edge: var(--ui-line);
+    --visit-consultation-ground: var(--ui-raised);
+    --visit-service-edge: var(--ui-line-control);
+    --visit-service-ground: var(--ui-box-off);
+    --visit-replacement-edge: var(--ui-accent);
+    --visit-replacement-ground: var(--ui-shade);
+    /* A state's badge (./Badge.tsx): square, with no dot, unless the app's look draws a pill. */
+    --badge-height: var(--sp-20);
+    --badge-text: var(--fs-13);
+    --badge-radius: 0;
+    --badge-dot: 0;
+    --badge-dot-gap: 0;
     --action-weight: var(--weight-medium);
     --radio-size: var(--sp-16);
     --check-text: var(--fs-14);
@@ -131,6 +159,12 @@
     --nav-label: var(--ink-muted);
     --nav-rule: var(--ink-rule);
     --nav-mark: var(--gilt);
+    /* The product named beside the mark, and the rule between them; a group's name; a count with some overdue. */
+    --nav-product: var(--nav-text);
+    --nav-divider: var(--nav-rule);
+    --nav-group-size: var(--fs-14);
+    --nav-urgent-ground: var(--error-on-ink);
+    --nav-urgent-text: var(--ink);
     /* The tab bar's mark on its current tab (./TabBar.tsx): none, unless the app draws one. Its counts in the label's
        tone on the bar's ground, unless the app boxes them. */
     --tab-mark: transparent;

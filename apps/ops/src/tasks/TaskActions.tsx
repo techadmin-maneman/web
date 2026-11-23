@@ -195,7 +195,7 @@ function CloseForm({
   );
 }
 
-/** A small action beneath the task's lines; each row's say whose they are to a screen reader. */
+/** An owner's action at the panel's foot, the size of the steps beside it; each says whose task it is to a screen reader. */
 function Act({
   label,
   subject,
@@ -210,9 +210,9 @@ function Act({
   expanded?: boolean;
 }) {
   return (
-    <RowButton ref={actRef} aria-expanded={expanded} onClick={onClick}>
+    <Button ref={actRef} variant="outline" size="small" aria-expanded={expanded} onClick={onClick}>
       <Named label={label} subject={subject} />
-    </RowButton>
+    </Button>
   );
 }
 

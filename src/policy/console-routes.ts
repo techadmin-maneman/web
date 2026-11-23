@@ -56,6 +56,11 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   // Each department sees its own groups of tasks, and Act takes one of them or gives it to someone (TASK_DEPARTMENTS).
   "GET /api/tasks": inOwnDepartments("view"),
   "PUT /api/tasks/{group}/{id}/owner": inOwnDepartments("act"),
+  // Anyone who opens Tasks may write a task, for any department; marking one done asks Act in its own (ADR 0302).
+  "POST /api/tasks": inOwnDepartments("view"),
+  "POST /api/tasks/staff/{id}/done": inOwnDepartments("act"),
+  // Snoozing a task asks Act in its group's department, as taking it does (ADR 0303).
+  "POST /api/tasks/{group}/{id}/snooze": inOwnDepartments("act"),
   "POST /api/tasks/{group}/{id}/close": inOwnPlaces("operations", "act"),
   // So with the alerts on Tasks' "Needs a hand": each department sees and acts on its own kinds (alertNeed).
   "GET /api/alerts": inOwnDepartments("view"),

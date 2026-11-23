@@ -2,6 +2,8 @@
 // chat; what the client wrote, our replies and notes, and our automatic messages with how far each got, a row of them
 // folded into one line; and the reply box at its foot. Who it is with is beside it (./ChatClient.tsx).
 
+import { clientPath } from "../route.ts";
+import { OpsLink } from "../frame/Shell.tsx";
 import { messageKindName } from "../lib/message-kind.ts";
 import { Toast } from "@maneman/ui/Toast";
 import { classes } from "@maneman/ui/classes";
@@ -194,7 +196,14 @@ export function Thread({
     <section className={styles.chat} aria-label={thread.title(who)}>
       <header className={styles.head}>
         <div className={styles.headWords}>
-          <h3 className={typeLook("title-4", styles.name)}>{who}</h3>
+          <h3 className={typeLook("title-4", styles.name)}>
+            {/* A client's name opens their page; a technician's or a stranger's is words alone. */}
+            {conversation.person !== null && conversation.technician === null ? (
+              <OpsLink to={clientPath(conversation.person.id, "visits")}>{who}</OpsLink>
+            ) : (
+              who
+            )}
+          </h3>
           <StateLine conversation={conversation} />
         </div>
         {mayAct && (

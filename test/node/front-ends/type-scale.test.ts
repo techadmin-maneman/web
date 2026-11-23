@@ -35,15 +35,24 @@ describe("the type scale", () => {
     expect(offScale).toEqual([]);
   });
 
+  // A style's size is a step on the scale, or a role named for its size that packages/ui/base.css points at one,
+  // which an app's look may point at another step (the console's titles).
   it("names its text styles from the scale, each with its leading or caps", () => {
     const css = read("packages/ui/type.module.css");
+    const roles = new Map(
+      [...read("packages/ui/base.css").matchAll(/(--[\w-]+-size):\s*var\((--fs-\d+)\)/g)].map((match) => [
+        match[1] ?? "",
+        match[2] ?? "",
+      ]),
+    );
     for (const style of ["display", "title1", "title2", "title3", "bodyLarge", "body", "label", "caption", "figure"]) {
       // Every rule whose selectors name the style, those it shares with others too.
       const rule = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)]
         .filter((match) => (match[1] ?? "").split(",").some((selector) => selector.trim() === `.${style}`))
         .map((match) => match[2] ?? "")
         .join("");
-      expect(rule, style).toMatch(/font-size: var\(--fs-\d+\)/);
+      const size = /font-size: var\((--[\w-]+)\)/.exec(rule)?.[1] ?? "";
+      expect(scale.has(size) || scale.has(roles.get(size) ?? ""), style).toBe(true);
       expect(rule, style).toMatch(/line-height|font-variant-caps/);
     }
   });

@@ -18,7 +18,7 @@ export type TimelineLook =
   "idle" | "busy" | "done" | "underway" | "late" | "proposed" | "free" | "chosen" | "unassigned" | "leave";
 
 /** A visit's kind, which its fill and its edge show: the dispatch board's own. */
-export type TimelineKind = "consultation" | "service" | "replacement" | "fit";
+export type TimelineKind = "consultation" | "service" | "replacement" | "fit" | "one_visit";
 
 export interface TimelineCell {
   readonly key: string;
@@ -47,7 +47,13 @@ const KINDS: Readonly<Record<TimelineKind, string | undefined>> = {
   service: styles.service,
   replacement: styles.replacement,
   fit: styles.fit,
+  one_visit: styles.oneVisit,
 };
+
+/** A kind's look in small, as the key draws it, for a choice or a line that names the kind. */
+export function KindSwatch({ kind }: { readonly kind: TimelineKind }) {
+  return <span className={classes(styles.swatch, KINDS[kind])} aria-hidden="true" />;
+}
 
 /**
  * The row's cells with the step it is now starting a cell of its own: an empty stretch across it is cut there, so the
@@ -82,7 +88,7 @@ export function TimelineLegend({
     <ul className={styles.legend} aria-label={label}>
       {kinds.map(({ kind, name }) => (
         <li key={kind} className={styles.key}>
-          <span className={classes(styles.swatch, KINDS[kind])} aria-hidden="true" />
+          <KindSwatch kind={kind} />
           {name}
         </li>
       ))}

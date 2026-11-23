@@ -8,7 +8,6 @@
 //   </SideNav>
 
 import { useId, type ReactNode } from "react";
-import { capsLook } from "./Caps.tsx";
 import { Icon } from "./Icon.tsx";
 import { Popover } from "./Popover.tsx";
 import { Link } from "./router.tsx";
@@ -49,15 +48,15 @@ export function SideNav({
 }
 
 /**
- * Entries for one kind of work under its name in small capitals, which folds away with the entries' names; set apart
- * from the group before it, named or not.
+ * Entries for one kind of work under its name, which folds away with the entries' names; set apart from the group
+ * before it, named or not.
  */
 export function NavGroup({ label, children }: { readonly label?: string | undefined; readonly children: ReactNode }) {
   const id = useId();
   return (
     <li className={styles.group}>
       {label !== undefined && (
-        <span className={capsLook(styles.groupLabel)} id={id}>
+        <span className={styles.groupLabel} id={id}>
           {label}
         </span>
       )}

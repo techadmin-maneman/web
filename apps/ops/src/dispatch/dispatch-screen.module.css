@@ -29,6 +29,8 @@
 /* The board on a panel's ground and edge, in from the page's sides as the bars above it are: as tall as its rows, up
    to the room the window leaves it, then scrolling under its head. */
 .scroll {
+  /* Its lines, nothing on the board or of a kind, in from its edge as a panel's are (@maneman/ui/panel.module.css). */
+  --note-inset: var(--sp-20);
   flex: 0 1 auto;
   min-height: 0;
   margin: 0 var(--sp-32) var(--sp-24);

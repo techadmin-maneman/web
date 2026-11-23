@@ -2,6 +2,7 @@
 // on top, then one technician's visits at a time in the order they start, chips to change technician. Each visit opens
 // the drawer it opens on a desk.
 
+import { kindOfBlock } from "./kinds.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
@@ -16,12 +17,17 @@ import styles from "./phone-day.module.css";
 interface Props {
   readonly board: Board;
   readonly rows: readonly BoardRow[];
+  /** Whether one kind of visit alone is shown: a technician with none of it says so. */
+  readonly narrowed: boolean;
   readonly date: string;
   readonly now: number;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
 }
 
-const kindOf = (type: Block["type"]) => (type === null ? dispatch.unknown : dispatch.typeNames[type]);
+const kindOf = (block: Pick<Block, "type" | "one_visit">) => {
+  const kind = kindOfBlock(block);
+  return kind === null ? dispatch.unknown : dispatch.kinds[kind];
+};
 
 /** How a visit stands, where it says more than booked: done, begun, or past its start with nobody there. */
 function stateOf(block: Block, now: number): { words: string; tone: "muted" | "warning" } | null {
@@ -39,16 +45,17 @@ function TechnicianVisits(props: {
   visits: readonly Block[];
   date: string;
   now: number;
+  narrowed: boolean;
   onOpen: Props["onOpen"];
 }) {
-  const { row, visits, date, now, onOpen } = props;
+  const { row, visits, date, now, narrowed, onOpen } = props;
   return (
     <section aria-labelledby="phone-visits" className={styles.section}>
       <h2 id="phone-visits" className={capsLook(styles.label)}>
         {dispatch.day.phoneHead(row.name, visits.length)}
       </h2>
       {visits.length === 0 ? (
-        <EmptyState look="panel" line={dispatch.routes.none} />
+        <EmptyState look="panel" line={narrowed ? dispatch.kinds.none : dispatch.routes.none} />
       ) : (
         <ListRows>
           {visits.map((block) => {
@@ -58,7 +65,7 @@ function TechnicianVisits(props: {
                 key={block.appointment_id}
                 lead={indiaClock(block.starts_at)}
                 title={block.client ?? dispatch.unknown}
-                meta={[kindOf(block.type), block.sector].filter((part) => part !== null).join(" · ")}
+                meta={[kindOf(block), block.sector].filter((part) => part !== null).join(" · ")}
                 end={state?.words}
                 endTone={state?.tone}
                 rule={state?.tone === "warning" ? "warning" : undefined}
@@ -78,7 +85,7 @@ function TechnicianVisits(props: {
 const openerOf = (): HTMLElement =>
   document.activeElement instanceof HTMLElement ? document.activeElement : document.body;
 
-export function PhoneDay({ board, rows, date, now, onOpen }: Props) {
+export function PhoneDay({ board, rows, narrowed, date, now, onOpen }: Props) {
   const blocksOf = (row: BoardRow) =>
     [...(row.days.find((day) => day.date === date)?.blocks ?? [])].sort((one, other) =>
       one.starts_at.localeCompare(other.starts_at),
@@ -116,7 +123,7 @@ export function PhoneDay({ board, rows, date, now, onOpen }: Props) {
                 key={job.appointment_id}
                 lead={indiaClock(job.starts_at)}
                 title={job.client ?? dispatch.unknown}
-                meta={kindOf(job.type)}
+                meta={kindOf(job)}
                 rule="error"
                 onClick={() => {
                   onOpen({ kind: "unassigned", job }, openerOf());
@@ -126,7 +133,9 @@ export function PhoneDay({ board, rows, date, now, onOpen }: Props) {
           </ListRows>
         </section>
       )}
-      {shown !== undefined && <TechnicianVisits row={shown} visits={visits} date={date} now={now} onOpen={onOpen} />}
+      {shown !== undefined && (
+        <TechnicianVisits row={shown} visits={visits} date={date} now={now} narrowed={narrowed} onOpen={onOpen} />
+      )}
     </div>
   );
 }

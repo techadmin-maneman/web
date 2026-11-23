@@ -80,8 +80,27 @@ test("opens on Dispatch's home: today's visits, those running late, and the visi
   const road = page.getByRole("region", { name: copy.road.title });
   await expect(road.getByRole("listitem")).toHaveCount(4);
   await expect(road.getByRole("listitem").first()).toContainText(copy.road.late);
+  // Every visit on its pill: one running late, the rest booked.
+  await expect(road.getByRole("listitem").last()).toContainText(copy.road.booked);
   // Needs you lists the person's whole board: stock's replacements too, as no other home takes them.
   await expect(page.getByRole("region", { name: copy.needs })).toContainText(tasks.groups.replacement_order);
+});
+
+test("lists Needs you by kind, why it waits and when it is due, each opening Tasks on that kind", async ({ page }) => {
+  await page.clock.setFixedTime(NOON);
+  await answer(page, { "GET /api/tasks": json(TASKS), "GET /api/dispatch": json(BOARD) });
+  await page.goto("/today");
+  const needs = page.getByRole("region", { name: copy.needs });
+  await expect(needs.getByRole("link", { name: copy.allTasks })).toBeVisible();
+  const kind = needs.getByRole("listitem").filter({ hasText: tasks.groups.replacement_order });
+  await expect(kind).toContainText(tasks.why.replacement_order);
+  await expect(kind).toContainText(
+    new RegExp(`${tasks.due.overdue}|${tasks.due.today}|${tasks.due.week}|${tasks.due.later}`),
+  );
+  await kind.getByRole("link").click();
+  await expect(page).toHaveURL(/\/tasks\?kind=replacement_order$/);
+  const filters = page.getByRole("search", { name: tasks.filters.label });
+  await expect(filters.getByLabel(tasks.filters.kind)).toHaveValue("replacement_order");
 });
 
 // The figures were drawn only once read, and the visits' line beneath grew every tile when it came: the page moved.

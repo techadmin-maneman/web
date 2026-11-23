@@ -3,6 +3,7 @@
 //
 //   <StatTile label={copy.overdue} value={4} tone="warning" to="/tasks" />
 
+import type { ReactNode } from "react";
 import { Link } from "./router.tsx";
 import { classes } from "./classes.ts";
 import { VisuallyHidden } from "./VisuallyHidden.tsx";
@@ -50,5 +51,17 @@ export function StatTile({
     <Link className={classes(styles.tile, styles.link, className)} to={to}>
       {body}
     </Link>
+  );
+}
+
+/**
+ * A row of figures joined into one strip, as the console draws them: one edge round them all, a rule between each, as
+ * many to a row as fit.
+ */
+export function StatTiles({ children, className }: { readonly children: ReactNode; readonly className?: string }) {
+  return (
+    <div className={classes(styles.strip, className)}>
+      <div className={styles.stripRow}>{children}</div>
+    </div>
   );
 }

@@ -37,7 +37,13 @@ import { EVERYWHERE, type PlacesReached } from "../../policy/access.ts";
 import { LOST_AFTER_DAYS, lostIfDoneBy } from "../../policy/client-standing.ts";
 import { factsOf, type TaskFacts } from "./task-facts.ts";
 import { taskWithinReach } from "./task-reach.ts";
-import { QUEUES, type Queue, type ReadAt } from "./task-queues.ts";
+import { isWrittenTask } from "../../policy/tasks.ts";
+import { QUEUES as KEPT_QUEUES, type Queue, type ReadAt } from "./task-queues.ts";
+import { STAFF_TASK_QUEUES } from "./staff-tasks.ts";
+import { snoozedNow, snoozeKey } from "./task-snoozes.ts";
+
+/** Every queue the board reads: those the database keeps, and the tasks written by hand. */
+const QUEUES: readonly Queue[] = [...KEPT_QUEUES, ...STAFF_TASK_QUEUES];
 
 /** A visit to come, by its id and its start. */
 interface TaskVisit {
@@ -210,6 +216,8 @@ interface BoardScope {
   readonly reach?: (group: TaskGroup) => PlacesReached;
   /** One client's tasks alone. */
   readonly person?: string;
+  /** Leave out the tasks snoozed until later (docs/decisions/0303-snoozing-a-task.md); a span is still open. */
+  readonly awake?: true;
 }
 
 /**
@@ -306,11 +314,23 @@ export async function outstandingTasks(
   const read = answers.flatMap((answer) => answer.results).map((row) => nextVisitDays(row, days));
   const results = overdueChats(read, hours, now).sort((a, b) => a.since.localeCompare(b.since));
   const counts = await countsOf(db, answers, { kept: results, at, scope });
-  return { tasks: results.map((row) => taskOf(row, sla, schedule)), counts, truncated };
+  const tasks = results.map((row) => taskOf(row, sla, schedule));
+  if (scope.awake !== true) return { tasks, counts, truncated };
+  // A task snoozed until later is left out of the board people read, and its group's count.
+  const asleep = await snoozedNow(db, now);
+  const awake = tasks.filter((task) => !asleep.has(snoozeKey(task)));
+  for (const task of tasks) {
+    if (asleep.has(snoozeKey(task))) counts.set(task.group, (counts.get(task.group) ?? 1) - 1);
+  }
+  return { tasks: awake, counts, truncated };
 }
 
-/** The group's allowance from when it started waiting, or the visit it is about, whichever comes first. */
+/**
+ * The group's allowance from when it started waiting, or the visit it is about, whichever comes first; a task written
+ * by hand, when its writer said.
+ */
 function dueOf(row: Row, since: string, sla: Slas): Date {
+  if (isWrittenTask(row.group) && row.due_by !== null) return new Date(row.due_by);
   const allowed = dueAt(new Date(since), row.group, sla);
   if (row.due_by === null) return allowed;
   const visit = new Date(row.due_by);

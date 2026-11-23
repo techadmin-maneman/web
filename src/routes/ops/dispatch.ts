@@ -68,6 +68,9 @@ const VISIT = {
   person: z.union([ClientSchema, z.null()]).openapi({
     description: "Null for a client who has been erased.",
   }),
+  one_visit: z
+    .boolean()
+    .openapi({ description: "A consultation and fit in one visit, its own kind on the board (ADR 0105)." }),
   badge: z.enum(PAYMENT_BADGES).openapi({ description: "Never an amount: prepaid, credit, or free." }),
   slots: z.number().openapi({ description: "Consultation 1, service 1, replacement 1.5, first fit 2." }),
   client_note: z

@@ -312,7 +312,7 @@ docs/tracking.md).
 ### Ops' own work
 
 - **Database work** (`src/domain/ops/`): `needs-a-hand`, `alert-names`, `tasks`, `task-queues` (the board's queues), `custom-order-tasks` (a paid custom order's order to send and piece to fit), `task-facts` (what each task turns on),
-  `task-reach` (whose cities each is in), `task-closures`, `task-owners`, `grievances`, `activity`, `staff`,
+  `task-reach` (whose cities each is in), `task-closures`, `task-owners`, `task-snoozes`, `staff-tasks` (tasks written by hand), `grievances`, `activity`, `staff`,
   `task-spans` (when each task opened and closed), `targets` (each month's plan, city by city)
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `client-errors`, `grievances`, `ops-settings`, `console-routes`, `access`,
   `decision-reasons`

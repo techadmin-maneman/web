@@ -1596,6 +1596,18 @@ export interface Rows {
     readonly added_by: string;
     readonly added_at: string;
   };
+  readonly staff_tasks: {
+    readonly id: string;
+    readonly department: string;
+    readonly what: string;
+    readonly person_id: string | null;
+    readonly city: string | null;
+    readonly due_at: string;
+    readonly created_by: string;
+    readonly created_at: string;
+    readonly done_at: string | null;
+    readonly done_by: string | null;
+  };
   readonly standard_costs: {
     readonly item: string;
     readonly tier: string;
@@ -1805,6 +1817,15 @@ export interface Rows {
     readonly owner: string;
     readonly assigned_by: string;
     readonly assigned_at: string;
+  };
+  readonly task_snoozes: {
+    readonly task_group: string;
+    readonly subject_id: string;
+    readonly episode: string;
+    readonly task_since: string;
+    readonly until: string;
+    readonly snoozed_by: string;
+    readonly snoozed_at: string;
   };
   readonly task_spans: {
     readonly id: string;

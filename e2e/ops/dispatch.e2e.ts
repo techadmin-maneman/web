@@ -41,6 +41,33 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
   await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, 9 am" })).toContainText("Sec 43 · first fit");
 });
 
+// The visits by kind, a chip each, a consultation and fit in one visit a kind of its own.
+test("shows one kind of visit alone from its chip, and every kind again from All types", async ({ page }) => {
+  await open(page);
+  const kinds = page.getByRole("radiogroup", { name: opsCopy.dispatch.kinds.label });
+  const { all, service, consultation, one_visit: oneVisit, first_fit: firstFit, replacement } = opsCopy.dispatch.kinds;
+  await expect(kinds.getByRole("radio")).toHaveText([all, service, consultation, oneVisit, firstFit, replacement]);
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeVisible();
+
+  await kinds.getByRole("radio", { name: opsCopy.dispatch.kinds.first_fit, exact: true }).click();
+  await expect(kinds.getByRole("radio", { name: opsCopy.dispatch.kinds.first_fit, exact: true })).toBeChecked();
+  await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, 9 am" })).toBeVisible();
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toHaveCount(0);
+
+  await kinds.getByRole("radio", { name: opsCopy.dispatch.kinds.all, exact: true }).click();
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeVisible();
+});
+
+// A kind with no visits on the board says so, rather than leaving bare lanes.
+test("says when the board has no visits of the kind chosen", async ({ page }) => {
+  await open(page);
+  const kinds = page.getByRole("radiogroup", { name: opsCopy.dispatch.kinds.label });
+  await kinds.getByRole("radio", { name: opsCopy.dispatch.kinds.one_visit, exact: true }).click();
+  await expect(page.getByText(opsCopy.dispatch.kinds.none)).toBeVisible();
+  await kinds.getByRole("radio", { name: opsCopy.dispatch.kinds.all, exact: true }).click();
+  await expect(page.getByText(opsCopy.dispatch.kinds.none)).toHaveCount(0);
+});
+
 // "Block heights follow their slots, about 42, 63 and 84 px".
 test("draws each job as tall as the slots it takes, so its size reads from its height", async ({ page }) => {
   await open(page);
@@ -130,7 +157,7 @@ test("lists the tray’s jobs with their client, the window asked beside the one
 });
 
 // A tray click picked the job up at once, so it could not be read before it was assigned.
-test("opens a tray job’s drawer, with the client, Assign and Open client", async ({ page }) => {
+test("opens a tray job’s drawer, the client’s name a link, with Assign", async ({ page }) => {
   await open(page);
   const job = page.getByRole("complementary", { name: opsCopy.dispatch.tray.title }).getByRole("button").first();
   await job.click();
@@ -145,10 +172,7 @@ test("opens a tray job’s drawer, with the client, Assign and Open client", asy
     "href",
     "https://wa.me/919810000002",
   );
-  await expect(drawer.getByRole("link", { name: opsCopy.dispatch.drawer.openClient })).toHaveAttribute(
-    "href",
-    `/clients/${VIKRAM.id}/visits`,
-  );
+  await expect(drawer.getByRole("heading").getByRole("link")).toHaveAttribute("href", `/clients/${VIKRAM.id}/visits`);
   // Nothing is in hand until Assign is pressed.
   await expect(page.getByLabel(opsCopy.dispatch.landing.list)).toHaveCount(0);
 
@@ -172,10 +196,7 @@ test("opens a block’s drawer with the client, the badge, and both ways to reac
     "href",
     "https://wa.me/919810000001",
   );
-  await expect(drawer.getByRole("link", { name: opsCopy.dispatch.drawer.openClient })).toHaveAttribute(
-    "href",
-    `/clients/${ROHIT.id}/visits`,
-  );
+  await expect(drawer.getByRole("heading").getByRole("link")).toHaveAttribute("href", `/clients/${ROHIT.id}/visits`);
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();

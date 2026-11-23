@@ -15,6 +15,8 @@
   --console-nav-text: #c8d0dc; /* the frame's names on navy */
   --console-nav-label: #8592a8; /* a group's name in the frame */
   --console-nav-count: #9aa6b9; /* a count beside an entry's name, on its own navy and the chosen entry's */
+  --console-nav-product: #aab5c6; /* "Ops" beside the lockup */
+  --console-navy-4: #3a4c6c; /* the rule between the lockup and "Ops" */
   --console-canvas: #f2f3f5;
   --console-sunk: #f7f8fa;
   --console-line: #e1e4e9;
@@ -23,6 +25,8 @@
   --console-ink-2: #3c4450;
   --console-faint: #8a919b;
   --console-amber-wash: #f7f1e4;
+  --console-blue: #3d5a85; /* a consultation's edge on the board */
+  --console-blue-wash: #eaf0f7;
   /* Its dark theme's. */
   --console-dark-canvas: #0f1521;
   --console-dark-surface: #161e2c;
@@ -37,6 +41,8 @@
   --console-dark-red: #f08b73;
   --console-dark-amber: #d8b271;
   --console-dark-amber-wash: #33291a;
+  --console-dark-blue: #8daad6;
+  --console-dark-blue-wash: #1a2840;
 
   --ops-row: 34px; /* a table row: dense but not cramped */
   --ops-figure: 76px; /* a column of figures, right aligned */
@@ -60,7 +66,8 @@
   --ops-tray: 236px; /* a job in the dispatch board's unassigned tray, beneath the board */
   --ops-filter: 176px; /* a list's narrowest filter, and a date with its time */
   --ops-measure: 560px; /* the widest a line of words runs, and the narrowest a list of people goes */
-  --ops-nav: 224px; /* the navigation column */
+  --ops-nav: var(--ops-tray); /* the navigation column, 236 px, as wide as a job in the tray is */
+  --ops-caption: var(--sp-12); /* the smallest words the redesign draws, 12 px: a group's name, a badge's */
   --ops-nav-folded: var(--header-h); /* the navigation folded to its icons, as wide as the header is tall */
   --ops-tile: 208px; /* the narrowest a figure's tile goes on Today */
   --ops-pair: 420px; /* the narrowest one of two parts side by side on Today goes */
@@ -88,6 +95,32 @@
    * main action, and each state in its own colour on its own wash. Every console screen draws in these roles, and the
    * dark theme sets them again (./theme.css).
    */
+  /* Titles in Plex's semibold, at the redesign's sizes: a page's 24 px, a drawer's 18, a card's or a section's 15. */
+  --title-weight: var(--weight-semibold);
+  /* A chip, a filter or a view, is a pill as tall as a control. */
+  --toggle-radius: calc(var(--control-height) / 2);
+  --title1-size: var(--fs-24);
+  --title3-size: var(--fs-18);
+  --title4-size: var(--fs-15);
+  /* A row of figures is one strip, two to a phone's row, each figure 26 px semibold. */
+  --stat-size: var(--fs-26);
+  --stat-weight: var(--weight-semibold);
+  --stat-min: var(--ops-tile-phone);
+  /* Each kind of visit on the board, as the redesign draws it: a service visit on white on the navy's edge, a
+     consultation on a blue wash and edge, a replacement on the amber wash on the brand's brass edge. */
+  --visit-service-edge: var(--ink);
+  --visit-service-ground: var(--ui-raised);
+  --visit-consultation-edge: var(--console-blue);
+  --visit-consultation-ground: var(--console-blue-wash);
+  /* A consultation and fit in one visit: the first fit's ink, on the light blue edge that sets it apart. */
+  --visit-one-visit-edge: var(--console-dark-blue);
+  --visit-replacement-ground: var(--console-amber-wash);
+  /* A state's badge is a pill 22 px high, its words 12 px after a dot in its colour. */
+  --badge-height: calc(var(--sp-20) + var(--sp-2));
+  --badge-text: var(--ops-caption);
+  --badge-radius: calc((var(--sp-20) + var(--sp-2)) / 2);
+  --badge-dot: calc(var(--sp-4) + var(--sp-2));
+  --badge-dot-gap: var(--sp-4);
   --ui-ground: var(--console-canvas);
   --ui-raised: var(--white);
   --ui-tint: var(--console-sunk);
@@ -126,6 +159,11 @@
   --nav-text-current: var(--white);
   --nav-label: var(--console-nav-label);
   --nav-count-text: var(--console-nav-count);
+  --nav-product: var(--console-nav-product);
+  --nav-divider: var(--console-navy-4);
+  --nav-group-size: var(--ops-caption);
+  --nav-urgent-ground: var(--nav-mark); /* the redesign's gilt pill for what waits too long */
+  --nav-urgent-text: var(--ink);
   --nav-rule: var(--console-navy-3);
   --link-underline: var(--console-control); /* a text link's rule, at a control edge's 3:1 */
   --pick-on: var(--ink);

@@ -2,8 +2,7 @@
 // payment links not yet paid and the UPI payments to record, from the Tasks board the navigation reads, and the
 // refunds still on their way back.
 
-import { Columns } from "@maneman/ui/Layout";
-import { StatTile } from "@maneman/ui/StatTile";
+import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { useLoad } from "@maneman/ui/useLoad";
 import { apiNow } from "@maneman/web-kit/clock";
 import { todayInIndia } from "@maneman/web-kit/dates";
@@ -34,13 +33,13 @@ export function MoneyFigures() {
   const upi = countOf(board, "upi_due");
   if (loaded.state !== "loaded") return null;
   return (
-    <Columns row className={styles.figures}>
+    <StatTiles className={styles.figures}>
       <StatTile label={words.collected(true)} value={rupees(loaded.value.collected)} />
       {owed !== null && (
         <StatTile label={tasks.groups.payment_owed} value={owed} tone={owed > 0 ? "attention" : "plain"} />
       )}
       {upi !== null && <StatTile label={today.tiles.upi} value={upi} tone={upi > 0 ? "attention" : "plain"} />}
       <StatTile label={words.processing} value={rupees(loaded.value.refunds_processing)} />
-    </Columns>
+    </StatTiles>
   );
 }

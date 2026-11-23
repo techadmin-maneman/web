@@ -273,10 +273,14 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.",
   targets:
     "Each month's target for a city, by measure, as set on the console's Targets page; set again, it is replaced (ADR 0154).",
+  staff_tasks:
+    "A task ops wrote themselves on Tasks: what needs doing, the department it is for, the client it is about if any, its city, when it is due, who wrote it and who marked it done (ADR 0302).",
   task_closures:
     "A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).",
   task_owners:
     "The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).",
+  task_snoozes:
+    "A task on the Tasks board snoozed until a moment, off the board and its counts until then, by the task's group, its row's id and its episode (ADR 0303).",
   task_spans:
     "Each task the Tasks board has held, by its group, row and episode: the client's city, when it opened and the night it was first found gone, from which the reporting copy counts Care cases (ADR 0147).",
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",

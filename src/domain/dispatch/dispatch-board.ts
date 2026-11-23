@@ -47,6 +47,8 @@ interface BoardClient {
 interface Visit {
   readonly appointment_id: string;
   readonly type: VisitType | null;
+  /** A consultation and fit in one visit (ADR 0105), which the board draws as a kind of its own. */
+  readonly one_visit: boolean;
   /** Its service's name in the console, where it names more than the kind: a first fit's hair system, say. */
   readonly service: string | null;
   /** "Rohit M.", as the board writes a client on a block. */
@@ -357,6 +359,8 @@ function visitOf(job: BoardJobRow): Visit {
   return {
     appointment_id: job.id,
     type: job.type,
+    // A declined one visit makes it a consultation (src/policy/one-visit.ts).
+    one_visit: job.one_visit !== null && job.one_visit !== "declined",
     service: namesMoreThanItsKind(job.tier, job.one_visit) ? job.service_name : null,
     client: shortName(job.client_name),
     sector: job.locality ?? job.area ?? job.service_city,

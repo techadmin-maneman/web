@@ -35,6 +35,7 @@ import {
   CLOSABLE_TASK_GROUPS,
   hasLapsed,
   isClosable,
+  lapsesFrom,
   mayOwnTasks,
   STAFF_SEEN_WITHIN_DAYS,
   TASK_GROUPS,
@@ -54,7 +55,7 @@ import { selfServeKinds } from "../../policy/self-serve.ts";
 export const TASKS_SHOWN = 50;
 
 // Not held to an e-mail's form: what makes an owner is having signed in, and locally Access's stand-in is ops@localhost.
-const OwnerSchema = z
+export const OwnerSchema = z
   .union([z.string().trim().min(1).max(254), z.null()])
   .openapi({ description: "The Access e-mail of the member of staff it is theirs; null while it is nobody's." });
 
@@ -287,6 +288,7 @@ async function readTheBoard(c: Context<AppEnv>, level: Level, person?: string, c
     lapseDays: inputs.taskLapseDays,
     reach: (group: TaskGroup) => narrowedTo(placesReached(access, TASK_DEPARTMENTS[group], level), city),
     person,
+    awake: true,
   });
 }
 
@@ -304,14 +306,14 @@ function personBody(person: Task["person"]) {
 }
 
 /** The members of staff a task may be given to: those who have used the console lately (src/policy/tasks.ts). */
-const staffNow = (c: Context<AppEnv>): Promise<string[]> =>
+export const staffNow = (c: Context<AppEnv>): Promise<string[]> =>
   staffSeenSince(c.env.DB, new Date(c.var.deps.now().getTime() - STAFF_SEEN_WITHIN_DAYS * DAY_MS));
 
 /** A write kept under whoever made it, asked for by a service token, which names nobody. */
-const noMemberOfStaff = (c: Context<AppEnv>) => refuse(c, "access_required");
+export const noMemberOfStaff = (c: Context<AppEnv>) => refuse(c, "access_required");
 
 /** The task as the board reads it now; null once its thing is done, if there never was one, or if it is elsewhere. */
-async function taskOnTheBoard(c: Context<AppEnv>, key: TaskKey): Promise<Task | null> {
+export async function taskOnTheBoard(c: Context<AppEnv>, key: TaskKey): Promise<Task | null> {
   const { tasks } = await readTheBoard(c, "act");
   return tasks.find((task) => task.group === key.group && task.id === key.id) ?? null;
 }
@@ -328,7 +330,7 @@ function splitLapsed(
   all: readonly Task[],
   look: { seen: readonly TaskGroup[]; asked: "include" | undefined; now: Date; lapseDays: number },
 ) {
-  const lapsedOf = (task: Task) => look.asked !== "include" && hasLapsed(task.since, look.now, look.lapseDays);
+  const lapsedOf = (task: Task) => look.asked !== "include" && hasLapsed(lapsesFrom(task), look.now, look.lapseDays);
   const seen = all.filter((task) => look.seen.includes(task.group));
   return { tasks: seen.filter((task) => !lapsedOf(task)), lapsed: seen.filter(lapsedOf) };
 }

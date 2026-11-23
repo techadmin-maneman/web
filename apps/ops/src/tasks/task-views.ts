@@ -57,3 +57,12 @@ export function narrowed(
     counts: { all: found.length, mine: count("mine"), nobody: count("nobody"), overdue: count("overdue") },
   };
 }
+
+/** Tasks opened on one kind, as Today's Needs you opens it. */
+export const kindPath = (kind: string): string => `/tasks?kind=${encodeURIComponent(kind)}`;
+
+/** What the address asks Tasks to show: a kind the board knows, or every kind. */
+export function filterOf(search: string, kinds: readonly string[]): TaskFilter {
+  const kind = new URLSearchParams(search).get("kind") ?? "";
+  return kinds.includes(kind) ? { ...NO_FILTER, kind } : NO_FILTER;
+}

@@ -1,6 +1,8 @@
-// A task's one action on a row, on Tasks and on Today's Needs you: the way to where it is decided, the booking that does
-// it, or else taking it while nobody has it. What else is done on a task is in its drawer (./TaskDetail.tsx).
+// A task's one action on its row on Tasks: the way to where it is decided, the booking that does it, Mark done for one
+// written by hand, or else taking it while nobody has it. What else is done on a task is in its drawer (./TaskDetail.tsx).
 
+import { isWrittenTask } from "@rules/policy/tasks.ts";
+import { StaffTaskDone } from "./StaffTaskDone.tsx";
 import { tasks } from "../content.ts";
 import { useAccess, useMayCall } from "../lib/access.ts";
 import { decidedAt } from "../lib/task-links.ts";
@@ -26,6 +28,15 @@ export function RowStep({
   const mayCall = useMayCall();
   const mayBook = useAccess().mayCall("POST /api/visits");
   const { group, task } = row;
+  if (isWrittenTask(group))
+    return !acting.mayOwn ? null : (
+      <StaffTaskDone
+        task={task}
+        onDone={() => {
+          onBooked(row);
+        }}
+      />
+    );
   const where = decidedAt(group, task);
   if (where !== null && tasks.decide[group] !== undefined && mayFollow(mayCall, where))
     return <DecideLink group={group} task={task} subject={subject} />;

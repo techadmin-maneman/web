@@ -16,3 +16,42 @@
   display: flex;
   gap: var(--sp-8);
 }
+
+/* A task written by hand (./NewTask.tsx): its boxes one under another, the client found and chosen, the search beside
+   its button, and the day and time it is due side by side. */
+.newTask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}
+
+.chosen {
+  margin: 0;
+}
+
+.find {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+}
+
+.found {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.due {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+}
+
+/* The panel's one action, at its foot's right. */
+.footEnd {
+  display: flex;
+  margin-left: auto;
+}

@@ -247,6 +247,18 @@ describe("what the board carries of each visit", () => {
     expect(block).toMatchObject({ appointment_id: A, service: null });
   });
 
+  it("marks a consultation and fit in one visit as its own kind, and a declined one as a consultation", async () => {
+    await insertJob(A, { type: "first_fit", start: TUESDAY["09:00"], technician: IMRAN });
+    await insertJob(B, { type: "consultation", start: TUESDAY["12:00"], technician: IMRAN });
+    await env.DB.prepare("UPDATE appointments SET one_visit = 'booked' WHERE id = ?1").bind(A).run();
+    await env.DB.prepare("UPDATE appointments SET one_visit = 'declined' WHERE id = ?1").bind(B).run();
+    const blocks = (await board("from=2026-09-22")).technicians[0]?.days[0]?.blocks ?? [];
+    expect(blocks.map((block) => [block.appointment_id, block.one_visit])).toEqual([
+      [A, true],
+      [B, false],
+    ]);
+  });
+
   it("names the move the client was not told of on the visit it moved", async () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
     const { move_id: moveId } = await (await move(askedForWednesdayMorning(A))).json<{ move_id: string }>();

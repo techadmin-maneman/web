@@ -5,7 +5,7 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const care = {
   title: "Messages",
-  views: { mine: "My clients", open: "Waiting on us", waiting: "Waiting on the client", closed: "Closed", all: "All" },
+  views: { mine: "Mine", open: "Waiting on us", waiting: "Waiting on client", closed: "Closed", all: "All" },
   show: "Show",
   none: "No chats here.",
   search: "Name or number",
