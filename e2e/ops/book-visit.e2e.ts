@@ -29,6 +29,10 @@ import {
   LINK_SENT,
   openVisits,
   panel,
+  gate,
+  mark,
+  marked,
+  inPlace,
 } from "./book-visit-fixtures.ts";
 
 const BOOK: Call = "POST /api/visits";
@@ -162,48 +166,60 @@ test("says a first fit needs the hair profile as soon as First fit is chosen, an
 // Choosing in the panel redraws it in place: the panel is the same node, no entrance plays again, and where nothing
 // changes height nothing scrolls. While the windows for a new kind are read, the last kind's times stay where they
 // are but cannot be taken, and Book waits, so a time free for one kind is never booked for another.
-test("redraws in place as each choice is made, and takes no time from the last kind's windows", async ({ page }) => {
-  let release: (() => void) | null = null;
+test("redraws each choice in place, and takes no time from the last kind's windows", async ({ page }) => {
+  const book = opsCopy.clients.visits.book;
+  const standard = { tier: "standard", name: "Service visit", minutes: 90, price: SERVICE_PRICE };
+  const premium = { tier: "premium", name: "Premium service", minutes: 120, price: SERVICE_PRICE };
+  const reached = gate();
+  const released = gate();
+  // Short, so the panel scrolls, and a redraw that moved it would show.
+  await page.setViewportSize({ width: 1440, height: 520 });
   await openVisits(page);
   await page.route("**/api/visits/availability**", async (route) => {
-    const kind = new URL(route.request().url()).searchParams.get("kind") ?? "service";
-    if (kind === "first_fit") await new Promise<void>((resolve) => (release = resolve));
-    const starts = [
+    const asked = new URL(route.request().url()).searchParams;
+    const kind = asked.get("kind") ?? "service";
+    if (kind === "first_fit") {
+      reached.open();
+      await released.passed;
+    }
+    const { price: _price, ...service } = asked.get("tier") === "premium" ? premium : standard;
+    const start =
       kind === "first_fit"
         ? at("14:00", "2027-09-23T08:30:00.000Z", [IMRAN])
-        : at("12:00", "2027-09-23T06:30:00.000Z", [IMRAN]),
-    ];
-    await route.fulfill({ json: { ...WINDOWS, kind, days: [{ ...WINDOWS.days[0], starts }] } });
+        : at("12:00", "2027-09-23T06:30:00.000Z", [IMRAN]);
+    const days = [{ ...WINDOWS.days[0], starts: [start] }, ...WINDOWS.days.slice(1)];
+    await route.fulfill({ json: { ...WINDOWS, kind, services: [standard, premium], service, days } });
   });
-  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await page.getByRole("button", { name: book.open }).click();
   const booking = panel(page);
   await expect(booking.getByRole("radio", { name: "12 pm", exact: true })).toBeVisible();
-  await booking.evaluate((node) => {
-    const watched = window as unknown as { replayed: string[] };
-    watched.replayed = [];
-    Object.assign(node, { kept: true });
-    document.addEventListener("animationstart", (event) => watched.replayed.push(event.animationName), true);
+  await mark(booking.locator("form"));
+
+  // A first fit's windows are read: the service visit's 12 pm stays drawn but cannot be taken, nor its services
+  // chosen, and Book waits.
+  await inPlace(booking, booking.getByRole("radio", { name: book.kinds.first_fit, exact: true }), async (kind) => {
+    await kind.check();
+    await reached.passed;
+    const stale = booking.getByRole("radio", { name: "12 pm", exact: true });
+    await expect(stale.locator("xpath=ancestor::*[@inert]")).toHaveCount(1);
+    await expect(booking.getByLabel(book.hairSystem)).toBeDisabled();
+    await expect(booking.getByRole("button", { name: book.chooseTime })).toBeDisabled();
+    await expect(booking.getByRole("status").filter({ hasText: book.loading })).toHaveCount(1);
+    released.open();
+    await expect(booking.getByRole("radio", { name: "2 pm", exact: true })).toBeVisible();
   });
-  const same = () => booking.evaluate((node) => (node as HTMLElement & { kept?: boolean }).kept === true);
-  const replayed = () => page.evaluate(() => (window as unknown as { replayed: string[] }).replayed);
-
-  // A first fit's windows are read: the service visit's 12 pm stays drawn, but cannot be taken, and Book waits.
-  await booking.getByRole("radio", { name: opsCopy.clients.visits.book.kinds.first_fit, exact: true }).check();
-  await expect(booking.getByText(opsCopy.clients.visits.book.loading).first()).toBeVisible();
-  const stale = booking.getByRole("radio", { name: "12 pm", exact: true });
-  await expect(stale.locator("xpath=ancestor::*[@inert]")).toHaveCount(1);
-  await expect(booking.getByRole("button", { name: opsCopy.clients.visits.book.chooseTime })).toBeDisabled();
-  (release as (() => void) | null)?.();
-  await expect(booking.getByRole("radio", { name: "2 pm", exact: true })).toBeVisible();
-  await booking.getByRole("radio", { name: "2 pm", exact: true }).check();
-  await expect(booking.getByRole("button", { name: /^Book Thu 23 Sep, 2/ })).toBeEnabled();
-
-  // Back to a service visit, then a day and a time: still the same panel, and nothing played again.
-  await booking.getByRole("radio", { name: opsCopy.clients.visits.book.kinds.service, exact: true }).check();
-  await expect(booking.getByRole("radio", { name: "12 pm", exact: true })).toBeVisible();
-  await booking.getByRole("radio", { name: "12 pm", exact: true }).check();
-  expect(await same()).toBe(true);
-  expect(await replayed()).toEqual([]);
+  await inPlace(booking, booking.getByLabel(book.hairSystem), async (tier) => {
+    await tier.selectOption("premium");
+    await expect(tier).toHaveValue("premium");
+  });
+  await inPlace(booking, booking.getByRole("button", { name: book.later }), (later) => later.click());
+  await inPlace(booking, booking.getByRole("button", { name: book.earlier }), (earlier) => earlier.click());
+  await inPlace(booking, booking.getByRole("radio", { name: /24 Sep/ }), (day) => day.check());
+  await inPlace(booking, booking.getByRole("radio", { name: "9 am", exact: true }), (time) => time.check());
+  await inPlace(booking, booking.getByLabel(book.technician), async (who) => {
+    await who.selectOption(IMRAN.id);
+    await expect(booking.getByRole("button", { name: /^Book Fri 24 Sep, 9/ })).toBeEnabled();
+  });
 });
 
 test("says why a booking was refused, and books nothing", async ({ page }) => {
@@ -212,12 +228,15 @@ test("says why a booking was refused, and books nothing", async ({ page }) => {
   });
   await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
   await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await mark(panel(page).locator("form"));
   await panel(page)
     .getByRole("button", { name: /^Book Thu/ })
     .click();
   await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.taken);
-  // The start refused is not offered again in the panel, though the days read afresh still list it.
+  // The start refused is not offered again in the panel, though the days read afresh still list it; the days are
+  // read again behind the panel as it stands, not from an empty one.
   await expect(panel(page).getByRole("radio", { name: "12 pm", exact: true })).toHaveCount(0);
+  expect(await marked(panel(page).locator("form"))).toBe(true);
 });
 
 test("books a consultation asked for from its Tasks row, at the first start in the window asked, and the task goes", async ({

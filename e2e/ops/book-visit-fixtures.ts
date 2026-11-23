@@ -1,7 +1,8 @@
 // What Book a visit's tests share (./book-visit.e2e.ts): the windows the API answers with, a link booking's answer,
-// and the client's Visits tab with the panel opened from it.
+// and the client's Visits tab with the panel opened from it; and how a test holds that the panel redraws in place.
 
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
+import { expect } from "../support.ts";
 import {
   answer,
   CLIENT,
@@ -93,3 +94,32 @@ export async function openVisits(page: Page, over: Answers = {}): Promise<void> 
 }
 
 export const panel = (page: Page) => page.getByRole("dialog", { name: `Book a visit for ${CLIENT.name}` });
+
+/** A promise, and the call that settles it. */
+export function gate() {
+  let open = (): void => undefined;
+  const passed = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  return { open, passed };
+}
+
+/** Marks the panel's form, so a form drawn afresh in its place is told from it. */
+export const mark = (form: Locator) => form.evaluate((node) => Object.assign(node, { kept: true }));
+export const marked = (form: Locator) =>
+  form.evaluate((node) => (node as HTMLElement & { kept?: boolean }).kept === true);
+
+/**
+ * Does `act` with `target` in the middle of the panel, clear of its head and foot, so nothing need scroll to reach
+ * it; then holds that the panel is the same form, scrolled as it was, once redrawn.
+ */
+export async function inPlace(booking: Locator, target: Locator, act: (target: Locator) => Promise<void>) {
+  await target.evaluate((node) => {
+    node.scrollIntoView({ block: "center" });
+  });
+  const scrolled = await booking.evaluate((node) => node.scrollTop);
+  await act(target);
+  await expect(booking.locator("[inert]")).toHaveCount(0);
+  expect(await marked(booking.locator("form"))).toBe(true);
+  expect(await booking.evaluate((node) => node.scrollTop)).toBe(scrolled);
+}

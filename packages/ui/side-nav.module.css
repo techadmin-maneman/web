@@ -172,7 +172,7 @@
   }
 
   .count {
-    color: var(--nav-label);
+    color: var(--nav-count-text);
   }
 
   .urgent {

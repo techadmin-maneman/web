@@ -57,7 +57,14 @@ const PAIRS = [
   ["--nav-text", "--nav-ground"] as const,
   ["--nav-label", "--nav-ground"] as const,
   ["--nav-text-current", "--nav-current"] as const,
+  // A count beside a name in the frame, on its own entry and on the chosen one.
+  ["--nav-count-text", "--nav-ground"] as const,
+  ["--nav-count-text", "--nav-current"] as const,
+  // A chosen day, and a time's name beside its slot (packages/ui/date-strip.module.css, time-choice.module.css).
+  ["--pick-on-text", "--pick-on"] as const,
+  ["--time-name-colour", "--ui-raised"] as const,
 ];
+const EDGES = ["--ui-line-control", "--pick-edge", "--choice-edge"];
 
 describe.each([
   ["light", LIGHT],
@@ -68,9 +75,12 @@ describe.each([
   });
 
   // A box's edge is what shows it is there (WCAG 1.4.11).
-  it.each(GROUNDS)("a control's edge on %s clears 3:1", (ground) => {
-    expect(ratio(hexOf(theme, "--ui-line-control"), hexOf(theme, ground))).toBeGreaterThanOrEqual(3);
-  });
+  it.each(EDGES.flatMap((edge) => GROUNDS.map((ground) => [edge, ground] as const)))(
+    "%s, a control's edge, on %s clears 3:1",
+    (edge, ground) => {
+      expect(ratio(hexOf(theme, edge), hexOf(theme, ground))).toBeGreaterThanOrEqual(3);
+    },
+  );
 });
 
 describe("the dark theme", () => {

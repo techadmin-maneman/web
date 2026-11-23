@@ -18,14 +18,14 @@
   --ui-text: var(--console-dark-ink);
   --ui-text-soft: var(--console-dark-ink-2);
   --ui-text-muted: var(--console-dark-muted);
-  --ui-text-quiet: var(--console-dark-faint);
+  --ui-text-quiet: var(--console-dark-control);
   --ui-toggle-text: var(--console-dark-muted);
   --ui-hint: var(--console-dark-muted);
   --ui-line: var(--console-dark-line);
   --ui-line-control: var(--console-dark-control);
   --ui-strong: var(--console-dark-ink);
   --outline-edge: var(--console-dark-control);
-  --ui-on-strong: var(--console-navy);
+  --ui-on-strong: var(--ink);
   --ui-strong-pressed: var(--console-dark-ink-2);
   --ui-error: var(--console-dark-red);
   --ui-attention: var(--console-dark-amber);
@@ -36,14 +36,20 @@
   --border-subtle: var(--console-dark-line);
   --border-control: var(--console-dark-control);
   --status-error: var(--console-dark-red);
-  --status-warning: var(--console-dark-amber);
+  --status-warning: var(--console-dark-red);
   --status-saved: var(--console-dark-green);
   --status-done: var(--console-dark-green);
   --status-note: var(--console-dark-muted);
   --status-attention: var(--console-dark-amber);
   --focus-colour: var(--brass);
-  --nav-ground: var(--console-navy);
+  --nav-ground: var(--ink);
   --nav-current: var(--console-navy-3);
+  --link-underline: var(--console-dark-control);
+  --pick-on: var(--console-dark-ink);
+  --pick-on-text: var(--ink);
+  --pick-edge: var(--console-dark-control);
+  --choice-edge: var(--console-dark-control);
+  --time-name-colour: var(--console-dark-muted);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -59,14 +65,14 @@
     --ui-text: var(--console-dark-ink);
     --ui-text-soft: var(--console-dark-ink-2);
     --ui-text-muted: var(--console-dark-muted);
-    --ui-text-quiet: var(--console-dark-faint);
+    --ui-text-quiet: var(--console-dark-control);
     --ui-toggle-text: var(--console-dark-muted);
     --ui-hint: var(--console-dark-muted);
     --ui-line: var(--console-dark-line);
     --ui-line-control: var(--console-dark-control);
     --ui-strong: var(--console-dark-ink);
     --outline-edge: var(--console-dark-control);
-    --ui-on-strong: var(--console-navy);
+    --ui-on-strong: var(--ink);
     --ui-strong-pressed: var(--console-dark-ink-2);
     --ui-error: var(--console-dark-red);
     --ui-attention: var(--console-dark-amber);
@@ -77,13 +83,19 @@
     --border-subtle: var(--console-dark-line);
     --border-control: var(--console-dark-control);
     --status-error: var(--console-dark-red);
-    --status-warning: var(--console-dark-amber);
+    --status-warning: var(--console-dark-red);
     --status-saved: var(--console-dark-green);
     --status-done: var(--console-dark-green);
     --status-note: var(--console-dark-muted);
     --status-attention: var(--console-dark-amber);
     --focus-colour: var(--brass);
-    --nav-ground: var(--console-navy);
+    --nav-ground: var(--ink);
     --nav-current: var(--console-navy-3);
+    --link-underline: var(--console-dark-control);
+    --pick-on: var(--console-dark-ink);
+    --pick-on-text: var(--ink);
+    --pick-edge: var(--console-dark-control);
+    --choice-edge: var(--console-dark-control);
+    --time-name-colour: var(--console-dark-muted);
   }
 }

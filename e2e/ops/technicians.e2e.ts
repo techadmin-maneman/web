@@ -93,16 +93,16 @@ test("says what the average is of when the phone timed fewer jobs than were fini
   await expect(sandeep).toContainText(opsCopy.technicians.work.base(30, 34));
 });
 
-// The board letters 1 h 48 min in oxblood, #8A3A2E, and leaves 1 h 31 min quiet, so a
+// The board letters 1 h 48 min in the warning red and leaves 1 h 31 min quiet, so a
 // minute over the planned length is not a technician running over: the API says
 // which run over, by the minutes ops set (technician_work.over_by).
 test("letters an average that runs over in the warning red, and leaves one a minute over quiet", async ({ page }) => {
   await open(page);
-  const oxblood = "rgb(163, 54, 31)"; // --status-warning, the redesign's red (--console-red)
+  const warning = "rgb(163, 54, 31)"; // --status-warning: the brand's red, --red-700
   const over = page.getByRole("row").filter({ hasText: "Faizan Ali" }).getByText("1 h 48 min");
   const near = page.getByRole("row").filter({ hasText: "Sandeep Yadav" }).getByText("1 h 31 min");
-  await expect(over).toHaveCSS("color", oxblood);
-  await expect(near).not.toHaveCSS("color", oxblood);
+  await expect(over).toHaveCSS("color", warning);
+  await expect(near).not.toHaveCSS("color", warning);
 });
 
 // A job that was done and never timed is not a job that took no time.

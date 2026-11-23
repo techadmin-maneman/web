@@ -37,12 +37,12 @@
 
   .plain {
     color: var(--ui-text);
-    text-decoration-color: var(--ui-line);
+    text-decoration-color: var(--link-underline);
   }
 
   .muted {
     color: var(--ui-text-muted);
-    text-decoration-color: var(--ui-line);
+    text-decoration-color: var(--link-underline);
   }
 
   .ink {

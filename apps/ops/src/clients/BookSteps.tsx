@@ -9,6 +9,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TimeChoice, type TimePeriod } from "@maneman/ui/TimeChoice";
 import { typeLook } from "@maneman/ui/type";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { type Reading } from "./book-availability.ts";
 import { addDays, dayClock, shortDate, weekdayDate } from "@maneman/web-kit/dates";
 import { type VisitAvailability } from "../api.ts";
 import styles from "./visit-dialog.module.css";
@@ -67,6 +68,8 @@ export function WhatIsBooked(props: {
   choice: Choice;
   offered: VisitAvailability;
   busy: boolean;
+  /** The services drawn are another kind's while the read for this one runs: none can be chosen for it. */
+  otherKind: boolean;
   onChoice: (choice: Choice) => void;
   onTier: (tier: string) => void;
 }) {
@@ -94,7 +97,7 @@ export function WhatIsBooked(props: {
           label={kindOf(choice) === "first_fit" ? copy.hairSystem : copy.service}
           value={offered.service.tier}
           options={offered.services.map((service) => ({ value: service.tier, label: service.name }))}
-          busy={busy}
+          busy={busy || props.otherKind}
           onChoose={onTier}
         />
       )}
@@ -126,7 +129,7 @@ export function WhenAndWho({
   slot,
   chosen,
   busy,
-  finding,
+  reading,
   onPick,
 }: {
   offered: VisitAvailability;
@@ -135,70 +138,73 @@ export function WhenAndWho({
   chosen: string | null;
   busy: boolean;
   /**
-   * The days and times drawn are for other choices while the read for these runs: they stay where they are, so
-   * nothing jumps, but none can be chosen, as none may be free for these.
+   * While the read for these choices runs, the days and times drawn are another's: they stay where they are, so
+   * nothing jumps, but none can be chosen, as none may be free for these; once the read is seen to take a while,
+   * they dim and it is said.
    */
-  finding: boolean;
+  reading: Reading;
   onPick: (next: Partial<Picked>) => void;
 }) {
   const { day, technicians, technician } = slot;
   return (
-    <div inert={finding} className={finding ? styles.finding : undefined}>
-      <VisuallyHidden role="status">{finding ? copy.loading : ""}</VisuallyHidden>
-      <section className={styles.section} aria-labelledby="book-day">
-        <Step id="book-day" number={2} name={copy.day} />
-        <DateStrip
-          name="book-day"
-          labelledBy="book-day"
-          days={offered.days.map((each) => ({
-            date: each.date,
-            weekday: shortDate(each.date).split(" ")[0] ?? "",
-            number: String(Number(each.date.slice(8))),
-            label: `${weekdayDate(each.date)}, ${copy.free(each.starts.length)}`,
-            open: each.starts.length > 0 && !busy,
-            note: copy.free(each.starts.length),
-          }))}
-          chosen={day?.date ?? null}
-          onChoose={(date) => {
-            onPick({ date, start: undefined, window: undefined });
-          }}
-        />
-      </section>
-      <section className={styles.section} aria-labelledby="book-time">
-        <Step id="book-time" number={3} name={copy.time} />
-        {day === undefined ? (
-          <p className={styles.note}>{copy.noDays}</p>
-        ) : (
-          <>
-            <TimeChoice
-              name="book-time"
-              labelledBy="book-time"
-              periods={periodsOf(day)}
-              chosen={chosen}
-              fullWord={copy.full}
-              takenWord={copy.taken}
-              onChoose={(start) => {
-                onPick({ start });
-              }}
-            />
-            <Choose
-              label={copy.technician}
-              value={technician}
-              options={[
-                { value: "", label: copy.anyone },
-                ...technicians.map((each) => ({
-                  value: each.id,
-                  label: copy.withDrive(each.name, each.added_drive_minutes),
-                })),
-              ]}
-              busy={busy}
-              onChoose={(next) => {
-                onPick({ technician: next });
-              }}
-            />
-          </>
-        )}
-      </section>
-    </div>
+    <>
+      <VisuallyHidden role="status">{reading.slow ? copy.loading : ""}</VisuallyHidden>
+      <div inert={reading.finding} className={reading.slow ? styles.finding : undefined}>
+        <section className={styles.section} aria-labelledby="book-day">
+          <Step id="book-day" number={2} name={copy.day} />
+          <DateStrip
+            name="book-day"
+            labelledBy="book-day"
+            days={offered.days.map((each) => ({
+              date: each.date,
+              weekday: shortDate(each.date).split(" ")[0] ?? "",
+              number: String(Number(each.date.slice(8))),
+              label: `${weekdayDate(each.date)}, ${copy.free(each.starts.length)}`,
+              open: each.starts.length > 0 && !busy,
+              note: copy.free(each.starts.length),
+            }))}
+            chosen={day?.date ?? null}
+            onChoose={(date) => {
+              onPick({ date, start: undefined, window: undefined });
+            }}
+          />
+        </section>
+        <section className={styles.section} aria-labelledby="book-time">
+          <Step id="book-time" number={3} name={copy.time} />
+          {day === undefined ? (
+            <p className={styles.note}>{copy.noDays}</p>
+          ) : (
+            <>
+              <TimeChoice
+                name="book-time"
+                labelledBy="book-time"
+                periods={periodsOf(day)}
+                chosen={chosen}
+                fullWord={copy.full}
+                takenWord={copy.taken}
+                onChoose={(start) => {
+                  onPick({ start });
+                }}
+              />
+              <Choose
+                label={copy.technician}
+                value={technician}
+                options={[
+                  { value: "", label: copy.anyone },
+                  ...technicians.map((each) => ({
+                    value: each.id,
+                    label: copy.withDrive(each.name, each.added_drive_minutes),
+                  })),
+                ]}
+                busy={busy}
+                onChoose={(next) => {
+                  onPick({ technician: next });
+                }}
+              />
+            </>
+          )}
+        </section>
+      </div>
+    </>
   );
 }
