@@ -2,6 +2,7 @@
 // changed or taken off where it stands. Add, in the card's head, opens a drawer to write one. A change made over
 // someone else's reads the page again (src/routes/ops/staff-notes.ts).
 
+import { classes } from "@maneman/ui/classes";
 import { Panel } from "@maneman/ui/Panel";
 import { STAFF_NOTE_MAX_CHARS } from "@rules/policy/staff-notes.ts";
 import { plainDate } from "@maneman/web-kit/plain-date";
@@ -39,10 +40,13 @@ function NoteForm({
   initial,
   onSave,
   onCancel,
+  inDrawer = false,
 }: {
   initial: string;
   onSave: (body: string) => Promise<string | null>;
   onCancel: () => void;
+  /** Written in Add's drawer, across it, rather than in place in the card. */
+  inDrawer?: boolean;
 }) {
   const [body, setBody] = useState(initial);
   const [refused, setRefused] = useState<string | null>(null);
@@ -52,7 +56,7 @@ function NoteForm({
       setRefused(await onSave(body.trim()));
     });
   return (
-    <div className={styles.noteForm}>
+    <div className={classes(styles.noteForm, inDrawer && styles.drawerForm)}>
       <Field label={copy.label}>
         {(control) => (
           <TextArea
@@ -138,7 +142,7 @@ function NoteList(props: {
       </ul>
       {props.adding && (
         <FormDrawer title={copy.formTitle} onClose={props.onCancel}>
-          <NoteForm initial="" onSave={(body) => write(body, null)} onCancel={props.onCancel} />
+          <NoteForm initial="" onSave={(body) => write(body, null)} onCancel={props.onCancel} inDrawer />
         </FormDrawer>
       )}
     </>

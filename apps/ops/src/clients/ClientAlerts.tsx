@@ -2,6 +2,7 @@
 // start (docs/decisions/0242-client-record.md), each with who raised it and when, and taken off where it stands. Add,
 // in the card's head, opens a drawer to raise one. A technician's raised at a visit's close shows with theirs.
 
+import { classes } from "@maneman/ui/classes";
 import { Panel } from "@maneman/ui/Panel";
 import { ALERT_MAX_CHARS } from "@rules/policy/client-record.ts";
 import { plainDate } from "@maneman/web-kit/plain-date";
@@ -44,7 +45,7 @@ function AlertForm({ onSave, onCancel }: { onSave: (body: string) => Promise<str
       setRefused(await onSave(body.trim()));
     });
   return (
-    <div className={styles.noteForm}>
+    <div className={classes(styles.noteForm, styles.drawerForm)}>
       <Field label={copy.label}>
         {(control) => (
           <TextArea

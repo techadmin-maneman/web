@@ -96,6 +96,15 @@
   max-width: var(--skeleton-card);
 }
 
+/* A note or an alert written in a drawer, across it. */
+.drawerForm {
+  max-width: none;
+}
+
+.drawerForm textarea {
+  width: 100%;
+}
+
 /* A take-off refused, beneath the alerts, as far in as they are. */
 .addNote {
   box-sizing: border-box;
