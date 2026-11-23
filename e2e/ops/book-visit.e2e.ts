@@ -172,6 +172,7 @@ test("redraws each choice in place, and takes no time from the last kind's windo
   const premium = { tier: "premium", name: "Premium service", minutes: 120, price: SERVICE_PRICE };
   const reached = gate();
   const released = gate();
+  const premiumRead = gate();
   // Short, so the panel scrolls, and a redraw that moved it would show.
   await page.setViewportSize({ width: 1440, height: 520 });
   await openVisits(page);
@@ -182,6 +183,7 @@ test("redraws each choice in place, and takes no time from the last kind's windo
       reached.open();
       await released.passed;
     }
+    if (asked.get("tier") === "premium") await premiumRead.passed;
     const { price: _price, ...service } = asked.get("tier") === "premium" ? premium : standard;
     const start =
       kind === "first_fit"
@@ -202,7 +204,8 @@ test("redraws each choice in place, and takes no time from the last kind's windo
     await reached.passed;
     const stale = booking.getByRole("radio", { name: "12 pm", exact: true });
     await expect(stale.locator("xpath=ancestor::*[@inert]")).toHaveCount(1);
-    await expect(booking.getByLabel(book.hairSystem)).toBeDisabled();
+    // The services drawn keep the service visit's name, where they stand, until the first fit's come.
+    await expect(booking.getByLabel(book.service, { exact: true }).locator("xpath=ancestor::*[@inert]")).toHaveCount(1);
     await expect(booking.getByRole("button", { name: book.chooseTime })).toBeDisabled();
     await expect(booking.getByRole("status").filter({ hasText: book.loading })).toHaveCount(1);
     released.open();
@@ -210,6 +213,11 @@ test("redraws each choice in place, and takes no time from the last kind's windo
   });
   await inPlace(booking, booking.getByLabel(book.hairSystem), async (tier) => {
     await tier.selectOption("premium");
+    // While its read runs the box keeps the service chosen, and can still be changed.
+    await expect(tier).toHaveValue("premium");
+    await expect(tier).toBeEnabled();
+    premiumRead.open();
+    await expect(booking.locator("[inert]")).toHaveCount(0);
     await expect(tier).toHaveValue("premium");
   });
   await inPlace(booking, booking.getByRole("button", { name: book.later }), (later) => later.click());
@@ -237,6 +245,8 @@ test("says why a booking was refused, and books nothing", async ({ page }) => {
   // read again behind the panel as it stands, not from an empty one.
   await expect(panel(page).getByRole("radio", { name: "12 pm", exact: true })).toHaveCount(0);
   expect(await marked(panel(page).locator("form"))).toBe(true);
+  // Book, pressed, cannot be pressed again with no time chosen: the focus goes to the panel's heading.
+  await expect(panel(page).getByRole("heading", { name: `Book a visit for ${CLIENT.name}` })).toBeFocused();
 });
 
 test("books a consultation asked for from its Tasks row, at the first start in the window asked, and the task goes", async ({

@@ -3,7 +3,7 @@
 
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useEffect, useState } from "react";
-import { type VisitAvailability } from "../api.ts";
+import { type VisitAvailability, type VisitType } from "../api.ts";
 import { clientsApi } from "./clients-api.ts";
 import { type Choice, kindOf } from "./book-slot.ts";
 
@@ -12,12 +12,14 @@ const SAY_AFTER_MS = 300;
 
 /**
  * Where the read for what is being booked stands, while the last answer stays drawn. `finding`: the answer drawn is
- * for other choices, whose times must not be taken for these. `otherKind`: it is for another kind, whose services
- * must not be chosen either. `slow`: the read has run long enough to be seen, and said.
+ * for other choices, whose times must not be taken for these. `drawnKind`: the kind it was read for, whose services
+ * it lists. `tier`: the service asked for while its read runs, drawn as chosen meanwhile. `slow`: the read has run
+ * long enough to be seen, and said.
  */
 export interface Reading {
   readonly finding: boolean;
-  readonly otherKind: boolean;
+  readonly drawnKind: VisitType;
+  readonly tier: string | undefined;
   readonly slow: boolean;
 }
 
@@ -39,6 +41,7 @@ function withoutRefused(offered: VisitAvailability, refused: ReadonlySet<string>
 /** Whether `on` has held, for the same `asked`, as long as SAY_AFTER_MS. */
 function useHeld(on: boolean, asked: string): boolean {
   const [heldFor, setHeldFor] = useState<string | null>(null);
+  if (!on && heldFor !== null) setHeldFor(null);
   useEffect(() => {
     if (!on) return;
     const wait = setTimeout(() => {
@@ -77,7 +80,8 @@ export function useAvailability(clientId: string, choice: Choice, tier: string |
   const finding = loaded.state === "loaded" && loaded.value.asked !== asked;
   const reading: Reading = {
     finding,
-    otherKind: loaded.state === "loaded" && loaded.value.askedKind !== kind,
+    drawnKind: loaded.state === "loaded" ? loaded.value.askedKind : kind,
+    tier: finding ? tier : undefined,
     slow: useHeld(finding, asked),
   };
   const refuse = (startsAt: string) => {

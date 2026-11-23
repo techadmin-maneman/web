@@ -68,12 +68,16 @@ export function WhatIsBooked(props: {
   choice: Choice;
   offered: VisitAvailability;
   busy: boolean;
-  /** The services drawn are another kind's while the read for this one runs: none can be chosen for it. */
-  otherKind: boolean;
+  /**
+   * While the read for another kind runs, the services drawn are the last kind's: they keep its name and stay where
+   * they are, but none can be chosen, dimming once the read is seen to take a while.
+   */
+  reading: Reading;
   onChoice: (choice: Choice) => void;
   onTier: (tier: string) => void;
 }) {
-  const { choice, offered, busy, onChoice, onTier } = props;
+  const { choice, offered, busy, reading, onChoice, onTier } = props;
+  const otherKind = reading.drawnKind !== kindOf(choice);
   return (
     <section className={styles.section} aria-labelledby="book-kind">
       <Step id="book-kind" number={1} name={copy.kind} />
@@ -93,13 +97,15 @@ export function WhatIsBooked(props: {
         ))}
       </div>
       {offered.services.length > 1 && (
-        <Choose
-          label={kindOf(choice) === "first_fit" ? copy.hairSystem : copy.service}
-          value={offered.service.tier}
-          options={offered.services.map((service) => ({ value: service.tier, label: service.name }))}
-          busy={busy || props.otherKind}
-          onChoose={onTier}
-        />
+        <div inert={otherKind} className={otherKind && reading.slow ? styles.finding : undefined}>
+          <Choose
+            label={reading.drawnKind === "first_fit" ? copy.hairSystem : copy.service}
+            value={reading.tier ?? offered.service.tier}
+            options={offered.services.map((service) => ({ value: service.tier, label: service.name }))}
+            busy={busy}
+            onChoose={onTier}
+          />
+        </div>
       )}
       {offered.recommended !== null && offered.recommended !== offered.service.tier && (
         <InlineMessage tone="note">

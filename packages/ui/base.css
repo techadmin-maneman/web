@@ -53,8 +53,9 @@
        fills it, as the technician app's prototype draws every button it cannot use. */
     --outline-off-ground: transparent;
     --outline-off-edge: var(--ui-line);
-    /* A text link's underline (./text-link.module.css): the paper's line, unless the app deepens it. */
-    --link-underline: var(--ui-line);
+    /* A text link's underline (./text-link.module.css): unset, so each link draws the line's colour where it
+       stands, as the technician app's looks set theirs on a screen rather than the page; an app may set one. */
+    --link-underline: initial;
     /* A field's box: the tap's height, which the technician app raises on its body. */
     --field-height: var(--tap);
     --field-text: var(--fs-15);

@@ -544,7 +544,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0205](0205-the-pipeline-as-it-runs.md) | The pipeline as it runs | 2026-10-15 | accepted |  |
 | [0206](0206-trusted-types-and-a-nonce-per-page.md) | Trusted Types enforced, and a nonce on every page | 2026-10-15 | accepted |  |
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
-| [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted | [0225](0225-the-console-on-a-desk-and-a-phone.md) |
+| [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted | [0225](0225-the-console-on-a-desk-and-a-phone.md), [0301](0301-the-console-look-to-the-22-november-redesign.md) |
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted | [0257](0257-razorpay-only.md) |
 | [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md), [0287](0287-a-start-googles-drive-refused-is-not-offered.md), [0289](0289-who-takes-a-visit.md), [0290](0290-allotted-the-evening-before.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |

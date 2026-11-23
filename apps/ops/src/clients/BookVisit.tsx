@@ -113,6 +113,13 @@ function BookingRefusal({
   useEffect(() => {
     if (letGo) focusIfLost(document.getElementById(TITLE_ID));
   }, [letGo]);
+  // A start refused as taken is chosen no more, so Book, pressed, cannot keep the focus: it goes to the heading too.
+  useEffect(() => {
+    if (refused !== "taken") return;
+    const held = document.activeElement;
+    if (held instanceof HTMLButtonElement && held.disabled) held.blur();
+    focusIfLost(document.getElementById(TITLE_ID));
+  }, [refused]);
   return (
     <>
       {refused !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: refused })} />}
@@ -342,7 +349,7 @@ function BookingDrawer({
         choice={choice}
         offered={offered}
         busy={busy}
-        otherKind={reading.otherKind}
+        reading={reading}
         onChoice={(next) => {
           setChoice(next);
           choose({ tier: undefined, start: undefined });

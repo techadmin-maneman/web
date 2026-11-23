@@ -3,6 +3,9 @@
 - Status: accepted
 - Date: 2026-11-23
 - Topic: The ops console
+- Amends [0208](0208-the-console-redesigned.md) on the console's colours, type and density: what is done and saved
+  is green, not the text's ink; the dark theme takes the redesign's palette; boxes and buttons are 34 px, small
+  ones 28
 
 ## Context
 
