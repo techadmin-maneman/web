@@ -1,6 +1,8 @@
 # 0297. A draft its day no longer fits is moved, and two cities are checked a run
 
-- Status: accepted
+- Status: accepted; decision 2 amended 23 November 2026, on the review of #958: the hourly re-plan leaves a draft a
+  failed batch left on its day to its next pass, and the check before the lock tells it only while it is still a draft
+  there
 - Date: 2026-11-23
 - Topic: Booking and visits
 - Amends [0290](0290-allotted-the-evening-before.md), decisions 5 and 6

@@ -1,14 +1,14 @@
 // Fit today (src/domain/booking/fit-today.ts, src/routes/tech/jobs.fit-today.ts, ADR 0299): a plain consultation the
-// technician has just closed as done becomes the client's fit on the spot, as a consultation and fit in one visit with
-// them, where their kit holds a piece made exactly to the client's profile and their day has room to begin now. NOW in
-// these tests is Monday 21 September 2026, 2 pm in India: the consultation was 1 to 2:30. Every name and number is made
-// up.
+// technician has just closed as done, the client going ahead, becomes the client's fit on the spot, as a consultation
+// and fit in one visit with them, where their kit holds a piece made exactly to the client's profile and their day has
+// room to begin now. NOW in these tests is Monday 21 September 2026, 2 pm in India, unless a test says: the consultation
+// was 1 to 2:30. Every name and number is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { LEGAL_VERSIONS } from "../../../src/config/legal-versions.ts";
 import { markDatabase } from "../helpers.ts";
-import { aPackage, aVisit } from "../fixtures/index.ts";
+import { aHold, aPackage, aVisit } from "../fixtures/index.ts";
 import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 
 /** 2 pm in India, the consultation closed half an hour early. */
@@ -19,14 +19,27 @@ const NATURAL = { code: "natural", name: "Mane Man Natural", firstFit: 4_500_000
 
 let job: Working;
 let stockCode: string;
+let now: Date;
 
-/** The consultation closed as done from the phone, at 2 pm. */
-const closedDone = () =>
-  env.DB.prepare(
+/** The consultation closed as done from the phone at `at`, the client going ahead unless `close` says otherwise. */
+async function closedDone(close: object = { going_ahead: true }, at = now) {
+  await env.DB.prepare(
     `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
-       superseded, updated_at) VALUES ('ev-out', ?1, 'ev-out', ?2, 'outcome', '{"outcome":"done"}', ?3, ?3, 0, ?3)`,
+       superseded, updated_at) VALUES (?4, ?1, ?4, ?2, 'outcome', ?5, ?3, ?3, 0, ?3)`,
   )
-    .bind(JOB, IMRAN, TWO_PM.toISOString())
+    .bind(JOB, IMRAN, at.toISOString(), crypto.randomUUID(), JSON.stringify({ outcome: "done", ...close }))
+    .run();
+  // As the close moves it (src/domain/field/job-record.ts).
+  await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(JOB).run();
+}
+
+/** The client agreed to today's terms as they booked the consultation on the site. */
+const agreed = () =>
+  env.DB.prepare(
+    `INSERT INTO terms_acceptances (id, person_id, terms_version, privacy_version, source, ip_hash, created_at)
+     VALUES ('ta-1', ?1, ?2, ?3, 'site_booking', 'hash', ?4)`,
+  )
+    .bind(PERSON, LEGAL_VERSIONS.terms, LEGAL_VERSIONS.privacy, TWO_PM.toISOString())
     .run();
 
 /** The client's latest profile, made to Natural's hair system unless `colour` says otherwise. */
@@ -37,15 +50,6 @@ const profiled = (colour = "1B", at = TWO_PM) =>
      VALUES (?4, ?1, 'ops@localhost', ?2, 'natural', 8, 10, ?3, 0, 100)`,
   )
     .bind(PERSON, at.toISOString(), colour, crypto.randomUUID())
-    .run();
-
-/** The client agreed to today's terms as they booked the consultation on the site. */
-const agreed = () =>
-  env.DB.prepare(
-    `INSERT INTO terms_acceptances (id, person_id, terms_version, privacy_version, source, ip_hash, created_at)
-     VALUES ('ta-1', ?1, ?2, ?3, 'site_booking', 'hash', ?4)`,
-  )
-    .bind(PERSON, LEGAL_VERSIONS.terms, LEGAL_VERSIONS.privacy, TWO_PM.toISOString())
     .run();
 
 /** A piece of the hair system delivered and handed to `technician`'s kit. */
@@ -59,9 +63,18 @@ async function inKitOf(technician: string) {
   });
 }
 
+/** All that Fit today asks of the client and the kit: closed as done going ahead, agreed, profiled, the piece held. */
+async function ready() {
+  await closedDone();
+  await agreed();
+  await profiled();
+  await inKitOf(IMRAN);
+}
+
 beforeEach(async () => {
   await markDatabase();
-  job = await working("consultation", { now: () => TWO_PM });
+  now = TWO_PM;
+  job = await working("consultation", { now: () => now });
   // Both in Gurgaon, where the client's pincode is served, and trained to fit (ADR 0117).
   await env.DB.prepare("UPDATE technicians SET city = 'Gurgaon', fits_trained = 1").run();
   await env.DB.prepare(
@@ -73,18 +86,15 @@ beforeEach(async () => {
 
 const offered = async () =>
   (await job.get(`/api/tech/jobs/${JOB}/fit-today`)).json<{ offer: Record<string, unknown> | null; refusal: string }>();
-const booked = () => job.post(`/api/tech/jobs/${JOB}/fit-today`, undefined, "event-fit-today-01");
+const booked = (event = "event-fit-today-01") => job.post(`/api/tech/jobs/${JOB}/fit-today`, undefined, event);
 
 describe("Fit today", () => {
   it("is offered with the piece in the kit and a start to begin now, and books a fixed one visit with this technician", async () => {
-    await closedDone();
-    await agreed();
-    await profiled();
-    await inKitOf(IMRAN);
+    await ready();
     const offer = await offered();
     expect(offer).toMatchObject({
       refusal: null,
-      offer: { product: NATURAL.name, stock_code: stockCode, minutes: 120 },
+      offer: { product: NATURAL.name, stock_code: stockCode, minutes: 120, pays_by: "link" },
     });
     const startsAt = String(offer.offer?.starts_at);
     // Within the hour a technician may check in ahead of a start, so they begin at once.
@@ -123,34 +133,60 @@ describe("Fit today", () => {
     });
   });
 
-  it("books it once: the client's fit to come refuses a second", async () => {
-    await closedDone();
-    await agreed();
-    await profiled();
-    await inKitOf(IMRAN);
-    expect((await booked()).status).toBe(201);
+  it("books it once: asked again, it answers with the fit booked, and offers it no more", async () => {
+    await ready();
+    const first = await (await booked()).json<{ visit_id: string }>();
+    const again = await booked("event-fit-today-02");
+    expect(again.status).toBe(201);
+    expect(await again.json()).toEqual({ visit_id: first.visit_id });
     expect(await offered()).toEqual({ offer: null, refusal: "fit_booked" });
-    expect((await job.post(`/api/tech/jobs/${JOB}/fit-today`, undefined, "event-fit-today-02")).status).toBe(409);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM appointments WHERE type = 'first_fit'").first("n")).toBe(1);
   });
 
   it("is not offered before the consultation is closed as done, nor on another technician's", async () => {
+    await agreed();
     await profiled();
     await inKitOf(IMRAN);
     expect(await offered()).toEqual({ offer: null, refusal: "not_offered" });
     expect((await booked()).status).toBe(404);
     await closedDone();
-    await agreed();
     await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(JOB, SAMEER).run();
     expect(await offered()).toEqual({ offer: null, refusal: "not_offered" });
   });
 
-  // Booked by phone, the client has agreed to nothing in their own app or on the site.
+  it("is not offered where the client is not going ahead, or the close reached us over an hour ago", async () => {
+    await agreed();
+    await profiled();
+    await inKitOf(IMRAN);
+    await closedDone({ going_ahead: false, lost_reason: "price" });
+    expect(await offered()).toEqual({ offer: null, refusal: "not_offered" });
+    expect((await booked()).status).toBe(404);
+    // Closed again, going ahead: offered, until the close is over an hour old and the technician has gone.
+    await closedDone({ going_ahead: true }, new Date(TWO_PM.getTime() + 60_000));
+    expect((await offered()).refusal).toBeNull();
+    now = new Date(TWO_PM.getTime() + 66 * 60_000);
+    expect(await offered()).toEqual({ offer: null, refusal: "not_offered" });
+  });
+
   it("is not offered to a client who has not agreed to today's terms", async () => {
+    // Booked by phone, the client has agreed to nothing in their own app or on the site.
     await closedDone();
     await profiled();
     await inKitOf(IMRAN);
     expect(await offered()).toEqual({ offer: null, refusal: "terms_needed" });
     expect((await booked()).status).toBe(422);
+  });
+
+  it("is not offered where a first fit's payment link ops sent is still open", async () => {
+    await ready();
+    await aHold({
+      person_id: PERSON,
+      technician_id: SAMEER,
+      type: "first_fit",
+      pay_by_link: 1,
+      expires_at: new Date(TWO_PM.getTime() + 60 * 60_000).toISOString(),
+    });
+    expect(await offered()).toEqual({ offer: null, refusal: "fit_booked" });
   });
 
   it("is not offered where no piece in this technician's kit is made exactly to the profile", async () => {
@@ -166,11 +202,8 @@ describe("Fit today", () => {
     expect((await booked()).status).toBe(422);
   });
 
-  it("is not offered where the technician's day has no room to begin now", async () => {
-    await closedDone();
-    await agreed();
-    await profiled();
-    await inKitOf(IMRAN);
+  it("is not offered where the technician's day has no room for the fit", async () => {
+    await ready();
     // Imran's next visit, at 4 pm, leaves no two hours.
     await aVisit({
       person_id: PERSON,
@@ -184,5 +217,29 @@ describe("Fit today", () => {
     });
     expect(await offered()).toEqual({ offer: null, refusal: "no_room" });
     expect((await booked()).status).toBe(409);
+  });
+
+  it("is not offered where the first start is later than the technician may check in ahead of it", async () => {
+    // At 2:05 the first start is 2:30; ops let a technician check in only ten minutes ahead of a start.
+    now = new Date(TWO_PM.getTime() + 5 * 60_000);
+    await ready();
+    expect((await offered()).refusal).toBeNull();
+    await env.DB.prepare(
+      `INSERT INTO ops_settings (name, value, set_by, set_at)
+       VALUES ('phone_clock', '{"before_start": 10, "held_offline": 24}', 'ops', ?1)`,
+    )
+      .bind(TWO_PM.toISOString())
+      .run();
+    expect(await offered()).toEqual({ offer: null, refusal: "no_room" });
+  });
+
+  it("is not offered where the fit would start in the evening, when no one visit is booked", async () => {
+    // The consultation was 3 to 4, closed at 4:05: the first start, 4:30, is in the evening.
+    now = new Date("2026-09-21T10:35:00.000Z");
+    await env.DB.prepare("UPDATE appointments SET window_start = ?2, window_end = ?3 WHERE id = ?1")
+      .bind(JOB, "2026-09-21T09:30:00.000Z", "2026-09-21T10:30:00.000Z")
+      .run();
+    await ready();
+    expect(await offered()).toEqual({ offer: null, refusal: "no_room" });
   });
 });

@@ -6305,6 +6305,11 @@ export interface components {
                 /** Format: date-time */
                 starts_at: string;
                 minutes: number;
+                /**
+                 * @description How the client pays once fitted: by the link the close asks for, or by UPI at the visit while online payment is off (ADR 0209).
+                 * @enum {string}
+                 */
+                pays_by: "link" | "at_visit";
             } | null;
             /** @description Why it is not offered: not_offered (not this technician's plain consultation closed done today), fit_booked, terms_needed (the client has not agreed to today's terms on the site or in the app), not_in_kit (no piece made exactly to the profile), no_product, no_room (no start near enough to begin now, or too late in the day for a one visit). Null with an offer. */
             refusal: ("not_offered" | "fit_booked" | "terms_needed" | "not_in_kit" | "no_product" | "no_room") | null;

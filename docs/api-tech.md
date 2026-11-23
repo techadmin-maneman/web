@@ -11857,6 +11857,14 @@ One of the client's try-on looks, under the card's own unlock, never cached
             },
             "minutes": {
               "type": "integer"
+            },
+            "pays_by": {
+              "type": "string",
+              "enum": [
+                "link",
+                "at_visit"
+              ],
+              "description": "How the client pays once fitted: by the link the close asks for, or by UPI at the visit while online payment is off (ADR 0209)."
             }
           },
           "required": [
@@ -11864,7 +11872,8 @@ One of the client's try-on looks, under the card's own unlock, never cached
             "stock_code",
             "stock_name",
             "starts_at",
-            "minutes"
+            "minutes",
+            "pays_by"
           ],
           "additionalProperties": false
         },

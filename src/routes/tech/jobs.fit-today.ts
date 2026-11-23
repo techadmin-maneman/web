@@ -1,9 +1,12 @@
 // Fit today, from the technician's side (docs/decisions/0299-fit-today.md): whether a plain consultation they have just
 // closed as done may become the client's fit on the spot, and booking it. Both need signal: the booking is the
-// engine's own, never queued on the phone.
+// engine's own, never queued on the phone. A booking asked again, once the first was made, is answered with the fit
+// booked, so a tap after the phone stopped waiting never reads as a refusal.
 
 import { z } from "@hono/zod-openapi";
-import { fitTodayOf, holdFitToday, type FitTodayRefusal } from "../../domain/booking/fit-today.ts";
+import { bookedAtTheDoor, fitTodayOf, holdFitToday, type FitTodayRefusal } from "../../domain/booking/fit-today.ts";
+import { takesPaymentsOnline } from "../../providers/payments/index.ts";
+import { driveCheckOf } from "../../http/drive-check.ts";
 import { visitOfHold } from "../../domain/booking/booked-hold.ts";
 import { bookHold } from "../../http/book-hold.ts";
 import type { App } from "../../http/context.ts";
@@ -32,6 +35,11 @@ const FitTodaySchema = z
           stock_name: z.string(),
           starts_at: z.iso.datetime(),
           minutes: z.number().int(),
+          pays_by: z.enum(["link", "at_visit"]).openapi({
+            description:
+              "How the client pays once fitted: by the link the close asks for, or by UPI at the visit while online " +
+              "payment is off (ADR 0209).",
+          }),
         })
         .strict(),
       z.null(),
@@ -106,14 +114,19 @@ export function registerTechFitToday(app: App): void {
       stock_name: stock.name,
       starts_at: startsAt.toISOString(),
       minutes: service.minutes,
+      pays_by: takesPaymentsOnline(c.var.deps.payments) ? ("link" as const) : ("at_visit" as const),
     };
     return c.json({ offer, refusal: null }, 200);
   });
 
   app.openapi(bookFitTodayRoute, async (c) => {
     const asked = { technicianId: technicianOf(c).technicianId, jobId: c.req.valid("param").id, now: c.var.deps.now() };
-    const held = await holdFitToday(c.env.DB, asked);
-    if (!held.ok) return refuse(c, CODE_OF[held.refusal]);
+    const held = await holdFitToday(c.env.DB, asked, driveCheckOf(c));
+    if (!held.ok) {
+      const booked = held.refusal === "fit_booked" ? await bookedAtTheDoor(c.env.DB, asked) : null;
+      if (booked !== null) return c.json({ visit_id: booked }, 201);
+      return refuse(c, CODE_OF[held.refusal]);
+    }
     await bookHold(c, held.holdId);
     c.var.log.info("fit_today_booked", { hold_id: held.holdId });
     return c.json({ visit_id: await visitOfHold(c.env.DB, held.holdId) }, 201);

@@ -110,8 +110,8 @@ export interface HoldInput {
   payByLink?: boolean;
   /** Paid by UPI at the visit, nothing taken now: ops booked it while online payment is off. */
   payAtVisit?: boolean;
-  /** Booked at the door by the technician there: today from now (./start-offers.ts). */
-  atTheDoor?: boolean;
+  /** The technician at the door, where they book it there: today from now, with them (./start-offers.ts). */
+  atTheDoor?: string;
   /** Written in the same batch, so they stand or fall with the hold: the person and their consent, from the site. */
   alongside?: readonly D1PreparedStatement[];
   /** Written after the hold, in its batch, given its ID: the site's discount code (docs/decisions/0108-discount-codes.md). */
@@ -163,7 +163,7 @@ async function candidatesFor({
         type: service.type,
         minutes: service.minutes,
         fitting: fittingOf(service.type, service.tier),
-        atTheDoor: input.atTheDoor === true,
+        ...(input.atTheDoor === undefined ? {} : { atTheDoor: input.atTheDoor }),
       },
       from: date,
       days: 1,
@@ -325,7 +325,8 @@ function holdRow(
 /**
  * Holds the start the client chose, or the best start in their window, with whoever it costs least
  * (./start-offers.ts, src/policy/allotment.ts), never the technician who took the client's visit just before or just
- * after it (src/domain/booking/technician-rotation.ts). Where Google is on, the drives either side are checked first.
+ * after it (src/domain/booking/technician-rotation.ts), but for the technician at the door booking it there. Where
+ * Google is on, the drives either side are checked first.
  * Holds nobody is paying for are let go first. A start only a draft's move makes room for is held with that move
  * (./make-room.ts). Null when nobody is free, or the day is blacked out. The hold waits `holdSeconds` for payment, and
  * keeps its time for `graceSeconds` after, both as ops set them when it is made.

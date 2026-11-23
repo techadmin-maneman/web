@@ -5,7 +5,8 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { startedThrough, writesTo } from "./steps-fixtures.ts";
+import { stepAction, startedThrough, writesTo } from "./steps-fixtures.ts";
+import type { Page } from "@playwright/test";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 const { closeOut } = techCopy;
@@ -103,22 +104,31 @@ test("a way to finish the work chosen with no signal is kept, and goes to ops on
   await expect.poll(() => writesTo(fake, "finish-ask").at(-1)?.body, { timeout: 20_000 }).toEqual({ ask: "ops_call" });
 });
 
-// Fit today (ADR 0299): at a plain consultation closed as done, where the kit holds the client's piece.
+// Fit today (ADR 0299): at a plain consultation closed as done, the client going ahead, where the kit holds their piece.
 const FIT_ID = "44444444-4444-4444-8444-444444444441";
 const OFFER = {
   product: "Mane Man Natural",
   stock_code: "hs_natural_8x10_1b",
   stock_name: "Mane Man Natural 8×10 1B",
   minutes: 120,
+  pays_by: "link",
 };
 
-test("a consultation closed done offers Fit today with the piece in the kit and what the client pays, and opens the fit", async ({
+/** The consultation closed on the phone as a technician closes it: the client going ahead, nothing picked on Options. */
+async function closedGoingAhead(page: Page, fake: Awaited<ReturnType<typeof fakeTech>>) {
+  fake.type = "consultation";
+  startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
+  await page.goto(`/jobs/${JOB_ID}/outcome`);
+  await stepAction(page).click();
+  await page.getByRole("radio", { name: techCopy.steps.outcome.yes, exact: true }).click();
+  await stepAction(page).click();
+  await expect(page.getByRole("heading", { level: 1, name: closeOut.titles.closed })).toBeVisible();
+}
+
+test("a consultation closed going ahead offers Fit today with the piece in the kit and what the client pays, and opens the fit", async ({
   page,
 }) => {
   const fake = await fakeTech(page);
-  fake.type = "consultation";
-  startedThrough(fake, "before_photos", "checklist", "outcome");
-  fake.progress = { ...fake.progress, outcome: "done" };
   const startsAt = new Date(Date.now() + 30 * 60_000).toISOString();
   const posted: string[] = [];
   // Registered after the fake, so it answers first.
@@ -129,24 +139,23 @@ test("a consultation closed done offers Fit today with the piece in the kit and 
     }
     return route.fulfill({ json: { offer: { ...OFFER, starts_at: startsAt }, refusal: null } });
   });
-  await page.goto(`/jobs/${JOB_ID}/done`);
+  await closedGoingAhead(page, fake);
 
   const fit = page.getByRole("region", { name: closeOut.fitToday.title });
   await expect(fit).toContainText(OFFER.stock_name);
+  await expect(fit).toContainText(closeOut.fitToday.paysLink);
+  // The Fit row above names the yes alone: the fit may be booked now, not left to ops.
+  await expect(page.getByText(closeOut.goingAheadToday(null), { exact: true })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
-  await expect(fit).toContainText(closeOut.fitToday.pays);
   await fit.getByRole("button", { name: closeOut.fitToday.action }).click();
   await expect(page).toHaveURL(new RegExp(`/jobs/${FIT_ID}$`));
   expect(posted).toHaveLength(1);
 });
 
-test("a consultation closed done offers nothing where Fit today is refused, and says why a booking failed", async ({
+test("a consultation closed going ahead offers nothing where Fit today is refused, and a refused booking takes the button", async ({
   page,
 }) => {
   const fake = await fakeTech(page);
-  fake.type = "consultation";
-  startedThrough(fake, "before_photos", "checklist", "outcome");
-  fake.progress = { ...fake.progress, outcome: "done" };
   let offered = false;
   await page.route(`**/api/tech/jobs/${JOB_ID}/fit-today`, (route) => {
     if (route.request().method() === "POST") {
@@ -159,13 +168,16 @@ test("a consultation closed done offers nothing where Fit today is refused, and 
         : { offer: null, refusal: "not_in_kit" },
     });
   });
-  await page.goto(`/jobs/${JOB_ID}/done`);
-  await expect(page.getByRole("heading", { level: 1, name: closeOut.titles.closed })).toBeVisible();
+  await closedGoingAhead(page, fake);
   await expect(page.getByRole("region", { name: closeOut.fitToday.title })).toHaveCount(0);
+  // With nothing offered, ops book the fit, as the row says.
+  await expect(page.getByText(closeOut.goingAhead(null), { exact: true })).toBeVisible();
 
   offered = true;
   await page.reload();
   const fit = page.getByRole("region", { name: closeOut.fitToday.title });
   await fit.getByRole("button", { name: closeOut.fitToday.action }).click();
-  await expect(fit.getByRole("status")).toHaveText(closeOut.fitToday.failed.taken);
+  await expect(fit.getByRole("alert")).toHaveText(closeOut.fitToday.failed.taken);
+  // Refused for good: no button to try again with.
+  await expect(fit.getByRole("button", { name: closeOut.fitToday.action })).toHaveCount(0);
 });

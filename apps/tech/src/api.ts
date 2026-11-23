@@ -37,6 +37,8 @@ export type Me = Schema["TechnicianMe"];
 export type Challenge = Schema["TechnicianChallenge"];
 /** A job on the day's list: its address once unlocked, and the next job still to do from it. */
 export type JobSummary = Schema["TechnicianDayJob"];
+/** Fit today's offer at a consultation's close: the piece in the kit, when the fit would start, how it is paid. */
+export type FitTodayOffer = NonNullable<Schema["TechnicianFitToday"]["offer"]>;
 /** A job of a past week on Schedule: its time, length, kind and how it closed, and nothing of its client. */
 export type PastJob = Schema["TechnicianPastJob"];
 /** A job's card. One an earlier build kept on the phone carries no check-in radius. */

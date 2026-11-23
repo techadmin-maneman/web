@@ -60,6 +60,8 @@ export const SENSITIVE_PATHS = [
   "src/routes/ops/credits",
   "src/routes/ops/visits",
   "src/routes/ops/upi-payments",
+  // A fit booked at the door, sold as a one visit and paid once fitted (docs/decisions/0299-fit-today.md)
+  "src/routes/tech/jobs.fit-today",
   // Consent, erasure, deletion, retention and a client's export of their data; clients' chats; the reporting copy
   "src/domain/privacy/",
   "src/domain/care/",

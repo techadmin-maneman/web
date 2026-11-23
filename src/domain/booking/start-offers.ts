@@ -5,7 +5,9 @@
 // Today is offered from the lead time on, and only for a kind of visit ops let clients book for today. A day ops
 // black out, or from the day a service is retired on, is offered to nobody; and no technician who took the client's
 // visit just before or just after that day takes it, unless nobody else can. A start nobody can take is offered where
-// moving one draft to another technician makes room for it (./make-room.ts).
+// moving one draft to another technician makes room for it (./make-room.ts). A visit booked at the door, as Fit today
+// is (./fit-today.ts), is offered today from now, and the technician at the door may take it though they took the
+// visit before.
 
 import type { VisitType } from "../../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant, indiaTime } from "../../lib/india-time.ts";
@@ -34,10 +36,10 @@ export interface StartVisit {
   readonly until?: string | null;
   readonly fitting?: Fitting | null;
   /**
-   * Booked at the door by the technician there, as Fit today is (./fit-today.ts): today from now, whatever ops let
-   * clients book for today and the lead time they keep, and with that technician, though the rotation would bar them.
+   * The technician at the door, where they book it there, as Fit today is (./fit-today.ts): today from now, whatever ops
+   * let clients book for today and the lead time they keep, and with them, though the rotation would bar them.
    */
-  readonly atTheDoor?: boolean;
+  readonly atTheDoor?: string;
 }
 
 /** Whose visit it is and where, and what the days are read without. */
@@ -101,7 +103,7 @@ function earliestOn(date: string, visit: StartVisit, inputs: OpsInputs, now: Dat
   const today = indiaDate(now);
   if (date < today) return null;
   if (date > today) return 0;
-  if (visit.atTheDoor === true) return minuteOf(indiaTime(now));
+  if (visit.atTheDoor !== undefined) return minuteOf(indiaTime(now));
   if (visit.type === undefined || visit.type === null || inputs.sameDayBooking[visit.type] !== "yes") return null;
   return minuteOf(indiaTime(now)) + inputs.bookingRules.lead * 60;
 }
@@ -251,8 +253,8 @@ async function startsOn(offering: Offering, date: string, earliest: number): Pro
     );
   }
   // At the door, the technician there goes on to the fit they just consulted for: the rotation is between visits.
-  const barred =
-    offering.visit.atTheDoor === true ? new Set<string>() : techniciansBarredOn(offering.clientVisits, date);
+  const barred = new Set(techniciansBarredOn(offering.clientVisits, date));
+  if (offering.visit.atTheDoor !== undefined) barred.delete(offering.visit.atTheDoor);
   return [...byStart.entries()]
     .sort(([a], [b]) => a - b)
     .map(([start, takers]): StartOffer => {

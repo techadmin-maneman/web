@@ -19,7 +19,10 @@ fit, and Fit today is not offered where the client has a first fit booked alread
 
 1. **Offered at a plain consultation the technician has closed as done today** (`fitTodayOf`,
    `src/domain/booking/fit-today.ts`; `GET /api/tech/jobs/{id}/fit-today`), where all of these hold:
-   - the client has no first fit, nor consultation and fit, to come (`liveVisitOf`);
+   - the close says the client is going ahead with a fit, with no reason not to, and reached us no longer ago than
+     the technician may check in ahead of a start (the phone clock's `before_start`), so they are still at the door;
+   - the client has no first fit, consultation and fit, or consultation to come, nor a first fit's payment link ops
+     sent still open (`liveVisitOf`, `linkStillOpen`), as ops booking one would refuse;
    - the client has agreed to today's terms in their own channel, on the site or in the app, as they booked
      (`agreedToToday`, `src/domain/privacy/terms-acceptances.ts`; ADR 0191): the owner's default that the client agrees
      in their own app, not the technician for them;
@@ -34,8 +37,14 @@ fit, and Fit today is not offered where the client has a first fit booked alread
    the technician they chose, so it is fixed, never a draft (ADR 0290), and confirmed at once. A visit booked at the
    door (`atTheDoor`, `src/domain/booking/start-offers.ts`) is offered today from now, whatever ops let clients book
    for today and the lead time they keep, and with the technician at the door though the rotation (ADR 0117) would bar
-   them: the rotation is between visits, and this is the visit going on. Every other rule of a start stands.
-3. **Paid as any one visit**: the close as fitted asks for the product's payment link (ADR 0105).
+   them alone: the rotation is between visits, and this is the visit going on. Every other rule of a start stands,
+   the drives either side asked of Google before it is held as at any booking (ADR 0287). Asked again once booked, as a
+   tap after the phone stopped waiting for the first, it answers with the fit booked.
+3. **Paid as any one visit**: the close as fitted asks for the product's payment link (ADR 0105); while online payment
+   is off, the client pays by UPI at the visit (ADR 0209), and the offer says which.
+4. **One tap books it, with no question after**: the offer says what the client pays and when the fit would start. The
+   plan asked once more before booking; the shared confirmation (`ConfirmSheet`) asks before what cannot be taken back,
+   with the answer drawn as a danger, and a booking ops can cancel is not that.
 
 ## Consequences
 

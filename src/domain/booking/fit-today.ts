@@ -1,33 +1,34 @@
-// Fit today (docs/decisions/0299-fit-today.md): at a plain consultation the technician has just closed as done, where
-// their kit holds a piece made exactly to the client's hair profile and their day has room for the fit from now, the
-// fit is booked on the spot as a consultation and fit in one visit (ADR 0105): with them, fixed, paid once the client is
-// fitted, by the link the close asks for. Nothing here is a new rule of booking: the hold is the booking engine's, at
-// the door's start, and refused where its checks refuse it.
+// Fit today (docs/decisions/0299-fit-today.md): at a plain consultation the technician has just closed as done, the
+// client going ahead, where their kit holds a piece made exactly to the client's hair profile and their day has room for
+// the fit from now, the fit is booked on the spot as a consultation and fit in one visit (ADR 0105): with them, fixed,
+// paid once the client is fitted. Nothing here is a new rule of booking: the hold is the booking engine's, at the door's
+// start, its drives checked on Google, and refused where its checks refuse it.
 
 import { HOLD_SECONDS } from "../../config/scheduling.ts";
-import { indiaDate } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { ONE_VISIT_TERMS, ONE_VISIT_WINDOWS } from "../../policy/one-visit.ts";
-import { readOpsInputs } from "../platform/ops-settings.ts";
 import { windowAt } from "../../policy/slot-times.ts";
 import { cityOfPerson } from "../cities/cities.ts";
 import { currentAddress } from "../clients/profile.ts";
 import { hairSystemSpecs } from "../inventory/hair-systems.ts";
 import { stockMatch } from "../inventory/stock-match.ts";
+import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
 import { agreedToToday } from "../privacy/terms-acceptances.ts";
-import { landedOutcome } from "../visits/visit-begun.ts";
 import { liveVisitOf } from "./availability.ts";
 import { confirmUnpaid } from "./bookings.ts";
+import type { DriveCheck } from "./drive-check.ts";
 import { holdSlot } from "./hold-slot.ts";
 import { fittingOf } from "./occupancy.ts";
 import { bookableService, type PricedService } from "./services.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { startOffers } from "./start-offers.ts";
+import { linkStillOpen } from "./visit-booking.ts";
 
 /** Why Fit today is not offered. */
 export type FitTodayRefusal =
-  /** Not this technician's plain consultation, closed as done today. */
+  /** Not this technician's plain consultation, closed as done today within the hour, the client going ahead. */
   | "not_offered"
-  /** The client has a first fit, or a consultation and fit, to come. */
+  /** The client has a first fit, a consultation and fit, a consultation or a first fit's payment link to come. */
   | "fit_booked"
   /** The client has not agreed to today's terms in their own app or on the site, as a fit sold to them needs. */
   | "terms_needed"
@@ -55,18 +56,46 @@ interface Asked {
   readonly now: Date;
 }
 
-/** The client of the technician's plain consultation closed as done today; null for any other job. */
-async function consultedToday(db: D1Database, { technicianId, jobId, now }: Asked): Promise<string | null> {
+/** How the consultation's close landed: its result, and whether the client is going ahead. */
+interface Close {
+  readonly outcome?: unknown;
+  readonly going_ahead?: unknown;
+  readonly lost_reason?: unknown;
+}
+
+/**
+ * The client of the technician's plain consultation today, closed as done with the client going ahead, its close
+ * reaching us no longer ago than the technician may check in ahead of a start (the phone clock's before_start), so they
+ * are still at the door; null for any other job.
+ */
+async function consultedToday(db: D1Database, asked: Asked, inputs: OpsInputs): Promise<string | null> {
+  const { technicianId, jobId, now } = asked;
   const row = await db
     .prepare(
-      `SELECT a.person_id, a.window_start, ${landedOutcome("a")} AS landed_outcome FROM appointments a
+      `SELECT a.person_id, a.window_start, e.body, e.received_at FROM appointments a
+       JOIN job_events e ON e.id = (SELECT je.id FROM job_events je
+         WHERE je.appointment_id = a.id AND je.kind = 'outcome' AND je.superseded = 0
+         ORDER BY je.received_at DESC, je.rowid DESC LIMIT 1)
        WHERE a.id = ?1 AND a.technician_id = ?2 AND a.deleted_at IS NULL AND a.type = 'consultation'
          AND a.one_visit IS NULL AND a.person_id IS NOT NULL`,
     )
     .bind(jobId, technicianId)
-    .first<{ person_id: string; window_start: string; landed_outcome: string | null }>();
-  if (row?.landed_outcome !== "done") return null;
-  return indiaDate(new Date(row.window_start)) === indiaDate(now) ? row.person_id : null;
+    .first<{ person_id: string; window_start: string; body: string; received_at: string }>();
+  if (row === null || indiaDate(new Date(row.window_start)) !== indiaDate(now)) return null;
+  const close = JSON.parse(row.body) as Close;
+  if (close.outcome !== "done" || close.going_ahead !== true || close.lost_reason !== undefined) return null;
+  const since = now.getTime() - Date.parse(row.received_at);
+  return since <= inputs.phoneClock.before_start * 60_000 ? row.person_id : null;
+}
+
+/** Whether the client has a fit, or a consultation, to come, or a first fit's link still open, which a fit would double. */
+async function fitToCome(db: D1Database, personId: string, now: Date): Promise<boolean> {
+  const [fit, consultation, link] = await Promise.all([
+    liveVisitOf(db, personId, { type: "first_fit", now }),
+    liveVisitOf(db, personId, { type: "consultation", now }),
+    linkStillOpen(db, personId, "first_fit", now),
+  ]);
+  return fit !== null || consultation !== null || link;
 }
 
 /**
@@ -86,9 +115,14 @@ async function inTheKit(db: D1Database, personId: string, technicianId: string) 
  * The technician's first start from now, where a one visit may start then and it is near enough to begin at once: no
  * later than they may check in ahead of a start (the phone clock's before_start, an hour until ops change it).
  */
-async function startFromNow(db: D1Database, personId: string, service: PricedService, asked: Asked) {
-  const today = indiaDate(asked.now);
-  const [days, schedule, inputs] = await Promise.all([
+async function startFromNow(
+  db: D1Database,
+  personId: string,
+  service: PricedService,
+  at: Asked & { inputs: OpsInputs },
+) {
+  const today = indiaDate(at.now);
+  const [days, schedule] = await Promise.all([
     startOffers({
       db,
       placing: { personId },
@@ -96,65 +130,61 @@ async function startFromNow(db: D1Database, personId: string, service: PricedSer
         type: "first_fit",
         minutes: service.minutes,
         fitting: fittingOf("first_fit", service.tier),
-        atTheDoor: true,
+        atTheDoor: at.technicianId,
       },
       from: today,
       days: 1,
-      now: asked.now,
+      now: at.now,
+      inputs: at.inputs,
     }),
     loadSlotSchedule(db),
-    readOpsInputs(db, asked.now),
   ]);
   const first = (days[0]?.starts ?? []).find((start) =>
-    start.takers.some((taker) => taker.technician.id === asked.technicianId),
+    start.takers.some((taker) => taker.technician.id === at.technicianId),
   );
   if (first === undefined) return null;
-  if (first.startsAt.getTime() - asked.now.getTime() > inputs.phoneClock.before_start * 60_000) return null;
+  if (first.startsAt.getTime() - at.now.getTime() > at.inputs.phoneClock.before_start * 60_000) return null;
   const window = windowAt(first.time, schedule.on(today));
-  return (ONE_VISIT_WINDOWS as readonly string[]).includes(window) ? { startsAt: first.startsAt, window } : null;
+  return (ONE_VISIT_WINDOWS as readonly string[]).includes(window) ? first.startsAt : null;
 }
 
 /** Fit today, offered where the consultation, the client, the kit and the day allow it; else why not. */
 export async function fitTodayOf(db: D1Database, asked: Asked): Promise<Offered> {
-  const personId = await consultedToday(db, asked);
+  const inputs = await readOpsInputs(db, asked.now);
+  const personId = await consultedToday(db, asked, inputs);
   if (personId === null) return { ok: false, refusal: "not_offered" };
-  if ((await liveVisitOf(db, personId, { type: "first_fit", now: asked.now })) !== null) {
-    return { ok: false, refusal: "fit_booked" };
-  }
+  if (await fitToCome(db, personId, asked.now)) return { ok: false, refusal: "fit_booked" };
   if (!(await agreedToToday(db, personId))) return { ok: false, refusal: "terms_needed" };
   const stock = await inTheKit(db, personId, asked.technicianId);
   if (stock === null) return { ok: false, refusal: "not_in_kit" };
   const city = await cityOfPerson(db, personId);
   const service = await bookableService(db, { kind: "first_fit", tier: stock.product, on: indiaDate(asked.now), city });
   if (service === null) return { ok: false, refusal: "no_product" };
-  const start = await startFromNow(db, personId, service, asked);
-  if (start === null) return { ok: false, refusal: "no_room" };
-  return {
-    ok: true,
-    fit: { personId, service, stock: { code: stock.code, name: stock.name }, startsAt: start.startsAt },
-  };
+  const startsAt = await startFromNow(db, personId, service, { ...asked, inputs });
+  if (startsAt === null) return { ok: false, refusal: "no_room" };
+  return { ok: true, fit: { personId, service, stock: { code: stock.code, name: stock.name }, startsAt } };
 }
 
 /**
  * Fit today held and confirmed, as ops book a consultation and fit in one visit with the technician they chose: nothing
- * paid now, sold under the one visit's terms. The hold's ID, for the caller to book; else why not.
+ * paid now, sold under the one visit's terms, the drives either side asked of Google first where it is on. The hold's
+ * ID, for the caller to book; else why not.
  */
 export async function holdFitToday(
   db: D1Database,
   asked: Asked,
+  drives: DriveCheck | null,
 ): Promise<{ readonly ok: true; readonly holdId: string } | { readonly ok: false; readonly refusal: FitTodayRefusal }> {
   const offered = await fitTodayOf(db, asked);
   if (!offered.ok) return offered;
   const { personId, service, startsAt } = offered.fit;
-  const address = await currentAddress(db, personId);
-  const today = indiaDate(asked.now);
-  const schedule = await loadSlotSchedule(db);
+  const [address, schedule] = await Promise.all([currentAddress(db, personId), loadSlotSchedule(db)]);
   const hold = await holdSlot({
     db,
     input: {
       personId,
       service: { type: "first_fit", tier: service.tier, minutes: service.minutes },
-      date: today,
+      date: indiaDate(asked.now),
       window: schedule.at(startsAt.toISOString()).window,
       startsAt,
       price: { amount: 0, amount_ex_gst: 0, gst_percent: service.price.gst_percent },
@@ -163,12 +193,36 @@ export async function holdFitToday(
       oneVisit: true,
       from: "ops",
       technicianId: asked.technicianId,
-      atTheDoor: true,
+      atTheDoor: asked.technicianId,
     },
     now: asked.now,
     holdSeconds: HOLD_SECONDS,
-    drives: null,
+    drives,
   });
   if (hold === null || !(await confirmUnpaid(db, hold.id, asked.now))) return { ok: false, refusal: "no_room" };
   return { ok: true, holdId: hold.id };
+}
+
+/**
+ * The fit this technician booked at the door today for the consultation's client, where they did: a booking asked again,
+ * as a tap after the phone stopped waiting for the first, is answered with it.
+ */
+export async function bookedAtTheDoor(db: D1Database, asked: Asked): Promise<string | null> {
+  const today = indiaDate(asked.now);
+  const row = await db
+    .prepare(
+      `SELECT f.id FROM appointments f
+       WHERE f.person_id = (SELECT c.person_id FROM appointments c WHERE c.id = ?1 AND c.technician_id = ?2)
+         AND f.technician_id = ?2 AND f.type = 'first_fit' AND f.one_visit = 'booked' AND f.deleted_at IS NULL
+         AND f.window_start >= ?3 AND f.window_start < ?4
+       LIMIT 1`,
+    )
+    .bind(
+      asked.jobId,
+      asked.technicianId,
+      indiaInstant(today, "00:00").toISOString(),
+      indiaInstant(addDays(today, 1), "00:00").toISOString(),
+    )
+    .first<{ id: string }>();
+  return row?.id ?? null;
 }

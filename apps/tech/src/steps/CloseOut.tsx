@@ -19,7 +19,7 @@ import { clock, dayAfter, lengthOf, metres, todayInIndia, where } from "../lib/w
 import { NO_PIECE } from "@rules/policy/in-job-steps.ts";
 import { go } from "../route.ts";
 import { JobFailed } from "../frame/JobFailed.tsx";
-import { FitToday } from "./FitToday.tsx";
+import { FitToday, useFitToday } from "./FitToday.tsx";
 import { Failed, Loading } from "../frame/States.tsx";
 import {
   type Heard,
@@ -149,6 +149,8 @@ function Decided({ job }: { job: Job }) {
   const said = valueOr(useAsync(readOutcome)[0], null);
   // In English ops' reason reads mid-line, "Not now · the price"; inside Hindi it stays exactly as they wrote it.
   const english = useLanguage() === "en";
+  // Fit today, offered beneath, may book the fit now: the row then names the product alone, not ops to book it.
+  const fitToday = useFitToday(job, said?.outcome === "done" && said.going_ahead === true);
   if (said === null) return null;
   // Ops' reasons, in Hindi where a catalog holds the whole of one, as they wrote it otherwise.
   const label = (reasons: Job["partial_reasons"], id: string | undefined) => {
@@ -162,7 +164,8 @@ function Decided({ job }: { job: Job }) {
   if (said.going_ahead === undefined) return null;
   if (said.going_ahead) {
     const product = job.products.find((one) => one.tier === said.product)?.name ?? null;
-    return <Row name={copy.fit} value={copy.goingAhead(product === null ? null : theirs(product))} />;
+    const named = product === null ? null : theirs(product);
+    return <Row name={copy.fit} value={fitToday === null ? copy.goingAhead(named) : copy.goingAheadToday(named)} />;
   }
   const lost = label(job.lost_reasons, said.lost_reason);
   return <Row name={copy.fit} value={copy.notNow(lost === null ? null : theirs(english ? midLine(lost) : lost))} />;
