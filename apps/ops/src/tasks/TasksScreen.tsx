@@ -28,7 +28,7 @@ import { BulkActions } from "./BulkActions.tsx";
 import { keyOf, TaskTable, type Listed } from "./TaskTable.tsx";
 import { TaskDrawer, type Acting } from "./TaskDetail.tsx";
 import { TaskFilters } from "./TaskFilters.tsx";
-import { narrowed, NO_FILTER, type Row, type TaskFilter } from "./task-views.ts";
+import { filterOf, narrowed, type Row, type TaskFilter } from "./task-views.ts";
 import { subOf } from "./task-subs.ts";
 import styles from "./tasks-screen.module.css";
 
@@ -225,7 +225,7 @@ export function TasksScreen() {
   const [alerts, setAlerts] = useState(0);
   const [open, setOpen] = useState(0);
   const [view, setView] = useState<"tasks" | "alerts">("tasks");
-  const [filter, setFilter] = useState<TaskFilter>(NO_FILTER);
+  const [filter, setFilter] = useState<TaskFilter>(() => filterOf(window.location.search, Object.keys(tasks.groups)));
   const views = needsAHand.views;
   return (
     <div className={styles.board}>

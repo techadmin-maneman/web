@@ -14,19 +14,21 @@
   }
 }
 
-/* The way to Tasks at Needs you's foot, across the panel's middle. */
-.foot {
-  margin: var(--sp-12) var(--note-inset) 0;
-  text-align: center;
+/* How many are open, beside the way to Tasks in Needs you's head. */
+.open {
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
 }
 
-/* On a phone, Needs you as a section of the page: its name in small capitals over its list. */
-.section {
-  display: flex;
-  flex-direction: column;
+/* A kind's count and its pill, at the row's end. */
+.kindEnd {
+  display: inline-flex;
+  align-items: center;
   gap: var(--sp-8);
 }
 
-.label {
-  margin: 0;
+.kindCount {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text);
 }

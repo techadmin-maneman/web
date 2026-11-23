@@ -62,8 +62,8 @@
   --ops-tray: 236px; /* a job in the dispatch board's unassigned tray, beneath the board */
   --ops-filter: 176px; /* a list's narrowest filter, and a date with its time */
   --ops-measure: 560px; /* the widest a line of words runs, and the narrowest a list of people goes */
-  --ops-nav: 236px; /* the navigation column */
-  --ops-caption: 12px; /* the navigation's group names */
+  --ops-nav: var(--ops-tray); /* the navigation column, 236 px, as wide as a job in the tray is */
+  --ops-caption: var(--sp-12); /* the smallest words the redesign draws, 12 px: a group's name, a badge's */
   --ops-nav-folded: var(--header-h); /* the navigation folded to its icons, as wide as the header is tall */
   --ops-tile: 208px; /* the narrowest a figure's tile goes on Today */
   --ops-pair: 420px; /* the narrowest one of two parts side by side on Today goes */

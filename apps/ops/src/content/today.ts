@@ -57,6 +57,7 @@ export const today = {
   },
   /** Yours first, then the rest of what waits, the longest overdue first. */
   needs: "Needs you",
+  allTasks: "All tasks",
   none: "Nothing waiting.",
   noPayments: "No payments yet today.",
   /** A side list's way to its page: "Open Dispatch". */
