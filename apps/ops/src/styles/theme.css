@@ -45,8 +45,6 @@
   --nav-ground: var(--ink);
   --nav-current: var(--console-navy-3);
   --link-underline: var(--console-dark-control);
-  --pick-on: var(--console-dark-ink);
-  --pick-on-text: var(--ink);
   --pick-edge: var(--console-dark-control);
   --choice-edge: var(--console-dark-control);
   --time-name-colour: var(--console-dark-muted);
@@ -92,8 +90,6 @@
     --nav-ground: var(--ink);
     --nav-current: var(--console-navy-3);
     --link-underline: var(--console-dark-control);
-    --pick-on: var(--console-dark-ink);
-    --pick-on-text: var(--ink);
     --pick-edge: var(--console-dark-control);
     --choice-edge: var(--console-dark-control);
     --time-name-colour: var(--console-dark-muted);
