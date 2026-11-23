@@ -7,7 +7,8 @@ import { describe, expect, it } from "vitest";
 import { ratio } from "../../contrast.ts";
 
 const HEX = new Map(
-  ["packages/brand/tokens.css", "packages/brand/tokens-apps.css"].flatMap((file) =>
+  // The console's own palette is in its own tokens (the November redesign's), beside the brand's.
+  ["packages/brand/tokens.css", "packages/brand/tokens-apps.css", "apps/ops/src/styles/tokens.css"].flatMap((file) =>
     [...readFileSync(file, "utf8").matchAll(/(--[\w-]+):\s*(#[0-9a-f]{6})\b/gi)].map(
       ([, name = "", hex = ""]) => [name, hex] as const,
     ),

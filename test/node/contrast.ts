@@ -3,7 +3,8 @@
 
 import { readFileSync } from "node:fs";
 
-const TOKEN_FILES = ["packages/brand/tokens.css", "packages/brand/tokens-apps.css"];
+// The brand's colours, and the console's own palette, which its themes draw in (apps/ops/src/styles/tokens.css).
+const TOKEN_FILES = ["packages/brand/tokens.css", "packages/brand/tokens-apps.css", "apps/ops/src/styles/tokens.css"];
 
 const TOKENS = new Map(
   TOKEN_FILES.flatMap((file) =>

@@ -96,9 +96,9 @@ test("says what the average is of when the phone timed fewer jobs than were fini
 // The board letters 1 h 48 min in oxblood, #8A3A2E, and leaves 1 h 31 min quiet, so a
 // minute over the planned length is not a technician running over: the API says
 // which run over, by the minutes ops set (technician_work.over_by).
-test("letters an average that runs over in oxblood, and leaves one a minute over quiet", async ({ page }) => {
+test("letters an average that runs over in the warning red, and leaves one a minute over quiet", async ({ page }) => {
   await open(page);
-  const oxblood = "rgb(138, 58, 46)"; // --error-on-paper
+  const oxblood = "rgb(163, 54, 31)"; // --status-warning, the redesign's red (--console-red)
   const over = page.getByRole("row").filter({ hasText: "Faizan Ali" }).getByText("1 h 48 min");
   const near = page.getByRole("row").filter({ hasText: "Sandeep Yadav" }).getByText("1 h 31 min");
   await expect(over).toHaveCSS("color", oxblood);

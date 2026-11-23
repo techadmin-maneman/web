@@ -90,5 +90,5 @@
 
 /* The days and times drawn for other choices while the read for these runs: in place, and plainly not to be chosen. */
 .finding {
-  opacity: 0.5;
+  opacity: var(--busy-opacity);
 }
