@@ -36,10 +36,13 @@ function Chosen(props: { client: Found; busy: boolean; failure: Failure | null; 
   );
 }
 
-/** What the search found: each client with Choose, or that none was, or that it could not search. */
-function Results(props: { found: readonly Found[] | "failed" | null; onChoose: (client: Found) => void }) {
+type Search = readonly Found[] | "failed" | "short" | null;
+
+/** What the search found: each client with Choose, or that none was, or why it did not search. */
+function Results(props: { found: Search; onChoose: (client: Found) => void }) {
   const { found } = props;
   if (found === null) return null;
+  if (found === "short") return <Note>{copy.tooShort}</Note>;
   if (found === "failed") return <Note>{copy.searchFailed}</Note>;
   if (found.length === 0) return <Note>{copy.noneFound}</Note>;
   return (
@@ -70,7 +73,7 @@ export function ClientChoice(props: {
   onChoose: (client: Found | null) => void;
 }) {
   const [text, setText] = useState("");
-  const [found, setFound] = useState<readonly Found[] | "failed" | null>(null);
+  const [found, setFound] = useState<Search>(null);
   // The button pressed goes as the client is chosen or let go: the keyboard goes to what takes its place.
   useEffect(() => {
     focusIfLost(
@@ -91,35 +94,42 @@ export function ClientChoice(props: {
       />
     );
   const find = async () => {
-    if (!searchable(text)) return;
+    if (!searchable(text)) {
+      setFound("short");
+      return;
+    }
     const answer = await api.findClients(text.trim());
     setFound(answer.ok ? answer.body.clients : "failed");
   };
   return (
     <>
-      <div id={BOX_ID} className={styles.find}>
-        <Field label={copy.client} hint={copy.findHint} error={boxError(copy.errors, props.failure, "client")}>
+      <div id={BOX_ID}>
+        <Field label={copy.client} error={boxError(copy.errors, props.failure, "client")}>
           {(control) => (
-            <TextInput
-              {...control}
-              maxLength={60}
-              value={text}
-              disabled={props.busy}
-              onChange={(event) => {
-                setText(event.target.value);
-              }}
-              onKeyDown={(event) => {
-                // Enter searches, rather than adding the task without its client.
-                if (event.key !== "Enter") return;
-                event.preventDefault();
-                void find();
-              }}
-            />
+            // Find beside the box it searches, level with it whatever is said beneath.
+            <div className={styles.find}>
+              <TextInput
+                {...control}
+                maxLength={60}
+                placeholder={copy.findPlaceholder}
+                value={text}
+                disabled={props.busy}
+                onChange={(event) => {
+                  setText(event.target.value);
+                }}
+                onKeyDown={(event) => {
+                  // Enter searches, rather than adding the task without its client.
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  void find();
+                }}
+              />
+              <Button variant="outline" size="control" onClick={() => void find()}>
+                {copy.find}
+              </Button>
+            </div>
           )}
         </Field>
-        <Button variant="outline" size="control" onClick={() => void find()}>
-          {copy.find}
-        </Button>
       </div>
       <Results found={found} onChoose={props.onChoose} />
     </>

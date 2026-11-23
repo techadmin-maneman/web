@@ -2,7 +2,7 @@
 // panel a task is written in, for a department, about a client found by name, due when chosen, and whose it is; a
 // written task on the board is marked done from its row. Every name and number here is made up.
 
-import type { Request, Route } from "@playwright/test";
+import type { Page, Request, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { empty, fails, json, TASKS, type OpsReply } from "./fixtures.ts";
@@ -41,6 +41,14 @@ const WITH_WRITTEN = {
     },
   ],
 } satisfies OpsReply<"/api/tasks">;
+
+/** The written task's panel, which its client heads and its words follow. */
+async function writtenPanel(page: Page) {
+  await detail(page, "Call back about the evening slot");
+  const panel = page.getByRole("dialog", { name: ROHIT.name });
+  await expect(panel).toContainText("Call back about the evening slot");
+  return panel;
+}
 
 test("writes a task for a department about a client found by name, due when chosen, and says it was added", async ({
   page,
@@ -182,7 +190,7 @@ test("offers no client search, and no Mark done or Snooze, where the person's ac
   const written = row(page, "Call back about the evening slot");
   await expect(written).toBeVisible();
   await expect(written.getByRole("button", { name: /^Mark done/ })).toHaveCount(0);
-  const panel = await detail(page, "Call back about the evening slot");
+  const panel = await writtenPanel(page);
   await expect(panel.getByRole("button", { name: opsCopy.tasks.snooze.button })).toHaveCount(0);
   await expect(panel.getByRole("button", { name: /^Mark done/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
@@ -191,4 +199,86 @@ test("offers no client search, and no Mark done or Snooze, where the person's ac
   const writing = page.getByRole("dialog", { name: copy.title });
   await expect(writing.getByLabel(copy.what, { exact: true })).toBeVisible();
   await expect(writing.getByLabel(copy.client, { exact: true })).toHaveCount(0);
+});
+
+// Someone whose work reaches Gurgaon and Delhi alone, with All cities in the header: a task about nobody needs a city.
+test("asks a city of a task about nobody where the person's cities are some alone, and says when it is refused", async ({
+  page,
+}) => {
+  const written: Request[] = [];
+  await open(page, TASKS, undefined, {
+    "GET /api/whoami": json({
+      signed_in_as: "city.head@maneman.in",
+      sign_out: "/cdn-cgi/access/logout",
+      cities: ["Gurgaon", "Delhi"],
+      every_city: false,
+      staff: {
+        enforced: true,
+        listed: true,
+        grants: [{ department: "operations", level: "act", geography: "city", place: "Gurgaon" }],
+        may_call: ["GET /api/health", "GET /api/whoami", "GET /api/tasks", "GET /api/alerts", "POST /api/tasks"],
+      },
+    } satisfies OpsReply<"/api/whoami">),
+    "POST /api/tasks": (route) => {
+      written.push(route.request());
+      return fails(400, "invalid_request", ["city"])(route);
+    },
+  });
+  await page.getByRole("button", { name: copy.open }).click();
+  const panel = page.getByRole("dialog", { name: copy.title });
+  await panel.getByLabel(copy.what, { exact: true }).fill("Count the kit at the Gurgaon store");
+  const city = panel.getByLabel(copy.city, { exact: true });
+  await expect(city).toBeVisible();
+  await city.selectOption("Gurgaon");
+  await panel.getByRole("button", { name: copy.add }).click();
+  await expect(panel.getByText(copy.errors.city).first()).toBeVisible();
+  expect(written.map((request) => (request.postDataJSON() as { city: string | null }).city)).toEqual(["Gurgaon"]);
+});
+
+test("says how to search when too little is typed, and when the search itself fails", async ({ page }) => {
+  const searched: Request[] = [];
+  await open(page, TASKS, undefined, {
+    "POST /api/clients/find": (route) => {
+      searched.push(route.request());
+      return fails(503, "unavailable")(route);
+    },
+  });
+  await page.getByRole("button", { name: copy.open }).click();
+  const panel = page.getByRole("dialog", { name: copy.title });
+  const box = panel.getByLabel(copy.client, { exact: true });
+  await box.fill("R");
+  await box.press("Enter");
+  await expect(panel.getByText(copy.tooShort)).toBeVisible();
+  expect(searched).toEqual([]);
+  await box.fill("Rohit");
+  await panel.getByRole("button", { name: copy.find, exact: true }).click();
+  await expect(panel.getByText(copy.searchFailed)).toBeVisible();
+  expect(searched).toHaveLength(1);
+});
+
+test("names a written task about nobody as for no client, in its row and its panel", async ({ page }) => {
+  const [written] = WITH_WRITTEN.groups.at(-1)?.tasks ?? [];
+  if (written === undefined) throw new Error("the board has no written task");
+  const nobody = {
+    ...WITH_WRITTEN,
+    groups: [...TASKS.groups, { ...WITH_WRITTEN.groups.at(-1), tasks: [{ ...written, person: null }] }],
+  } as unknown as OpsReply<"/api/tasks">;
+  await open(page, nobody);
+  await expect(row(page, "Call back about the evening slot")).toContainText(copy.noClient);
+  await detail(page, "Call back about the evening slot");
+  await expect(page.getByRole("dialog", { name: copy.noClient })).toBeVisible();
+});
+
+test("says why a written task could not be snoozed, and that one done or gone meanwhile is so", async ({ page }) => {
+  await open(page, WITH_WRITTEN, undefined, {
+    [`POST /api/tasks/staff/${WRITTEN}/done`]: fails(404, "not_found"),
+    [`POST /api/tasks/staff_task_customer_care/${WRITTEN}/snooze`]: fails(403, "not_permitted"),
+  });
+  const panel = await writtenPanel(page);
+  await panel.getByRole("button", { name: opsCopy.tasks.snooze.button }).click();
+  await expect(panel.getByText(opsCopy.tasks.snooze.errors.not_permitted)).toBeVisible();
+  // Done or gone since the board was read: the panel closes on the board read again, which says so.
+  await panel.getByRole("button", { name: /^Mark done/ }).click();
+  await expect(page.getByText(copy.errors.not_found).first()).toBeVisible();
+  await expect(panel).toHaveCount(0);
 });
