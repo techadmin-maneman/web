@@ -7,13 +7,13 @@ import { Button } from "@maneman/ui/Button";
 import { TextButton } from "@maneman/ui/TextLink";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextInput } from "@maneman/ui/Field";
-import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { focusIfLost } from "@maneman/ui/arrival";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { type BookingWindow, type VisitAvailability, type VisitBooked, type VisitToBook } from "../api.ts";
+import { useAvailability } from "./book-availability.ts";
 import shared from "./visit-dialog.module.css";
 import styles from "./book-visit.module.css";
 import { HeldLinkActions, InTheWay } from "./HeldBooking.tsx";
@@ -113,6 +113,13 @@ function BookingRefusal({
   useEffect(() => {
     if (letGo) focusIfLost(document.getElementById(TITLE_ID));
   }, [letGo]);
+  // A start refused as taken is chosen no more, so Book, pressed, cannot keep the focus: it goes to the heading too.
+  useEffect(() => {
+    if (refused !== "taken") return;
+    const held = document.activeElement;
+    if (held instanceof HTMLButtonElement && held.disabled) held.blur();
+    focusIfLost(document.getElementById(TITLE_ID));
+  }, [refused]);
   return (
     <>
       {refused !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: refused })} />}
@@ -172,46 +179,6 @@ function visitOf(chosen: {
     ...(takesCode && chosen.code.trim() !== "" ? { code: chosen.code.trim() } : {}),
     ...(chosen.covers === "" ? {} : { covers: chosen.covers }),
   };
-}
-
-/**
- * The days without each start a booking was refused at in this panel: offered on the plan's
- * estimate of the drives, then found by the drives themselves not to fit, it would only be refused again.
- */
-function withoutRefused(offered: VisitAvailability, refused: ReadonlySet<string>): VisitAvailability {
-  if (refused.size === 0) return offered;
-  return {
-    ...offered,
-    days: offered.days.map((day) => ({
-      ...day,
-      starts: day.starts.filter((start) => !refused.has(start.starts_at)),
-    })),
-  };
-}
-
-/** The starts a booking was refused at in this panel; `refuse` shuts one and reads the days afresh. */
-function useRefusedStarts(retry: () => void) {
-  const [refused, setRefused] = useState<ReadonlySet<string>>(new Set());
-  const refuse = (startsAt: string) => {
-    setRefused((was) => new Set([...was, startsAt]));
-    retry();
-  };
-  return [refused, refuse] as const;
-}
-
-/** The fortnight's windows for what is being booked, read again as any of it changes. */
-function useAvailability(clientId: string, choice: Choice, tier: string | undefined, from: string | undefined) {
-  const load = useCallback(
-    () =>
-      clientsApi.visitAvailability({
-        client: clientId,
-        kind: kindOf(choice),
-        ...(tier === undefined ? {} : { tier }),
-        ...(from === undefined ? {} : { from }),
-      }),
-    [clientId, choice, tier, from],
-  );
-  return useLoad(load);
 }
 
 /** A discount code for the visit, where it takes one. */
@@ -313,8 +280,7 @@ function BookingDrawer({
   const { choice, setChoice, from, setFrom, picked, setPicked, code, setCode, covers, setCovers } = useAsked(prefill);
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
-  const [loaded, retry] = useAvailability(clientId, choice, picked.tier, from);
-  const [refusedStarts, refuseStart] = useRefusedStarts(retry);
+  const { loaded, retry, refuse, reading } = useAvailability(clientId, choice, picked.tier, from);
   const frame = { titleId: TITLE_ID, title: copy.title(name), close: CLOSE, onDismiss };
 
   const choose = (next: Partial<Picked>) => {
@@ -328,7 +294,7 @@ function BookingDrawer({
       </Drawer>
     );
 
-  const offered = withoutRefused(loaded.value, refusedStarts);
+  const offered = loaded.value;
   const slot = slotOf(offered, picked);
   const { day, start, window, technician } = slot;
   // A time is chosen once ops pick one, or a window was asked for, as Tasks hands one on.
@@ -356,7 +322,7 @@ function BookingDrawer({
       if (answer.ok) onBooked(answer.body);
       // A start refused as taken is not offered again here, and the days are read afresh for what is free now.
       else if (answer.code === "taken") {
-        refuseStart(start.starts_at);
+        refuse(start.starts_at);
         setPicked((was) => ({ ...was, start: undefined, window: undefined, technician: "" }));
       }
       setFailed(answer.ok ? null : answer.code);
@@ -371,11 +337,11 @@ function BookingDrawer({
       }}
       foot={
         <BookFoot
-          line={replacesLine(choice, prefill) + payLine(choice, offered, cover !== "")}
+          line={reading.slow ? copy.loading : replacesLine(choice, prefill) + payLine(choice, offered, cover !== "")}
           day={day?.date}
           chosen={chosen}
           busy={busy}
-          blocked={refused === "no_profile"}
+          blocked={refused === "no_profile" || reading.finding}
         />
       }
     >
@@ -383,6 +349,7 @@ function BookingDrawer({
         choice={choice}
         offered={offered}
         busy={busy}
+        reading={reading}
         onChoice={(next) => {
           setChoice(next);
           choose({ tier: undefined, start: undefined });
@@ -391,7 +358,7 @@ function BookingDrawer({
           choose({ tier });
         }}
       />
-      <WhenAndWho offered={offered} slot={slot} chosen={chosen} busy={busy} onPick={choose} />
+      <WhenAndWho offered={offered} slot={slot} chosen={chosen} busy={busy} reading={reading} onPick={choose} />
       <StripButtons busy={busy} from={from} firstDay={offered.days[0]?.date} onFrom={setFrom} />
       <CoverChoice owed={offered.owed} value={cover} busy={busy} onChoose={setCovers} />
       {takesCode && <CodeOrAdd code={code} given={prefill.code !== undefined} busy={busy} onCode={setCode} />}

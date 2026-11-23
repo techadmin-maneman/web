@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0301. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0302. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -333,6 +333,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0238](0238-third-design-pass.md) Third design pass: one home, the chat's column, a record's facts beside its head, Inventory's one row of tabs
 - [0282](0282-tasks-chosen-together.md) Tasks chosen together, and the keys a desk moves by
 - [0283](0283-changed-and-deleted-while-unused.md) What ops configure is changed, and deleted while nothing uses it
+- [0301](0301-the-console-look-to-the-22-november-redesign.md) The console's look, to the 22 November redesign
 
 ## Every decision, oldest first
 
@@ -543,7 +544,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0205](0205-the-pipeline-as-it-runs.md) | The pipeline as it runs | 2026-10-15 | accepted |  |
 | [0206](0206-trusted-types-and-a-nonce-per-page.md) | Trusted Types enforced, and a nonce on every page | 2026-10-15 | accepted |  |
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
-| [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted | [0225](0225-the-console-on-a-desk-and-a-phone.md) |
+| [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted | [0225](0225-the-console-on-a-desk-and-a-phone.md), [0301](0301-the-console-look-to-the-22-november-redesign.md) |
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted | [0257](0257-razorpay-only.md) |
 | [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md), [0287](0287-a-start-googles-drive-refused-is-not-offered.md), [0289](0289-who-takes-a-visit.md), [0290](0290-allotted-the-evening-before.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
@@ -636,3 +637,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0298](0298-past-weeks-on-schedule.md) | Schedule goes back to past weeks, and never past this one | 2026-11-23 | accepted |  |
 | [0299](0299-fit-today.md) | Fit today: a consultation becomes the fit at the door | 2026-11-23 | accepted |  |
 | [0300](0300-payment-links-on-whatsapp.md) | Payment links on WhatsApp, through our own address | 2026-11-23 | accepted |  |
+| [0301](0301-the-console-look-to-the-22-november-redesign.md) | The console's look, to the 22 November redesign | 2026-11-23 | accepted |  |

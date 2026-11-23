@@ -198,7 +198,8 @@ test("keeps the theme chosen, and draws the console dark", async ({ page }) => {
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   const ground = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  expect(ground).toBe("rgb(14, 23, 40)");
+  // The redesign's dark canvas (apps/ops/src/styles/tokens.css, --console-dark-canvas).
+  expect(ground).toBe("rgb(15, 21, 33)");
 });
 
 test("folds the navigation to its icons, and keeps it folded", async ({ page }) => {

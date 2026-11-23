@@ -11,20 +11,22 @@
 @import "@maneman/brand/tokens-apps.css";
 @import "./tokens.css";
 @import "@maneman/brand/fonts.css";
+@import "@maneman/brand/fonts-plex.css";
 @import "@maneman/ui/base.css";
 @import "./theme.css";
 
-/* A desk's density: controls at 36 px and the words in them at 14, a small button at 32. The filled buttons are edged
-   as the outlined ones are, so the two stand side by side at one width. */
+/* A desk's density, as the November redesign draws it (docs/prompts/ops-redesign.md): every button, box, chip and
+   search 34 px with its words at 14, a small button 28, the large 40. The filled buttons are edged as the outlined ones
+   are, so the two stand side by side at one width. */
 :root {
   --action-height: var(--sp-40);
   --action-text: var(--fs-14);
-  --control-height: var(--sp-36);
+  --control-height: calc(var(--sp-32) + var(--sp-2));
   --control-text: var(--fs-14);
-  --small-height: var(--sp-32);
+  --small-height: var(--sp-28);
   --small-text: var(--fs-14);
   --small-pad: var(--sp-12);
-  --field-height: var(--sp-36);
+  --field-height: calc(var(--sp-32) + var(--sp-2));
   --field-text: var(--fs-14);
   --filled-edge: var(--hairline);
   --message-size: var(--fs-14);

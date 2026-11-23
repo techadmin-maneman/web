@@ -17,12 +17,13 @@
     padding-bottom: var(--sp-16);
   }
 
+  /* A panel's head is at least 52 px, as the console's November redesign draws every card's (only the console uses it). */
   .head {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--sp-8) var(--sp-16);
-    min-height: var(--sp-48);
+    min-height: calc(var(--sp-48) + var(--sp-4));
     padding: var(--sp-8) var(--sp-20);
     border-bottom: var(--hairline) solid var(--ui-line);
   }

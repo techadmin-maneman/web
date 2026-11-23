@@ -3,6 +3,41 @@
    shared parts' room where the console needs its own (packages/ui/base.css). */
 
 :root {
+  /*
+   * The ops console's own palette, as its November redesign draws it (docs/prompts/ops-redesign.md, the prototype's
+   * style.css): navy for the frame and the main action, canvas under white panels, and a wash under each state's
+   * colour. The console's roles below are set from these; no other app draws in them. Gilt and brass are the brand's
+   * own (packages/brand/tokens.css). The prototype stays out of the repository, so its colours are kept here, where
+   * test/node/apps/ops/ops-theme-contrast.test.ts reads them.
+   */
+  --console-navy-2: #1d2c46;
+  --console-navy-3: #2a3b59;
+  --console-nav-text: #c8d0dc; /* the frame's names on navy */
+  --console-nav-label: #8592a8; /* a group's name in the frame */
+  --console-nav-count: #9aa6b9; /* a count beside an entry's name, on its own navy and the chosen entry's */
+  --console-canvas: #f2f3f5;
+  --console-sunk: #f7f8fa;
+  --console-line: #e1e4e9;
+  --console-control: #858c96; /* a control's edge: the board's faint grey, deepened to clear 3:1 on the canvas */
+  --console-ink: #1a1f27;
+  --console-ink-2: #3c4450;
+  --console-faint: #8a919b;
+  --console-amber-wash: #f7f1e4;
+  /* Its dark theme's. */
+  --console-dark-canvas: #0f1521;
+  --console-dark-surface: #161e2c;
+  --console-dark-sunk: #121927;
+  --console-dark-line: #26324a;
+  --console-dark-line-2: #1f2a3e;
+  --console-dark-control: #6f7889;
+  --console-dark-ink: #e8ebf0;
+  --console-dark-ink-2: #c9cfd8;
+  --console-dark-muted: #98a1af;
+  --console-dark-green: #79c2a0;
+  --console-dark-red: #f08b73;
+  --console-dark-amber: #d8b271;
+  --console-dark-amber-wash: #33291a;
+
   --ops-row: 34px; /* a table row: dense but not cramped */
   --ops-figure: 76px; /* a column of figures, right aligned */
   --ops-panel: 484px; /* a panel the boards draw on its own, such as the launch confirmation */
@@ -48,6 +83,66 @@
   --box-area: var(--ops-area);
   --box-text-max: var(--measure-form);
   --box-note-max: var(--measure-column);
-  /* A panel on white over the paper page, so a panel reads as raised (the dark theme sets its own). */
+  /*
+   * The November redesign's look (docs/prompts/ops-redesign.md): white panels on a canvas, navy for the frame and the
+   * main action, and each state in its own colour on its own wash. Every console screen draws in these roles, and the
+   * dark theme sets them again (./theme.css).
+   */
+  --ui-ground: var(--console-canvas);
   --ui-raised: var(--white);
+  --ui-tint: var(--console-sunk);
+  --ui-wash: var(--console-amber-wash);
+  --ui-shade: var(--console-line); /* a block's fill, seen on the canvas and on a white panel alike */
+  --ui-box: var(--white);
+  --ui-box-off: var(--console-sunk);
+  --ui-text: var(--console-ink);
+  --ui-text-soft: var(--console-ink-2);
+  --ui-text-muted: var(--ink-500);
+  --ui-text-quiet: var(--console-faint);
+  --ui-toggle-text: var(--ink-500);
+  --ui-hint: var(--ink-500);
+  --ui-line: var(--console-line);
+  --ui-line-control: var(--console-control);
+  --ui-strong: var(--ink);
+  --outline-edge: var(--console-control);
+  --ui-on-strong: var(--white);
+  --ui-strong-pressed: var(--console-navy-2);
+  --ui-error: var(--red-700);
+  --ui-attention: var(--brass-text); /* the board's amber, as the brand writes small words in it, to read at 4.5:1 */
+  --surface: var(--white);
+  --on-surface: var(--console-ink);
+  --on-surface-muted: var(--ink-500);
+  --border-subtle: var(--console-line);
+  --border-control: var(--console-control);
+  --status-error: var(--red-700);
+  --status-warning: var(--red-700); /* something to act on: overdue, late, low, as the brand marks it, in red */
+  --status-saved: var(--green-700);
+  --status-done: var(--green-700);
+  --status-note: var(--ink-500);
+  --status-attention: var(--brass-text);
+  --nav-ground: var(--ink);
+  --nav-current: var(--console-navy-3);
+  --nav-text: var(--console-nav-text);
+  --nav-text-current: var(--white);
+  --nav-label: var(--console-nav-label);
+  --nav-count-text: var(--console-nav-count);
+  --nav-rule: var(--console-navy-3);
+  --link-underline: var(--console-control); /* a text link's rule, at a control edge's 3:1 */
+  --pick-on: var(--ink);
+  --pick-on-text: var(--white);
+  --pick-edge: var(--console-control);
+  --choice-edge: var(--console-control);
+  --time-name-colour: var(--ink-500);
+  /* Corners: the redesign's 6 px, on a button and a box alike. */
+  --ui-radius-button: calc(var(--sp-4) + var(--sp-2));
+  --ui-radius-box: calc(var(--sp-4) + var(--sp-2));
+}
+
+/* One type throughout on screen: titles, figures, initials and the frame's small capitals are Plex as the words are.
+   A printed order sheet or label keeps the brand's own faces. */
+@media screen {
+  :root {
+    --font-sans: var(--font-plex);
+    --font-serif: var(--font-plex);
+  }
 }
