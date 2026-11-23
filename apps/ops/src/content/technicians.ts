@@ -40,7 +40,7 @@ export const technicians = {
     over: "Over",
     days: (days: number) => (days === 365 ? "Last 12 months" : `Last ${String(days)} days`),
     /** The same on a phone, where the period's segments share one row. */
-    shortDays: (days: number) => (days === 365 ? "12 months" : `${String(days)} days`),
+    shortDays: (days: number) => (days === 365 ? "1 year" : `${String(days)} days`),
     /** When the phone timed fewer jobs than were finished, the average says what it is of: "13 of 14 timed". */
     base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)} timed`,
     /** The jobs checked in by the end of the arrival window, of all done: "92%". */

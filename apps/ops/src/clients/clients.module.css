@@ -156,9 +156,10 @@
   color: var(--ui-text-muted);
 }
 
+/* As many to a row as fit with room for a name and its pill, six on a wide screen. */
 .recentList {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--sp-8) * 22), 1fr));
   gap: var(--sp-8);
   margin: 0;
   padding: 0;
@@ -206,7 +207,7 @@
 
 @media (max-width: 1279px) {
   .recentList {
-    grid-auto-columns: calc(var(--sp-8) * 21);
+    grid-auto-columns: calc(var(--sp-8) * 22);
     grid-auto-flow: column;
     grid-template-columns: none;
     overflow-x: auto;
@@ -303,7 +304,8 @@
   color: var(--ui-text-muted);
 }
 
-/* A visit's time, from and to on one line. */
+/* A visit's day, and its time from and to, each on one line. */
+.visitDate,
 .visitTime {
   white-space: nowrap;
 }
@@ -525,17 +527,28 @@
   margin-top: var(--sp-16);
 }
 
-/* Every list of a client's visits at the same widths, so overdue, to come and done line up one under another. */
+/* Every list of a client's visits at the same widths, so overdue, to come and done line up one under another, and no
+   narrower than its columns' words: on a narrow window it scrolls in its panel, a phone's cards apart. */
+.visitTable {
+  min-width: calc(var(--sp-8) * 100);
+}
+
+@media (max-width: 600px) {
+  .visitTable {
+    min-width: 0;
+  }
+}
+
 .visitTable th:nth-child(1) {
-  width: 10%;
+  width: 13%;
 }
 
 .visitTable th:nth-child(2) {
-  width: 14%;
+  width: 13%;
 }
 
 .visitTable th:nth-child(3) {
-  width: 15%;
+  width: 13%;
 }
 
 .visitTable th:nth-child(4) {
@@ -543,13 +556,13 @@
 }
 
 .visitTable th:nth-child(5) {
-  width: 12%;
+  width: 15%;
 }
 
 .visitTable th:nth-child(6) {
-  width: 13%;
+  width: 11%;
 }
 
 .visitTable th:nth-child(7) {
-  width: 19%;
+  width: 18%;
 }
