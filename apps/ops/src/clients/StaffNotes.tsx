@@ -70,7 +70,7 @@ function NoteForm({
       </Field>
       {refused !== null && <Refusal said={refused} />}
       <div className={styles.noteActions}>
-        <Button variant="primary" size="small" disabled={busy || body.trim() === ""} onClick={() => void save()}>
+        <Button variant="primary" size="small" busy={busy} onClick={() => void save()}>
           {busy ? copy.saving : copy.save}
         </Button>
         <CancelButton disabled={busy} onClick={onCancel} />

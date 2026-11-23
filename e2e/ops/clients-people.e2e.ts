@@ -124,3 +124,22 @@ test("leaves out of the recently opened a client kept with a standing it does no
   await expect(recent.getByRole("link")).toHaveCount(1);
   await expect(recent.getByRole("link")).toContainText(CLIENT.name);
 });
+
+test("says why a note changed in place to nothing is refused, keeping it open", async ({ page }) => {
+  const note = {
+    id: "5c000000-0000-4000-8000-000000000001",
+    body: "Prefers early mornings.",
+    written_by: "priya@maneman.in",
+    written_at: "2027-09-19T05:00:00.000Z",
+  };
+  await openClient(page, `/clients/${CLIENT.id}/visits`, {
+    "GET /api/clients/{id}/notes": json({ notes: [note] }),
+    "POST /api/clients/{id}/notes": fails(400, "invalid_request", ["body"]),
+  });
+  const notes = card(page, words.notes.title);
+  await notes.getByRole("button", { name: words.notes.change }).click();
+  await notes.getByLabel(words.notes.label, { exact: true }).fill("");
+  await notes.getByRole("button", { name: words.notes.save }).click();
+  await expect(notes.getByText(words.notes.errors.body)).toBeVisible();
+  await expect(notes.getByLabel(words.notes.label, { exact: true })).toBeVisible();
+});
