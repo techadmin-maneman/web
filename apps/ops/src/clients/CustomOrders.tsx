@@ -13,7 +13,9 @@ import { Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { FIGURE, Table } from "@maneman/ui/Table";
+import { useAskFocus } from "@maneman/ui/useAskFocus";
 import { useLoad } from "@maneman/ui/useLoad";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
@@ -100,12 +102,16 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
   );
 }
 
-/** Cancel, asked once more: the order's payment link stops working. */
+/** Cancel, asked once more: the order's payment link stops working. The ask opens on Keep, and Keep goes back. */
 function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
   const [asking, setAsking] = useState(false);
+  // One cancelling per intent: a second press inside the first's round trip asks nothing.
+  const [busy, once] = useOneAtATime();
+  const { opener, question, safe } = useAskFocus(asking);
   if (!asking) {
     return (
       <Button
+        ref={opener}
         variant="outline"
         size="small"
         onClick={() => {
@@ -117,22 +123,25 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
     );
   }
   return (
-    <div role="group" aria-label={copy.cancelAsk}>
+    <div ref={question} role="group" aria-label={copy.cancelAsk}>
       <p className={form.fieldLabel}>{copy.cancelAsk}</p>
       <FormActions>
         <Button
           variant="destructive"
           size="small"
+          busy={busy}
           onClick={() =>
-            void clientsApi.cancelCustomOrder(order.id).then((answer) => {
-              onAnswer(answer, copy.cancelled);
+            void once(async () => {
+              onAnswer(await clientsApi.cancelCustomOrder(order.id), copy.cancelled);
             })
           }
         >
-          {copy.cancelYes}
+          {busy ? copy.cancelling : copy.cancelYes}
         </Button>
         <CancelButton
+          ref={safe}
           keep
+          disabled={busy}
           onClick={() => {
             setAsking(false);
           }}

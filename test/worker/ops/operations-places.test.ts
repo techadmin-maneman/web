@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { enforce, listStaff, person, type GrantCode } from "./staff-fixtures.ts";
+import { aHold } from "../fixtures/index.ts";
 
 const DELHI_TECH = "33333333-3333-4333-8333-333333333331";
 const GURGAON_TECH = "33333333-3333-4333-8333-333333333332";
@@ -320,6 +321,43 @@ describe("booking a visit, for a grant of Operations in one city", () => {
     expect((await post(delhi, `/api/visits/${GURGAON_VISIT}/close`, close)).status).toBe(404);
     // Its own visit gets past its city to the visit's own answer: its time has not come.
     expect((await post(delhi, `/api/visits/${DELHI_VISIT}/close`, close)).status).toBe(409);
+  });
+});
+
+describe("a booking held on its payment link, for a grant of Operations in one city", () => {
+  const GURGAON_HOLD = "55555555-5555-4555-8555-555555555552";
+  let delhi: App;
+
+  beforeEach(async () => {
+    delhi = await staffWith("operations:act:city:Delhi");
+    await aHold({
+      id: GURGAON_HOLD,
+      person_id: ROHIT,
+      technician_id: GURGAON_TECH,
+      type: "first_fit",
+      date: WEDNESDAY,
+      amount: 2150000,
+      amount_ex_gst: 2150000,
+      pay_by_link: 1,
+      payment_link_id: "plink_gurgaon",
+      payment_link_url: "https://rzp.io/i/gurgaon",
+      pincode: "122018",
+      expires_at: new Date(NOW.getTime() + 24 * 3_600_000).toISOString(),
+    });
+  });
+
+  it("finds no client's held booking elsewhere, and neither sends its link nor lets it go", async () => {
+    expect((await get(delhi, `/api/clients/${ROHIT}/held-bookings?kind=first_fit`)).status).toBe(404);
+    const sent = await post(delhi, `/api/holds/${GURGAON_HOLD}/send-link`);
+    expect([sent.status, (await errorOf(sent)).code]).toEqual([404, "not_found"]);
+    const letGo = await post(delhi, `/api/holds/${GURGAON_HOLD}/let-go`);
+    expect([letGo.status, (await errorOf(letGo)).code]).toEqual([404, "not_found"]);
+    const hold = await env.DB.prepare("SELECT state, booking_until FROM slot_holds WHERE id = ?1")
+      .bind(GURGAON_HOLD)
+      .first();
+    expect(hold).toEqual({ state: "held", booking_until: null });
+    // Its own city's client is read as ever.
+    expect((await get(delhi, `/api/clients/${ARJUN}/held-bookings?kind=first_fit`)).status).toBe(200);
   });
 });
 

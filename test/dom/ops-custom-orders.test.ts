@@ -8,6 +8,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CustomOrders } from "../../apps/ops/src/clients/CustomOrders.tsx";
 import { customOrders as copy } from "../../apps/ops/src/content/custom-orders.ts";
+import { DISMISS } from "../../packages/ui/words.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
 
@@ -52,6 +53,8 @@ const UNKNOWN_CALLER = () => Response.json({ error: { code: "internal_error", re
 let page: HTMLDivElement;
 let root: Root;
 let posted: { path: string; body: unknown }[];
+/** What was brought into view, in order. */
+let scrolled: Element[];
 
 const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
@@ -76,6 +79,10 @@ async function press(text: string) {
 
 beforeEach(() => {
   posted = [];
+  scrolled = [];
+  Reflect.set(Element.prototype, "scrollIntoView", function (this: Element) {
+    scrolled.push(this);
+  });
   vi.stubGlobal(
     "fetch",
     contractChecked("ops", (url: string, init?: RequestInit) => {
@@ -158,6 +165,23 @@ describe("the client’s custom orders", () => {
       "/api/custom-orders/co-1/cancel",
     ]);
     expect(page.textContent).toContain(copy.statuses.cancelled);
+  });
+
+  it("asks a cancel on Keep, brought into view, and Keep gives the focus back to Cancel order", async () => {
+    await show();
+    act(() => {
+      button(copy.cancelOrder)?.focus();
+      button(copy.cancelOrder)?.click();
+    });
+    const ask = page.querySelector(`[role="group"][aria-label="${copy.cancelAsk}"]`);
+    expect(ask).not.toBeNull();
+    expect(scrolled).toEqual([ask]);
+    expect(document.activeElement).toBe(button(DISMISS.keep));
+    act(() => {
+      button(DISMISS.keep)?.click();
+    });
+    expect(document.activeElement).toBe(button(copy.cancelOrder));
+    expect(posted).toEqual([]);
   });
 
   it("says a profile is needed before offering an order to a client whose profile is not complete", async () => {

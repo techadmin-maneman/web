@@ -96,6 +96,7 @@
     "./Toolbar": "./Toolbar.tsx",
     "./type": "./type.ts",
     "./UpdateReady": "./UpdateReady.tsx",
+    "./useAskFocus": "./useAskFocus.ts",
     "./useAsync": "./useAsync.ts",
     "./useCamera": "./useCamera.ts",
     "./useFocusOnMount": "./useFocusOnMount.ts",

@@ -18,7 +18,10 @@ const HELD_AT = "COALESCE(sp.name, t.name, u.place)";
 const FIT = `CASE WHEN EXISTS (SELECT 1 FROM pieces f WHERE f.person_id = k.person_id AND f.fitted_at IS NOT NULL
     AND f.deleted_at IS NULL) THEN 'replacement' ELSE 'first_fit' END`;
 
-/** Paid, not refunded, and its own purchase order still to go to the supplier. */
+/**
+ * Paid, not refunded, and its own purchase order still to go to the supplier. Read from the purchase orders not yet
+ * sent, through their lines to the order each was drafted for, never every order ever paid.
+ */
 const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: string } = {
   group: "custom_order_to_send",
   sql: `SELECT 'custom_order_to_send' AS "group", k.id AS id, k.person_id AS person_id, pe.name AS person_name,
@@ -26,15 +29,18 @@ const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: string } 
          json_object('order', k.number, 'purchase_order', o.number, 'purchase_order_id', o.id,
            'approved', CASE WHEN o.state = 'approved' THEN json('true') ELSE json('false') END) AS facts,
          k.paid_at AS since, NULL AS due_by, '' AS episode
-    FROM custom_orders k JOIN purchase_orders o ON o.id = k.po_id JOIN people pe ON pe.id = k.person_id
-   WHERE k.state = 'paid' AND k.refunded_at IS NULL AND o.state IN ('drafted', 'approved') AND pe.erased_at IS NULL`,
+    FROM purchase_orders o INDEXED BY purchase_orders_unsent
+    JOIN po_lines l ON l.po_id = o.id AND l.custom_order_id IS NOT NULL
+    JOIN custom_orders k ON k.id = l.custom_order_id AND k.po_id = o.id
+    JOIN people pe ON pe.id = k.person_id
+   WHERE o.state IN ('drafted', 'approved') AND k.state = 'paid' AND k.refunded_at IS NULL AND pe.erased_at IS NULL`,
 };
 
 /**
  * Arrived: a piece reserved to it is held, in the warehouse or a kit, and no first fit or replacement is booked, under
- * way or paid for the client to fit it at. Read from the pieces reserved to custom orders (one for each received),
- * as Stock reads them, not from the orders. Where it is held, so ops know whether it must first go to a technician's
- * kit, and which fit to book.
+ * way or paid for the client to fit it at. Read from the pieces made for custom orders and held now, never all the
+ * stock held or every piece ever received for a custom order. Where it is held, so ops know whether it must first go
+ * to a technician's kit, and which fit to book.
  */
 const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: string } = {
   group: "custom_piece_to_fit",
@@ -42,7 +48,7 @@ const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: string } =
          ${ORDER_NUMBER} || ' · ' || ${HELD_AT} AS detail,
          json_object('order', k.number, 'piece_code', u.code, 'held_at', ${HELD_AT}, 'fit', ${FIT}) AS facts,
          u.labelled_at AS since, NULL AS due_by, '' AS episode
-    FROM stock_units u INDEXED BY stock_units_reserved
+    FROM stock_units u INDEXED BY stock_units_custom_held
     JOIN custom_orders k ON k.id = u.custom_order_id
     LEFT JOIN stock_places sp ON sp.id = u.place LEFT JOIN technicians t ON t.id = u.place
     JOIN people pe ON pe.id = k.person_id

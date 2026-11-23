@@ -195,6 +195,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "alert.resolve": "Alert marked done",
   "alert.send_again": "Alert sent again",
   "booking.give_back": "Unpaid booking released",
+  "booking.link_resend": "Payment link sent again",
   "visit.book": "Visit booked",
   "visit.move_accepted": "New day accepted by client",
   "visit.cancel": "Visit cancelled",

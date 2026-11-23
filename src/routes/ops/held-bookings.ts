@@ -153,10 +153,27 @@ export function registerOpsHeldBookings(app: App): void {
     const { id } = c.req.valid("param");
     if ((await holdInReach(c, id)) === null) return refuse(c, "not_found");
     const deps = { ...c.var.deps, log: c.var.log, messagingSettings: c.var.config.settings.messaging };
-    const outcome = await resendHeldLink(c.env.DB, deps, id, c.var.deps.now());
+    const now = c.var.deps.now();
+    const outcome = await resendHeldLink(c.env.DB, deps, id, now);
     if (outcome === "not_found") return refuse(c, "not_found");
     if (outcome === "closed") return refuse(c, "hold_expired");
     if (outcome === "unavailable") return refuse(c, "unavailable");
+    if (outcome === "resent") {
+      const entry = {
+        surface: "ops",
+        actor: actorOf(c),
+        action: "booking.link_resend",
+        subject: { kind: "hold", id },
+        requestId: c.var.requestId,
+        detail: {},
+      } as const;
+      try {
+        await auditStatement(c.env.DB, entry, now).run();
+      } catch (error) {
+        // The text has gone already: the answer says so, whatever the log says of it.
+        c.var.log.error("audit_write_failed", { action: entry.action, error });
+      }
+    }
     return c.json({ outcome }, 200);
   });
 

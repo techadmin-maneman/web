@@ -35,6 +35,25 @@ describe("the app’s preview of an invite", () => {
   });
 });
 
+describe("the invite’s message", () => {
+  const LINK = "https://maneman.in/r/RM4K7P2Q";
+
+  it("tells the friend what they get when fitted, since a card sent as a photograph comes without the preview", () => {
+    expect(refer.preview.message(LINK, { referrer_visits: 3, friend_visits: 3 })).toBe(
+      `Thought you’d like this: Mane Man, at home. You get 3 free service visits when you’re fitted. ${LINK}`,
+    );
+    expect(refer.preview.message(LINK, { referrer_visits: 3, friend_visits: 1 })).toBe(
+      `Thought you’d like this: Mane Man, at home. You get 1 free service visit when you’re fitted. ${LINK}`,
+    );
+  });
+
+  it("promises the friend nothing where ops give them nothing, or the reward is not known", () => {
+    const plain = `Thought you’d like this: Mane Man, at home. ${LINK}`;
+    expect(refer.preview.message(LINK, { referrer_visits: 3, friend_visits: 0 })).toBe(plain);
+    expect(refer.preview.message(LINK, null)).toBe(plain);
+  });
+});
+
 describe("the app’s promise of what a referral earns", () => {
   const promise = (mine: number, theirs: number) => refer.promise({ referrer_visits: mine, friend_visits: theirs });
 

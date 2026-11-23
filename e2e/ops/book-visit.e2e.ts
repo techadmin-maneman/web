@@ -103,47 +103,59 @@ async function openVisits(page: Page, over: Answers = {}): Promise<void> {
 
 const panel = (page: Page) => page.getByRole("dialog", { name: `Book a visit for ${CLIENT.name}` });
 
+/** What the page brought into view: the element, with its words and the room it kept beneath it, as they were then. */
+interface Brought {
+  readonly element: Element;
+  readonly text: string;
+  readonly margin: number;
+}
+
 /** Records each element the page brings into view, as the drawer does a line beneath its buttons. */
 async function recordScrolls(page: Page): Promise<void> {
   await page.evaluate(() => {
-    const brought: Element[] = [];
+    const brought: Brought[] = [];
     Object.assign(window, { brought });
     type Bring = (this: Element, how?: boolean | ScrollIntoViewOptions) => void;
     const bring = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView")?.value as Bring;
     Element.prototype.scrollIntoView = function (this: Element, how?: boolean | ScrollIntoViewOptions) {
-      brought.push(this);
+      const margin = parseFloat(getComputedStyle(this).scrollMarginBottom);
+      brought.push({ element: this, text: this.textContent, margin });
       bring.call(this, how);
     };
   });
 }
 
-/** The words of each element brought into view. */
+/** The words of each element brought into view, as they were when it was. */
 const broughtIntoView = (page: Page) =>
-  page.evaluate(() => (window as unknown as { brought: Element[] }).brought.map((each) => each.textContent));
+  page.evaluate(() => (window as unknown as { brought: Brought[] }).brought.map((each) => each.text));
 
 /**
- * Whether the element was brought into view keeping room beneath it at least the Book bar's height: the margin is read
- * off the element scrolled itself, where alone it acts, and the bar is the drawer's foot, stuck to its bottom.
+ * Whether the element was brought into view keeping room beneath it at least the Book bar's height: the margin is the
+ * one the element scrolled had then, where alone it acts, and the bar is the sticky box holding the Book button.
  */
 const clearsTheBar = (element: Locator) =>
   element.evaluate((node) => {
-    const brought = (window as unknown as { brought: Element[] }).brought;
-    const scrolled = brought.findLast((each) => each.contains(node));
-    const bar = [...(node.closest("dialog")?.querySelectorAll("*") ?? [])].find((each) => {
-      const style = getComputedStyle(each);
-      return style.position === "sticky" && style.bottom !== "auto";
-    });
-    if (scrolled === undefined || bar === undefined) return false;
-    return parseFloat(getComputedStyle(scrolled).scrollMarginBottom) >= bar.getBoundingClientRect().height;
+    const scrolled = (window as unknown as { brought: Brought[] }).brought.findLast((each) =>
+      each.element.contains(node),
+    );
+    const dialog = node.closest("dialog");
+    let bar = dialog?.querySelector("button[type=submit]") ?? null;
+    while (bar !== null && bar !== dialog && getComputedStyle(bar).position !== "sticky") bar = bar.parentElement;
+    if (scrolled === undefined || bar === null || bar === dialog) return false;
+    return scrolled.margin >= bar.getBoundingClientRect().height;
   });
 
-/** Whether what is at the middle of the element is the element itself, not the Book bar or anything else over it. */
+/**
+ * Whether what is at the middle of each line the element takes is the element itself, not the Book bar or anything
+ * else over it: a line of words that wraps is seen only if every line of it is.
+ */
 const seen = (element: Locator) =>
-  element.evaluate((node) => {
-    const box = node.getBoundingClientRect();
-    const at = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-    return at !== null && node.contains(at);
-  });
+  element.evaluate((node) =>
+    [...node.getClientRects()].every((line) => {
+      const at = document.elementFromPoint(line.left + line.width / 2, line.top + line.height / 2);
+      return at !== null && node.contains(at);
+    }),
+  );
 
 /** Whether the element starts beneath the control, not beside it in its row. */
 async function beneath(element: Locator, control: Locator): Promise<boolean> {
@@ -521,6 +533,20 @@ test("lists a booking that refunded its payment by itself beneath the visits, an
   expect(await axeViolations(page)).toEqual([]);
 });
 
+// Most paid bookings go out as a link with the technician a draft until the evening's lock.
+test("says a link booking's technician is a draft, and still offers its link's buttons", async ({ page }) => {
+  await openVisits(page, { [BOOK]: json({ ...LINK_SENT, technician_draft: true }, 201) });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  await panel(page).getByRole("radio", { name: "12 pm", exact: true }).check();
+  await panel(page)
+    .getByRole("button", { name: /^Book Thu/ })
+    .click();
+  const booked = panel(page).getByRole("status").filter({ hasText: "Payment link sent for Rs. 2,000." });
+  await expect(booked).toContainText(opsCopy.clients.visits.book.draftTechnician("Sandeep Rawat"));
+  await expect(panel(page).getByRole("button", { name: opsCopy.tasks.link.copy, exact: true })).toBeVisible();
+  await expect(panel(page).getByRole("button", { name: opsCopy.tasks.link.resend, exact: true })).toBeVisible();
+});
+
 test("says a link that was not texted, and sends it again on asking", async ({ page }) => {
   await openVisits(page, {
     [BOOK]: json({ ...LINK_SENT, link: { ...LINK_SENT.link, texted: false } }, 201),
@@ -555,7 +581,7 @@ test("says a link that was not texted, and sends it again on asking", async ({ p
   });
   await panel(page).getByRole("button", { name: opsCopy.tasks.link.copy, exact: true }).click();
   await expect(
-    panel(page).getByRole("status").filter({ hasText: opsCopy.clients.visits.book.inTheWay.notCopied }),
+    panel(page).getByRole("alert").filter({ hasText: opsCopy.clients.visits.book.inTheWay.notCopied }),
   ).toBeVisible();
   expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
 
@@ -568,6 +594,7 @@ test("says a link that was not texted, and sends it again on asking", async ({ p
     .filter({ hasText: opsCopy.clients.visits.book.inTheWay.errors.hold_expired });
   await expect(refused).toBeVisible();
   expect(await beneath(refused, sendAgain)).toBe(true);
+  await expect(sendAgain).toBeFocused();
 });
 
 test("names the booking held on its link that refuses another of its kind, and lets it go", async ({ page }) => {
@@ -616,10 +643,15 @@ test("names the booking held on its link that refuses another of its kind, and l
   await panel(page)
     .getByRole("button", { name: `${inTheWay.letGo} · service visit, Wed 22 Sep, 12 pm`, exact: true })
     .click();
-  // Asked once more, since its link stops working; kept, nothing is let go.
+  // Asked once more, since its link stops working, on its safe answer; kept, nothing is let go, and the focus is
+  // back where it was.
   const asked = panel(page).getByRole("group", { name: inTheWay.letGoAsk });
+  await expect(asked.getByRole("button", { name: DISMISS.keep, exact: true })).toBeFocused();
   await asked.getByRole("button", { name: DISMISS.keep, exact: true }).click();
   expect(letGo).toBe(false);
+  await expect(
+    panel(page).getByRole("button", { name: `${inTheWay.letGo} · service visit, Wed 22 Sep, 12 pm` }),
+  ).toBeFocused();
   await panel(page)
     .getByRole("button", { name: `${inTheWay.letGo} · service visit, Wed 22 Sep, 12 pm` })
     .click();
@@ -670,18 +702,29 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
     .click();
   const inTheWay = opsCopy.clients.visits.book.inTheWay;
   await expect(panel(page)).toContainText(inTheWay.held("service visit", "Fri 24 Sep, 12 pm", "Wed 22 Sep, 7 pm"));
-  await panel(page)
-    .getByRole("button", { name: `${inTheWay.letGo} · service visit, Fri 24 Sep, 12 pm`, exact: true })
-    .click();
+
+  // Asked at a phone's width: the ask brought into view clear of the Book bar, on its safe answer.
+  await page.setViewportSize({ width: 360, height: 800 });
+  await recordScrolls(page);
+  const letGo = panel(page).getByRole("button", {
+    name: `${inTheWay.letGo} · service visit, Fri 24 Sep, 12 pm`,
+    exact: true,
+  });
+  await letGo.click();
   const asked = panel(page).getByRole("group", { name: inTheWay.letGoAsk });
+  await expect(asked.getByRole("button", { name: DISMISS.keep, exact: true })).toBeFocused();
+  expect(await broughtIntoView(page)).toContain(`${inTheWay.letGoAsk}${inTheWay.letGo}${DISMISS.keep}`);
+  expect(await clearsTheBar(asked)).toBe(true);
+  expect(await seen(asked)).toBe(true);
+  // Refused, the ask goes and the focus is back on Let it go.
   await asked.getByRole("button", { name: inTheWay.letGo, exact: true }).click();
   await expect(panel(page)).toContainText(inTheWay.errors.hold_expired);
   await expect(asked).toHaveCount(0);
+  await expect(letGo).toBeFocused();
   await expect(panel(page)).not.toContainText(inTheWay.letGone);
 
-  // The browser will not copy its link, at a phone's width: the link on its own line beneath the buttons, brought
-  // into view clear of the Book bar with the buttons still in view, and in no toast.
-  await page.setViewportSize({ width: 360, height: 800 });
+  // The browser will not copy its link: the link on its own line beneath the buttons, brought into view clear of the
+  // Book bar with the buttons still in view, and in no toast.
   await page.evaluate(() => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -692,20 +735,21 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
     name: `${opsCopy.tasks.link.copy} · service visit, Fri 24 Sep, 12 pm`,
     exact: true,
   });
-  await recordScrolls(page);
   await copyLink.click();
   const line = panel(page)
-    .getByRole("status")
-    .filter({ hasText: /^https:\/\/rzp\.io\/i\/stub4417$/ });
+    .getByRole("alert")
+    .filter({ hasText: opsCopy.clients.visits.book.inTheWay.notCopiedHere("https://rzp.io/i/stub4417") });
   await expect(line).toBeVisible();
   expect(await beneath(line, copyLink)).toBe(true);
-  expect(await broughtIntoView(page)).toContain("https://rzp.io/i/stub4417");
+  expect(await broughtIntoView(page)).toContain(
+    opsCopy.clients.visits.book.inTheWay.notCopiedHere("https://rzp.io/i/stub4417"),
+  );
   expect(await clearsTheBar(line)).toBe(true);
   expect(await seen(line)).toBe(true);
   await expect(copyLink).toBeInViewport();
   expect(await panel(page).locator("[data-toasts] [role=status]").count()).toBe(0);
   // Pressed again, it is said again: a new message, the last one gone.
-  const first = await line.locator("*").first().elementHandle();
+  const first = await line.elementHandle();
   await copyLink.click();
   await expect.poll(() => first.evaluate((node) => node.isConnected)).toBe(false);
   await expect(line).toBeVisible();
@@ -718,6 +762,7 @@ test("names the day a hold ends before its visit, and says why a let-go was refu
   await sendAgain.click();
   const refused = panel(page).getByRole("alert").filter({ hasText: opsCopy.tasks.link.errors.unavailable });
   await expect(refused).toBeVisible();
+  await expect(sendAgain).toBeFocused();
   expect(await beneath(refused, sendAgain)).toBe(true);
   expect(await broughtIntoView(page)).toContain(opsCopy.tasks.link.errors.unavailable);
   expect(await clearsTheBar(refused)).toBe(true);
