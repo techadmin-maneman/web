@@ -158,3 +158,9 @@ describe("the hair profile's densities", () => {
     expect(Object.keys(ops.clients.profile.densities).map(Number)).toEqual([...DENSITIES]);
   });
 });
+
+describe("the Book button's words", () => {
+  it("keep a time's hour and its am or pm on one line", () => {
+    expect(ops.clients.visits.book.bookAt("Thu 23 Sep", "12 pm")).toBe("Book Thu 23 Sep, 12\u00a0pm");
+  });
+});

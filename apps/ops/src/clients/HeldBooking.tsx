@@ -9,6 +9,7 @@ import { classes } from "@maneman/ui/classes";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextButton } from "@maneman/ui/TextLink";
 import { Refusal } from "@maneman/ui/Refusal";
+import { useAskFocus } from "@maneman/ui/useAskFocus";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -135,15 +136,8 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
   const mayLetGo = useAccess().mayCall("POST /api/holds/{id}/let-go");
-  const keep = useRef<HTMLButtonElement>(null);
-  const opener = useRef<HTMLButtonElement>(null);
-  const asked = useRef(false);
-  // The ask opens on its safe answer, Keep; kept, or refused, the focus goes back to Let it go.
-  useEffect(() => {
-    if (asking) keep.current?.focus();
-    else if (asked.current) opener.current?.focus();
-    asked.current = asking;
-  }, [asking]);
+  // The ask opens on its safe answer, Keep, clear of the Book bar; kept, or refused, the focus goes back to Let it go.
+  const { opener, question, safe } = useAskFocus(asking);
   const when = whenOf(held.date, held.starts_at);
   if (held.paid) return <p>{copy.paid(named(held.type), when)}</p>;
   const subject = `${named(held.type)}, ${when}`;
@@ -181,14 +175,14 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
     <div className={styles.inTheWay}>
       <p>{copy.held(named(held.type), when, untilOf(held.open_until, held.date))}</p>
       {asking ? (
-        <div role="group" aria-label={copy.letGoAsk}>
+        <div ref={question} role="group" aria-label={copy.letGoAsk} className={styles.asking}>
           <p>{copy.letGoAsk}</p>
           <FormActions>
-            <Button variant="destructive" size="small" disabled={busy} onClick={() => void letGo()}>
+            <Button variant="destructive" size="small" busy={busy} onClick={() => void letGo()}>
               {busy ? copy.lettingGo : copy.letGo}
             </Button>
             <CancelButton
-              ref={keep}
+              ref={safe}
               keep
               disabled={busy}
               onClick={() => {

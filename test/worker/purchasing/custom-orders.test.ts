@@ -217,6 +217,9 @@ describe("a custom order's money, wherever it goes", () => {
       .bind(id, NOW.toISOString())
       .run();
     const written = { actor: { kind: "system", id: "custom-order" }, requestId: "race", now: NOW } as const;
+    const count = (table: "hair_systems" | "consumables") =>
+      env.DB.prepare(`SELECT COUNT(*) AS n FROM ${table}`).first<number>("n");
+    const before = { hairSystems: await count("hair_systems"), consumables: await count("consumables") };
     const drafted = await Promise.all([
       draftCustomOrderPo(env.DB, id, written),
       draftCustomOrderPo(env.DB, id, written),
@@ -224,6 +227,10 @@ describe("a custom order's money, wherever it goes", () => {
     expect(drafted).toEqual([true, true]);
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM purchase_orders").first<number>("n")).toBe(1);
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM po_lines").first<number>("n")).toBe(1);
+    expect({ hairSystems: await count("hair_systems"), consumables: await count("consumables") }).toEqual({
+      hairSystems: (before.hairSystems ?? 0) + 1,
+      consumables: (before.consumables ?? 0) + 1,
+    });
   });
 
   it("paid, tells ops to order its piece by hand where its purchase order could not be drafted", async () => {

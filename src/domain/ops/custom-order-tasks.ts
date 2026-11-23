@@ -38,8 +38,9 @@ const CUSTOM_ORDER_TO_SEND: { readonly group: TaskGroup; readonly sql: string } 
 
 /**
  * Arrived: a piece reserved to it is held, in the warehouse or a kit, and no first fit or replacement is booked, under
- * way or paid for the client to fit it at. Read from the stock held now, never every piece ever received for a custom
- * order. Where it is held, so ops know whether it must first go to a technician's kit, and which fit to book.
+ * way or paid for the client to fit it at. Read from the pieces made for custom orders and held now, never all the
+ * stock held or every piece ever received for a custom order. Where it is held, so ops know whether it must first go
+ * to a technician's kit, and which fit to book.
  */
 const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: string } = {
   group: "custom_piece_to_fit",
@@ -47,7 +48,7 @@ const CUSTOM_PIECE_TO_FIT: { readonly group: TaskGroup; readonly sql: string } =
          ${ORDER_NUMBER} || ' · ' || ${HELD_AT} AS detail,
          json_object('order', k.number, 'piece_code', u.code, 'held_at', ${HELD_AT}, 'fit', ${FIT}) AS facts,
          u.labelled_at AS since, NULL AS due_by, '' AS episode
-    FROM stock_units u INDEXED BY stock_units_held
+    FROM stock_units u INDEXED BY stock_units_custom_held
     JOIN custom_orders k ON k.id = u.custom_order_id
     LEFT JOIN stock_places sp ON sp.id = u.place LEFT JOIN technicians t ON t.id = u.place
     JOIN people pe ON pe.id = k.person_id

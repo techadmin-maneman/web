@@ -331,6 +331,10 @@ describe("a look at the Tasks board or the Stock page", () => {
      SELECT 'su-' || i, 'MM-' || i, 5000 + i, 'tape_strips', 'fitted', NULL, '${AGO}', '${AGO}', 'k-' || i FROM n`,
   ];
 
+  /** Pieces numbered ?1 to ?2 held in the warehouse, none made for a custom order. */
+  const HELD_STOCK_SQL = `INSERT INTO stock_units (id, code, serial, consumable_code, state, place, labelled_at, moved_at)
+     SELECT 'sh-' || i, 'MS-' || i, 20000 + i, 'tape_strips', 'held', 'central', '${AGO}', '${AGO}' FROM n`;
+
   it("reads no more for custom orders to send and pieces to fit when ten times the orders were fitted", async () => {
     await env.DB.batch([
       ...CLIENTS_SQL.slice(0, 2).map((sql) => over(sql, 1, 5)),
@@ -361,7 +365,8 @@ describe("a look at the Tasks board or the Stock page", () => {
       ]),
     );
 
-    await env.DB.batch(FINISHED_ORDERS_SQL.map((sql) => over(sql, 21, 200)));
+    // Ten times the orders fitted, and as many pieces of ordinary stock held in the warehouse.
+    await env.DB.batch([...FINISHED_ORDERS_SQL.map((sql) => over(sql, 21, 200)), over(HELD_STOCK_SQL, 1, 200)]);
     const after = await rowsReadBy(tasks);
 
     expect({ before, after }).toEqual({ before, after: before });

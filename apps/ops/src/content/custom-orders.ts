@@ -38,6 +38,7 @@ export const customOrders = {
   cancelOrder: "Cancel order",
   cancelAsk: "Cancel this order? Its payment link stops working.",
   cancelYes: "Cancel the order",
+  cancelling: "Cancelling…",
   cancelled: "Cancelled.",
   refund: "Refund in full",
   refunded: "Refunded in full.",

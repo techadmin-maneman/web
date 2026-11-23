@@ -2635,7 +2635,7 @@ Made by `0016_booking.sql`; changed by `0220_prices_with_gst.sql`.
 
 Each purchase order to a supplier: its state from drafted to closed or cancelled, who approved, sent or cancelled it, and when (ADR 0166).
 
-Made by `0141_purchase_orders.sql`; changed by `0231_purchase_orders_unsent.sql`.
+Made by `0141_purchase_orders.sql`; changed by `0232_made_to_order_task_indexes.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3587,7 +3587,7 @@ Indexes:
 
 Each hair system piece labelled: its label, stock code and lot, and where it is now, held at a place, in transit, fitted or gone (ADR 0161).
 
-Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`, `0155_recalls.sql`.
+Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`, `0155_recalls.sql`, `0232_made_to_order_task_indexes.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3611,6 +3611,7 @@ Indexes:
 - `stock_units_by_lot`: on (`lot_id`), where `lot_id IS NOT NULL`
 - `stock_units_by_transfer`: on (`transfer_id`), where `transfer_id IS NOT NULL`
 - `stock_units_by_visit`: on (`appointment_id`), where `appointment_id IS NOT NULL`
+- `stock_units_custom_held`: on (`custom_order_id`), where `state = 'held' AND custom_order_id IS NOT NULL`
 - `stock_units_held`: on (`place`, `consumable_code`), where `state = 'held'`
 - `stock_units_reserved`: on (`custom_order_id`), where `custom_order_id IS NOT NULL`
 

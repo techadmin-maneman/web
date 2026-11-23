@@ -421,7 +421,27 @@ describe("a booking held on its payment link", () => {
     )
       .bind(body.hold_id)
       .all<{ actor: string; subject_kind: string }>();
-    expect(kept.results).toEqual([expect.objectContaining({ subject_kind: "hold" })]);
+    expect(kept.results).toEqual([{ actor: "ops@localhost", subject_kind: "hold" }]);
+  });
+
+  it("answers that the link was sent again even where the log cannot keep who sent it", async () => {
+    await rohit("consulted");
+    const body = await (await book(firstFit)).json<{ hold_id: string }>();
+    await env.DB.exec(
+      "CREATE TRIGGER no_resend_log BEFORE INSERT ON audit_log WHEN NEW.action = 'booking.link_resend' BEGIN SELECT RAISE(ABORT, 'log down'); END",
+    );
+    const logs = captureLogs();
+    try {
+      const sent = await call(`/api/holds/${body.hold_id}/send-link`, "POST");
+      expect(sent.status).toBe(200);
+      expect(await sent.json()).toEqual({ outcome: "resent" });
+      expect(payments.made.resent).toHaveLength(1);
+      expect(logs.lines()).toContainEqual(
+        expect.objectContaining({ event: "audit_write_failed", action: "booking.link_resend" }),
+      );
+    } finally {
+      await env.DB.exec("DROP TRIGGER no_resend_log");
+    }
   });
 
   it("is named when it stands in the way of another of its kind, and let go, frees the way", async () => {

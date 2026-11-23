@@ -59,7 +59,7 @@ export function PaymentLinkActions({ task, subject }: { task: Task; subject: str
           </TextButton>
         )}
         {mayResend && (
-          <TextButton tone="muted" compact disabled={busy} onClick={() => void resend()}>
+          <TextButton tone="muted" compact busy={busy} onClick={() => void resend()}>
             {busy ? copy.sending : copy.resend}
             <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
           </TextButton>

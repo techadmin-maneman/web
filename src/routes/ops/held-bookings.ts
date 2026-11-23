@@ -167,7 +167,12 @@ export function registerOpsHeldBookings(app: App): void {
         requestId: c.var.requestId,
         detail: {},
       } as const;
-      await auditStatement(c.env.DB, entry, now).run();
+      try {
+        await auditStatement(c.env.DB, entry, now).run();
+      } catch (error) {
+        // The text has gone already: the answer says so, whatever the log says of it.
+        c.var.log.error("audit_write_failed", { action: entry.action, error });
+      }
     }
     return c.json({ outcome }, 200);
   });

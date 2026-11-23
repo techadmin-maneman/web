@@ -17,8 +17,12 @@
 .said:not(:empty) {
   display: block;
   margin-top: var(--sp-8);
-  /* Brought into view clear of the drawer's Book bar, which stays over the foot of what scrolls: room for its
-     tallest, the pay line wrapped beside the button and the button on a line of its own. */
+}
+
+/* Brought into view clear of the drawer's Book bar, which stays over the foot of what scrolls: room for its tallest,
+   the pay line wrapped beside the button and the button on a line of its own. */
+.said:not(:empty),
+.asking {
   scroll-margin-bottom: calc(var(--sp-64) * 2 + var(--sp-32));
 }
 
