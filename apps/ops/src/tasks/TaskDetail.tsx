@@ -22,6 +22,8 @@ import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
 import { subOf } from "./task-subs.ts";
 import { TaskActions } from "./TaskActions.tsx";
 import { UpiPaymentAction } from "./UpiPaymentAction.tsx";
+import { SnoozeButton } from "./Snooze.tsx";
+import { isWrittenTask, StaffTaskDone } from "./StaffTaskDone.tsx";
 import shared from "./tasks.module.css";
 
 /** A claim's photographs, loaded when a claim is first opened, so Today's first load leaves Care's section out. */
@@ -49,6 +51,8 @@ export interface Acting {
   readonly owner: string | null;
   readonly onOwner: (owner: string | null) => void;
   readonly onClosed: () => void;
+  /** It was snoozed until the morning: it leaves the list, and the page says so. */
+  readonly onSnoozed?: () => void;
 }
 
 interface Props {
@@ -103,6 +107,16 @@ export function TaskDrawer({ group, task, subject, now, acting, onDismiss }: Pro
             <TaskActions group={group} task={task} subject={subject} {...settling} />
           </div>
           <div className={shared.footStep}>
+            <SnoozeButton
+              group={group}
+              task={task}
+              mayAct={acting.mayOwn}
+              onSnoozed={() => {
+                onDismiss();
+                requestAnimationFrame(acting.onSnoozed ?? acting.onClosed);
+              }}
+            />
+            {isWrittenTask(group) && <StaffTaskDone task={task} onDone={done} primary />}
             <DecideLink group={group} task={task} subject={subject} primary />
             <BookFromTask task={task} subject={subject} primary onBooked={done} />
           </div>

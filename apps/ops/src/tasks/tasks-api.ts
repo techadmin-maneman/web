@@ -27,6 +27,9 @@ export const tasksApi = {
     due: string;
     owner: string | null;
   }) => client.post("/api/tasks", { body: task }),
+  /** A task snoozed until 10 am tomorrow; it leaves the board until then (ADR 0303). */
+  snoozeTask: (group: TaskGroup["group"], id: string) =>
+    client.post("/api/tasks/{group}/{id}/snooze", { path: { group, id } }),
   /** A task written by hand marked done; it leaves the board. */
   markTaskDone: (id: string) => client.post("/api/tasks/staff/{id}/done", { path: { id } }),
   /** A one visit's payment link, texted to the client again by Razorpay, or made now where it never was. */

@@ -1818,6 +1818,14 @@ export interface Rows {
     readonly assigned_by: string;
     readonly assigned_at: string;
   };
+  readonly task_snoozes: {
+    readonly task_group: string;
+    readonly subject_id: string;
+    readonly episode: string;
+    readonly until: string;
+    readonly snoozed_by: string;
+    readonly snoozed_at: string;
+  };
   readonly task_spans: {
     readonly id: string;
     readonly task_group: string;

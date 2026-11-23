@@ -21388,6 +21388,127 @@ Mark a task written by hand done; it leaves the board
 }
 ```
 
+### POST /api/tasks/{group}/{id}/snooze
+
+Snooze a task until 10 am tomorrow in India; it leaves the board and its counts until then
+
+**200**: Snoozed, and until when
+
+```json
+{
+  "$ref": "#/components/schemas/TaskSnoozed"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: a service token; or not_permitted: it asks Act in the department that decides the task's group
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such task on the board now in the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/alerts
 
 The open alerts ops have been told of, the longest open first
@@ -52244,6 +52365,7 @@ Request body:
         "task.close",
         "task.write",
         "task.done",
+        "task.snooze",
         "address.given_to_ops",
         "alert.resolve",
         "alert.send_again",
@@ -57026,6 +57148,24 @@ Request body:
     "city",
     "due",
     "owner"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TaskSnoozed
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "until": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "until"
   ],
   "additionalProperties": false
 }

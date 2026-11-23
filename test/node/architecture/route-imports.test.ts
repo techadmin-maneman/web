@@ -22,7 +22,7 @@ const BASELINE = [
 /** The module a file belongs to: tech/jobs.steps.ts is part of tech/jobs.ts. */
 const moduleOf = (file: string) =>
   file.replace(
-    /\.(claims|close-notes|fit-today|outcome|photos|piece|places|read|receipts|record|routes|schemas|scorecard|sign-off|steps|transit|units|updates|written)\.ts$/,
+    /\.(claims|close-notes|fit-today|outcome|photos|piece|places|read|receipts|record|routes|schemas|scorecard|sign-off|steps|transit|units|updates|written|snooze)\.ts$/,
     ".ts",
   );
 

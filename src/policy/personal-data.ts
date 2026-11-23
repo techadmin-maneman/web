@@ -599,6 +599,11 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     whyLeftOut: "Ops' own to-do list.",
     erasure: { why: "Kept: which member of staff looks after a task, nothing about them." },
   },
+  task_snoozes: {
+    leftOut: ["task_group", "subject_id", "episode", "until", "snoozed_by", "snoozed_at"],
+    whyLeftOut: "Ops' own to-do list.",
+    erasure: { why: "Kept: when a task comes back to the board, nothing about them." },
+  },
   task_spans: {
     leftOut: ["id", "task_group", "subject_id", "episode", "city", "opened_at", "closed_at"],
     whyLeftOut: "When ops' own tasks opened and closed, for the reporting figures.",

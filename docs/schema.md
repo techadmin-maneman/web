@@ -41,7 +41,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries`, `campaign_links` | A credit, a grant, a partner, a partner's payment, an entry of spend, a campaign link or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `qc_points`, `checklist_items`, `partial_reasons`, `lost_reasons`, `not_fitted_reasons`, `failure_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
-| Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks`, `staff_tasks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, a fit's stock risk is found or cleared again within the hour, and a task written by hand since is gone, one marked done since open again | Closing or giving it again on the Tasks board |
+| Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks`, `staff_tasks`, `task_snoozes` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, a fit's stock risk is found or cleared again within the hour, a task written by hand since is gone, one marked done since open again, and one snoozed since is back on the board | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs`, `crm_contact_updates` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and the old catalogue table | `technicians`, `fsm_items` | A technician added or changed since goes back | The rows since `<T>`; ops can add one again on the Technicians page |
@@ -213,6 +213,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [targets](#targets): Each month's target for a city, by measure, as set on the console's Targets page; set again, it is replaced (ADR 0154).
 - [task_closures](#task_closures): A task on the Tasks board ops closed without doing its thing, a visit left partly done alone, with why, who and when, by the task's group and its row's id (ADR 0092).
 - [task_owners](#task_owners): The member of staff a task on the Tasks board is theirs, by Access e-mail, by the task's group, its row's id and, where that row can be a new task again, its episode; a task with no row for it is nobody's (ADR 0092).
+- [task_snoozes](#task_snoozes): A task on the Tasks board snoozed until a moment, off the board and its counts until then, by the task's group, its row's id and its episode (ADR 0303).
 - [task_spans](#task_spans): Each task the Tasks board has held, by its group, row and episode: the client's city, when it opened and the night it was first found gone, from which the reporting copy counts Care cases (ADR 0147).
 - [tech_alert_kinds_off](#tech_alert_kinds_off): The kinds of alert a technician turned off; every kind is on until then (ADR 0250).
 - [tech_alerts](#tech_alerts): A technician's alerts, the inbox the phone reads over the last seven days: time to leave, the day ahead, a job moved, called off or given to another, and running over; when each was pushed and read (ADR 0250).
@@ -3831,6 +3832,21 @@ Made by `0056_task_owners.sql`.
 | `owner` | TEXT | no |  |  |  |
 | `assigned_by` | TEXT | no |  |  |  |
 | `assigned_at` | TEXT | no |  |  |  |
+
+## task_snoozes
+
+A task on the Tasks board snoozed until a moment, off the board and its counts until then, by the task's group, its row's id and its episode (ADR 0303).
+
+Made by `0235_task_snoozes.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `task_group` | TEXT | no |  | primary key |  |
+| `subject_id` | TEXT | no |  | primary key |  |
+| `episode` | TEXT | no |  |  |  |
+| `until` | TEXT | no |  |  |  |
+| `snoozed_by` | TEXT | no |  |  |  |
+| `snoozed_at` | TEXT | no |  |  |  |
 
 ## task_spans
 

@@ -12479,6 +12479,7 @@
               "task.close",
               "task.write",
               "task.done",
+              "task.snooze",
               "address.given_to_ops",
               "alert.resolve",
               "alert.send_again",
@@ -17066,6 +17067,19 @@
           "city",
           "due",
           "owner"
+        ],
+        "additionalProperties": false
+      },
+      "TaskSnoozed": {
+        "type": "object",
+        "properties": {
+          "until": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "until"
         ],
         "additionalProperties": false
       },
@@ -45257,6 +45271,7 @@
                 "task.close",
                 "task.write",
                 "task.done",
+                "task.snooze",
                 "address.given_to_ops",
                 "alert.resolve",
                 "alert.send_again",
@@ -50773,6 +50788,204 @@
           },
           "404": {
             "description": "not_found: no such task open on the board in the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "not_found"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{group}/{id}/snooze": {
+      "post": {
+        "summary": "Snooze a task until 10 am tomorrow in India; it leaves the board and its counts until then",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "untold_move",
+                "move_unanswered",
+                "reschedule_request",
+                "visit_not_begun",
+                "visit_left_open",
+                "unassigned_visit",
+                "recall_call",
+                "unanswered_chat",
+                "message_undelivered",
+                "city_matter",
+                "remedy_approval",
+                "leave_conflict",
+                "leave_request",
+                "address_to_confirm",
+                "consultation_request",
+                "first_fit_to_book",
+                "heard_from_missing",
+                "replacement_order",
+                "made_to_order_ask",
+                "custom_order_to_send",
+                "custom_piece_to_fit",
+                "stock_at_risk",
+                "at_risk_client",
+                "partial_visit",
+                "consumables_short",
+                "fit_unsigned",
+                "fit_guarantee_claim",
+                "low_rating",
+                "erasure_follow_up",
+                "kit_request",
+                "referral_review",
+                "no_show_decision",
+                "no_show_dispute",
+                "number_change",
+                "erasure_request",
+                "grievance",
+                "draft_invoice",
+                "payment_owed",
+                "upi_due",
+                "payment_to_refund",
+                "staff_task_operations",
+                "staff_task_customer_care",
+                "staff_task_finance",
+                "staff_task_growth",
+                "staff_task_admin"
+              ]
+            },
+            "required": true,
+            "name": "group",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snoozed, and until when",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSnoozed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "invalid_request"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required: a service token; or not_permitted: it asks Act in the department that decides the task's group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "access_required",
+                                "not_permitted"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "code"
+                          ],
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such task on the board now in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {

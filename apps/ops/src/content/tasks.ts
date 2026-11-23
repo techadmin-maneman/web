@@ -230,6 +230,18 @@ export const tasks = {
       unknown: FAILED,
     },
   },
+  /** A task snoozed until the next morning (docs/decisions/0303-snoozing-a-task.md). */
+  snooze: {
+    button: "Snooze",
+    done: "Snoozed until tomorrow, 10 am.",
+    errors: {
+      not_found: changed("This task is done or gone."),
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
+  },
   /** When a kind's first task is due, on its pill. */
   due: { overdue: "Overdue", today: "Today", week: "This week", later: "Later" },
   /** The first line of a no-show whose client has since been erased: the visit, which is all that is left. */

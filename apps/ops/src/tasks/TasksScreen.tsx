@@ -10,6 +10,7 @@ import { PanelFailed, PanelLoading } from "@maneman/ui/States";
 import { useRowSelection } from "@maneman/ui/useRowSelection";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import { TextButton } from "@maneman/ui/TextLink";
+import { Toast } from "@maneman/ui/Toast";
 import { useLoad } from "@maneman/ui/useLoad";
 import { apiNow } from "@maneman/web-kit/clock";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -136,6 +137,35 @@ interface QueueProps {
   readonly onFilter: (filter: TaskFilter) => void;
 }
 
+/** What a person may do to each row, and what follows: its owner changed, it closed, or it snoozed. */
+function actingOnRows(on: {
+  me: string | null;
+  board: Tasks;
+  access: ReturnType<typeof useAccess>;
+  onOwner: (row: Row, owner: string | null) => void;
+  onClosed: (row: Row) => void;
+  onSnoozed: (row: Row) => void;
+}) {
+  return (row: Row): Acting => ({
+    me: on.me,
+    staff: on.board.staff,
+    mayOwn: on.access.reaches(taskNeed(row.group, "act")),
+    closable:
+      (on.board.groups.find((group) => group.group === row.group)?.closable ?? false) &&
+      on.access.mayCall("POST /api/tasks/{group}/{id}/close"),
+    owner: row.owner,
+    onOwner: (owner) => {
+      on.onOwner(row, owner);
+    },
+    onClosed: () => {
+      on.onClosed(row);
+    },
+    onSnoozed: () => {
+      on.onSnoozed(row);
+    },
+  });
+}
+
 function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
   const { loaded, retry, lapsed } = useBoard();
   const [signedIn] = useLoad(whoami);
@@ -144,6 +174,7 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
   const [owners, setOwners] = useState<ReadonlyMap<string, string | null>>(new Map());
   const [closed, setClosed] = useState<readonly string[]>([]);
   const [opened, setOpened] = useState<string | null>(null);
+  const [snoozed, setSnoozed] = useState(0);
   const [all, setAll] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const board = loaded.state === "loaded" ? loaded.value : null;
@@ -166,19 +197,17 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
     heading.current?.focus();
   };
 
-  const actingOn = (row: Row): Acting => ({
+  const actingOn = actingOnRows({
     me,
-    staff: board.staff,
-    mayOwn: access.reaches(taskNeed(row.group, "act")),
-    closable:
-      (board.groups.find((group) => group.group === row.group)?.closable ?? false) &&
-      access.mayCall("POST /api/tasks/{group}/{id}/close"),
-    owner: row.owner,
-    onOwner: (owner) => {
+    board,
+    access,
+    onOwner: (row, owner) => {
       setOwners((was) => new Map(was).set(keyOf(row), owner));
     },
-    onClosed: () => {
+    onClosed: closeRow,
+    onSnoozed: (row) => {
       closeRow(row);
+      setSnoozed((count) => count + 1);
     },
   });
 
@@ -198,6 +227,7 @@ function TaskQueue({ alerts, onOpen, filter, onFilter }: QueueProps) {
   return (
     <>
       <WriteTask me={me} staff={board.staff} />
+      {snoozed > 0 && <Toast key={snoozed}>{tasks.snooze.done}</Toast>}
       <TaskFilters filter={filter} counts={found.counts} onFilter={onFilter} />
       <BoardNotes truncated={board.truncated} lapsed={board.lapsed} shown={lapsed.shown} onToggle={lapsed.toggle} />
       {chooses && <BulkActions rows={chosen} actingOn={actingOn} onClear={selection.clear} onKeep={selection.only} />}

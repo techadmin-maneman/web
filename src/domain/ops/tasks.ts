@@ -214,6 +214,8 @@ interface BoardScope {
   readonly reach?: (group: TaskGroup) => PlacesReached;
   /** One client's tasks alone. */
   readonly person?: string;
+  /** Leave out the tasks snoozed until later (docs/decisions/0303-snoozing-a-task.md); a span is still open. */
+  readonly awake?: true;
 }
 
 /**
@@ -228,9 +230,14 @@ function statementOf(
   const binds = queue.binds?.(at) ?? [];
   const reach = `?${String(binds.length + 1)}`;
   const person = `?${String(binds.length + 2)}`;
-  const kept = `${taskWithinReach(queue.group, "t.id", reach)} AND (${person} IS NULL OR t.person_id = ${person})`;
+  const awake = `?${String(binds.length + 3)}`;
+  const kept = `${taskWithinReach(queue.group, "t.id", reach)} AND (${person} IS NULL OR t.person_id = ${person})
+    AND (${awake} IS NULL OR NOT EXISTS (SELECT 1 FROM task_snoozes sn WHERE sn.task_group = t."group"
+      AND sn.subject_id = t.id AND sn.episode = t.episode AND sn.until > ${awake}))`;
   const reached = scope.reach?.(queue.group) ?? EVERYWHERE;
-  return db.prepare(read(queue.sql, kept)).bind(...binds, reachBinding(reached), scope.person ?? null);
+  return db
+    .prepare(read(queue.sql, kept))
+    .bind(...binds, reachBinding(reached), scope.person ?? null, scope.awake === true ? at.now : null);
 }
 
 /**

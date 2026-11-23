@@ -2,11 +2,11 @@
 // panel a task is written in, for a department, about a client found by name, due when chosen, and whose it is; a
 // written task on the board is marked done from its row. Every name and number here is made up.
 
-import type { Request } from "@playwright/test";
+import type { Request, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { empty, fails, json, TASKS, type OpsReply } from "./fixtures.ts";
-import { open, row } from "./tasks-fixtures.ts";
+import { detail, open, row } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const copy = opsCopy.tasks.write;
@@ -103,4 +103,23 @@ test("marks a task written by hand done from its row, which leaves the board", a
   await written.getByRole("button", { name: copy.doneLabel("Call back about the evening slot") }).click();
   await expect(written).toHaveCount(0);
   expect(done).toHaveLength(1);
+});
+
+// A task snoozed until the morning (docs/decisions/0303-snoozing-a-task.md): it leaves the list, and the page says so.
+test("snoozes a task from its panel until tomorrow morning, which leaves the list", async ({ page }) => {
+  const [replacements] = TASKS.groups;
+  const kunal = replacements?.tasks.find((task) => task.person.name === "Kunal Mehta");
+  if (replacements === undefined || kunal === undefined) throw new Error("the board has no task for Kunal Mehta");
+  const snoozed: string[] = [];
+  await open(page, TASKS, undefined, {
+    [`POST /api/tasks/${replacements.group}/${kunal.id}/snooze`]: (route: Route) => {
+      snoozed.push(route.request().url());
+      return json({ until: "2027-09-21T04:30:00.000Z" })(route);
+    },
+  });
+  const panel = await detail(page, "Kunal Mehta");
+  await panel.getByRole("button", { name: opsCopy.tasks.snooze.button }).click();
+  await expect(page.getByText(opsCopy.tasks.snooze.done)).toBeVisible();
+  await expect(row(page, "Kunal Mehta")).toHaveCount(0);
+  expect(snoozed).toHaveLength(1);
 });

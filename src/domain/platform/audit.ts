@@ -254,6 +254,7 @@ export const AUDIT_ACTIONS = [
   // A task ops wrote themselves, and one marked done (docs/decisions/0302-tasks-written-by-hand.md).
   "task.write",
   "task.done",
+  "task.snooze",
   "address.given_to_ops",
   // An alert on Tasks' "Needs a hand" marked done, and the message, lead or CRM erasure it gave up on sent again.
   "alert.resolve",
