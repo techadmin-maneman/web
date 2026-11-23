@@ -40,6 +40,8 @@ export interface RosterTechnician {
   readonly fitsTrained: boolean;
   /** The day their training is expected to end; null when they are not in training (ADR 0278). */
   readonly trainingEndDate: string | null;
+  /** The day they started with us; null where it was never given (ADR 0305). */
+  readonly startedOn: string | null;
 }
 
 interface RosterRow {
@@ -53,6 +55,7 @@ interface RosterRow {
   sign_in_stopped_at: string | null;
   fits_trained: number;
   training_end_date: string | null;
+  started_on: string | null;
 }
 
 const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
@@ -66,10 +69,11 @@ const rosterTechnicianOf = (row: RosterRow): RosterTechnician => ({
   signInStoppedAt: row.sign_in_stopped_at,
   fitsTrained: row.fits_trained === 1,
   trainingEndDate: row.training_end_date,
+  startedOn: row.started_on,
 });
 
 const ROSTER_COLUMNS =
-  "id, name, initials, zone, city, mobile_e164, active, sign_in_stopped_at, fits_trained, training_end_date";
+  "id, name, initials, zone, city, mobile_e164, active, sign_in_stopped_at, fits_trained, training_end_date, started_on";
 
 /** Every technician, active or switched off, by name. */
 export async function roster(db: D1Database): Promise<RosterTechnician[]> {
@@ -93,6 +97,7 @@ interface NewTechnician {
   readonly city: string | null;
   readonly fitsTrained: boolean;
   readonly trainingEndDate: string | null;
+  readonly startedOn: string | null;
   /** Whether a technician so named, added here, is a test record (testRecordAtCreation, src/policy/staging-test-records.ts). */
   readonly testRecord: boolean;
 }
@@ -108,8 +113,8 @@ export async function addTechnician(
     db
       .prepare(
         `INSERT INTO technicians (id, fsm_id, name, initials, active, zone, city, mobile_e164, updated_at, hand_written,
-           fits_trained, test_record, training_end_date)
-         SELECT ?1, ?1, ?3, ?4, 1, ?5, ?7, ?2, ?6, 1, ?8, ?9, ?10 WHERE NOT ${NUMBER_TAKEN}`,
+           fits_trained, test_record, training_end_date, started_on)
+         SELECT ?1, ?1, ?3, ?4, 1, ?5, ?7, ?2, ?6, 1, ?8, ?9, ?10, ?11 WHERE NOT ${NUMBER_TAKEN}`,
       )
       .bind(
         technician.id,
@@ -122,6 +127,7 @@ export async function addTechnician(
         technician.fitsTrained ? 1 : 0,
         technician.testRecord ? 1 : 0,
         technician.trainingEndDate,
+        technician.startedOn,
       ),
     auditStatementIfWritten(db, audit, now, { table: "technicians", id: technician.id }),
   ]);
@@ -147,6 +153,8 @@ interface TechnicianChange {
   readonly fitsTrained?: boolean;
   /** Null marks their training done. */
   readonly trainingEndDate?: string | null;
+  /** Null says it is not known. */
+  readonly startedOn?: string | null;
 }
 
 /** Changes what was sent, unless the new number is another active technician's. */
@@ -169,12 +177,13 @@ export async function changeTechnician({
   const city = change.city === undefined ? current.city : change.city;
   const fitsTrained = change.fitsTrained ?? current.fitsTrained;
   const trainingEndDate = change.trainingEndDate === undefined ? current.trainingEndDate : change.trainingEndDate;
+  const startedOn = change.startedOn === undefined ? current.startedOn : change.startedOn;
   if (mobile !== null && (await numberTaken(db, current.id, mobile))) return "number_in_use";
   await db.batch([
     db
       .prepare(
         `UPDATE technicians SET name = ?2, initials = ?3, mobile_e164 = ?4, zone = ?5, city = ?6, updated_at = ?7,
-           fits_trained = ?8, training_end_date = ?9
+           fits_trained = ?8, training_end_date = ?9, started_on = ?10
          WHERE id = ?1`,
       )
       .bind(
@@ -187,6 +196,7 @@ export async function changeTechnician({
         now.toISOString(),
         fitsTrained ? 1 : 0,
         trainingEndDate,
+        startedOn,
       ),
     auditStatement(db, audit, now),
   ]);

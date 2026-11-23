@@ -255,6 +255,29 @@ describe("changing a technician", () => {
     ]);
   });
 
+  it("keeps the day they started, which the roster shows, changes it, and takes it off with null", async () => {
+    const ops = appIn("ops");
+    const added = await send(ops, "POST", "/api/technicians", {
+      name: "Naveen Rao",
+      mobile: "9810000007",
+      started_on: "2026-03-03",
+    });
+    const { id } = await added.json<{ id: string }>();
+    const listed = async () =>
+      (
+        await (
+          await send(ops, "GET", "/api/technicians")
+        ).json<{ technicians: { id: string; started_on: string | null }[] }>()
+      ).technicians.find((each) => each.id === id);
+    expect(await listed()).toMatchObject({ started_on: "2026-03-03" });
+
+    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { started_on: "2026-04-01" })).status).toBe(200);
+    expect(await listed()).toMatchObject({ started_on: "2026-04-01" });
+    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { started_on: null })).status).toBe(200);
+    expect(await listed()).toMatchObject({ started_on: null });
+    expect((await send(ops, "PATCH", `/api/technicians/${id}`, { started_on: "3 March" })).status).toBe(400);
+  });
+
   it("changes only what was sent", async () => {
     const ops = appIn("ops");
 
@@ -523,6 +546,7 @@ describe("the roster", () => {
         mobile: "+919810000008",
         fits_trained: false,
         training_end_date: null,
+        started_on: null,
         visits_to_come: 0,
       },
     ]);
