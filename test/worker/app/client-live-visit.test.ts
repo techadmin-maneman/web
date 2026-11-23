@@ -158,4 +158,58 @@ describe("a fit's sign-off under way", () => {
     }>();
     expect(list.upcoming.find((each) => each.id === id)?.sign_off).toMatchObject(declined);
   });
+
+  // A fit runs past its booked window, and the technician asks for the sign-off after it: the client can still sign, as
+  // the visit is under way until they do. It was "being closed", with no sign-off, so it could never be signed.
+  it("reaches the client when asked after the visit's window, the visit under way until they answer", async () => {
+    const rohit = await client();
+    const id = await today(rohit.id, "replacement");
+    await landed(id, "check_in", "2026-09-21T06:55:00.000Z");
+    await landed(id, "start", "2026-09-21T07:00:00.000Z");
+    await env.DB.prepare(
+      `INSERT INTO fit_sign_offs (appointment_id, state, asked_at, guarantee_days, updated_at)
+       VALUES (?1, 'asked', ?2, 14, ?2)`,
+    )
+      .bind(id, "2026-09-21T08:40:00.000Z")
+      .run();
+    // 2:15 pm, a quarter of an hour past the window's end.
+    const later = appFor("local", fakeDependencies({ now: () => new Date("2026-09-21T08:45:00.000Z") }), {}, "client");
+    const home = async () =>
+      (await (await request(later, "/api/me", { headers: { Cookie: rohit.cookie } })).json<{ next_visit: Live }>())
+        .next_visit;
+    expect(await home()).toMatchObject({ stage: "in_progress", sign_off: { state: "asked" } });
+    // Signed, or closed by the technician, it is being closed again as its window says.
+    await env.DB.prepare("UPDATE fit_sign_offs SET state = 'signed', signed_at = ?2 WHERE appointment_id = ?1")
+      .bind(id, "2026-09-21T08:44:00.000Z")
+      .run();
+    expect(await home()).toMatchObject({ stage: "closing" });
+  });
+
+  it("comes first on Home while its sign-off is asked after the window, before a visit booked for later", async () => {
+    const rohit = await client();
+    const id = await today(rohit.id, "replacement");
+    const laterOn = await visit(rohit.id, "service", "scheduled", "2026-10-05T05:30:00.000Z", IMRAN);
+    await landed(id, "check_in", "2026-09-21T06:55:00.000Z");
+    await landed(id, "start", "2026-09-21T07:00:00.000Z");
+    await env.DB.prepare(
+      `INSERT INTO fit_sign_offs (appointment_id, state, asked_at, guarantee_days, updated_at)
+       VALUES (?1, 'flagged', ?2, 14, ?2)`,
+    )
+      .bind(id, "2026-09-21T08:40:00.000Z")
+      .run();
+    const later = appFor("local", fakeDependencies({ now: () => new Date("2026-09-21T08:45:00.000Z") }), {}, "client");
+    const home = async () =>
+      (
+        await (
+          await request(later, "/api/me", { headers: { Cookie: rohit.cookie } })
+        ).json<{
+          next_visit: Live & { id: string };
+        }>()
+      ).next_visit;
+    expect(await home()).toMatchObject({ id, stage: "in_progress", sign_off: { state: "flagged" } });
+    await env.DB.prepare("UPDATE fit_sign_offs SET state = 'signed', signed_at = ?2 WHERE appointment_id = ?1")
+      .bind(id, "2026-09-21T08:44:00.000Z")
+      .run();
+    expect(await home()).toMatchObject({ id: laterOn });
+  });
 });

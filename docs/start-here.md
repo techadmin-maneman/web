@@ -58,7 +58,7 @@ this map, or when the map names something that no longer exists.
 ### A visit, and changing it
 
 - **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`, `visit-paid`,
-  `visit-begun`, `client-visits`, `ratings` (a client's stars for a visit done), `client-photo-keys`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
+  `visit-begun`, `client-visits`, `visit-stage` (where a visit not yet closed stands for the client), `ratings` (a client's stars for a visit done), `client-photo-keys`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
   `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `finish-asks` (how a technician suggests finishing a visit), `open-proposals`, `technician-draft` (fixing drafts, and giving a draft to another technician), `visit-upkeep` (what a write to a
   visit keeps up beside it),
   `no-show-notes`, `visit-story` (a visit's steps, for its drawer), `live-visit` (the technician's word and step, for the client), `visit-photo-links` (a visit's photographs with their links)
