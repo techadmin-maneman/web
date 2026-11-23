@@ -3,11 +3,11 @@
 // city's learned drive times, each with its drives and whether it has enough to be used.
 
 import { Field, Select } from "@maneman/ui/Field";
-import { Columns, Stack } from "@maneman/ui/Layout";
+import { Stack } from "@maneman/ui/Layout";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Segmented } from "@maneman/ui/Segmented";
-import { StatTile } from "@maneman/ui/StatTile";
+import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { PanelFailed, PanelLoading } from "@maneman/ui/States";
 import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
@@ -71,12 +71,12 @@ function Totals({ report }: { report: Driving }) {
   const planned = sum((row) => row.planned_minutes);
   const actual = sum((row) => row.actual_minutes);
   return (
-    <Columns row>
+    <StatTiles>
       <StatTile label={copy.drives} value={quantity(sum((row) => row.drives))} />
       <StatTile label={copy.planned} value={copy.total(planned)} />
       <StatTile label={copy.actual} value={copy.total(actual)} />
       <StatTile label={copy.gap} value={copy.signedTotal(actual - planned)} />
-    </Columns>
+    </StatTiles>
   );
 }
 

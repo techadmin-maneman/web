@@ -2,8 +2,7 @@
 // with their uses and takings. A code is made, and found by how it begins; a row opens its record beside the list,
 // where it is switched off or, while no booking has taken it, deleted. Codes switched off fold away beneath.
 
-import { Columns } from "@maneman/ui/Layout";
-import { StatTile } from "@maneman/ui/StatTile";
+import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Badge } from "@maneman/ui/Badge";
 import { Toast } from "@maneman/ui/Toast";
@@ -51,11 +50,11 @@ function Figures({ totals }: { totals: DiscountCodeList["totals"] }) {
     [copy.figures.paid, rupees(totals.paid)],
   ];
   return (
-    <Columns row>
+    <StatTiles>
       {figures.map(([label, value]) => (
         <StatTile key={label} label={label} value={value} />
       ))}
-    </Columns>
+    </StatTiles>
   );
 }
 

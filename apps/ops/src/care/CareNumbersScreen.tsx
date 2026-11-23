@@ -16,8 +16,8 @@ import { care } from "../content/care.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
 import shared from "./care.module.css";
-import { Columns, Stack } from "@maneman/ui/Layout";
-import { StatTile } from "@maneman/ui/StatTile";
+import { Stack } from "@maneman/ui/Layout";
+import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toolbar } from "@maneman/ui/Toolbar";
@@ -35,7 +35,7 @@ const minutes = (value: number | null): string => (value === null ? copy.nothing
 function Figures({ numbers }: { numbers: CareNumbers }) {
   const overdue = numbers.backlog.overdue;
   return (
-    <Columns row>
+    <StatTiles>
       <StatTile label={copy.chats} value={numbers.replies.chats} />
       <StatTile label={copy.firstReply} value={minutes(numbers.replies.median_minutes)} />
       <StatTile label={copy.withinTarget} value={percent(numbers.replies.within_target)} />
@@ -43,7 +43,7 @@ function Figures({ numbers }: { numbers: CareNumbers }) {
       <StatTile label={copy.waitingOnUs} value={numbers.backlog.waiting_on_us} />
       <StatTile label={copy.overdue} value={overdue} tone={overdue > 0 ? "warning" : "plain"} />
       <StatTile label={copy.waitingOnClient} value={numbers.backlog.waiting_on_client} />
-    </Columns>
+    </StatTiles>
   );
 }
 

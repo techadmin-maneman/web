@@ -5,8 +5,7 @@
 import { ButtonLink } from "@maneman/ui/Button";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { Icon } from "@maneman/ui/Icon";
-import { Columns } from "@maneman/ui/Layout";
-import { StatTile } from "@maneman/ui/StatTile";
+import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { useLoad } from "@maneman/ui/useLoad";
 import { GLYPHS } from "@maneman/brand/icons";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -96,7 +95,7 @@ export function TechnicianFigures({ summary, belowZero }: { summary: TechnicianS
       ? Math.round((Date.parse(loaded.value.to) - Date.parse(loaded.value.from)) / DAY_MS)
       : null;
   return (
-    <Columns row>
+    <StatTiles>
       <StatTile label={figures.toCome} value={summary.visits_to_come} />
       {work !== undefined && days !== null && (
         <StatTile label={figures.jobs(days)} value={figures.jobCount(work.jobs)} />
@@ -107,6 +106,6 @@ export function TechnicianFigures({ summary, belowZero }: { summary: TechnicianS
       {belowZero !== null && (
         <StatTile label={figures.kit} value={quantity(belowZero)} tone={belowZero > 0 ? "warning" : "plain"} />
       )}
-    </Columns>
+    </StatTiles>
   );
 }

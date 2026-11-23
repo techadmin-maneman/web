@@ -96,6 +96,10 @@
   --title1-size: var(--fs-24);
   --title3-size: var(--fs-18);
   --title4-size: var(--fs-15);
+  /* A row of figures is one strip, two to a phone's row, each figure 26 px semibold. */
+  --stat-size: var(--fs-26);
+  --stat-weight: var(--weight-semibold);
+  --stat-min: var(--ops-tile-phone);
   --ui-ground: var(--console-canvas);
   --ui-raised: var(--white);
   --ui-tint: var(--console-sunk);
