@@ -92,6 +92,13 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
   await expect(page.getByRole("region", { name: copy.thread.title("Arjun Mehta") })).toContainText(
     copy.thread.replyBy(`${shortDate(indiaDate(due))}, ${indiaClock(due)}`),
   );
+  // The client's name heads the chat and opens their page.
+  await expect(
+    page
+      .getByRole("region", { name: copy.thread.title("Arjun Mehta") })
+      .getByRole("heading")
+      .getByRole("link", { name: "Arjun Mehta" }),
+  ).toHaveAttribute("href", "/clients/11111111-1111-4111-8111-111111111111/visits");
   expect(await axeViolations(page)).toEqual([]);
   await expect(
     page.getByText(copy.thread.auto("Visit reminder", [copy.thread.delivered, copy.thread.read])),
