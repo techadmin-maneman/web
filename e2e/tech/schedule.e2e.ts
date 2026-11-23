@@ -149,6 +149,23 @@ test("a job on now opened from Schedule goes back to Schedule", async ({ page })
 const daysFrom = (date: string, days: number) =>
   new Date(new Date(`${date}T00:00:00Z`).getTime() + days * 86_400_000).toISOString().slice(0, 10);
 
+test("says a past week did not load, and still steps back on to this week", async ({ page }) => {
+  await fakeTech(page);
+  const today = todayInIndia();
+  await page.route("**/api/tech/past-week?**", (route) =>
+    route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "req-past-1" } } }),
+  );
+  await page.goto("/week");
+  await page.getByRole("button", { name: copy.earlier }).click();
+  await expect(page.getByText(copy.failed)).toBeVisible();
+  // The week's span is known before it loads.
+  const first = String(Number(daysFrom(today, -7).slice(8, 10)));
+  await expect(page.getByText(new RegExp(`^${first}( [A-Z][a-z]{2})? to `))).toBeVisible();
+  await page.getByRole("button", { name: copy.later }).click();
+  await expect(page).toHaveURL(/\/week$/);
+  await expect(page.getByRole("table", { name: copy.dayView })).toBeVisible();
+});
+
 // Back only (ADR 0298): a past week's jobs say how they closed and open nothing, and nothing of the client is asked for.
 test("steps back to the week before, its jobs as they closed, and on again to this week, never past it", async ({
   page,

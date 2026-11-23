@@ -113,7 +113,7 @@ function costOf(plan: Plan, planning: Planning) {
  * The drafts a technician had on a day that no longer fits as it stands: they are away all of it, or leave, shorter
  * hours or a lower cap has since been laid over it. Each starts with nobody, and goes back to them only where it fits.
  */
-function strandedOn(whole: Planning): ReadonlySet<string> {
+export function strandedOn(whole: Planning): ReadonlySet<string> {
   const own: Plan = new Map(whole.drafts.map((draft) => [draft.id, draft.technicianId]));
   const unfit = new Set(
     whole.drafts
@@ -142,6 +142,20 @@ export function replan(planning: Planning): Map<string, string | null> {
     for (const [id, technicianId] of next) plan.set(id, technicianId);
     return true;
   };
+  // The stranded are placed first, those fewest can take before the rest, each where it costs least: a draft only its
+  // own technician can take keeps its place on their day before one another could take fills it.
+  const takersIn = (draft: Draft) => [...draft.takers.keys()].filter((id) => crew.days.has(id)).length;
+  const first = drafts.filter((draft) => stranded.has(draft.id)).sort((a, b) => takersIn(a) - takersIn(b));
+  for (const draft of first) {
+    let cheapest: { readonly plan: Plan; readonly cost: number } | null = null;
+    for (const technicianId of draft.takers.keys()) {
+      if (!crew.days.has(technicianId)) continue;
+      const next = new Map(plan).set(draft.id, technicianId);
+      const cost = costOf(next, planning);
+      if (cost !== null && (cheapest === null || cost < cheapest.cost)) cheapest = { plan: next, cost };
+    }
+    if (cheapest !== null) tryPlan(cheapest.plan);
+  }
   for (let pass = 0; pass < PASSES; pass += 1) {
     let changed = false;
     for (const draft of drafts) {

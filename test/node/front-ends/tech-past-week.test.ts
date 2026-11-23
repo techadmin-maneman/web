@@ -27,7 +27,7 @@ describe("Schedule's past weeks", () => {
     expect(weekStartOf("2026-11-15", TODAY)).toBe("2026-11-09");
   });
 
-  it("draws each past job by its kind, how it closed and its length, as a link to nothing", () => {
+  it("draws each past job by its kind, how it closed and its length, behind the technician, as a link to nothing", () => {
     const [done, open] = pastBlocksOf([
       job({}),
       job({ id: "22222222-2222-4222-8222-222222222232", status: "scheduled", starts_at: "2026-11-18T09:30:00.000Z" }),
@@ -40,7 +40,7 @@ describe("Schedule's past weeks", () => {
       title: "Service visit",
       meta: "Done · 1 h 30 min",
     });
-    expect(open).toMatchObject({ start: 15 * 60, look: "visit", meta: "Not closed · 1 h 30 min" });
+    expect(open).toMatchObject({ start: 15 * 60, look: "done", meta: "Not closed · 1 h 30 min" });
     expect(done).not.toHaveProperty("to");
   });
 });

@@ -190,13 +190,12 @@ const stripDay = (day: Day): StripDate => ({
   date: day.date,
   weekday: sayNow(weekdayName(day.date).slice(0, 3)),
   number: String(Number(day.date.slice(8, 10))),
-  label: copy.dayLabel(weekdayName(day.date), dayMonth(day.date), day.jobs?.length ?? null, settledOf(day)),
+  label: day.past
+    ? copy.pastDayLabel(weekdayName(day.date), dayMonth(day.date), day.jobs.length)
+    : copy.dayLabel(weekdayName(day.date), dayMonth(day.date), day.jobs?.length ?? null, day.settled),
   open: true,
   note: noteOf(day),
 });
-
-/** Whether a day's list stands: a past day's always does. */
-const settledOf = (day: Day): boolean => day.past || day.settled;
 
 /** Under a day's title: how many jobs, or none; and, before the evening that gives its visits out, so far. */
 function daySub(day: Day, jobs: number): string {
@@ -258,6 +257,8 @@ function DayView(props: {
 /** The week shown, from its first day, with a step to the week before and, from a past week, to the one after. */
 function Weeks({ from, today, jobs }: { readonly from: string; readonly today: string; readonly jobs: number | null }) {
   const after = addDays(from, SCHEDULE_DAYS);
+  // Known before the week is read, so the steps keep their places while it loads.
+  const ends = spanEnds(from, addDays(from, SCHEDULE_DAYS - 1));
   return (
     <div className={styles.weeks}>
       <IconButton
@@ -270,7 +271,7 @@ function Weeks({ from, today, jobs }: { readonly from: string; readonly today: s
         }}
       />
       <p className={styles.range} aria-live="polite">
-        {jobs !== null && copy.range(...spanEnds(from, addDays(from, SCHEDULE_DAYS - 1)), jobs)}
+        {jobs === null ? copy.span(...ends) : copy.range(...ends, jobs)}
       </p>
       <IconButton
         className={styles.week}

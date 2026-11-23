@@ -39,7 +39,7 @@
 }
 
 /* The week's range between a step back and a step on, each the technician's tap; the step back's edge lines up with
-   the title above it. */
+   the title above it, and the step on keeps its place at the row's end however long the range. */
 .weeks {
   display: flex;
   flex-basis: 100%;
@@ -47,10 +47,13 @@
   margin-left: calc(-1 * var(--sp-12));
 }
 
+.weeks .range {
+  flex: 1;
+}
+
+/* The button's own colour, and its fade while disabled, are the shared part's. */
 .week {
   --icon-button-size: var(--tech-min);
-
-  color: var(--ui-text);
 }
 
 /* The one chevron, turned to point back. */

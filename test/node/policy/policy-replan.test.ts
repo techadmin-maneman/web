@@ -177,6 +177,21 @@ describe("a day's re-plan", () => {
     expect(plan.get("d1")).toBe("A");
   });
 
+  it("places first the stranded drafts fewest can take, so one another could take never crowds them out", () => {
+    // Chetan's day now takes two visits. His 10 o'clock draft Aman may take too; his noon and 3 o'clock ones only he may.
+    const plan = replan({
+      drafts: [
+        draft("d1", "10:00", 10, "C", { C: inside, A: inside }),
+        draft("d2", "12:00", 12, "C", { C: inside }),
+        draft("d3", "15:00", 14, "C", { C: inside }),
+      ],
+      crew: crewOf({ A: day(50), C: day(10) }),
+      rules: { ...RULES, booking: { ...RULES.booking, visits: 2 } },
+      allotment: ALLOT,
+    });
+    expect([plan.get("d1"), plan.get("d2"), plan.get("d3")]).toEqual(["A", "C", "C"]);
+  });
+
   it("places nobody on a draft its day no longer fits that nobody else can take", () => {
     const busy = [{ start: minuteOf("09:30"), end: minuteOf("12:00"), pin: north(50), fit: false }];
     const plan = replan({

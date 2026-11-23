@@ -28,7 +28,8 @@ export const listableDate = (date: string, now: Date): boolean => date >= addDay
  * Whether a past week of a technician's jobs may be read from `from`: one that ends before today, as Schedule pages
  * back from the week that starts today. It says nothing of the clients, so it reaches back as far as there are jobs.
  */
-export const pastWeekFrom = (from: string, now: Date): boolean => addDays(from, 6) < indiaDate(now);
+export const pastWeekFrom = (from: string, now: Date): boolean =>
+  from < indiaDate(now) && addDays(from, 6) < indiaDate(now);
 
 /**
  * The hour in India the day-before WhatsApp goes at (docs/decisions/0047-visit-messages.md): 6 pm, until ops set

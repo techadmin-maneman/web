@@ -40,17 +40,17 @@ function pastState(job: PastJob): string {
   return closedAs(job, [], undefined);
 }
 
-/** A past day's jobs as blocks, each by its kind, how it closed and its length, opening nothing. */
+/**
+ * A past day's jobs as blocks, each by its kind, how it closed and its length, opening nothing: each in the look of a
+ * job behind the technician, one never closed too, which its words say, as only a job still to do is drawn as one.
+ */
 export function pastBlocksOf(jobs: readonly PastJob[]): DayBlock[] {
-  return jobs.map((job) => {
-    const open = job.progress.outcome === null && OPEN.has(job.status);
-    return {
-      key: job.id,
-      start: minuteOf(job.starts_at),
-      minutes: job.minutes,
-      look: open ? "visit" : "done",
-      title: kindName(job),
-      meta: `${pastState(job)} · ${jobCopy.minutes(job.minutes)}`,
-    };
-  });
+  return jobs.map((job) => ({
+    key: job.id,
+    start: minuteOf(job.starts_at),
+    minutes: job.minutes,
+    look: "done",
+    title: kindName(job),
+    meta: `${pastState(job)} · ${jobCopy.minutes(job.minutes)}`,
+  }));
 }

@@ -8,7 +8,7 @@
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { timeOf, type PlanDay } from "../../policy/day-plan.ts";
-import { replan, type Draft } from "../../policy/replan.ts";
+import { replan, strandedOn, type Draft } from "../../policy/replan.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import type { OpsInputs } from "../platform/ops-settings.ts";
 import { visitUpkeep } from "../visits/visit-upkeep.ts";
@@ -37,7 +37,7 @@ interface Move {
   readonly minutes: number;
 }
 
-/** A draft its own technician's day no longer has room for, which nobody else in the city can take. */
+/** A draft its own technician's day no longer has room for, which the re-plan could give nobody else. */
 export interface Stranded {
   readonly visitId: string;
   readonly technicianId: string;
@@ -166,16 +166,20 @@ export async function replanDay(
     const own = drafts.filter((each) => each.technicianId === id);
     weekMinutes.set(id, weekOf(plans, id, date) - own.reduce((sum, each) => sum + each.stop.end - each.stop.start, 0));
   }
-  const plan = replan({
+  const planning = {
     drafts,
     crew: { days: fixed, weekMinutes },
     rules: planRulesOf(inputs),
     allotment: inputs.allotment,
+  };
+  const plan = replan(planning);
+  const offUnfit = strandedOn(planning);
+  const strandedOf = (draft: Draft): Stranded => ({
+    visitId: draft.id,
+    technicianId: draft.technicianId,
+    start: draft.stop.start,
   });
-
-  const stranded = drafts
-    .filter((draft) => plan.get(draft.id) === null)
-    .map((draft) => ({ visitId: draft.id, technicianId: draft.technicianId, start: draft.stop.start }));
+  const stranded = drafts.filter((draft) => plan.get(draft.id) === null).map(strandedOf);
   const moves: Move[] = drafts.flatMap((draft) => {
     const to = plan.get(draft.id);
     const row = rows.find((each) => each.id === draft.id);
@@ -184,7 +188,11 @@ export async function replanDay(
       : [{ row, to, minutes: draft.stop.end - draft.stop.start }];
   });
   if (moves.length === 0) return { moved: 0, stranded };
-  return { moved: (await writeMoves(db, { moves, plans, date }, now)) ? moves.length : 0, stranded };
+  if (await writeMoves(db, { moves, plans, date }, now)) return { moved: moves.length, stranded };
+  // Nothing was written: a draft that was to leave a day that no longer fits is still on it, which ops are told, as the
+  // evening's check has no next pass to try again.
+  const unmoved = drafts.filter((draft) => offUnfit.has(draft.id) && moves.some((move) => move.row.id === draft.id));
+  return { moved: 0, stranded: [...stranded, ...unmoved.map(strandedOf)] };
 }
 
 /** Each stranded draft told to Operations once, naming the technician whose day no longer has room for it. */

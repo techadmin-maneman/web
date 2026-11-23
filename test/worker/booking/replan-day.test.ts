@@ -146,6 +146,22 @@ describe("a day's drafts re-planned", () => {
     expect(await visitRow()).toEqual({ technician_id: SANDEEP, technician_draft: 1 });
   });
 
+  it("tells of a draft that was to leave a day that no longer fits where a hold stopped its move being written", async () => {
+    await withImran();
+    await leave(IMRAN);
+    const rival = await aHold({ person_id: (await client()).id, technician_id: SANDEEP });
+    const holdLocks = () =>
+      env.DB.prepare("INSERT INTO slot_claims (technician_id, date, claim, hold_id) VALUES (?1, ?2, 'rev:1', ?3)")
+        .bind(SANDEEP, TUESDAY, rival.id)
+        .run();
+    const inputs = await readOpsInputs(env.DB, NOW);
+    expect(await replanDay(racedBy(holdLocks), { city: "Gurgaon", date: TUESDAY, now: NOW, inputs })).toEqual({
+      moved: 0,
+      stranded: [{ visitId, technicianId: IMRAN, start: 11 * 60 }],
+    });
+    expect(await visitRow()).toEqual({ technician_id: IMRAN, technician_draft: 1 });
+  });
+
   it("leaves a draft nobody else can take with its technician, and tells Operations of it once", async () => {
     await withImran();
     await leave(IMRAN);

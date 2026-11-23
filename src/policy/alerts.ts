@@ -135,7 +135,7 @@ const OPERATIONS_KINDS = [
   "leg_short",
   // A city's drafts on a day not re-planned this hour, for ops to look over on Dispatch.
   "replan_failed",
-  // A draft its technician's day no longer has room for, which nobody else in the city can take.
+  // A draft its technician's day no longer has room for, which the re-plan could give to nobody else.
   "draft_stranded",
 ];
 

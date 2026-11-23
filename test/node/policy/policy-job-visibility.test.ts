@@ -124,6 +124,8 @@ describe("a card after its visit", () => {
     expect(pastWeekFrom("2025-01-06", NOW)).toBe(true);
     expect(pastWeekFrom("2026-09-15", NOW)).toBe(false);
     expect(pastWeekFrom("2026-09-21", NOW)).toBe(false);
+    // A week whose end would run past the year 9999 is no past week.
+    expect(pastWeekFrom("9999-12-28", NOW)).toBe(false);
   });
 
   it("is on the past day, not today, once its date has gone", () => {
