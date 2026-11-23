@@ -47,6 +47,11 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   payment_owed: "payment_link",
   upi_due: "visit",
   payment_to_refund: "payment",
+  staff_task_operations: "staff_task",
+  staff_task_customer_care: "staff_task",
+  staff_task_finance: "staff_task",
+  staff_task_growth: "staff_task",
+  staff_task_admin: "staff_task",
 };
 
 /**

@@ -94,6 +94,7 @@ import { registerOpsSuppliers } from "./suppliers.ts";
 import { registerOpsSupplyPlan } from "./supply-plan.ts";
 import { registerOpsTargets } from "./targets.ts";
 import { registerOpsTasks } from "./tasks.ts";
+import { registerOpsStaffTasks } from "./tasks.written.ts";
 import { registerOpsTechnicianLeave } from "./technician-leave.ts";
 import { registerOpsTechnicianPay } from "./technician-pay.ts";
 import { registerOpsTechnicianPhones } from "./technician-phones.ts";
@@ -196,6 +197,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsNoShowRulings,
   registerOpsDisputes,
   registerOpsTasks,
+  registerOpsStaffTasks,
   // The alerts on Tasks' "Needs a hand".
   registerOpsAlerts,
   registerOpsPayments,

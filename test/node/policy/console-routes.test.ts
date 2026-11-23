@@ -101,6 +101,8 @@ describe("the routes a caller's calls go ahead on", () => {
     expect(routesOpenTo(adminInDelhi, true, NO_ZONES)).toEqual([
       ...SIGNED_IN_ROUTES,
       "GET /api/tasks",
+      // Anyone who opens Tasks may write a task (docs/decisions/0302-tasks-written-by-hand.md).
+      "POST /api/tasks",
       "GET /api/alerts",
       "GET /api/staff",
     ]);

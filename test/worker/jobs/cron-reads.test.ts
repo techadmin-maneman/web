@@ -91,6 +91,12 @@ const HISTORY = [
   `INSERT INTO pay_links (id, person_id, subject_kind, subject_id, url, amount, what, open_until, made_at)
    SELECT 'pl-' || i, 'p-' || i, 'hold', 'h-' || i, 'https://rzp.io/rzp/x' || i, 200000, 'service visit',
      '${AGO}', '${AGO}' FROM n`,
+  // A task written by hand each, long done, and given to someone (docs/decisions/0302-tasks-written-by-hand.md).
+  `INSERT INTO task_owners (task_group, subject_id, episode, owner, assigned_by, assigned_at)
+   SELECT 'staff_task_operations', 'st-' || i, '', 'ops@maneman.in', 'ops@maneman.in', '${AGO}' FROM n`,
+  `INSERT INTO staff_tasks (id, department, what, person_id, city, due_at, created_by, created_at, done_at, done_by)
+   SELECT 'st-' || i, 'operations', 'call back', 'p-' || i, NULL, '${AGO}', 'ops@maneman.in', '${AGO}', '${AGO}',
+     'ops@maneman.in' FROM n`,
   `INSERT INTO tryon_jobs (id, created_at, upload_key, uploaded_at, upload_deleted_at, state, expires_at, person_id,
      photo_consent_version, photo_consent_at, ip_hash, request_id, copy_key, kept_at)
    SELECT 'j-' || i, '${AGO}', 'uploads/j-' || i, '${AGO}', '${AGO}', 'expired', '${AGO}', 'p-' || i, 'photo-v2',

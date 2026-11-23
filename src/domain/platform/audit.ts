@@ -251,6 +251,9 @@ export const AUDIT_ACTIONS = [
   "task.assign",
   "task.hand_back",
   "task.close",
+  // A task ops wrote themselves, and one marked done (docs/decisions/0302-tasks-written-by-hand.md).
+  "task.write",
+  "task.done",
   "address.given_to_ops",
   // An alert on Tasks' "Needs a hand" marked done, and the message, lead or CRM erasure it gave up on sent again.
   "alert.resolve",
@@ -466,7 +469,7 @@ export function auditStatementIfRuled(
 /**
  * The entry for a row stamped earlier in the same batch, by a statement that stamps nothing when another request
  * stamped it a moment before: written only if the row carries this entry's own time. A discount code switched off,
- * or a use taken off its booking.
+ * a use taken off its booking, or a task written by hand marked done.
  */
 export function auditStatementIfStamped(
   db: D1Database,
@@ -475,7 +478,8 @@ export function auditStatementIfStamped(
   stamped:
     | { readonly table: "discount_codes"; readonly column: "switched_off_at"; readonly id: string }
     | { readonly table: "discount_code_uses"; readonly column: "removed_at"; readonly id: string }
-    | { readonly table: "referral_attributions"; readonly column: "updated_at"; readonly id: string },
+    | { readonly table: "referral_attributions"; readonly column: "updated_at"; readonly id: string }
+    | { readonly table: "staff_tasks"; readonly column: "done_at"; readonly id: string },
 ): D1PreparedStatement {
   return db
     .prepare(

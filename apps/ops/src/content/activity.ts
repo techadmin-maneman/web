@@ -191,6 +191,8 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "task.assign": "Task taken or given",
   "task.hand_back": "Task handed back",
   "task.close": "Task closed",
+  "task.write": "Task written",
+  "task.done": "Task done",
   "address.given_to_ops": "Address taken by phone",
   "alert.resolve": "Alert marked done",
   "alert.send_again": "Alert sent again",

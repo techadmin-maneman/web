@@ -33,6 +33,7 @@ export const CITY_COLUMNS: readonly (readonly [table: string, column: string])[]
   ["plan_lines", "city"],
   ["serviceable_pincodes", "city"],
   ["spend_entries", "city"],
+  ["staff_tasks", "city"],
   ["stock_places", "city"],
   ["stock_risks", "city"],
   ["targets", "city"],

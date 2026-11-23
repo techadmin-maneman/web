@@ -12534,7 +12534,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "quick_reply.change" | "qc_point.add" | "qc_point.change" | "qc_point.delete" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "spend.import" | "campaign_link.add" | "campaign_link.retire" | "lead.call" | "client.heard_from" | "client.sharing_stop" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.delete" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "zone.rename" | "zone.delete" | "city.rename" | "city.delete" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "booking.link_resend" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.change" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "quick_reply.change" | "qc_point.add" | "qc_point.change" | "qc_point.delete" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "spend.import" | "campaign_link.add" | "campaign_link.retire" | "lead.call" | "client.heard_from" | "client.sharing_stop" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.delete" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "zone.rename" | "zone.delete" | "city.rename" | "city.delete" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "task.write" | "task.done" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "booking.link_resend" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.change" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -15456,7 +15456,67 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
+        /** Write a task by hand, for a department, about a client or a city, due when it is due */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StaffTaskWritten"];
+                };
+            };
+            responses: {
+                /** @description Written, and on the board of the department it is for */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffTaskId"];
+                    };
+                };
+                /** @description invalid_request: a due time past, a client or a city the writer's work does not reach, or an owner who has not used the console lately */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: a service token, which names no member of staff; or not_permitted */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -15477,7 +15537,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "custom_order_to_send" | "custom_piece_to_fit" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                    group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "custom_order_to_send" | "custom_piece_to_fit" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund" | "staff_task_operations" | "staff_task_customer_care" | "staff_task_finance" | "staff_task_growth" | "staff_task_admin";
                     id: string;
                 };
                 cookie?: never;
@@ -15630,6 +15690,96 @@ export interface paths {
                     };
                 };
                 /** @description not_found: no such task on the board now in the caller's cities; a follow-up may be booked, or it is closed already */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_found";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/staff/{id}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a task written by hand done; it leaves the board */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Done */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description access_required: a service token; or not_permitted: it asks Act in the department the task is for */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_found: no such task open on the board in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -31254,7 +31404,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "quick_reply.change" | "qc_point.add" | "qc_point.change" | "qc_point.delete" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "spend.import" | "campaign_link.add" | "campaign_link.retire" | "lead.call" | "client.heard_from" | "client.sharing_stop" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.delete" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "zone.rename" | "zone.delete" | "city.rename" | "city.delete" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "booking.link_resend" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.change" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "call.refused" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "quick_reply.change" | "qc_point.add" | "qc_point.change" | "qc_point.delete" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "spend.import" | "campaign_link.add" | "campaign_link.retire" | "lead.call" | "client.heard_from" | "client.sharing_stop" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.leave_declined" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.hours" | "technician.home" | "technician.reach" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "slot_times.withdraw" | "pincode.set" | "pincode.rename" | "pincode.add" | "pincode.delete" | "pincode.pause" | "pincode.resume" | "launch.schedule" | "launch.cancel" | "city.add" | "city.change" | "zone.add" | "zone.rename" | "zone.delete" | "city.rename" | "city.delete" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "package.add" | "package.change" | "package.reorder" | "package.delete" | "client.package" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "piece.failed" | "piece.failure_undone" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "payment.upi_record" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "task.write" | "task.done" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "booking.link_resend" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.step_send_back" | "visit.move_accepted" | "hair_profile.correct" | "staff_note.write" | "staff_note.take_off" | "client_alert.raise" | "client_alert.take_off" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.change" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;
@@ -31993,7 +32143,7 @@ export interface components {
             lapsed: number;
             groups: {
                 /** @enum {string} */
-                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "custom_order_to_send" | "custom_piece_to_fit" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund";
+                group: "untold_move" | "move_unanswered" | "reschedule_request" | "visit_not_begun" | "visit_left_open" | "unassigned_visit" | "recall_call" | "unanswered_chat" | "message_undelivered" | "city_matter" | "remedy_approval" | "leave_conflict" | "leave_request" | "address_to_confirm" | "consultation_request" | "first_fit_to_book" | "heard_from_missing" | "replacement_order" | "made_to_order_ask" | "custom_order_to_send" | "custom_piece_to_fit" | "stock_at_risk" | "at_risk_client" | "partial_visit" | "consumables_short" | "fit_unsigned" | "fit_guarantee_claim" | "low_rating" | "erasure_follow_up" | "kit_request" | "referral_review" | "no_show_decision" | "no_show_dispute" | "number_change" | "erasure_request" | "grievance" | "draft_invoice" | "payment_owed" | "upi_due" | "payment_to_refund" | "staff_task_operations" | "staff_task_customer_care" | "staff_task_finance" | "staff_task_growth" | "staff_task_admin";
                 /** @description How many are waiting in the group in the caller's cities, all of them. */
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
@@ -32152,6 +32302,21 @@ export interface components {
         } | {
             /** @enum {string} */
             group: "erasure_request";
+        } | {
+            /** @enum {string} */
+            group: "staff_task_operations";
+        } | {
+            /** @enum {string} */
+            group: "staff_task_customer_care";
+        } | {
+            /** @enum {string} */
+            group: "staff_task_finance";
+        } | {
+            /** @enum {string} */
+            group: "staff_task_growth";
+        } | {
+            /** @enum {string} */
+            group: "staff_task_admin";
         } | {
             /** @enum {string} */
             group: "no_show_decision";
@@ -32376,6 +32541,33 @@ export interface components {
             reason: string;
             /** @description A guarantee claim's alone, where the hair system was at fault: why it failed, by a code of the job sheet's failure_reasons; the piece its fit put on is marked failed today (ADR 0273). */
             failure_reason?: string;
+        };
+        StaffTaskId: {
+            /** Format: uuid */
+            id: string;
+        };
+        StaffTaskWritten: {
+            /** @description What needs doing. */
+            what: string;
+            /**
+             * @description The department it is for, whose people see it.
+             * @enum {string}
+             */
+            department: "operations" | "customer_care" | "finance" | "growth" | "admin";
+            /**
+             * Format: uuid
+             * @description The client it is about; null for none.
+             */
+            client: string | null;
+            /** @description Where a task about no client is: a city the writer's work reaches; null for every city. */
+            city: string | null;
+            /**
+             * Format: date-time
+             * @description When it is due; not before now.
+             */
+            due: string;
+            /** @description The Access e-mail of the member of staff it is theirs; null while it is nobody's. */
+            owner: string | null;
         };
         OpenAlerts: {
             /** @description How many are open, all of them. */

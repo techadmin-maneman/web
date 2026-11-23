@@ -41,7 +41,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries`, `campaign_links` | A credit, a grant, a partner, a partner's payment, an entry of spend, a campaign link or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
 | Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `qc_points`, `checklist_items`, `partial_reasons`, `lost_reasons`, `not_fitted_reasons`, `failure_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
-| Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, and a fit's stock risk is found or cleared again within the hour | Closing or giving it again on the Tasks board |
+| Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks`, `staff_tasks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, a fit's stock risk is found or cleared again within the hour, and a task written by hand since is gone, one marked done since open again | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs`, `crm_contact_updates` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and the old catalogue table | `technicians`, `fsm_items` | A technician added or changed since goes back | The rows since `<T>`; ops can add one again on the Technicians page |
@@ -192,6 +192,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [staff_grants](#staff_grants): What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).
 - [staff_notes](#staff_notes): Staff's short notes on a client, at the top of their page: a change writes a new note in the place of the one before, and one taken off is marked so, never deleted, until an erasure.
 - [staff_service_tokens](#staff_service_tokens): The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).
+- [staff_tasks](#staff_tasks): A task ops wrote themselves on Tasks: what needs doing, the department it is for, the client it is about if any, its city, when it is due, who wrote it and who marked it done (ADR 0302).
 - [standard_costs](#standard_costs): What each first fit and replacement product costs us, from its date, for the margin figures until stock lots carry what was paid; an old row stays for the visits under it (ADR 0152).
 - [step_send_backs](#step_send_backs): A landed step of a visit ops sent back to its technician with why; it lands again even after the close, which clears it (ADR 0246).
 - [stock_balances](#stock_balances): What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
@@ -3374,6 +3375,30 @@ Made by `0069_staff_and_access.sql`.
 | `label` | TEXT | no |  |  |  |
 | `added_by` | TEXT | no |  |  |  |
 | `added_at` | TEXT | no |  |  |  |
+
+## staff_tasks
+
+A task ops wrote themselves on Tasks: what needs doing, the department it is for, the client it is about if any, its city, when it is due, who wrote it and who marked it done (ADR 0302).
+
+Made by `0234_staff_tasks.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `department` | TEXT | no |  |  |  |
+| `what` | TEXT | no |  |  |  |
+| `person_id` | TEXT | yes |  | → `people.id` |  |
+| `city` | TEXT | yes |  |  |  |
+| `due_at` | TEXT | no |  |  |  |
+| `created_by` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `done_at` | TEXT | yes |  |  |  |
+| `done_by` | TEXT | yes |  |  |  |
+
+Indexes:
+
+- `staff_tasks_by_person`: on (`person_id`), where `person_id IS NOT NULL`
+- `staff_tasks_open`: on (`department`, `created_at`), where `done_at IS NULL`
 
 ## standard_costs
 

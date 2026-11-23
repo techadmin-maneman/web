@@ -55,6 +55,11 @@ export type TaskFacts =
   | { readonly group: "grievance" }
   | { readonly group: "number_change" }
   | { readonly group: "erasure_request" }
+  | { readonly group: "staff_task_operations" }
+  | { readonly group: "staff_task_customer_care" }
+  | { readonly group: "staff_task_finance" }
+  | { readonly group: "staff_task_growth" }
+  | { readonly group: "staff_task_admin" }
   | { readonly group: "no_show_decision"; readonly technician: string | null }
   | { readonly group: "draft_invoice"; readonly invoice_id: string }
   | { readonly group: "unassigned_visit"; readonly kind: VisitType; readonly starts_at: Instant }

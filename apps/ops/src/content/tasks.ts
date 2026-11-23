@@ -138,6 +138,12 @@ export const tasks = {
     upi_due: "UPI to record",
     // A group the board does not draw: money owed back that no refund has reached.
     payment_to_refund: "Payment to refund",
+    // A task ops wrote themselves, by the department it is for (docs/decisions/0302-tasks-written-by-hand.md).
+    staff_task_operations: `Task for ${DEPARTMENT_NAMES.operations}`,
+    staff_task_customer_care: `Task for ${DEPARTMENT_NAMES.customer_care}`,
+    staff_task_finance: `Task for ${DEPARTMENT_NAMES.finance}`,
+    staff_task_growth: `Task for ${DEPARTMENT_NAMES.growth}`,
+    staff_task_admin: `Task for ${DEPARTMENT_NAMES.admin}`,
   } satisfies Readonly<Record<Group, string>>,
   /** Why a kind waits, under its name on Today's Needs you. */
   why: {
@@ -181,6 +187,11 @@ export const tasks = {
     payment_owed: "A visit not yet paid for",
     upi_due: "Paid by UPI at the visit",
     payment_to_refund: "Owed back, no refund yet",
+    staff_task_operations: "Written by the team",
+    staff_task_customer_care: "Written by the team",
+    staff_task_finance: "Written by the team",
+    staff_task_growth: "Written by the team",
+    staff_task_admin: "Written by the team",
   } satisfies Readonly<Record<Group, string>>,
   /** When a kind's first task is due, on its pill. */
   due: { overdue: "Overdue", today: "Today", week: "This week", later: "Later" },

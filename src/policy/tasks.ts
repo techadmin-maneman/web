@@ -118,6 +118,12 @@ export const TASK_GROUPS = [
   "payment_owed",
   "upi_due",
   "payment_to_refund",
+  // A task ops wrote themselves, one group for each department it can be for (docs/decisions/0302-tasks-written-by-hand.md).
+  "staff_task_operations",
+  "staff_task_customer_care",
+  "staff_task_finance",
+  "staff_task_growth",
+  "staff_task_admin",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
 
@@ -215,6 +221,13 @@ export const TASK_SLA_HOURS: Slas = {
   upi_due: 12,
   // Money owed back to a client: refunded within the day.
   payment_to_refund: 24,
+  // A task written by hand is due when its writer said: the board reads that as its start and its latest, so this
+  // allowance never comes first (src/domain/ops/staff-tasks.ts).
+  staff_task_operations: 48,
+  staff_task_customer_care: 48,
+  staff_task_finance: 48,
+  staff_task_growth: 48,
+  staff_task_admin: 48,
 };
 
 /**

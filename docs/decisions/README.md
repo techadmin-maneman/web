@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0302. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0303. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -334,6 +334,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0282](0282-tasks-chosen-together.md) Tasks chosen together, and the keys a desk moves by
 - [0283](0283-changed-and-deleted-while-unused.md) What ops configure is changed, and deleted while nothing uses it
 - [0301](0301-the-console-look-to-the-22-november-redesign.md) The console's look, to the 22 November redesign
+- [0302](0302-tasks-written-by-hand.md) Tasks written by hand
 
 ## Every decision, oldest first
 
@@ -638,3 +639,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0299](0299-fit-today.md) | Fit today: a consultation becomes the fit at the door | 2026-11-23 | accepted |  |
 | [0300](0300-payment-links-on-whatsapp.md) | Payment links on WhatsApp, through our own address | 2026-11-23 | accepted |  |
 | [0301](0301-the-console-look-to-the-22-november-redesign.md) | The console's look, to the 22 November redesign | 2026-11-23 | accepted |  |
+| [0302](0302-tasks-written-by-hand.md) | Tasks written by hand | 2026-11-23 | accepted |  |

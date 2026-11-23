@@ -103,6 +103,8 @@ const RECORD_PLACES = {
   no_show: { table: "no_show_cases", city: (row) => cityOfVisit(`${row}.appointment_id`) },
   dispute: { table: "no_show_disputes", city: (row) => cityOfVisit(caseVisit(`${row}.case_id`)) },
   grievance: { table: "grievances", city: (row) => clientCity(`${row}.person_id`) },
+  // A task written by hand: its client's city, else the city it was written in.
+  staff_task: { table: "staff_tasks", city: (row) => `COALESCE(${clientCity(`${row}.person_id`)}, ${row}.city)` },
   number_change: { table: "number_change_requests", city: (row) => clientCity(`${row}.person_id`) },
   deletion_request: { table: "deletion_requests", city: (row) => clientCity(`${row}.person_id`) },
   referral: { table: "referral_attributions", city: (row) => clientCity(`${row}.referred_person_id`) },
