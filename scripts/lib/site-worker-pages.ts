@@ -12,6 +12,10 @@ export const SITE_WORKER_PAGES = [
   "/privacy",
   "/notices",
   "/offer-terms",
+  // A payment link's button, and the pages it lands on (docs/decisions/0300-payment-links-on-whatsapp.md).
+  "/pay",
+  "/pay-again",
+  "/pay/*",
   "/r",
   "/r/*",
   // A campaign link: a society activation's, and an offer's (docs/tracking.md).

@@ -148,8 +148,9 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Messages",
-    tables: ["outbound_messages"],
-    leftAtT: "The sweeper sends again what was sent since",
+    tables: ["outbound_messages", "pay_links"],
+    leftAtT:
+      "The sweeper sends again what was sent since; a payment link sent since opens the closed page until it is sent again",
     putBackBy: "The rows since `<T>`, before the switch is turned off",
   },
   {

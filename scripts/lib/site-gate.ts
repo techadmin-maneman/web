@@ -23,10 +23,11 @@ export const refusedFor = (output: string): string[] =>
     .map((line) => line.slice(4));
 
 /**
- * Pages that stay out of search engines: the 404, the referral landing, whose address holds an invite code, and /stop,
- * whose address holds the token that stops a person's messages.
+ * Pages that stay out of search engines: the 404, the referral landing, whose address holds an invite code, /stop,
+ * whose address holds the token that stops a person's messages, and the two a payment link's button lands on when it
+ * does not open Razorpay's page (docs/decisions/0300-payment-links-on-whatsapp.md).
  */
-const NOT_INDEXED = new Set(["404.html", "r.html", "stop.html"]);
+const NOT_INDEXED = new Set(["404.html", "r.html", "stop.html", "pay.html", "pay-again.html"]);
 
 /** What a passing build, in `out`, shipped of the design's placeholder material, or of a page kept from search. */
 export function shippedPlaceholders(out: string): string[] {

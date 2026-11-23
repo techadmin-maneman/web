@@ -41,6 +41,12 @@ describe("attribution", () => {
     });
   });
 
+  // A payment link's token is the client's own (docs/decisions/0300-payment-links-on-whatsapp.md).
+  it("keeps a payment link's landing as /pay, never its token", () => {
+    const url = new URL("https://maneman.in/pay/AbCdEfGhIjKlMnOpQrSt_-");
+    expect(attributionFrom(url, "", "")).toEqual({ landing_path: "/pay" });
+  });
+
   it("keeps Google's iOS click IDs, our codes, and Meta's cookies as the browser holds them", () => {
     const url = new URL("https://maneman.in/book?gbraid=g1&wbraid=w1&utm_term=hair&soc=K7M2QP&ref=ASHA42&offer=$$");
     const cookies = "_ga=GA1.1; _fbp=fb.1.1795156200000.123456789; _fbc=fb.1.1795156200000.IwAR2x";

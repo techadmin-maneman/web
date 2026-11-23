@@ -12,6 +12,7 @@ import { shortDate } from "@maneman/web-kit/dates";
 import { HOLD_SECONDS, type BookingWindow } from "../../config/scheduling.ts";
 import { onAllowlist, type MessagingSettings } from "../../config/settings.ts";
 import type { VisitType } from "../../config/visit-types.ts";
+import { queuePayLink, visitPaidFor } from "../money/pay-links.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import { amountOff, discounted } from "../../policy/discount-codes.ts";
@@ -477,10 +478,13 @@ export async function sendHoldLink(
   }
   if (made === null) return null;
   if (!notify) deps.log.info("payment_link_not_texted", { hold_id: hold.id });
+  // Beside Razorpay's SMS, the link on WhatsApp (docs/decisions/0300-payment-links-on-whatsapp.md).
   await db
     .prepare("UPDATE slot_holds SET payment_link_id = ?2, payment_link_url = ?3, updated_at = ?4 WHERE id = ?1")
     .bind(hold.id, made.id, made.shortUrl, now.toISOString())
     .run();
+  const link = { url: made.shortUrl, amount: sale.price.amount, what: visitPaidFor(asked), openUntil: closesAt };
+  await queuePayLink(db, { ...link, personId: asked.personId, subject: { kind: "hold", id: hold.id } }, now, deps.log);
   return { ...made, texted: notify };
 }
 

@@ -79,6 +79,7 @@ import { registerServedCities } from "./routes/public/served-cities.ts";
 import { registerSiteWords } from "./routes/public/site-words.ts";
 import { registerReferralReward } from "./routes/public/referral-reward.ts";
 import { registerFitGuarantee } from "./routes/public/fit-guarantee.ts";
+import { registerPayLinks } from "./routes/public/pay-links.ts";
 import { registerTechAuth } from "./routes/tech/auth.ts";
 import { registerTechJobs } from "./routes/tech/jobs.ts";
 import { registerTechPieces } from "./routes/tech/pieces.ts";
@@ -113,6 +114,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerReferralReward,
     // How long the fit guarantee runs, for the terms (docs/decisions/0256-fit-guarantee-setting.md).
     registerFitGuarantee,
+    // Where a payment link's WhatsApp button sends the client (docs/decisions/0300-payment-links-on-whatsapp.md).
+    registerPayLinks,
     registerTryonUpload,
     registerTryonGenerate,
     registerTryonClaim,

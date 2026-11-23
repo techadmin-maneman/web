@@ -1672,6 +1672,70 @@
     "reviewed": true
   },
   {
+    "key": "site:pages/payClosed.title",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payClosed",
+    "text": "This payment link has closed.",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payClosed.body",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payClosed",
+    "text": "It may already be paid. For a new link, message us on WhatsApp.",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payClosed.chat",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payClosed",
+    "text": "Message us on WhatsApp",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payClosed.greeting",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payClosed",
+    "text": "Hi, my payment link has closed. Please send me a new one.",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payAgain.title",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payAgain",
+    "text": "We couldn’t open your payment link.",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payAgain.body",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payAgain",
+    "text": "Tap Pay now in our WhatsApp message again in a minute. If it still won’t open, message us.",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payAgain.chat",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payAgain",
+    "text": "Message us on WhatsApp",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payAgain.greeting",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payAgain",
+    "text": "Hi, my payment link won’t open.",
+    "reviewed": false
+  },
+  {
     "key": "site:pages/stopMessages.ask.title",
     "surface": "site",
     "group": "Stop messages",
@@ -1822,6 +1886,22 @@
     "where": "pageTitles",
     "text": "Not found — Mane Man",
     "reviewed": true
+  },
+  {
+    "key": "site:pages/pageTitles.payClosed",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Payment link closed — Mane Man",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/pageTitles.payAgain",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Payment link — Mane Man",
+    "reviewed": false
   },
   {
     "key": "site:pages/pageTitles.stop",
@@ -5589,6 +5669,14 @@
     "group": "Messages",
     "where": "upi_received_v1",
     "text": "Hi {{1}}, thank you: payment received.\n{{6}} by UPI for your {{2}} (ref {{7}}). It's in the Mane Man app.",
+    "reviewed": false
+  },
+  {
+    "key": "message:payment_link_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "payment_link_v1",
+    "text": "Hi {{1}}, here's your payment link.\n{{2}} for your {{3}}. Pay by {{4}}: {{5}}",
     "reviewed": false
   },
   {

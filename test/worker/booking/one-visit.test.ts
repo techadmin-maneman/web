@@ -304,6 +304,12 @@ describe("closing a one visit the client was fitted at", () => {
     expect(stub.made.links).toHaveLength(1);
     expect(await linkRow()).toMatchObject({ made: 1 });
     expect(job.deps.alerts).toEqual([]);
+    // The link kept goes on WhatsApp too, as one just made does (docs/decisions/0300-payment-links-on-whatsapp.md).
+    const whatsApp = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM pay_links l JOIN outbound_messages m ON m.subject_id = l.id
+       WHERE l.subject_kind = 'payment_link' AND m.kind = 'payment_link'`,
+    ).first<number>("n");
+    expect(whatsApp).toBe(1);
   });
 
   // A link written before links had a reference may already be at Razorpay under the visit's ID: a new reference

@@ -249,6 +249,16 @@ export const MY_DATA = {
       fields: { care_person: words("Who"), since: time("Since") },
     },
     city_matters: { title: "Passed to your city team", fields: { city: text("City"), raised_at: time("When") } },
+    pay_links: {
+      title: "Payment links sent on WhatsApp",
+      fields: {
+        url: text("Link"),
+        amount: money("Amount"),
+        what: text("For"),
+        open_until: time("Open until"),
+        made_at: time("Sent"),
+      },
+    },
     remedies: {
       title: "Free visits we gave you",
       fields: {
