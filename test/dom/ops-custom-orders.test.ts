@@ -165,6 +165,8 @@ describe("the client’s custom orders", () => {
       "/api/custom-orders/co-1/cancel",
     ]);
     expect(page.textContent).toContain(copy.statuses.cancelled);
+    // The ask went with the order's buttons: the focus is on the panel's heading, not lost.
+    expect(document.activeElement).toBe(page.querySelector("#custom-orders"));
   });
 
   it("asks a cancel on Keep, brought into view, and Keep gives the focus back to Cancel order", async () => {

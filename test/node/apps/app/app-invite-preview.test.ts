@@ -38,12 +38,12 @@ describe("the app’s preview of an invite", () => {
 describe("the invite’s message", () => {
   const LINK = "https://maneman.in/r/RM4K7P2Q";
 
-  it("tells the friend what they get when fitted, since a card sent as a photograph comes without the preview", () => {
+  it("tells the friend what they get when fitted, as the preview says it, since a photograph comes without it", () => {
     expect(refer.preview.message(LINK, { referrer_visits: 3, friend_visits: 3 })).toBe(
-      `Thought you’d like this: Mane Man, at home. You get 3 free service visits when you’re fitted. ${LINK}`,
+      `Thought you’d like this: Mane Man, at home. 3 service visits free when you’re fitted. ${LINK}`,
     );
     expect(refer.preview.message(LINK, { referrer_visits: 3, friend_visits: 1 })).toBe(
-      `Thought you’d like this: Mane Man, at home. You get 1 free service visit when you’re fitted. ${LINK}`,
+      `Thought you’d like this: Mane Man, at home. 1 service visit free when you’re fitted. ${LINK}`,
     );
   });
 
@@ -51,6 +51,12 @@ describe("the invite’s message", () => {
     const plain = `Thought you’d like this: Mane Man, at home. ${LINK}`;
     expect(refer.preview.message(LINK, { referrer_visits: 3, friend_visits: 0 })).toBe(plain);
     expect(refer.preview.message(LINK, null)).toBe(plain);
+  });
+
+  it("words the reward as the preview does, so a chat that draws both says it once over", () => {
+    const reward = { referrer_visits: 3, friend_visits: 4 };
+    const [, line] = refer.preview.body(reward).split(". ");
+    expect(refer.preview.message(LINK, reward)).toContain(line);
   });
 });
 

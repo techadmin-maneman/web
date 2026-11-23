@@ -18,7 +18,8 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
-import { useCallback, useState } from "react";
+import { focusIfLost } from "@maneman/ui/arrival";
+import { useCallback, useEffect, useState } from "react";
 import form from "@maneman/ui/forms.module.css";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { useAccess } from "../lib/access.ts";
@@ -34,6 +35,8 @@ type Order = CustomOrders["orders"][number];
 type Answer =
   | { readonly ok: true; readonly body: CustomOrders }
   | { readonly ok: false; readonly code: string; readonly fields: readonly string[] };
+
+const TITLE_ID = "custom-orders";
 
 const REFUND_REASONS = ["not_ordered", "late", "failed_check"] as const;
 
@@ -216,13 +219,18 @@ export function CustomOrders({ clientId }: { clientId: string }) {
   const [loaded, retry] = useLoad(load);
   const [customOrders, setCustomOrders] = useState<CustomOrders | null>(null);
   const [raising, setRaising] = useState(false);
-  const [said, setSaid] = useState<string | null>(null);
+  const [said, setSaid] = useState<{ readonly text: string; readonly count: number } | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const access = useAccess();
   const current = customOrders ?? (loaded.state === "loaded" ? loaded.value : null);
+  // A change takes the button that made it with it, as Cancel the order or Send the link: the focus lands on the
+  // panel's heading rather than on nothing.
+  useEffect(() => {
+    if (said !== null) focusIfLost(document.getElementById(TITLE_ID));
+  }, [said]);
   const changed = (next: CustomOrders, words: string) => {
     setCustomOrders(next);
-    setSaid(words);
+    setSaid((last) => ({ text: words, count: (last?.count ?? 0) + 1 }));
     setFailure(null);
     setRaising(false);
   };
@@ -231,7 +239,7 @@ export function CustomOrders({ clientId }: { clientId: string }) {
     else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <Panel titleId="custom-orders" title={copy.title}>
+    <Panel titleId={TITLE_ID} title={copy.title}>
       {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && <OrdersTable customOrders={current} onAnswer={answered} />}
@@ -264,7 +272,7 @@ export function CustomOrders({ clientId }: { clientId: string }) {
             </Button>
           </FormActions>
         )}
-      {said !== null && <Toast>{said}</Toast>}
+      {said !== null && <Toast>{said.text}</Toast>}
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );

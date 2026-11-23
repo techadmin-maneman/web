@@ -163,7 +163,8 @@
 
   .rule .actions,
   .group .actions,
-  .check .actions {
+  .check .actions,
+  .actions .actions {
     margin-left: 0;
     margin-right: 0;
   }

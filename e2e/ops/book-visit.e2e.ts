@@ -660,6 +660,8 @@ test("names the booking held on its link that refuses another of its kind, and l
   await expect(asked.getByRole("button", { name: DISMISS.keep, exact: true })).toBeDisabled();
   answer();
   await expect(panel(page)).toContainText(inTheWay.letGone);
+  // The ask went with the refusal: the focus is on the panel's heading, not lost.
+  await expect(panel(page).getByRole("heading", { name: `Book a visit for ${CLIENT.name}` })).toBeFocused();
 
   // Said once: another try refused, then another time chosen, says nothing of the let-go again.
   await panel(page)

@@ -134,11 +134,12 @@ export const refer = {
     },
     domain: "maneman.in",
     // A first line that says nothing of the sender's own hair: the landing page says what Mane Man does. What the
-    // friend gets is said in the message too, since a card sent as a photograph comes without the link's preview.
+    // friend gets is said in the message too, in the preview's own words, since a card sent as a photograph comes
+    // without the link's preview.
     message: (link: string, reward: Reward | null) => {
       const friend = reward?.friend_visits ?? 0;
       if (friend === 0) return `Thought you’d like this: Mane Man, at home. ${link}`;
-      return `Thought you’d like this: Mane Man, at home. You get ${freeServiceVisits(friend)} when you’re fitted. ${link}`;
+      return `Thought you’d like this: Mane Man, at home. ${serviceVisits(friend)} free when you’re fitted. ${link}`;
     },
     via: "Share via",
     whatsapp: "WhatsApp",
