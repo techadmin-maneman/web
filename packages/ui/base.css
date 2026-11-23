@@ -92,6 +92,12 @@
     --stat-size: var(--fs-34);
     --stat-weight: var(--weight-regular);
     --stat-min: calc(var(--sp-8) * 17);
+    /* A state's badge (./Badge.tsx): square, with no dot, unless the app's look draws a pill. */
+    --badge-height: var(--sp-20);
+    --badge-text: var(--fs-13);
+    --badge-radius: 0;
+    --badge-dot: 0;
+    --badge-dot-gap: 0;
     --action-weight: var(--weight-medium);
     --radio-size: var(--sp-16);
     --check-text: var(--fs-14);

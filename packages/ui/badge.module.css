@@ -8,13 +8,25 @@
   .badge {
     display: inline-flex;
     align-items: center;
-    min-height: var(--sp-20);
+    min-height: var(--badge-height);
     padding: 0 var(--sp-8);
-    font-size: var(--fs-13);
+    border-radius: var(--badge-radius);
+    font-size: var(--badge-text);
     font-weight: var(--weight-medium);
     line-height: var(--lh-130);
     white-space: nowrap;
     background: color-mix(in srgb, currentcolor 12%, var(--ui-raised));
+  }
+
+  /* A dot in the state's colour before its words, where the app's look draws one. */
+  .badge::before {
+    content: "";
+    flex-shrink: 0;
+    width: var(--badge-dot);
+    height: var(--badge-dot);
+    margin-right: var(--badge-dot-gap);
+    border-radius: 50%;
+    background: currentcolor;
   }
 
   .neutral {

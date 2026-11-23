@@ -100,6 +100,12 @@
   --stat-size: var(--fs-26);
   --stat-weight: var(--weight-semibold);
   --stat-min: var(--ops-tile-phone);
+  /* A state's badge is a pill 22 px high, its words 12 px after a dot in its colour. */
+  --badge-height: calc(var(--sp-20) + var(--sp-2));
+  --badge-text: var(--ops-caption);
+  --badge-radius: calc((var(--sp-20) + var(--sp-2)) / 2);
+  --badge-dot: calc(var(--sp-4) + var(--sp-2));
+  --badge-dot-gap: var(--sp-4);
   --ui-ground: var(--console-canvas);
   --ui-raised: var(--white);
   --ui-tint: var(--console-sunk);
