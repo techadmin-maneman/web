@@ -252,9 +252,11 @@
   margin-right: var(--sp-12);
 }
 
+/* Its left edge is its kind's colour (.svc and the rest), so the key sets only that edge's width and style. */
 .key {
   display: inline-block;
   padding: var(--sp-2) var(--sp-8);
-  border-left: var(--sp-4) solid;
+  border-left-width: var(--sp-4);
+  border-left-style: solid;
   font-size: var(--fs-13);
 }

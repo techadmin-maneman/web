@@ -97,6 +97,8 @@
    */
   /* Titles in Plex's semibold, at the redesign's sizes: a page's 24 px, a drawer's 18, a card's or a section's 15. */
   --title-weight: var(--weight-semibold);
+  /* A chip, a filter or a view, is a pill as tall as a control. */
+  --toggle-radius: calc(var(--control-height) / 2);
   --title1-size: var(--fs-24);
   --title3-size: var(--fs-18);
   --title4-size: var(--fs-15);

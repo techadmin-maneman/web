@@ -169,7 +169,7 @@ export function BlockDrawer(props: Props) {
         person === null ? (
           nameOf(job)
         ) : (
-          // The client's name opens their page (the redesign's C3).
+          // The client's name opens their page.
           <OpsLink to={clientPath(person.id, "visits")}>{person.name}</OpsLink>
         )
       }

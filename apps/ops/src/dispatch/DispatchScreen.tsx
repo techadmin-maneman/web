@@ -4,6 +4,7 @@
 // 0069-dispatch-under-concurrency.md). The address keeps the week, city, search and visit (./address.ts).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { Note } from "@maneman/ui/Note";
 import { indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { Board, BoardQuery, BoardRow } from "../api.ts";
@@ -23,7 +24,7 @@ import { Toolbar } from "./Toolbar.tsx";
 import { Tray } from "./Tray.tsx";
 import { useBoard } from "./useBoard.ts";
 import { useSearch, weekOf } from "./board-view.ts";
-import { boardOfKind, rowsOfKind, type BoardKind } from "./kinds.ts";
+import { anyOfKind, boardOfKind, rowsOfKind, type BoardKind } from "./kinds.ts";
 import { ChangePanel, changedNotice } from "./ChangePanel.tsx";
 import { NoticeLine } from "./NoticeLine.tsx";
 import { useOver, type Over } from "./over.ts";
@@ -121,7 +122,7 @@ function daySub(board: Board, date: string): string {
 /** The board itself, by the day or the week, the head's controls at its right; what the search keeps of it, or why none. */
 function BoardBody(props: {
   board: Board;
-  search: ReturnType<typeof useSearch>;
+  search: ReturnType<typeof useSearch> & { readonly kind: BoardKind };
   view: BoardView;
   onView: (view: BoardView) => void;
   onWeek: (from: string | null) => void;
@@ -158,10 +159,12 @@ function BoardBody(props: {
           {board.technicians.length > 0 && rows.length === 0 && (
             <EmptyState look="panel" line={dispatch.tools.nothingFound(search.settled.trim())} />
           )}
+          {rows.length > 0 && !anyOfKind(board, rows, search.kind) && <Note>{dispatch.kinds.none}</Note>}
           {!phone && rows.length > 0 && view === "day" && dayShown !== undefined && (
             <DayBoard
               board={board}
               rows={rows}
+              kind={search.kind}
               date={dayShown}
               inHand={inHand}
               now={apiNow()}
@@ -170,7 +173,13 @@ function BoardBody(props: {
             />
           )}
           {rows.length > 0 && view === "week" && (
-            <Grid board={board} rows={rows} found={search.found} onOpen={onOpen} onRoutes={props.onRoutes} />
+            <Grid
+              board={boardOfKind(board, search.kind)}
+              rows={rowsOfKind(rows, search.kind)}
+              found={search.found}
+              onOpen={onOpen}
+              onRoutes={props.onRoutes}
+            />
           )}
         </div>
       )}
@@ -311,8 +320,8 @@ export function DispatchScreen() {
           {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
           {board !== null && (
             <BoardBody
-              board={boardOfKind(board, kind)}
-              search={{ settled, rows: rowsOfKind(rows, kind), found }}
+              board={board}
+              search={{ settled, rows, found, kind }}
               view={view}
               onView={setView}
               onWeek={onWeek}

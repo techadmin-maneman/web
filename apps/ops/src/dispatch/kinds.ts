@@ -1,4 +1,4 @@
-// The board's visits by kind (the redesign's C1): a consultation and fit in one visit is a kind of its own beside the
+// The board's visits by kind: a consultation and fit in one visit is a kind of its own beside the
 // four types, and ops may show one kind alone on the day and the week.
 
 import type { TimelineKind } from "@maneman/ui/DayTimeline";
@@ -22,7 +22,7 @@ export const TIMELINE_KINDS: Readonly<Record<VisitKind, TimelineKind>> = {
 };
 
 /** Whether a visit is of the kind chosen; every one is of all. */
-const ofKind = (block: Pick<Block, "type" | "one_visit">, kind: BoardKind): boolean =>
+export const ofKind = (block: Pick<Block, "type" | "one_visit">, kind: BoardKind): boolean =>
   kind === "all" || kindOfBlock(block) === kind;
 
 /** The rows with only the visits of the kind chosen, each technician kept. */
@@ -43,3 +43,9 @@ export function boardOfKind(board: Board, kind: BoardKind): Board {
     unassigned: board.unassigned.filter((job) => ofKind(job, kind)),
   };
 }
+
+/** Whether any visit on the board, a technician's or nobody's, is of the kind chosen. */
+export const anyOfKind = (board: Board, rows: readonly BoardRow[], kind: BoardKind): boolean =>
+  kind === "all" ||
+  board.unassigned.some((job) => ofKind(job, kind)) ||
+  rows.some((row) => row.days.some((day) => day.blocks.some((block) => ofKind(block, kind))));

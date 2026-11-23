@@ -1,5 +1,5 @@
-// Beneath the board's head (./DispatchScreen.tsx): the visits by kind, a chip each with its look, the key to a visit
-// nobody is on, and a search for one row among many at its end. The chips and the search narrow what is drawn only:
+// Beneath the board's head (./DispatchScreen.tsx): the visits by kind, a chip each with its look, and at a desk the key
+// to a visit nobody is on and a search for one row among many. The chips and the search narrow what is drawn only:
 // each day's figures stay the day's own.
 
 import { KindSwatch, TimelineLegend } from "@maneman/ui/DayTimeline";
@@ -23,13 +23,13 @@ interface Props {
 
 export function Toolbar({ day, find, onFind, kind, onKind }: Props) {
   const copy = dispatch.tools;
-  // A phone has neither: one technician's visits, a list, need no key, and the chips find the technician.
-  if (useIsPhone()) return null;
+  // A phone has the chips alone: one technician's visits, a list, need no key, and the chips find the technician.
+  const phone = useIsPhone();
   return (
     <SharedToolbar
       label={copy.label}
       className={styles.tools}
-      end={<SearchInput label={copy.find} value={find} onChange={onFind} />}
+      end={phone ? undefined : <SearchInput label={copy.find} value={find} onChange={onFind} />}
     >
       <div className={styles.kinds} role="radiogroup" aria-label={dispatch.kinds.label}>
         {BOARD_KINDS.map((each) => (
@@ -49,7 +49,7 @@ export function Toolbar({ day, find, onFind, kind, onKind }: Props) {
           </ToggleButton>
         ))}
       </div>
-      {day && <TimelineLegend label={copy.key} kinds={[]} nobody={tasks.groups.unassigned_visit} />}
+      {day && !phone && <TimelineLegend label={copy.key} kinds={[]} nobody={tasks.groups.unassigned_visit} />}
     </SharedToolbar>
   );
 }

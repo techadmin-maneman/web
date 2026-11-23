@@ -32,6 +32,8 @@ export const dispatch = {
     service: "service",
     replacement: "replace",
   },
+  /** A consultation and fit in one visit, in short, on a block's second line. */
+  oneVisitShort: "consult and first fit",
   /** The same four, named in full, as the drawer and the tray head a job. */
   typeNames: {
     consultation: "Consultation",
@@ -39,7 +41,7 @@ export const dispatch = {
     service: "Service visit",
     replacement: "Replacement",
   },
-  /** The board's visits by kind, a chip each, a consultation and fit in one visit a kind of its own (the redesign's C1). */
+  /** The board's visits by kind, a chip each, a consultation and fit in one visit a kind of its own. */
   kinds: {
     label: "Visit type",
     all: "All types",
@@ -48,6 +50,7 @@ export const dispatch = {
     one_visit: "Consultation and first fit",
     first_fit: "First fit",
     replacement: "Replacement",
+    none: "No visits of this type here.",
   },
   windows: { morning: "morning", afternoon: "afternoon", evening: "evening" },
   /**

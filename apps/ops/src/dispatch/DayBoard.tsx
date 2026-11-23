@@ -3,7 +3,7 @@
 // visits and hours booked and how full the day is, a day off as a band; the hour it is now marked down the day. A visit
 // opens its drawer. While a job is in hand, each start it could take is a button that places it (../lib/day-cells.ts).
 
-import { kindOfBlock, TIMELINE_KINDS } from "./kinds.ts";
+import { kindOfBlock, ofKind, TIMELINE_KINDS, type BoardKind } from "./kinds.ts";
 import {
   DayTimeline,
   type TimelineCell,
@@ -62,6 +62,8 @@ function lastAt(blocks: readonly Block[]): string | null {
 interface Props {
   readonly board: Board;
   readonly rows: readonly BoardRow[];
+  /** The kind of visit drawn; the day's hours and each technician's figures count every kind. */
+  readonly kind: BoardKind;
   readonly date: string;
   readonly inHand: InHand | null;
   readonly now: number;
@@ -231,9 +233,15 @@ export function DayBoard(props: Props) {
       cells:
         away && visits.length === 0
           ? [{ key: `${row.technician_id}/away`, span: steps.length, look: "leave", children: dispatch.board.away }]
-          : rowCells(props, row, steps, visitsOf(row)),
+          : rowCells(
+              props,
+              row,
+              steps,
+              visitsOf(row).filter((visit) => ofKind(visit.block, props.kind)),
+            ),
     };
   });
+  const nobodyShown = nobody.filter((job) => ofKind(job, props.kind));
   const label = copy.label(shortDate(props.date));
   return (
     <>
@@ -244,7 +252,7 @@ export function DayBoard(props: Props) {
         label={label}
         labelledBy="day-board"
         steps={steps.map((minute) => ({ key: String(minute), label: hourLabel(minute) }))}
-        rows={nobody.length === 0 ? rows : [nobodyRow(props, steps, nobody), ...rows]}
+        rows={nobodyShown.length === 0 ? rows : [nobodyRow(props, steps, nobodyShown), ...rows]}
         now={nowStep(steps, props.date, props.now)}
       />
     </>

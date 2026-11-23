@@ -209,12 +209,16 @@
     gap: var(--sp-8);
   }
 
+  /* Its left edge is its kind's colour (the kind rules above), so the swatch sets only that edge's width and style. */
   .swatch {
     width: var(--sp-12);
     height: var(--sp-12);
     padding: 0;
-    border: var(--hairline) solid var(--ui-line);
-    border-left: var(--rule-strong) solid var(--ui-line);
+    border-top: var(--hairline) solid var(--ui-line);
+    border-right: var(--hairline) solid var(--ui-line);
+    border-bottom: var(--hairline) solid var(--ui-line);
+    border-left-width: var(--rule-strong);
+    border-left-style: solid;
   }
 
   .swatch.unassigned {

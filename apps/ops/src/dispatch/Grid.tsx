@@ -24,11 +24,15 @@ import { begunWord, isMovable, nameOf, windowWord, type Job } from "./job.ts";
 /** "Fri 19", as a column is headed. */
 const dayHead = (date: string) => shortDate(date).split(" ").slice(0, 2).join(" ");
 
+/** A block's kind in short: "service", or "consultation and first fit" for the two in one visit. */
+function shortKind(block: Block): string | null {
+  if (block.one_visit) return dispatch.oneVisitShort;
+  return block.type === null ? null : dispatch.types[block.type];
+}
+
 /** A block's second line: "Sec 65 · service". */
 const whatOf = (block: Block) =>
-  [block.sector, block.type === null ? null : dispatch.types[block.type]]
-    .filter((part): part is string => typeof part === "string")
-    .join(" · ");
+  [block.sector, shortKind(block)].filter((part): part is string => typeof part === "string").join(" · ");
 
 /** "10:30 am", "4 pm": when a block starts, as every surface writes a time. */
 const startOf = (block: Block): string => indiaClock(block.starts_at);
