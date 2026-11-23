@@ -254,20 +254,44 @@ test("the Fit row says the yes alone while the close is on its way, never ops to
     await route.fallback();
     landed = true;
   });
-  await page.route(`**/api/tech/jobs/${JOB_ID}/fit-today`, (route) => {
+  // And the offer answers a second after that.
+  await page.route(`**/api/tech/jobs/${JOB_ID}/fit-today`, async (route) => {
     const starts = new Date(Date.now() + 30 * 60_000).toISOString();
-    return route.fulfill({
-      json: landed
-        ? { offer: { ...OFFER, starts_at: starts }, refusal: null }
-        : { offer: null, refusal: "not_offered" },
-    });
+    const answer = landed
+      ? { offer: { ...OFFER, starts_at: starts }, refusal: null }
+      : { offer: null, refusal: "not_offered" };
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.fulfill({ json: answer });
   });
   await closedGoingAhead(page, fake);
+  const yes = page.getByText(closeOut.goingAheadToday(null), { exact: true });
   const opsToBook = page.getByText(closeOut.goingAhead(null), { exact: true });
-  for (let look = 0; look < 8; look += 1) {
+  await expect(yes).toBeVisible();
+  // The yes stays on screen, alone, through the close landing and the offer coming: the screen redraws for a moment
+  // as the close lands, but the row is never gone for the offer's read.
+  for (let look = 0; look < 15; look += 1) {
+    await expect(yes).toBeVisible({ timeout: 100 });
     expect(await opsToBook.count()).toBe(0);
     await page.waitForTimeout(200);
   }
   await expect(page.getByRole("region", { name: closeOut.fitToday.title })).toBeVisible();
   await expect(page.getByText(closeOut.goingAheadToday(null), { exact: true })).toBeVisible();
+});
+
+test("a one visit's fit booked for later says ops book it while its close is still on its way", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "first_fit";
+  fake.oneVisit = true;
+  fake.clientChoice = { product: "natural", fit_later: true };
+  startedThrough(fake, "before_photos", "piece", "checklist", "consumables", "profile", "after_photos");
+  // The close held on a slow line throughout.
+  await page.route(`**/api/tech/jobs/${JOB_ID}/outcome`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await route.fallback().catch(() => undefined);
+  });
+  await page.goto(`/jobs/${JOB_ID}/outcome`);
+  await page.getByRole("radio", { name: techCopy.steps.outcome.done, exact: true }).click();
+  await stepAction(page).click();
+  await expect(page.getByRole("heading", { level: 1, name: closeOut.titles.closed })).toBeVisible();
+  await expect(page.getByText(closeOut.goingAhead("Mane Man Natural"), { exact: true })).toBeVisible({ timeout: 2000 });
 });

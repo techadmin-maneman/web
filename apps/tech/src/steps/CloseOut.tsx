@@ -166,8 +166,10 @@ function Decided({ job, closing }: { job: Job; closing: boolean }) {
   if (said.going_ahead) {
     const product = job.products.find((one) => one.tier === said.product)?.name ?? null;
     const named = product === null ? null : theirs(product);
-    // The yes alone until the close has landed: only then can Fit today say who books the fit.
-    if (closing) return <Row name={copy.fit} value={copy.goingAheadToday(named)} />;
+    // At a plain consultation, the yes alone until the close has landed: only then can Fit today say who books the fit.
+    if (closing && job.type === "consultation" && !job.one_visit) {
+      return <Row name={copy.fit} value={copy.goingAheadToday(named)} />;
+    }
     return <GoingAhead job={job} product={named} />;
   }
   const lost = label(job.lost_reasons, said.lost_reason);
@@ -175,13 +177,13 @@ function Decided({ job, closing }: { job: Job; closing: boolean }) {
 }
 
 /**
- * The Fit row for a client going ahead, drawn once Fit today's offer beneath is answered, which may book the fit now or
- * have booked it. Its own part, mounted once the close is known, so its read is the offer's from its first draw.
+ * The Fit row for a client going ahead: the yes alone until Fit today's offer beneath is answered, which may book the fit
+ * now or have booked it. Its own part, mounted once the close is known, so its read is the offer's from its first draw.
  */
 function GoingAhead({ job, product }: { job: Job; product: string | null }) {
   const fitToday = useFitToday(job, true);
-  if (!fitToday.answered) return null;
-  return <Row name={copy.fit} value={fitRow(fitToday, product)} />;
+  const value = fitToday.answered ? fitRow(fitToday, product) : copy.goingAheadToday(product);
+  return <Row name={copy.fit} value={value} />;
 }
 
 /** A yes as the Fit row says it: the fit booked, Fit today offered beneath, or ops to book it. */
