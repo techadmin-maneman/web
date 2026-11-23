@@ -148,31 +148,8 @@ Today's flow (ADR 0174, `src/domain/purchasing/custom-orders.ts`), and where eac
 
 ## Your notes from testing
 
-These are about today's console. I read the code for each, but **none is reproduced yet**. Per the repo rules, each
-gets reproduced and its cause confirmed before any fix, as a separate bug batch rather than inside the redesign PRs.
-
-1. **"It says payment link is open, but the customer does not see anything."** Two leads, both unconfirmed:
-   - The console shows the link from `short_url`, but the client app shows its pay link only when `pay_url` is set
-     (`apps/app/src/home/CustomOrderCard.tsx:23`). If the two can differ, ops see an open link that the client never
-     gets.
-   - "Send link again" disappears once the link was sent once, so ops can't re-send a link that didn't arrive.
-2. **"Custom order flow is broken; nothing to do after placing the order."** By design, after raising, the next step
-   is the client paying: until then, ops can only send again (see 1) or cancel. The screen doesn't say what happens
-   next. Reproduce to see whether something else stops.
-3. **"Custom order into the warehouse is not working."** The custom order's arrival is in `src/domain/purchasing/receipts.ts`.
-   Reproduce with a paid order through its PO's receipt.
-4. **"Already booked, or a payment link is open for one", when booking.** This refusal fires when the client already has
-   a visit of that kind still to come, or a booking of that kind held on an unpaid payment link until its grace ends
-   (`visit-booking.ts`, `alreadyToCome` and `linkStillOpen`). The message doesn't say which, or how to clear it. Likely
-   fix: name the visit or the open link, and offer to release the held booking. Confirm by reproducing.
-5. **"Technician slots: earliest available slot is 9:30."** Not yet traced. Candidates are the Day times setting, the
-   first drive from home, or the lead time for today. Reproduce on staging with the settings in force.
-6. **"Area they cover for technician."** This is D1.
-7. **"Are places added automatically when technicians, cities or zones are added?"**
-   - A technician's kit: yes. A database trigger creates it when the technician is added (`technicians_kit`, migration
-     0133).
-   - Cities and zones: no. Hubs (per zone) and stockrooms (per city) are added by hand on Stock › Places.
-8. **"The map in Settings › Business › Areas is not interactable."** It's a static picture by design. This is D6.
+Reproduced and fixed before the redesign, as their own batch (#951). The area map (D6) and a technician's area (D1)
+are decisions above.
 
 ## Server changes the new features need
 
