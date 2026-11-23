@@ -152,14 +152,23 @@ function BoardBody(props: {
         />
       </PageActions>
       {phone && rows.length > 0 && view === "day" && dayShown !== undefined ? (
-        <PhoneDay board={board} rows={rows} date={dayShown} now={apiNow()} onOpen={onOpen} />
+        <PhoneDay
+          board={boardOfKind(board, search.kind)}
+          rows={rowsOfKind(rows, search.kind)}
+          narrowed={search.kind !== "all"}
+          date={dayShown}
+          now={apiNow()}
+          onOpen={onOpen}
+        />
       ) : (
         <div className={styles.scroll}>
           {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
           {board.technicians.length > 0 && rows.length === 0 && (
             <EmptyState look="panel" line={dispatch.tools.nothingFound(search.settled.trim())} />
           )}
-          {rows.length > 0 && !anyOfKind(board, rows, search.kind) && <Note>{dispatch.kinds.none}</Note>}
+          {rows.length > 0 && !anyOfKind(board, rows, search.kind, view === "day" ? dayShown : undefined) && (
+            <Note>{dispatch.kinds.none}</Note>
+          )}
           {!phone && rows.length > 0 && view === "day" && dayShown !== undefined && (
             <DayBoard
               board={board}

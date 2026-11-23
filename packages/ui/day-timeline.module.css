@@ -144,7 +144,7 @@
   }
 
   .oneVisit {
-    border-left-color: var(--visit-consultation-edge);
+    border-left-color: var(--visit-one-visit-edge, var(--visit-consultation-edge));
   }
 
   /* Done, whatever its kind: set back. A late one keeps its kind's fill on the warning's rule. */

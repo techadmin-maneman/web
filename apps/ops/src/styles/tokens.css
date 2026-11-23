@@ -112,6 +112,8 @@
   --visit-service-ground: var(--ui-raised);
   --visit-consultation-edge: var(--console-blue);
   --visit-consultation-ground: var(--console-blue-wash);
+  /* A consultation and fit in one visit: the first fit's ink, on the light blue edge that sets it apart. */
+  --visit-one-visit-edge: var(--console-dark-blue);
   --visit-replacement-ground: var(--console-amber-wash);
   /* A state's badge is a pill 22 px high, its words 12 px after a dot in its colour. */
   --badge-height: calc(var(--sp-20) + var(--sp-2));

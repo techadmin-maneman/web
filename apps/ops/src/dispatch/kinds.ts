@@ -2,6 +2,7 @@
 // four types, and ops may show one kind alone on the day and the week.
 
 import type { TimelineKind } from "@maneman/ui/DayTimeline";
+import { indiaDate } from "@maneman/web-kit/dates";
 import type { Block, Board, BoardRow } from "../api.ts";
 
 export const BOARD_KINDS = ["all", "service", "consultation", "one_visit", "first_fit", "replacement"] as const;
@@ -44,8 +45,12 @@ export function boardOfKind(board: Board, kind: BoardKind): Board {
   };
 }
 
-/** Whether any visit on the board, a technician's or nobody's, is of the kind chosen. */
-export const anyOfKind = (board: Board, rows: readonly BoardRow[], kind: BoardKind): boolean =>
-  kind === "all" ||
-  board.unassigned.some((job) => ofKind(job, kind)) ||
-  rows.some((row) => row.days.some((day) => day.blocks.some((block) => ofKind(block, kind))));
+/** Whether any visit, a technician's or nobody's, is of the kind chosen: on the day shown, or in the week. */
+export function anyOfKind(board: Board, rows: readonly BoardRow[], kind: BoardKind, date?: string): boolean {
+  if (kind === "all") return true;
+  const onDay = (day: string) => date === undefined || day === date;
+  return (
+    board.unassigned.some((job) => onDay(job.date ?? indiaDate(job.starts_at)) && ofKind(job, kind)) ||
+    rows.some((row) => row.days.some((day) => onDay(day.date) && day.blocks.some((block) => ofKind(block, kind))))
+  );
+}

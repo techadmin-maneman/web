@@ -17,6 +17,8 @@ import styles from "./phone-day.module.css";
 interface Props {
   readonly board: Board;
   readonly rows: readonly BoardRow[];
+  /** Whether one kind of visit alone is shown: a technician with none of it says so. */
+  readonly narrowed: boolean;
   readonly date: string;
   readonly now: number;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
@@ -43,16 +45,17 @@ function TechnicianVisits(props: {
   visits: readonly Block[];
   date: string;
   now: number;
+  narrowed: boolean;
   onOpen: Props["onOpen"];
 }) {
-  const { row, visits, date, now, onOpen } = props;
+  const { row, visits, date, now, narrowed, onOpen } = props;
   return (
     <section aria-labelledby="phone-visits" className={styles.section}>
       <h2 id="phone-visits" className={capsLook(styles.label)}>
         {dispatch.day.phoneHead(row.name, visits.length)}
       </h2>
       {visits.length === 0 ? (
-        <EmptyState look="panel" line={dispatch.routes.none} />
+        <EmptyState look="panel" line={narrowed ? dispatch.kinds.none : dispatch.routes.none} />
       ) : (
         <ListRows>
           {visits.map((block) => {
@@ -82,7 +85,7 @@ function TechnicianVisits(props: {
 const openerOf = (): HTMLElement =>
   document.activeElement instanceof HTMLElement ? document.activeElement : document.body;
 
-export function PhoneDay({ board, rows, date, now, onOpen }: Props) {
+export function PhoneDay({ board, rows, narrowed, date, now, onOpen }: Props) {
   const blocksOf = (row: BoardRow) =>
     [...(row.days.find((day) => day.date === date)?.blocks ?? [])].sort((one, other) =>
       one.starts_at.localeCompare(other.starts_at),
@@ -130,7 +133,9 @@ export function PhoneDay({ board, rows, date, now, onOpen }: Props) {
           </ListRows>
         </section>
       )}
-      {shown !== undefined && <TechnicianVisits row={shown} visits={visits} date={date} now={now} onOpen={onOpen} />}
+      {shown !== undefined && (
+        <TechnicianVisits row={shown} visits={visits} date={date} now={now} narrowed={narrowed} onOpen={onOpen} />
+      )}
     </div>
   );
 }

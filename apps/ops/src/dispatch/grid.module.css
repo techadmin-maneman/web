@@ -162,7 +162,7 @@
 }
 
 /* The board's rule is gilt; gold marks only the one primary action (ADR 0025, item 59), so it is the ink's own line.
-   A consultation and fit in one visit is the same, on the consultation's edge. */
+   A consultation and fit in one visit is the same, on an edge of its own. */
 .fit,
 .oneVisit {
   border-left-color: var(--ink-line-strong);
@@ -171,7 +171,7 @@
 }
 
 .oneVisit {
-  border-left-color: var(--visit-consultation-edge);
+  border-left-color: var(--visit-one-visit-edge, var(--visit-consultation-edge));
 }
 
 .who,

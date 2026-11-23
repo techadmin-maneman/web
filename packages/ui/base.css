@@ -56,6 +56,9 @@
     /* A text link's underline (./text-link.module.css): unset, so each link draws the line's colour where it
        stands, as the technician app's looks set theirs on a screen rather than the page; an app may set one. */
     --link-underline: initial;
+    /* A consultation and fit in one visit's edge (./DayTimeline.tsx): unset, so it is a consultation's, unless the
+       app's look gives the kind its own. */
+    --visit-one-visit-edge: initial;
     /* A field's box: the tap's height, which the technician app raises on its body. */
     --field-height: var(--tap);
     --field-text: var(--fs-15);
