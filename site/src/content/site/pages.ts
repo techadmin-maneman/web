@@ -50,13 +50,17 @@ export const payClosed = {
   title: "This payment link has closed.",
   body: "It may already be paid. For a new link, message us on WhatsApp.",
   chat: "Message us on WhatsApp",
+  /** What the chat opens with, ahead of the visitor's reference. */
+  greeting: "Hi, my payment link has closed. Please send me a new one.",
 };
 
 /** Where it lands when we could not look the link up just now: it may still be open. */
 export const payAgain = {
   title: "We couldn’t open your payment link.",
-  body: "Tap the button in our WhatsApp message again in a minute. If it still won’t open, message us.",
+  body: "Tap Pay now in our WhatsApp message again in a minute. If it still won’t open, message us.",
   chat: "Message us on WhatsApp",
+  /** What the chat opens with, ahead of the visitor's reference. */
+  greeting: "Hi, my payment link won’t open.",
 };
 
 /**

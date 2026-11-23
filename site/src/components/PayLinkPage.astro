@@ -12,8 +12,10 @@ interface Props {
   readonly heading: string;
   readonly body: string;
   readonly chat: string;
+  /** What the chat opens with: the page's own words, never the site's greeting to a new visitor. */
+  readonly greeting: string;
 }
-const { title, heading, body, chat } = Astro.props;
+const { title, heading, body, chat, greeting } = Astro.props;
 ---
 
 <Site title={title} noindex>
@@ -22,7 +24,7 @@ const { title, heading, body, chat } = Astro.props;
     <p class="page-lede">{body}</p>
     <a
       class={buttonLook({ variant: "primary", size: "action", className: "chat" })}
-      href={whatsappChat(whatsapp.number)}
+      href={whatsappChat(whatsapp.number, greeting)}
     >
       {chat}
     </a>

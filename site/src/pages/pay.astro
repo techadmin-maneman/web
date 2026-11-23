@@ -4,4 +4,10 @@ import PayLinkPage from "../components/PayLinkPage.astro";
 import { pageTitles, payClosed } from "../content/site.ts";
 ---
 
-<PayLinkPage title={pageTitles.payClosed} heading={payClosed.title} body={payClosed.body} chat={payClosed.chat} />
+<PayLinkPage
+  title={pageTitles.payClosed}
+  heading={payClosed.title}
+  body={payClosed.body}
+  chat={payClosed.chat}
+  greeting={payClosed.greeting}
+/>

@@ -26,6 +26,12 @@
   color: var(--ui-text);
 }
 
+/* A failure's reference, on paper: soft, but read, as a reference on ink is in paper's own colour. */
+.reference {
+  font-size: var(--fs-15);
+  color: var(--ui-text-soft);
+}
+
 /* Beneath a screen in the new look, its white runs on to the bar: outside the screen, so the brief's own white. */
 .ground {
   background: var(--white-000);

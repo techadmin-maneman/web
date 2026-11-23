@@ -158,8 +158,8 @@ export function answerConsent(answer: "granted" | "denied"): void {
 const STOP_PATH = "/stop";
 
 /**
- * A payment link's pages, whose address the site's Worker never lets hold its token; tags start on none of them all the
- * same, as a client's own link (docs/decisions/0300-payment-links-on-whatsapp.md).
+ * A payment link's pages, whose address the site's Worker never lets hold its token: no tag starts as they open, as on
+ * /stop, a client's own link (docs/decisions/0300-payment-links-on-whatsapp.md). An Accept there starts them, as there.
  */
 const PAY_PATH = /^\/pay(?:\/|$)/;
 

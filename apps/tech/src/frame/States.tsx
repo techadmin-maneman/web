@@ -28,7 +28,9 @@ export function Failed({
   onPaper?: boolean;
 }) {
   const shown =
-    requestId === null ? null : <ErrorRef requestId={requestId} words={reference} className={styles.reference} />;
+    requestId === null ? null : (
+      <ErrorRef requestId={requestId} words={reference} className={onPaper ? light.reference : styles.reference} />
+    );
   return (
     <SharedFailed
       message={message}

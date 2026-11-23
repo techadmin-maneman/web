@@ -137,6 +137,31 @@ describe("a custom order", () => {
 
   // Razorpay made and texted the link, and its answer never came: the next ask is refused for the same reference, and
   // the link found under it is kept, and sent on WhatsApp too (docs/decisions/0300-payment-links-on-whatsapp.md).
+  // Razorpay made and texted the link: a message we could not queue beside it is ours, and fails nothing.
+  it("stands sent, and tells ops of no failure, where its WhatsApp message could not be queued", async () => {
+    const logs = captureLogs();
+    await env.DB.exec(
+      "CREATE TRIGGER no_pay_links BEFORE INSERT ON pay_links BEGIN SELECT RAISE(ABORT, 'pay_links down'); END",
+    );
+    try {
+      const raised = await raise();
+      expect(raised.status).toBe(200);
+      const [order] = (await raised.json<Orders>()).orders;
+      expect(order?.short_url).toMatch(/^https:\/\/rzp\.io\//);
+      const sentAt = await env.DB.prepare("SELECT link_sent_at FROM custom_orders WHERE id = ?1")
+        .bind(order?.id ?? "")
+        .first<string | null>("link_sent_at");
+      expect(sentAt).not.toBeNull();
+      const alerts = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first<number>(
+        "n",
+      );
+      expect(alerts).toBe(0);
+      expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "pay_link_not_queued" }));
+    } finally {
+      await env.DB.exec("DROP TRIGGER no_pay_links");
+    }
+  });
+
   it("keeps the link a try whose answer never came made, and sends it on WhatsApp", async () => {
     const stub = { ...payments };
     let answerLost = true;

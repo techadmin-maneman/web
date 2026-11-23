@@ -355,6 +355,18 @@ test("never says the job isn't closed while its close lands, though the phone no
   expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).toEqual([]);
 });
 
+// A job's card that would not load, on the close-out's paper: its reference was drawn in paper's own colour, all but
+// unseen on white.
+test("says the job's card didn't load with its reference readable, on paper", async ({ page }) => {
+  await fakeTech(page);
+  await page.route(`**/api/tech/jobs/${JOB_ID}`, (route) =>
+    route.fulfill({ status: 500, json: { error: { code: "internal_error", request_id: "1a2b3c4d-5e6f" } } }),
+  );
+  await page.goto(`/jobs/${JOB_ID}/done`);
+  await expect(page.getByText("1a2b3c4d")).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+});
+
 // A close the API refuses stays on the phone, refused: the close-out says the job is not closed.
 test("says the job isn't closed once its close is refused", async ({ page }) => {
   const fake = await fakeTech(page);

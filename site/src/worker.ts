@@ -428,7 +428,9 @@ function reportFailure(request: Request, env: SiteEnv, ctx: ExecutionContext | u
 /** The page as built, as the Worker serves it while mm-api cannot say: an invite's landing for its code. */
 function asBuilt(request: Request, env: SiteEnv): Promise<Response> {
   const url = new URL(request.url);
-  const path = INVITE_PATH.test(url.pathname) ? "/r" : withoutKeys(url.pathname);
+  // A payment link the Worker failed on may still be open: never told it has closed.
+  if (PAY_LINK.test(url.pathname)) return Promise.resolve(Response.redirect(`${url.origin}${PAY_AGAIN}`, 302));
+  const path = INVITE_PATH.test(url.pathname) ? "/r" : url.pathname;
   return env.ASSETS.fetch(builtFile(request, `${url.origin}${path}`));
 }
 

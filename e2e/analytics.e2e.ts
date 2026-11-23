@@ -190,3 +190,11 @@ test("starts no tag on /stop", async ({ page }) => {
   await page.goto("/stop#a-stop-token");
   expect(await analyticsCommands(page)).toEqual([]);
 });
+
+// Where a payment link's WhatsApp button lands (docs/decisions/0300-payment-links-on-whatsapp.md).
+for (const path of ["/pay", "/pay/again"]) {
+  test(`starts no tag on ${path}`, async ({ page }) => {
+    await page.goto(path);
+    expect(await analyticsCommands(page)).toEqual([]);
+  });
+}
