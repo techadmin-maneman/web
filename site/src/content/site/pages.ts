@@ -45,11 +45,18 @@ export const notFound = {
   home: "Back to the site",
 };
 
-/** Where a payment link's WhatsApp button lands once the link has closed, been paid, or was never ours. */
+/** Where a payment link's WhatsApp button lands once the link has closed, or was never ours. */
 export const payClosed = {
   title: "This payment link has closed.",
   body: "It may already be paid. For a new link, message us on WhatsApp.",
-  home: "Back to the site",
+  chat: "Message us on WhatsApp",
+};
+
+/** Where it lands when we could not look the link up just now: it may still be open. */
+export const payAgain = {
+  title: "We couldn’t open your payment link.",
+  body: "Tap the button in our WhatsApp message again in a minute. If it still won’t open, message us.",
+  chat: "Message us on WhatsApp",
 };
 
 /**
@@ -87,6 +94,7 @@ export const pageTitles = {
   notices: "Notices — Mane Man",
   notFound: "Not found — Mane Man",
   payClosed: "Payment link closed — Mane Man",
+  payAgain: "Payment link — Mane Man",
   stop: "Stop messages — Mane Man",
 };
 

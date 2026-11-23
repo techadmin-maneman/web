@@ -147,7 +147,7 @@ export function robotsFile(indexed: boolean): string {
  * The built pages no search engine is given: the 404, and the pages a single person's link opens. r.html answers
  * every /r/:code, each one a person's invite; /stop is opened from a person's own message.
  */
-const UNLISTED_PAGES = new Set(["404.html", "r.html", "stop.html"]);
+const UNLISTED_PAGES = new Set(["404.html", "r.html", "stop.html", "pay.html", "pay/again.html"]);
 
 /** The page a built file serves, for the sitemap: index.html is /, try.html is /try. */
 export function pagePath(file: string): string | null {

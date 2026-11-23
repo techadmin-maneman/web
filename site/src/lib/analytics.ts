@@ -157,6 +157,12 @@ export function answerConsent(answer: "granted" | "denied"): void {
 /** The page whose address carries the token that stops a person's messages. */
 const STOP_PATH = "/stop";
 
+/**
+ * A payment link's pages, whose address the site's Worker never lets hold its token; tags start on none of them all the
+ * same, as a client's own link (docs/decisions/0300-payment-links-on-whatsapp.md).
+ */
+const PAY_PATH = /^\/pay(?:\/|$)/;
+
 /** What an event says of the person, which no tag is given as a parameter: the area, and the hashed number. */
 const PERSONAL_PARAMETERS = new Set(["area", "phone_hash"]);
 
@@ -178,7 +184,7 @@ function clearUnknownParameters(): void {
 export function startAnalytics(): void {
   clearUnknownParameters();
   window.dataLayer ??= [];
-  if (location.pathname === STOP_PATH) return;
+  if (location.pathname === STOP_PATH || PAY_PATH.test(location.pathname)) return;
   const ids = ANALYTICS_IDS[ENVIRONMENT];
   const agreed = consented() ? "granted" : "denied";
   gtag("consent", "default", {

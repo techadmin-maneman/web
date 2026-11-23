@@ -1,6 +1,8 @@
 // Where maneman.in/pay/<token>, the button on a payment link's WhatsApp message, sends the client: Razorpay's link while
 // it is open (docs/decisions/0300-payment-links-on-whatsapp.md). mm-site's Worker asks, and redirects, or says the link
-// has closed. A token closed or never made counts against the address it comes from, so none is found by guessing.
+// has closed. An open token is always answered, so clients behind one carrier's address are never kept from theirs; a
+// token closed or never made counts against the address it comes from, which is refused once it has missed too often.
+// A link paid, or cancelled at Razorpay, is answered while it is open: Razorpay's own page says so.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
@@ -21,8 +23,8 @@ const payLinkRoute = createRoute({
   responses: {
     200: { description: "Open", content: { "application/json": { schema: OpenPayLinkSchema } } },
     400: errorResponse("invalid_request: not a token we make"),
-    404: errorResponse("not_found: closed, paid for or never made"),
-    429: errorResponse("rate_limited: this address asked for too many tokens that are not open this hour"),
+    404: errorResponse("not_found: closed or never made"),
+    429: errorResponse("rate_limited: closed or never made, and this address has asked for too many such this hour"),
   },
 });
 
@@ -31,12 +33,10 @@ export function registerPayLinks(app: App): void {
     const { token } = c.req.valid("param");
     const at = { now: c.var.deps.now(), settings: c.var.config.settings };
     const { ipHash } = await visitorOf(c);
-    if (await payLinkMissesSpent(c.env.DB, ipHash, at)) return refuse(c, "rate_limited");
     const url = await openPayLink(c.env.DB, token, at.now);
-    if (url === null) {
-      await countPayLinkMiss(c.env.DB, ipHash, at);
-      return refuse(c, "not_found");
-    }
-    return c.json({ url }, 200, { "Cache-Control": "no-store" });
+    if (url !== null) return c.json({ url }, 200, { "Cache-Control": "no-store" });
+    if (await payLinkMissesSpent(c.env.DB, ipHash, at)) return refuse(c, "rate_limited");
+    await countPayLinkMiss(c.env.DB, ipHash, at);
+    return refuse(c, "not_found");
   });
 }

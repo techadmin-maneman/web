@@ -155,18 +155,35 @@ const RAZORPAY = /^https:\/\/(?:rzp\.io|(?:[a-z0-9-]+\.)?razorpay\.com)\//;
 const isOpenPayLink = (body: unknown): body is { readonly url: string } =>
   typeof body === "object" && body !== null && "url" in body && typeof body.url === "string" && RAZORPAY.test(body.url);
 
+/** A payment link's pages of our own: it has closed, or it could not be looked up just now. Never the token. */
+const PAY_CLOSED = "/pay";
+const PAY_AGAIN = "/pay/again";
+
 /**
- * On to Razorpay's link while it is open; else the page that says it has closed. The visitor's address goes along, as
- * an invite's does, since mm-api counts tokens that are not open against it.
+ * On to Razorpay's link while it is open. Otherwise to a page of ours by an address without the token, so no page's
+ * tags, history or report ever holds it: that the link has closed where mm-api says it is not open (404, or 429 for an
+ * address past its misses), else that it could not be opened just now, since it may still be. The visitor's address
+ * goes along, as an invite's does, since mm-api counts tokens that are not open against it.
  */
 async function payLink(env: SiteEnv, visit: Request, origin: string, token: string): Promise<Response> {
   const headers = new Headers();
   const address = visit.headers.get("CF-Connecting-IP");
   if (address !== null) headers.set("CF-Connecting-IP", address);
-  const found = await fetchJson(env, new Request(`${origin}/api/pay/${token}`, { headers }), "pay link", isOpenPayLink);
-  if (found !== null) return Response.redirect(found.url, 302);
-  return withNonce(await env.ASSETS.fetch(builtFile(visit, `${origin}/pay`)));
+  try {
+    const answer = await env.API.fetch(new Request(`${origin}/api/pay/${token}`, { headers }));
+    if (answer.status === 404 || answer.status === 429) return Response.redirect(`${origin}${PAY_CLOSED}`, 302);
+    const body: unknown = answer.ok ? await answer.json() : null;
+    if (isOpenPayLink(body)) return Response.redirect(body.url, 302);
+    failed("pay link", answer.status, answer.ok ? "unknown shape" : "refused");
+  } catch (error) {
+    failed("pay link", null, error instanceof Error ? error.message : "unreachable");
+  }
+  return Response.redirect(`${origin}${PAY_AGAIN}`, 302);
 }
+
+/** A path as a report or the fallback names it: an invite's without its code, a payment link's without its token. */
+const withoutKeys = (path: string): string =>
+  PAY_LINK.test(path) ? PAY_CLOSED : path.replace(INVITE_PATH_IN_URL, "/r/");
 
 /**
  * Where a campaign link sends the visitor: /book with its tags and code, or plain /book for a link that is retired, is
@@ -386,7 +403,7 @@ const WORKER_SOURCE = "mm-site Worker";
  */
 function reportFailure(request: Request, env: SiteEnv, ctx: ExecutionContext | undefined, thrown: unknown): void {
   const url = new URL(request.url);
-  const path = url.pathname.replace(INVITE_PATH_IN_URL, "/r/");
+  const path = withoutKeys(url.pathname);
   const message = thrown instanceof Error ? `${thrown.name}: ${thrown.message}` : String(thrown);
   const stack = thrown instanceof Error ? thrown.stack : undefined;
   // On the Worker's one console channel, as mm_api_failed is; the line's own level says what it is.
@@ -411,7 +428,7 @@ function reportFailure(request: Request, env: SiteEnv, ctx: ExecutionContext | u
 /** The page as built, as the Worker serves it while mm-api cannot say: an invite's landing for its code. */
 function asBuilt(request: Request, env: SiteEnv): Promise<Response> {
   const url = new URL(request.url);
-  const path = INVITE_PATH.test(url.pathname) ? "/r" : url.pathname;
+  const path = INVITE_PATH.test(url.pathname) ? "/r" : withoutKeys(url.pathname);
   return env.ASSETS.fetch(builtFile(request, `${url.origin}${path}`));
 }
 

@@ -248,6 +248,16 @@ describe("POST /api/payment-links/:id/resend", () => {
       ["payment_link", 1, "payment_link"],
     ]);
     expect(whatsApp.results[0]?.what).toMatch(/^visit of /);
+
+    // Sent again, from the console or the technician's close: on WhatsApp again, under the same token.
+    expect(await (await resend(payments)).json()).toEqual({ outcome: "resent" });
+    const again = await env.DB.prepare(
+      `SELECT COUNT(DISTINCT l.id) AS tokens, COUNT(m.id) AS sent FROM pay_links l
+       JOIN outbound_messages m ON m.subject_id = l.id WHERE l.subject_id = ?1`,
+    )
+      .bind(LINK)
+      .first<{ tokens: number; sent: number }>();
+    expect(again).toEqual({ tokens: 1, sent: 2 });
   });
 
   it("sends nothing for a link already paid, or one Razorpay refused", async () => {

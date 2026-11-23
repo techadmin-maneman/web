@@ -166,14 +166,14 @@
   .group .actions,
   .check .actions,
   .actions .actions,
-  td .actions {
+  td .actions:not(dialog *) {
     margin-left: 0;
     margin-right: 0;
   }
 
   /* On a phone's card a row's buttons end at its edge, as its values do (./table.module.css). */
   @media (max-width: 600px) {
-    [data-cards] td .actions {
+    [data-cards] td .actions:not(dialog *) {
       justify-content: flex-end;
     }
   }

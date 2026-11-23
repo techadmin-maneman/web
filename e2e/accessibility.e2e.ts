@@ -31,6 +31,7 @@ const PAGES = [
   "/stop",
   // Where a payment link's WhatsApp button lands once the link has closed (docs/decisions/0300-payment-links-on-whatsapp.md).
   "/pay",
+  "/pay/again",
   // The guides and the cities, drafts on every build but production's.
   "/guides",
   "/guides/what-is-a-hair-system",

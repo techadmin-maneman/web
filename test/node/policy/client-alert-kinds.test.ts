@@ -7,8 +7,9 @@ import { MESSAGE_KINDS } from "../../../src/config/message-kinds.ts";
 import { WHATSAPP_ONLY } from "../../../src/policy/client-alerts.ts";
 
 describe("the client's alerts beside messages", () => {
-  it("leave out, in each of migration 0211's triggers on messages, exactly the kinds the rule calls WhatsApp's own", () => {
-    const sql = readFileSync("migrations/0211_client_app_alerts.sql", "utf8");
+  // The triggers as they stand: 0211's, made again by 0233 when a payment link became WhatsApp's own.
+  it("leave out, in each of the triggers on messages, exactly the kinds the rule calls WhatsApp's own", () => {
+    const sql = readFileSync("migrations/0233_pay_links.sql", "utf8");
     const lists = [...sql.matchAll(/NEW\.kind NOT IN \(([\s\S]*?)\)/g)].map((match) =>
       [...(match[1] ?? "").matchAll(/'(\w+)'/g)].map((kind) => kind[1]).sort(),
     );

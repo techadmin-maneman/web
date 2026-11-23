@@ -10,6 +10,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createStubPayments, type StubPayments } from "../../../src/providers/payments/stub.ts";
+import { ProviderError } from "../../../src/providers/provider-error.ts";
 import { catchUpWithRazorpay } from "../../../src/domain/money/razorpay-catch-up.ts";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
@@ -132,6 +133,30 @@ describe("a custom order", () => {
       .all<{ amount: number; what: string; kind: string }>();
     expect(whatsApp.results.map((row) => [row.amount, row.kind])).toEqual([[4_500_000, "payment_link"]]);
     expect(whatsApp.results[0]?.what).toMatch(/^custom hair system, order /);
+  });
+
+  // Razorpay made and texted the link, and its answer never came: the next ask is refused for the same reference, and
+  // the link found under it is kept, and sent on WhatsApp too (docs/decisions/0300-payment-links-on-whatsapp.md).
+  it("keeps the link a try whose answer never came made, and sends it on WhatsApp", async () => {
+    const stub = { ...payments };
+    let answerLost = true;
+    Object.assign(payments, {
+      createPaymentLink: async (link: Parameters<StubPayments["createPaymentLink"]>[0]) => {
+        const made = await stub.createPaymentLink(link);
+        if (!answerLost) return made;
+        answerLost = false;
+        throw new ProviderError(400, "BAD_REQUEST_ERROR", "reference_id already exists");
+      },
+    });
+    const [order] = (await (await raise()).json<Orders>()).orders;
+    expect(order?.short_url).toMatch(/^https:\/\/rzp\.io\//);
+    const sent = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM pay_links l JOIN outbound_messages m ON m.subject_id = l.id
+       WHERE l.subject_kind = 'custom_order' AND l.subject_id = ?1`,
+    )
+      .bind(order?.id ?? "")
+      .first<number>("n");
+    expect(sent).toBe(1);
   });
 
   it("once paid, is the client's payment and a purchase order of its own, however often Razorpay says so", async () => {

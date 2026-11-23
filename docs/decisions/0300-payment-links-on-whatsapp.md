@@ -17,16 +17,24 @@ have approved is our site's origin followed by a path.
 ## Decision
 
 1. **Each link made is kept under a random token** (`pay_links`, migration 0233): the person, Razorpay's address, the
-   amount, what it pays for, and when it closes. Sending it again sends the same token.
-2. **`maneman.in/pay/<token>` sends the client on to Razorpay** while the link is open; once it has closed, or for a
-   token we never made, the site says the link has closed. A token is 128 random bits; an address that misses
-   repeatedly is refused for the hour, as invite codes are.
+   amount, what it pays for, and when it closes. A link found made by a try whose answer never came is kept and sent
+   the same way. Sending it again sends the same token. Failing to queue the message never fails the link: Razorpay has
+   texted it.
+2. **`maneman.in/pay/<token>` sends the client on to Razorpay** while the link is open. Otherwise mm-site's Worker
+   sends them to a page of ours by an address without the token, so no page's tags, history or error report ever
+   holds it: `/pay`, that the link has closed, where mm-api says it is not open; `/pay/again`, that it could not be
+   opened just now, where mm-api could not say, since it may still be open. Both offer a chat with us. A token is 128
+   random bits; an open one is always answered, so clients behind one carrier's address are never kept from theirs, and
+   an address that misses repeatedly is refused for the hour, as invite codes are. A link paid, or cancelled at
+   Razorpay, still opens while it is open, and Razorpay's page says so.
 3. **The message is `payment_link_v1`**, a transactional template with a "Pay now" button on that address. It goes
    whatever the client's consent to visit messages, as a receipt does, and through the allowlist as any message ops'
-   action sends.
+   action sends. It is WhatsApp's alone: the client app's cards already show a held booking's and a custom order's
+   link, so no alert is written beside it (migration 0233 makes 0211's triggers again without it).
 4. **Until WhatsApp approves the template, MSG91 does not send it** (`AWAITING_APPROVAL`,
    src/config/approved-templates.ts): the message is skipped, not failed, so no "Message not delivered" task is made.
-   Approved, the template leaves that list.
+   Approved, the template leaves that list. It is held back in code rather than by a console setting: the console's
+   settings hold figures, not switches, and this one is turned once, by us, when WhatsApp approves.
 
 ## Consequences
 

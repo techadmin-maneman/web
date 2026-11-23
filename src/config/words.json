@@ -1688,11 +1688,35 @@
     "reviewed": false
   },
   {
-    "key": "site:pages/payClosed.home",
+    "key": "site:pages/payClosed.chat",
     "surface": "site",
     "group": "Pages",
     "where": "payClosed",
-    "text": "Back to the site",
+    "text": "Message us on WhatsApp",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payAgain.title",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payAgain",
+    "text": "We couldn’t open your payment link.",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payAgain.body",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payAgain",
+    "text": "Tap the button in our WhatsApp message again in a minute. If it still won’t open, message us.",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/payAgain.chat",
+    "surface": "site",
+    "group": "Pages",
+    "where": "payAgain",
+    "text": "Message us on WhatsApp",
     "reviewed": false
   },
   {
@@ -1853,6 +1877,14 @@
     "group": "Page titles",
     "where": "pageTitles",
     "text": "Payment link closed — Mane Man",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/pageTitles.payAgain",
+    "surface": "site",
+    "group": "Page titles",
+    "where": "pageTitles",
+    "text": "Payment link — Mane Man",
     "reviewed": false
   },
   {

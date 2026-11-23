@@ -1,29 +1,7 @@
 ---
-// Where a payment link's WhatsApp button lands once its link has closed (docs/decisions/0300-payment-links-on-whatsapp.md):
-// mm-site's Worker serves it at /pay/<token> for a token mm-api does not send on to Razorpay.
-import { buttonLook } from "@maneman/ui/Button";
+// A payment link that has closed, or was never ours (../components/PayLinkPage.astro).
+import PayLinkPage from "../components/PayLinkPage.astro";
 import { pageTitles, payClosed } from "../content/site.ts";
-import Site from "../layouts/Site.astro";
 ---
 
-<Site title={pageTitles.payClosed} noindex>
-  <section class="text-page short">
-    <h1 class="page-title">{payClosed.title}</h1>
-    <p class="page-lede">{payClosed.body}</p>
-    <a class={buttonLook({ variant: "primary", size: "action", className: "home" })} href="/">
-      {payClosed.home}
-    </a>
-  </section>
-</Site>
-
-<style>
-  .home {
-    margin-top: var(--sp-28);
-  }
-  /* Across a phone; on a laptop, as wide as its words. */
-  @media (min-width: 761px) {
-    .home {
-      width: fit-content;
-    }
-  }
-</style>
+<PayLinkPage title={pageTitles.payClosed} heading={payClosed.title} body={payClosed.body} chat={payClosed.chat} />

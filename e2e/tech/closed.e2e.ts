@@ -313,6 +313,48 @@ test("never says the job isn't closed while its close lands", async ({ page }) =
   expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).toEqual([]);
 });
 
+// What a landing writes is kept in the days the phone holds: a day it no longer keeps gets nothing, and the read of
+// what the phone heard comes back without the close. The close-out holds it all the same.
+test("never says the job isn't closed while its close lands, though the phone no longer keeps its day", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  let landed = false;
+  await page.route(`**/api/tech/jobs/${JOB_ID}/outcome`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.fallback();
+    landed = true;
+  });
+  await closedGoingAhead(page, fake);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const opened = indexedDB.open("mm-tech");
+        opened.onerror = () => {
+          reject(new Error("the phone's store would not open"));
+        };
+        opened.onsuccess = () => {
+          const clearing = opened.result.transaction("days", "readwrite").objectStore("days").clear();
+          clearing.onsuccess = () => {
+            opened.result.close();
+            resolve();
+          };
+        };
+      }),
+  );
+  await page.evaluate((line) => {
+    const seen: string[] = [];
+    Object.assign(window, { seen });
+    new MutationObserver(() => {
+      if (document.body.innerText.includes(line)) seen.push(line);
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }, closeOut.notClosed);
+  await expect.poll(() => landed, { timeout: 5000 }).toBe(true);
+  await page.waitForTimeout(1500);
+  await expect(page.getByRole("heading", { level: 1, name: closeOut.titles.closed })).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).toEqual([]);
+});
+
 // A close the API refuses stays on the phone, refused: the close-out says the job is not closed.
 test("says the job isn't closed once its close is refused", async ({ page }) => {
   const fake = await fakeTech(page);

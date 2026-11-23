@@ -4,7 +4,7 @@
 // (src/domain/purchasing/custom-order-po.ts). Nothing goes to the supplier before then.
 
 import { onAllowlist } from "../../config/settings.ts";
-import { failureReason } from "../../log.ts";
+import { failureReason, type Logger } from "../../log.ts";
 import { paymentLinkClosesAt } from "../../policy/one-visit.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../../providers/payments/razorpay.ts";
@@ -15,7 +15,7 @@ import type { LinkDeps } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
-import { payLinkStatements } from "./pay-links.ts";
+import { queuePayLink } from "./pay-links.ts";
 
 export type CustomLinkSent = "sent" | "already_sent" | "unavailable";
 
@@ -33,14 +33,25 @@ type LinkRow = {
 const numberOf = (number: number) => `CU-${String(number).padStart(4, "0")}`;
 
 /** The link kept on the order. */
-function keep(db: D1Database, orderId: string, made: { id: string; shortUrl: string }, now: Date) {
-  return db
+/** The order's link kept, just made or made by a try whose answer never came, and sent on WhatsApp too (ADR 0300). */
+async function keep(
+  db: D1Database,
+  log: Logger,
+  kept: { readonly order: LinkRow; readonly made: { id: string; shortUrl: string }; readonly closesAt: Date },
+  now: Date,
+) {
+  const { order, made } = kept;
+  await db
     .prepare(
       `UPDATE custom_orders SET razorpay_link_id = ?2, short_url = ?3, link_sent_at = ?4, updated_at = ?4
        WHERE id = ?1`,
     )
-    .bind(orderId, made.id, made.shortUrl, now.toISOString())
+    .bind(order.id, made.id, made.shortUrl, now.toISOString())
     .run();
+  const what = `custom hair system, order ${numberOf(order.number)}`;
+  const subject = { kind: "custom_order", id: order.id } as const;
+  const paidFor = { personId: order.person_id, subject, amount: order.amount };
+  await queuePayLink(db, { ...paidFor, url: made.shortUrl, what, openUntil: kept.closesAt }, now, log);
 }
 
 /**
@@ -74,13 +85,7 @@ export async function sendCustomOrderLink(
       closesAt,
       notify,
     });
-    await keep(db, order.id, made, now);
-    // Beside Razorpay's SMS, the link on WhatsApp (docs/decisions/0300-payment-links-on-whatsapp.md).
-    const what = `custom hair system, order ${numberOf(order.number)}`;
-    const paidFor = { personId: order.person_id, subject: { kind: "custom_order", id: order.id } } as const;
-    await db.batch(
-      payLinkStatements(db, { ...paidFor, url: made.shortUrl, amount: order.amount, what, openUntil: closesAt }, now),
-    );
+    await keep(db, deps.log, { order, made, closesAt }, now);
     await resolveAlertStatement(db, `custom_order_link:${order.id}`, now).run();
     return "sent";
   } catch (error) {
@@ -88,7 +93,7 @@ export async function sendCustomOrderLink(
     deps.log.warn("custom_order_link_failed", { custom_order_id: order.id, reason });
     const before = isRefusal(error) ? await deps.payments.findPaymentLink(order.id) : null;
     if (before !== null) {
-      await keep(db, order.id, before, now);
+      await keep(db, deps.log, { order, made: before, closesAt }, now);
       return "sent";
     }
     await deps.alertOnce({

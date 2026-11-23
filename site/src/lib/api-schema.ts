@@ -2036,7 +2036,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description not_found: closed, paid for or never made */
+                /** @description not_found: closed or never made */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2054,7 +2054,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description rate_limited: this address asked for too many tokens that are not open this hour */
+                /** @description rate_limited: closed or never made, and this address has asked for too many such this hour */
                 429: {
                     headers: {
                         [name: string]: unknown;

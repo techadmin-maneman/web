@@ -8,6 +8,7 @@ import { VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
 import { toBase64Url } from "../../lib/base64url.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { insertRow } from "../../lib/sql.ts";
+import type { Logger } from "../../log.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
 import { isSpent, takeOne, type CountedAt } from "../sign-in/rate-limit.ts";
 
@@ -68,6 +69,18 @@ export function payLinkStatements(db: D1Database, made: PayLinkMade, now: Date):
     }),
     messageOf(db, made.personId, token, at),
   ];
+}
+
+/**
+ * A link just made, or found made by a try whose answer never came, sent on WhatsApp too. Never throws: the link stands,
+ * Razorpay has texted it, whatever befalls its message, and a failure here is not Razorpay's.
+ */
+export async function queuePayLink(db: D1Database, made: PayLinkMade, now: Date, log: Logger): Promise<void> {
+  try {
+    await db.batch(payLinkStatements(db, made, now));
+  } catch (error) {
+    log.warn("pay_link_not_queued", { subject_kind: made.subject.kind, subject_id: made.subject.id, error });
+  }
 }
 
 /** The message queued again for a link sent again, under the token it went with; false for one never sent so. */

@@ -2099,7 +2099,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`, `0221_refused_messages.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`, `0211_client_app_alerts.sql`, `0221_refused_messages.sql`, `0233_pay_links.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |

@@ -22,7 +22,7 @@ import {
   request,
 } from "../helpers.ts";
 import { log } from "../messages/messaging-fixtures.ts";
-import { insertPerson } from "../tryon-fixtures.ts";
+import { aPerson } from "../fixtures/index.ts";
 
 const HOUR = 60 * 60 * 1000;
 const SUBJECT = { kind: "hold", id: "h-1" } as const;
@@ -84,13 +84,15 @@ const ask = (token: string, address = "203.0.113.7") =>
 beforeEach(async () => {
   await markDatabase();
   captureLogs();
-  await insertPerson("p", "+919810000001", "Arjun Mehta");
+  await aPerson({ id: "p", mobile_e164: "+919810000001", name: "Arjun Mehta" });
 });
 
 describe("a payment link's message", () => {
   it("names the amount, what it pays for and until when, with our address for it", async () => {
     const { token, messageId } = await linkMade();
     expect(token).toMatch(/^[A-Za-z0-9_-]{22}$/);
+    // WhatsApp's alone: no alert or push in the app beside it, whose cards show the link already.
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM client_app_alerts").first<number>("n")).toBe(0);
 
     const sent = await send(messageId);
     expect(sent).toHaveLength(1);
@@ -146,12 +148,14 @@ describe("our address for a payment link", () => {
     expect((await ask("short")).status).toBe(400);
   });
 
-  it("refuses an address that has asked for too many tokens that are not open this hour", async () => {
+  // A carrier puts many clients behind one address: one's misses never keep another from an open link.
+  it("refuses an address past its misses only a token that is not open, never an open one", async () => {
     const { token } = await linkMade();
     for (let miss = 0; miss < INVITE_MISSES_PER_ADDRESS_HOURLY; miss += 1) {
       expect((await ask("AbCdEfGhIjKlMnOpQrSt_-")).status).toBe(404);
     }
-    expect((await ask(token)).status).toBe(429);
-    expect((await ask(token, "198.51.100.9")).status).toBe(200);
+    expect((await ask("AbCdEfGhIjKlMnOpQrSt_-")).status).toBe(429);
+    expect((await ask(token)).status).toBe(200);
+    expect((await ask("AbCdEfGhIjKlMnOpQrSt_-", "198.51.100.9")).status).toBe(404);
   });
 });

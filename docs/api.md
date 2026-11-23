@@ -2700,7 +2700,7 @@ Razorpay's address for a payment link sent on WhatsApp, while it is open.
 }
 ```
 
-**404**: not_found: closed, paid for or never made
+**404**: not_found: closed or never made
 
 ```json
 {
@@ -2736,7 +2736,7 @@ Razorpay's address for a payment link sent on WhatsApp, while it is open.
 }
 ```
 
-**429**: rate_limited: this address asked for too many tokens that are not open this hour
+**429**: rate_limited: closed or never made, and this address has asked for too many such this hour
 
 ```json
 {

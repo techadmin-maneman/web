@@ -14,6 +14,7 @@ export const PAGES = [
   "/offer-terms",
   "/stop",
   "/pay",
+  "/pay/again",
   "/guides",
   "/guides/what-is-a-hair-system",
   "/areas",

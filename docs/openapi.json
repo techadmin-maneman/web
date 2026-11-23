@@ -5173,7 +5173,7 @@
             }
           },
           "404": {
-            "description": "not_found: closed, paid for or never made",
+            "description": "not_found: closed or never made",
             "content": {
               "application/json": {
                 "schema": {
@@ -5211,7 +5211,7 @@
             }
           },
           "429": {
-            "description": "rate_limited: this address asked for too many tokens that are not open this hour",
+            "description": "rate_limited: closed or never made, and this address has asked for too many such this hour",
             "content": {
               "application/json": {
                 "schema": {
