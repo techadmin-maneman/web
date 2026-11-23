@@ -37,7 +37,11 @@ import { EVERYWHERE, type PlacesReached } from "../../policy/access.ts";
 import { LOST_AFTER_DAYS, lostIfDoneBy } from "../../policy/client-standing.ts";
 import { factsOf, type TaskFacts } from "./task-facts.ts";
 import { taskWithinReach } from "./task-reach.ts";
-import { QUEUES, type Queue, type ReadAt } from "./task-queues.ts";
+import { QUEUES as KEPT_QUEUES, type Queue, type ReadAt } from "./task-queues.ts";
+import { STAFF_TASK_QUEUES } from "./staff-tasks.ts";
+
+/** Every queue the board reads: those the database keeps, and the tasks written by hand. */
+const QUEUES: readonly Queue[] = [...KEPT_QUEUES, ...STAFF_TASK_QUEUES];
 
 /** A visit to come, by its id and its start. */
 interface TaskVisit {

@@ -22,7 +22,6 @@ import {
 import type { SqlValue } from "../../lib/sql.ts";
 import { REFUND_OWED_FAILED, REFUND_OWED_LET_GO } from "../money/payment-refunds.ts";
 import { VISIT_QUEUES } from "../dispatch/not-begun.ts";
-import { STAFF_TASK_QUEUES } from "./staff-tasks.ts";
 
 /**
  * When a number change `nc` started waiting for ops: once the second code was
@@ -506,5 +505,4 @@ export const QUEUES: readonly Queue[] = [
   // A payment to refund (src/domain/money/payment-refunds.ts): a hold let go, or a refund Razorpay failed.
   { group: "payment_to_refund", sql: REFUND_OWED_LET_GO },
   { group: "payment_to_refund", sql: REFUND_OWED_FAILED },
-  ...STAFF_TASK_QUEUES,
 ];
