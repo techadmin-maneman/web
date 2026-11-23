@@ -786,6 +786,8 @@ export const clients = {
     none: "No hair profile yet.",
     /** "21 Sep 2026 · Imran, at the consultation", as each version is headed. */
     version: (date: string, by: string) => `${date} · ${by}`,
+    /** What a field was in the version before, beside what it is now. */
+    was: (value: string) => `was ${value}`,
     atVisit: (name: string, visit: string) => `${name}, at the ${visit.toLowerCase()}`,
     byOps: (staff: string) => `${staff}, correction`,
     unnamed: "A technician",
@@ -829,8 +831,10 @@ export const clients = {
       other_systems: "Other hair systems",
       other: "Other",
     },
-    correct: "Correct profile",
-    record: "Add profile",
+    correct: "Correct it",
+    /** Correct it, named in full to a screen reader. */
+    correctLabel: "Correct the hair profile",
+    record: "Add a profile",
     formTitle: "Correct hair profile",
     notRecorded: "Not recorded",
     product: "Hair system",

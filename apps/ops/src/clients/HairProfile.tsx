@@ -110,9 +110,28 @@ function rowsOf(profile: HairProfileView): { key: string; value: string }[] {
   ];
 }
 
-function ProfileRows({ profile }: { profile: HairProfileView }) {
+/** A version's rows, each that differs from the version before it saying what it was. */
+function ProfileRows({ profile, previous }: { profile: HairProfileView; previous: HairProfileView | null }) {
+  const before = new Map(previous === null ? [] : rowsOf(previous).map((row) => [row.key, row.value]));
   return (
-    <DescriptionList layout="list" items={rowsOf(profile).map((row) => ({ term: row.key, details: row.value }))} />
+    <DescriptionList
+      layout="list"
+      items={rowsOf(profile).map((row) => {
+        const was = before.get(row.key);
+        return {
+          term: row.key,
+          details:
+            was === undefined || was === row.value ? (
+              row.value
+            ) : (
+              <>
+                {row.value}
+                <span className={styles.was}>{copy.was(was)}</span>
+              </>
+            ),
+        };
+      })}
+    />
   );
 }
 
@@ -131,13 +150,13 @@ function Versions({ versions }: { versions: readonly HairProfileVersion[] }) {
         {copy.versions}
       </h4>
       <ol className={styles.versionList}>
-        {versions.map((version) => (
+        {versions.map((version, index) => (
           <li key={version.id}>
             <Disclosure
               className={styles.version}
               summary={copy.version(longDate(version.recorded_at), byWhom(version))}
             >
-              <ProfileRows profile={version} />
+              <ProfileRows profile={version} previous={versions[index + 1] ?? null} />
             </Disclosure>
           </li>
         ))}
@@ -384,7 +403,11 @@ export function HairProfile({ clientId }: { clientId: string }) {
         {copy.title}
       </h3>
       {moved && <Refusal className={styles.error} said={copy.moved} />}
-      {page.latest === null ? <p className={styles.hint}>{copy.none}</p> : <ProfileRows profile={page.latest} />}
+      {page.latest === null ? (
+        <p className={styles.hint}>{copy.none}</p>
+      ) : (
+        <ProfileRows profile={page.latest} previous={page.versions[1] ?? null} />
+      )}
       {correcting && (
         <CorrectionForm
           clientId={clientId}
@@ -410,6 +433,7 @@ export function HairProfile({ clientId }: { clientId: string }) {
           <Button
             variant="outline"
             size="small"
+            aria-label={page.latest === null ? undefined : copy.correctLabel}
             onClick={() => {
               setCorrecting(true);
             }}
