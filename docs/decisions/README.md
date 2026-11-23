@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0299. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0300. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -90,6 +90,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0293](0293-steering-booking-times.md) Clients are steered to the times that drive least
 - [0294](0294-learned-drive-times.md) Drive times are learned from our own drives
 - [0297](0297-drafts-off-a-day-that-no-longer-fits.md) A draft its day no longer fits is moved, and two cities are checked a run
+- [0299](0299-fit-today.md) Fit today: a consultation becomes the fit at the door
 
 ### Field work
 
@@ -438,7 +439,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0102](0102-window-times.md) | The window times in the console | 2026-10-01 | accepted, on the owner's rulings of 30 September and 1 October 2026 | [0210](0210-booking-by-start-time.md) |
 | [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted | [0213](0213-the-sites-second-copy-round.md), [0215](0215-the-range-as-a-table.md) |
 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 | [0214](0214-from-the-site-into-the-app.md), [0217](0217-the-try-ons-photo-taken-and-looked-at.md), [0219](0219-one-line-consents.md), [0276](0276-a-message-whatsapp-refuses.md) |
-| [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length |  |
+| [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length | [0299](0299-fit-today.md) |
 | [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 | [0240](0240-consultation-rules-and-inches.md), [0270](0270-the-design-checks-api-side.md) |
 | [0107](0107-referral-rewards-in-the-console.md) | What a referral earns, set in the console, each side apart | 2026-10-01 | accepted, on the owner's ruling of 1 October 2026 |  |
 | [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 | [0283](0283-changed-and-deleted-while-unused.md) |
@@ -632,3 +633,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0296](0296-no-empty-reference-photograph.md) | A guided task draws no reference photograph until it has one | 2026-11-23 | accepted |  |
 | [0297](0297-drafts-off-a-day-that-no-longer-fits.md) | A draft its day no longer fits is moved, and two cities are checked a run | 2026-11-23 | accepted |  |
 | [0298](0298-past-weeks-on-schedule.md) | Schedule goes back to past weeks, and never past this one | 2026-11-23 | accepted |  |
+| [0299](0299-fit-today.md) | Fit today: a consultation becomes the fit at the door | 2026-11-23 | accepted |  |

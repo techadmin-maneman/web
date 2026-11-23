@@ -33,6 +33,11 @@ export interface StartVisit {
   readonly minutes: number;
   readonly until?: string | null;
   readonly fitting?: Fitting | null;
+  /**
+   * Booked at the door by the technician there, as Fit today is (./fit-today.ts): today from now, whatever ops let
+   * clients book for today and the lead time they keep, and with that technician, though the rotation would bar them.
+   */
+  readonly atTheDoor?: boolean;
 }
 
 /** Whose visit it is and where, and what the days are read without. */
@@ -96,6 +101,7 @@ function earliestOn(date: string, visit: StartVisit, inputs: OpsInputs, now: Dat
   const today = indiaDate(now);
   if (date < today) return null;
   if (date > today) return 0;
+  if (visit.atTheDoor === true) return minuteOf(indiaTime(now));
   if (visit.type === undefined || visit.type === null || inputs.sameDayBooking[visit.type] !== "yes") return null;
   return minuteOf(indiaTime(now)) + inputs.bookingRules.lead * 60;
 }
@@ -244,7 +250,9 @@ async function startsOn(offering: Offering, date: string, earliest: number): Pro
       rooms.map((room) => candidateOf(offering, { ...room, date })),
     );
   }
-  const barred = techniciansBarredOn(offering.clientVisits, date);
+  // At the door, the technician there goes on to the fit they just consulted for: the rotation is between visits.
+  const barred =
+    offering.visit.atTheDoor === true ? new Set<string>() : techniciansBarredOn(offering.clientVisits, date);
   return [...byStart.entries()]
     .sort(([a], [b]) => a - b)
     .map(([start, takers]): StartOffer => {

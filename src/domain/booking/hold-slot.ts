@@ -110,6 +110,8 @@ export interface HoldInput {
   payByLink?: boolean;
   /** Paid by UPI at the visit, nothing taken now: ops booked it while online payment is off. */
   payAtVisit?: boolean;
+  /** Booked at the door by the technician there: today from now (./start-offers.ts). */
+  atTheDoor?: boolean;
   /** Written in the same batch, so they stand or fall with the hold: the person and their consent, from the site. */
   alongside?: readonly D1PreparedStatement[];
   /** Written after the hold, in its batch, given its ID: the site's discount code (docs/decisions/0108-discount-codes.md). */
@@ -157,7 +159,12 @@ async function candidatesFor({
         pincode: input.pincode ?? null,
         leaving: { ownUnpaidOf: from === "app" ? personId : null },
       },
-      visit: { type: service.type, minutes: service.minutes, fitting: fittingOf(service.type, service.tier) },
+      visit: {
+        type: service.type,
+        minutes: service.minutes,
+        fitting: fittingOf(service.type, service.tier),
+        atTheDoor: input.atTheDoor === true,
+      },
       from: date,
       days: 1,
       now,
