@@ -41,6 +41,19 @@
     color: var(--ui-text-muted);
   }
 
+  /* Its name with a line beneath it, as how far a target has come. */
+  .naming {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    min-width: 0;
+  }
+
+  .note {
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
   .editing .label {
     padding-top: var(--sp-8);
     color: var(--ui-text);

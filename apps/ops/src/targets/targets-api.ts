@@ -10,4 +10,7 @@ export const targetsApi = {
   setTarget: (body: Sent<paths["/api/targets"]["post"]>) => client.post("/api/targets", { body }),
   targets: (query: NonNullable<paths["/api/targets"]["get"]["parameters"]["query"]>) =>
     client.get("/api/targets", { query }),
+  /** What each city has done towards the month's targets, read apart, so a target saved reads nothing again. */
+  progress: (query: NonNullable<paths["/api/targets/progress"]["get"]["parameters"]["query"]>) =>
+    client.get("/api/targets/progress", { query }),
 };

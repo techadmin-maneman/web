@@ -62,3 +62,44 @@ test("takes a target off once its figure is emptied", async ({ page }) => {
   await box.press("Enter");
   await expect(page.getByText(copy.none)).toBeVisible();
 });
+
+type Progress = OpsReply<"/api/targets/progress">;
+
+/** Gurgaon's September so far, made up; every other figure nothing to count by. */
+const progressOf = (month: string, figures: Readonly<Record<string, number>>): Progress => ({
+  month,
+  progress: SEPTEMBER.measures.map((measure) => ({ city: "Gurgaon", measure, actual: figures[measure] ?? null })),
+});
+
+/** A measure's row on the city's panel, by its Change. */
+const rowOf = (page: Page, measure: keyof typeof copy.measures) =>
+  page
+    .getByRole("button", { name: `${EDITING.change} ${copy.measures[measure]}` })
+    .locator("xpath=ancestor::div[1]/..");
+
+test("says beneath each measure how far the month has come, with a line towards a target set", async ({ page }) => {
+  await open(page, {
+    "GET /api/targets/progress": (route: Route) =>
+      json(
+        new URL(route.request().url()).searchParams.get("month") === "2026-08"
+          ? progressOf("2026-08", { new_clients: 31 })
+          : progressOf("2026-09", { leads: 612, new_clients: 9, cac: 3500 }),
+      )(route),
+  });
+  // New clients has a target of 40: nine so far, its line a little filled, in the accent as it is below half.
+  const newClients = rowOf(page, "new_clients");
+  await expect(newClients).toContainText(copy.soFar("9"));
+  await expect(newClients).toContainText(copy.target("40"));
+  await expect(newClients.locator("progress")).toHaveJSProperty("value", 9 / 40);
+  // Leads has no target, so its figure stands with no line; a cost never has one.
+  await expect(rowOf(page, "leads")).toContainText(copy.soFar("612"));
+  await expect(rowOf(page, "leads").locator("progress")).toHaveCount(0);
+  await expect(rowOf(page, "cac")).toContainText(copy.soFar("3,500"));
+  await expect(rowOf(page, "cac").locator("progress")).toHaveCount(0);
+  // A measure with nothing to count by says nothing beneath its name.
+  await expect(rowOf(page, "on_time")).not.toContainText("so far");
+  // A month gone says what it came to.
+  await answer(page, { "GET /api/targets": json({ ...SEPTEMBER, month: "2026-08" }) });
+  await page.getByRole("main").getByLabel(copy.month).selectOption("2026-08");
+  await expect(rowOf(page, "new_clients")).toContainText(copy.inMonth("31", "August 2026"));
+});

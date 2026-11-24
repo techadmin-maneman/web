@@ -88,12 +88,22 @@ export function LinesRow(
 
 /** A figure, with the unit it counts in after the box. */
 export function FigureRow(
-  props: RowProps & { readonly value: number | null; readonly shown: ReactNode; readonly unit?: string },
+  props: RowProps & {
+    readonly value: number | null;
+    readonly shown: ReactNode;
+    readonly unit?: string;
+    /** The figure as the dialog's Now says it, where `shown` says more. */
+    readonly now?: ReactNode;
+    /** A line beneath its name as it reads. */
+    readonly note?: ReactNode;
+  },
 ) {
   return (
     <EditableRow<string>
       id={props.id}
       label={props.label}
+      now={props.now}
+      note={props.note}
       words={EDITING}
       mayChange={props.mayChange}
       value={props.shown}

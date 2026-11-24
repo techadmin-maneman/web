@@ -14519,6 +14519,91 @@ Request body:
 }
 ```
 
+### GET /api/targets/progress
+
+What each city has done towards a month's targets, measure by measure; this month's to date
+
+**200**: Each city's figure for each measure
+
+```json
+{
+  "$ref": "#/components/schemas/TargetProgress"
+}
+```
+
+**400**: invalid_request: a month outside the year either side of this one
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/targets/remove
 
 Take a month's target for a city off
@@ -50909,6 +50994,65 @@ Request body:
     "target",
     "set_by",
     "set_at"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TargetProgress
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string"
+    },
+    "progress": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "measure": {
+            "type": "string",
+            "enum": [
+              "leads",
+              "consultations",
+              "new_clients",
+              "active_clients",
+              "revenue",
+              "cac",
+              "utilisation",
+              "on_time"
+            ]
+          },
+          "actual": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The month's figure to date, as its target is counted; null where there is nothing to count by, as a month still to come, or active clients in a month gone."
+          }
+        },
+        "required": [
+          "city",
+          "measure",
+          "actual"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "month",
+    "progress"
   ],
   "additionalProperties": false
 }

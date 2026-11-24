@@ -19,6 +19,12 @@ export const targets = {
     on_time: "On time, %",
   },
   notSet: "Not set",
+  /** The target beside how far it has come. */
+  target: (figure: string) => `Target ${figure}`,
+  /** How far this month has come, beneath the measure's name. */
+  soFar: (figure: string) => `${figure} so far`,
+  /** What a month gone came to. */
+  inMonth: (figure: string, month: string) => `${figure} in ${month}`,
   /** The month's every target, beneath the city's own. */
   all: "Every target this month",
   none: "No targets for this month.",

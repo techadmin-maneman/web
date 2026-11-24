@@ -42,7 +42,7 @@ export interface Acquisition {
 const NONE: Figures = { spend: 0, leads: 0, consults_booked: 0, consults_done: 0, first_fits: 0, first_fit_revenue: 0 };
 
 /** What a payment brought in: before GST, less what was refunded of it. */
-const NET = "COALESCE(y.amount_ex_gst, y.amount) * (y.amount - y.refunded_amount) / y.amount";
+export const NET = "COALESCE(y.amount_ex_gst, y.amount) * (y.amount - y.refunded_amount) / y.amount";
 
 const known = (code: string | null): ChannelCode => {
   const found = CHANNELS.find((each) => each.code === code);
