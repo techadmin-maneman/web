@@ -75,7 +75,7 @@ describe("the weeks ahead", () => {
     expect(rows).toContainEqual({ consumable_code: "solvent", city: "Gurgaon", expected: 10, held: 4 });
   });
 
-  // The redesign's C10, as the owner ruled on 24 November (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+  // The redesign's C10 (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
   it("names a kit short for its technician's visits already allotted, and not for a draft the plan may still move", async () => {
     await job.opsPost("/api/stock/deliveries", { consumable_code: "solvent", quantity: 100 });
     await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 4, from: "central", to: IMRAN });

@@ -511,8 +511,8 @@ test("shows what the next four weeks will use beside what each city holds, and t
   await expect(panel).toContainText(stockViews.demand.fit("Fri 24 Sep", "Gurgaon", stockViews.demand.noProfile));
 });
 
-// The redesign's C10, as the owner ruled on 24 November: a kit short for its technician's visits already allotted is
-// named with what to send it; the rest of the weeks ahead stays the city's.
+// The redesign's C10 (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md): a kit short for its
+// technician's visits already allotted is named with what to send it; the rest of the weeks ahead stays the city's.
 test("names a kit short for its technician's allotted visits, and says Enough where the city holds what it uses", async ({
   page,
 }) => {
