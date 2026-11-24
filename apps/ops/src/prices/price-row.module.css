@@ -28,6 +28,11 @@
   list-style: none;
 }
 
+/* At a section's end the section's own rule stands there already, as a last row draws none. */
+.list:last-child {
+  border-bottom: 0;
+}
+
 .line {
   display: flex;
   flex-wrap: wrap;

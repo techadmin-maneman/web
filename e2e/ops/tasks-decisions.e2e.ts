@@ -5,6 +5,7 @@ import { expect, test } from "../support.ts";
 import { empty, json, type OpsReply } from "./fixtures.ts";
 import { detail, kindsListed, NO_ALERTS, open, PLAIN, row } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { care } from "../../apps/ops/src/content/care.ts";
 
 // A technician's ask for leave from their phone, decided from its drawer: Approve records the leave.
 test("approves a technician’s ask for leave from its drawer", async ({ page }) => {
@@ -90,6 +91,10 @@ test("approves a remedy past the limit from its drawer, with no way to Settings"
       await json({ ok: true })(route);
     },
   });
+  // What the approver decides on: the visits, and why Care gave them.
+  await expect(row(page, "Kabir Sethi")).toContainText(
+    opsCopy.tasks.subs.remedy_approval(2, care.remedy.reasons.technician_late),
+  );
   const drawer = await detail(page, "Kabir Sethi");
   await expect(drawer.getByRole("link", { name: /Remedies/ })).toHaveCount(0);
   await drawer.getByRole("button", { name: opsCopy.tasks.remedy.approve }).click();

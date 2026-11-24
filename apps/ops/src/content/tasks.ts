@@ -442,8 +442,9 @@ export const tasks = {
       `${kind} · WhatsApp refused it${code === null ? "" : ` (${code})`}`,
     /** Care's note to the city team, as they wrote it. */
     city_matter: (note: string) => note,
-    /** "2 free service visits"; why is in the Remedies panel on Messages. */
-    remedy_approval: (visits: number) => `${String(visits)} free service ${visits === 1 ? "visit" : "visits"}`,
+    /** "2 free service visits · Technician late": the visits, and why Care gave them. */
+    remedy_approval: (visits: number, why: string | null) =>
+      `${String(visits)} free service ${visits === 1 ? "visit" : "visits"}${why === null ? "" : ` · ${why}`}`,
     number_change: "Both numbers verified",
     erasure_request: "Requested in the app",
     // A concern about their data, which the app promises an answer to within 30 days.
