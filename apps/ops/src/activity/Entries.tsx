@@ -7,7 +7,7 @@ import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { Initials } from "@maneman/ui/Initials";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Panel } from "@maneman/ui/Panel";
-import { TextButton } from "@maneman/ui/TextLink";
+import { TextButton, textLinkLook } from "@maneman/ui/TextLink";
 import { apiNow } from "@maneman/web-kit/clock";
 import { addDays, indiaClock, indiaDate, longDate, weekdayDate, todayInIndia } from "@maneman/web-kit/dates";
 import { SectionHead } from "@maneman/ui/SectionHead";
@@ -28,18 +28,26 @@ function pageOf(opens: Named["opens"]): string | null {
   return technicianPath(opens.id);
 }
 
-/** A name in a sentence, a link where it has a page. */
+/** A name in a sentence, a link where it has a page, at the sentence's own line height. */
 function Name({ named }: { named: Named }) {
   const page = pageOf(named.opens);
-  return page === null ? named.words : <OpsLink to={page}>{named.words}</OpsLink>;
+  if (page === null) return named.words;
+  return (
+    <OpsLink to={page} className={textLinkLook({ inline: true })}>
+      {named.words}
+    </OpsLink>
+  );
 }
+
+/** Whose initials a row draws: a member of staff's from the name in their address, "FK" for farah.khan@…. */
+const initialsName = (who: string) => who.split("@")[0]?.replace(/[._-]+/g, " ") ?? who;
 
 function Entry({ entry, onOpen }: { entry: ActivityEntry; onOpen: () => void }) {
   const sentence = sentenceOf(entry);
   const clock = indiaClock(entry.at);
   return (
     <ListRow
-      mark={<Initials name={sentence.who.words} small />}
+      mark={<Initials name={initialsName(sentence.who.words)} small />}
       title={
         <span className={styles.sentence}>
           <span className={styles.who}>
@@ -118,29 +126,19 @@ function dayWords(day: string, today: string): string {
 }
 
 /** A day's entries: in a panel of their own on Activity's page, under a list's heading in a record's panel. */
-function Day({
-  day,
-  title,
-  within,
-  children,
-}: {
-  day: string;
-  title: string;
-  within: boolean;
-  children: (inPanel: boolean) => ReactNode;
-}) {
+function Day({ day, title, within, children }: { day: string; title: string; within: boolean; children: ReactNode }) {
   const titleId = `activity-${day}`;
   if (!within) {
     return (
       <Panel titleId={titleId} title={title}>
-        {children(true)}
+        {children}
       </Panel>
     );
   }
   return (
     <section aria-labelledby={titleId}>
-      <SectionHead id={titleId} title={title} level={3} size="list" ruled={false} />
-      {children(false)}
+      <SectionHead id={titleId} title={title} level={3} size="list" ruled={false} className={styles.dayHead} />
+      {children}
     </section>
   );
 }
@@ -161,19 +159,17 @@ export function Entries({ entries, within = false }: { entries: readonly Activit
     <>
       {[...days].map(([day, theirs]) => (
         <Day key={day} day={day} title={dayWords(day, today)} within={within}>
-          {(inPanel) => (
-            <ListRows inPanel={inPanel}>
-              {theirs.map((entry) => (
-                <Entry
-                  key={entry.id}
-                  entry={entry}
-                  onOpen={() => {
-                    setOpen(entry);
-                  }}
-                />
-              ))}
-            </ListRows>
-          )}
+          <ListRows inPanel>
+            {theirs.map((entry) => (
+              <Entry
+                key={entry.id}
+                entry={entry}
+                onOpen={() => {
+                  setOpen(entry);
+                }}
+              />
+            ))}
+          </ListRows>
         </Day>
       ))}
       {open !== null && (

@@ -1,16 +1,23 @@
 /* What ./CareNumbersScreen.tsx alone draws. */
 
-/* What chats were about beside who answered them on a desk, as the redesign draws them; one above the other short of
-   one. */
+/* What chats were about beside who answered them on a wide desk, as the redesign draws them, the people's table the
+   wider for its e-mail addresses; one above the other short of one. */
 .beside {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   align-items: start;
   gap: var(--sp-24);
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1279px) {
   .beside {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Beside the reasons, the people's table takes its own width rather than a full table's least, so it fits unscrolled. */
+@media (min-width: 1280px) {
+  .beside table {
+    min-width: 0;
   }
 }

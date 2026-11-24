@@ -33,3 +33,8 @@
 .older {
   align-self: flex-start;
 }
+
+/* A day's heading inside a record's panel, in from its edges as the record's own lines are. */
+.dayHead {
+  padding: var(--sp-16) var(--sp-20) var(--sp-8);
+}
