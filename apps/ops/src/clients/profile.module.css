@@ -62,16 +62,26 @@
   margin: 0;
 }
 
-/* The latest's rows reach the panel's edges, their names in line with its title, as a setting's rows do. */
+/* The latest's rows under their headings, two columns where there is room, as the design draws them; they reach the
+   panel's edges, their names in line with its title, as a setting's rows do. */
 .rows {
+  --setting-label-width: 40%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--ops-aside)), 1fr));
+  align-items: start;
+  column-gap: var(--sp-16);
   margin-inline: calc(-1 * var(--sp-20));
 }
 
-/* What the client has tried, a tick each, in a row's dialog. */
-.remedies {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
+.group {
+  min-width: 0;
+}
+
+.groupTitle {
+  margin: var(--sp-12) var(--sp-20) var(--sp-4);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-medium);
+  color: var(--ui-text-muted);
 }
 
 /* What a field was in the version before, after what it is now. */

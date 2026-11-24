@@ -98,6 +98,26 @@ test.describe("the client’s hair profile", () => {
     await expect(change(page, words.rows.colour)).toBeFocused();
   });
 
+  test("records a first profile a row at a time, from no version at all", async ({ page }) => {
+    const recorded = { ...HAIR_PROFILE, versions: HAIR_PROFILE.versions.slice(0, 1) };
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, { [CORRECT_HAIR_PROFILE]: json(recorded) });
+    await expect(section(page)).toContainText(words.none);
+    await expect(shown(page, words.rows.colour)).toContainText(opsCopy.clients.unknown);
+
+    await change(page, words.rows.colour).click();
+    await page.getByRole("combobox", { name: words.rows.colour }).selectOption({ label: words.colours["2"] });
+    const sent = page.waitForRequest(
+      (request) => request.method() === "POST" && request.url().endsWith("/hair-profile"),
+    );
+    await page.getByRole("button", { name: words.save }).click();
+    const body = (await sent).postDataJSON() as { fit: Record<string, unknown>; history: unknown; based_on: unknown };
+    expect(body.based_on).toBeNull();
+    expect(body.fit.colour).toBe("2");
+    expect(body.history).toBeNull();
+    await expect(shown(page, words.rows.colour)).toContainText(words.colours["2"]);
+    await expect(section(page)).not.toContainText(words.none);
+  });
+
   test("reads the profile again, saving nothing, when another version became the latest meanwhile", async ({
     page,
   }) => {

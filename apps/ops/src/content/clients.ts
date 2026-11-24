@@ -811,6 +811,8 @@ export const clients = {
     aVisit: "visit",
     fit: "Fit spec",
     versions: "Every version",
+    /** The headings the profile's rows stand under. */
+    groups: { head: "Head", base: "Base", hair: "Hair", product: "Product", history: "Health history" },
     rows: {
       norwood_stage: "Norwood stage",
       head_circumference_in: "Circumference, in",
