@@ -126,8 +126,12 @@ test("keeps a long choice and a long link inside the screen", async ({ page }) =
     }),
   });
   await page.goto("/quality");
+  // The lot is chosen in the drawer Start a recall opens, which a phone fills.
+  await page.getByRole("button", { name: quality.raise }).click();
+  const raising = page.getByRole("dialog", { name: quality.raise });
   const right = (element: Element) => element.getBoundingClientRect().right;
-  expect(await page.getByLabel(quality.lot).evaluate(right)).toBeLessThanOrEqual(PHONE.width);
+  expect(await raising.getByLabel(quality.lot).evaluate(right)).toBeLessThanOrEqual(PHONE.width);
+  await page.keyboard.press("Escape");
 
   const partner = {
     id: "7b0c8e3a-4d5f-4a6b-8c7d-2e3f4a5b6c7d",
