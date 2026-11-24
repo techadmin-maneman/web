@@ -1,8 +1,7 @@
-// Money › Technician pay: the month's pay at the rates per visit (docs/decisions/0122-technician-pay-per-visit.md), a
-// row each technician as the redesign draws it: their grade, their visits by kind, and what they are paid, with the
-// month's total; the same line by line, by city and rate, as a CSV for payroll. A technician with no grade is named
-// above the table, since nothing they do is paid, and a visit no rate covered is marked so the gap is seen before
-// anyone is paid.
+// Money › Technician pay (docs/decisions/0122-technician-pay-per-visit.md): a row each technician, as the redesign
+// draws it, with their grade, visits by kind and pay at the rates per visit; the same by city and rate as a CSV for
+// payroll. A technician with no grade is named above, as nothing they do is paid, and a visit no rate covered is
+// marked, so the gap is seen before anyone is paid.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Badge } from "@maneman/ui/Badge";

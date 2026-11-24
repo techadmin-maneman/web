@@ -100,7 +100,7 @@ export const deletions = {
     openLabel: (name: string) => `Open ${name}’s deletion request`,
     /** What the API would refuse an erasure for, in a row: nothing, or what to settle first. */
     settle: {
-      none: "Nothing",
+      none: "None",
       visit_booked: "A visit booked",
       payment_held: "A refund owed",
       payment_owed: "A link unpaid",

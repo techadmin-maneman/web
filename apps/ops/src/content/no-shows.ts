@@ -202,9 +202,9 @@ export const noShows = {
       unknown: FAILED,
     },
   },
-  /** The board draws no list of the day's rulings. Each case ruled on today, the latest first. */
   /** Beside the page's title: the no-shows and disputed charges waiting on a ruling. */
   toDecide: (count: number) => `${String(count)} to decide`,
+  /** The board draws no list of the day's rulings. Each case ruled on today, the latest first. */
   decided: {
     title: "Decided today",
     /** A row each, as the redesign draws them. */
