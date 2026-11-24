@@ -2,6 +2,7 @@
 // reads; a level of none takes the grant away. A department is added beneath, and the person taken off the list at the
 // foot. Every change sends their whole list of grants, which replaces theirs.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -178,6 +179,7 @@ function MoreGrants(props: {
   return (
     <div className={styles.addGrant}>
       <Button
+        icon={ACTION_ICONS.plus}
         variant="outline"
         size="small"
         narrow

@@ -1,6 +1,7 @@
 // A technician's ask for leave, decided from its task's drawer (./TaskDetail.tsx): Approve records the leave as ops
 // record it on the technician's page, Decline only the decision; either way the task leaves the board.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -28,10 +29,22 @@ export function LeaveDecision(props: { group: TaskGroup["group"]; task: Task; on
     });
   return (
     <div className={shared.cardActions}>
-      <Button variant="primary" size="small" disabled={busy} onClick={() => void decide("approved")}>
+      <Button
+        icon={ACTION_ICONS.circleCheck}
+        variant="primary"
+        size="small"
+        disabled={busy}
+        onClick={() => void decide("approved")}
+      >
         {busy ? copy.sending : copy.approve}
       </Button>
-      <Button variant="outline" size="small" disabled={busy} onClick={() => void decide("declined")}>
+      <Button
+        icon={ACTION_ICONS.circleX}
+        variant="outline"
+        size="small"
+        disabled={busy}
+        onClick={() => void decide("declined")}
+      >
         {copy.decline}
       </Button>
       {refused !== null && <Refusal said={refused} />}

@@ -1,6 +1,8 @@
 // Remedies (docs/decisions/0143-remedies.md): free service visits Care give a client from their chat, with why, and
 // the panel on the Messages page where a Customer Care manager approves or declines those above the limit.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -13,7 +15,7 @@ import type { Success } from "@maneman/web-kit/api";
 import type { paths } from "../api-schema.ts";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
-import { Button, RowButton } from "@maneman/ui/Button";
+import { RowButton } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { FormActions } from "@maneman/ui/FormActions";
@@ -130,9 +132,9 @@ function RemedyFields(props: { personId: string; onGiven: (said: string) => void
       </div>
       <Refused failed={failure} errors={copy.errors} boxes={["visits", "reason", "note"]} />
       <FormActions>
-        <Button variant="primary" size="small" type="submit" busy={busy} disabled={note.trim() === ""}>
+        <SubmitButton icon={ACTION_ICONS.gift} busy={busy} disabled={note.trim() === ""}>
           {copy.give}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
     </form>
@@ -145,7 +147,7 @@ export function RemedyForm({ personId }: { readonly personId: string }) {
   return (
     <div className={styles.action}>
       {said !== null && <Toast>{said}</Toast>}
-      <DrawerButton label={copy.open}>
+      <DrawerButton icon={ACTION_ICONS.gift} label={copy.open}>
         {(close) => (
           <RemedyFields
             personId={personId}
@@ -210,12 +212,14 @@ function RemediesTable(props: { remedies: readonly Remedy[]; mayDecide: boolean;
                 {mayDecide && remedy.state === "awaiting" && (
                   <RowActions>
                     <RowButton
+                      icon={ACTION_ICONS.circleCheck}
                       aria-label={copy.approveLabel(remedy.person.name)}
                       onClick={() => void api.decideRemedy(remedy.id, true).then(retry)}
                     >
                       {copy.approve}
                     </RowButton>
                     <RowButton
+                      icon={ACTION_ICONS.circleX}
                       aria-label={copy.declineLabel(remedy.person.name)}
                       onClick={() => void api.decideRemedy(remedy.id, false).then(retry)}
                     >

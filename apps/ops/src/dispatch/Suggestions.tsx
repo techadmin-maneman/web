@@ -2,6 +2,7 @@
 // nearest first, then those free closest to it, three at most, each a choice; Assign puts it on the one chosen as
 // placing it on the board does, through the move's own sheet. The rooms are the board's own (GET /api/dispatch/room).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { ChoiceCard } from "@maneman/ui/ChoiceCard";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
@@ -87,6 +88,7 @@ export function Suggestions(props: {
               </ChoiceCard>
             ))}
             <Button
+              icon={ACTION_ICONS.userCheck}
               variant="primary"
               size="small"
               onClick={() => {

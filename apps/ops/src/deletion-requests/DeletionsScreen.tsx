@@ -3,15 +3,12 @@
 // undone, so erasing takes two steps, the second offered only once ops confirm the request with the client on their
 // own number. The API refuses while a visit is booked or a payment held, and says which.
 
-import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
-import { CancelButton } from "@maneman/ui/CancelButton";
-import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button, RowButton } from "@maneman/ui/Button";
-import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, longDate, shortDate } from "@maneman/web-kit/dates";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { Panel } from "@maneman/ui/Panel";
@@ -34,12 +31,10 @@ import { clientPath } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./erasure.module.css";
 import styles from "./deletions-screen.module.css";
-import { ErasureLists } from "./ErasureLists.tsx";
+import { Choices, ConfirmDelete, RejectReason, type Choice } from "./DeletionDecision.tsx";
 import { Refusal } from "@maneman/ui/Refusal";
 import { deletionRequestsApi } from "./deletion-requests-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
-
-type Choice = "delete" | "reject";
 
 /** Where a request is in its decision: listed, asked about, sending, or refused by the API. */
 type Deciding =
@@ -52,58 +47,6 @@ const copy = deletions.queue;
 /** A row's kind in its id, as a task's link names it: "request-…". */
 const ROW = "request";
 
-/**
- * The second of the two steps: what the erasure destroys, what it leaves, and
- * the check that the request came from the client. It takes focus as it opens,
- * because it stands where the button that opened it stood.
- */
-function ConfirmDelete({
-  request,
-  sending,
-  onDelete,
-  onCancel,
-}: {
-  request: DeletionRequest;
-  sending: boolean;
-  onDelete: () => void;
-  onCancel: () => void;
-}) {
-  const panel = useFocusOnMount<HTMLDivElement>();
-  const [checked, setChecked] = useState(false);
-  const [chatDeleted, setChatDeleted] = useState(false);
-
-  return (
-    <div className={shared.confirm} ref={panel} tabIndex={-1} role="group" aria-label={copy.confirmLabel(request.name)}>
-      <p className={shared.warning}>{copy.warning}</p>
-      <ErasureLists />
-      <Checkbox
-        className={shared.checkLine}
-        label={copy.checked}
-        checked={checked}
-        disabled={sending}
-        onChange={(event) => {
-          setChecked(event.target.checked);
-        }}
-      />
-      <Checkbox
-        className={shared.checkLine}
-        label={copy.chatDeleted}
-        checked={chatDeleted}
-        disabled={sending}
-        onChange={(event) => {
-          setChatDeleted(event.target.checked);
-        }}
-      />
-      <div className={shared.actions}>
-        <Button variant="destructive" size="small" disabled={sending || !checked || !chatDeleted} onClick={onDelete}>
-          {sending ? copy.deleting : copy.confirm(request.name)}
-        </Button>
-        <CancelButton disabled={sending} onClick={onCancel} />
-      </div>
-    </div>
-  );
-}
-
 interface RequestProps {
   readonly request: DeletionRequest;
   readonly now: Date;
@@ -112,43 +55,6 @@ interface RequestProps {
   /** Opened from a row's Erase or Keep, that step is asked at once. */
   readonly start: Choice | null;
   readonly onDecided: (choice: Choice) => void;
-}
-
-/** Why the request is rejected, which the route will not take without, and the buttons that send it or go back. */
-function RejectReason(props: {
-  reason: string;
-  sending: boolean;
-  onReason: (reason: string) => void;
-  onReject: () => void;
-  onCancel: () => void;
-}) {
-  const { reason, sending } = props;
-  // The field stands where the button that asked for it stood, so the keyboard goes to it, once the drawer has opened.
-  const box = useFocusOnMount<HTMLTextAreaElement>();
-  return (
-    <div className={shared.reason}>
-      <Field label={copy.reason.label}>
-        {(control) => (
-          <TextArea
-            {...control}
-            ref={box}
-            className={styles.reasonField}
-            maxLength={REASON_MAX_CHARS}
-            value={reason}
-            onChange={(event) => {
-              props.onReason(event.target.value);
-            }}
-          />
-        )}
-      </Field>
-      <div className={shared.actions}>
-        <Button variant="outline" size="small" disabled={sending || reason.trim() === ""} onClick={props.onReject}>
-          {sending ? copy.rejecting : copy.reason.confirm}
-        </Button>
-        <CancelButton disabled={sending} onClick={props.onCancel} />
-      </div>
-    </div>
-  );
 }
 
 /**
@@ -169,40 +75,6 @@ function Asked({ request }: { request: DeletionRequest }) {
         </p>
       )}
     </>
-  );
-}
-
-/** The two decisions in the drawer, each asked about before it is sent. */
-function Choices(props: {
-  readonly name: string;
-  readonly openers: Readonly<Record<Choice, RefObject<HTMLButtonElement | null>>>;
-  readonly onAsk: (choice: Choice) => void;
-}) {
-  return (
-    <div className={shared.actions}>
-      <Button
-        variant="destructive"
-        size="small"
-        ref={props.openers.delete}
-        aria-label={copy.deleteLabel(props.name)}
-        onClick={() => {
-          props.onAsk("delete");
-        }}
-      >
-        {copy.delete}
-      </Button>
-      <Button
-        variant="outline"
-        size="small"
-        ref={props.openers.reject}
-        aria-label={copy.rejectLabel(props.name)}
-        onClick={() => {
-          props.onAsk("reject");
-        }}
-      >
-        {copy.reject}
-      </Button>
-    </div>
   );
 }
 
@@ -307,6 +179,7 @@ function RowDecision({ request, onOpen }: { request: DeletionRequest; onOpen: (i
     <td className={ACTIONS}>
       <RowActions>
         <Button
+          icon={ACTION_ICONS.trash}
           variant="destructive"
           size="compact"
           aria-label={copy.deleteLabel(request.name)}
@@ -317,6 +190,7 @@ function RowDecision({ request, onOpen }: { request: DeletionRequest; onOpen: (i
           {copy.delete}
         </Button>
         <RowButton
+          icon={ACTION_ICONS.circleX}
           aria-label={copy.rejectLabel(request.name)}
           onClick={() => {
             onOpen(request.id, "reject");

@@ -2,6 +2,7 @@
 // changed or taken off where it stands. Add, in the card's head, opens a drawer to write one. A change made over
 // someone else's reads the page again (src/routes/ops/staff-notes.ts).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { AddForm } from "@maneman/ui/AddForm";
 import { Panel } from "@maneman/ui/Panel";
 import { STAFF_NOTE_MAX_CHARS } from "@rules/policy/staff-notes.ts";
@@ -70,7 +71,7 @@ function NoteForm({
       </Field>
       {refused !== null && <Refusal said={refused} />}
       <div className={styles.noteActions}>
-        <Button variant="primary" size="small" busy={busy} onClick={() => void save()}>
+        <Button icon={ACTION_ICONS.check} variant="primary" size="small" busy={busy} onClick={() => void save()}>
           {busy ? copy.saving : copy.save}
         </Button>
         <CancelButton disabled={busy} onClick={onCancel} />
@@ -159,13 +160,16 @@ function NoteList(props: {
               {mayWrite && (
                 <span className={styles.noteActions}>
                   <RowButton
+                    icon={ACTION_ICONS.pencil}
                     onClick={() => {
                       setOpen(note.id);
                     }}
                   >
                     {copy.change}
                   </RowButton>
-                  <RowButton onClick={() => void takeOff(note.id)}>{copy.takeOff}</RowButton>
+                  <RowButton icon={ACTION_ICONS.trash} onClick={() => void takeOff(note.id)}>
+                    {copy.takeOff}
+                  </RowButton>
                 </span>
               )}
             </li>
@@ -208,6 +212,7 @@ function Strip({ clientId }: { clientId: string }) {
         mayWrite &&
         loaded.state === "loaded" && (
           <TextButton
+            icon={ACTION_ICONS.plus}
             compact
             ref={opener}
             aria-label={copy.add}

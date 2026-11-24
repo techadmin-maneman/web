@@ -1,6 +1,7 @@
 // One claim's next steps (docs/decisions/0169-supplier-claims.md): a drafted claim marked sent, with a note, or
 // withdrawn with why; a sent claim settled by the supplier's answer, a credit of so much, a replacement or a refusal.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -37,6 +38,7 @@ function Withdraw({
   if (!withdrawing) {
     return (
       <Button
+        icon={ACTION_ICONS.undo2}
         variant="outline"
         size="small"
         onClick={() => {
@@ -50,6 +52,7 @@ function Withdraw({
   return (
     <>
       <Button
+        icon={ACTION_ICONS.undo2}
         variant="danger"
         size="small"
         disabled={note === ""}
@@ -95,6 +98,7 @@ function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAn
       <FormActions>
         {!withdrawing && access.mayCall("POST /api/supplier-claims/{id}/send") && (
           <Button
+            icon={ACTION_ICONS.send}
             variant="primary"
             size="small"
             onClick={() =>
@@ -161,6 +165,7 @@ function Sent({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAnswe
       </div>
       <FormActions>
         <Button
+          icon={ACTION_ICONS.handCoins}
           variant="primary"
           size="small"
           disabled={!Number.isFinite(amount) || amount < 1}
@@ -168,10 +173,15 @@ function Sent({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAnswe
         >
           {copy.claims.credited}
         </Button>
-        <Button variant="outline" size="small" onClick={() => void decide("replacement")}>
+        <Button
+          icon={ACTION_ICONS.packageCheck}
+          variant="outline"
+          size="small"
+          onClick={() => void decide("replacement")}
+        >
           {copy.claims.replaced}
         </Button>
-        <Button variant="outline" size="small" onClick={() => void decide("rejected")}>
+        <Button icon={ACTION_ICONS.circleX} variant="outline" size="small" onClick={() => void decide("rejected")}>
           {copy.claims.rejected}
         </Button>
       </FormActions>

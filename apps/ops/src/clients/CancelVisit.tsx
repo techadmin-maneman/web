@@ -2,6 +2,8 @@
 // what the cancel gives back before anything changes: free to the client, unless ops tick the client's own late terms.
 // It goes only with a reason, which is kept with the cancel (src/routes/ops/visit-changes.ts). No board draws it.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -117,9 +119,9 @@ function CancelForm({
         )}
       </Field>
       <div className={styles.actions}>
-        <Button variant="danger" size="small" type="submit" busy={busy} disabled={reason.trim() === ""}>
+        <SubmitButton variant="danger" busy={busy} disabled={reason.trim() === ""}>
           {busy ? copy.cancelling : copy.confirm}
-        </Button>
+        </SubmitButton>
       </div>
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
@@ -169,7 +171,13 @@ function Body({ visitId, onCancelled }: { visitId: string; onCancelled: (gives: 
       <div>
         <Refusal className={styles.error} said={unreadable.said} />
         {!unreadable.final && (
-          <Button variant="outline" size="small" className={styles.quiet} onClick={readAgain}>
+          <Button
+            icon={ACTION_ICONS.refreshCw}
+            variant="outline"
+            size="small"
+            className={styles.quiet}
+            onClick={readAgain}
+          >
             {copy.retry}
           </Button>
         )}

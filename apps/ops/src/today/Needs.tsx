@@ -1,6 +1,7 @@
 // Needs you, on each of Today's homes (ADR 0227): the person's board by kind, as the redesign draws it. Each kind says
 // why it waits, how many wait and when the first is due; it opens Tasks on that kind, where each task's step is.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { buttonLook } from "@maneman/ui/Button";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -85,7 +86,11 @@ export function Needs({ board }: { readonly board: Tasks }) {
       actions={
         <>
           <span className={styles.open}>{taskWords.openCount(count)}</span>
-          <OpsLink to={sectionOf("tasks").path} className={buttonLook({ variant: "outline", size: "small" })}>
+          <OpsLink
+            to={sectionOf("tasks").path}
+            className={buttonLook({ variant: "outline", size: "small", iconOnly: true })}
+            icon={ACTION_ICONS.arrowUpRight}
+          >
             {copy.allTasks}
           </OpsLink>
         </>

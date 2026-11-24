@@ -2,6 +2,7 @@
 // price of one in their currency, the pack it comes in, the least they take, and the lead time they promise. A line
 // opens its values, each changed where it reads, and removing it takes it off their list once asked.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -240,6 +241,7 @@ export function SupplierItems(props: Props) {
           />
         ) : (
           <Button
+            icon={ACTION_ICONS.plus}
             variant="outline"
             size="small"
             onClick={() => {

@@ -2,6 +2,7 @@
 // activation's and offer's link, its code and discount, what was spent on it and what came through it; its link to
 // copy and its QR code to print, as SVG or PNG; a new one of either kind; and retiring one.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { RowButton } from "@maneman/ui/Button";
@@ -62,6 +63,7 @@ function LinkActions(props: {
   return (
     <td className={ACTIONS}>
       <RowButton
+        icon={ACTION_ICONS.copy}
         aria-label={copy.copyLabel(link.name)}
         onClick={() => {
           navigator.clipboard.writeText(link.short_link).then(
@@ -77,6 +79,7 @@ function LinkActions(props: {
         {copy.copy}
       </RowButton>
       <RowButton
+        icon={ACTION_ICONS.download}
         beside
         aria-label={copy.qrLabel(link.name, "SVG")}
         onClick={() => {
@@ -86,6 +89,7 @@ function LinkActions(props: {
         {copy.qrSvg}
       </RowButton>
       <RowButton
+        icon={ACTION_ICONS.download}
         beside
         aria-label={copy.qrLabel(link.name, "PNG")}
         onClick={() => {
@@ -165,7 +169,7 @@ function LinksTable(props: { links: readonly CampaignLink[]; mayRetire: boolean;
 function Making({ list, onMade }: { list: CampaignLinks; onMade: () => void }) {
   return (
     <PageActions>
-      <DrawerButton primary label={copy.newSociety}>
+      <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.newSociety}>
         {(close) => (
           <SocietyForm
             list={list}
@@ -177,7 +181,7 @@ function Making({ list, onMade }: { list: CampaignLinks; onMade: () => void }) {
           />
         )}
       </DrawerButton>
-      <DrawerButton label={copy.newOffer}>
+      <DrawerButton icon={ACTION_ICONS.plus} label={copy.newOffer}>
         {(close) => (
           <OfferForm
             list={list}

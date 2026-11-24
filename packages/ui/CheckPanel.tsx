@@ -2,6 +2,7 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). Every write but a deletion goes through it, in the
 // words of `review` (../content/common.ts). It takes the focus as it opens, so it is read at once.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useFocusOnMount } from "./useFocusOnMount.ts";
 import { Button } from "./Button.tsx";
 import { BackButton, CancelButton } from "./CancelButton.tsx";
@@ -63,7 +64,7 @@ export function CheckPanel({
         <CheckWarning key={line}>{line}</CheckWarning>
       ))}
       <FormActions>
-        <Button variant="primary" size="small" disabled={busy || !ready} onClick={onSend}>
+        <Button variant="primary" size="small" disabled={busy || !ready} icon={ACTION_ICONS.send} onClick={onSend}>
           {busy ? review.sending : review.send}
         </Button>
         {question === undefined ? (

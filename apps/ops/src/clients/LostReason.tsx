@@ -2,6 +2,7 @@
 // a closed consultation, which Care may set, change or clear as the client tells them. The visit's row says it, and
 // the choice opens beside the page, so no box stands in the table.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Field, Select } from "@maneman/ui/Field";
 import { RowButton } from "@maneman/ui/Button";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
@@ -64,6 +65,7 @@ export function LostReason({
   return (
     <>
       <RowButton
+        icon={ACTION_ICONS.pencil}
         onClick={() => {
           setChoosing(true);
         }}

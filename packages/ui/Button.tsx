@@ -6,9 +6,11 @@
 // would erase the button's states (./README.md).
 
 import type { IconSize } from "@maneman/brand/icons";
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, MouseEvent, Ref } from "react";
+import { useContext, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type MouseEvent, type Ref } from "react";
 import { classes } from "./classes.ts";
 import { Icon } from "./Icon.tsx";
+import { IconActions, textOf } from "./icon-actions.ts";
+import { VisuallyHidden } from "./VisuallyHidden.tsx";
 import styles from "./button.module.css";
 
 export const BUTTON_VARIANTS = [
@@ -51,6 +53,8 @@ interface Look {
   readonly size: ButtonSize;
   /** A little narrower than the action beside it, as Cancel beside Save. */
   readonly narrow?: boolean;
+  /** Its icon alone, a square of its size's height: an action in the console (./icon-actions.ts). */
+  readonly iconOnly?: boolean;
   readonly className?: string | undefined;
 }
 
@@ -64,8 +68,15 @@ interface Leading {
 }
 
 /** A button's classes, for a link the app draws with its own link component, as an in-app link drawn as a button. */
-export function buttonLook({ variant, size, narrow = false, className }: Look): string {
-  return classes(styles.button, styles[variant], styles[size], narrow && styles.narrow, className);
+export function buttonLook({ variant, size, narrow = false, iconOnly = false, className }: Look): string {
+  return classes(
+    styles.button,
+    styles[variant],
+    styles[size],
+    narrow && styles.narrow,
+    iconOnly && styles.iconOnly,
+    className,
+  );
 }
 
 export type ButtonProps = Look &
@@ -95,6 +106,8 @@ export function Button({
   children,
   ...rest
 }: ButtonProps) {
+  // In the console every action is its icon: its words its name, and shown on hover or focus (./ActionTips.tsx).
+  const iconOnly = useContext(IconActions) && icon !== undefined;
   const click = (event: MouseEvent<HTMLButtonElement>) => {
     // Cancelled, a busy submit button does not send its form again.
     if (busy || settling) {
@@ -107,13 +120,14 @@ export function Button({
     <button
       {...rest}
       type={type}
-      className={buttonLook({ variant, size, narrow, className })}
+      className={buttonLook({ variant, size, narrow, iconOnly, className })}
       aria-busy={busy ? true : undefined}
+      data-tip={iconOnly ? (rest["aria-label"] ?? textOf(children)) : undefined}
       {...(settling ? { "aria-disabled": true, "data-settling": true } : {})}
       onClick={click}
     >
-      {icon !== undefined && <Icon d={icon} size={iconSize} />}
-      {children}
+      {icon !== undefined && <Icon d={icon} size={iconOnly ? "sm" : iconSize} />}
+      {iconOnly ? <VisuallyHidden>{children}</VisuallyHidden> : children}
     </button>
   );
 }
@@ -145,10 +159,15 @@ export function ButtonLink({
   children,
   ...rest
 }: ButtonLinkProps) {
+  const iconOnly = useContext(IconActions) && icon !== undefined;
   return (
-    <a {...rest} className={buttonLook({ variant, size, narrow, className })}>
-      {icon !== undefined && <Icon d={icon} size={iconSize} />}
-      {children}
+    <a
+      {...rest}
+      className={buttonLook({ variant, size, narrow, iconOnly, className })}
+      data-tip={iconOnly ? (rest["aria-label"] ?? textOf(children)) : undefined}
+    >
+      {icon !== undefined && <Icon d={icon} size={iconOnly ? "sm" : iconSize} />}
+      {iconOnly ? <VisuallyHidden>{children}</VisuallyHidden> : children}
     </a>
   );
 }

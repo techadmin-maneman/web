@@ -2,6 +2,7 @@
 // later day or pauses them, shown once one is chosen, and the question a change waits on, the launch check where it
 // would message people waiting (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Toast } from "@maneman/ui/Toast";
 import { Toolbar } from "@maneman/ui/Toolbar";
@@ -30,16 +31,33 @@ function ChosenButtons(props: {
 }) {
   const access = useAccess();
   const offers = [
-    { form: "schedule", words: areas.launches.schedule, shown: props.chosen.some((each) => !each.served) },
-    { form: "pause", words: areas.pause.pause, shown: props.chosen.some((each) => each.served) },
+    {
+      form: "schedule",
+      words: areas.launches.schedule,
+      icon: ACTION_ICONS.calendarPlus,
+      shown: props.chosen.some((each) => !each.served),
+    },
+    {
+      form: "pause",
+      words: areas.pause.pause,
+      icon: ACTION_ICONS.pause,
+      shown: props.chosen.some((each) => each.served),
+    },
   ] as const;
   const may = { schedule: "POST /api/pincode-launches", pause: "POST /api/service-area/pause" } as const;
   return (
     <>
-      <Button variant="outline" size="small" narrow onClick={props.onServe}>
+      <Button icon={ACTION_ICONS.mapPinPlus} variant="outline" size="small" narrow onClick={props.onServe}>
         {copy.serve}
       </Button>
-      <Button variant="outline" size="small" narrow disabled={props.busy} onClick={props.onStop}>
+      <Button
+        icon={ACTION_ICONS.mapPinOff}
+        variant="outline"
+        size="small"
+        narrow
+        disabled={props.busy}
+        onClick={props.onStop}
+      >
         {copy.stop}
       </Button>
       {offers
@@ -47,6 +65,7 @@ function ChosenButtons(props: {
         .map((each) => (
           <Button
             key={each.form}
+            icon={each.icon}
             variant="outline"
             size="small"
             narrow
@@ -99,7 +118,7 @@ export function ChosenBar(props: {
       label={copy.count(count)}
       className={styles.chosen}
       end={
-        <TextButton tone="muted" compact onClick={props.onClear}>
+        <TextButton icon={ACTION_ICONS.x} tone="muted" compact onClick={props.onClear}>
           {copy.clear}
         </TextButton>
       }

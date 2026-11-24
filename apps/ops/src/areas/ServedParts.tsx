@@ -1,6 +1,7 @@
 // Settings › Areas' parts (./Served.tsx): the city tabs, one pincode's row (its drawer ./PincodeDrawer.tsx), who a save would message,
 // how the last save went, and a file read with its changes shown before they are saved.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { AreaSection } from "./AreaSection.tsx";
 import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
@@ -78,6 +79,7 @@ export function PincodeRow({ pincode, chosen, onChoose, onSave, onDeleted }: Pin
       {chosen !== null && (
         <td className={styles.actions}>
           <RowButton
+            icon={ACTION_ICONS.pencil}
             aria-label={copy.editLabel(id)}
             onClick={() => {
               setEditing(true);
@@ -186,7 +188,7 @@ function FilePreview({
         </tbody>
       </Table>
       <FormActions>
-        <Button variant="primary" size="small" onClick={onApply}>
+        <Button icon={ACTION_ICONS.check} variant="primary" size="small" onClick={onApply}>
           {copy.upload.apply}
         </Button>
         <CancelButton onClick={onCancel} />
@@ -232,7 +234,13 @@ function FileAdds({
         </tbody>
       </Table>
       <FormActions>
-        <Button variant="primary" size="small" disabled={busy} onClick={() => void once(onAdd)}>
+        <Button
+          icon={ACTION_ICONS.plus}
+          variant="primary"
+          size="small"
+          disabled={busy}
+          onClick={() => void once(onAdd)}
+        >
           {busy ? copy.upload.adding : copy.upload.add(adds.length)}
         </Button>
         <CancelButton onClick={onCancel} />

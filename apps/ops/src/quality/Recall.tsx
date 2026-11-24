@@ -1,6 +1,7 @@
 // One recall (docs/decisions/0187-recalls.md): where its lot's stock is, who wears its pieces, and its close once dealt
 // with; and a lot recalled, with why.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import type { Success } from "@maneman/web-kit/api";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Panel } from "@maneman/ui/Panel";
@@ -71,6 +72,7 @@ function BookFree({ worn }: { worn: Worn }) {
   return (
     <>
       <Button
+        icon={ACTION_ICONS.calendarPlus}
         variant="outline"
         size="small"
         aria-label={copy.bookFreeLabel(worn.person)}
@@ -157,6 +159,7 @@ export function RecallDetail({
       {recall.closed_at === null && access.mayCall("POST /api/recalls/{id}/close") && (
         <FormActions>
           <Button
+            icon={ACTION_ICONS.x}
             variant="outline"
             size="small"
             onClick={() =>
@@ -220,6 +223,7 @@ export function RaiseRecall({
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       <FormActions>
         <Button
+          icon={ACTION_ICONS.check}
           variant="destructive"
           size="small"
           disabled={lot === "" || reason.trim() === ""}

@@ -1,6 +1,7 @@
 // Saved answers (docs/decisions/0141-quick-replies.md): picked in a chat and filled in with the client's first name and
 // next visit, and kept on the Messages page by a Customer Care manager, who adds, changes and retires them.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Button } from "@maneman/ui/Button";
@@ -175,7 +176,7 @@ export function QuickRepliesPanel() {
             <li key={reply.id}>
               <span className={styles.who}>{reply.title}</span> · {reply.text}{" "}
               {mayKeep && (
-                <DrawerButton label={copy.change(reply.title)}>
+                <DrawerButton icon={ACTION_ICONS.pencil} label={copy.change(reply.title)}>
                   {(close) => (
                     <ReplyForm
                       reply={reply}
@@ -204,7 +205,7 @@ export function QuickRepliesPanel() {
       )}
       {mayKeep && (
         <PageActions>
-          <DrawerButton primary label={copy.addOne}>
+          <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.addOne}>
             {(close) => (
               <ReplyForm
                 onAdded={() => {

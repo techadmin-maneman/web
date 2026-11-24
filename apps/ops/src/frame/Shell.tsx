@@ -3,12 +3,14 @@
 // its title, figures, actions and tabs. On a phone a tab bar at the foot stands in for the navigation, and the page's
 // head carries the search and the person signed in.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Breadcrumbs, type Crumb } from "@maneman/ui/Breadcrumbs";
 import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Badge } from "@maneman/ui/Badge";
 import { Initials } from "@maneman/ui/Initials";
 import { PageHeader, PageTitle } from "@maneman/ui/PageHeader";
+import { ActionContent, useTipOf } from "@maneman/ui/ActionContent";
 import { Link, usePath, wasRedirected } from "@maneman/ui/router";
 import { SkipLink } from "@maneman/ui/SkipLink";
 import { textLinkLook } from "@maneman/ui/TextLink";
@@ -53,7 +55,14 @@ import styles from "./shell.module.css";
  */
 export function OpsLink(props: ComponentProps<typeof Link>) {
   const mayCall = useMayCall();
-  if (!mayFollow(mayCall, props.to)) return <span className={props.className}>{props.children}</span>;
+  const tip = useTipOf(props.icon, props.label, props.children);
+  if (!mayFollow(mayCall, props.to)) {
+    return (
+      <span className={props.className} data-tip={tip}>
+        <ActionContent icon={props.icon}>{props.children}</ActionContent>
+      </span>
+    );
+  }
   return <Link {...props} className={props.className ?? textLinkLook()} />;
 }
 
@@ -63,6 +72,7 @@ function Lapsed() {
     <div className={styles.lapsed} role="alert">
       <p className={styles.lapsedLine}>{shell.lapsed}</p>
       <Button
+        icon={ACTION_ICONS.refreshCw}
         variant="primary"
         size="small"
         onClick={() => {
@@ -209,6 +219,7 @@ function Bar({ menu, crumbs }: { menu: ReturnType<typeof useMenu>; crumbs: Retur
         variant="quiet"
         size="small"
         className={styles.menu}
+        icon={menu.open ? ACTION_ICONS.x : ACTION_ICONS.menu}
         aria-expanded={menu.open}
         aria-controls={NAV_ID}
         onClick={menu.toggle}

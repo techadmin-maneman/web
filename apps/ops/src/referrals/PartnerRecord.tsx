@@ -2,6 +2,7 @@
 // commission per fit and its discount code, each changed where it reads; its link; and at the foot its QR code to
 // print, and pausing it, asked once, or resuming it.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { TextLink } from "@maneman/ui/TextLink";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -55,6 +56,7 @@ function PartnerFoot({ partner, site, onSaved }: Omit<Props, "list">) {
   return (
     <div className={form.recordFoot}>
       <Button
+        icon={ACTION_ICONS.download}
         variant="outline"
         size="small"
         narrow
@@ -77,6 +79,7 @@ function PartnerFoot({ partner, site, onSaved }: Omit<Props, "list">) {
       )}
       {mayPause && partner.paused_at !== null && (
         <Button
+          icon={ACTION_ICONS.play}
           variant="outline"
           size="small"
           narrow

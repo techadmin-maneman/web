@@ -3,6 +3,7 @@
 // booked on it, so the visits it would strand are counted beneath the boxes as the days are typed, before anything is
 // sent, and each run links to the board to move them. A run is reopened from its line, asked once.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { isBlackoutReason } from "@rules/policy/blackouts.ts";
 import { CheckWarning } from "@maneman/ui/CheckPanel";
@@ -236,7 +237,8 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
       {period.booked > 0 && mayShow && (
         <FormActions>
           <OpsLink
-            className={buttonLook({ variant: "outline", size: "small", narrow: true })}
+            className={buttonLook({ variant: "outline", size: "small", iconOnly: true })}
+            icon={ACTION_ICONS.arrowUpRight}
             to={dispatchPath({ from: period.from })}
             label={copy.showLabel(words)}
           >
@@ -277,7 +279,7 @@ export function Blackouts() {
     <Panel titleId="blackouts" title={copy.title}>
       {mayAdd && (
         <PageActions>
-          <DrawerButton primary label={copy.formTitle}>
+          <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.formTitle}>
             {(close) => (
               <CloseDays
                 today={loaded.value.today}

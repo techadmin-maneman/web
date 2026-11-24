@@ -1,6 +1,7 @@
 // One pincode's drawer at Settings › Areas (./ServedParts.tsx): its area's name, whether we go there and from when,
 // and, while we do not and nothing names it, the way to delete it (docs/decisions/0283-changed-and-deleted-while-unused.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { Field, Checkbox, DateInput, TextInput } from "@maneman/ui/Field";
@@ -75,6 +76,7 @@ export function PincodeDrawer({
       {refused !== null && <Refusal className={form.error} said={refused} />}
       <FormActions>
         <Button
+          icon={ACTION_ICONS.check}
           variant="primary"
           size="small"
           onClick={() => {

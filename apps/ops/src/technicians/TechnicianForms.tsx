@@ -3,11 +3,11 @@
 // Switching off asks first, since it signs them out at once and hands their visits still to come back to the dispatch
 // board.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { CancelButton } from "@maneman/ui/CancelButton";
-import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
 import { mobileDigits } from "@maneman/web-kit/mobile";
@@ -222,9 +222,9 @@ export function AddTechnician({
         }
       />
       <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
+        <SubmitButton className={styles.save} disabled={sending}>
           {sending ? copy.saving : copy.save}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={sending} onClick={onClose} />
       </div>
       {failed !== null && <Refusal className={styles.error} said={failed} />}

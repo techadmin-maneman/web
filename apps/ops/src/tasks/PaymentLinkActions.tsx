@@ -2,6 +2,7 @@
 // Razorpay text it to the client again, or make it now where it never did. A link Razorpay refused is sent from its
 // dashboard, so it offers neither.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { TextButton } from "@maneman/ui/TextLink";
 import { Toast } from "@maneman/ui/Toast";
 import { Refusal } from "@maneman/ui/Refusal";
@@ -53,13 +54,13 @@ export function PaymentLinkActions({ task, subject }: { task: Task; subject: str
     <>
       <span className={shared.acts}>
         {url !== null && (
-          <TextButton tone="muted" compact onClick={() => void copyLink(url)}>
+          <TextButton icon={ACTION_ICONS.copy} tone="muted" compact onClick={() => void copyLink(url)}>
             {copy.copy}
             <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
           </TextButton>
         )}
         {mayResend && (
-          <TextButton tone="muted" compact busy={busy} onClick={() => void resend()}>
+          <TextButton icon={ACTION_ICONS.send} tone="muted" compact busy={busy} onClick={() => void resend()}>
             {busy ? copy.sending : copy.resend}
             <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
           </TextButton>

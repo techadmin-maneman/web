@@ -2,8 +2,8 @@
 // and the ways to the client. It is also the keyboard's way into a move: a visit begun has none, and one only checked
 // in at moves after a warning. A visit ahead can be cancelled here, and one whose time has come closed by hand.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { badgeLook } from "@maneman/ui/Caps";
-import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { DescriptionList } from "@maneman/ui/DescriptionList";
@@ -81,7 +81,7 @@ function Contacts({ person }: { readonly person: NonNullable<Props["job"]["block
   const copy = dispatch.drawer;
   return (
     <div className={styles.contacts}>
-      <ButtonLink variant="outline" size="small" href={`tel:${person.mobile}`}>
+      <ButtonLink variant="outline" size="small" href={`tel:${person.mobile}`} icon={ACTION_ICONS.phone}>
         {copy.call(firstNameOf(person.name))}
       </ButtonLink>
       <ButtonLink
@@ -90,8 +90,8 @@ function Contacts({ person }: { readonly person: NonNullable<Props["job"]["block
         href={whatsappChat(person.mobile)}
         target="_blank"
         rel="noopener noreferrer"
+        icon={ICONS.whatsapp}
       >
-        <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
         {copy.whatsapp(firstNameOf(person.name))}
       </ButtonLink>
     </div>
@@ -110,6 +110,7 @@ function Foot(props: Props) {
     <div className={styles.drawerActions}>
       {change === "cancel" && (
         <Button
+          icon={ACTION_ICONS.x}
           variant="danger"
           size="small"
           onClick={() => {
@@ -122,6 +123,7 @@ function Foot(props: Props) {
       <div className={styles.drawerSteps}>
         {change === "close" && (
           <Button
+            icon={ACTION_ICONS.circleCheck}
             variant="outline"
             size="small"
             onClick={() => {
@@ -132,17 +134,17 @@ function Foot(props: Props) {
           </Button>
         )}
         {onLetIn !== null && (
-          <Button variant="outline" size="small" onClick={onLetIn}>
+          <Button icon={ACTION_ICONS.logIn} variant="outline" size="small" onClick={onLetIn}>
             {copy.letIn}
           </Button>
         )}
         {movesIfCheckInCleared(block) && onMoveAnyway !== null && (
-          <Button variant="outline" size="small" onClick={onMoveAnyway}>
+          <Button icon={ACTION_ICONS.calendarSync} variant="outline" size="small" onClick={onMoveAnyway}>
             {copy.moveAnyway}
           </Button>
         )}
         {isMovable(block) && onMove !== null && (
-          <Button variant="primary" size="small" onClick={onMove}>
+          <Button icon={ACTION_ICONS.calendarSync} variant="primary" size="small" onClick={onMove}>
             {copy.move}
           </Button>
         )}
@@ -191,6 +193,7 @@ export function BlockDrawer(props: Props) {
           <p className={styles.untoldLine}>{copy.untold[block.untold.reason](movedTo, phoneWords(person.mobile))}</p>
           {onTold !== null && (
             <Button
+              icon={ACTION_ICONS.send}
               variant="outline"
               size="small"
               onClick={() => {
@@ -212,6 +215,7 @@ export function BlockDrawer(props: Props) {
           </p>
           {onWithdraw !== null && (
             <Button
+              icon={ACTION_ICONS.undo2}
               variant="outline"
               size="small"
               onClick={() => {

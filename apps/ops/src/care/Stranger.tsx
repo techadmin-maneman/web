@@ -1,6 +1,7 @@
 // A chat from a number we don't know (docs/decisions/0138-strangers-in-the-inbox.md): Care find the client it turns
 // out to be and link it, or save the person as someone new by the name they gave. Either way the chat becomes theirs.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
@@ -53,7 +54,13 @@ function FindAndLink(props: { conversationId: string; onDone: () => void }) {
             />
           )}
         </Field>
-        <Button variant="outline" size="small" disabled={!searchable(text)} onClick={() => void find()}>
+        <Button
+          icon={ACTION_ICONS.search}
+          variant="outline"
+          size="small"
+          disabled={!searchable(text)}
+          onClick={() => void find()}
+        >
           {copy.search}
         </Button>
       </div>
@@ -63,7 +70,12 @@ function FindAndLink(props: { conversationId: string; onDone: () => void }) {
           {found.map((client) => (
             <li key={client.id}>
               {copy.client(client.name, client.mobile)}{" "}
-              <RowButton beside aria-label={copy.linkLabel(client.name)} onClick={() => void link(client.id)}>
+              <RowButton
+                icon={ACTION_ICONS.link}
+                beside
+                aria-label={copy.linkLabel(client.name)}
+                onClick={() => void link(client.id)}
+              >
                 {copy.link}
               </RowButton>
             </li>
@@ -123,7 +135,13 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
             </Select>
           )}
         </Field>
-        <Button variant="outline" size="small" disabled={name.trim() === ""} onClick={() => void save()}>
+        <Button
+          icon={ACTION_ICONS.check}
+          variant="outline"
+          size="small"
+          disabled={name.trim() === ""}
+          onClick={() => void save()}
+        >
           {copy.save}
         </Button>
       </div>

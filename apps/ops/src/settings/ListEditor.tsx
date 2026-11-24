@@ -3,6 +3,7 @@
 // still sends what the API understands. A checklist's item also has the words the client's record shows, empty for a
 // step only the technician needs.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { GLYPHS, ICONS } from "@maneman/brand/icons";
 import { Toast } from "@maneman/ui/Toast";
 import { Button } from "@maneman/ui/Button";
@@ -246,6 +247,7 @@ function Removed(props: { off: readonly ListItem[]; shut: boolean; onPutBack: (i
           <li className={styles.retiredItem} key={item.code}>
             <span>{item.label}</span>
             <Button
+              icon={ACTION_ICONS.undo2}
               variant="outline"
               size="small"
               aria-label={copy.putBack(item.label)}
@@ -307,6 +309,7 @@ function MoreItems(props: { editor: Props; add: (words: Words) => ReturnType<Pro
   return (
     <div className={styles.add}>
       <Button
+        icon={ACTION_ICONS.plus}
         variant="outline"
         size="small"
         narrow

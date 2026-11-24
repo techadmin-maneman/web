@@ -2,6 +2,7 @@
 // none. A row opens its record beside the list, where each value, and each rule the city sets for itself, changes where
 // it reads (docs/decisions/0212-editing-in-place.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Note } from "@maneman/ui/Note";
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
@@ -134,7 +135,7 @@ export function CityList({ cities, reread }: { cities: Cities; reread: () => Pro
     <>
       <PageActions>
         {mayAdd && (
-          <DrawerButton primary label={copy.add}>
+          <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.add}>
             {(close) => (
               <AddCity
                 zones={cities.zones}

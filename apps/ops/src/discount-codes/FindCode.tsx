@@ -1,6 +1,7 @@
 // Finding discount codes by how they begin, however old, as it is typed: the list on Discount codes holds only the
 // latest made.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { SearchInput } from "@maneman/ui/SearchInput";
 import { useEffect, useState } from "react";
@@ -37,6 +38,7 @@ export function FindForm({ finding, onFind }: { finding: string | null; onFind: 
       <SearchInput label={copy.find} placeholder={copy.find} value={text} onChange={setText} />
       {finding !== null && (
         <Button
+          icon={ACTION_ICONS.eye}
           variant="outline"
           size="small"
           narrow

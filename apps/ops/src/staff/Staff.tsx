@@ -3,6 +3,7 @@
 // the list (docs/decisions/0212-editing-in-place.md). The API narrows the list to the places its viewer may see, and
 // refuses a change beyond their own.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { Apart } from "@maneman/ui/Apart";
@@ -167,7 +168,7 @@ function People({ staff, onChanged }: PanelProps) {
     <>
       <PageActions>
         {mayGrant && (
-          <DrawerButton primary label={copy.add}>
+          <DrawerButton icon={ACTION_ICONS.userPlus} primary label={copy.add}>
             {(close) => (
               <AddPerson
                 staff={staff}
@@ -306,7 +307,7 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
       title={words.title}
       actions={
         staff.may_run_access && (
-          <DrawerButton label={words.addTitle}>
+          <DrawerButton icon={ACTION_ICONS.userPlus} label={words.addTitle}>
             {(close) => (
               <TokenForm
                 onAdded={(next) => {

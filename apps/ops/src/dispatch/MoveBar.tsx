@@ -2,6 +2,7 @@
 // a list of the technicians' days on screen with room for it, each from its first free start, nearest first (ADR 0120).
 // The start itself is chosen in the move's sheet (./MovePicker.tsx).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Field, Select } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
@@ -105,6 +106,7 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
             )}
           </Field>
           <Button
+            icon={ACTION_ICONS.check}
             variant="outline"
             size="small"
             disabled={choice === undefined}
@@ -116,7 +118,7 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
           </Button>
         </div>
       )}
-      <Button variant="outline" size="small" onClick={onStop}>
+      <Button icon={ACTION_ICONS.x} variant="outline" size="small" onClick={onStop}>
         {copy.stop}
       </Button>
     </div>

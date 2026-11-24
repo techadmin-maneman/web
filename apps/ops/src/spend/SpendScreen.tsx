@@ -2,10 +2,12 @@
 // Google's and Meta's included, typed or imported from an ad account's CSV; a society activation's costs come with it
 // from Campaign links. The figures read only these rows. An entry is added whole, and taken off rather than changed.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { SelectField, TextField } from "@maneman/ui/FieldRows";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { whoWords } from "../lib/who.ts";
-import { Button, RowButton } from "@maneman/ui/Button";
+import { RowButton } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
 import { DateInput, Field } from "@maneman/ui/Field";
@@ -186,9 +188,9 @@ function SpendForm({
       />
       <Refused failed={failure} errors={copy.errors} boxes={SPEND_BOXES} />
       <FormActions>
-        <Button variant="primary" size="small" type="submit" busy={busy} disabled={!isRupees(draft.amount)}>
+        <SubmitButton icon={ACTION_ICONS.plus} busy={busy} disabled={!isRupees(draft.amount)}>
           {busy ? copy.adding : copy.add}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={busy} onClick={onCancel} />
       </FormActions>
     </form>
@@ -247,6 +249,7 @@ function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean;
               {props.mayRemove && (
                 <td className={ACTIONS}>
                   <RowButton
+                    icon={ACTION_ICONS.trash}
                     aria-label={copy.removeLabel(dayWords(entry), entry.city ?? copy.national, rupees(entry.amount))}
                     onClick={() => {
                       props.onRemove(entry.id);
@@ -283,7 +286,7 @@ function Spend(props: { onImported: (rows: number) => void }) {
     <>
       {access.mayCall("POST /api/spend") && (
         <PageActions>
-          <DrawerButton primary label={copy.addOne}>
+          <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.addOne}>
             {(close) => (
               <SpendForm
                 list={loaded.value}
@@ -296,7 +299,7 @@ function Spend(props: { onImported: (rows: number) => void }) {
             )}
           </DrawerButton>
           {access.mayCall("POST /api/spend/import") && (
-            <DrawerButton label={copy.importOne}>
+            <DrawerButton icon={ACTION_ICONS.upload} label={copy.importOne}>
               {(close) => (
                 <SpendImport
                   onImported={(rows) => {

@@ -5,6 +5,8 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { applyTheme, keptTheme } from "./lib/theme.ts";
 import { AppBoundary } from "./frame/ErrorBoundary.tsx";
+import { ActionTips } from "@maneman/ui/ActionTips";
+import { IconActions } from "@maneman/ui/icon-actions";
 import "./styles/global.css";
 
 reportUncaughtErrors();
@@ -20,16 +22,21 @@ const KitScreen =
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("index.html has no #root");
+// Every action in the console is its icon, its words its name and its hover label
+// (docs/decisions/0316-every-console-action-an-icon.md).
 createRoot(root).render(
   <StrictMode>
-    <AppBoundary>
-      {KitScreen !== null && window.location.pathname === "/_kit" ? (
-        <Suspense fallback={null}>
-          <KitScreen />
-        </Suspense>
-      ) : (
-        <App />
-      )}
-    </AppBoundary>
+    <IconActions.Provider value>
+      <AppBoundary>
+        {KitScreen !== null && window.location.pathname === "/_kit" ? (
+          <Suspense fallback={null}>
+            <KitScreen />
+          </Suspense>
+        ) : (
+          <App />
+        )}
+      </AppBoundary>
+      <ActionTips />
+    </IconActions.Provider>
   </StrictMode>,
 );

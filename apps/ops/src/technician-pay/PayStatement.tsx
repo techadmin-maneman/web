@@ -3,6 +3,7 @@
 // has them. A technician with no grade is named above, as nothing they do is paid, and a visit no rate covered is
 // marked, so the gap is seen before anyone is paid.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Badge } from "@maneman/ui/Badge";
 import { Button } from "@maneman/ui/Button";
@@ -254,6 +255,7 @@ export function PayStatement({ pay }: { pay: Pay }) {
       {lines.length > 0 && (
         <PageActions>
           <Button
+            icon={ACTION_ICONS.download}
             variant="outline"
             size="control"
             onClick={() => {

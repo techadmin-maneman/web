@@ -2,10 +2,10 @@
 // far from its door (src/routes/ops/visit-changes.ts). Ops say why; the reason stays with the visit and is shown with a
 // no-show's evidence. No board draws it.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -52,16 +52,9 @@ function LetInForm({ visitId, onLetIn }: { visitId: string; onLetIn: () => void 
         )}
       </Field>
       <div className={styles.actions}>
-        <Button
-          variant="primary"
-          size="small"
-          className={styles.primary}
-          type="submit"
-          busy={busy}
-          disabled={reason.trim() === ""}
-        >
+        <SubmitButton className={styles.primary} busy={busy} disabled={reason.trim() === ""}>
           {busy ? copy.sending : copy.confirm}
-        </Button>
+        </SubmitButton>
       </div>
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>

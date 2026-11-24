@@ -3,6 +3,7 @@
 // visit's discount code (VisitCode.tsx) and cancel one (CancelVisit.tsx) or close one by hand (CloseVisit.tsx).
 // Beneath, any booking that refunded itself, and why.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { typeLook } from "@maneman/ui/type";
 import { Panel } from "@maneman/ui/Panel";
 import { NoValue } from "@maneman/ui/NoValue";
@@ -109,6 +110,7 @@ function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: str
         <RowButton
           key={change}
           ref={change === open ? opener : undefined}
+          icon={change === "cancel" ? ACTION_ICONS.x : ACTION_ICONS.circleCheck}
           aria-label={change === "cancel" ? copy.cancel.openLabel(when) : copy.handClose.openLabel(when)}
           onClick={() => {
             setOpen(change);
@@ -129,7 +131,8 @@ function ShowOnBoard({ visit }: { visit: ClientVisit }) {
   if (!mayOpen) return null;
   return (
     <OpsLink
-      className={buttonLook({ variant: "outline", size: "compact" })}
+      className={buttonLook({ variant: "outline", size: "compact", iconOnly: true })}
+      icon={ACTION_ICONS.arrowUpRight}
       to={dispatchPath({ from: visit.date, visit: visit.id })}
       label={copy.onBoardLabel(plainDate(visit.date))}
     >
@@ -236,6 +239,7 @@ function NothingBooked({ record, booking }: { record: ClientRecord; booking: Boo
       action={
         booking.mayBook && (
           <Button
+            icon={ACTION_ICONS.calendarPlus}
             variant="outline"
             size="small"
             onClick={(event) => {

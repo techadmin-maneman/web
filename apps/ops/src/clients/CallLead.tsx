@@ -2,8 +2,9 @@
 // mobile, and where they came from, which must be picked before it saves, since a call carries nothing else. A number
 // we hold is put on that client's record as a call, and their record is offered.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { Field } from "@maneman/ui/Field";
@@ -115,16 +116,13 @@ function CallForm(props: { onTaken: (taken: { personId: string; known: boolean }
       </div>
       <Refused failed={failure} errors={foundUs.errors} boxes={["name", "mobile", "pincode"]} />
       <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          type="submit"
+        <SubmitButton
           busy={busy}
           disabled={missing !== null}
           aria-describedby={describedBy("call-lead-missing", missing !== null)}
         >
           {busy ? copy.saving : copy.save}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
       <Missing id="call-lead-missing" what={missing} />
@@ -142,7 +140,7 @@ export interface CallTaken {
 export function CallLead(props: { onTaken: (taken: CallTaken) => void }) {
   if (!useAccess().mayCall("POST /api/leads/call")) return null;
   return (
-    <DrawerButton label={copy.open} primary>
+    <DrawerButton icon={ACTION_ICONS.phone} label={copy.open} primary>
       {(close) => (
         <CallForm
           onTaken={(done) => {

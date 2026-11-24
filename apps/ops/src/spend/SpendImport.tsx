@@ -2,8 +2,9 @@
 // CSV broken down by day, read here and shown as its rows and total before it is imported. Each campaign's city is
 // the one its name starts with, as the Spend page's own entries say.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
 import { Field, FileInput, Select } from "@maneman/ui/Field";
@@ -89,16 +90,14 @@ export function SpendImport(props: { onImported: (rows: number) => void; onCance
       </div>
       <Refused failed={failure} errors={copy.errors} boxes={["rows"]} />
       <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          type="submit"
+        <SubmitButton
+          icon={ACTION_ICONS.upload}
           busy={busy}
           disabled={read?.ok !== true}
           aria-describedby={describedBy("import-missing", read === null)}
         >
           {busy ? copy.import.importing : copy.import.submit}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
       <Missing id="import-missing" what={read === null ? copy.import.missing : null} />

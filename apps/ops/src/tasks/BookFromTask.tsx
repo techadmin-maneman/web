@@ -3,6 +3,7 @@
 // opens the panel the client's page books from, started from what the task holds; the task leaves the board once the
 // visit is booked, and stays while a payment link for it waits to be paid.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import type { Prefill } from "../clients/index.ts";
@@ -108,10 +109,12 @@ function BookButton(props: {
 }) {
   const shared = { ref: props.buttonRef, "aria-haspopup": "dialog", onClick: props.onClick } as const;
   return props.primary ? (
-    <Button {...shared} variant="primary" size="compact">
+    <Button icon={ACTION_ICONS.calendarPlus} {...shared} variant="primary" size="compact">
       {props.children}
     </Button>
   ) : (
-    <RowButton {...shared}>{props.children}</RowButton>
+    <RowButton icon={ACTION_ICONS.calendarPlus} {...shared}>
+      {props.children}
+    </RowButton>
   );
 }

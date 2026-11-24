@@ -65,6 +65,28 @@
     font-size: var(--small-text);
   }
 
+  /* An action drawn as its icon alone (./icon-actions.ts): a square of its size's height, the icon at its middle, a
+     narrow one's padding left off too. */
+  .button.iconOnly {
+    padding: 0;
+  }
+
+  .iconOnly.action {
+    width: var(--action-height);
+  }
+
+  .iconOnly.control {
+    width: var(--control-height);
+  }
+
+  .iconOnly.small {
+    width: var(--small-height);
+  }
+
+  .iconOnly.compact {
+    width: var(--compact-height);
+  }
+
   /* Among a row's words, so it sits in the line as they do. */
   .compact {
     display: inline-flex;

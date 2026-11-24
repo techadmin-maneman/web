@@ -2,6 +2,7 @@
 // chat; what the client wrote, our replies and notes, and our automatic messages with how far each got, a row of them
 // folded into one line; and the reply box at its foot. Who it is with is beside it (./ChatClient.tsx).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { clientPath } from "../route.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { messageKindName } from "../lib/message-kind.ts";
@@ -95,6 +96,7 @@ function AutoRun({ items, them }: { items: readonly ThreadItem[]; them: string }
         {items.length > 1 && (
           <li className={styles.autoRun}>
             <TextButton
+              icon={ACTION_ICONS.eyeOff}
               compact
               onClick={() => {
                 setShown(false);
@@ -110,6 +112,7 @@ function AutoRun({ items, them }: { items: readonly ThreadItem[]; them: string }
     <li className={styles.autoRun}>
       {thread.autos(items.length)}{" "}
       <TextButton
+        icon={ACTION_ICONS.eye}
         compact
         onClick={() => {
           setShown(true);

@@ -2,6 +2,7 @@
 // shoot (docs/fidelity-method.md) and for anyone building a screen to look up. It is built into local builds alone
 // (./App.tsx), so no staging or production console carries it. It calls no API.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { ICONS } from "@maneman/brand/icons";
 import { BUTTON_VARIANTS, Button, RowButton, type ButtonSize } from "@maneman/ui/Button";
 import { badgeLook, Caps } from "@maneman/ui/Caps";
@@ -81,14 +82,14 @@ function Buttons() {
     variants.map((variant) => (
       <div className={styles.row} key={variant}>
         {SIZES.map((size) => (
-          <Button key={size} variant={variant} size={size}>
+          <Button icon={ACTION_ICONS.check} key={size} variant={variant} size={size}>
             {words.button(variant, size)}
           </Button>
         ))}
-        <Button variant={variant} size="control" disabled>
+        <Button icon={ACTION_ICONS.ban} variant={variant} size="control" disabled>
           {words.disabled}
         </Button>
-        <Button variant={variant} size="control" busy>
+        <Button icon={ACTION_ICONS.refreshCw} variant={variant} size="control" busy>
           {words.busy}
         </Button>
       </div>
@@ -100,11 +101,13 @@ function Buttons() {
         <>
           {row(onPaper)}
           <div className={styles.row}>
-            <RowButton>{words.rowButton}</RowButton>
+            <RowButton icon={ACTION_ICONS.pencil}>{words.rowButton}</RowButton>
             <IconButton d={ICONS.cross} size="sm" label={words.iconButton} />
             <TextLink href="#kit">{words.textLink}</TextLink>
-            <TextButton>{words.textButton}</TextButton>
-            <TextButton tone="danger">{words.textButton}</TextButton>
+            <TextButton icon={ACTION_ICONS.pencil}>{words.textButton}</TextButton>
+            <TextButton icon={ACTION_ICONS.pencil} tone="danger">
+              {words.textButton}
+            </TextButton>
           </div>
         </>
       }
@@ -250,6 +253,7 @@ function Modals() {
     <>
       <div className={styles.row}>
         <Button
+          icon={ACTION_ICONS.externalLink}
           variant="outline"
           size="small"
           onClick={() => {
@@ -259,6 +263,7 @@ function Modals() {
           {words.openDrawer}
         </Button>
         <Button
+          icon={ACTION_ICONS.externalLink}
           variant="outline"
           size="small"
           onClick={() => {
@@ -278,7 +283,7 @@ function Modals() {
             setOpen(null);
           }}
           foot={
-            <Button variant="primary" size="small">
+            <Button icon={ACTION_ICONS.check} variant="primary" size="small">
               {words.yes}
             </Button>
           }

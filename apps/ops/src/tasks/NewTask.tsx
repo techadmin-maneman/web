@@ -2,7 +2,8 @@
 // for, a client if it is about one, when it is due, and whose it is. Written, it is on that department's board; one
 // about no client is in the city chosen in the header, or here where the header names none.
 
-import { Button } from "@maneman/ui/Button";
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Drawer } from "@maneman/ui/Drawer";
 import { DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { Refused } from "@maneman/ui/Refusal";
@@ -240,9 +241,9 @@ export function NewTask(props: {
       }}
       foot={
         <div className={styles.footEnd}>
-          <Button variant="primary" size="small" type="submit" busy={busy}>
+          <SubmitButton icon={ACTION_ICONS.plus} busy={busy}>
             {busy ? copy.adding : copy.add}
-          </Button>
+          </SubmitButton>
         </div>
       }
     >

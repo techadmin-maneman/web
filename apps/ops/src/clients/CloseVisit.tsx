@@ -2,10 +2,10 @@
 // reached us. Ops say how it went, when the work began and ended on the visit's own day, and how they know
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { ChoiceGroup, Field, Radio, TextArea, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -129,9 +129,9 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
         )}
       </Field>
       <div className={shared.actions}>
-        <Button variant="primary" size="small" className={shared.primary} type="submit" busy={busy} disabled={!ready}>
+        <SubmitButton className={shared.primary} busy={busy} disabled={!ready}>
           {busy ? copy.closing : copy.confirm}
-        </Button>
+        </SubmitButton>
       </div>
       <FormRefusal className={shared.error} errors={ERRORS} failure={failure} boxes={BOXES} />
     </form>

@@ -1,6 +1,7 @@
 // Returned pieces handed in, to settle (docs/decisions/0169-supplier-claims.md): each with its supplier's warranty,
 // claimed while inside it, or written off with why.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { NoValue } from "@maneman/ui/NoValue";
@@ -65,6 +66,7 @@ function WriteOffForm({
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       <FormActions>
         <Button
+          icon={ACTION_ICONS.trash}
           variant="destructive"
           size="small"
           disabled={reason.trim() === "" || photoId === null}
@@ -99,6 +101,7 @@ function WriteOff({
   return (
     <>
       <RowButton
+        icon={ACTION_ICONS.trash}
         aria-label={copy.returns.writeOffLabel(piece.piece_code)}
         onClick={() => {
           setOpen(true);
@@ -168,7 +171,11 @@ export function ReturnedPieces({
               <td className={ACTIONS}>
                 <RowActions>
                   {piece.in_warranty && access.mayCall("POST /api/returned-pieces/{id}/claim") && (
-                    <RowButton aria-label={copy.returns.claimLabel(piece.piece_code)} onClick={() => void claim(piece)}>
+                    <RowButton
+                      icon={ACTION_ICONS.send}
+                      aria-label={copy.returns.claimLabel(piece.piece_code)}
+                      onClick={() => void claim(piece)}
+                    >
                       {copy.returns.claim}
                     </RowButton>
                   )}

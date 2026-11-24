@@ -3,6 +3,7 @@
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). A ruling needs a reason and a charge is asked about once
 // more; the server never charges by itself (src/policy/no-show.ts).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { typeLook } from "@maneman/ui/type";
 import { BackButton } from "@maneman/ui/CancelButton";
 import { Field, DateInput, TextArea } from "@maneman/ui/Field";
@@ -250,7 +251,13 @@ function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge:
         {copy.confirm.who(each.person?.name ?? copy.erased, day)}
       </p>
       <div className={styles.actions}>
-        <Button variant="primary" size="small" disabled={preview.state !== "loaded"} onClick={onCharge}>
+        <Button
+          icon={ACTION_ICONS.check}
+          variant="primary"
+          size="small"
+          disabled={preview.state !== "loaded"}
+          onClick={onCharge}
+        >
           {keepsNothing(preview) ? copy.closeNoShow : copy.confirmCharge}
         </Button>
         <BackButton onClick={onBack} />
@@ -341,6 +348,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
       ) : (
         <div className={styles.actions}>
           <Button
+            icon={ACTION_ICONS.handCoins}
             variant="primary"
             size="small"
             ref={chargeButton}
@@ -352,7 +360,13 @@ function Case({ each, now, may, onDecided }: CaseProps) {
             {sending ? copy.deciding : <ChargeWords caseId={each.id} />}
           </Button>
           {may.waive && (
-            <Button variant="outline" size="small" disabled={sending || noReason} onClick={() => void decide("waived")}>
+            <Button
+              icon={ACTION_ICONS.ban}
+              variant="outline"
+              size="small"
+              disabled={sending || noReason}
+              onClick={() => void decide("waived")}
+            >
               {copy.waive}
             </Button>
           )}

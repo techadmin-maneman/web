@@ -2,12 +2,11 @@
 // number, city, fitting and hours beneath; Call and Edit details at its right; and beneath it, their visits to come,
 // their jobs over the roster's period, how often they were on time, and what in their kit is below zero.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { ButtonLink } from "@maneman/ui/Button";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
-import { Icon } from "@maneman/ui/Icon";
 import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { useLoad } from "@maneman/ui/useLoad";
-import { GLYPHS } from "@maneman/brand/icons";
 import { apiNow } from "@maneman/web-kit/clock";
 import { longDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
@@ -18,7 +17,6 @@ import { PageActions, useRecordHead, useRecordTitle, type RecordHead } from "../
 import { phoneWords } from "../lib/phone.ts";
 import { weekLines } from "./TechnicianHours.tsx";
 import { techniciansApi } from "./technicians-api.ts";
-import styles from "./technicians.module.css";
 
 const copy = technicians.head;
 const figures = technicians.figures;
@@ -66,12 +64,11 @@ export function TechnicianHead(props: {
   return (
     <PageActions>
       {summary.mobile !== null && (
-        <ButtonLink variant="outline" size="small" href={`tel:${summary.mobile}`}>
-          <Icon d={GLYPHS.phone} size="sm" className={styles.icon} />
+        <ButtonLink variant="outline" size="small" href={`tel:${summary.mobile}`} icon={ACTION_ICONS.phone}>
           {copy.call}
         </ButtonLink>
       )}
-      <DrawerButton label={copy.edit} title={summary.name}>
+      <DrawerButton icon={ACTION_ICONS.pencil} label={copy.edit} title={summary.name}>
         {props.details}
       </DrawerButton>
     </PageActions>

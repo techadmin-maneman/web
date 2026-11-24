@@ -2,6 +2,7 @@
 // technician's leave is (./LeaveDecision.tsx): Approve grants the free visits, Decline grants nothing; either way the
 // task leaves the board. Settings' Remedies lists it too, but a decision is never kept only there.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -28,10 +29,22 @@ export function RemedyDecision(props: { group: TaskGroup["group"]; task: Task; o
     });
   return (
     <div className={shared.cardActions}>
-      <Button variant="primary" size="small" disabled={busy} onClick={() => void decide(true)}>
+      <Button
+        icon={ACTION_ICONS.circleCheck}
+        variant="primary"
+        size="small"
+        disabled={busy}
+        onClick={() => void decide(true)}
+      >
         {busy ? copy.sending : copy.approve}
       </Button>
-      <Button variant="outline" size="small" disabled={busy} onClick={() => void decide(false)}>
+      <Button
+        icon={ACTION_ICONS.circleX}
+        variant="outline"
+        size="small"
+        disabled={busy}
+        onClick={() => void decide(false)}
+      >
         {copy.decline}
       </Button>
       {refused !== null && <Refusal said={refused} />}

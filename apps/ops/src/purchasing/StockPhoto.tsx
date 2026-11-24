@@ -1,6 +1,7 @@
 // A photograph of stock for a write-off or a claim (docs/decisions/0170-stock-photos.md): taken or chosen, made small
 // in the browser as the technician's camera makes its photographs, stored, and shown once stored.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Field, FileInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -65,6 +66,7 @@ export function StockPhoto({
             <>
               <img className={styles.photo} src={`/api/stock-photos/${photoId}`} alt={copy.photo.alt} />
               <Button
+                icon={ACTION_ICONS.trash}
                 variant="outline"
                 size="small"
                 onClick={() => {

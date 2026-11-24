@@ -1,6 +1,7 @@
 // Adding a pincode the service area does not hold: its number, what messages call its area, and its city, one of
 // ours. It goes in unserved, so adding one messages nobody; marking it live is the launch panel's.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -131,7 +132,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
         <CityChoice cities={cities} city={city} onCity={setCity} />
       </div>
       <div className={shared.actions}>
-        <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
+        <Button icon={ACTION_ICONS.plus} variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {busy ? copy.adding : copy.add}
         </Button>
         {cancel}

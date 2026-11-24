@@ -2,6 +2,7 @@
 // then their pincodes, each one not held already ticked, added unserved to one of our cities. Serving them is the
 // table's above; a pincode the directory does not list is still added by hand beneath.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { AreaSection } from "./AreaSection.tsx";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, ChoiceGroup, Field, Select } from "@maneman/ui/Field";
@@ -96,6 +97,7 @@ function ChooseDistricts({ onShown }: { onShown: (pincodes: readonly DirectoryPi
       {districts !== null && (
         <div className={shared.actions}>
           <Button
+            icon={ACTION_ICONS.eye}
             variant="outline"
             size="small"
             disabled={picked.size === 0 || tooMany || busy}
@@ -263,6 +265,7 @@ export function OpenCity(props: { cities: readonly string[]; onAdded: (added: re
       {pincodes !== null && (
         <div className={shared.actions}>
           <Button
+            icon={ACTION_ICONS.plus}
             variant="primary"
             size="small"
             disabled={city === "" || ticked.size === 0 || busy}

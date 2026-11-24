@@ -1,6 +1,7 @@
 // A launch refused because its city is not ready (no one trained to fit, or no stockroom): an Admin may serve it all
 // the same, with why (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { FormActions } from "@maneman/ui/FormActions";
@@ -44,6 +45,7 @@ export function NotReady({
       </div>
       <FormActions>
         <Button
+          icon={ACTION_ICONS.rocket}
           variant="outline"
           size="small"
           disabled={reason.trim() === ""}

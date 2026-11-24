@@ -3,6 +3,7 @@
 // with why. The design draws each task's owner and none of these; they sit beneath the
 // task's own lines, as the way to where it is decided does.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Refusal } from "@maneman/ui/Refusal";
 import { CancelButton } from "@maneman/ui/CancelButton";
@@ -62,7 +63,7 @@ const CLOSE_WORDS: Readonly<Record<ClosableGroup, { readonly open: string; reado
 export const closeWords = (group: ClosableGroup) => CLOSE_WORDS[group];
 
 /** A label every row repeats, with whose it is said to a screen reader. */
-const Named = ({ label, subject }: { label: string; subject: string }) => (
+const named = (label: string, subject: string) => (
   <>
     {label}
     <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
@@ -94,7 +95,7 @@ function GiveForm({
   const copy = tasks.owner;
   return (
     <div className={styles.form}>
-      <Field label={<Named label={copy.giveTo} subject={subject} />}>
+      <Field label={named(copy.giveTo, subject)}>
         {(control) => (
           <Select
             {...control}
@@ -117,6 +118,7 @@ function GiveForm({
       </Field>
       <div className={styles.formActions}>
         <Button
+          icon={ACTION_ICONS.check}
           variant="outline"
           size="small"
           busy={busy}
@@ -156,7 +158,7 @@ function CloseForm({
   return (
     <div className={styles.form}>
       {asksWhy && (
-        <Field label={<Named label={closeWords(group).label} subject={subject} />}>
+        <Field label={named(closeWords(group).label, subject)}>
           {(control) => (
             <TextArea
               {...control}
@@ -179,6 +181,7 @@ function CloseForm({
       )}
       <div className={styles.formActions}>
         <Button
+          icon={ACTION_ICONS.check}
           variant="outline"
           size="small"
           busy={busy}
@@ -199,19 +202,21 @@ function CloseForm({
 function Act({
   label,
   subject,
+  icon,
   onClick,
   actRef,
   expanded,
 }: {
   label: string;
   subject: string;
+  icon: string;
   onClick: () => void;
   actRef?: RefObject<HTMLButtonElement | null>;
   expanded?: boolean;
 }) {
   return (
-    <Button ref={actRef} variant="outline" size="small" aria-expanded={expanded} onClick={onClick}>
-      <Named label={label} subject={subject} />
+    <Button ref={actRef} variant="outline" size="small" icon={icon} aria-expanded={expanded} onClick={onClick}>
+      {named(label, subject)}
     </Button>
   );
 }
@@ -285,26 +290,21 @@ export function TaskActions(props: TaskActionsProps) {
   return (
     <>
       <span className={shared.ownerActs}>
-        {mine && (
+        {/* Mine, it is handed back; anyone's else, or nobody's, it is taken. */}
+        {(mine || canTake) && (
           <Act
-            label={tasks.owner.handBack}
+            label={mine ? tasks.owner.handBack : tasks.owner.take}
             subject={subject}
+            icon={mine ? ACTION_ICONS.undo2 : ACTION_ICONS.handGrab}
             actRef={mineButton}
-            onClick={() => void makeOwner(null, mineButton)}
-          />
-        )}
-        {!mine && canTake && (
-          <Act
-            label={tasks.owner.take}
-            subject={subject}
-            actRef={mineButton}
-            onClick={() => void makeOwner(me, mineButton)}
+            onClick={() => void makeOwner(mine ? null : me, mineButton)}
           />
         )}
         {canGive && (
           <Act
             label={tasks.owner.give}
             subject={subject}
+            icon={ACTION_ICONS.userCheck}
             actRef={giveButton}
             expanded={open === "give"}
             onClick={() => {
@@ -316,6 +316,7 @@ export function TaskActions(props: TaskActionsProps) {
           <Act
             label={closeWords(closing).open}
             subject={subject}
+            icon={ACTION_ICONS.circleCheck}
             actRef={closeButton}
             expanded={open === "close"}
             onClick={() => {
@@ -387,8 +388,8 @@ export function TakeButton({
     });
   return (
     <>
-      <RowButton busy={busy} onClick={() => void take()}>
-        <Named label={tasks.owner.take} subject={subject} />
+      <RowButton icon={ACTION_ICONS.handGrab} busy={busy} onClick={() => void take()}>
+        {named(tasks.owner.take, subject)}
       </RowButton>
       {refused !== null && <Refusal inline said={refused} />}
     </>

@@ -3,6 +3,7 @@
 // (src/policy/tasks.ts), so it leaves when that row is decided. A row opens its drawer (./TaskDetail.tsx) and ends with
 // its step (./RowStep.tsx); on a phone the rows are a list.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { Panel } from "@maneman/ui/Panel";
@@ -58,7 +59,7 @@ function BoardNotes(props: { truncated: boolean; lapsed: number; shown: boolean;
       {(props.lapsed > 0 || props.shown) && (
         <p className={styles.note}>
           {props.shown ? null : <>{tasks.lapsed(props.lapsed)} </>}
-          <TextButton tone="muted" compact onClick={props.onToggle}>
+          <TextButton icon={ACTION_ICONS.eye} tone="muted" compact onClick={props.onToggle}>
             {props.shown ? tasks.hideLapsed : tasks.showLapsed}
           </TextButton>
         </p>
@@ -112,6 +113,7 @@ function MoreRows({ found, all, onToggle }: { found: number; all: boolean; onTog
       <TextButton
         tone="muted"
         compact
+        icon={all ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown}
         onClick={() => {
           onToggle(!all);
         }}

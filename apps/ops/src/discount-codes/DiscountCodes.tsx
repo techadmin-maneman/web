@@ -2,6 +2,7 @@
 // with their uses and takings. A code is made, and found by how it begins; a row opens its record beside the list,
 // where it is switched off or, while no booking has taken it, deleted. Codes switched off fold away beneath.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Badge } from "@maneman/ui/Badge";
@@ -191,7 +192,7 @@ function OpenCode(props: {
 function MakeCodes({ codes, onMade }: { codes: DiscountCodeList; onMade: () => void }) {
   if (!useAccess().mayCall("POST /api/discount-codes")) return null;
   return (
-    <DrawerButton primary label={copy.make}>
+    <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.make}>
       {(close) => <DiscountCodeForm today={codes.today} most={codes.batch_most} onMade={onMade} onClose={close} />}
     </DrawerButton>
   );

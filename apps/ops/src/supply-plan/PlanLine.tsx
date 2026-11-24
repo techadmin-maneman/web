@@ -1,6 +1,7 @@
 // One line of the supply plan (docs/decisions/0180-supply-plan.md): approved at the quantity ops leave in its box, or
 // rejected with why; once decided, what came of it.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import type { Success } from "@maneman/web-kit/api";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Badge } from "@maneman/ui/Badge";
@@ -62,6 +63,7 @@ function Reject({
       </Field>
       <FormActions>
         <Button
+          icon={ACTION_ICONS.circleX}
           variant="danger"
           size="small"
           disabled={reason.trim() === ""}
@@ -112,6 +114,7 @@ export function PlanLineSteps({ line, onAnswer }: { line: Line; onAnswer: (answe
         )}
       </Field>
       <Button
+        icon={ACTION_ICONS.circleCheck}
         variant="primary"
         size="small"
         disabled={!Number.isInteger(count) || count < 1}
@@ -124,6 +127,7 @@ export function PlanLineSteps({ line, onAnswer }: { line: Line; onAnswer: (answe
         {copy.approve}
       </Button>
       <Button
+        icon={ACTION_ICONS.circleX}
         variant="outline"
         size="small"
         onClick={() => {

@@ -2,7 +2,8 @@
 // it under its UTR, which closes the task and sends the client their receipt (docs/decisions/0209). A "Payment owed"
 // task offers it too, for a one visit whose link was never paid.
 
-import { Button } from "@maneman/ui/Button";
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -66,9 +67,9 @@ function UpiDrawer(props: {
           )}
         </Field>
         <span className={shared.acts}>
-          <Button type="submit" variant="primary" size="small" disabled={props.busy || props.utr.trim() === ""}>
+          <SubmitButton icon={ACTION_ICONS.wallet} disabled={props.busy || props.utr.trim() === ""}>
             {props.busy ? copy.recording : copy.record}
-          </Button>
+          </SubmitButton>
           <CancelButton disabled={props.busy} onClick={props.onClose} />
         </span>
       </form>
@@ -112,6 +113,7 @@ export function UpiPaymentAction({
     <>
       <span className={shared.acts}>
         <TextButton
+          icon={ACTION_ICONS.wallet}
           tone="muted"
           compact
           onClick={() => {

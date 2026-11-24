@@ -2,6 +2,7 @@
 // from home as one map, the served pincodes no reach takes in, and each technician's reach as a way to choose its
 // pincodes, which the bar above then serves, schedules or pauses.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { AreaSection } from "./AreaSection.tsx";
 import { Button } from "@maneman/ui/Button";
 
@@ -61,6 +62,7 @@ function Unreached({ reach, onChoose }: { reach: CityReach; onChoose: (pincodes:
       </ul>
       <div className={shared.actions}>
         <Button
+          icon={ACTION_ICONS.check}
           variant="outline"
           size="small"
           narrow
@@ -89,6 +91,7 @@ function Within({ reach, onChoose }: { reach: CityReach; onChoose: (pincodes: Re
               {copy.within(technician.name, technician.radius_km, technician.ring_km, theirs.length)}
             </p>
             <Button
+              icon={ACTION_ICONS.check}
               variant="outline"
               size="small"
               narrow

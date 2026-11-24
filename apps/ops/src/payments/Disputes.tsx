@@ -2,6 +2,7 @@
 // what it took and the client's words, and Refund or Uphold, each with a note
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The client is told the ruling, never the note.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -159,6 +160,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
           <div className={shared.actions} role="group" aria-label={copy.ruling}>
             {may.refund && (
               <Button
+                icon={ACTION_ICONS.banknoteArrowDown}
                 variant="primary"
                 size="small"
                 disabled={sending || noReason}
@@ -167,7 +169,13 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
                 {copy.refund}
               </Button>
             )}
-            <Button variant="outline" size="small" disabled={sending || noReason} onClick={() => void rule("upheld")}>
+            <Button
+              icon={ACTION_ICONS.circleCheck}
+              variant="outline"
+              size="small"
+              disabled={sending || noReason}
+              onClick={() => void rule("upheld")}
+            >
               {copy.uphold}
             </Button>
           </div>

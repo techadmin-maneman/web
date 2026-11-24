@@ -1,6 +1,7 @@
 // Every wording a line has had, newest first (docs/decisions/0126-the-words-page.md), and the code's own: each can be
 // used again, which opens the line's box with it, to read before it is kept.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { whoWords } from "../lib/who.ts";
 import { RowButton } from "@maneman/ui/Button";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -19,7 +20,7 @@ const versions = copy.versions;
 
 function UseButton({ label, onUse }: { label: string; onUse: () => void }) {
   return (
-    <RowButton beside aria-label={label} onClick={onUse}>
+    <RowButton icon={ACTION_ICONS.check} beside aria-label={label} onClick={onUse}>
       {versions.use}
     </RowButton>
   );

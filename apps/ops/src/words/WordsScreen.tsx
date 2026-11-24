@@ -2,6 +2,7 @@
 // client, found by page or by what it says. A row opens the line's record beside the table, where its wording changes
 // where it reads, with its history beneath it (docs/decisions/0212-editing-in-place.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Toast } from "@maneman/ui/Toast";
 import { whoWords } from "../lib/who.ts";
@@ -118,6 +119,7 @@ function Words() {
       {mayPublish && !publishing && (
         <PageActions>
           <Button
+            icon={ACTION_ICONS.send}
             variant="primary"
             size="small"
             onClick={() => {

@@ -3,6 +3,7 @@
 // from the client's own number. Where the API refuses for a booked visit or money held, ops may erase anyway and settle
 // it by hand today.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { typeLook } from "@maneman/ui/type";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -84,7 +85,13 @@ function Confirm({
         />
       ))}
       <div className={deletionStyles.actions}>
-        <Button variant="destructive" size="small" disabled={sending || !allTicked} onClick={onErase}>
+        <Button
+          icon={ACTION_ICONS.userX}
+          variant="destructive"
+          size="small"
+          disabled={sending || !allTicked}
+          onClick={onErase}
+        >
           {sending ? copy.erasing : action}
         </Button>
         <CancelButton disabled={sending} onClick={onCancel} />
@@ -156,6 +163,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
       {(erasing.step === "closed" || erasing.step === "failed") && (
         <div className={deletionStyles.actions}>
           <Button
+            icon={ACTION_ICONS.userX}
             variant="destructive"
             size="small"
             ref={opener}

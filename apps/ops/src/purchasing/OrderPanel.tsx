@@ -1,6 +1,7 @@
 // One purchase order beneath the list (docs/decisions/0166-purchase-orders.md): its lines and total, and what can be
 // done with it now: approved, by a second manager where it needs one; marked sent; cancelled with why; printed.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Panel } from "@maneman/ui/Panel";
@@ -70,6 +71,7 @@ function CancelOrder({
       </Field>
       <FormActions>
         <Button
+          icon={ACTION_ICONS.x}
           variant="destructive"
           size="small"
           disabled={reason.trim() === ""}
@@ -109,17 +111,28 @@ function Steps({
     <>
       <FormActions>
         {approvable && (
-          <Button variant="primary" size="small" onClick={() => void step("approve", copy.order.approved)}>
+          <Button
+            icon={ACTION_ICONS.circleCheck}
+            variant="primary"
+            size="small"
+            onClick={() => void step("approve", copy.order.approved)}
+          >
             {order.approved_by === null ? copy.order.approve : copy.order.secondApprove}
           </Button>
         )}
         {order.state === "approved" && access.mayCall("POST /api/purchase-orders/{id}/send") && (
-          <Button variant="primary" size="small" onClick={() => void step("send", copy.order.sent)}>
+          <Button
+            icon={ACTION_ICONS.send}
+            variant="primary"
+            size="small"
+            onClick={() => void step("send", copy.order.sent)}
+          >
             {copy.order.send}
           </Button>
         )}
         {cancellable && !cancelling && (
           <Button
+            icon={ACTION_ICONS.x}
             variant="outline"
             size="small"
             onClick={() => {
@@ -217,6 +230,7 @@ export function OrderPanel({
       <Receiving orders={orders} order={order} onChanged={onChanged} />
       <FormActions>
         <Button
+          icon={ACTION_ICONS.printer}
           variant="outline"
           size="small"
           onClick={() => {

@@ -2,6 +2,7 @@
 // a technician's skills, so Leave stands in the design's Skill column (docs/open-points.md, item 59). A name opens
 // their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { quantity } from "@maneman/web-kit/figures";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { textLinkLook } from "@maneman/ui/TextLink";
@@ -377,6 +378,7 @@ function Roster() {
         {mayAdd && (
           <PageActions>
             <Button
+              icon={ACTION_ICONS.userPlus}
               variant="primary"
               size="small"
               onClick={() => {

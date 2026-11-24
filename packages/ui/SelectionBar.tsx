@@ -4,6 +4,7 @@
 //     <Button size="small" onClick={takeAll}>{copy.take(3)}</Button>
 //   </SelectionBar>
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import type { ReactNode } from "react";
 import { TextButton } from "./TextLink.tsx";
 import { tables } from "./words.ts";
@@ -25,7 +26,9 @@ export function SelectionBar({
         {tables.chosen(count)}
       </span>
       <div className={styles.actions}>{children}</div>
-      <TextButton onClick={onClear}>{tables.clearChosen}</TextButton>
+      <TextButton icon={ACTION_ICONS.x} onClick={onClear}>
+        {tables.clearChosen}
+      </TextButton>
     </div>
   );
 }

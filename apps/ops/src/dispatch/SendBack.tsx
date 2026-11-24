@@ -2,8 +2,8 @@
 // (docs/decisions/0246-closed-and-sent-back.md). Their phone opens the step again and shows the reason. No board
 // draws it.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
-import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { Refusal } from "@maneman/ui/Refusal";
@@ -63,16 +63,9 @@ export function SendBackForm({
         )}
       </Field>
       <div className={styles.actions}>
-        <Button
-          variant="primary"
-          size="small"
-          className={styles.primary}
-          type="submit"
-          busy={busy}
-          disabled={reason.trim() === ""}
-        >
+        <SubmitButton className={styles.primary} busy={busy} disabled={reason.trim() === ""}>
           {busy ? copy.sending : copy.confirm}
-        </Button>
+        </SubmitButton>
         <CancelButton onClick={onCancel} />
       </div>
       {failed !== null && <Refusal className={styles.error} said={failed} />}

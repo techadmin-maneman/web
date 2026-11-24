@@ -57,10 +57,6 @@
   margin-bottom: var(--sp-16);
 }
 
-.icon {
-  flex-shrink: 0;
-}
-
 /* ---- A narrow window, or 200% zoom: the tray goes beneath the grid --- */
 
 /* What happened on the visit, under its facts in the drawer. */

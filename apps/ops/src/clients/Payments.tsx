@@ -2,6 +2,8 @@
 // page holds; and their service-visit credits, which ops correct by hand, the server writing the ledger and audit
 // entries together (docs/decisions/0068-a-paid-hold-is-kept.md).
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Panel } from "@maneman/ui/Panel";
 import form from "@maneman/ui/forms.module.css";
 import { plainDate } from "@maneman/web-kit/plain-date";
@@ -154,7 +156,13 @@ function CopyLink({ url, what }: { url: string; what: string }) {
   return (
     <span className={styles.linkLine}>
       <span className={styles.linkUrl}>{url}</span>
-      <Button variant="outline" size="small" className={styles.copyLink} onClick={() => void copyUrl()}>
+      <Button
+        icon={ACTION_ICONS.copy}
+        variant="outline"
+        size="small"
+        className={styles.copyLink}
+        onClick={() => void copyUrl()}
+      >
         {copied ? linkCopy.copied : linkCopy.copy}
         <VisuallyHidden>{` · ${what}`}</VisuallyHidden>
       </Button>
@@ -274,7 +282,7 @@ function CreditSection({
       title={creditCopy.title}
       actions={
         mayAdjust && (
-          <DrawerButton label={creditCopy.adjust} title={creditCopy.title}>
+          <DrawerButton icon={ACTION_ICONS.handCoins} label={creditCopy.adjust} title={creditCopy.title}>
             {(close) => (
               <CreditForm
                 clientId={clientId}
@@ -360,15 +368,9 @@ function CreditForm({
           />
         ))}
       </ChoiceGroup>
-      <Button
-        variant="primary"
-        size="small"
-        className={styles.primary}
-        type="submit"
-        disabled={sending || visits === null || reason === ""}
-      >
+      <SubmitButton className={styles.primary} disabled={sending || visits === null || reason === ""}>
         {sending ? creditCopy.saving : creditCopy.save}
-      </Button>
+      </SubmitButton>
       {adjusting.step === "failed" && (
         <Refusal className={styles.error} said={creditRefusal(adjusting.code, credits?.visits ?? 0)} />
       )}

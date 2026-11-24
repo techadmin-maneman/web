@@ -3,6 +3,7 @@
 // primary tone, before a page's main switch. Anything but the primary tone looks dangerous before it is pressed, and a
 // switch that reaches everyone can ask for a word typed first.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "./useOneAtATime.ts";
 import { Button } from "./Button.tsx";
 import { CancelButton } from "./CancelButton.tsx";
@@ -31,6 +32,7 @@ type Answer<Body> = { readonly ok: true; readonly body: Body } | { readonly ok: 
 function Asking(props: {
   name: string;
   tone: Tone;
+  icon: string;
   words: DeleteWords;
   typed: string | undefined;
   sending: boolean;
@@ -63,6 +65,7 @@ function Asking(props: {
           variant={props.tone}
           size="small"
           className={styles.quiet}
+          icon={props.icon}
           disabled={props.sending || waiting}
           onClick={props.onConfirm}
         >
@@ -78,6 +81,7 @@ export function DeleteAction<Body>({
   name,
   tone = "destructive",
   words: copy = deleting,
+  icon = ACTION_ICONS.trash,
   typed,
   send,
   refusal,
@@ -90,6 +94,8 @@ export function DeleteAction<Body>({
   readonly tone?: Tone;
   /** Its own words, where what goes is not gone for good, as a member of staff taken off the list. */
   readonly words?: DeleteWords;
+  /** Its icon where it is not a deletion: a retirement's archive, a switch's power. */
+  readonly icon?: string;
   /** A word to type before the second press goes, for a switch that reaches everyone. */
   readonly typed?: string;
   readonly send: () => Promise<Answer<Body>>;
@@ -122,6 +128,7 @@ export function DeleteAction<Body>({
         <Asking
           name={name}
           tone={tone}
+          icon={icon}
           words={copy}
           typed={typed}
           sending={sending}
@@ -137,6 +144,7 @@ export function DeleteAction<Body>({
             variant={tone === "primary" ? "outline" : "danger"}
             size="small"
             className={styles.quiet}
+            icon={icon}
             aria-label={copy.label(name)}
             onClick={() => {
               setFailed(null);

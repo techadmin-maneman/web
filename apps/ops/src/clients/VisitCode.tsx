@@ -3,12 +3,13 @@
 // visit's price is open (`price_open`), and a consultation takes none. A code the client typed on the site shows
 // beneath the visit and starts the box.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Refusal } from "@maneman/ui/Refusal";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { errorText } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
 import { TextButton } from "@maneman/ui/TextLink";
 
 import { rupees } from "@maneman/web-kit/money";
@@ -57,12 +58,19 @@ function CodeLines(props: {
       {!(mayEnter && code === null) && <Shown code={code} />}
       {requested !== null && <span className={shared.closedLine}>{copy.requested(requested)}</span>}
       {mayEnter && code === null && (
-        <TextButton compact className={shared.rowAction} aria-label={copy.enterLabel(when)} onClick={props.onEnter}>
+        <TextButton
+          icon={ACTION_ICONS.ticketPercent}
+          compact
+          className={shared.rowAction}
+          aria-label={copy.enterLabel(when)}
+          onClick={props.onEnter}
+        >
           {copy.enter}
         </TextButton>
       )}
       {mayRemove && code !== null && (
         <TextButton
+          icon={ACTION_ICONS.x}
           compact
           className={shared.rowAction}
           aria-label={copy.removeLabel(when)}
@@ -143,9 +151,9 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
             />
           )}
         </Field>
-        <Button type="submit" variant="primary" size="small" disabled={typed.trim() === "" || step === "applying"}>
+        <SubmitButton disabled={typed.trim() === "" || step === "applying"}>
           {step === "applying" ? copy.applying : copy.apply}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={step === "applying"} onClick={stopEntering} />
       </form>
     </FormDrawer>

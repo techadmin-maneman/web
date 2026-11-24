@@ -13,6 +13,7 @@ import { CLOSE } from "./words.ts";
 export function DrawerButton({
   label,
   title = label,
+  icon,
   primary = false,
   children,
 }: {
@@ -22,6 +23,8 @@ export function DrawerButton({
   readonly primary?: boolean;
   /** The drawer's title, the button's words unless it says otherwise. */
   readonly title?: string;
+  /** Its icon, from @maneman/brand/action-icons: in the console it is drawn alone, its words its name. */
+  readonly icon?: string;
   readonly children: (close: () => void) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -36,6 +39,7 @@ export function DrawerButton({
       <Button
         variant={primary ? "primary" : "outline"}
         size="small"
+        icon={icon}
         ref={button}
         aria-expanded={open}
         onClick={() => {

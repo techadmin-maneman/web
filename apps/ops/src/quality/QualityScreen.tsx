@@ -1,6 +1,7 @@
 // Operations · Quality (docs/decisions/0187-recalls.md, 0188-failure-rates-and-value-at-risk.md): every recall, each
 // opened to where its lot is and who wears it, and a lot recalled with why; failure rates; and the value at risk.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { indiaDate } from "@maneman/web-kit/dates";
 import { plainDate } from "@maneman/web-kit/plain-date";
@@ -155,7 +156,7 @@ export function QualityScreen() {
         <div className={form.screen}>
           {access.mayCall("POST /api/recalls") && current.lots.length > 0 && (
             <PageActions>
-              <DrawerButton label={copy.raise}>
+              <DrawerButton icon={ACTION_ICONS.triangleExclamationPoint} label={copy.raise}>
                 {(close) => (
                   <RaiseRecall
                     quality={current}

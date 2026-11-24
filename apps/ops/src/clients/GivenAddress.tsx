@@ -3,11 +3,11 @@
 // (apps/app/src/profile/AddressForm.tsx), its building search one session token for every keystroke and the save
 // (docs/decisions/0054-address-capture.md); an address typed without the search saves with no pin.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { errorText } from "@maneman/web-kit/refusal";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { hiddenLook } from "@maneman/ui/VisuallyHidden";
-import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { AddressSearch, type AddressSuggestion } from "@maneman/ui/AddressSearch";
@@ -236,9 +236,7 @@ export function GivenAddressForm({ clientId, address, onSaved, onCancel }: Given
       {ADDRESS_FIELDS.filter(({ part }) => part !== "line1").map(field)}
       {problem !== null && <Refusal className={styles.error} said={problem} />}
       <div className={styles.actions}>
-        <Button variant="primary" size="small" type="submit" busy={busy}>
-          {busy ? copy.saving : copy.save}
-        </Button>
+        <SubmitButton busy={busy}>{busy ? copy.saving : copy.save}</SubmitButton>
         <CancelButton disabled={busy} onClick={onCancel} />
       </div>
     </form>

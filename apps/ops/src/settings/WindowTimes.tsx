@@ -3,6 +3,7 @@
 // the API names as the earliest, and is kept for good, so the list of changes only grows. A change is made beside the
 // page, each window's hours read beneath its boxes as they are typed, before it is set.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { ReadRow } from "@maneman/ui/RecordRows";
 import { SettingPairs } from "@maneman/ui/SettingsLayout";
@@ -207,7 +208,7 @@ export function WindowTimes() {
     <>
       <PageActions>
         {access.mayCall("POST /api/slot-times") && (
-          <DrawerButton primary label={copy.formTitle}>
+          <DrawerButton icon={ACTION_ICONS.pencil} primary label={copy.formTitle}>
             {(close) => (
               <ChangeForm
                 key={times.earliest}

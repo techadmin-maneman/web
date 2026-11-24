@@ -2,6 +2,7 @@
 // start (docs/decisions/0242-client-record.md), each with who raised it and when, and taken off where it stands. Add,
 // in the card's head, opens a drawer to raise one. A technician's raised at a visit's close shows with theirs.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Panel } from "@maneman/ui/Panel";
 import { ALERT_MAX_CHARS } from "@rules/policy/client-record.ts";
 import { plainDate } from "@maneman/web-kit/plain-date";
@@ -98,7 +99,9 @@ function AlertList(props: {
             </span>
             {mayWrite && (
               <span className={styles.noteActions}>
-                <RowButton onClick={() => void takeOff(alert.id)}>{copy.takeOff}</RowButton>
+                <RowButton icon={ACTION_ICONS.trash} onClick={() => void takeOff(alert.id)}>
+                  {copy.takeOff}
+                </RowButton>
               </span>
             )}
           </li>
@@ -145,6 +148,7 @@ function Strip({ clientId }: { clientId: string }) {
         mayWrite &&
         loaded.state === "loaded" && (
           <TextButton
+            icon={ACTION_ICONS.plus}
             compact
             ref={opener}
             aria-label={copy.add}

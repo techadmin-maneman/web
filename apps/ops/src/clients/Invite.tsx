@@ -2,6 +2,8 @@
 // client who came with none may have one attached, for a friend who booked away from the invite's page
 // (docs/decisions/0089-an-invite-is-not-lost.md).
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { FormActions } from "@maneman/ui/FormActions";
@@ -11,7 +13,6 @@ import form from "@maneman/ui/forms.module.css";
 import { Toast } from "@maneman/ui/Toast";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState, type ReactNode } from "react";
@@ -162,9 +163,7 @@ function AttachForm({
         <Refusal className={shared.error} said={errorText(copy.form.errors, { code: attaching.code })} />
       )}
       <FormActions>
-        <Button variant="primary" size="small" type="submit" disabled={sending || !ready}>
-          {sending ? copy.form.saving : copy.form.save}
-        </Button>
+        <SubmitButton disabled={sending || !ready}>{sending ? copy.form.saving : copy.form.save}</SubmitButton>
         <CancelButton disabled={sending} onClick={onCancel} />
       </FormActions>
     </form>
@@ -191,7 +190,7 @@ export function Invite({
       actions={
         invite === null &&
         mayAttach && (
-          <DrawerButton label={copy.attach}>
+          <DrawerButton icon={ACTION_ICONS.link} label={copy.attach}>
             {(close) => (
               <AttachForm
                 clientId={clientId}

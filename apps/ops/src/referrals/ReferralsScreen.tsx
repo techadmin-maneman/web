@@ -2,6 +2,7 @@
 // (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts), over every referrer's figures. The partners who
 // refer on their own code are Settings' (./Partners.tsx). Approving a grant releases its credits.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
@@ -55,6 +56,26 @@ interface HeldGrantProps {
   readonly onDecided: () => void;
 }
 
+/** Who referred whom, each a way to their record, and how long the reward has been held. */
+function GrantHead({ grant, now }: { grant: Held; now: Date }) {
+  const copy = referrals.queue;
+  const overdue = daysUntil(grant.due, now) < 0;
+  return (
+    <div className={styles.grantHead}>
+      <span className={styles.pair}>
+        <OpsLink className={styles.person} to={clientPath(grant.referrer.person_id, "visits")}>
+          {grant.referrer.name}
+        </OpsLink>{" "}
+        {copy.arrow}{" "}
+        <OpsLink className={styles.person} to={clientPath(grant.referred.person_id, "referrals")}>
+          {grant.referred.name}
+        </OpsLink>
+      </span>
+      <span className={overdue ? styles.late : styles.when}>{heldFor(grant.held_since, now)}</span>
+    </div>
+  );
+}
+
 function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
   const [decision, setDecision] = useState<Decision>({ step: "open" });
   const [reason, setReason] = useState("");
@@ -77,21 +98,9 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
   // Both decisions are made in the same two steps, so the reason is asked for either way.
   const asking = decision.step === "asking" || decision.step === "sending" ? decision : null;
   const sending = decision.step === "sending";
-  const overdue = daysUntil(grant.due, now) < 0;
   return (
     <>
-      <div className={styles.grantHead}>
-        <span className={styles.pair}>
-          <OpsLink className={styles.person} to={clientPath(grant.referrer.person_id, "visits")}>
-            {grant.referrer.name}
-          </OpsLink>{" "}
-          {copy.arrow}{" "}
-          <OpsLink className={styles.person} to={clientPath(grant.referred.person_id, "referrals")}>
-            {grant.referred.name}
-          </OpsLink>
-        </span>
-        <span className={overdue ? styles.late : styles.when}>{heldFor(grant.held_since, now)}</span>
-      </div>
+      <GrantHead grant={grant} now={now} />
       <ul className={styles.signals}>
         {grant.signals.map((signal) => (
           <li key={signal} className={capsLook(styles.signal)}>
@@ -120,6 +129,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             <Button
               variant={asking.choice === "approve" ? "primary" : "danger"}
               size="small"
+              icon={asking.choice === "approve" ? ACTION_ICONS.circleCheck : ACTION_ICONS.circleX}
               disabled={sending || reason.trim() === ""}
               onClick={() => void decide(asking.choice)}
             >
@@ -137,6 +147,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
       {asking === null && mayDecide && (
         <div className={styles.actions}>
           <Button
+            icon={ACTION_ICONS.circleCheck}
             variant="primary"
             size="small"
             ref={openers.approve}
@@ -147,6 +158,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
             {copy.approve}
           </Button>
           <Button
+            icon={ACTION_ICONS.circleX}
             variant="danger"
             size="small"
             ref={openers.reject}
@@ -314,7 +326,13 @@ function ReferrersTable({ version }: { version: number }) {
       )}
       {pages.next !== null && (
         <div className={styles.actions}>
-          <Button variant="outline" size="small" disabled={pages.fetching} onClick={() => void more(pages)}>
+          <Button
+            icon={ACTION_ICONS.chevronDown}
+            variant="outline"
+            size="small"
+            disabled={pages.fetching}
+            onClick={() => void more(pages)}
+          >
             {pages.fetching ? copy.loading : copy.more}
           </Button>
         </div>

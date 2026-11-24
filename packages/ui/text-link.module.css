@@ -24,6 +24,22 @@
     font-size: var(--fs-14);
   }
 
+  /* An action drawn as its icon alone (./icon-actions.ts): no underline, a square tap with the icon at its middle. */
+  .iconOnly {
+    justify-content: center;
+    min-width: var(--tap);
+    text-decoration: none;
+  }
+
+  .iconOnly.compact {
+    min-width: var(--sp-24);
+  }
+
+  .iconOnly:hover:not(:disabled),
+  .iconOnly:focus-visible {
+    background: var(--ui-box-off);
+  }
+
   .words:disabled {
     color: var(--ui-text-quiet);
     text-decoration-color: currentcolor;

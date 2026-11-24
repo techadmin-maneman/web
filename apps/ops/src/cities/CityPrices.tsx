@@ -1,6 +1,7 @@
 // The prices a city sets apart from the book's: each from its day, before the national price there. One still to come
 // may be withdrawn, asked once in its row; the one in force and the spent ones stay, as an invoice may stand on them.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -250,7 +251,7 @@ export function CityPrices({ cities, reread }: { cities: Cities; reread: () => P
       count={cities.prices.length}
       actions={
         mayAdd && (
-          <DrawerButton label={copy.add}>
+          <DrawerButton icon={ACTION_ICONS.plus} label={copy.add}>
             {(close) => (
               <PriceForm
                 cities={cities}
