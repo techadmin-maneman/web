@@ -43,6 +43,7 @@ function OneSos({ sos, mayHandle, onHandled }: { sos: OpenSos; mayHandle: boolea
             variant="outline"
             size="small"
             href={mapLink(sos.position)}
+            icon={ACTION_ICONS.map}
             target="_blank"
             rel="noopener noreferrer"
           >

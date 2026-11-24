@@ -51,7 +51,13 @@ export function CallAboutMove({
         <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
       </TextLink>
       {mayTell && (
-        <TextButton icon={ACTION_ICONS.circleCheck} tone="muted" compact disabled={busy} onClick={() => void record()}>
+        <TextButton
+          icon={ACTION_ICONS.phoneOutgoing}
+          tone="muted"
+          compact
+          disabled={busy}
+          onClick={() => void record()}
+        >
           {busy ? copy.recording : copy.told}
           <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
         </TextButton>

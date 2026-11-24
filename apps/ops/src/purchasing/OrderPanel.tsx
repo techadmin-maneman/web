@@ -71,7 +71,7 @@ function CancelOrder({
       </Field>
       <FormActions>
         <Button
-          icon={ACTION_ICONS.x}
+          icon={ACTION_ICONS.fileX}
           variant="destructive"
           size="small"
           disabled={reason.trim() === ""}
@@ -132,7 +132,7 @@ function Steps({
         )}
         {cancellable && !cancelling && (
           <Button
-            icon={ACTION_ICONS.x}
+            icon={ACTION_ICONS.fileX}
             variant="outline"
             size="small"
             onClick={() => {

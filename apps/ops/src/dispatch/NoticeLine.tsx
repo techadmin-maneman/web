@@ -18,7 +18,7 @@ export function NoticeLine({
       <p className={styles.noticeText}>{notice.text}</p>
       {notice.call !== null && (
         <Button
-          icon={ACTION_ICONS.send}
+          icon={ACTION_ICONS.phoneOutgoing}
           variant="outline"
           size="small"
           onClick={() => {

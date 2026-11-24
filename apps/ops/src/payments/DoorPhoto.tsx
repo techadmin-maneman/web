@@ -31,7 +31,7 @@ export function DoorPhoto({ caseId }: { caseId: string }) {
     });
   return (
     <>
-      <Button icon={ACTION_ICONS.camera} variant="outline" size="small" busy={busy} onClick={() => void show()}>
+      <Button icon={ACTION_ICONS.eye} variant="outline" size="small" busy={busy} onClick={() => void show()}>
         {copy.show}
       </Button>
       {failed && <span className={styles.doorFailed}>{copy.failed}</span>}

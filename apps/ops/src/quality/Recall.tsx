@@ -159,7 +159,7 @@ export function RecallDetail({
       {recall.closed_at === null && access.mayCall("POST /api/recalls/{id}/close") && (
         <FormActions>
           <Button
-            icon={ACTION_ICONS.x}
+            icon={ACTION_ICONS.circleCheck}
             variant="outline"
             size="small"
             onClick={() =>

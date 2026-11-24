@@ -100,6 +100,7 @@ function LinkActions(props: {
       </RowButton>
       {props.mayRetire && link.retired_at === null && (
         <DeleteAction
+          icon={ACTION_ICONS.archive}
           name={link.name}
           tone="danger"
           words={copy.retiring}
@@ -169,7 +170,7 @@ function LinksTable(props: { links: readonly CampaignLink[]; mayRetire: boolean;
 function Making({ list, onMade }: { list: CampaignLinks; onMade: () => void }) {
   return (
     <PageActions>
-      <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.newSociety}>
+      <DrawerButton icon={ACTION_ICONS.building} primary label={copy.newSociety}>
         {(close) => (
           <SocietyForm
             list={list}
@@ -181,7 +182,7 @@ function Making({ list, onMade }: { list: CampaignLinks; onMade: () => void }) {
           />
         )}
       </DrawerButton>
-      <DrawerButton icon={ACTION_ICONS.plus} label={copy.newOffer}>
+      <DrawerButton icon={ACTION_ICONS.ticketPercent} label={copy.newOffer}>
         {(close) => (
           <OfferForm
             list={list}

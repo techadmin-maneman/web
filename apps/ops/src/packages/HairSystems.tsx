@@ -212,6 +212,7 @@ function HairSystemFoot(props: {
     <div className={styles.foot}>
       {piece.offered && access.mayCall("POST /api/consumables/{code}/retire") && (
         <DeleteAction
+          icon={ACTION_ICONS.archive}
           name={piece.name}
           tone="danger"
           words={asked(copy.retire, piece.name, copy.retireAsk)}

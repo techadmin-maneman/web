@@ -59,7 +59,7 @@ function LaunchRow({ launch, onCancel }: { launch: PincodeLaunch; onCancel: (() 
       {launch.held_because !== null && <p className={shared.error}>{heldWhy(launch.held_because)}</p>}
       {onCancel !== null && (
         <Button
-          icon={ACTION_ICONS.x}
+          icon={ACTION_ICONS.calendarX}
           variant="outline"
           size="small"
           narrow

@@ -8,7 +8,7 @@ import { CancelButton } from "@maneman/ui/CancelButton";
 import { DateInput, Field, Select } from "@maneman/ui/Field";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { Refused } from "@maneman/ui/Refusal";
-import { TextButton } from "@maneman/ui/TextLink";
+import { RowButton } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { apiNow } from "@maneman/web-kit/clock";
 import { todayInIndia } from "@maneman/web-kit/dates";
@@ -155,21 +155,19 @@ export function PieceFailure(props: {
     <>
       {!(mayMark && piece.replaced_at === null) && <span>{props.said}</span>}
       {mayUndo && (
-        <TextButton
+        <RowButton
           icon={ACTION_ICONS.undo2}
-          compact
           className={shared.rowAction}
           aria-label={copy.undoLabel(piece.piece_code)}
           disabled={busy}
           onClick={() => void undo()}
         >
           {busy ? copy.undoing : copy.undo}
-        </TextButton>
+        </RowButton>
       )}
       {mayMark && (
-        <TextButton
-          icon={ACTION_ICONS.triangleExclamationPoint}
-          compact
+        <RowButton
+          icon={ACTION_ICONS.flag}
           className={shared.rowAction}
           aria-label={copy.markLabel(piece.piece_code)}
           onClick={() => {
@@ -177,7 +175,7 @@ export function PieceFailure(props: {
           }}
         >
           {copy.mark}
-        </TextButton>
+        </RowButton>
       )}
       <Refused failed={failure} errors={copy.errors} />
       {marking && (

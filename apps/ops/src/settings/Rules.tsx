@@ -78,17 +78,20 @@ function Standard({ rule, onSaved }: { readonly rule: OpsSetting; readonly onSav
           </Button>
         </>
       ) : (
-        <Button
-          icon={ACTION_ICONS.rotateCcw}
-          variant="quiet"
-          size="small"
-          narrow
-          busy={busy}
-          aria-label={copy.resetLabel(rule.title)}
-          onClick={() => void send(null)}
-        >
-          {copy.reset}
-        </Button>
+        <>
+          <span className={styles.wasReset}>{copy.notDefault}</span>
+          <Button
+            icon={ACTION_ICONS.rotateCcw}
+            variant="quiet"
+            size="small"
+            narrow
+            busy={busy}
+            aria-label={copy.resetLabel(rule.title)}
+            onClick={() => void send(null)}
+          >
+            {copy.reset}
+          </Button>
+        </>
       )}
       {refused !== null && <Refusal className={styles.refusal} said={refused} />}
     </div>

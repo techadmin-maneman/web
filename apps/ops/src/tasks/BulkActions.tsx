@@ -237,7 +237,7 @@ export function BulkActions({
         <SelectionBar count={rows.length} onClear={onClear}>
           {takeable.length > 0 && me !== null && (
             <Button
-              icon={ACTION_ICONS.userCheck}
+              icon={ACTION_ICONS.handGrab}
               variant="outline"
               size="small"
               busy={busy}

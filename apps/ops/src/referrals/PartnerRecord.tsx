@@ -69,6 +69,7 @@ function PartnerFoot({ partner, site, onSaved }: Omit<Props, "list">) {
       </Button>
       {mayPause && partner.paused_at === null && (
         <DeleteAction
+          icon={ACTION_ICONS.pause}
           name={partner.name}
           tone="danger"
           words={copy.pausing}

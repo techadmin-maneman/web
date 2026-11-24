@@ -248,6 +248,7 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
       )}
       {mayRemove && (
         <DeleteAction
+          icon={ACTION_ICONS.calendarCheck}
           name={words}
           tone="danger"
           words={copy.reopening}

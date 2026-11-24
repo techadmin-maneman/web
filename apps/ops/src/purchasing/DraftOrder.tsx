@@ -272,6 +272,7 @@ export function DraftOrder({
     setNote("");
     onDrafted(answer.body, copy.draft.drafted);
   };
+  const sendDraft = () => void draft();
   return (
     <div className={styles.draft}>
       <SupplierPick
@@ -290,7 +291,7 @@ export function DraftOrder({
       />
       <Note>{copy.draft.total(inCurrency(total, supplier.currency))}</Note>
       <FormActions>
-        <Button icon={ACTION_ICONS.send} variant="primary" size="small" disabled={!ready} onClick={() => void draft()}>
+        <Button icon={ACTION_ICONS.filePlus} variant="primary" size="small" disabled={!ready} onClick={sendDraft}>
           {copy.draft.send}
         </Button>
       </FormActions>

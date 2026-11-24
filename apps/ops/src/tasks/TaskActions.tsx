@@ -295,7 +295,7 @@ export function TaskActions(props: TaskActionsProps) {
           <Act
             label={mine ? tasks.owner.handBack : tasks.owner.take}
             subject={subject}
-            icon={mine ? ACTION_ICONS.undo2 : ACTION_ICONS.handGrab}
+            icon={mine ? ACTION_ICONS.userMinus : ACTION_ICONS.handGrab}
             actRef={mineButton}
             onClick={() => void makeOwner(mine ? null : me, mineButton)}
           />

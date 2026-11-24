@@ -110,7 +110,7 @@ function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: str
         <RowButton
           key={change}
           ref={change === open ? opener : undefined}
-          icon={change === "cancel" ? ACTION_ICONS.x : ACTION_ICONS.circleCheck}
+          icon={change === "cancel" ? ACTION_ICONS.calendarX : ACTION_ICONS.circleCheck}
           aria-label={change === "cancel" ? copy.cancel.openLabel(when) : copy.handClose.openLabel(when)}
           onClick={() => {
             setOpen(change);

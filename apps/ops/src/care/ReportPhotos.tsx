@@ -68,7 +68,7 @@ function Photos({ conversationId, only }: Props) {
   return (
     <div className={styles.reportPhotos}>
       {(shown === null || failed) && (
-        <Button icon={ACTION_ICONS.camera} variant="outline" size="small" busy={busy} onClick={() => void show()}>
+        <Button icon={ACTION_ICONS.eye} variant="outline" size="small" busy={busy} onClick={() => void show()}>
           {copy.show(photos.length)}
         </Button>
       )}

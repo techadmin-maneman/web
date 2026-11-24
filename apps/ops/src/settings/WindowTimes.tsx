@@ -166,6 +166,7 @@ function setsOf(change: SlotTimes["changes"][number]): string[] {
 function Withdraw({ from, onWithdrawn }: { from: string; onWithdrawn: () => void }) {
   return (
     <DeleteAction
+      icon={ACTION_ICONS.undo2}
       name={shortDate(from)}
       words={copy.withdrawing}
       send={() => settingsApi.withdrawSlotTimes(from)}

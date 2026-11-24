@@ -63,6 +63,7 @@ function SupplierFoot({ supplier, onSaved }: Omit<Props, "suppliers">) {
     <div className={form.recordFoot}>
       {supplier.retired_at === null ? (
         <DeleteAction
+          icon={ACTION_ICONS.archive}
           name={supplier.name}
           tone="danger"
           words={copy.retiring}

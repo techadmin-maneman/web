@@ -77,6 +77,7 @@ export function TrayDrawer({ each, onAssign, onAssignTo, technicians, onClose }:
                 target="_blank"
                 rel="noopener noreferrer"
                 icon={ICONS.whatsapp}
+                iconSize="md"
               >
                 {copy.whatsapp(firstNameOf(person.name))}
               </ButtonLink>

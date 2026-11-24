@@ -164,7 +164,7 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
   if (!asking) {
     return (
       <RowButton
-        icon={ACTION_ICONS.x}
+        icon={ACTION_ICONS.fileX}
         ref={opener}
         onClick={() => {
           setAsking(true);
@@ -179,7 +179,7 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
       <p className={form.fieldLabel}>{copy.cancelAsk}</p>
       <FormActions>
         <Button
-          icon={ACTION_ICONS.x}
+          icon={ACTION_ICONS.fileX}
           variant="destructive"
           size="small"
           busy={busy}

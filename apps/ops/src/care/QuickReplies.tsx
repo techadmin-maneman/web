@@ -191,6 +191,7 @@ export function QuickRepliesPanel() {
               )}
               {mayKeep && (
                 <DeleteAction
+                  icon={ACTION_ICONS.archive}
                   name={reply.title}
                   tone="danger"
                   words={copy.retiring}

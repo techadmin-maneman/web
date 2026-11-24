@@ -15,7 +15,7 @@ type DismissProps = Omit<ButtonProps, "variant" | "size" | "narrow" | "className
 /** Cancel; `keep` where what is asked is itself a cancelling or a withdrawal, which then reads Keep it. */
 export function CancelButton({ keep = false, ...rest }: DismissProps & { readonly keep?: boolean }) {
   return (
-    <Button {...rest} variant="outline" size="small" narrow icon={ACTION_ICONS.x}>
+    <Button {...rest} variant="outline" size="small" narrow icon={keep ? ACTION_ICONS.undo2 : ACTION_ICONS.x}>
       {keep ? DISMISS.keep : DISMISS.cancel}
     </Button>
   );

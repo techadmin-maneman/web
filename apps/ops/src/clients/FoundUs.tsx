@@ -3,6 +3,7 @@
 // the consultation, kept apart and changed where it reads; and whether their details still go to Google and Meta,
 // which they may ask to stop.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { Panel } from "@maneman/ui/Panel";
 import { ChoiceRow, ReadRow, TextRow } from "@maneman/ui/RecordRows";
@@ -94,6 +95,7 @@ function Rows(props: { clientId: string; name: string; found: ClientAttribution;
       {found.sharing_stopped_at === null && access.mayCall("POST /api/clients/{id}/stop-sharing") && (
         <div className={form.recordFoot}>
           <DeleteAction
+            icon={ACTION_ICONS.ban}
             name={props.name}
             words={copy.stopping}
             send={() => clientsApi.stopSharing(clientId)}

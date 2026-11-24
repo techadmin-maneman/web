@@ -83,6 +83,7 @@ function WhatsApp({ record }: { record: ClientRecord }) {
       rel="noopener noreferrer"
       aria-label={clients.whatsappLabel(record.name)}
       icon={ICONS.whatsapp}
+      iconSize="md"
     >
       {clients.whatsapp}
     </ButtonLink>

@@ -248,6 +248,7 @@ export function StaffRecord(props: {
       {props.mayRemove && (
         <div className={form.recordFoot}>
           <DeleteAction
+            icon={ACTION_ICONS.userX}
             name={person.email}
             words={copy.removing}
             send={() => staffApi.deleteStaff(person.email)}

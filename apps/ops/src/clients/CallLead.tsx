@@ -140,7 +140,7 @@ export interface CallTaken {
 export function CallLead(props: { onTaken: (taken: CallTaken) => void }) {
   if (!useAccess().mayCall("POST /api/leads/call")) return null;
   return (
-    <DrawerButton icon={ACTION_ICONS.phone} label={copy.open} primary>
+    <DrawerButton icon={ACTION_ICONS.userPlus} label={copy.open} primary>
       {(close) => (
         <CallForm
           onTaken={(done) => {

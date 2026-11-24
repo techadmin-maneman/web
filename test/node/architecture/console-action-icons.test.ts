@@ -7,7 +7,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const ROOT = "apps/ops/src";
-const BUTTON = /<(Button|RowButton|TextButton|DrawerButton)(?![A-Za-z])/g;
+const BUTTONS = new Set(["Button", "RowButton", "TextButton", "DrawerButton", "ButtonLink"]);
+const COMPONENT = /<([A-Z][A-Za-z]*)(?![A-Za-z])/g;
 
 /** The buttons in each file that are a record's name or a piece of content, so keep their words. */
 const KEEPS_WORDS: Readonly<Record<string, number>> = {
@@ -53,9 +54,12 @@ function filesUnder(directory: string): string[] {
   });
 }
 
-/** Each button's opening tag, up to the > that closes it outside any {expression}. */
+/**
+ * Each action's opening tag, up to the > that closes it outside any {expression}: a button, a link drawn as a button,
+ * or any element given a button's look.
+ */
 function buttonTags(text: string): string[] {
-  return [...text.matchAll(BUTTON)].map((match) => {
+  const tags = [...text.matchAll(COMPONENT)].map((match) => {
     let depth = 0;
     let end = match.index;
     for (; end < text.length; end += 1) {
@@ -64,8 +68,9 @@ function buttonTags(text: string): string[] {
       else if (ch === "}") depth -= 1;
       else if (ch === ">" && depth === 0) break;
     }
-    return text.slice(match.index, end + 1);
+    return { name: match[1] ?? "", tag: text.slice(match.index, end + 1) };
   });
+  return tags.filter(({ name, tag }) => BUTTONS.has(name) || tag.includes("buttonLook(")).map(({ tag }) => tag);
 }
 
 function wordsOnly(): Record<string, number> {
@@ -83,7 +88,10 @@ describe("the console's actions", () => {
   });
 
   it("would catch a button without one", () => {
-    const tags = buttonTags(`<Button variant="outline" onClick={() => { go(); }}>Go</Button><RowButton icon={x}>`);
-    expect(tags.map((tag) => /\bicon=/.test(tag))).toEqual([false, true]);
+    const tags = buttonTags(
+      `<Button variant="outline" onClick={() => { go(); }}>Go</Button><RowButton icon={x}>` +
+        `<OpsLink className={buttonLook({ variant: "outline", size: "small" })} to="/x">Open</OpsLink><Panel title="x">`,
+    );
+    expect(tags.map((tag) => /\bicon=/.test(tag))).toEqual([false, true, false]);
   });
 });

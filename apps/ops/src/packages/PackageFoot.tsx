@@ -122,6 +122,7 @@ export function PackageFoot(props: {
       )}
       {!retired && access.mayCall("POST /api/packages/{code}/retire") && (
         <DeleteAction
+          icon={ACTION_ICONS.archive}
           name={chosen.name}
           tone="danger"
           words={asked(copy.foot.retire, chosen.name, copy.foot.retireAsk)}

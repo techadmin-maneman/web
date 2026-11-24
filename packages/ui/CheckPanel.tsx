@@ -64,7 +64,7 @@ export function CheckPanel({
         <CheckWarning key={line}>{line}</CheckWarning>
       ))}
       <FormActions>
-        <Button variant="primary" size="small" disabled={busy || !ready} icon={ACTION_ICONS.send} onClick={onSend}>
+        <Button variant="primary" size="small" disabled={busy || !ready} icon={ACTION_ICONS.check} onClick={onSend}>
           {busy ? review.sending : review.send}
         </Button>
         {question === undefined ? (

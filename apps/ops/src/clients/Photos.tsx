@@ -243,7 +243,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
         <PanelLoading />
       ) : (
         <Button
-          icon={ACTION_ICONS.camera}
+          icon={ACTION_ICONS.eye}
           variant="primary"
           size="small"
           className={styles.primary}

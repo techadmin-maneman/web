@@ -173,6 +173,7 @@ function PlaceFoot(props: { place: Place; name: string; onChanged: (stock: Stock
     <div className={form.recordFoot}>
       {place.active ? (
         <DeleteAction
+          icon={ACTION_ICONS.archive}
           name={props.name}
           tone="danger"
           words={copy.closing}

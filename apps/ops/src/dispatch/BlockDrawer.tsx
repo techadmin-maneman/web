@@ -91,6 +91,7 @@ function Contacts({ person }: { readonly person: NonNullable<Props["job"]["block
         target="_blank"
         rel="noopener noreferrer"
         icon={ICONS.whatsapp}
+        iconSize="md"
       >
         {copy.whatsapp(firstNameOf(person.name))}
       </ButtonLink>
@@ -110,7 +111,7 @@ function Foot(props: Props) {
     <div className={styles.drawerActions}>
       {change === "cancel" && (
         <Button
-          icon={ACTION_ICONS.x}
+          icon={ACTION_ICONS.calendarX}
           variant="danger"
           size="small"
           onClick={() => {
@@ -193,7 +194,7 @@ export function BlockDrawer(props: Props) {
           <p className={styles.untoldLine}>{copy.untold[block.untold.reason](movedTo, phoneWords(person.mobile))}</p>
           {onTold !== null && (
             <Button
-              icon={ACTION_ICONS.send}
+              icon={ACTION_ICONS.phoneOutgoing}
               variant="outline"
               size="small"
               onClick={() => {
@@ -215,7 +216,7 @@ export function BlockDrawer(props: Props) {
           </p>
           {onWithdraw !== null && (
             <Button
-              icon={ACTION_ICONS.undo2}
+              icon={ACTION_ICONS.calendarX}
               variant="outline"
               size="small"
               onClick={() => {

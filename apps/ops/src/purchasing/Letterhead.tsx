@@ -185,7 +185,7 @@ export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next
   if (letter !== null) {
     return (
       <PageActions>
-        <DrawerButton icon={ACTION_ICONS.pencil} label={copy.title}>
+        <DrawerButton icon={ACTION_ICONS.fileText} label={copy.title}>
           {() => <LetterheadRows letter={letter} onSaved={onSaved} />}
         </DrawerButton>
       </PageActions>
@@ -195,7 +195,7 @@ export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next
     <Note>
       <span className={styles.letterheadNote}>
         {copy.missing}{" "}
-        <DrawerButton icon={ACTION_ICONS.pencil} label={copy.set} title={copy.title}>
+        <DrawerButton icon={ACTION_ICONS.fileText} label={copy.set} title={copy.title}>
           {(close) => (
             <SetLetterhead
               onSaved={(next, said) => {

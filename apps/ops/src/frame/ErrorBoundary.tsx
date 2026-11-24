@@ -24,7 +24,7 @@ function Broken({ home }: { home: boolean }) {
           {broken.reload}
         </Button>
         {home && (
-          <ButtonLink variant="outline" size="small" href="/">
+          <ButtonLink variant="outline" size="small" href="/" icon={ACTION_ICONS.house}>
             {broken.home}
           </ButtonLink>
         )}

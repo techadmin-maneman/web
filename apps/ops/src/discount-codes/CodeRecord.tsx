@@ -75,6 +75,7 @@ export function CodeRecord(props: {
         )}
         {code.switched_off === null && access.mayCall("POST /api/discount-codes/{id}/off") && (
           <DeleteAction
+            icon={ACTION_ICONS.powerOff}
             name={code.code}
             tone="danger"
             words={{ ...copy.switching, warning: (name: string) => copy.switching.warning(name, code.uses) }}

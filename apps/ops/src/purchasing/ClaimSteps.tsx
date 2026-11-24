@@ -38,7 +38,7 @@ function Withdraw({
   if (!withdrawing) {
     return (
       <Button
-        icon={ACTION_ICONS.undo2}
+        icon={ACTION_ICONS.fileX}
         variant="outline"
         size="small"
         onClick={() => {
@@ -52,7 +52,7 @@ function Withdraw({
   return (
     <>
       <Button
-        icon={ACTION_ICONS.undo2}
+        icon={ACTION_ICONS.fileX}
         variant="danger"
         size="small"
         disabled={note === ""}
