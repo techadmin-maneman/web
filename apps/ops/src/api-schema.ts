@@ -18040,7 +18040,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianPay"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: a start before today */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -33003,6 +33003,36 @@ export interface components {
                 /** Format: date-time */
                 set_at: string;
             }[];
+            /** @description Every rate set, the latest start first. */
+            rate_history: {
+                /** Format: uuid */
+                grade_id: string;
+                /** @description One city's rate; null for every city. */
+                city: string | null;
+                /**
+                 * @description consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show.
+                 * @enum {string}
+                 */
+                kind: "consultation" | "one_visit" | "first_fit" | "service" | "replacement" | "no_show";
+                /** @description Paise; null from that date for no rate of its own. */
+                amount: number | null;
+                /** Format: date */
+                effective_from: string;
+                set_by: string;
+                /** Format: date-time */
+                set_at: string;
+            }[];
+            /** @description Each technician's grades by the day each applies from, the latest first. */
+            grade_history: {
+                technician_id: string;
+                /** @description Null takes the grade away from that day. */
+                grade_id: string | null;
+                /** Format: date */
+                effective_from: string;
+                set_by: string;
+                /** Format: date-time */
+                set_at: string;
+            }[];
         };
         /** @description Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day. */
         PayStatement: {
@@ -33047,6 +33077,11 @@ export interface components {
         };
         TechnicianPayGrade: {
             grade_id: string | null;
+            /**
+             * Format: date
+             * @description India's date it applies from, today or later; today if left out.
+             */
+            from?: string;
         };
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {

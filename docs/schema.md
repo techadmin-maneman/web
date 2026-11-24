@@ -39,7 +39,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Where clients came from, and what Google and Meta were told | `visitors`, `touches`, `person_attribution`, `conversions` | A visit, chat or call since is not put down to its channel, what a client told ops is gone, and a conversion recorded since is never sent | Adding the touches and conversions since `<T>` from the copy, then bringing each person's attribution up to date from their touches |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries`, `campaign_links` | A credit, a grant, a partner, a partner's payment, an entry of spend, a campaign link or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `qc_points`, `checklist_items`, `partial_reasons`, `lost_reasons`, `not_fitted_reasons`, `failure_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `po_letterhead`, `standard_costs`, `targets`, `services`, `packages`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `leave_requests`, `technician_hours`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `qc_points`, `checklist_items`, `partial_reasons`, `lost_reasons`, `not_fitted_reasons`, `failure_reasons`, `pay_grades`, `visit_pay_rates`, `technician_grades`, `word_versions`, `site_word_publishes` | A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate, technician's grade or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks`, `staff_tasks`, `task_snoozes` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, a fit's stock risk is found or cleared again within the hour, a task written by hand since is gone, one marked done since open again, and one snoozed since is back on the board | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -218,6 +218,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [tech_alert_kinds_off](#tech_alert_kinds_off): The kinds of alert a technician turned off; every kind is on until then (ADR 0250).
 - [tech_alerts](#tech_alerts): A technician's alerts, the inbox the phone reads over the last seven days: time to leave, the day ahead, a job moved, called off or given to another, and running over; when each was pushed and read (ADR 0250).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
+- [technician_grades](#technician_grades): A technician's pay grade from a day on, so each visit is paid on the grade held on its day (ADR 0311).
 - [technician_hours](#technician_hours): A technician's own week: a row for each day they work, with its hours. One with no rows works their city's hours every day (ADR 0210).
 - [technician_leave](#technician_leave): A technician's leave, in whole days or between two times of one day, which the clash check reads beside `slot_claims` (ADR 0062, ADR 0210).
 - [technician_updates](#technician_updates): A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).
@@ -3940,6 +3941,24 @@ Indexes:
 
 - A `UNIQUE` constraint: unique on (`technician_id`, `device_id`)
 - `technician_devices_by_session`: on (`session_id`)
+
+## technician_grades
+
+A technician's pay grade from a day on, so each visit is paid on the grade held on its day (ADR 0311).
+
+Made by `0238_technician_grades.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `technician_id` | TEXT | no |  | primary key; → `technicians.id` |  |
+| `grade_id` | TEXT | yes |  | → `pay_grades.id` |  |
+| `effective_from` | TEXT | no |  | primary key | India's date it applies from. |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `technician_grades_grade`: on (`grade_id`)
 
 ## technician_hours
 

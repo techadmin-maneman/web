@@ -15,6 +15,7 @@ interface Pay {
   grades: { id: string; name: string; technicians: number }[];
   technicians: { id: string; name: string; city: string | null; grade_id: string | null }[];
   rates: { grade_id: string; city: string | null; kind: string; amount: number | null; effective_from: string }[];
+  grade_history: { technician_id: string; grade_id: string | null; effective_from: string }[];
 }
 
 const send = (app: App, method: string, path: string, body?: unknown) =>
@@ -130,6 +131,43 @@ describe("a technician's grade", () => {
 
     await send(ops, "POST", "/api/technician-pay/technicians/t1", { grade_id: null });
     expect((await pay()).technicians.find((each) => each.id === "t1")?.grade_id).toBeNull();
+  });
+
+  it("starts a change no earlier than today, keeping today's grade until it starts, and keeps its history", async () => {
+    const senior = await addGrade("Senior");
+    const trainee = await addGrade("Trainee");
+    await technician("t1", "Delhi");
+    const today = (await pay()).today;
+    const later = "2099-01-01";
+    expect(
+      (await send(ops, "POST", "/api/technician-pay/technicians/t1", { grade_id: senior, from: "2000-01-02" })).status,
+    ).toBe(400);
+    await send(ops, "POST", "/api/technician-pay/technicians/t1", { grade_id: trainee });
+    await send(ops, "POST", "/api/technician-pay/technicians/t1", { grade_id: senior, from: later });
+    const set = await pay();
+    expect(set.technicians.find((each) => each.id === "t1")?.grade_id).toBe(trainee);
+    expect(set.grade_history.map((each) => [each.grade_id, each.effective_from])).toEqual([
+      [senior, later],
+      [trainee, today],
+    ]);
+
+    // The same start replaces the change set for it, and only that one.
+    await send(ops, "POST", "/api/technician-pay/technicians/t1", { grade_id: null, from: later });
+    expect((await pay()).grade_history.map((each) => [each.grade_id, each.effective_from])).toEqual([
+      [null, later],
+      [trainee, today],
+    ]);
+  });
+
+  it("frees a grade replaced before it started, and keeps one a technician holds from any day", async () => {
+    const senior = await addGrade("Senior");
+    const trainee = await addGrade("Trainee");
+    await technician("t1", "Delhi");
+    await send(ops, "POST", "/api/technician-pay/technicians/t1", { grade_id: senior, from: "2099-01-01" });
+    await send(ops, "POST", "/api/technician-pay/technicians/t1", { grade_id: trainee, from: "2099-01-01" });
+    await send(ops, "POST", "/api/technician-pay/technicians/t1", { grade_id: trainee });
+    expect((await send(ops, "POST", `/api/technician-pay/grades/${senior}/delete`)).status).toBe(200);
+    expect((await send(ops, "POST", `/api/technician-pay/grades/${trainee}/delete`)).status).toBe(409);
   });
 });
 

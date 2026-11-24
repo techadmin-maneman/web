@@ -5,6 +5,7 @@
 
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { read, readAll } from "../../lib/read-all.ts";
+import { gradeOnSql } from "./grade-on.ts";
 
 export const VISIT_PAY_KINDS = ["consultation", "one_visit", "first_fit", "service", "replacement", "no_show"] as const;
 type VisitPayKind = (typeof VISIT_PAY_KINDS)[number];
@@ -22,7 +23,17 @@ interface PayTechnician {
   readonly id: string;
   readonly name: string;
   readonly city: string | null;
+  /** Their grade today. */
   readonly grade_id: string | null;
+}
+
+/** A technician's grade from a day on, as it was set; grade_id null takes their grade away from that day. */
+interface GradeFrom {
+  readonly technician_id: string;
+  readonly grade_id: string | null;
+  readonly effective_from: string;
+  readonly set_by: string;
+  readonly set_at: string;
 }
 
 interface PayRate {
@@ -42,21 +53,39 @@ export interface TechnicianPay {
   readonly technicians: PayTechnician[];
   /** The rates in force on `today`, and every one set to start later. */
   readonly rates: PayRate[];
+  /** Every rate ever set, the latest start first: what each grade paid, and from when. */
+  readonly rate_history: PayRate[];
+  /** Every active technician's grades by the day each applies from, the latest first, a change set to start later too. */
+  readonly grade_history: GradeFrom[];
 }
 
 const RATE_COLUMNS = "grade_id, city, visit_kind AS kind, amount, effective_from, set_by, set_at";
 
 export async function technicianPay(db: D1Database, today: string): Promise<TechnicianPay> {
-  const { grades, technicians, rates } = await readAll(db, {
+  const { grades, technicians, rates, rate_history, grade_history } = await readAll(db, {
     grades: read<PayGrade>(
-      db.prepare(
-        `SELECT g.id, g.name, (SELECT COUNT(*) FROM technicians t WHERE t.pay_grade_id = g.id AND t.active = 1) AS technicians
-       FROM pay_grades g ORDER BY g.name`,
-      ),
+      db
+        .prepare(
+          `SELECT g.id, g.name,
+           (SELECT COUNT(*) FROM technicians t WHERE ${gradeOnSql("t.id", "?1")} = g.id AND t.active = 1) AS technicians
+         FROM pay_grades g ORDER BY g.name`,
+        )
+        .bind(today),
     ),
     technicians: read<PayTechnician>(
+      db
+        .prepare(
+          `SELECT t.id, t.name, t.city, ${gradeOnSql("t.id", "?1")} AS grade_id
+           FROM technicians t WHERE t.active = 1 AND t.test_record = 0 ORDER BY t.name`,
+        )
+        .bind(today),
+    ),
+    rate_history: read<PayRate>(db.prepare(`SELECT ${RATE_COLUMNS} FROM visit_pay_rates ORDER BY effective_from DESC`)),
+    grade_history: read<GradeFrom>(
       db.prepare(
-        "SELECT id, name, city, pay_grade_id AS grade_id FROM technicians WHERE active = 1 AND test_record = 0 ORDER BY name",
+        `SELECT tg.technician_id, tg.grade_id, tg.effective_from, tg.set_by, tg.set_at
+         FROM technician_grades tg JOIN technicians t ON t.id = tg.technician_id
+         WHERE t.active = 1 AND t.test_record = 0 ORDER BY tg.effective_from DESC`,
       ),
     ),
     rates: read<PayRate>(
@@ -74,11 +103,7 @@ export async function technicianPay(db: D1Database, today: string): Promise<Tech
         .bind(today),
     ),
   });
-  return {
-    grades: grades,
-    technicians: technicians,
-    rates: rates,
-  };
+  return { grades, technicians, rates, rate_history, grade_history };
 }
 
 interface Change {
@@ -150,7 +175,8 @@ export async function deleteGrade(
   if (!(await gradeExists(db, change.id))) return "not_found";
   const used = await db
     .prepare(
-      `SELECT EXISTS (SELECT 1 FROM technicians WHERE pay_grade_id = ?1)
+      `SELECT EXISTS (SELECT 1 FROM technician_grades WHERE grade_id = ?1)
+         OR EXISTS (SELECT 1 FROM technicians WHERE pay_grade_id = ?1)
          OR EXISTS (SELECT 1 FROM visit_pay_rates WHERE grade_id = ?1) AS used`,
     )
     .bind(change.id)
@@ -223,21 +249,44 @@ export async function setRate(db: D1Database, change: RateChange): Promise<"not_
   return "set";
 }
 
-/** Gives a technician a grade, or takes theirs away. */
-export async function setTechnicianGrade(
-  db: D1Database,
-  change: Change & { readonly technicianId: string; readonly gradeId: string | null },
-): Promise<"not_found" | "set"> {
+interface GradeChange extends Change {
+  readonly technicianId: string;
+  readonly gradeId: string | null;
+  /** India's date it applies from, today or later: checked by the caller. */
+  readonly from: string;
+  readonly today: string;
+}
+
+/**
+ * Gives a technician a grade from a day, or takes theirs away from it, replacing a change already set to start that
+ * day: their visits before it keep the grade they were paid on. One starting today is their grade on the technician
+ * row too, which the release before reads.
+ */
+export async function setTechnicianGrade(db: D1Database, change: GradeChange): Promise<"not_found" | "set"> {
   const technician = await db
-    .prepare("SELECT pay_grade_id AS grade FROM technicians WHERE id = ?1")
-    .bind(change.technicianId)
+    .prepare(`SELECT ${gradeOnSql("t.id", "?2")} AS grade FROM technicians t WHERE t.id = ?1`)
+    .bind(change.technicianId, change.from)
     .first<{ grade: string | null }>();
   if (technician === null) return "not_found";
   if (change.gradeId !== null && !(await gradeExists(db, change.gradeId))) return "not_found";
+  const now = change.now.toISOString();
   await db.batch([
     db
-      .prepare("UPDATE technicians SET pay_grade_id = ?2, updated_at = ?3 WHERE id = ?1")
-      .bind(change.technicianId, change.gradeId, change.now.toISOString()),
+      .prepare("DELETE FROM technician_grades WHERE technician_id = ?1 AND effective_from = ?2")
+      .bind(change.technicianId, change.from),
+    db
+      .prepare(
+        `INSERT INTO technician_grades (technician_id, grade_id, effective_from, set_by, set_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)`,
+      )
+      .bind(change.technicianId, change.gradeId, change.from, change.actor.id, now),
+    ...(change.from <= change.today
+      ? [
+          db
+            .prepare("UPDATE technicians SET pay_grade_id = ?2, updated_at = ?3 WHERE id = ?1")
+            .bind(change.technicianId, change.gradeId, now),
+        ]
+      : []),
     auditStatement(
       db,
       {
@@ -246,7 +295,7 @@ export async function setTechnicianGrade(
         action: "technician.pay_grade",
         subject: { kind: "technician", id: change.technicianId },
         requestId: change.requestId,
-        detail: { grade: change.gradeId, was: technician.grade },
+        detail: { grade: change.gradeId, was: technician.grade, from: change.from },
       },
       change.now,
     ),

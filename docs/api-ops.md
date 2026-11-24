@@ -24384,7 +24384,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: a start before today
 
 ```json
 {
@@ -58436,6 +58436,117 @@ Request body:
         "additionalProperties": false
       },
       "description": "The rates in force today, and every one set to start later."
+    },
+    "rate_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "grade_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One city's rate; null for every city."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "one_visit",
+              "first_fit",
+              "service",
+              "replacement",
+              "no_show"
+            ],
+            "description": "consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paise; null from that date for no rate of its own."
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "set_by": {
+            "type": "string"
+          },
+          "set_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "grade_id",
+          "city",
+          "kind",
+          "amount",
+          "effective_from",
+          "set_by",
+          "set_at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Every rate set, the latest start first."
+    },
+    "grade_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "type": "string"
+          },
+          "grade_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null takes the grade away from that day."
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "set_by": {
+            "type": "string"
+          },
+          "set_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "technician_id",
+          "grade_id",
+          "effective_from",
+          "set_by",
+          "set_at"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Each technician's grades by the day each applies from, the latest first."
     }
   },
   "required": [
@@ -58445,7 +58556,9 @@ Request body:
     "max_amount",
     "grades",
     "technicians",
-    "rates"
+    "rates",
+    "rate_history",
+    "grade_history"
   ],
   "additionalProperties": false
 }
@@ -58658,6 +58771,11 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "from": {
+      "type": "string",
+      "format": "date",
+      "description": "India's date it applies from, today or later; today if left out."
     }
   },
   "required": [

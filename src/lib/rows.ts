@@ -1871,6 +1871,13 @@ export interface Rows {
     readonly revoked_by: string | null;
     readonly wiped_at: string | null;
   };
+  readonly technician_grades: {
+    readonly technician_id: string;
+    readonly grade_id: string | null;
+    readonly effective_from: string;
+    readonly set_by: string;
+    readonly set_at: string;
+  };
   readonly technician_hours: {
     readonly technician_id: string;
     readonly weekday: number;

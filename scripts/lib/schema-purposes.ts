@@ -307,6 +307,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   pay_grades: "The seniority grades Finance names for technicians' pay per visit (ADR 0122).",
   visit_pay_rates:
     "What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).",
+  technician_grades:
+    "A technician's pay grade from a day on, so each visit is paid on the grade held on its day (ADR 0311).",
   city_blackouts: "Days on which no visit is offered in one city alone (ADR 0119).",
   city_prices: "A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).",
   city_settings: "A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).",

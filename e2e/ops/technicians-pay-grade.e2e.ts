@@ -35,6 +35,8 @@ const PAY: OpsReply<"/api/technician-pay"> = {
   grades: [{ id: SENIOR, name: "Senior", technicians: 0 }],
   technicians: [{ id: IMRAN, name: "Imran Qureshi", city: "Gurgaon", grade_id: null }],
   rates: [],
+  rate_history: [],
+  grade_history: [],
 };
 
 const ADD: Call = "POST /api/technicians";

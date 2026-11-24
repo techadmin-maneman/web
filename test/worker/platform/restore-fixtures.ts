@@ -87,6 +87,9 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO pay_grades (id, name, created_by, created_at) VALUES ('pg1', 'Senior', 'finance@maneman.in', '${AT}')`,
   `INSERT INTO visit_pay_rates (id, grade_id, city, visit_kind, amount, effective_from, set_by, set_at)
      VALUES ('vr1', 'pg1', NULL, 'service', 30000, '2026-09-01', 'finance@maneman.in', '${AT}')`,
+  // A technician's grade from a day (docs/decisions/0311-dated-technician-grades.md).
+  `INSERT INTO technician_grades (technician_id, grade_id, effective_from, set_by, set_at)
+     VALUES ('t1', 'pg1', '2026-09-01', 'finance@maneman.in', '${AT}')`,
   // A line of the site given new words on the Words page (docs/decisions/0126-the-words-page.md).
   `INSERT INTO word_versions (id, key, text, set_by, set_at)
      VALUES ('wv1', 'site:home/hero.title', 'Hair, fitted at home.', 'growth@maneman.in', '${AT}')`,

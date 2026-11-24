@@ -95,7 +95,11 @@ describe("who is signed in", () => {
   it("names their grade, city and number for Me", async () => {
     const grade = crypto.randomUUID();
     await writeRow("pay_grades", { id: grade, name: "Senior", created_by: "finance@maneman.in", created_at: AT }, {});
-    await env.DB.prepare("UPDATE technicians SET pay_grade_id = ?2 WHERE id = ?1").bind(IMRAN, grade).run();
+    await writeRow(
+      "technician_grades",
+      { technician_id: IMRAN, grade_id: grade, effective_from: "2000-01-01", set_by: "finance@maneman.in", set_at: AT },
+      {},
+    );
     expect(await (await job.get("/api/tech/me")).json()).toMatchObject({
       grade: "Senior",
       city: null,

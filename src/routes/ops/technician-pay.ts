@@ -34,6 +34,20 @@ const KindSchema = z.enum(VISIT_PAY_KINDS).openapi({
     "consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show.",
 });
 
+const RateSchema = z
+  .object({
+    grade_id: z.uuid(),
+    city: z.union([z.string(), z.null()]).openapi({ description: "One city's rate; null for every city." }),
+    kind: KindSchema,
+    amount: z
+      .union([z.number().int(), z.null()])
+      .openapi({ description: "Paise; null from that date for no rate of its own." }),
+    effective_from: z.iso.date(),
+    set_by: z.string(),
+    set_at: z.iso.datetime(),
+  })
+  .strict();
+
 const PaySchema = z
   .object({
     today: z.iso.date().openapi({ description: "India's date, the first a rate may start from." }),
@@ -59,23 +73,23 @@ const PaySchema = z
         })
         .strict(),
     ),
-    rates: z
+    rates: z.array(RateSchema).openapi({ description: "The rates in force today, and every one set to start later." }),
+    rate_history: z.array(RateSchema).openapi({ description: "Every rate set, the latest start first." }),
+    grade_history: z
       .array(
         z
           .object({
-            grade_id: z.uuid(),
-            city: z.union([z.string(), z.null()]).openapi({ description: "One city's rate; null for every city." }),
-            kind: KindSchema,
-            amount: z
-              .union([z.number().int(), z.null()])
-              .openapi({ description: "Paise; null from that date for no rate of its own." }),
+            technician_id: z.string(),
+            grade_id: z
+              .union([z.uuid(), z.null()])
+              .openapi({ description: "Null takes the grade away from that day." }),
             effective_from: z.iso.date(),
             set_by: z.string(),
             set_at: z.iso.datetime(),
           })
           .strict(),
       )
-      .openapi({ description: "The rates in force today, and every one set to start later." }),
+      .openapi({ description: "Each technician's grades by the day each applies from, the latest first." }),
   })
   .strict()
   .openapi("TechnicianPay");
@@ -207,7 +221,13 @@ const gradeOfRoute = opsRoute({
       required: true,
       ...json(
         z
-          .object({ grade_id: z.union([z.uuid(), z.null()]) })
+          .object({
+            grade_id: z.union([z.uuid(), z.null()]),
+            from: z.iso
+              .date()
+              .optional()
+              .openapi({ description: "India's date it applies from, today or later; today if left out." }),
+          })
           .strict()
           .openapi("TechnicianPayGrade"),
       ),
@@ -215,6 +235,7 @@ const gradeOfRoute = opsRoute({
   },
   responses: {
     200: ok,
+    400: errorResponse("invalid_request: a start before today"),
     404: errorResponse("not_found: no such technician in the caller's cities, or no such grade"),
   },
 });
@@ -225,14 +246,19 @@ export function registerOpsTechnicianPay(app: App): void {
     const reach = await routeReach(c);
     const today = indiaDate(c.var.deps.now());
     const [pay, cities] = await Promise.all([technicianPay(c.env.DB, today), listCities(c.env.DB)]);
+    const technicians = pay.technicians.filter((technician) => reachesCity(reach, technician.city));
+    const reached = new Set(technicians.map((technician) => technician.id));
+    const inReach = (rate: { readonly city: string | null }) => rate.city === null || reachesCity(reach, rate.city);
     return {
       today,
       kinds: [...VISIT_PAY_KINDS],
       cities: cities.map((city) => city.name).filter((city) => reachesCity(reach, city)),
       max_amount: MAX_VISIT_PAY,
       grades: pay.grades,
-      technicians: pay.technicians.filter((technician) => reachesCity(reach, technician.city)),
-      rates: pay.rates.filter((rate) => rate.city === null || reachesCity(reach, rate.city)),
+      technicians,
+      rates: pay.rates.filter(inReach),
+      rate_history: pay.rate_history.filter(inReach),
+      grade_history: pay.grade_history.filter((each) => reached.has(each.technician_id)),
     };
   };
   const change = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
@@ -294,11 +320,17 @@ export function registerOpsTechnicianPay(app: App): void {
 
   app.openapi(gradeOfRoute, async (c) => {
     const { id } = c.req.valid("param");
+    const body = c.req.valid("json");
+    const today = indiaDate(c.var.deps.now());
+    const from = body.from ?? today;
+    if (from < today) return refuse(c, "invalid_request", ["from"]);
     if (!(await withinRouteReach(c, "technician", id))) return refuse(c, "not_found");
     const set = await setTechnicianGrade(c.env.DB, {
       ...change(c),
       technicianId: id,
-      gradeId: c.req.valid("json").grade_id,
+      gradeId: body.grade_id,
+      from,
+      today,
     });
     if (set === "not_found") return refuse(c, "not_found");
     return c.json(await list(c), 200);

@@ -32,7 +32,11 @@ beforeEach(async () => {
     },
     {},
   );
-  await env.DB.prepare("UPDATE technicians SET pay_grade_id = ?2 WHERE id = ?1").bind(IMRAN, grade).run();
+  await writeRow(
+    "technician_grades",
+    { technician_id: IMRAN, grade_id: grade, effective_from: "2000-01-01", set_by: "finance@maneman.in", set_at: AT },
+    {},
+  );
 });
 
 describe("the technician's month", () => {
@@ -55,7 +59,7 @@ describe("the technician's month", () => {
       {
         id: crypto.randomUUID(),
         grade_id: (
-          await env.DB.prepare("SELECT pay_grade_id AS id FROM technicians WHERE id = ?1")
+          await env.DB.prepare("SELECT grade_id AS id FROM technician_grades WHERE technician_id = ?1")
             .bind(IMRAN)
             .first<{ id: string }>()
         )?.id,
@@ -78,6 +82,39 @@ describe("the technician's month", () => {
     expect(month.lines).toEqual([
       expect.objectContaining({ kind: "consultation", visits: 1, rate: 20_000, amount: 20_000 }),
     ]);
+  });
+
+  // A grade given from a day pays the visits from that day on, never one before it (docs/decisions/0311).
+  it("pays each visit on the grade the technician held on its day", async () => {
+    const lead = crypto.randomUUID();
+    await writeRow("pay_grades", { id: lead, name: "Lead", created_by: "finance@maneman.in", created_at: AT }, {});
+    await writeRow(
+      "visit_pay_rates",
+      {
+        id: crypto.randomUUID(),
+        grade_id: lead,
+        visit_kind: "service",
+        amount: 60_000,
+        effective_from: "2026-09-01",
+        set_by: "finance@maneman.in",
+        set_at: AT,
+      },
+      {},
+    );
+    const from = (day: string) =>
+      writeRow(
+        "technician_grades",
+        { technician_id: IMRAN, grade_id: lead, effective_from: day, set_by: "finance@maneman.in", set_at: AT },
+        {},
+      );
+    await job.workTo("outcome");
+    await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
+    const line = async () => (await (await job.get("/api/tech/month")).json<Month>()).lines[0];
+
+    await from("2026-09-22");
+    expect(await line()).toMatchObject({ rate: 45_000 });
+    await from("2026-09-21");
+    expect(await line()).toMatchObject({ rate: 60_000 });
   });
 
   it("is empty before any is closed, and for a month asked for with none", async () => {

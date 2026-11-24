@@ -33,6 +33,29 @@ const PAY: OpsReply<"/api/technician-pay"> = {
     rate({ grade_id: SENIOR, kind: "service", amount: 40000, effective_from: "2026-09-10", city: "Delhi" }),
     rate({ grade_id: SENIOR, kind: "first_fit", amount: 100000, effective_from: "2026-09-01" }),
   ],
+  rate_history: [
+    rate({ grade_id: SENIOR, kind: "service", amount: 35000, effective_from: "2026-10-01" }),
+    rate({ grade_id: SENIOR, kind: "service", amount: 40000, effective_from: "2026-09-10", city: "Delhi" }),
+    rate({ grade_id: SENIOR, kind: "service", amount: 30000, effective_from: "2026-09-01" }),
+    rate({ grade_id: SENIOR, kind: "first_fit", amount: 100000, effective_from: "2026-09-01" }),
+    rate({ grade_id: SENIOR, kind: "service", amount: 25000, effective_from: "2026-06-01" }),
+  ],
+  grade_history: [
+    {
+      technician_id: "t1",
+      grade_id: SENIOR,
+      effective_from: "2026-08-01",
+      set_by: "finance@maneman.in",
+      set_at: "2026-07-30T05:00:00.000Z",
+    },
+    {
+      technician_id: "t1",
+      grade_id: TRAINEE,
+      effective_from: "2000-01-01",
+      set_by: "migration 0238",
+      set_at: "2026-11-24T05:00:00.000Z",
+    },
+  ],
 };
 
 function rate(set: {
