@@ -33,8 +33,8 @@ test("draws where the keyboard is on the navigation and the Tasks board, in the 
   expect(seen).toBeGreaterThan(20);
 });
 
-// A record named by a member of staff's e-mail runs to a second line rather than past the table.
-test("keeps a long e-mail in Activity's Record column inside its cell", async ({ page }) => {
+// A record named by a member of staff's e-mail runs to a second line rather than past the row.
+test("keeps a long e-mail in Activity's sentence inside its row", async ({ page }) => {
   const email = "gurgaon.operations.head@maneman.in";
   const entry = {
     id: 1,
@@ -47,11 +47,14 @@ test("keeps a long e-mail in Activity's Record column inside its cell", async ({
   } as const;
   await answer(page, { "GET /api/activity": json({ entries: [entry], next_cursor: null }) });
   await page.goto("/activity");
-  const cell = page.getByRole("cell").filter({ hasText: email });
-  await expect(cell).toBeVisible();
+  const row = page.getByRole("listitem").filter({ hasText: email });
+  await expect(row).toBeVisible();
   const rightEdge = (element: Element) => element.getBoundingClientRect().right;
-  const [cellEnds, textEnds] = await Promise.all([cell.evaluate(rightEdge), cell.locator("span").evaluate(rightEdge)]);
-  expect(textEnds).toBeLessThanOrEqual(cellEnds);
+  const [rowEnds, textEnds] = await Promise.all([
+    row.evaluate(rightEdge),
+    row.getByText(email, { exact: false }).evaluate(rightEdge),
+  ]);
+  expect(textEnds).toBeLessThanOrEqual(rowEnds);
 });
 
 // Only the section scrolls: a long page, its rules' legends hidden for a screen reader, never scrolls the console's

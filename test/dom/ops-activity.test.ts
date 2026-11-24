@@ -112,4 +112,29 @@ describe("the Activity page", () => {
     await settle();
     expect(reads).toHaveLength(2);
   });
+
+  it("reads the pages opened too when its box in the bar is ticked, and keeps them through the filters' Clear", async () => {
+    await act(async () => {
+      root.render(createElement(ActivityScreen));
+      await Promise.resolve();
+    });
+    await settle();
+    const box = [...document.body.querySelectorAll("label")]
+      .find((each) => each.textContent.trim() === activity.filters.reads)
+      ?.querySelector("input");
+    act(() => {
+      box?.click();
+    });
+    await settle();
+    expect(reads).toEqual(["?person=p-1", "?person=p-1&reads=include"]);
+
+    filter();
+    act(() => {
+      [...document.body.querySelectorAll("button")]
+        .find((each) => each.textContent.trim() === activity.filters.clear)
+        ?.click();
+    });
+    await settle();
+    expect(reads.at(-1)).toBe("?person=p-1&reads=include");
+  });
 });

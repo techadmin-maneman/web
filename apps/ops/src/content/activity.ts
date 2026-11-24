@@ -1,12 +1,12 @@
-// Activity: the audit log, read in the console (src/routes/ops/activity.ts). The design draws no board for it; these
-// words are ours.
+// Activity: the audit log, read in the console (src/routes/ops/activity.ts), each entry a sentence whose words are in
+// ./activity-sentences.ts; these are the page's own, and what each action is called in its filter.
 
 // The schema's own type, not ../api.ts's: content is read by tests in Node, where the API client's DOM types are not.
 import type { components } from "../api-schema.ts";
 
 type ActivityAction = components["schemas"]["ActivityEntry"]["action"];
 
-/** What each action in the log was, as a line in the list says it. */
+/** What each action in the log is called, as the What filter lists it and a row's details name it. */
 const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "ops.call": "Console request",
   "call.refused": "Refused",
@@ -224,79 +224,9 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "staff.delete": "Staff member removed",
 };
 
-/**
- * What a client or a technician did, by the call their app made, as a line says it beside their name. A call missing
- * here reads by its app and its path; the sign-in calls are made before anyone is signed in, so none is logged.
- */
-const CALLS: Readonly<Partial<Record<string, string>>> = {
-  "GET /api/tech/jobs/{id}": "Opened the visit",
-  "POST /api/tech/jobs/{id}/checkin": "Arrived at the visit",
-  "POST /api/tech/jobs/{id}/start": "Started the visit",
-  "POST /api/tech/jobs/{id}/photos": "Took the photographs",
-  "POST /api/tech/jobs/{id}/checklist": "Ticked the checklist",
-  "POST /api/tech/jobs/{id}/consumables": "Recorded what was used",
-  "POST /api/tech/jobs/{id}/piece": "Recorded the hair system fitted",
-  "POST /api/tech/jobs/{id}/profile": "Updated the hair profile",
-  "POST /api/tech/jobs/{id}/outcome": "Closed the visit",
-  "POST /api/tech/jobs/{id}/no-show": "Closed the visit as a no-show",
-  "POST /api/tech/jobs/{id}/updates": "Sent the client an update",
-  "POST /api/tech/jobs/{id}/sign-off-request": "Asked the client to sign off the fit",
-  "POST /api/tech/jobs/{id}/sign-off-declined": "Recorded that the client declined to sign",
-  "POST /api/tech/jobs/{id}/discount-code": "Applied a discount code",
-  "POST /api/tech/jobs/{id}/payment-link/resend": "Texted the client their payment link again",
-  "POST /api/tech/jobs/{id}/finish-ask": "Suggested a time to finish the visit",
-  "POST /api/tech/jobs/{id}/fit-today": "Booked the client’s fit on the spot",
-  "POST /api/tech/jobs/{id}/reschedule-request": "Asked ops to move the visit",
-  "POST /api/tech/sos": "Raised an SOS",
-  "POST /api/tech/sos/{id}/safe": "Said they were safe after an SOS",
-  "POST /api/tech/kit/transfers/{id}/receive": "Received stock into their kit",
-  "POST /api/tech/kit/hand-back": "Handed pieces back",
-  "POST /api/tech/kit/requests": "Asked ops for kit",
-  "POST /api/tech/alerts/read": "Read their alerts",
-  "PATCH /api/tech/alerts/settings": "Changed which alerts they get",
-  "POST /api/tech/push-subscriptions": "Allowed alerts on their phone",
-  "POST /api/tech/leave": "Asked for leave",
-  "POST /api/tech/auth/logout": "Signed out",
-  "POST /api/holds": "Held a start time",
-  "DELETE /api/holds/{id}": "Let a held time go",
-  "POST /api/holds/{id}/discount-code": "Applied a discount code",
-  "DELETE /api/holds/{id}/discount-code": "Took a discount code off",
-  "POST /api/bookings": "Booked a visit",
-  "POST /api/appointments/{id}/reschedule": "Moved the visit",
-  "POST /api/appointments/{id}/cancel": "Cancelled the visit",
-  "POST /api/appointments/{id}/note": "Left a note for the technician",
-  "POST /api/visits/{id}/proposed-move/accept": "Accepted a new day",
-  "POST /api/visits/{id}/dispute": "Disputed a no-show charge",
-  "POST /api/visits/{id}/sign-off": "Answered the fit’s sign-off",
-  "POST /api/visits/{id}/rating": "Rated the visit",
-  "POST /api/me/made-to-order": "Asked us to order their size",
-  "PATCH /api/profile/address": "Changed their address",
-  "PATCH /api/consents/{purpose}": "Changed a consent",
-  "POST /api/number-change": "Asked to change their number",
-  "POST /api/number-change/verify": "Confirmed their new number",
-  "DELETE /api/number-change": "Withdrew a number change",
-  "POST /api/deletion-request": "Asked for their record to be deleted",
-  "POST /api/me/problems": "Told Care something is wrong",
-  "POST /api/me/problems/{reference}/updates": "Added to an issue",
-  "POST /api/me/problems/{reference}/reopen": "Reopened an issue",
-  "POST /api/me/problems/{reference}/sorted": "Marked an issue sorted",
-  "POST /api/me/problems/{reference}/photos": "Added a photograph to an issue",
-  "POST /api/me/alerts/read": "Read their alerts",
-  "POST /api/csp-reports": "Their app blocked something",
-  "POST /api/photos/try-on/{id}/shown": "Saw a try-on look WhatsApp refused",
-  "POST /api/me/push-subscriptions": "Turned on notifications on a phone",
-  "POST /api/grievances": "Raised a concern",
-  "POST /api/refer/card": "Made their referral card",
-  "DELETE /api/refer/card": "Took their referral card down",
-  "DELETE /api/sessions/others": "Signed out their other phones",
-  "DELETE /api/sessions/{id}": "Signed out a phone",
-  "POST /api/auth/logout": "Signed out",
-};
-
 export const activity = {
   title: "Activity",
   actions: ACTIONS,
-  calls: CALLS,
   filters: {
     label: "Narrow the log",
     filter: "Filter",
@@ -311,7 +241,7 @@ export const activity = {
     },
     actor: "Email or ID",
     action: "What",
-    // Not drawn: each page opened is logged as a call; the log shows what changed unless asked.
+    // Each page opened is logged as a call; the log shows what changed unless asked.
     reads: "Show pages opened and searches too",
     anyAction: "Any action",
     /** A filter set, as its chip says it: "Client · 22000000", with its own way off. */
@@ -323,18 +253,53 @@ export const activity = {
     show: "Show",
     clear: "Clear",
   },
-  columns: { when: "When", who: "Who", what: "What", record: "Record" },
+  /** The file's columns, and a row's details' names. */
+  columns: {
+    when: "When",
+    who: "Who",
+    whoIs: "Who they are",
+    from: "From",
+    what: "What",
+    action: "Action",
+    call: "Request",
+    record: "Record",
+    recordId: "Record ID",
+    refused: "Refused",
+  },
   surfaces: { public: "Site", client: "Client app", ops: "Console", tech: "Technician app" },
-  /** A client the log names only by ID: erased, or never named. */
-  unnamedClient: "Client",
-  /** The kind of record an entry names, where the console has a page for it; a visit by its client where known. */
-  records: { person: "Client", appointment: "Visit", visitOf: (client: string) => `${client}’s visit` },
-  /** A call that only read, as its line says it: "Console page opened". */
-  opened: (surface: string) => `${surface} page opened`,
-  /** A change the API refused, which changed nothing: "Console request, refused". */
-  refused: (what: string) => `${what}, refused`,
+  /** Whom an entry names, where the log has no name: erased, or never named. */
+  someClient: "a client",
+  someTechnician: "a technician",
+  /** A client acting, where the log has no name: the start of a sentence. */
+  aClient: "A client",
+  /** A call that only read, as its sentence says it: "opened the record of Neha Kapoor". */
+  opened: {
+    record: "opened the record of {name}",
+    visit: "opened the visit for {name}",
+    page: {
+      public: "opened a page on the site",
+      client: "opened a page in the client app",
+      ops: "opened a page in the console",
+      tech: "opened a page in the technician app",
+    },
+  },
+  /** The days the log shows, beside the page's title, and above each day's entries. */
+  today: "Today",
+  yesterday: "Yesterday",
+  days: (from: string, to: string) => `${from} to ${to}`,
+  /** Each row's time, which opens what was logged: "Details, 11:14 am". */
+  details: (time: string) => `Details, ${time}`,
+  detailsTitle: "What was logged",
+  /** What else the log kept: IDs, counts and codes, each by its name. */
+  kept: "Kept with it",
+  yes: "Yes",
+  export: "Download CSV",
+  /** The file: "activity-2026-11-18-to-2026-11-24.csv", the days its entries cover. */
+  fileName: (from: string, to: string) => `activity-${from}-to-${to}.csv`,
   /** Every other record the log names, by its kind, beside the start of its ID; a kind added since, by its code. */
   kinds: {
+    person: "Client",
+    appointment: "Visit",
     alert: "Alert",
     blackout: "Closed day",
     city: "City",

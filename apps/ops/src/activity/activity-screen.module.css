@@ -1,52 +1,35 @@
-/* What ./ActivityScreen.tsx alone draws; what it shares is in ./activity.module.css. */ /*
- * Activity: the audit log as a table, under the fields that narrow it. The design draws no board for it, so nothing
- * here is new: Areas' table, the console's fields, and a line of muted text beneath a name, as Tasks sets who owns one.
+/*
+ * What ./ActivityScreen.tsx and ./Entries.tsx draw: the bar, then a panel a day of sentences, as the redesign draws
+ * Activity. A sentence runs to as many lines as it takes; nothing in it is cut short.
  */
 
-.table {
-  table-layout: fixed;
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
 }
 
-.when {
-  width: var(--ops-filter);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.record {
-  --local-activity-record: 128px; /* the least it takes: "Client", "Visit", or a kind and the start of an ID */
-  --local-activity-record-share: 24%; /* a kind and a name, or a member of staff's e-mail, on a line or two */
-  width: max(var(--local-activity-record), var(--local-activity-record-share));
+.sentence {
+  font-weight: var(--weight-regular);
+  white-space: normal;
   overflow-wrap: anywhere;
-}
-
-/* A name, then what they are and where they did it, a line beneath. */
-.stack {
-  vertical-align: middle;
-}
-
-.stack > * {
-  display: block;
 }
 
 .who {
-  overflow-wrap: anywhere;
+  font-weight: var(--weight-medium);
 }
 
-.sub {
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
+.refused {
+  margin-left: var(--sp-8);
 }
 
-/* A call's method and path, IDs only, which can run long. */
+/* A call's method and path, and the IDs the log kept, which can run long. */
 .call {
   font-size: var(--fs-13);
-  color: var(--ui-text-muted);
   overflow-wrap: anywhere;
 }
 
-/* Beneath the entries, in from the panel's edge as they are. */
+/* Beneath the days, at their edge. */
 .older {
   align-self: flex-start;
-  margin: var(--sp-16) var(--form-inset);
 }
