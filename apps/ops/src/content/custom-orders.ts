@@ -6,7 +6,9 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 export const customOrders = {
   title: "Custom orders",
   none: "None yet.",
-  columns: ["Order", "Made to", "Price", "Status", ""],
+  columns: ["Order", "Made to", "Price", "Status"],
+  /** The actions' column, read aloud. */
+  actions: "Change",
   /** "CU-0007" */
   number: (number: number) => `CU-${String(number).padStart(4, "0")}`,
   /** "8x10 1B, 20% grey, 100%, slight wave" */
@@ -41,6 +43,9 @@ export const customOrders = {
   cancelling: "Cancelling…",
   cancelled: "Cancelled.",
   refund: "Refund in full",
+  /** A paid order's row action, and the drawer it opens: "Refund CU-0007". */
+  refundOpen: "Refund",
+  refundLabel: (number: string) => `Refund ${number}`,
   refunded: "Refunded in full.",
   refundWhy: "Why",
   reasons: {

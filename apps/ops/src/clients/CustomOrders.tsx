@@ -8,11 +8,13 @@ import { Panel } from "@maneman/ui/Panel";
 import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
 import { rowPath } from "@maneman/ui/target";
 import { OpsLink } from "../frame/Shell.tsx";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
-import { FIGURE, Table } from "@maneman/ui/Table";
+import { ACTIONS, FIGURE, RowActions, Table } from "@maneman/ui/Table";
 import { useAskFocus } from "@maneman/ui/useAskFocus";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -40,16 +42,58 @@ const TITLE_ID = "custom-orders";
 
 const REFUND_REASONS = ["not_ordered", "late", "failed_check"] as const;
 
-/** A paid order refunded in full, for the reason chosen, which the API checks holds. */
+/** A paid order refunded in full, for the reason chosen, which the API checks holds: in a drawer from its row. */
 function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
   const access = useAccess();
+  const [open, setOpen] = useState(false);
+  if (order.status !== "paid" && order.status !== "ordered") return null;
+  if (!access.mayCall("POST /api/custom-orders/{id}/refund")) return null;
+  const number = copy.number(order.number);
+  return (
+    <>
+      <RowButton
+        aria-label={copy.refundLabel(number)}
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {copy.refundOpen}
+      </RowButton>
+      {open && (
+        <FormDrawer
+          title={copy.refundLabel(number)}
+          onClose={() => {
+            setOpen(false);
+          }}
+        >
+          <RefundForm
+            order={order}
+            onAnswer={(answer, said) => {
+              // Refused, the drawer stays open and says why; refunded, it closes on the order's new state.
+              if (!answer.ok) return;
+              setOpen(false);
+              onAnswer(answer, said);
+            }}
+            onCancel={() => {
+              setOpen(false);
+            }}
+          />
+        </FormDrawer>
+      )}
+    </>
+  );
+}
+
+/** Why the order is refunded, and the refund itself, one press. */
+function RefundForm(props: { order: Order; onAnswer: (answer: Answer, said: string) => void; onCancel: () => void }) {
+  const { order, onAnswer } = props;
   const [reason, setReason] = useState<(typeof REFUND_REASONS)[number]>(
     order.status === "paid" ? "not_ordered" : "late",
   );
-  if (order.status !== "paid" && order.status !== "ordered") return null;
-  if (!access.mayCall("POST /api/custom-orders/{id}/refund")) return null;
+  const [refused, setRefused] = useState<string | null>(null);
   return (
-    <FormActions>
+    <div className={form.fields}>
+      {refused !== null && <Refusal className={form.error} said={refused} />}
       <Field label={copy.refundWhy} className={form.field}>
         {(control) => (
           <Select
@@ -67,18 +111,22 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
           </Select>
         )}
       </Field>
-      <Button
-        variant="destructive"
-        size="small"
-        onClick={() =>
-          void clientsApi.refundCustomOrder(order.id, reason).then((answer) => {
-            onAnswer(answer, copy.refunded);
-          })
-        }
-      >
-        {copy.refund}
-      </Button>
-    </FormActions>
+      <FormActions>
+        <Button
+          variant="destructive"
+          size="small"
+          onClick={() =>
+            void clientsApi.refundCustomOrder(order.id, reason).then((answer) => {
+              setRefused(answer.ok ? null : errorText(copy.errors, { code: answer.code, fields: answer.fields }));
+              onAnswer(answer, copy.refunded);
+            })
+          }
+        >
+          {copy.refund}
+        </Button>
+        <CancelButton onClick={props.onCancel} />
+      </FormActions>
+    </div>
   );
 }
 
@@ -86,11 +134,9 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
   const access = useAccess();
   if (order.status !== "awaiting_payment") return <Refund order={order} onAnswer={onAnswer} />;
   return (
-    <FormActions>
+    <RowActions>
       {order.link_sent_at === null && access.mayCall("POST /api/custom-orders/{id}/send-link") && (
-        <Button
-          variant="outline"
-          size="small"
+        <RowButton
           onClick={() =>
             void clientsApi.sendCustomOrderLink(order.id).then((answer) => {
               onAnswer(answer, copy.sent);
@@ -98,10 +144,10 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
           }
         >
           {copy.sendAgain}
-        </Button>
+        </RowButton>
       )}
       {access.mayCall("POST /api/custom-orders/{id}/cancel") && <CancelOrder order={order} onAnswer={onAnswer} />}
-    </FormActions>
+    </RowActions>
   );
 }
 
@@ -113,16 +159,14 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
   const { opener, question, safe } = useAskFocus(asking);
   if (!asking) {
     return (
-      <Button
+      <RowButton
         ref={opener}
-        variant="outline"
-        size="small"
         onClick={() => {
           setAsking(true);
         }}
       >
         {copy.cancelOrder}
-      </Button>
+      </RowButton>
     );
   }
   return (
@@ -171,6 +215,9 @@ function OrdersTable({
               {column}
             </th>
           ))}
+          <th scope="col">
+            <VisuallyHidden>{copy.actions}</VisuallyHidden>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -204,7 +251,7 @@ function OrdersTable({
                 )}
               {order.status === "arrived" && order.piece_at !== null && ` · ${copy.pieceAt(order.piece_at)}`}
             </td>
-            <td>
+            <td className={ACTIONS}>
               <Steps order={order} onAnswer={onAnswer} />
             </td>
           </tr>

@@ -1,14 +1,14 @@
 /*
- * Inventory's pages at the head of each (./SectionGroups.tsx). On a desk with the navigation open, the navigation lists
- * them beneath the entry, and only Stock's views are tabs; short of a desk, or with the navigation folded to its icons,
- * the pages are tabs again, Stock's views among them.
+ * An entry's pages at the head of each (./SectionGroups.tsx). On a desk with the navigation open, the navigation lists
+ * them beneath the entry, as the redesign draws them, and they are not tabs as well; on Stock its views are. Short of a
+ * desk, or with the navigation folded to its icons, the pages are tabs again, Stock's views among them.
  */
-.inventoryPages {
+.pages {
   display: none;
 }
 
 @media (max-width: 1023px) {
-  .inventoryPages {
+  .pages {
     display: flex;
   }
 
@@ -17,7 +17,7 @@
   }
 }
 
-:global(body:has(#console-nav[data-folded="true"])) .inventoryPages {
+:global(body:has(#console-nav[data-folded="true"])) .pages {
   display: flex;
 }
 

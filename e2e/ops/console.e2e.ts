@@ -375,16 +375,19 @@ test("lists an entry's pages beneath it, marks the one open, and has Inventory's
   }
 });
 
-test("has Inventory's pages as tabs again with the navigation folded, and keeps every other entry's", async ({
+// A section's pages are in the navigation beneath it, as the redesign draws them, and tabs only where it is folded.
+test("lists a section's pages only in the navigation while it is open, and as tabs once it is folded", async ({
   page,
 }) => {
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/payments");
   const money = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.nav.money });
-  await expect(money.getByRole("link", { name: opsCopy.shell.sections.payments })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+  await expect(money).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("list", { name: opsCopy.shell.nav.money })
+      .getByRole("link", { name: opsCopy.shell.sections.payments }),
+  ).toHaveAttribute("aria-current", "page");
   await page.goto("/counts");
   const inventory = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.nav.inventory });
   await expect(inventory).toHaveCount(0);

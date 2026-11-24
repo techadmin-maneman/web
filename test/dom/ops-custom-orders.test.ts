@@ -6,6 +6,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 import { CustomOrders } from "../../apps/ops/src/clients/CustomOrders.tsx";
 import { customOrders as copy } from "../../apps/ops/src/content/custom-orders.ts";
 import { DISMISS } from "../../packages/ui/words.ts";
@@ -56,7 +57,9 @@ let posted: { path: string; body: unknown }[];
 /** What was brought into view, in order. */
 let scrolled: Element[];
 
-const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+/** A button by its words, on the page or in a drawer it opened, which is drawn at the document's foot. */
+const button = (text: string) =>
+  [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
 const settle = () => answered();
 
@@ -78,6 +81,8 @@ async function press(text: string) {
 }
 
 beforeEach(() => {
+  // Refunding opens a drawer beside the page, as a modal dialog.
+  openDialogsAsJsdomCan();
   posted = [];
   scrolled = [];
   Reflect.set(Element.prototype, "scrollIntoView", function (this: Element) {
@@ -222,8 +227,10 @@ describe("the client’s custom orders", () => {
     // Being ordered, it names its purchase order, which opens on Purchasing.
     const order = [...page.querySelectorAll("a")].find((link) => link.textContent === copy.purchaseOrder(3));
     expect(order?.getAttribute("href")).toBe("/purchasing#order-po-3");
+    // Refunding opens a drawer from the row: the reason, then the refund; refused, it stays open and says why.
+    await press(copy.refundOpen);
     await press(copy.refund);
-    expect(page.textContent).toContain(copy.errors.refund_not_due);
+    expect(document.body.textContent).toContain(copy.errors.refund_not_due);
     await press(copy.refund);
     expect(posted).toEqual([
       { path: "/api/custom-orders/co-1/refund", body: { reason: "late" } },
