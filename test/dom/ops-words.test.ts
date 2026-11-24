@@ -216,7 +216,7 @@ describe("the Words page", () => {
     await show();
     expect(document.body.textContent).toContain(copy.publish.never);
     expect(document.body.textContent).toContain(copy.notOnSite);
-    await press(copy.publish.open);
+    await press(copy.publish.openCount(1));
     expect(document.body.textContent).toContain(copy.publish.changed(1));
     await press(review.send);
     expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.publish.done);

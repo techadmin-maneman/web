@@ -16,7 +16,6 @@ export const DECIDED_IN: Partial<Record<Group, { readonly page: SectionPath; rea
   untold_move: { page: "/dispatch", row: null },
   move_unanswered: { page: "/dispatch", row: null },
   unanswered_chat: { page: "/messages", row: null },
-  remedy_approval: { page: "/messages", row: null },
   leave_conflict: { page: "/dispatch", row: null },
   // A technician's ask to move a visit: the client is called, then the visit moved there.
   reschedule_request: { page: "/dispatch", row: null },

@@ -58,7 +58,10 @@ export const REMEDIES_AWAITING = `SELECT 'remedy_approval' AS "group", r.id AS i
   FROM remedies r JOIN people pe ON pe.id = r.person_id
  WHERE r.state = 'awaiting' AND pe.erased_at IS NULL`;
 
-/** Gives a client free visits: at once within the limit, else awaiting a manager. Null for no such client. */
+/**
+ * Gives a client free visits: at once within the limit, or past it by one who may approve a remedy, whose giving is
+ * its approval; else awaiting a manager. Null for no such client.
+ */
 export async function giveRemedy(
   db: D1Database,
   change: Change & {
@@ -67,6 +70,8 @@ export async function giveRemedy(
     readonly reason: RemedyReason;
     readonly note: string;
     readonly limit: RemedyLimit;
+    /** Whether the giver may approve a remedy past the limit themselves: a Care manager, or an admin. */
+    readonly approves: boolean;
   },
 ): Promise<{ readonly id: string; readonly state: "given" | "awaiting" } | null> {
   const person = await db
@@ -74,14 +79,17 @@ export async function giveRemedy(
     .bind(change.personId)
     .first();
   if (person === null) return null;
-  const given = withinLimit(change.visits, await givenLately(db, change.personId, change.limit, change.now));
+  const within = withinLimit(change.visits, await givenLately(db, change.personId, change.limit, change.now));
+  const given = within || change.approves;
   const id = crypto.randomUUID();
   const state = given ? "given" : "awaiting";
+  // Past the limit, the giver's own approval is recorded as a manager's decision is.
+  const decided = given && !within ? change.actor.id : null;
   await db.batch([
     db
       .prepare(
-        `INSERT INTO remedies (id, person_id, visits, reason, note, given_by, given_at, state)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+        `INSERT INTO remedies (id, person_id, visits, reason, note, given_by, given_at, state, decided_by, decided_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
       )
       .bind(
         id,
@@ -92,6 +100,8 @@ export async function giveRemedy(
         change.actor.id,
         change.now.toISOString(),
         state,
+        decided,
+        decided === null ? null : change.now.toISOString(),
       ),
     ...(given ? [grantRemedy(db, { id, personId: change.personId, visits: change.visits }, change.now)] : []),
     audited(db, change, { action: given ? "remedy.give" : "remedy.ask", id, visits: change.visits }),
