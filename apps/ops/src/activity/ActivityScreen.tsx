@@ -3,6 +3,7 @@
 // filters live in the page's address (./filters.ts), so a client's whole record, linked from their History tab, opens
 // already narrowed; what is shown can be downloaded as a file.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Chip } from "@maneman/ui/Chip";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
@@ -57,6 +58,7 @@ function DownloadCsv({ entries }: { entries: readonly ActivityEntry[] }) {
   return (
     <PageActions>
       <Button
+        icon={ACTION_ICONS.download}
         variant="outline"
         size="small"
         onClick={() => {
@@ -111,6 +113,7 @@ function Log({ filters, empty = copy.empty, page = false }: { filters: Filters; 
       )}
       {next !== null && (
         <Button
+          icon={ACTION_ICONS.chevronDown}
           variant="outline"
           size="small"
           className={page ? styles.older : styles.olderWithin}
@@ -158,7 +161,7 @@ export function ActivityScreen() {
   return (
     <div className={styles.log}>
       <Toolbar label={copy.filters.label}>
-        <DrawerButton label={copy.filters.filter}>
+        <DrawerButton icon={ACTION_ICONS.funnel} label={copy.filters.filter}>
           {(close) => (
             <Narrow
               filters={filters}

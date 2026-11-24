@@ -97,7 +97,7 @@ export function CareHome({ board, needs }: { readonly board: Tasks; readonly nee
       label: taskWords.groups.remedy_approval,
       value: countOf(board, "remedy_approval"),
       tone: "attention",
-      page: "messages",
+      page: "tasks",
     },
   ];
   return (

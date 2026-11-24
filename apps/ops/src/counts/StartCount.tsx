@@ -1,6 +1,7 @@
 // A count of one item at one place, started now rather than waiting for the morning's tasks
 // (docs/decisions/0185-cycle-counts.md), in the drawer the page's action opens.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
@@ -63,7 +64,13 @@ export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; 
           )}
         </Field>
         <FormActions>
-          <Button variant="primary" size="small" disabled={place === "" || item === ""} onClick={() => void start()}>
+          <Button
+            icon={ACTION_ICONS.clipboardCheck}
+            variant="primary"
+            size="small"
+            disabled={place === "" || item === ""}
+            onClick={() => void start()}
+          >
             {copy.start}
           </Button>
         </FormActions>

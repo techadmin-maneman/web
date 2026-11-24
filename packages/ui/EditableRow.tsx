@@ -12,6 +12,7 @@
 //
 // `save` answers null once the change is kept, or the words of why it was not.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useContext, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { StackedRows } from "./stacked-rows.ts";
 import { ChangeInDialog } from "./change-in-dialog.ts";
@@ -166,6 +167,7 @@ function ReadingRow(props: {
           <TextButton
             ref={props.changeButton}
             className={styles.change}
+            icon={ACTION_ICONS.pencil}
             aria-label={`${props.words.change} ${props.label}`}
             aria-describedby={valueId}
             onClick={props.onOpen}
@@ -235,10 +237,10 @@ function InlineEditing<Draft>(props: OpenProps<Draft> & { readonly id?: string; 
           {unit !== undefined && <span className={styles.unit}>{unit}</span>}
         </span>
         <span className={styles.actions}>
-          <Button variant="primary" size="small" type="submit" busy={row.busy}>
+          <Button variant="primary" size="small" type="submit" busy={row.busy} icon={ACTION_ICONS.check}>
             {words.save}
           </Button>
-          <Button variant="quiet" size="small" narrow disabled={row.busy} onClick={row.dismiss}>
+          <Button variant="quiet" size="small" narrow disabled={row.busy} icon={ACTION_ICONS.x} onClick={row.dismiss}>
             {words.cancel}
           </Button>
         </span>
@@ -285,10 +287,10 @@ function ChangeDialog<Draft>({ label, value, words, unit, row, children }: OpenP
           </p>
         )}
         <span className={styles.dialogActions}>
-          <Button variant="quiet" size="small" disabled={row.busy} onClick={row.dismiss}>
+          <Button variant="quiet" size="small" disabled={row.busy} icon={ACTION_ICONS.x} onClick={row.dismiss}>
             {words.cancel}
           </Button>
-          <Button variant="primary" size="small" type="submit" busy={row.busy}>
+          <Button variant="primary" size="small" type="submit" busy={row.busy} icon={ACTION_ICONS.check}>
             {words.save}
           </Button>
         </span>

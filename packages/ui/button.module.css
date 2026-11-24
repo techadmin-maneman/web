@@ -65,6 +65,48 @@
     font-size: var(--small-text);
   }
 
+  /* An action drawn as its icon alone (./icon-actions.ts): a square of its size's height, the icon at its middle. A
+     screen's own class may place it but not pad it or change its width, since an icon squeezed out of its square is
+     gone and one stretched past it is a bar: the padding is held here over any page's rule, and the width is held to
+     the square both ways. */
+  .button.iconOnly {
+    padding: 0 !important;
+  }
+
+  .button.iconOnly > svg {
+    flex-shrink: 0;
+  }
+
+  .iconOnly.action {
+    min-width: var(--action-height);
+    max-width: var(--action-height);
+  }
+
+  .iconOnly.control {
+    min-width: var(--control-height);
+    max-width: var(--control-height);
+  }
+
+  .iconOnly.small {
+    min-width: var(--small-height);
+    max-width: var(--small-height);
+  }
+
+  .iconOnly.compact {
+    min-width: var(--compact-height);
+    max-width: var(--compact-height);
+  }
+
+  /* Under a finger, every icon is at least a finger's square, and a long press shows its words (./ActionTips.tsx)
+     without selecting anything. A phone's sizes are already a finger's (the console's global.css). */
+  @media (pointer: coarse) {
+    .button.iconOnly {
+      min-width: var(--tap);
+      min-height: var(--tap);
+      user-select: none;
+    }
+  }
+
   /* Among a row's words, so it sits in the line as they do. */
   .compact {
     display: inline-flex;

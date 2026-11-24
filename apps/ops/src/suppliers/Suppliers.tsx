@@ -2,6 +2,7 @@
 // than deleted. A row opens its record beside the list, with what the supplier supplies, where each value changes
 // where it reads (docs/decisions/0212-editing-in-place.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { Apart } from "@maneman/ui/Apart";
 import { PageActions } from "../frame/PageHead.tsx";
@@ -170,7 +171,7 @@ export function Suppliers() {
     <>
       <PageActions>
         {mayAdd && (
-          <DrawerButton primary label={copy.form.addTitle}>
+          <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.form.addTitle}>
             {(close) => (
               <AddSupplier
                 onAdded={(next) => {

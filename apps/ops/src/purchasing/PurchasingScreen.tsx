@@ -3,6 +3,7 @@
 // printed order says of us (./Letterhead.tsx); the claims on suppliers, with the returned pieces to settle
 // (./Claims.tsx); and each supplier's scorecard.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { TextButton } from "@maneman/ui/TextLink";
 import { plainDate } from "@maneman/web-kit/plain-date";
@@ -146,7 +147,7 @@ export function PurchasingScreen() {
           )}
           {access.mayCall("POST /api/purchase-orders") && (
             <PageActions>
-              <DrawerButton primary label={copy.draft.title}>
+              <DrawerButton icon={ACTION_ICONS.shoppingCart} primary label={copy.draft.title}>
                 {(close) => (
                   <DraftOrder
                     orders={current}

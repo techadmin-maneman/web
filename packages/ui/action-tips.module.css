@@ -1,0 +1,35 @@
+/*
+ * An action's words beside its icon (./ActionTips.tsx): a small dark label in the top layer, above everything, placed
+ * by the script at --tip-x and --tip-y.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .tip {
+    /* Where the script places it, over the action it names. */
+    --tip-x: 0;
+    --tip-y: 0;
+
+    position: fixed;
+    inset: auto;
+    top: var(--tip-y);
+    left: var(--tip-x);
+    max-width: var(--skeleton-card);
+    margin: 0;
+    padding: var(--sp-4) var(--sp-8);
+    border: 0;
+    border-radius: var(--ui-radius-button);
+    background: var(--ui-strong);
+    color: var(--ui-on-strong);
+    font-size: var(--fs-13);
+    line-height: var(--lh-145);
+    pointer-events: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* An action's name, then what it waits for while it cannot act, each on its own line. */
+  .tip > span {
+    display: block;
+  }
+}

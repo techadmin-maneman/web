@@ -2,6 +2,7 @@
 // (src/routes/ops/alerts.ts), a kind's together. Each says what happened, whose visit, and links to where to act; ops
 // mark one done, or send again the message, lead or CRM erasure it gave up on. Each person sees their departments' kinds.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { Refusal } from "@maneman/ui/Refusal";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -75,13 +76,19 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
             </OpsLink>
           )}
           {maySend && alert.send_again && (
-            <TextButton tone="muted" compact disabled={busy} onClick={() => void act("send")}>
+            <TextButton icon={ACTION_ICONS.send} tone="muted" compact disabled={busy} onClick={() => void act("send")}>
               {acting === "send" ? copy.sending : copy.sendAgain}
               <VisuallyHidden>{` · ${title}`}</VisuallyHidden>
             </TextButton>
           )}
           {mayMarkDone && (
-            <TextButton tone="muted" compact disabled={busy} onClick={() => void act("done")}>
+            <TextButton
+              icon={ACTION_ICONS.circleCheck}
+              tone="muted"
+              compact
+              disabled={busy}
+              onClick={() => void act("done")}
+            >
               {acting === "done" ? copy.closing : copy.done}
               <VisuallyHidden>{` · ${title}`}</VisuallyHidden>
             </TextButton>

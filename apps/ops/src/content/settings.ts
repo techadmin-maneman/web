@@ -206,6 +206,8 @@ export const settings = {
     reset: "Reset to default",
     resetLabel: (rule: string) => `Reset ${rule} to default`,
     wasReset: "Back to the default.",
+    /** Beside the reset of a rule set by hand. */
+    notDefault: "Not the default.",
     undo: "Undo",
     /** Beside the title of a page of policies the person may read and not change. */
     viewOnly: "View only",

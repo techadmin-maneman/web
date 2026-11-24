@@ -3,6 +3,7 @@
 // statement sent to the partner, records the month's payment from the payout tool, or deletes one recorded by
 // mistake; the month's file goes to the payout tool.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { Button, RowButton } from "@maneman/ui/Button";
@@ -74,9 +75,10 @@ function StatementActions({
   const act = (kind: NonNullable<Acting>["kind"]) => {
     onAct({ id: statement.channel_id, kind });
   };
-  const offer = (kind: NonNullable<Acting>["kind"], words: string, label: string) => (
+  const offer = (kind: NonNullable<Acting>["kind"], icon: string, words: string, label: string) => (
     <RowButton
       beside
+      icon={icon}
       aria-label={label}
       disabled={acting !== null}
       onClick={() => {
@@ -89,6 +91,7 @@ function StatementActions({
   return (
     <td className={styles.actions}>
       <RowButton
+        icon={ACTION_ICONS.download}
         beside
         aria-label={copy.statementLabel(statement.name)}
         onClick={() => {
@@ -104,10 +107,10 @@ function StatementActions({
       {mayPay &&
         statements.month < statements.this_month &&
         statement.payout === null &&
-        offer("pay", copy.record, copy.recordLabel(statement.name))}
+        offer("pay", ACTION_ICONS.wallet, copy.record, copy.recordLabel(statement.name))}
       {mayPay &&
         statement.payout !== null &&
-        offer("delete", copy.deletePayment, copy.deletePaymentLabel(statement.name))}
+        offer("delete", ACTION_ICONS.trash, copy.deletePayment, copy.deletePaymentLabel(statement.name))}
     </td>
   );
 }
@@ -287,6 +290,7 @@ export function PartnerCommission() {
           <MonthChoice statements={statements} onMonth={choose} />
           {statements.statements.length > 0 && (
             <Button
+              icon={ACTION_ICONS.download}
               variant="outline"
               size="control"
               onClick={() => {

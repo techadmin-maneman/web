@@ -2,6 +2,7 @@
 // were accepted, damaged or failed their check, its lot and expiry; and the receipt's supplier invoice, rupee rate for an
 // order in another currency, and its freight, duty and clearing, which the landed cost shares out.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Checkbox, ChoiceGroup, Field, Fieldset, TextInput } from "@maneman/ui/Field";
@@ -314,7 +315,13 @@ export function ReceiveForm(props: {
         refused={(box) => boxError(copy.errors, failure, box)}
       />
       <FormActions>
-        <Button variant="primary" size="small" disabled={!ready} onClick={() => void send()}>
+        <Button
+          icon={ACTION_ICONS.packageCheck}
+          variant="primary"
+          size="small"
+          disabled={!ready}
+          onClick={() => void send()}
+        >
           {copy.receive.send}
         </Button>
         <CancelButton onClick={props.onCancel} />

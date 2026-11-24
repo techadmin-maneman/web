@@ -1,6 +1,7 @@
 // "Record a movement": the drawer Stock opens from its head, and a technician's Kit tab from theirs, starting at their
 // kit. A delivery goes into the warehouse, so a kit's drawer offers the rest.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import type { Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
@@ -27,7 +28,7 @@ export function RecordMovement(props: {
   );
   if (firstKind === undefined || props.stock.consumables.length === 0) return null;
   return (
-    <DrawerButton primary label={copy.record.title}>
+    <DrawerButton icon={ACTION_ICONS.arrowRightLeft} primary label={copy.record.title}>
       {(close) => (
         <StockForm
           stock={props.stock}

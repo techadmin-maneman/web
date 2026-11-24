@@ -3,6 +3,7 @@
 // name and the place above change where they read (ADR 0212), and it is closed once it is empty and nothing open is
 // under it. A technician's kit comes with them, and is only moved.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
@@ -172,6 +173,7 @@ function PlaceFoot(props: { place: Place; name: string; onChanged: (stock: Stock
     <div className={form.recordFoot}>
       {place.active ? (
         <DeleteAction
+          icon={ACTION_ICONS.archive}
           name={props.name}
           tone="danger"
           words={copy.closing}
@@ -180,7 +182,14 @@ function PlaceFoot(props: { place: Place; name: string; onChanged: (stock: Stock
           onDeleted={props.onChanged}
         />
       ) : (
-        <Button variant="outline" size="small" narrow busy={busy} onClick={() => void reopen()}>
+        <Button
+          icon={ACTION_ICONS.pencil}
+          variant="outline"
+          size="small"
+          narrow
+          busy={busy}
+          onClick={() => void reopen()}
+        >
           {copy.change.open}
         </Button>
       )}
@@ -281,7 +290,7 @@ export function PlacesPanel({ stock, onChanged }: { stock: Stock; onChanged: (st
       titleId="stock-places"
       title={copy.title}
       actions={
-        <DrawerButton label={copy.add.title}>
+        <DrawerButton icon={ACTION_ICONS.plus} label={copy.add.title}>
           {(close) => (
             <AddPlace
               stock={stock}

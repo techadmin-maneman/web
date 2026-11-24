@@ -1,6 +1,7 @@
 // Raising a custom order (docs/decisions/0174-custom-orders.md): made to the client's profile, from a supplier at its
 // price, with what the client pays and when the supplier promised it. Raising it sends the client the payment link.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import type { Success } from "@maneman/web-kit/api";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
@@ -173,7 +174,7 @@ export function RaiseCustomOrder({
       <h3 className={form.fieldLabel}>{copy.raise.title}</h3>
       <OrderBoxes customOrders={customOrders} draft={draft} edit={edit} failure={failure} />
       <FormActions>
-        <Button variant="primary" size="small" disabled={!ready} onClick={() => void raise()}>
+        <Button icon={ACTION_ICONS.send} variant="primary" size="small" disabled={!ready} onClick={() => void raise()}>
           {copy.raise.send}
         </Button>
         <CancelButton onClick={onClose} />

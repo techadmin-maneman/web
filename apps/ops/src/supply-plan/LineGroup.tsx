@@ -1,6 +1,7 @@
 // A run of the supply plan's lines that go to one place or come from one supplier (./SupplyPlanScreen.tsx): its head
 // names where and how many, and approves every line still to decide at the quantity proposed, once asked.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState, type ReactNode } from "react";
@@ -46,6 +47,7 @@ export function LineGroup(props: {
             <span className={styles.groupTitle}>{copy.group.title(props.where, props.lines.length)}</span>
             {mayApprove && open.length > 1 && !asking && (
               <Button
+                icon={ACTION_ICONS.circleCheck}
                 variant="outline"
                 size="small"
                 narrow

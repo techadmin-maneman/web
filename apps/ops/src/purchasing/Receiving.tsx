@@ -1,6 +1,7 @@
 // An order's receipts (docs/decisions/0167-receipts-and-landed-cost.md): each one's lines with what one cost landed;
 // receiving more while the order is sent or part received; and closing it short once part received.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
 import { roundRupees } from "@maneman/web-kit/money";
@@ -79,6 +80,7 @@ export function Receiving({
         <FormActions>
           {receivable && access.mayCall("POST /api/purchase-orders/{id}/receipts") && (
             <Button
+              icon={ACTION_ICONS.packageCheck}
               variant="primary"
               size="small"
               onClick={() => {
@@ -89,7 +91,7 @@ export function Receiving({
             </Button>
           )}
           {order.state === "part_received" && access.mayCall("POST /api/purchase-orders/{id}/close") && (
-            <Button variant="outline" size="small" onClick={() => void close()}>
+            <Button icon={ACTION_ICONS.packageX} variant="outline" size="small" onClick={() => void close()}>
               {copy.receive.close}
             </Button>
           )}

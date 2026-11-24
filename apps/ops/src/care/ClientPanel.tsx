@@ -1,6 +1,7 @@
 // The client beside their chat (docs/decisions/0140-the-client-panel.md): their next and last visit, free service
 // visits, city and Care person; and a link to each part of their page where Care book, move or take payment.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
@@ -20,17 +21,22 @@ function visitLine(visit: ClientVisit): string {
   return copy.visit(`${shortDate(visit.date)}, ${indiaClock(visit.starts_at)}`, kind);
 }
 
-const LINKS: readonly (readonly [ClientTab, string])[] = [
-  ["visits", copy.links.visits],
-  ["payments", copy.links.payments],
-  ["pieces", copy.links.pieces],
-  ["consents", copy.links.consents],
+const LINKS: readonly (readonly [ClientTab, string, string])[] = [
+  ["visits", copy.links.visits, ACTION_ICONS.calendar],
+  ["payments", copy.links.payments, ACTION_ICONS.receipt],
+  ["pieces", copy.links.pieces, ACTION_ICONS.package],
+  ["consents", copy.links.consents, ACTION_ICONS.fileCheck],
 ];
 
 /** A button to each part of the client's page, one beneath another. */
 export function ClientLinks({ personId }: { readonly personId: string }) {
-  return LINKS.map(([tab, label]) => (
-    <OpsLink key={tab} className={buttonLook({ variant: "outline", size: "small" })} to={clientPath(personId, tab)}>
+  return LINKS.map(([tab, label, icon]) => (
+    <OpsLink
+      key={tab}
+      className={buttonLook({ variant: "outline", size: "small", iconOnly: true })}
+      icon={icon}
+      to={clientPath(personId, tab)}
+    >
       {label}
     </OpsLink>
   ));

@@ -2,6 +2,7 @@
 // quarterly, or the one ops set. Read beside the counts as the redesign draws them; changed in a drawer, for those
 // who may.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import styles from "./counts.module.css";
 import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
@@ -44,7 +45,7 @@ export function CountClasses(props: {
       title={copy.classesTitle}
       actions={
         props.mayChange && (
-          <DrawerButton label={copy.change} title={copy.classesTitle}>
+          <DrawerButton icon={ACTION_ICONS.pencil} label={copy.change} title={copy.classesTitle}>
             {() => <ClassChoices countTasks={countTasks} onChanged={props.onChanged} />}
           </DrawerButton>
         )

@@ -1,6 +1,7 @@
 // The client a task written by hand is about (./NewTask.tsx): found by name or number, Enter or Find searching, and
 // chosen; Change puts the search back. The keyboard follows each step, so it is never left on a button gone.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -28,7 +29,14 @@ function Chosen(props: { client: Found; busy: boolean; failure: Failure | null; 
       {() => (
         <p className={styles.chosen}>
           {copy.chosen(props.client.name, props.client.mobile)}{" "}
-          <Button id={CHANGE_ID} variant="outline" size="small" disabled={props.busy} onClick={props.onChange}>
+          <Button
+            icon={ACTION_ICONS.pencil}
+            id={CHANGE_ID}
+            variant="outline"
+            size="small"
+            disabled={props.busy}
+            onClick={props.onChange}
+          >
             {copy.change}
           </Button>
         </p>
@@ -53,6 +61,7 @@ function Results(props: { found: Search; onChoose: (client: Found) => void }) {
         <li key={client.id}>
           {copy.chosen(client.name, client.mobile)}{" "}
           <Button
+            icon={ACTION_ICONS.check}
             variant="outline"
             size="small"
             aria-label={copy.chooseLabel(client.name)}
@@ -126,7 +135,7 @@ export function ClientChoice(props: {
                   void find();
                 }}
               />
-              <Button variant="outline" size="control" onClick={() => void find()}>
+              <Button icon={ACTION_ICONS.search} variant="outline" size="control" onClick={() => void find()}>
                 {copy.find}
               </Button>
             </div>

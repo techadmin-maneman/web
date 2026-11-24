@@ -3,6 +3,7 @@
 // figure at once, and says so beside it; a rule set by hand can be put back to its standard. A person who may only
 // look sees each value as it reads.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { Button } from "@maneman/ui/Button";
 import { Stack } from "@maneman/ui/Layout";
@@ -65,21 +66,32 @@ function Standard({ rule, onSaved }: { readonly rule: OpsSetting; readonly onSav
       {rule.set_by === null ? (
         <>
           <span className={styles.wasReset}>{copy.wasReset}</span>
-          <Button variant="quiet" size="small" narrow busy={busy} onClick={() => void send(undo)}>
+          <Button
+            icon={ACTION_ICONS.undo2}
+            variant="quiet"
+            size="small"
+            narrow
+            busy={busy}
+            onClick={() => void send(undo)}
+          >
             {copy.undo}
           </Button>
         </>
       ) : (
-        <Button
-          variant="quiet"
-          size="small"
-          narrow
-          busy={busy}
-          aria-label={copy.resetLabel(rule.title)}
-          onClick={() => void send(null)}
-        >
-          {copy.reset}
-        </Button>
+        <>
+          <span className={styles.wasReset}>{copy.notDefault}</span>
+          <Button
+            icon={ACTION_ICONS.rotateCcw}
+            variant="quiet"
+            size="small"
+            narrow
+            busy={busy}
+            aria-label={copy.resetLabel(rule.title)}
+            onClick={() => void send(null)}
+          >
+            {copy.reset}
+          </Button>
+        </>
       )}
       {refused !== null && <Refusal className={styles.refusal} said={refused} />}
     </div>

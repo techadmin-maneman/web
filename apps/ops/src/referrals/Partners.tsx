@@ -2,6 +2,7 @@
 // link, what its friend gets, its commission per fit, and what has come through it. A row opens its record beside the
 // list, where each term changes where it reads (docs/decisions/0212-editing-in-place.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
@@ -144,7 +145,7 @@ export function Partners() {
     <>
       <PageActions>
         {mayAdd && (
-          <DrawerButton primary label={copy.add} title={copy.form.addTitle}>
+          <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.add} title={copy.form.addTitle}>
             {(close) => (
               <AddPartner
                 limits={list.limits}

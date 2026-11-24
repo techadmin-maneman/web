@@ -2,6 +2,7 @@
 // by whom, how it ended, and a way to the client's photographs. Read when the drawer opens. A landed step can be sent
 // back to the technician with why, and says so until they do it again (docs/decisions/0246-closed-and-sent-back.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useLoad } from "@maneman/ui/useLoad";
 import { PanelFailed } from "@maneman/ui/States";
 import { indiaClock } from "@maneman/web-kit/dates";
@@ -59,6 +60,7 @@ function StepLine(props: {
         )}
         {props.last && props.mayCall && !asking && (
           <Button
+            icon={ACTION_ICONS.undo2}
             variant="quiet"
             size="small"
             narrow

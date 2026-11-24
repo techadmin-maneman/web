@@ -291,11 +291,6 @@
   }
 }
 
-/* Call's handset, the size of the words beside it. */
-.icon {
-  flex-shrink: 0;
-}
-
 /* The four figures beneath the head (./TechnicianHead.tsx), and the Kit tab's count of what is below zero. */
 .tabCount {
   margin-left: var(--sp-8);

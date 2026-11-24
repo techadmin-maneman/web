@@ -2,6 +2,7 @@
 // guarantee claim's drawer: a button saying how many, and each photograph once it is pressed, since a viewing is logged
 // as a client photograph's is. Nothing shows for a client who sent none.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -67,7 +68,7 @@ function Photos({ conversationId, only }: Props) {
   return (
     <div className={styles.reportPhotos}>
       {(shown === null || failed) && (
-        <Button variant="outline" size="small" busy={busy} onClick={() => void show()}>
+        <Button icon={ACTION_ICONS.eye} variant="outline" size="small" busy={busy} onClick={() => void show()}>
           {copy.show(photos.length)}
         </Button>
       )}

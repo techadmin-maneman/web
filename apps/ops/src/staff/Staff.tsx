@@ -3,6 +3,7 @@
 // the list (docs/decisions/0212-editing-in-place.md). The API narrows the list to the places its viewer may see, and
 // refuses a change beyond their own.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { Apart } from "@maneman/ui/Apart";
@@ -54,6 +55,7 @@ function Enforcement({ staff, onChanged }: PanelProps) {
       {staff.may_run_access && (
         <div className={form.recordFoot}>
           <DeleteAction
+            icon={on ? ACTION_ICONS.powerOff : ACTION_ICONS.power}
             key={String(on)}
             name={copy.title}
             tone={on ? "danger" : "primary"}
@@ -167,7 +169,7 @@ function People({ staff, onChanged }: PanelProps) {
     <>
       <PageActions>
         {mayGrant && (
-          <DrawerButton primary label={copy.add}>
+          <DrawerButton icon={ACTION_ICONS.userPlus} primary label={copy.add}>
             {(close) => (
               <AddPerson
                 staff={staff}
@@ -240,6 +242,7 @@ function TokenRow({ token, removable, onChanged }: TokenRowProps) {
       <p className={form.set}>{words.addedBy(whoWords(token.added_by), longDate(token.added_at))}</p>
       {removable && (
         <DeleteAction
+          icon={ACTION_ICONS.userX}
           name={token.label}
           words={words.removing}
           send={() => staffApi.removeServiceToken(token.client_id)}
@@ -306,7 +309,7 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
       title={words.title}
       actions={
         staff.may_run_access && (
-          <DrawerButton label={words.addTitle}>
+          <DrawerButton icon={ACTION_ICONS.keyRound} label={words.addTitle}>
             {(close) => (
               <TokenForm
                 onAdded={(next) => {

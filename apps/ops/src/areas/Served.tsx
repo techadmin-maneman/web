@@ -3,6 +3,7 @@
 // file once its changes are shown. One that would message people waiting opens the launch panel first
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { AreaSection } from "./AreaSection.tsx";
 import { Toast } from "@maneman/ui/Toast";
 import { Checkbox } from "@maneman/ui/Field";
@@ -178,6 +179,7 @@ function AddBeneath(props: { cities: readonly string[]; onAdded: (rows: readonly
 function DownloadCsv({ pincodes }: { pincodes: readonly ServedPincode[] }) {
   return (
     <Button
+      icon={ACTION_ICONS.download}
       variant="outline"
       size="small"
       narrow

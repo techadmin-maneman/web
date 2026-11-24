@@ -3,6 +3,7 @@
 // those refused stay chosen with why, or, where a task had changed meanwhile, the page is read again and the frame says
 // so (docs/decisions/0282-tasks-chosen-together.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
@@ -114,6 +115,7 @@ function CloseAll({
         )}
       </Field>
       <Button
+        icon={ACTION_ICONS.circleCheck}
         variant="outline"
         size="small"
         busy={busy}
@@ -162,6 +164,7 @@ function AssignAll(props: {
         )}
       </Field>
       <Button
+        icon={ACTION_ICONS.userCheck}
         variant="outline"
         size="small"
         busy={busy}
@@ -233,7 +236,13 @@ export function BulkActions({
       {rows.length > 0 && (
         <SelectionBar count={rows.length} onClear={onClear}>
           {takeable.length > 0 && me !== null && (
-            <Button variant="outline" size="small" busy={busy} onClick={() => void run(takeable, ownedBy(me))}>
+            <Button
+              icon={ACTION_ICONS.handGrab}
+              variant="outline"
+              size="small"
+              busy={busy}
+              onClick={() => void run(takeable, ownedBy(me))}
+            >
               {copy.take(takeable.length)}
             </Button>
           )}

@@ -3,10 +3,10 @@
 // right (./ClientAside.tsx). The record is read once for the page, so moving between tabs costs no request; an erased
 // client's page keeps only their visits and money (Erase.tsx).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { FoundUs } from "./FoundUs.tsx";
 import { Button, ButtonLink } from "@maneman/ui/Button";
-import { Icon } from "@maneman/ui/Icon";
-import { GLYPHS, ICONS } from "@maneman/brand/icons";
+import { ICONS } from "@maneman/brand/icons";
 import { PageTitle } from "@maneman/ui/PageHeader";
 import { NamedSteps } from "@maneman/ui/Progress";
 import { Stack } from "@maneman/ui/Layout";
@@ -82,8 +82,9 @@ function WhatsApp({ record }: { record: ClientRecord }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={clients.whatsappLabel(record.name)}
+      icon={ICONS.whatsapp}
+      iconSize="md"
     >
-      <Icon d={ICONS.whatsapp} size="sm" className={shared.icon} />
       {clients.whatsapp}
     </ButtonLink>
   );
@@ -102,13 +103,14 @@ function Head({ record, booking }: { record: ClientRecord; booking: Booking }) {
         size="small"
         href={`tel:${record.mobile}`}
         aria-label={clients.callLabel(record.name, mobile)}
+        icon={ACTION_ICONS.phone}
       >
-        <Icon d={GLYPHS.phone} size="sm" className={shared.icon} />
         {clients.head.call}
       </ButtonLink>
       <WhatsApp record={record} />
       {booking.mayBook && (
         <Button
+          icon={ACTION_ICONS.calendarPlus}
           variant="primary"
           size="small"
           onClick={(event) => {

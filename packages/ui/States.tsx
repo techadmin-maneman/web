@@ -2,6 +2,8 @@
 // design draws both; the others follow its shapes. Each app gives them
 // its words, its ground and its own class for the spacing its design draws.
 
+import { useActionIcon } from "./icon-actions.ts";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import type { ReactNode } from "react";
 import { Button, type ButtonVariant } from "./Button.tsx";
 import { classes } from "./classes.ts";
@@ -59,11 +61,12 @@ export function Failed({
   /** A second way on, beside the retry: a link to reach us. */
   also?: ReactNode;
 }) {
+  const retryIcon = useActionIcon(ACTION_ICONS.refreshCw);
   return (
     <div className={classes(styles.failed, className)} role={polite ? "status" : "alert"}>
       <p className={classes(styles.message, messageClassName)}>{message}</p>
       {reference}
-      <Button variant={button} size="small" className={retryClassName} onClick={onRetry}>
+      <Button variant={button} size="small" className={retryClassName} icon={retryIcon} onClick={onRetry}>
         {retry}
       </Button>
       {also}

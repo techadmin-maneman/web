@@ -1,6 +1,7 @@
 // Operations · Counts (docs/decisions/0185-cycle-counts.md): the count tasks in the caller's places, each opened to be
 // counted, counted again or signed off; and each item's count class.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { todayInIndia } from "@maneman/web-kit/dates";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
@@ -72,6 +73,7 @@ function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpen
               <td className={ACTIONS}>
                 <RowActions>
                   <RowButton
+                    icon={ACTION_ICONS.clipboardCheck}
                     aria-label={`${copy.act[task.state]} · ${copy.heading(task.place, whatOf(task))}`}
                     {...opener(task.id)}
                   >
@@ -121,7 +123,7 @@ export function CountsScreen() {
         <div className={form.screen}>
           {access.mayCall("POST /api/count-tasks") && (
             <PageActions>
-              <DrawerButton label={copy.startTitle} primary>
+              <DrawerButton icon={ACTION_ICONS.clipboardCheck} label={copy.startTitle} primary>
                 {(close) => (
                   <StartCount
                     countTasks={current}

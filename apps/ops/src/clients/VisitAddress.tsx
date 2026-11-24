@@ -1,6 +1,7 @@
 // The address a client's visits go to, at the right of their page: its lines, and Edit, which records an address the
 // client gave on the phone (./GivenAddress.tsx). Saved, it stands over the one the page read.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Panel } from "@maneman/ui/Panel";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { classes } from "@maneman/ui/classes";
@@ -80,6 +81,7 @@ export function VisitAddress({
       actions={
         mayRecord && (
           <TextButton
+            icon={ACTION_ICONS.pencil}
             compact
             ref={opener}
             onClick={() => {

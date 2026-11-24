@@ -2,6 +2,7 @@
 // its minimum, at the price it lists; the total shown before it is drafted. Drafting sends nothing to the supplier: an
 // order goes out only once approved and marked sent.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { TextButton } from "@maneman/ui/TextLink";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -44,6 +45,10 @@ function LineBoxes(props: {
   const times =
     item === undefined || listed === undefined || listed.unit_cost === 0 ? 0 : item.unit_price / listed.unit_cost;
   const questioned = currency === "INR" && times >= FAR_ABOVE && item !== undefined && listed !== undefined;
+  const minimum =
+    item === undefined
+      ? undefined
+      : copy.draft.minimum(item.minimum_order, item.pack_size, unit, inCurrency(item.unit_price, currency));
   return (
     <div className={styles.line}>
       <Field label={copy.draft.item} className={form.field}>
@@ -64,15 +69,7 @@ function LineBoxes(props: {
           </Select>
         )}
       </Field>
-      <Field
-        label={copy.draft.quantity}
-        hint={
-          item === undefined
-            ? undefined
-            : copy.draft.minimum(item.minimum_order, item.pack_size, unit, inCurrency(item.unit_price, currency))
-        }
-        className={form.field}
-      >
+      <Field label={copy.draft.quantity} hint={minimum} className={form.field}>
         {(control) => (
           <TextInput
             {...control}
@@ -86,7 +83,13 @@ function LineBoxes(props: {
           />
         )}
       </Field>
-      <TextButton compact tone="danger" aria-label={copy.draft.removeLine(named(line.code))} onClick={props.onRemove}>
+      <TextButton
+        icon={ACTION_ICONS.trash}
+        compact
+        tone="danger"
+        aria-label={copy.draft.removeLine(named(line.code))}
+        onClick={props.onRemove}
+      >
         {copy.draft.remove}
       </TextButton>
       {questioned && (
@@ -167,6 +170,7 @@ function LinesEditor(props: {
       </div>
       <FormActions>
         <Button
+          icon={ACTION_ICONS.plus}
           variant="outline"
           size="small"
           onClick={() => {
@@ -268,6 +272,7 @@ export function DraftOrder({
     setNote("");
     onDrafted(answer.body, copy.draft.drafted);
   };
+  const sendDraft = () => void draft();
   return (
     <div className={styles.draft}>
       <SupplierPick
@@ -286,7 +291,7 @@ export function DraftOrder({
       />
       <Note>{copy.draft.total(inCurrency(total, supplier.currency))}</Note>
       <FormActions>
-        <Button variant="primary" size="small" disabled={!ready} onClick={() => void draft()}>
+        <Button icon={ACTION_ICONS.filePlus} variant="primary" size="small" disabled={!ready} onClick={sendDraft}>
           {copy.draft.send}
         </Button>
       </FormActions>

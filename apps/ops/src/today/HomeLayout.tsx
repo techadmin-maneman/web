@@ -2,6 +2,7 @@
 // by side, what needs the person on the left and the home's own list on the right: a time, what and whom, its state.
 // A phone has the figures and what needs the person alone.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
@@ -94,7 +95,11 @@ export function AsideList(props: {
       titleId={props.id}
       title={props.title}
       actions={
-        <OpsLink to={sectionOf(props.page).path} className={buttonLook({ variant: "outline", size: "small" })}>
+        <OpsLink
+          to={sectionOf(props.page).path}
+          className={buttonLook({ variant: "outline", size: "small", iconOnly: true })}
+          icon={ACTION_ICONS.arrowUpRight}
+        >
           {copy.openPage(SECTION_NAMES[props.page])}
         </OpsLink>
       }

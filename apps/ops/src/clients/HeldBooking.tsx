@@ -2,6 +2,7 @@
 // again, as the board's payment links are (../tasks/PaymentLinkActions.tsx), and, where it stands in the way of
 // booking another of its kind, let go so that one can be booked.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
@@ -100,12 +101,12 @@ export function HeldLinkActions({
     <div>
       <span className={styles.heldActions}>
         {lead}
-        <TextButton tone="muted" onClick={() => void copyLink()}>
+        <TextButton icon={ACTION_ICONS.copy} tone="muted" onClick={() => void copyLink()}>
           {linkCopy.copy}
           {about}
         </TextButton>
         {maySend && (
-          <TextButton tone="muted" busy={busy} onClick={() => void send()}>
+          <TextButton icon={ACTION_ICONS.send} tone="muted" busy={busy} onClick={() => void send()}>
             {busy ? linkCopy.sending : linkCopy.resend}
             {about}
           </TextButton>
@@ -154,6 +155,7 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
     });
   const letGoButton = mayLetGo ? (
     <TextButton
+      icon={ACTION_ICONS.lockOpen}
       ref={opener}
       tone="muted"
       onClick={() => {
@@ -178,7 +180,13 @@ function HeldRow({ held, onLetGo }: { held: HeldBooking; onLetGo: () => void }) 
         <div ref={question} role="group" aria-label={copy.letGoAsk} className={styles.asking}>
           <p>{copy.letGoAsk}</p>
           <FormActions>
-            <Button variant="destructive" size="small" busy={busy} onClick={() => void letGo()}>
+            <Button
+              icon={ACTION_ICONS.lockOpen}
+              variant="destructive"
+              size="small"
+              busy={busy}
+              onClick={() => void letGo()}
+            >
               {busy ? copy.lettingGo : copy.letGo}
             </Button>
             <CancelButton

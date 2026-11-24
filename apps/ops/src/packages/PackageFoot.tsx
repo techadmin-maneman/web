@@ -1,6 +1,7 @@
 // The foot of a package's record (./PackageRecord.tsx): its place in the order, retiring it or selling it again, and
 // deleting one never sold, each asking in place first where it cannot simply be put back.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { addDays } from "@maneman/web-kit/dates";
@@ -50,6 +51,7 @@ function Order(props: {
   return (
     <div className={styles.order}>
       <Button
+        icon={ACTION_ICONS.arrowUp}
         variant="quiet"
         size="small"
         busy={busy}
@@ -59,6 +61,7 @@ function Order(props: {
         {copy.foot.up}
       </Button>
       <Button
+        icon={ACTION_ICONS.arrowDown}
         variant="quiet"
         size="small"
         busy={busy}
@@ -78,6 +81,7 @@ function SellAgain(props: { readonly chosen: Package; readonly onChanged: (body:
   return (
     <>
       <Button
+        icon={ACTION_ICONS.archiveArrowUp}
         variant="outline"
         size="small"
         busy={busy}
@@ -118,6 +122,7 @@ export function PackageFoot(props: {
       )}
       {!retired && access.mayCall("POST /api/packages/{code}/retire") && (
         <DeleteAction
+          icon={ACTION_ICONS.archive}
           name={chosen.name}
           tone="danger"
           words={asked(copy.foot.retire, chosen.name, copy.foot.retireAsk)}

@@ -6,6 +6,7 @@
 //     <CancelButton onClick={close} />
 //   </FormActions>
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button, type ButtonProps } from "./Button.tsx";
 import { DISMISS } from "./words.ts";
 
@@ -14,7 +15,7 @@ type DismissProps = Omit<ButtonProps, "variant" | "size" | "narrow" | "className
 /** Cancel; `keep` where what is asked is itself a cancelling or a withdrawal, which then reads Keep it. */
 export function CancelButton({ keep = false, ...rest }: DismissProps & { readonly keep?: boolean }) {
   return (
-    <Button {...rest} variant="outline" size="small" narrow>
+    <Button {...rest} variant="outline" size="small" narrow icon={keep ? ACTION_ICONS.undo2 : ACTION_ICONS.x}>
       {keep ? DISMISS.keep : DISMISS.cancel}
     </Button>
   );
@@ -23,7 +24,7 @@ export function CancelButton({ keep = false, ...rest }: DismissProps & { readonl
 /** Back, to the step before, as from a check to the boxes it checks. */
 export function BackButton(props: DismissProps) {
   return (
-    <Button {...props} variant="outline" size="small" narrow>
+    <Button {...props} variant="outline" size="small" narrow icon={ACTION_ICONS.undo2}>
       {DISMISS.back}
     </Button>
   );

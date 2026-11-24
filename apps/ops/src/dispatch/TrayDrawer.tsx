@@ -3,8 +3,8 @@
 // details, who is free to take it, the block drawer's two ways to the client, and
 // Assign, which takes the job up for the list of technicians' days to put it on.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { badgeLook } from "@maneman/ui/Caps";
-import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { DescriptionList } from "@maneman/ui/DescriptionList";
@@ -64,7 +64,7 @@ export function TrayDrawer({ each, onAssign, onAssignTo, technicians, onClose }:
       foot={
         <div className={styles.drawerActions}>
           {onAssign !== null && (
-            <Button variant="outline" size="small" onClick={onAssign}>
+            <Button icon={ACTION_ICONS.userCheck} variant="outline" size="small" onClick={onAssign}>
               {copy.assign}
             </Button>
           )}
@@ -76,8 +76,9 @@ export function TrayDrawer({ each, onAssign, onAssignTo, technicians, onClose }:
                 href={whatsappChat(person.mobile)}
                 target="_blank"
                 rel="noopener noreferrer"
+                icon={ICONS.whatsapp}
+                iconSize="md"
               >
-                <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
                 {copy.whatsapp(firstNameOf(person.name))}
               </ButtonLink>
             </>

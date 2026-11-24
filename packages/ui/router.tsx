@@ -6,6 +6,7 @@
 // something else -- a new tab, a new window, a download -- which is left to the
 // browser.
 
+import { ActionContent, useTipOf } from "./ActionContent.tsx";
 import { useEffect, useState, type ReactNode } from "react";
 import { afterSheets, atSheetEntry } from "./sheetHistory.ts";
 
@@ -97,6 +98,7 @@ export function Link({
   current,
   label,
   title,
+  icon,
   children,
 }: {
   to: string;
@@ -104,6 +106,8 @@ export function Link({
   current?: boolean | "within";
   /** Its name, where the words inside it are not enough: an icon alone, or a back arrow. */
   label?: string;
+  /** Its icon, from @maneman/brand/action-icons: in the console it is drawn alone, its words its name. */
+  icon?: string;
   /** Shown to a pointer resting on it, where its words are folded away. */
   title?: string;
   children: ReactNode;
@@ -115,13 +119,14 @@ export function Link({
       title={title}
       aria-current={ariaCurrent(current)}
       aria-label={label}
+      data-tip={useTipOf(icon, label, children)}
       onClick={(event) => {
         if (!followsHere(event)) return;
         event.preventDefault();
         go(to);
       }}
     >
-      {children}
+      <ActionContent icon={icon}>{children}</ActionContent>
     </a>
   );
 }

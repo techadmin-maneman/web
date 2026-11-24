@@ -852,6 +852,8 @@ export const clients = {
     notRecorded: "Not recorded",
     product: "Hair system",
     invalid: "Check this field.",
+    /** A value already recorded in another row, which the API would not take: "Check Base width, in." */
+    invalidIn: (rows: readonly string[]) => `Check ${rows.join(" and ")}.`,
     failed: FAILED,
     moved: "The profile changed while you were editing. Review it and try again.",
     save: "Save new version",

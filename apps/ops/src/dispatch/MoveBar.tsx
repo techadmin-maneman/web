@@ -2,6 +2,7 @@
 // a list of the technicians' days on screen with room for it, each from its first free start, nearest first (ADR 0120).
 // The start itself is chosen in the move's sheet (./MovePicker.tsx).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Field, Select } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
@@ -77,6 +78,12 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
   const destinations = checking ? [] : destinationsOf(inHand, rows, dates);
   const choice = destinations.find((each) => each.key === chosen);
 
+  // Held with Go where there is a list, so the pair stays on one line; alone where there is none.
+  const stop = (
+    <Button icon={ACTION_ICONS.x} variant="outline" size="small" onClick={onStop}>
+      {copy.stop}
+    </Button>
+  );
   return (
     <div className={styles.bar} ref={ref} tabIndex={-1}>
       <p className={styles.barText}>{copy.moving(nameOf(inHand.job), sizeOf(inHand))}</p>
@@ -104,21 +111,23 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
               </Select>
             )}
           </Field>
-          <Button
-            variant="outline"
-            size="small"
-            disabled={choice === undefined}
-            onClick={() => {
-              if (choice !== undefined) onLand(choice.target);
-            }}
-          >
-            {copy.listGo}
-          </Button>
+          <span className={styles.pair}>
+            <Button
+              icon={ACTION_ICONS.check}
+              variant="outline"
+              size="small"
+              disabled={choice === undefined}
+              onClick={() => {
+                if (choice !== undefined) onLand(choice.target);
+              }}
+            >
+              {copy.listGo}
+            </Button>
+            {stop}
+          </span>
         </div>
       )}
-      <Button variant="outline" size="small" onClick={onStop}>
-        {copy.stop}
-      </Button>
+      {(checking || destinations.length === 0) && stop}
     </div>
   );
 }

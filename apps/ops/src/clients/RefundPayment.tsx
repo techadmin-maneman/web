@@ -3,7 +3,9 @@
 // shows once Razorpay processes it.
 // Offered beside each payment on a client's Payments tab and on the Ledger, which Finance reach without a client's page.
 
-import { Button, RowButton } from "@maneman/ui/Button";
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
+import { RowButton } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
@@ -52,6 +54,7 @@ export function RefundPayment({ entry }: { entry: Refundable }) {
   return (
     <>
       <RowButton
+        icon={ACTION_ICONS.banknoteArrowDown}
         aria-label={copy.refundLabel(rupees(left))}
         onClick={() => {
           setOpen(true);
@@ -155,15 +158,14 @@ function RefundForm(props: {
       </Field>
       {failed !== null && <Refusal said={failed} />}
       <FormActions>
-        <Button
+        <SubmitButton
+          icon={ACTION_ICONS.banknoteArrowDown}
           variant="destructive"
-          size="small"
-          type="submit"
           busy={busy}
           disabled={reason.trim() === "" || !amountFits}
         >
           {copy.refundConfirm(rupees(amountFits ? amount : left))}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
     </form>

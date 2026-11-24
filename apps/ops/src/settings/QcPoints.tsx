@@ -2,6 +2,7 @@
 // a row that opens its record, where it is renamed and switched on or off, and deleted while no claim names it
 // (docs/decisions/0283-changed-and-deleted-while-unused.md). A claim keeps the names as they read when drafted.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { AddForm } from "@maneman/ui/AddForm";
 import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
@@ -34,7 +35,7 @@ type QcPoint = Success<paths["/api/qc-points"]["get"]>["points"][number];
 function AddPoint({ onAdded }: { readonly onAdded: () => Promise<void> }) {
   const [name, setName] = useState("");
   return (
-    <DrawerButton label={copy.add}>
+    <DrawerButton icon={ACTION_ICONS.plus} label={copy.add}>
       {(close) => (
         <AddForm
           title={copy.add}

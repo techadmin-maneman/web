@@ -2,6 +2,7 @@
 // the press that sends it. Nothing is sent before that press
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
@@ -63,7 +64,13 @@ export function LaunchPanel(props: Props) {
       {done === null && (
         <div className={shared.actions}>
           {sendLabel !== null && (
-            <Button variant="primary" size="small" disabled={sending || !ready} onClick={onSend}>
+            <Button
+              icon={ACTION_ICONS.send}
+              variant="primary"
+              size="small"
+              disabled={sending || !ready}
+              onClick={onSend}
+            >
               {sending ? copy.sending : sendLabel}
             </Button>
           )}

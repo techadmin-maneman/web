@@ -3,6 +3,7 @@
 // Its view (docs/decisions/0307-the-people-rulings.md) and the page are kept in the address, so a list narrowed one way
 // can be kept as a bookmark and sent to a colleague: "/clients?view=lead".
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Badge } from "@maneman/ui/Badge";
 import { Initials } from "@maneman/ui/Initials";
@@ -312,6 +313,7 @@ function CityList({ search, instead, city, paged }: ListProps & { city: string |
             {(later || loaded.value.next_cursor !== null) && (
               <div className={styles.listPages}>
                 <Button
+                  icon={ACTION_ICONS.chevronLeft}
                   variant="outline"
                   size="small"
                   disabled={!later}
@@ -327,6 +329,7 @@ function CityList({ search, instead, city, paged }: ListProps & { city: string |
                   </span>
                 )}
                 <Button
+                  icon={ACTION_ICONS.chevronRight}
                   variant="outline"
                   size="small"
                   disabled={loaded.value.next_cursor === null}

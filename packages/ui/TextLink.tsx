@@ -4,8 +4,10 @@
 // draw a link. `TextButton` does something; `TextLink` goes somewhere; an in-app link is the
 // router's `Link`, given `textLinkLook()`.
 
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, MouseEvent, Ref } from "react";
+import { useContext, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type MouseEvent, type Ref } from "react";
 import { classes } from "./classes.ts";
+import { ActionContent, useTipOf } from "./ActionContent.tsx";
+import { IconActions } from "./icon-actions.ts";
 import styles from "./text-link.module.css";
 
 export type TextTone = "plain" | "muted" | "ink" | "brass" | "danger" | "strong";
@@ -68,11 +70,19 @@ export function TextButton({
   className,
   busy = false,
   type = "button",
+  icon,
   onClick,
+  children,
   ...rest
-}: ButtonProps) {
+}: ButtonProps & {
+  /** Its icon, from @maneman/brand/action-icons: in the console it is drawn alone, its words its name. */
+  readonly icon?: string;
+}) {
+  const iconOnly = useContext(IconActions) && icon !== undefined;
+  // As ./Button.tsx's: one drawn as its icon that cannot act yet stays reachable, so its name can be read.
+  const waiting = iconOnly && rest.disabled === true;
   const click = (event: MouseEvent<HTMLButtonElement>) => {
-    if (busy) {
+    if (busy || waiting) {
       event.preventDefault();
       return;
     }
@@ -82,9 +92,20 @@ export function TextButton({
     <button
       {...rest}
       type={type}
-      className={textLinkLook({ tone, compact, inline, quiet, className })}
+      disabled={waiting ? undefined : rest.disabled}
+      {...(waiting ? { "aria-disabled": true } : {})}
+      className={textLinkLook({
+        tone,
+        compact,
+        inline,
+        quiet,
+        className: classes(iconOnly && styles.iconOnly, className),
+      })}
       aria-busy={busy ? true : undefined}
+      data-tip={useTipOf(icon, rest["aria-label"], children)}
       onClick={click}
-    />
+    >
+      <ActionContent icon={icon}>{children}</ActionContent>
+    </button>
   );
 }

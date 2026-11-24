@@ -2,6 +2,7 @@
 // its payment terms and warranty, each changed where it reads; retiring or restoring it at the foot; and beneath, what
 // it supplies.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -62,6 +63,7 @@ function SupplierFoot({ supplier, onSaved }: Omit<Props, "suppliers">) {
     <div className={form.recordFoot}>
       {supplier.retired_at === null ? (
         <DeleteAction
+          icon={ACTION_ICONS.archive}
           name={supplier.name}
           tone="danger"
           words={copy.retiring}
@@ -71,6 +73,7 @@ function SupplierFoot({ supplier, onSaved }: Omit<Props, "suppliers">) {
         />
       ) : (
         <Button
+          icon={ACTION_ICONS.archiveArrowUp}
           variant="outline"
           size="small"
           narrow

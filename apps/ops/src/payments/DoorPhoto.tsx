@@ -1,6 +1,7 @@
 // The technician's photograph of the door a no-show was closed with, on a case's facts (./NoShowsScreen.tsx): fetched
 // only when asked for, since its viewing is logged as a client photograph's is.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useState } from "react";
@@ -30,7 +31,7 @@ export function DoorPhoto({ caseId }: { caseId: string }) {
     });
   return (
     <>
-      <Button variant="outline" size="small" busy={busy} onClick={() => void show()}>
+      <Button icon={ACTION_ICONS.eye} variant="outline" size="small" busy={busy} onClick={() => void show()}>
         {copy.show}
       </Button>
       {failed && <span className={styles.doorFailed}>{copy.failed}</span>}

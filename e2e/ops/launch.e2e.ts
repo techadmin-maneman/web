@@ -3,6 +3,7 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 // e2e/ops/waitlist.e2e.ts holds the queue itself; this holds the panel.
 
+import { WAITING_FOR } from "../../apps/ops/src/content/common.ts";
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import {
@@ -181,6 +182,7 @@ test("adds a pincode the service area does not hold, then marks it live in the s
 
   const adding = page.getByRole("region", { name: "Add 560001" });
   await expect(adding).toBeFocused();
+  await expect(adding.getByText(WAITING_FOR.areaAndCity, { exact: true })).toBeVisible();
   await adding.getByLabel(opsCopy.areas.add.area).fill("MG Road");
   await adding.getByLabel(opsCopy.areas.add.city).selectOption("Bengaluru");
   const sent = page.waitForRequest((request) => request.url().endsWith("/api/pincodes") && request.method() === "POST");

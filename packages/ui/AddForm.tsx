@@ -1,6 +1,7 @@
 // A new record's few boxes and its Add (docs/decisions/0212-editing-in-place.md): Enter or Add sends it, Cancel puts
 // it away. A refusal is said on the box it names, else under the form, and nothing typed is lost.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "./Button.tsx";
 import { CancelButton } from "./CancelButton.tsx";
 import { Fieldset, RefusedBoxes } from "./Field.tsx";
@@ -59,7 +60,7 @@ export function AddForm<Body>(props: {
           {props.children}
         </RefusedBoxes.Provider>
         <FormActions>
-          <Button variant="primary" size="small" type="submit" busy={busy}>
+          <Button variant="primary" size="small" type="submit" busy={busy} icon={ACTION_ICONS.plus}>
             {props.words.add}
           </Button>
           {props.onCancel !== null && <CancelButton onClick={props.onCancel} />}

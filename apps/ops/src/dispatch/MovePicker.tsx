@@ -3,6 +3,7 @@
 // (src/policy/dispatch.ts), and the WhatsApp line shows only for a client who agreed to it, the panel saying to call
 // any other (docs/decisions/0069-dispatch-under-concurrency.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { classes } from "@maneman/ui/classes";
@@ -198,6 +199,7 @@ export function MovePicker({ job, to, starts, blackout, sending, clearingCheckIn
       {clearingCheckIn && <p className={styles.consequence}>{copy.checkInCleared}</p>}
       <div className={styles.actions}>
         <Button
+          icon={ACTION_ICONS.calendarSync}
           variant="primary"
           size="small"
           disabled={!ready || sending}

@@ -2,6 +2,7 @@
 // the launches ops have scheduled, each cancelled once asked; the chosen pincodes scheduled for a later day, with what
 // their city still needs; and served ones paused, taking no new clients till a day, or resumed.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { AreaSection } from "./AreaSection.tsx";
 import { Badge } from "@maneman/ui/Badge";
 import { BackButton } from "@maneman/ui/CancelButton";
@@ -58,6 +59,7 @@ function LaunchRow({ launch, onCancel }: { launch: PincodeLaunch; onCancel: (() 
       {launch.held_because !== null && <p className={shared.error}>{heldWhy(launch.held_because)}</p>}
       {onCancel !== null && (
         <Button
+          icon={ACTION_ICONS.calendarX}
           variant="outline"
           size="small"
           narrow
@@ -193,7 +195,13 @@ function ScheduleForm(props: {
         )}
       </Field>
       <FormActions>
-        <Button variant="primary" size="small" disabled={busy || day === ""} onClick={() => void schedule()}>
+        <Button
+          icon={ACTION_ICONS.calendarPlus}
+          variant="primary"
+          size="small"
+          disabled={busy || day === ""}
+          onClick={() => void schedule()}
+        >
           {busy ? copy.scheduling : copy.schedule}
         </Button>
         <BackButton onClick={props.onBack} />
@@ -240,11 +248,24 @@ function PauseForm(props: {
         )}
       </Field>
       <FormActions>
-        <Button variant="primary" size="small" disabled={busy || day === ""} onClick={() => void send(day)}>
+        <Button
+          icon={ACTION_ICONS.pause}
+          variant="primary"
+          size="small"
+          disabled={busy || day === ""}
+          onClick={() => void send(day)}
+        >
           {busy ? words.pausing : words.pause}
         </Button>
         {props.anyPaused && (
-          <Button variant="outline" size="small" narrow disabled={busy} onClick={() => void send(null)}>
+          <Button
+            icon={ACTION_ICONS.play}
+            variant="outline"
+            size="small"
+            narrow
+            disabled={busy}
+            onClick={() => void send(null)}
+          >
             {words.resume}
           </Button>
         )}

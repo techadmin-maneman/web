@@ -3,6 +3,7 @@
 // their scanned labels (docs/decisions/0162-scanning-labels.md); a top-up to a kit counts once the technician scans it
 // in (docs/decisions/0164-the-kit-screen.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { type Choice } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
@@ -331,11 +332,8 @@ export function StockForm({
   const [step, setStep] = useState<Step>({ step: "editing" });
   const edit = (field: Exclude<keyof Draft, "units" | "waitForScan">) => (value: string) => {
     // Pieces scanned belong to one stock code and one kind of movement.
-    setDraft({
-      ...draft,
-      [field]: value,
-      ...(field === "code" || field === "kind" ? { units: [], quantity: "" } : {}),
-    });
+    const cleared = field === "code" || field === "kind" ? { units: [], quantity: "" } : {};
+    setDraft({ ...draft, [field]: value, ...cleared });
     setStep({ step: "editing" });
   };
   const scan = (units: readonly string[]) => {
@@ -385,6 +383,7 @@ export function StockForm({
       ) : (
         <FormActions>
           <Button
+            icon={ACTION_ICONS.check}
             variant="primary"
             size="small"
             disabled={!readyOf(draft, stock.max_quantity)}

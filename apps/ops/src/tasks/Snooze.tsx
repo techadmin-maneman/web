@@ -1,6 +1,7 @@
 // A task snoozed from its panel until 10 am tomorrow (docs/decisions/0303-snoozing-a-task.md): it leaves the board until
 // then, and the page says so.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Refusal } from "@maneman/ui/Refusal";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
@@ -32,7 +33,7 @@ export function SnoozeButton(props: {
     });
   return (
     <>
-      <Button variant="outline" size="small" busy={busy} onClick={() => void snooze()}>
+      <Button icon={ACTION_ICONS.alarmClock} variant="outline" size="small" busy={busy} onClick={() => void snooze()}>
         {copy.button}
       </Button>
       {failed !== null && <Refusal inline said={errorText(copy.errors, { code: failed })} />}

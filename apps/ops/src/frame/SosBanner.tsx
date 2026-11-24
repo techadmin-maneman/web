@@ -2,6 +2,7 @@
 // oldest first, read again every half minute, with whose it is, the visit, when, a map while there is a position, and
 // whether they said they are safe. Operations mark one handled, which takes it off.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { indiaClock } from "@maneman/web-kit/dates";
@@ -42,6 +43,7 @@ function OneSos({ sos, mayHandle, onHandled }: { sos: OpenSos; mayHandle: boolea
             variant="outline"
             size="small"
             href={mapLink(sos.position)}
+            icon={ACTION_ICONS.map}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -49,7 +51,14 @@ function OneSos({ sos, mayHandle, onHandled }: { sos: OpenSos; mayHandle: boolea
           </ButtonLink>
         )}
         {mayHandle && (
-          <Button variant="primary" size="small" busy={busy} disabled={busy} onClick={() => void handle()}>
+          <Button
+            icon={ACTION_ICONS.circleCheck}
+            variant="primary"
+            size="small"
+            busy={busy}
+            disabled={busy}
+            onClick={() => void handle()}
+          >
             {copy.handled}
           </Button>
         )}

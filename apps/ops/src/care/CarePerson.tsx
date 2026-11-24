@@ -1,6 +1,7 @@
 // A client's Care person beside their chat (docs/decisions/0131-care-people.md): who looks after them, among the
 // client's facts, and for a Customer Care manager, moving them to another of the team.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
@@ -65,6 +66,7 @@ function MoveTo(props: {
         )}
       </Field>
       <Button
+        icon={ACTION_ICONS.arrowRightLeft}
         variant="outline"
         size="small"
         narrow

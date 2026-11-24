@@ -3,6 +3,7 @@
 // left can send it back before it arrives. A hair system's pieces that arrived are scanned, and those not scanned
 // went missing on the way (docs/decisions/0162-scanning-labels.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Panel } from "@maneman/ui/Panel";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, RowButton } from "@maneman/ui/Button";
@@ -42,6 +43,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
   const arrived = units.length > 0 ? String(units.length) : typed;
   const figure = Number(arrived);
   const ready = /^\d{1,6}$/.test(arrived.trim()) && figure <= transfer.quantity;
+  const refused = (box: string) => boxError(copy.errors, failure, box);
   const record = async () => {
     const body = {
       received: figure,
@@ -56,11 +58,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
     <div className={form.group}>
       {consumable?.hair_system === true && <PieceScans units={units} onUnits={setUnits} />}
       <div className={form.fields}>
-        <Field
-          label={`${copy.arrived} (${unit})`}
-          className={form.field}
-          error={boxError(copy.errors, failure, "received")}
-        >
+        <Field label={`${copy.arrived} (${unit})`} className={form.field} error={refused("received")}>
           {(control) => (
             <NumberInput
               {...control}
@@ -76,11 +74,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
             />
           )}
         </Field>
-        <Field
-          label={copy.note}
-          className={classes(form.field, form.wide)}
-          error={boxError(copy.errors, failure, "note")}
-        >
+        <Field label={copy.note} className={classes(form.field, form.wide)} error={refused("note")}>
           {(control) => (
             <TextInput
               {...control}
@@ -95,7 +89,13 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
       </div>
       {ready && figure < transfer.quantity && <Note>{copy.short(transfer.quantity - figure, unit)}</Note>}
       <FormActions>
-        <Button variant="primary" size="small" disabled={!ready} onClick={() => void record()}>
+        <Button
+          icon={ACTION_ICONS.check}
+          variant="primary"
+          size="small"
+          disabled={!ready}
+          onClick={() => void record()}
+        >
           {copy.confirm}
         </Button>
         <CancelButton
@@ -129,12 +129,16 @@ function TransferRow(props: { stock: Stock; transfer: Transfer; onReceive: () =>
       <td className={ACTIONS}>
         <RowActions>
           {access.mayCall("POST /api/stock/transfers/{id}/receive") && (
-            <RowButton aria-label={copy.receiveLabel(what, to)} onClick={props.onReceive}>
+            <RowButton
+              icon={ACTION_ICONS.packageCheck}
+              aria-label={copy.receiveLabel(what, to)}
+              onClick={props.onReceive}
+            >
               {copy.receive}
             </RowButton>
           )}
           {access.mayCall("POST /api/stock/transfers/{id}/send-back") && (
-            <RowButton aria-label={copy.sendBackLabel(what, from)} onClick={props.onSendBack}>
+            <RowButton icon={ACTION_ICONS.send} aria-label={copy.sendBackLabel(what, from)} onClick={props.onSendBack}>
               {copy.sendBack}
             </RowButton>
           )}

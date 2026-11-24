@@ -2,6 +2,7 @@
 // (docs/decisions/0109-console-departments-and-access.md). A zone is added, renamed and deleted here, while nothing
 // names it, and a city put in it from its row.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
@@ -125,7 +126,7 @@ function OpenedZone(props: {
 /** The way to add a zone, a form in a drawer. */
 function AddZone({ onAdded }: { readonly onAdded: () => Promise<void> }) {
   return (
-    <DrawerButton label={copy.add}>
+    <DrawerButton icon={ACTION_ICONS.plus} label={copy.add}>
       {(close) => (
         <ZoneForm
           onAdded={async () => {

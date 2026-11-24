@@ -3,6 +3,7 @@
 // what Care do for them, then the photographs they sent with their reports. One of our technicians: their city and
 // their page. A number we don't know: made a client here.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
@@ -36,7 +37,11 @@ function TechnicianSide({ id }: { id: string }) {
         </dl>
       )}
       <div className={care.panelLinks}>
-        <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={technicianPath(id)}>
+        <OpsLink
+          className={buttonLook({ variant: "outline", size: "small", iconOnly: true })}
+          icon={ACTION_ICONS.arrowUpRight}
+          to={technicianPath(id)}
+        >
           {thread.technicianPage}
         </OpsLink>
       </div>

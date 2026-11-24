@@ -2,6 +2,7 @@
 // board, then these seven days side by side, a card a day from today, each visit in its day as the board has it and
 // opening there.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { buttonLook } from "@maneman/ui/Button";
 import { PanelFailed } from "@maneman/ui/States";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -77,7 +78,8 @@ export function TechnicianWeek({ technician }: { technician: TechnicianSummary }
       <div className={styles.weekHead}>
         <WorkStrip technicianId={technician.id} />
         <OpsLink
-          className={buttonLook({ variant: "outline", size: "small", className: styles.weekOpen })}
+          className={buttonLook({ variant: "outline", size: "small", iconOnly: true, className: styles.weekOpen })}
+          icon={ACTION_ICONS.arrowUpRight}
           to={dispatchPath({ find: technician.name })}
         >
           {copy.open}

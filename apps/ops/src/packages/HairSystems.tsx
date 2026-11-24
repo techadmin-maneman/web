@@ -2,6 +2,8 @@
 // price of its own. A row opens its record beneath the list, where its price and its cost change in place; one never
 // stocked may be deleted, any other retired. A new one is added to the package with its spec and its cost.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Badge } from "@maneman/ui/Badge";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button } from "@maneman/ui/Button";
@@ -150,9 +152,9 @@ function AddHairSystem(props: {
         <Figure label={copy.cost} value={draft.cost} onChange={edit("cost")} />
       </div>
       <div className={styles.addActions}>
-        <Button variant="primary" size="small" type="submit" busy={busy}>
+        <SubmitButton icon={ACTION_ICONS.plus} busy={busy}>
           {copy.create}
-        </Button>
+        </SubmitButton>
         <CancelButton onClick={props.onCancel} />
       </div>
       {refused !== null && <Refusal said={refused} />}
@@ -210,6 +212,7 @@ function HairSystemFoot(props: {
     <div className={styles.foot}>
       {piece.offered && access.mayCall("POST /api/consumables/{code}/retire") && (
         <DeleteAction
+          icon={ACTION_ICONS.archive}
           name={piece.name}
           tone="danger"
           words={asked(copy.retire, piece.name, copy.retireAsk)}
@@ -219,7 +222,13 @@ function HairSystemFoot(props: {
         />
       )}
       {!piece.offered && access.mayCall("POST /api/consumables/{code}/restore") && (
-        <Button variant="outline" size="small" busy={busy} onClick={() => void restore()}>
+        <Button
+          icon={ACTION_ICONS.archiveArrowUp}
+          variant="outline"
+          size="small"
+          busy={busy}
+          onClick={() => void restore()}
+        >
           {copy.restore}
         </Button>
       )}
@@ -351,6 +360,7 @@ export function HairSystems(props: {
         ) : (
           <div className={styles.addRow}>
             <Button
+              icon={ACTION_ICONS.plus}
               variant="outline"
               size="small"
               onClick={() => {

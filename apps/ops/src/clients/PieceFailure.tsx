@@ -2,12 +2,13 @@
 // the Hair systems tab's last column. Marking asks why, from the job sheet's list, and the day, in a drawer beside the
 // page; the client is then owed a replacement as for one the technician recorded. Undo takes it back at once.
 
-import { Button } from "@maneman/ui/Button";
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { DateInput, Field, Select } from "@maneman/ui/Field";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { Refused } from "@maneman/ui/Refusal";
-import { TextButton } from "@maneman/ui/TextLink";
+import { RowButton } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { apiNow } from "@maneman/web-kit/clock";
 import { todayInIndia } from "@maneman/web-kit/dates";
@@ -103,9 +104,9 @@ function MarkForm(props: {
         </Field>
         <Refused failed={failure} errors={copy.errors} boxes={BOXES} />
         <FormActions>
-          <Button type="submit" variant="primary" size="small" disabled={busy || reason === "" || on === ""}>
+          <SubmitButton icon={ACTION_ICONS.triangleExclamationPoint} disabled={busy || reason === "" || on === ""}>
             {busy ? copy.marking : copy.mark}
-          </Button>
+          </SubmitButton>
           <CancelButton disabled={busy} onClick={props.onCancel} />
         </FormActions>
       </form>
@@ -154,19 +155,19 @@ export function PieceFailure(props: {
     <>
       {!(mayMark && piece.replaced_at === null) && <span>{props.said}</span>}
       {mayUndo && (
-        <TextButton
-          compact
+        <RowButton
+          icon={ACTION_ICONS.undo2}
           className={shared.rowAction}
           aria-label={copy.undoLabel(piece.piece_code)}
           disabled={busy}
           onClick={() => void undo()}
         >
           {busy ? copy.undoing : copy.undo}
-        </TextButton>
+        </RowButton>
       )}
       {mayMark && (
-        <TextButton
-          compact
+        <RowButton
+          icon={ACTION_ICONS.flag}
           className={shared.rowAction}
           aria-label={copy.markLabel(piece.piece_code)}
           onClick={() => {
@@ -174,7 +175,7 @@ export function PieceFailure(props: {
           }}
         >
           {copy.mark}
-        </TextButton>
+        </RowButton>
       )}
       <Refused failed={failure} errors={copy.errors} />
       {marking && (

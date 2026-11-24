@@ -2,6 +2,7 @@
 // branch; any other is supplied from the registration Books is set up with (docs/decisions/0198-cities-as-data.md).
 // One is removed from its row, asked once.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
@@ -142,6 +143,7 @@ function RegistrationTable({ cities, onRemoved }: { cities: Cities; onRemoved: (
               <td className={ACTIONS}>
                 {mayRemove && (
                   <DeleteAction
+                    beside
                     name={registration.state_code}
                     words={copy.removing}
                     send={() => citiesApi.removeGstRegistration(registration.state_code)}
@@ -173,7 +175,7 @@ export function Registrations({ cities, reread }: { cities: Cities; reread: () =
       count={cities.registrations.length}
       actions={
         access.mayCall("POST /api/gst-registrations") && (
-          <DrawerButton label={copy.add}>
+          <DrawerButton icon={ACTION_ICONS.plus} label={copy.add}>
             {(close) => (
               <RegistrationForm
                 onAdded={async () => {

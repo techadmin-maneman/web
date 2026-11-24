@@ -2,6 +2,7 @@
 // office and CIN, the GSTIN and where the supplier delivers, which a manager sets once and each printed order carries.
 // Once set, each line changes where it reads (docs/decisions/0212-editing-in-place.md), the rest sent as they stand.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { PageActions } from "../frame/PageHead.tsx";
 import styles from "./purchasing.module.css";
@@ -184,7 +185,9 @@ export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next
   if (letter !== null) {
     return (
       <PageActions>
-        <DrawerButton label={copy.title}>{() => <LetterheadRows letter={letter} onSaved={onSaved} />}</DrawerButton>
+        <DrawerButton icon={ACTION_ICONS.fileText} label={copy.title}>
+          {() => <LetterheadRows letter={letter} onSaved={onSaved} />}
+        </DrawerButton>
       </PageActions>
     );
   }
@@ -192,7 +195,7 @@ export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next
     <Note>
       <span className={styles.letterheadNote}>
         {copy.missing}{" "}
-        <DrawerButton label={copy.set} title={copy.title}>
+        <DrawerButton icon={ACTION_ICONS.fileText} label={copy.set} title={copy.title}>
           {(close) => (
             <SetLetterhead
               onSaved={(next, said) => {

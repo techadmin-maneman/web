@@ -36,7 +36,12 @@ test("marks a hair system in wear failed, why from the job sheet’s list and th
     },
   });
 
-  await page.getByRole("button", { name: copy.markLabel(LIVE) }).click();
+  // Drawn as its icon in its row's own class, which fits it to its content, it is still a square.
+  const markIt = page.getByRole("button", { name: copy.markLabel(LIVE) });
+  const square = await markIt.boundingBox();
+  if (square === null) throw new Error("Mark failed is not drawn");
+  expect(square.width).toBeGreaterThanOrEqual(square.height - 1);
+  await markIt.click();
   const drawer = page.getByRole("dialog", { name: copy.title(LIVE) });
   const mark = drawer.getByRole("button", { name: copy.mark, exact: true });
   // Off until a reason is picked; the day starts at today.

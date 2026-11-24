@@ -1,6 +1,7 @@
 // What Care write in a chat (docs/decisions/0130-replies-from-the-care-inbox.md): a reply sent from our number, a note
 // only staff see, or the chat closed with what it was about. Each answers with the chat as it then stands.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
@@ -136,7 +137,13 @@ export function Composer(props: {
         <ReplyBox text={text} onText={setText} error={boxError(copy.errors, failure, "text")} />
         <div className={styles.composeFoot}>
           <Segmented label={compose.label} options={MODES} value={mode} onChange={setMode} />
-          <Button variant="primary" size="small" disabled={busy || text.trim() === ""} onClick={() => void send()}>
+          <Button
+            icon={ACTION_ICONS.send}
+            variant="primary"
+            size="small"
+            disabled={busy || text.trim() === ""}
+            onClick={() => void send()}
+          >
             {busy ? compose.sending : sendWords[mode]}
           </Button>
         </div>
@@ -158,7 +165,11 @@ export function CloseChat(props: {
   readonly pieceOf: string | null;
   readonly onThread: (thread: ChatThread, said: string) => void;
 }) {
-  return <DrawerButton label={compose.closeChat}>{(close) => <CloseForm {...props} onClosed={close} />}</DrawerButton>;
+  return (
+    <DrawerButton icon={ACTION_ICONS.circleCheck} label={compose.closeChat}>
+      {(close) => <CloseForm {...props} onClosed={close} />}
+    </DrawerButton>
+  );
 }
 
 function CloseForm(props: {
@@ -196,7 +207,13 @@ function CloseForm(props: {
         />
       )}
       <FormActions>
-        <Button variant="primary" size="small" disabled={busy} onClick={() => void shut()}>
+        <Button
+          icon={ACTION_ICONS.circleCheck}
+          variant="primary"
+          size="small"
+          disabled={busy}
+          onClick={() => void shut()}
+        >
           {compose.closeChat}
         </Button>
       </FormActions>

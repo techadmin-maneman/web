@@ -2,6 +2,8 @@
 // narrowed to from a link to it (../route.ts, activityPath), and shown above the form as a filter to take off; pages
 // opened are shown by a box of their own in the bar.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
@@ -106,10 +108,9 @@ export function Narrow({ filters, onApply }: { filters: Filters; onApply: (filte
       <DateBox label={copy.from} {...box("from")} />
       <DateBox label={copy.to} {...box("to")} />
       <div className={styles.apply}>
-        <Button variant="primary" size="small" type="submit">
-          {copy.show}
-        </Button>
+        <SubmitButton icon={ACTION_ICONS.funnel}>{copy.show}</SubmitButton>
         <Button
+          icon={ACTION_ICONS.x}
           variant="outline"
           size="small"
           onClick={() => {

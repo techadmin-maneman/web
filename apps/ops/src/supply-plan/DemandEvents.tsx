@@ -1,6 +1,7 @@
 // The events calendar on the Supply plan (docs/decisions/0182-the-events-calendar.md): the events still to end, each
 // taken off with a press, and one added with its city, its days and how much it lifts or drops demand.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
@@ -147,7 +148,7 @@ function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (
       />
       <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={EVENT_BOXES} />
       <FormActions>
-        <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
+        <Button icon={ACTION_ICONS.check} variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {copy.save}
         </Button>
       </FormActions>
@@ -174,6 +175,7 @@ function EventRow({
       <td>
         {mayRemove && (
           <Button
+            icon={ACTION_ICONS.trash}
             variant="outline"
             size="small"
             aria-label={copy.remove(event.name)}
@@ -206,7 +208,7 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
   const mayRemove = access.mayCall("POST /api/demand-events/{id}/remove");
   // Added in a drawer from the panel's head, as the redesign draws it; it closes once the event is on the list.
   const adding = access.mayCall("POST /api/demand-events") && (
-    <DrawerButton label={copy.add}>
+    <DrawerButton icon={ACTION_ICONS.plus} label={copy.add}>
       {(close) => (
         <AddEvent
           cities={demand.cities}

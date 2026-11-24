@@ -171,6 +171,10 @@ test("opens Customer Care on Care's home: their board under Needs you, and the c
   const chats = page.getByRole("region", { name: care.views.open });
   await expect(chats.getByRole("listitem")).toHaveCount(1);
   await expect(chats).toContainText(care.overdue("11:30 am"));
+  // A remedy past the limit is decided on its task, so its tile opens Tasks, not Messages.
+  await expect(
+    page.getByRole("main").getByRole("link", { name: new RegExp(`^${tasks.groups.remedy_approval}`) }),
+  ).toHaveAttribute("href", /^\/tasks/);
 });
 
 test("opens a person whose grants are in one city on the City head's home", async ({ page }) => {

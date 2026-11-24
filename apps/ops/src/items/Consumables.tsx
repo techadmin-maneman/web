@@ -3,6 +3,7 @@
 // is read only here. A row opens its record beside the list, where each value changes where it reads
 // (docs/decisions/0212-editing-in-place.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { Apart } from "@maneman/ui/Apart";
 import { PageActions } from "../frame/PageHead.tsx";
@@ -163,7 +164,7 @@ function ItemPanel(props: {
 function AddAction({ current, onAdded }: { current: ConsumableList; onAdded: (next: ConsumableList) => void }) {
   return (
     <PageActions>
-      <DrawerButton primary label={copy.add}>
+      <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.add}>
         {(done) => (
           <AddConsumable
             maxUnitCost={current.max_unit_cost}

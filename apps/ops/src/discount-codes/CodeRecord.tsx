@@ -2,6 +2,7 @@
 // it has come to. Until a booking takes it, its terms change and it is deleted (0283-changed-and-deleted-while-unused);
 // after, its values only read, and at its foot it is switched off, asked once.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { errorText } from "@maneman/web-kit/refusal";
 import { rupees } from "@maneman/web-kit/money";
 import { type DiscountCode } from "../api.ts";
@@ -62,6 +63,7 @@ export function CodeRecord(props: {
       <div className={form.recordFoot}>
         {code.deletable && access.mayCall("PATCH /api/discount-codes/{id}") && (
           <Button
+            icon={ACTION_ICONS.pencil}
             variant="outline"
             size="small"
             onClick={() => {
@@ -73,6 +75,7 @@ export function CodeRecord(props: {
         )}
         {code.switched_off === null && access.mayCall("POST /api/discount-codes/{id}/off") && (
           <DeleteAction
+            icon={ACTION_ICONS.powerOff}
             name={code.code}
             tone="danger"
             words={{ ...copy.switching, warning: (name: string) => copy.switching.warning(name, code.uses) }}

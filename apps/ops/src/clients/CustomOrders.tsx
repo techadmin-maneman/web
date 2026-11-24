@@ -2,6 +2,7 @@
 // with its spec, price and where it stands, its payment link sent again or the order cancelled while unpaid; and a new
 // one raised.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Panel } from "@maneman/ui/Panel";
@@ -52,6 +53,7 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
   return (
     <>
       <RowButton
+        icon={ACTION_ICONS.banknoteArrowDown}
         aria-label={copy.refundLabel(number)}
         onClick={() => {
           setOpen(true);
@@ -113,6 +115,7 @@ function RefundForm(props: { order: Order; onAnswer: (answer: Answer, said: stri
       </Field>
       <FormActions>
         <Button
+          icon={ACTION_ICONS.banknoteArrowDown}
           variant="destructive"
           size="small"
           onClick={() =>
@@ -137,6 +140,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
     <RowActions>
       {order.link_sent_at === null && access.mayCall("POST /api/custom-orders/{id}/send-link") && (
         <RowButton
+          icon={ACTION_ICONS.send}
           onClick={() =>
             void clientsApi.sendCustomOrderLink(order.id).then((answer) => {
               onAnswer(answer, copy.sent);
@@ -160,6 +164,7 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
   if (!asking) {
     return (
       <RowButton
+        icon={ACTION_ICONS.fileX}
         ref={opener}
         onClick={() => {
           setAsking(true);
@@ -174,6 +179,7 @@ function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Ans
       <p className={form.fieldLabel}>{copy.cancelAsk}</p>
       <FormActions>
         <Button
+          icon={ACTION_ICONS.fileX}
           variant="destructive"
           size="small"
           busy={busy}
@@ -309,6 +315,7 @@ export function CustomOrders({ clientId }: { clientId: string }) {
         access.mayCall("POST /api/clients/{id}/custom-orders") && (
           <FormActions>
             <Button
+              icon={ACTION_ICONS.plus}
               variant="outline"
               size="small"
               onClick={() => {

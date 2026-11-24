@@ -1,4 +1,5 @@
 import { Button } from "@maneman/ui/Button";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { dispatch } from "../content.ts";
 import styles from "./notice-line.module.css";
 import type { Notice } from "./landing.ts";
@@ -17,6 +18,7 @@ export function NoticeLine({
       <p className={styles.noticeText}>{notice.text}</p>
       {notice.call !== null && (
         <Button
+          icon={ACTION_ICONS.phoneOutgoing}
           variant="outline"
           size="small"
           onClick={() => {

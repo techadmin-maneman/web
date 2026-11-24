@@ -1,12 +1,15 @@
 // Adding a pincode the service area does not hold: its number, what messages call its area, and its city, one of
 // ours. It goes in unserved, so adding one messages nobody; marking it live is the launch panel's.
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import shared from "./areas.module.css";
@@ -33,6 +36,16 @@ const boxRefusals = (pincode: string, area: string) => ({
   pincode: pincode !== "" && !PINCODE.test(pincode) ? copy.badPincode : null,
   area: area !== "" && !AREA_NAME.test(area) ? copy.badName : null,
 });
+
+/** No city to add a pincode to yet: the way to add one is in Cities. */
+function NoCity({ cancel }: { cancel: ReactNode }) {
+  return (
+    <div>
+      <p className={shared.note}>{copy.noCity}</p>
+      {cancel}
+    </div>
+  );
+}
 
 /** The city it goes in, one of ours. */
 function CityChoice(props: { cities: readonly string[]; city: string; onCity: (city: string) => void }) {
@@ -87,14 +100,8 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
 
   const cancel = onCancel === undefined ? null : <CancelButton disabled={busy} onClick={onCancel} />;
 
-  if (cities.length === 0) {
-    return (
-      <div>
-        <p className={shared.note}>{copy.noCity}</p>
-        {cancel}
-      </div>
-    );
-  }
+  if (cities.length === 0) return <NoCity cancel={cancel} />;
+  const waits = pincode === null ? WAITING_FOR.pincode : WAITING_FOR.areaAndCity;
 
   return (
     <div>
@@ -131,11 +138,19 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
         <CityChoice cities={cities} city={city} onCity={setCity} />
       </div>
       <div className={shared.actions}>
-        <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
+        <Button
+          icon={ACTION_ICONS.plus}
+          variant="primary"
+          size="small"
+          disabled={!ready}
+          aria-describedby={describedBy("pincode-waits", !ready && !busy)}
+          onClick={() => void add()}
+        >
           {busy ? copy.adding : copy.add}
         </Button>
         {cancel}
       </div>
+      <Missing id="pincode-waits" what={!ready && !busy ? waits : null} />
       {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
     </div>
   );

@@ -2,6 +2,8 @@
 // fortnight, and a time someone is free at, with the technician ops choose or whoever is free. A paid visit goes out as a payment link and is booked once the client pays, or, while
 // online payment is off, is paid by UPI at the visit; anything else is booked at once (src/routes/ops/visits.ts). No board draws it (docs/fidelity-method.md).
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -117,7 +119,10 @@ function BookingRefusal({
   useEffect(() => {
     if (refused !== "taken") return;
     const held = document.activeElement;
-    if (held instanceof HTMLButtonElement && held.disabled) held.blur();
+    // Waiting, an icon's button stays focusable (aria-disabled), so it is let go of too.
+    const waiting =
+      held instanceof HTMLButtonElement && (held.disabled || held.getAttribute("aria-disabled") === "true");
+    if (waiting) held.blur();
     focusIfLost(document.getElementById(TITLE_ID));
   }, [refused]);
   return (
@@ -144,7 +149,7 @@ function Unreadable({ onRetry }: { onRetry: () => void }) {
   return (
     <div>
       <Refusal className={shared.error} said={copy.unreadable} />
-      <Button variant="outline" size="small" className={shared.quiet} onClick={onRetry}>
+      <Button icon={ACTION_ICONS.refreshCw} variant="outline" size="small" className={shared.quiet} onClick={onRetry}>
         {copy.retry}
       </Button>
     </div>
@@ -217,15 +222,9 @@ function BookFoot(props: {
   return (
     <div className={shared.foot}>
       <p className={shared.pays}>{props.line}</p>
-      <Button
-        variant="primary"
-        size="small"
-        type="submit"
-        busy={props.busy}
-        disabled={chosen === null || props.blocked}
-      >
+      <SubmitButton icon={ACTION_ICONS.calendarPlus} busy={props.busy} disabled={chosen === null || props.blocked}>
         {props.busy ? copy.booking : label}
-      </Button>
+      </SubmitButton>
     </div>
   );
 }
@@ -253,6 +252,7 @@ function CodeOrAdd(props: { code: string; given: boolean; busy: boolean; onCode:
   if (open) return <CodeBox code={props.code} busy={props.busy} onCode={props.onCode} />;
   return (
     <TextButton
+      icon={ACTION_ICONS.ticketPercent}
       compact
       onClick={() => {
         setOpen(true);

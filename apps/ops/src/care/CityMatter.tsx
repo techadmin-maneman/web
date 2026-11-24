@@ -1,10 +1,13 @@
 // Sending a matter from a chat to the client's city (docs/decisions/0135-city-matters.md): what the city team need to
 // know, which waits on their Tasks as a City matter until they close it.
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
-import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { FormActions } from "@maneman/ui/FormActions";
@@ -58,11 +61,17 @@ function MatterFields(props: { conversationId: string; onSent: (city: string) =>
       </div>
       <Refused failed={failure} errors={copy.errors} boxes={["note"]} />
       <FormActions>
-        <Button variant="primary" size="small" type="submit" busy={busy} disabled={note.trim() === ""}>
+        <SubmitButton
+          icon={ACTION_ICONS.send}
+          busy={busy}
+          disabled={note.trim() === ""}
+          aria-describedby={describedBy("city-matter-waits", note.trim() === "")}
+        >
           {copy.send}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
+      <Missing id="city-matter-waits" what={note.trim() === "" ? WAITING_FOR.note : null} />
     </form>
   );
 }
@@ -72,7 +81,7 @@ export function CityMatter({ conversationId }: { readonly conversationId: string
   return (
     <div className={styles.action}>
       {sentTo !== null && <Toast>{copy.sent(sentTo)}</Toast>}
-      <DrawerButton label={copy.open}>
+      <DrawerButton icon={ACTION_ICONS.send} label={copy.open}>
         {(close) => (
           <MatterFields
             conversationId={conversationId}

@@ -3,6 +3,7 @@
 // consumable lot's label, for its boxes, in as many copies as there are boxes. Any label scanned here finds its piece
 // (docs/decisions/0162-scanning-labels.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Panel } from "@maneman/ui/Panel";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Button, RowButton } from "@maneman/ui/Button";
@@ -85,6 +86,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
       {toPrint.length > 0 && (
         <FormActions>
           <Button
+            icon={ACTION_ICONS.printer}
             variant="primary"
             size="small"
             disabled={printing !== null}
@@ -141,6 +143,7 @@ function UnitTable({ units, name }: { units: readonly Unit[]; name: string }) {
                 <td className={ACTIONS}>
                   <RowActions>
                     <RowButton
+                      icon={ACTION_ICONS.printer}
                       aria-label={copy.printOneLabel(unit.code)}
                       disabled={printing !== null}
                       onClick={() => {
@@ -198,7 +201,13 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
         <Note>
           {copy.unlabelled(units.unlabelled)}{" "}
           {access.mayCall("POST /api/stock/units") && (
-            <Button variant="outline" size="small" disabled={labelling === "busy"} onClick={() => void label()}>
+            <Button
+              icon={ACTION_ICONS.printer}
+              variant="outline"
+              size="small"
+              disabled={labelling === "busy"}
+              onClick={() => void label()}
+            >
               {labelling === "busy" ? copy.labelling : copy.labelThem(toLabel)}
             </Button>
           )}
@@ -275,6 +284,7 @@ function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: Labels
       {failed && <Refusal className={form.error} said={copy.noLabel} />}
       <FormActions>
         <Button
+          icon={ACTION_ICONS.printer}
           variant="primary"
           size="small"
           disabled={count < 1 || count > MAX_COPIES || printing !== null}

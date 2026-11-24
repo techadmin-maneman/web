@@ -15,6 +15,11 @@
     font-size: var(--fs-14);
   }
 
+  /* In a row's line of buttons, set off from the one before it as theirs are (./Button.tsx's RowButton). */
+  .beside:not(:first-child) {
+    margin-left: var(--sp-8);
+  }
+
   .asking {
     margin-top: var(--sp-8);
   }

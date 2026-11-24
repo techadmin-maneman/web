@@ -1,6 +1,7 @@
 // A long table's heads that sort, the bar above it that narrows it, and the button beneath it that shows the next
 // page (./useTableView.ts). A head sorts on a press and reverses on the next; aria-sort says which way it runs.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { TextButton } from "./TextLink.tsx";
 import { Field, Select } from "./Field.tsx";
 import { SearchInput } from "./SearchInput.tsx";
@@ -103,7 +104,7 @@ export function Narrowing<Row>({
         view.narrowed ? (
           <>
             {copy.count(view.matching, view.total)}
-            <TextButton tone="muted" compact onClick={view.clear}>
+            <TextButton tone="muted" compact icon={ACTION_ICONS.x} onClick={view.clear}>
               {copy.clear}
             </TextButton>
           </>
@@ -159,7 +160,7 @@ export function TableEnd<Row>({
   if (view.more === null) return null;
   return (
     <p className={classes(styles.end, className)}>
-      <TextButton tone="muted" compact onClick={view.more}>
+      <TextButton tone="muted" compact icon={ACTION_ICONS.chevronDown} onClick={view.more}>
         {copy.more}
       </TextButton>
     </p>

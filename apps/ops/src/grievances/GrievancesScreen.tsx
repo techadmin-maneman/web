@@ -3,6 +3,7 @@
 // answer closes it and writes `grievance.resolve` to the audit log (ADR 0031); it messages nobody, since ops answer the
 // client on the number shown.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -93,6 +94,7 @@ function Answer({ each, now, mayAnswer, onAnswered }: AnswerProps) {
           </Field>
           <div className={styles.actions}>
             <Button
+              icon={ACTION_ICONS.send}
               variant="primary"
               size="small"
               disabled={sending || response.trim() === ""}

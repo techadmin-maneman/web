@@ -3,6 +3,8 @@
 // form says so before it is sent. Leave moves none of the jobs already booked: each waits on the Tasks board until
 // ops move it, and "Show on board" opens the board on that job's week, with their row in view and the job's drawer open.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Toast } from "@maneman/ui/Toast";
@@ -105,6 +107,7 @@ function Period({
         {leave.note !== null && <span className={styles.leaveNote}>{leave.note}</span>}
         {mayTakeBack && step === "listed" && (
           <Button
+            icon={ACTION_ICONS.undo2}
             variant="outline"
             size="small"
             className={shared.quiet}
@@ -268,9 +271,9 @@ function LeaveForm({
         )}
       </Field>
       <div className={shared.actions}>
-        <Button variant="primary" size="small" className={shared.save} type="submit" disabled={sending}>
+        <SubmitButton className={shared.save} disabled={sending}>
           {sending ? copy.saving : copy.save}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={sending} onClick={onCancel} />
       </div>
       {failed !== null && <Refusal className={shared.error} said={failed} />}
@@ -299,6 +302,7 @@ export function Leave({ technician }: { technician: TechnicianSummary }) {
   const add =
     !recording && mayRecord ? (
       <Button
+        icon={ACTION_ICONS.calendarOff}
         variant="outline"
         size="small"
         className={shared.quiet}

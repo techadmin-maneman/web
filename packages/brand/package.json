@@ -10,6 +10,7 @@
     "./fonts.css": "./fonts.css",
     "./fonts-plex.css": "./fonts-plex.css",
     "./breakpoints": "./breakpoints.ts",
+    "./action-icons": "./action-icons.ts",
     "./icons": "./icons.ts",
     "./marks": "./marks.ts",
     "./colours": "./colours.ts",

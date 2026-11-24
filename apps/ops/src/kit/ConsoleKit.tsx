@@ -1,6 +1,7 @@
 // The kit's console frame (./KitScreen.tsx): a page's head, the row that narrows a list, its figures and badges, a
 // record's facts, Settings, the account's panel and the navigation open and folded. Each follows the theme.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { GLYPHS, TAB_ICONS } from "@maneman/brand/icons";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { Breadcrumbs } from "@maneman/ui/Breadcrumbs";
@@ -47,10 +48,10 @@ function Head() {
       }
       actions={
         <>
-          <Button variant="outline" size="small">
+          <Button icon={ACTION_ICONS.ellipsis} variant="outline" size="small">
             {words.more}
           </Button>
-          <Button variant="primary" size="small">
+          <Button icon={ACTION_ICONS.plus} variant="primary" size="small">
             {words.action}
           </Button>
         </>
@@ -148,7 +149,9 @@ function List() {
             endTone={"tone" in row ? row.tone : "muted"}
             rule={"tone" in row ? row.tone : undefined}
             onClick={() => undefined}
-            action={row === words.rows[0] ? <RowButton>{words.act}</RowButton> : undefined}
+            action={
+              row === words.rows[0] ? <RowButton icon={ACTION_ICONS.clipboardCheck}>{words.act}</RowButton> : undefined
+            }
           />
         ))}
       </ListRows>
@@ -243,10 +246,10 @@ function Settings() {
         <SettingValue label={words.radius} value={words.viewOnly} />
       </Panel>
       <ChangeBar count={words.changes}>
-        <Button variant="quiet" size="small">
+        <Button icon={ACTION_ICONS.x} variant="quiet" size="small">
           {words.discard}
         </Button>
-        <Button variant="primary" size="small">
+        <Button icon={ACTION_ICONS.eye} variant="primary" size="small">
           {words.review}
         </Button>
       </ChangeBar>

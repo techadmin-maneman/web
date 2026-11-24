@@ -2,6 +2,7 @@
 // time, the longest-waiting first, as a list beside the chat open, with our automatic messages and the client in it.
 // The list and the chat read themselves again while in view, and a chat new to the list is said as it comes.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Initials } from "@maneman/ui/Initials";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
@@ -80,6 +81,7 @@ function Search({ search, onSearch }: { search: string; onSearch: (search: strin
       <SearchInput label={copy.search} value={typed} maxLength={80} onChange={setTyped} />
       {search !== "" && (
         <Button
+          icon={ACTION_ICONS.x}
           variant="outline"
           size="small"
           narrow
@@ -245,7 +247,13 @@ function Conversations({ view, search, tools }: { view: ConversationView; search
         {next !== null && (
           <div className={styles.more}>
             <Note>{copy.latest(conversations.length)}</Note>
-            <Button variant="outline" size="small" busy={loadingOlder} onClick={() => void showOlder(next)}>
+            <Button
+              icon={ACTION_ICONS.chevronDown}
+              variant="outline"
+              size="small"
+              busy={loadingOlder}
+              onClick={() => void showOlder(next)}
+            >
               {loadingOlder ? copy.loadingMore : copy.more}
             </Button>
           </div>

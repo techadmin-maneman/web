@@ -3,7 +3,8 @@
 // from those its key may take; an open-keyed rule's new key; and, for a person who may only look, each value as it
 // reads, with nothing to press. A row saves its own figure, the rule's others as they stand.
 
-import { Button } from "@maneman/ui/Button";
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { NumberInput, Select, TextInput } from "@maneman/ui/Field";
@@ -183,9 +184,9 @@ function AddKey({ rule, onSaved }: { readonly rule: NumberRule; readonly onSaved
           setText(event.target.value);
         }}
       />
-      <Button variant="outline" size="small" type="submit" busy={busy}>
+      <SubmitButton icon={ACTION_ICONS.plus} variant="outline" busy={busy}>
         {copy.add}
-      </Button>
+      </SubmitButton>
       {refused !== null && <Refusal className={styles.refusal} said={refused} />}
     </form>
   );

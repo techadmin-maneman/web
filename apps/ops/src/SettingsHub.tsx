@@ -3,6 +3,7 @@
 // and a search across the pages and every rule beside them, what it finds above the page. A page of policies draws
 // its rule groups; every other page is its own screen, loaded the first time it opens.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
@@ -127,7 +128,7 @@ function Matches({ typed, onClear }: { typed: string; onClear: () => void }) {
       titleId="settings-matches"
       title={copy.matches}
       actions={
-        <Button variant="outline" size="small" onClick={onClear}>
+        <Button icon={ACTION_ICONS.x} variant="outline" size="small" onClick={onClear}>
           {copy.clear}
         </Button>
       }

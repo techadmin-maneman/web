@@ -2,6 +2,7 @@
 // a render throws, navigation and all: a page's failure keeps the navigation and offers a reload, and one round the
 // whole console, for a failure in the frame itself, offers a reload and the way in again.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { ErrorBoundary } from "@maneman/ui/ErrorBoundary";
 import { reportRenderError } from "@maneman/web-kit/client-errors";
@@ -19,11 +20,11 @@ function Broken({ home }: { home: boolean }) {
     <div className={shared.failed}>
       <p role="alert">{broken.message}</p>
       <div className={styles.actions}>
-        <Button variant="primary" size="small" onClick={reload}>
+        <Button icon={ACTION_ICONS.refreshCw} variant="primary" size="small" onClick={reload}>
           {broken.reload}
         </Button>
         {home && (
-          <ButtonLink variant="outline" size="small" href="/">
+          <ButtonLink variant="outline" size="small" href="/" icon={ACTION_ICONS.house}>
             {broken.home}
           </ButtonLink>
         )}

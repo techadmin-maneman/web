@@ -2,6 +2,7 @@
 // reference, with where Books stands with each, and the whole list saved as a CSV; and the payment links still unpaid
 // (src/domain/money/payment-ledger.ts).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { NoValue } from "@maneman/ui/NoValue";
@@ -264,6 +265,7 @@ export function LedgerScreen() {
       {loaded.state === "loaded" && (
         <PageActions>
           <Button
+            icon={ACTION_ICONS.download}
             variant="outline"
             size="small"
             onClick={() => {

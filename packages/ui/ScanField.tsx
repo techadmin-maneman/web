@@ -2,6 +2,8 @@
 // (docs/decisions/0162-scanning-labels.md). The back camera opens only while the person reads with it, and each frame
 // is read for a QR code, in a worker (./qr-decoder.ts), until one is found.
 
+import { useActionIcon } from "./icon-actions.ts";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useEffect, useRef, useState } from "react";
 import { useCamera } from "./useCamera.ts";
 import { Button } from "./Button.tsx";
@@ -133,6 +135,8 @@ export function ScanField({
   const variant = onInk ? "outlineOnInk" : "outline";
   const [typed, setTyped] = useState("");
   const [reading, setReading] = useState(false);
+  const addIcon = useActionIcon(ACTION_ICONS.plus);
+  const scanIcon = useActionIcon(reading ? ACTION_ICONS.x : ACTION_ICONS.scanBarcode);
   const add = (text: string) => {
     const label = scanned(text);
     if (label === "") return;
@@ -166,6 +170,7 @@ export function ScanField({
           variant={variant}
           size="small"
           disabled={scanned(typed) === ""}
+          icon={addIcon}
           onClick={() => {
             add(typed);
           }}
@@ -176,6 +181,7 @@ export function ScanField({
           variant={variant}
           size="small"
           aria-pressed={reading}
+          icon={scanIcon}
           onClick={() => {
             setReading(!reading);
           }}

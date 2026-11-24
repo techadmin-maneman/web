@@ -3,6 +3,7 @@
 // sold before it was retired is still done. Each figure changes where it reads (docs/decisions/0212-editing-in-place.md),
 // and the service's list goes whole with it. An empty box is none.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
@@ -88,7 +89,7 @@ export function ServiceUsage({
       title={words.title}
       actions={
         mayChange && (
-          <DrawerButton label={words.change} title={words.title}>
+          <DrawerButton icon={ACTION_ICONS.pencil} label={words.change} title={words.title}>
             {() => <UsageEditor consumables={consumables} onSaved={onSaved} />}
           </DrawerButton>
         )

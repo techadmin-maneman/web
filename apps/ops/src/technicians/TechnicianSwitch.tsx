@@ -1,6 +1,7 @@
 // Switching a technician off, which signs them out and hands back their visits still to come, listed once it is done;
 // and switching them back on (./TechnicianForms.tsx).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { Button, buttonLook } from "@maneman/ui/Button";
@@ -44,6 +45,7 @@ export function SwitchOff({
           variant="outline"
           size="small"
           className={styles.quiet}
+          icon={ACTION_ICONS.powerOff}
           aria-label={copy.openLabel(technician.name)}
           onClick={() => {
             setAsking(true);
@@ -58,7 +60,14 @@ export function SwitchOff({
     <div className={styles.asking}>
       <p className={styles.warning}>{copy.warning(technician.visits_to_come)}</p>
       <div className={styles.actions}>
-        <Button variant="danger" size="small" className={styles.revoke} disabled={sending} onClick={() => void send()}>
+        <Button
+          icon={ACTION_ICONS.check}
+          variant="danger"
+          size="small"
+          className={styles.revoke}
+          disabled={sending}
+          onClick={() => void send()}
+        >
           {sending ? copy.sending : copy.confirm}
         </Button>
         <CancelButton
@@ -103,6 +112,7 @@ export function SwitchOn({
           variant="outline"
           size="small"
           className={styles.quiet}
+          icon={ACTION_ICONS.power}
           aria-label={copy.openLabel(technician.name)}
           disabled={sending}
           onClick={() => void send()}
@@ -134,7 +144,8 @@ export function Returned({ visits }: { visits: readonly ReturnedVisit[] }) {
             ))}
           </ul>
           <OpsLink
-            className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })}
+            className={buttonLook({ variant: "outline", size: "small", iconOnly: true, className: styles.quiet })}
+            icon={ACTION_ICONS.arrowUpRight}
             to="/dispatch"
           >
             {copy.move}

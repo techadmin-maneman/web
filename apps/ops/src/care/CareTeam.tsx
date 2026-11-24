@@ -3,6 +3,7 @@
 // beside the table, where a Customer Care manager changes the name and the days off where they read, adds or cancels
 // leave, and moves every client to another member (docs/decisions/0212-editing-in-place.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
@@ -136,6 +137,7 @@ function LeaveList(props: { leave: readonly Leave[]; mayManage: boolean; onChang
             {periodOf(leave)}
             {props.mayManage && (
               <RowButton
+                icon={ACTION_ICONS.undo2}
                 beside
                 disabled={busy}
                 aria-label={copy.takeBackLabel(periodOf(leave))}
@@ -173,6 +175,7 @@ function ShiftSwitch(props: { me: CareMember; onDone: () => void }) {
       <Button
         variant={since === null ? "primary" : "outline"}
         size="small"
+        icon={since === null ? ACTION_ICONS.power : ACTION_ICONS.powerOff}
         disabled={busy}
         onClick={() => void send(() => careApi.setOnShift(since === null))}
       >
@@ -195,6 +198,7 @@ function MoveAll(props: { member: CareMember; team: readonly CareMember[]; onDon
   if (!asking) {
     return (
       <Button
+        icon={ACTION_ICONS.arrowRightLeft}
         variant="outline"
         size="small"
         narrow
@@ -229,6 +233,7 @@ function MoveAll(props: { member: CareMember; team: readonly CareMember[]; onDon
           )}
         </Field>
         <Button
+          icon={ACTION_ICONS.arrowRightLeft}
           variant="primary"
           size="small"
           disabled={busy || to === ""}
@@ -349,6 +354,7 @@ function MemberRecord(props: {
         ) : (
           <div className={styles.addLeave}>
             <Button
+              icon={ACTION_ICONS.calendarOff}
               variant="outline"
               size="small"
               narrow

@@ -2,6 +2,8 @@
 // its record's foot. Retiring asks its day and says what that does before anything is sent: the technician app stops
 // offering it from that day; nothing already recorded moves, and neither does its stock.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { DateInput, Field } from "@maneman/ui/Field";
@@ -48,6 +50,7 @@ export function Restoring({ consumable, onSaved }: Props) {
   return (
     <>
       <Button
+        icon={ACTION_ICONS.archiveArrowUp}
         variant="outline"
         size="small"
         narrow
@@ -82,6 +85,7 @@ export function Retiring({ consumable, today, onSaved }: Props & { readonly toda
   if (!asking) {
     return (
       <Button
+        icon={ACTION_ICONS.archive}
         variant="outline"
         size="small"
         narrow
@@ -119,9 +123,9 @@ export function Retiring({ consumable, today, onSaved }: Props & { readonly toda
       </Field>
       <p className={styles.question}>{words.question(consumable.name, from === "" ? "" : longDate(from))}</p>
       <FormActions>
-        <Button variant="danger" size="small" type="submit" busy={busy}>
+        <SubmitButton icon={ACTION_ICONS.archive} variant="danger" busy={busy}>
           {copy.retire}
-        </Button>
+        </SubmitButton>
         <CancelButton
           onClick={() => {
             setAsking(false);

@@ -35,11 +35,6 @@
   font-size: var(--fs-30);
 }
 
-/* The brand's WhatsApp glyph is a line, drawn as the dispatch board's drawer draws it. */
-.icon {
-  flex-shrink: 0;
-}
-
 .metaKey {
   font-size: var(--fs-13);
   color: var(--ui-text-muted);

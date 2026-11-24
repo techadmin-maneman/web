@@ -2,6 +2,7 @@
 // offered, each with how many starts are free, moved a fortnight at a time; and the time, under its part of the day,
 // with the technician, whoever is free unless ops choose.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { ChoiceCard } from "@maneman/ui/ChoiceCard";
 import { DateStrip } from "@maneman/ui/DateStrip";
@@ -29,6 +30,7 @@ export function StripButtons(props: {
   return (
     <div className={styles.days}>
       <Button
+        icon={ACTION_ICONS.chevronLeft}
         variant="outline"
         size="small"
         className={styles.quiet}
@@ -40,6 +42,7 @@ export function StripButtons(props: {
         {copy.earlier}
       </Button>
       <Button
+        icon={ACTION_ICONS.chevronRight}
         variant="outline"
         size="small"
         className={styles.quiet}

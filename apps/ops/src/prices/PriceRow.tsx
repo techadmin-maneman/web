@@ -3,6 +3,7 @@
 // none starts today by accident, and its boxes open on the price in force, its GST included, so no change of rate
 // slips through unseen (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { TextButton } from "@maneman/ui/TextLink";
 import { DateInput, NumberInput } from "@maneman/ui/Field";
 import { EditableRow } from "@maneman/ui/EditableRow";
@@ -163,6 +164,7 @@ function PricesToCome(props: {
         <li key={price.valid_from} className={styles.line}>
           <span>{copy.upcoming(priceText(price), shortDate(price.valid_from))}</span>
           <TextButton
+            icon={ACTION_ICONS.undo2}
             compact
             busy={busy}
             aria-label={copy.takeBack(shortDate(price.valid_from))}

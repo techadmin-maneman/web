@@ -3,8 +3,10 @@
 // primary tone, before a page's main switch. Anything but the primary tone looks dangerous before it is pressed, and a
 // switch that reaches everyone can ask for a word typed first.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "./useOneAtATime.ts";
 import { Button } from "./Button.tsx";
+import { classes } from "./classes.ts";
 import { CancelButton } from "./CancelButton.tsx";
 import { Field, TextInput } from "./Field.tsx";
 import { useState } from "react";
@@ -31,6 +33,7 @@ type Answer<Body> = { readonly ok: true; readonly body: Body } | { readonly ok: 
 function Asking(props: {
   name: string;
   tone: Tone;
+  icon: string;
   words: DeleteWords;
   typed: string | undefined;
   sending: boolean;
@@ -63,6 +66,7 @@ function Asking(props: {
           variant={props.tone}
           size="small"
           className={styles.quiet}
+          icon={props.icon}
           disabled={props.sending || waiting}
           onClick={props.onConfirm}
         >
@@ -74,10 +78,36 @@ function Asking(props: {
   );
 }
 
+/** Closed: its button on a line of its own, or in a table row's line of buttons, sized as theirs are. */
+function Opener(props: {
+  readonly tone: Tone;
+  readonly icon: string;
+  readonly label: string;
+  readonly open: string;
+  readonly beside: boolean;
+  readonly onOpen: () => void;
+}) {
+  const button = (
+    <Button
+      variant={props.tone === "primary" ? "outline" : "danger"}
+      size={props.beside ? "compact" : "small"}
+      className={classes(styles.quiet, props.beside && styles.beside)}
+      icon={props.icon}
+      aria-label={props.label}
+      onClick={props.onOpen}
+    >
+      {props.open}
+    </Button>
+  );
+  return props.beside ? button : <div className={styles.actions}>{button}</div>;
+}
+
 export function DeleteAction<Body>({
   name,
   tone = "destructive",
   words: copy = deleting,
+  icon = ACTION_ICONS.trash,
+  beside = false,
   typed,
   send,
   refusal,
@@ -90,6 +120,10 @@ export function DeleteAction<Body>({
   readonly tone?: Tone;
   /** Its own words, where what goes is not gone for good, as a member of staff taken off the list. */
   readonly words?: DeleteWords;
+  /** Its icon where it is not a deletion: a retirement's archive, a switch's power. */
+  readonly icon?: string;
+  /** In a table row's actions, its button beside the row's others rather than on a line of its own. */
+  readonly beside?: boolean;
   /** A word to type before the second press goes, for a switch that reaches everyone. */
   readonly typed?: string;
   readonly send: () => Promise<Answer<Body>>;
@@ -122,6 +156,7 @@ export function DeleteAction<Body>({
         <Asking
           name={name}
           tone={tone}
+          icon={icon}
           words={copy}
           typed={typed}
           sending={sending}
@@ -132,20 +167,17 @@ export function DeleteAction<Body>({
           }}
         />
       ) : (
-        <div className={styles.actions}>
-          <Button
-            variant={tone === "primary" ? "outline" : "danger"}
-            size="small"
-            className={styles.quiet}
-            aria-label={copy.label(name)}
-            onClick={() => {
-              setFailed(null);
-              setAsking(true);
-            }}
-          >
-            {copy.open}
-          </Button>
-        </div>
+        <Opener
+          tone={tone}
+          icon={icon}
+          label={copy.label(name)}
+          open={copy.open}
+          beside={beside}
+          onOpen={() => {
+            setFailed(null);
+            setAsking(true);
+          }}
+        />
       )}
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </>

@@ -3,6 +3,7 @@
 // sends (src/domain/dispatch/technicians.ts). It also stops them signing in on any phone until ops let them again, as
 // does their number using up its login codes for the day.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { CancelButton } from "@maneman/ui/CancelButton";
@@ -71,6 +72,7 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
           <p className={shared.warning}>{copy.warning}</p>
           <div className={shared.actions}>
             <Button
+              icon={ACTION_ICONS.phoneOff}
               variant="danger"
               size="small"
               className={shared.revoke}
@@ -91,6 +93,7 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
       {offered && (
         <div className={shared.actions}>
           <Button
+            icon={ACTION_ICONS.phoneOff}
             variant="outline"
             size="small"
             className={shared.quiet}
@@ -140,6 +143,7 @@ function SignInStopped({ technician, why }: { technician: Technician; why: strin
       {mayAllow && (
         <div className={shared.actions}>
           <Button
+            icon={ACTION_ICONS.logIn}
             variant="outline"
             size="small"
             className={shared.quiet}

@@ -1,6 +1,7 @@
 // One count task (docs/decisions/0185-cycle-counts.md): counted blind, item by item; what differed counted again; and
 // a recount that still differs signed off by a manager, who alone sees what the ledger held.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
@@ -101,7 +102,7 @@ function Counting({
         </div>
       ))}
       <FormActions>
-        <Button variant="primary" size="small" disabled={!ready} onClick={() => void save()}>
+        <Button icon={ACTION_ICONS.check} variant="primary" size="small" disabled={!ready} onClick={() => void save()}>
           {words.save}
         </Button>
       </FormActions>
@@ -163,6 +164,7 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
       </Field>
       <FormActions>
         <Button
+          icon={ACTION_ICONS.circleCheck}
           variant="primary"
           size="small"
           disabled={note.trim() === ""}

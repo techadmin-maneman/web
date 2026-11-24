@@ -2,6 +2,7 @@
 // A city with no rate of its own shows every city's, marked; a rate set to start later shows beneath the one in force.
 // A grade's row opens its record beside the table, where its name and its rates change where they read.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
@@ -98,7 +99,7 @@ export function PayRates(props: { pay: TechnicianPay; mayAdd: boolean; onChanged
     <>
       <PageActions>
         {props.mayAdd && (
-          <DrawerButton primary label={copy.addGrade}>
+          <DrawerButton icon={ACTION_ICONS.plus} primary label={copy.addGrade}>
             {(close) => (
               <AddGrade
                 onAdded={(next) => {

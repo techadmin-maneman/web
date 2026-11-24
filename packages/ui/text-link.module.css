@@ -24,7 +24,46 @@
     font-size: var(--fs-14);
   }
 
-  .words:disabled {
+  /* An action drawn as its icon alone (./icon-actions.ts): no underline, a square tap with the icon at its middle. */
+  .iconOnly {
+    justify-content: center;
+    min-width: var(--tap);
+    max-width: var(--tap);
+    text-decoration: none;
+  }
+
+  .iconOnly.compact {
+    min-width: var(--sp-24);
+    max-width: var(--sp-24);
+  }
+
+  /* On a phone, or under a finger, every icon is a finger's square however compact its row, and a long press shows
+     its words (./ActionTips.tsx) without selecting anything. */
+  @media (max-width: 760px), (pointer: coarse) {
+    .iconOnly,
+    .iconOnly.compact {
+      min-width: var(--tap);
+      max-width: var(--tap);
+      min-height: var(--tap);
+      user-select: none;
+    }
+  }
+
+  /* Lit as an icon button is (./button.module.css), on white and on the canvas alike: under a pointer that rests, so a
+     tap leaves no mark behind; while pressed, and for the keyboard, everywhere. */
+  @media (hover: hover) {
+    .iconOnly:hover:not(:disabled, [aria-disabled="true"]) {
+      background: var(--ui-shade);
+    }
+  }
+
+  .iconOnly:focus-visible,
+  .iconOnly:active:not(:disabled, [aria-disabled="true"]) {
+    background: var(--ui-shade);
+  }
+
+  .words:disabled,
+  .words[aria-disabled="true"] {
     color: var(--ui-text-quiet);
     text-decoration-color: currentcolor;
     cursor: default;
@@ -105,19 +144,19 @@
   }
 
   @media (hover: hover) {
-    .plain:hover:not(:disabled),
-    .muted:hover:not(:disabled),
-    .brass:hover:not(:disabled) {
+    .plain:hover:not(:disabled, [aria-disabled="true"]),
+    .muted:hover:not(:disabled, [aria-disabled="true"]),
+    .brass:hover:not(:disabled, [aria-disabled="true"]) {
       color: var(--ui-text);
       text-decoration-color: currentcolor;
     }
 
-    .ink:hover:not(:disabled) {
+    .ink:hover:not(:disabled, [aria-disabled="true"]) {
       color: var(--on-ink);
       text-decoration-color: currentcolor;
     }
 
-    .danger:hover:not(:disabled) {
+    .danger:hover:not(:disabled, [aria-disabled="true"]) {
       text-decoration-thickness: var(--rule-strong);
     }
   }

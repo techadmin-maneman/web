@@ -2,6 +2,8 @@
 // what a first fit comes to and what it leaves us; a row opens its record beneath the list, where each value changes in
 // place (docs/decisions/0212-editing-in-place.md). Every write answers every package as it stands, so the page follows.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Note } from "@maneman/ui/Note";
 import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 import { Button } from "@maneman/ui/Button";
@@ -169,9 +171,9 @@ function AddPackage(props: {
           setName(event.target.value);
         }}
       />
-      <Button variant="primary" size="small" type="submit" busy={busy}>
+      <SubmitButton icon={ACTION_ICONS.plus} busy={busy}>
         {copy.create}
-      </Button>
+      </SubmitButton>
       <CancelButton onClick={props.onCancel} />
       {refused !== null && <Refusal className={styles.addRefusal} said={refused} />}
     </form>
@@ -203,6 +205,7 @@ export function PackagesScreen() {
       {mayAdd && !adding && (
         <PageActions>
           <Button
+            icon={ACTION_ICONS.plus}
             variant="primary"
             size="small"
             onClick={() => {

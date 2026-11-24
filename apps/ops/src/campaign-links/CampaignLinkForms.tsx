@@ -2,9 +2,10 @@
 // society, pincode, day, costs and any discount for the first fit; or an offer link, with its name, where and how it
 // goes, its campaign, city and any discount. One field to a row; the link, its code and its QR come once it is made.
 
+import { SubmitButton } from "@maneman/ui/SubmitButton";
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { SelectField, TextField } from "@maneman/ui/FieldRows";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { FormActions } from "@maneman/ui/FormActions";
 import { DateInput, Field } from "@maneman/ui/Field";
@@ -70,16 +71,14 @@ function Sending(props: {
       <div className={form.fields}>{props.children}</div>
       <Refused failed={props.failure} errors={copy.errors} boxes={BOXES} />
       <FormActions>
-        <Button
-          variant="primary"
-          size="small"
-          type="submit"
+        <SubmitButton
+          icon={ACTION_ICONS.plus}
           busy={props.busy}
           disabled={props.missing !== null}
           aria-describedby={describedBy("link-missing", props.missing !== null)}
         >
           {props.busy ? copy.making : copy.make}
-        </Button>
+        </SubmitButton>
         <CancelButton disabled={props.busy} onClick={props.onCancel} />
       </FormActions>
       <Missing id="link-missing" what={props.missing} />

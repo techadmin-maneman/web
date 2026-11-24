@@ -3,6 +3,7 @@
 // quantity or rejected with why; and the plan drafted again from the latest forecast. Beneath, the forecast itself and
 // the events calendar it reads.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -166,6 +167,7 @@ export function SupplyPlanScreen() {
           {access.mayCall("POST /api/supply-plan/draft") && (
             <PageActions>
               <Button
+                icon={ACTION_ICONS.shoppingCart}
                 variant="outline"
                 size="small"
                 onClick={() =>

@@ -3,6 +3,7 @@
 // a decline needs a reason, asked in the drawer the change opens in, a number someone else holds is refused, and each
 // change says how long it has left, as Tasks counts it.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
@@ -117,6 +118,7 @@ function ReasonStep(props: {
       </Field>
       <div className={styles.actions}>
         <Button
+          icon={ACTION_ICONS.circleX}
           variant="outline"
           size="small"
           disabled={props.sending || props.reason.trim() === ""}
@@ -176,6 +178,7 @@ function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps)
         <div className={styles.decide}>
           <div className={styles.actions}>
             <Button
+              icon={ACTION_ICONS.check}
               variant="primary"
               size="small"
               // As in the row: a number another client holds can't be moved here while they hold it.
@@ -186,6 +189,7 @@ function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps)
               {sending ? copy.deciding : copy.confirm}
             </Button>
             <Button
+              icon={ACTION_ICONS.circleX}
               variant="outline"
               size="small"
               ref={rejectButton}
@@ -247,6 +251,7 @@ function RowDecision({
     <td className={ACTIONS}>
       <RowActions>
         <Button
+          icon={ACTION_ICONS.check}
           variant="primary"
           size="compact"
           aria-label={copy.confirmLabel(change.name)}
@@ -259,6 +264,7 @@ function RowDecision({
           {copy.confirm}
         </Button>
         <RowButton
+          icon={ACTION_ICONS.circleX}
           aria-label={copy.rejectLabel(change.name)}
           disabled={busy !== null}
           onClick={() => {

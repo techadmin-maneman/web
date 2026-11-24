@@ -2,6 +2,7 @@
 // nothing is fetched unless that is written (docs/decisions/0031-access-and-audit.md); beside them is who opened them
 // before. The newest visits come first, earlier ones when asked for.
 
+import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -197,7 +198,13 @@ function Earlier({ waiting, fetching, onMore }: { waiting: number; fetching: boo
   if (waiting === 0) return null;
   if (fetching) return <PanelLoading />;
   return (
-    <Button variant="outline" size="small" className={styles.secondary} onClick={onMore}>
+    <Button
+      icon={ACTION_ICONS.chevronDown}
+      variant="outline"
+      size="small"
+      className={styles.secondary}
+      onClick={onMore}
+    >
       {copy.earlier(Math.min(waiting, VISITS_AT_ONCE))}
     </Button>
   );
@@ -235,7 +242,13 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
       {state.step === "opening" ? (
         <PanelLoading />
       ) : (
-        <Button variant="primary" size="small" className={styles.primary} onClick={() => void open()}>
+        <Button
+          icon={ACTION_ICONS.eye}
+          variant="primary"
+          size="small"
+          className={styles.primary}
+          onClick={() => void open()}
+        >
           {copy.open}
         </Button>
       )}
