@@ -142,6 +142,8 @@ test.describe("the client’s hair profile", () => {
 
     await expect(section(page).getByRole("alert")).toContainText("The profile changed while you were editing.");
     await expect(shown(page, words.rows.colour)).toContainText(words.colours["4"]);
+    // The row it was changed from went with the version it read, so the keyboard lands on what happened.
+    await expect(section(page).getByRole("alert").locator("..")).toBeFocused();
   });
 
   test("sends nothing while a figure is no number at all, and marks it", async ({ page }) => {
@@ -170,6 +172,17 @@ test.describe("the client’s hair profile", () => {
     await page.getByRole("button", { name: words.save }).click();
     await expect(page.getByRole("alert")).toHaveText(words.invalid);
     await expect(width).toHaveAttribute("aria-invalid", "true");
+  });
+
+  test("names the row whose recorded value the API refused, where it is not the row changed", async ({ page }) => {
+    await openClient(page, `/clients/${CLIENT.id}/pieces`, {
+      [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
+      [CORRECT_HAIR_PROFILE]: fails(400, "invalid_request", ["fit.base_width_in"]),
+    });
+    await change(page, words.rows.colour).click();
+    await page.getByRole("combobox", { name: words.rows.colour }).selectOption({ label: "#3" });
+    await page.getByRole("button", { name: words.save }).click();
+    await expect(page.getByRole("alert")).toHaveText(words.invalidIn([words.rows.base_width_in]));
   });
 });
 

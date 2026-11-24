@@ -10,6 +10,7 @@ import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { RowGroupTitle } from "@maneman/ui/RowGroupTitle";
+import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate, yearInIndia } from "@maneman/web-kit/dates";
 import { bodyOf, fitOf, historyOf, type FigureName } from "@maneman/web-kit/hair-profile";
@@ -177,7 +178,7 @@ function LatestRows(props: {
   const latest = page.latest;
   const previous = page.versions[1] ?? null;
   const products = productOptions(page.products, latest);
-  const save = async (draft: Draft): Promise<string | null> => {
+  const save = async (row: Row, draft: Draft): Promise<string | null> => {
     const thisYear = yearInIndia(apiNow());
     const fit = fitOf(draft.fit);
     const history = historyOf(draft.history, thisYear);
@@ -191,7 +192,7 @@ function LatestRows(props: {
       props.onMoved();
       return copy.moved;
     }
-    if (answer.status === 400 && answer.fields.length > 0) return copy.invalid;
+    if (answer.status === 400 && answer.fields.length > 0) return refusedIn(row, answer.fields);
     return errorText({ not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: copy.failed }, answer);
   };
   return (
@@ -207,7 +208,7 @@ function LatestRows(props: {
               value={shownOf(row, latest, latest === null ? null : previous)}
               now={valueOf(row, latest)}
               start={() => draftOf(latest)}
-              save={save}
+              save={(draft) => save(row, draft)}
             >
               {(control, draft, setDraft) => (
                 <RowBox row={row} control={control} draft={draft} setDraft={setDraft} products={products} />
@@ -216,6 +217,28 @@ function LatestRows(props: {
           ))}
         </Group>
       ))}
+    </div>
+  );
+}
+
+/**
+ * What a refusal says on the row being changed: "Check this field" where the field refused is its own, or the other
+ * rows' names, where a value already recorded there is what the API would not take.
+ */
+function refusedIn(row: Row, fields: readonly string[]): string {
+  const others = fields
+    .map((field) => field.slice(field.lastIndexOf(".") + 1))
+    .filter((name): name is Row => name !== row && Object.hasOwn(copy.rows, name))
+    .map((name) => copy.rows[name]);
+  return others.length === 0 ? copy.invalid : copy.invalidIn(others);
+}
+
+/** Said where the keyboard lands once the profile is read again, since the row it was in went with what it read. */
+function Moved() {
+  const note = useFocusOnMount<HTMLDivElement>();
+  return (
+    <div ref={note} tabIndex={-1}>
+      <Refusal className={styles.error} said={copy.moved} />
     </div>
   );
 }
@@ -238,7 +261,7 @@ export function HairProfile({ clientId }: { clientId: string }) {
       <h3 className={typeLook("title-4", styles.title)} id="hair-profile-title">
         {copy.title}
       </h3>
-      {moved && <Refusal className={styles.error} said={copy.moved} />}
+      {moved && <Moved />}
       {page.latest === null && <p className={styles.hint}>{copy.none}</p>}
       {(page.latest !== null || mayCorrect) && (
         <LatestRows
