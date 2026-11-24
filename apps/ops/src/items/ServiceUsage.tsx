@@ -6,6 +6,10 @@
 import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { NoValue } from "@maneman/ui/NoValue";
+import { RowHead } from "@maneman/ui/RowHead";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { amountOf } from "@maneman/web-kit/figures";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -33,7 +37,7 @@ const listedFor = (consumable: Consumables["consumables"][number], expected: Rea
 function ServiceChoice(props: { consumables: Consumables; chosen: string; onChoose: (key: string) => void }) {
   const { services } = props.consumables;
   return (
-    <Field label={words.service} labelHidden>
+    <Field label={words.service}>
       {(control) => (
         <Select
           {...control}
@@ -59,7 +63,74 @@ function ServiceChoice(props: { consumables: Consumables; chosen: string; onChoo
   );
 }
 
+/**
+ * What each service offered expects of each consumable, as the redesign draws it: a service a row, an item a column;
+ * Change, for those who may, opens the figures to be set a service at a time.
+ */
 export function ServiceUsage({
+  consumables,
+  onSaved,
+}: {
+  consumables: Consumables;
+  onSaved: (consumables: Consumables) => void;
+}) {
+  const mayChange = useAccess().mayCall("POST /api/service-usage");
+  const services = consumables.services.filter((each) => each.retired_date === null);
+  const items = consumables.consumables.filter((each) => each.hair_system === null && each.offered);
+  return (
+    <Panel
+      titleId="service-usage"
+      title={words.title}
+      actions={
+        mayChange && (
+          <DrawerButton label={words.change} title={words.title}>
+            {() => <UsageEditor consumables={consumables} onSaved={onSaved} />}
+          </DrawerButton>
+        )
+      }
+    >
+      {items.length === 0 || services.length === 0 ? (
+        <EmptyState look="panel" line={words.noneOffered} />
+      ) : (
+        <TableScroll labelledBy="service-usage">
+          <Table>
+            <thead>
+              <tr>
+                <th scope="col">{words.visit}</th>
+                {items.map((item) => (
+                  <th key={item.code} scope="col" className={FIGURE}>
+                    {item.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {services.map((service) => {
+                const expected = new Map(service.expected.map((each) => [each.code, each.quantity]));
+                return (
+                  <tr key={keyOf(service)}>
+                    <RowHead>{service.name}</RowHead>
+                    {items.map((item) => {
+                      const quantity = expected.get(item.code);
+                      return (
+                        <td key={item.code} className={FIGURE}>
+                          {quantity === undefined ? <NoValue /> : amountOf(quantity, item.unit)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        </TableScroll>
+      )}
+    </Panel>
+  );
+}
+
+/** The figures a service at a time, each changed where it reads, the service's whole list sent on each change. */
+function UsageEditor({
   consumables,
   onSaved,
 }: {
@@ -90,11 +161,8 @@ export function ServiceUsage({
   };
 
   return (
-    <Panel
-      titleId="service-usage"
-      title={words.title}
-      actions={<ServiceChoice consumables={consumables} chosen={chosen} onChoose={setChosen} />}
-    >
+    <>
+      <ServiceChoice consumables={consumables} chosen={chosen} onChoose={setChosen} />
       {listed.length === 0 ? (
         <EmptyState look="panel" line={words.noneOffered} />
       ) : (
@@ -115,6 +183,6 @@ export function ServiceUsage({
           })}
         </SettingPairs>
       )}
-    </Panel>
+    </>
   );
 }

@@ -206,9 +206,16 @@ test.describe("a consumable's record", () => {
 });
 
 test.describe("what each service uses", () => {
-  test("shows the chosen service’s figures, each changed where it reads, the list sent whole", async ({ page }) => {
+  test("reads each service's figures in a grid, and changes them a service at a time in a drawer", async ({ page }) => {
     await open(page, { "POST /api/service-usage": json(CONSUMABLES) });
-    const uses = page.getByRole("region", { name: copy.usage.title });
+    const grid = page.getByRole("region", { name: copy.usage.title });
+    // A service offered a row, an item offered a column (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+    const visit = grid.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Service visit" }) });
+    await expect(visit).toContainText("4 strips");
+    await expect(visit).toContainText("10 ml");
+    await expect(grid.getByRole("rowheader", { name: "Premium first fit" })).toHaveCount(0);
+    await grid.getByRole("button", { name: copy.usage.change }).click();
+    const uses = page.getByRole("dialog", { name: copy.usage.title });
     const service = uses.getByLabel(copy.usage.service);
     // Each service by its name alone, a kind at a time; a retired one apart beneath, for a visit sold before.
     await expect(service.locator("optgroup")).toHaveCount(5);

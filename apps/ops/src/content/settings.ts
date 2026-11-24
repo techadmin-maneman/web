@@ -703,7 +703,10 @@ export const settings = {
       question: (name: string, from: string) => `Technicians can’t log ${name} from ${from}. Past jobs keep it.`,
     },
     usage: {
-      title: "Expected use per service",
+      title: "Expected use per visit",
+      /** The grid's first column, a service a row. */
+      visit: "Visit",
+      change: "Change",
       service: "Service",
       /** Beneath the services offered, those retired, whose visits sold before are still done. */
       retired: "Retired",
