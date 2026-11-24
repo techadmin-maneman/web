@@ -26,6 +26,7 @@ import { useHeaderSub } from "../frame/PageHead.tsx";
 import { grievances } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
+import { useHeadingAfter } from "../lib/heading-after.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
@@ -158,15 +159,7 @@ export function GrievancesScreen() {
   const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
-  // Once an answered concern's drawer has closed, its row is gone, so the keyboard goes to the list's heading.
-  const [answeredLast, setAnsweredLast] = useState<string | null>(null);
-  useEffect(() => {
-    if (answeredLast === null) return;
-    const frame = requestAnimationFrame(() => heading.current?.focus());
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, [answeredLast]);
+  const focusHeading = useHeadingAfter(heading);
   const items = loaded.state === "loaded" ? loaded.value.grievances.filter((each) => !answered.includes(each.id)) : [];
   useHeaderSub(items.length === 0 ? undefined : copy.openCount(items.length));
   // A task links to its concern's row ("#grievance-…"), which opens it once the list is read.
@@ -204,7 +197,7 @@ export function GrievancesScreen() {
             onAnswered={() => {
               setAnswered((already) => [...already, opened.id]);
               setSaid(copy.closed(opened.name));
-              setAnsweredLast(opened.id);
+              focusHeading(opened.id);
               close();
             }}
           />

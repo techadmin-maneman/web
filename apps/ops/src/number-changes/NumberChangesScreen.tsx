@@ -1,17 +1,28 @@
-// Number changes waiting for ops: a code went to both numbers, and the change takes effect only once ops confirm it
-// (docs/decisions/0042-client-profile.md). Built as the Referrals review queue is; a rejection needs a reason, a number
-// someone else holds is refused, and each change says how long it has left, as Tasks counts it.
+// Requests › Number changes: a code went to both numbers, and the change takes effect only once ops approve it
+// (docs/decisions/0042-client-profile.md). A row each, as the redesign draws them, approved or declined from the row;
+// a decline needs a reason, asked in the drawer the change opens in, a number someone else holds is refused, and each
+// change says how long it has left, as Tasks counts it.
 
 import { Field, TextArea } from "@maneman/ui/Field";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
-import { longDate } from "@maneman/web-kit/dates";
-import { useRef, useState } from "react";
+import { indiaDate, longDate, shortDate } from "@maneman/web-kit/dates";
+import { useEffect, useRef, useState } from "react";
+import { EmptyState } from "@maneman/ui/EmptyState";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { Panel } from "@maneman/ui/Panel";
+import { RowHead } from "@maneman/ui/RowHead";
+import { ACTIONS, RowActions, Table, TableScroll } from "@maneman/ui/Table";
+import { TextButton } from "@maneman/ui/TextLink";
+import { Toast } from "@maneman/ui/Toast";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { rowId, useTargetRow } from "@maneman/ui/target";
+import { useHeaderSub } from "../frame/PageHead.tsx";
+import { useHeadingAfter } from "../lib/heading-after.ts";
 import { type NumberChange } from "../api.ts";
-import { DecisionQueue } from "@maneman/ui/DecisionQueue";
 import { Reach } from "../clients/index.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { numberChanges } from "../content.ts";
@@ -35,13 +46,17 @@ type Deciding =
   | { readonly step: "failed"; readonly code: string };
 
 const copy = numberChanges.queue;
+/** A row's kind in its id, as a task's link names it: "change-…". */
+const ROW = "change";
 
 interface ChangeProps {
   readonly change: NumberChange;
   readonly now: Date;
   /** Whether the person's access lets them confirm or reject it. */
   readonly mayDecide: boolean;
-  readonly onDecided: () => void;
+  /** Opened from the row's Decline: the reason is asked at once. */
+  readonly startAsking: boolean;
+  readonly onDecided: (choice: Choice) => void;
 }
 
 /** Who is changing number, from which to which, how long it has left, and whether the new one is someone else's. */
@@ -66,8 +81,8 @@ function ChangeFacts({ change, now }: { change: ChangeProps["change"]; now: Date
   );
 }
 
-function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
-  const [deciding, setDeciding] = useState<Deciding>({ step: "open" });
+function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps) {
+  const [deciding, setDeciding] = useState<Deciding>({ step: startAsking ? "asking" : "open" });
   const [reason, setReason] = useState("");
   const rejectButton = useRef<HTMLButtonElement>(null);
 
@@ -78,7 +93,7 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       choice,
       choice === "reject" ? reason.trim() : null,
     );
-    if (answer.ok) onDecided();
+    if (answer.ok) onDecided(choice);
     else setDeciding({ step: "failed", code: answer.code });
   };
 
@@ -153,30 +168,172 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
   );
 }
 
-function NumberChangeQueue() {
-  const [loaded, retry] = useLoad(numberChangesApi.numberChanges);
-  const mayDecide = useAccess().mayCall("POST /api/number-changes/{id}/decision");
-  if (loaded.state === "loading") return <PanelLoading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
+/** The row's check: both numbers proven by code, or the new one on another record. */
+const checkOf = (change: NumberChange) =>
+  change.new_number_held_by === null ? copy.checked : copy.heldShort(change.new_number_held_by.name);
 
-  const now = new Date(apiNow());
+interface RowsProps {
+  readonly changes: readonly NumberChange[];
+  readonly now: Date;
+  readonly mayDecide: boolean;
+  readonly busy: string | null;
+  readonly onOpen: (id: string, asking: boolean) => void;
+  readonly onConfirm: (change: NumberChange) => void;
+}
+
+/** Approve and Decline at a row's end, for those who may decide. */
+function RowDecision({ change, busy, onOpen, onConfirm }: Omit<RowsProps, "changes" | "now" | "mayDecide"> & {
+  readonly change: NumberChange;
+}) {
   return (
-    <DecisionQueue
-      titleId="number-changes"
-      title={copy.title}
-      items={loaded.value.changes}
-      rowKind="change"
-      empty={copy.empty}
-    >
-      {(change, decided) => <Change change={change} now={now} mayDecide={mayDecide} onDecided={decided} />}
-    </DecisionQueue>
+    <td className={ACTIONS}>
+      <RowActions>
+        <RowButton
+          aria-label={copy.confirmLabel(change.name)}
+          disabled={busy !== null}
+          onClick={() => {
+            onConfirm(change);
+          }}
+        >
+          {copy.confirm}
+        </RowButton>
+        <RowButton
+          aria-label={copy.rejectLabel(change.name)}
+          disabled={busy !== null}
+          onClick={() => {
+            onOpen(change.id, true);
+          }}
+        >
+          {copy.reject}
+        </RowButton>
+      </RowActions>
+    </td>
+  );
+}
+
+/** The changes waiting, a row each: whose, from which number to which, when, its check, and its decision. */
+function ChangeRows({ changes, now, mayDecide, busy, onOpen, onConfirm }: RowsProps) {
+  return (
+    <TableScroll labelledBy="number-changes">
+      <Table>
+        <thead>
+          <tr>
+            {copy.columns.map((column) => (
+              <th key={column} scope="col">
+                {column}
+              </th>
+            ))}
+            {mayDecide && (
+              <th scope="col">
+                <VisuallyHidden>{copy.actions}</VisuallyHidden>
+              </th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {changes.map((change) => (
+            <tr key={change.id} id={rowId(ROW, change.id)} tabIndex={-1}>
+              <RowHead>
+                <TextButton
+                  compact
+                  aria-label={copy.openLabel(change.name)}
+                  onClick={() => {
+                    onOpen(change.id, false);
+                  }}
+                >
+                  {change.name}
+                </TextButton>
+              </RowHead>
+              <td className={styles.number}>{phoneWords(change.old_mobile)}</td>
+              <td className={styles.number}>{phoneWords(change.new_mobile)}</td>
+              <td>{shortDate(indiaDate(change.requested_at))}</td>
+              <td>{checkOf(change)}</td>
+              <td>
+                <Left due={change.due} now={now} />
+              </td>
+              {mayDecide && <RowDecision change={change} busy={busy} onOpen={onOpen} onConfirm={onConfirm} />}
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </TableScroll>
   );
 }
 
 export function NumberChangesScreen() {
+  const [loaded, retry] = useLoad(numberChangesApi.numberChanges);
+  const mayDecide = useAccess().mayCall("POST /api/number-changes/{id}/decision");
+  const [decided, setDecided] = useState<readonly string[]>([]);
+  const [open, setOpen] = useState<{ readonly id: string; readonly asking: boolean } | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [said, setSaid] = useState<string | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const focusHeading = useHeadingAfter(heading);
+  const changes = loaded.state === "loaded" ? loaded.value.changes.filter((each) => !decided.includes(each.id)) : [];
+  useHeaderSub(changes.length === 0 ? undefined : copy.toDecide(changes.length));
+  // A task links to its change's row ("#change-…"), which opens it once the list is read.
+  const target = useTargetRow(loaded.state === "loaded");
+  useEffect(() => {
+    if (loaded.state === "loaded" && target?.startsWith(`${ROW}-`) === true) {
+      setOpen({ id: target.slice(ROW.length + 1), asking: false });
+    }
+  }, [loaded.state, target]);
+  if (loaded.state === "loading") return <PanelLoading />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
+
+  const now = new Date(apiNow());
+  const leave = (change: NumberChange, choice: Choice) => {
+    setDecided((already) => [...already, change.id]);
+    setSaid(choice === "confirm" ? copy.confirmed(change.name) : copy.rejected(change.name));
+    focusHeading(change.id);
+    setOpen(null);
+  };
+  const confirm = async (change: NumberChange) => {
+    setBusy(change.id);
+    setFailure(null);
+    const answer = await numberChangesApi.decideNumberChange(change.id, "confirm", null);
+    setBusy(null);
+    if (answer.ok) leave(change, "confirm");
+    else setFailure(errorText(copy.errors, { code: answer.code }));
+  };
+  const opened = changes.find((each) => each.id === open?.id) ?? null;
   return (
-    <div className={styles.column}>
-      <NumberChangeQueue />
-    </div>
+    <Panel titleId="number-changes" title={copy.title} count={changes.length} headingRef={heading}>
+      {changes.length === 0 ? (
+        <EmptyState look="panel" line={copy.empty} />
+      ) : (
+        <ChangeRows
+          changes={changes}
+          now={now}
+          mayDecide={mayDecide}
+          busy={busy}
+          onOpen={(id, asking) => {
+            setOpen({ id, asking });
+          }}
+          onConfirm={(change) => void confirm(change)}
+        />
+      )}
+      {failure !== null && <Refusal className={styles.error} said={failure} />}
+      {said !== null && <Toast>{said}</Toast>}
+      {opened !== null && (
+        <FormDrawer
+          title={opened.name}
+          onClose={() => {
+            setOpen(null);
+          }}
+        >
+          <Change
+            change={opened}
+            now={now}
+            mayDecide={mayDecide}
+            startAsking={open?.asking === true}
+            onDecided={(choice) => {
+              leave(opened, choice);
+            }}
+          />
+        </FormDrawer>
+      )}
+    </Panel>
   );
 }

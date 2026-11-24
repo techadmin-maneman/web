@@ -124,15 +124,28 @@ export const numberChanges = {
         ? `This number is on ${whose}, a client. It can’t be confirmed while they hold it.`
         : `This number is on ${whose}, never a client. Confirming moves it here.`;
     },
-    confirm: "Confirm",
-    reject: "Reject",
+    confirm: "Approve",
+    reject: "Decline",
     reason: {
       label: "Reason",
       // The client's profile shows this reason for thirty days.
-      confirm: "Reject change",
+      confirm: "Decline change",
     },
     deciding: "Saving…",
     empty: "No number changes.",
+    /** A row each, as the redesign draws them; the client's name opens the change in a drawer. */
+    columns: ["Client", "From", "To", "Asked", "Check", "Answer by"] as const,
+    actions: "Decision",
+    /** Beside the page's title. */
+    toDecide: (count: number) => `${String(count)} to decide`,
+    openLabel: (name: string) => `Open ${name}’s number change`,
+    confirmLabel: (name: string) => `Approve ${name}’s number change`,
+    rejectLabel: (name: string) => `Decline ${name}’s number change`,
+    /** The row's check: both numbers proven, or the new one on another record. */
+    checked: "Both numbers verified",
+    heldShort: (name: string) => `On ${name === "" ? "another record" : `${name}’s record`}`,
+    confirmed: (name: string) => `${name}’s number changed.`,
+    rejected: (name: string) => `${name}’s number change declined.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       number_in_use: "Another client already has that number.",
