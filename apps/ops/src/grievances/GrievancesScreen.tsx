@@ -1,17 +1,28 @@
-// Grievances: what a client has said about how we use their data, raised in their app and answered here
-// (docs/decisions/0049-dpdp.md), built as the Referrals review queue is. Recording the answer closes it and writes
-// `grievance.resolve` to the audit log (ADR 0031); it messages nobody, since ops answer the client on the number shown.
+// Requests › Concerns: what a client has said about how we use their data, raised in their app and answered here
+// (docs/decisions/0049-dpdp.md). A row each, as the redesign draws them, opened in a drawer to answer. Recording the
+// answer closes it and writes `grievance.resolve` to the audit log (ADR 0031); it messages nobody, since ops answer the
+// client on the number shown.
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { EmptyState } from "@maneman/ui/EmptyState";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Panel } from "@maneman/ui/Panel";
+import { RowHead } from "@maneman/ui/RowHead";
+import { Table, TableScroll } from "@maneman/ui/Table";
+import { TextButton } from "@maneman/ui/TextLink";
+import { Toast } from "@maneman/ui/Toast";
 import { useLoad } from "@maneman/ui/useLoad";
-import { longDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { rowId, useTargetRow } from "@maneman/ui/target";
+import { firstShown } from "@maneman/ui/words";
+import { longDate, shortDate, indiaDate } from "@maneman/web-kit/dates";
+import { useEffect, useRef, useState } from "react";
 import { type Grievance } from "../api.ts";
-import { DecisionQueue } from "@maneman/ui/DecisionQueue";
 import { Reach } from "../clients/index.ts";
 import { OpsLink } from "../frame/Shell.tsx";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { grievances } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
@@ -28,8 +39,10 @@ type Answering =
   { readonly step: "open" } | { readonly step: "sending" } | { readonly step: "failed"; readonly code: string };
 
 const copy = grievances.queue;
+/** A row's kind in its id, as a task's link names it: "grievance-…". */
+const ROW = "grievance";
 
-interface OpenProps {
+interface AnswerProps {
   readonly each: Grievance;
   readonly now: Date;
   /** Whether the person's access lets them record the answer. */
@@ -37,7 +50,8 @@ interface OpenProps {
   readonly onAnswered: () => void;
 }
 
-function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
+/** One concern opened: who raised it and when, the client's own words, and the answer that closes it. */
+function Answer({ each, now, mayAnswer, onAnswered }: AnswerProps) {
   const [answering, setAnswering] = useState<Answering>({ step: "open" });
   const [response, setResponse] = useState("");
 
@@ -95,31 +109,107 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
   );
 }
 
-function GrievanceQueue() {
-  const [loaded, retry] = useLoad(grievancesApi.grievances);
-  const mayAnswer = useAccess().mayCall("POST /api/grievances/{id}/resolve");
-  if (loaded.state === "loading") return <PanelLoading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-
-  const now = new Date(apiNow());
+/** The concerns open, a row each: who raised it, what about, when, and how long is left to answer. */
+function ConcernRows(props: { items: readonly Grievance[]; now: Date; onOpen: (id: string) => void }) {
+  const [client, concern, raised, answerBy] = copy.columns;
   return (
-    <DecisionQueue
-      titleId="grievances"
-      title={copy.title}
-      items={loaded.value.grievances}
-      more={loaded.value.more}
-      rowKind="grievance"
-      empty={copy.empty}
-    >
-      {(each, answered) => <Open each={each} now={now} mayAnswer={mayAnswer} onAnswered={answered} />}
-    </DecisionQueue>
+    <TableScroll labelledBy="grievances">
+      <Table>
+        <thead>
+          <tr>
+            <th scope="col">{client}</th>
+            <th scope="col">{concern}</th>
+            <th scope="col">{raised}</th>
+            <th scope="col">{answerBy}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.items.map((each) => (
+            <tr key={each.id} id={rowId(ROW, each.id)} tabIndex={-1}>
+              <RowHead>
+                <TextButton
+                  compact
+                  aria-label={copy.openLabel(each.name)}
+                  onClick={() => {
+                    props.onOpen(each.id);
+                  }}
+                >
+                  {each.name}
+                </TextButton>
+              </RowHead>
+              <td className={styles.concern}>{each.text}</td>
+              <td>{shortDate(indiaDate(each.raised_at))}</td>
+              <td>
+                <span className={styles.due}>{shortDate(indiaDate(each.due))}</span>
+                <Left due={each.due} now={props.now} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </TableScroll>
   );
 }
 
 export function GrievancesScreen() {
+  const [loaded, retry] = useLoad(grievancesApi.grievances);
+  const mayAnswer = useAccess().mayCall("POST /api/grievances/{id}/resolve");
+  const [answered, setAnswered] = useState<readonly string[]>([]);
+  const [open, setOpen] = useState<string | null>(null);
+  const [said, setSaid] = useState<string | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  // Once an answered concern's drawer has closed, its row is gone, so the keyboard goes to the list's heading.
+  const [answeredLast, setAnsweredLast] = useState<string | null>(null);
+  useEffect(() => {
+    if (answeredLast === null) return;
+    const frame = requestAnimationFrame(() => heading.current?.focus());
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [answeredLast]);
+  const items = loaded.state === "loaded" ? loaded.value.grievances.filter((each) => !answered.includes(each.id)) : [];
+  useHeaderSub(items.length === 0 ? undefined : copy.openCount(items.length));
+  // A task links to its concern's row ("#grievance-…"), which opens it once the list is read.
+  const target = useTargetRow(loaded.state === "loaded");
+  useEffect(() => {
+    if (loaded.state === "loaded" && target?.startsWith(`${ROW}-`) === true) setOpen(target.slice(ROW.length + 1));
+  }, [loaded.state, target]);
+  if (loaded.state === "loading") return <PanelLoading />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
+
+  const now = new Date(apiNow());
+  const opened = items.find((each) => each.id === open) ?? null;
+  const close = () => {
+    setOpen(null);
+  };
   return (
-    <div className={styles.column}>
-      <GrievanceQueue />
-    </div>
+    <Panel titleId="grievances" title={copy.title} count={items.length} headingRef={heading}>
+      {items.length === 0 ? (
+        <EmptyState look="panel" line={copy.empty} />
+      ) : (
+        <ConcernRows items={items} now={now} onOpen={setOpen} />
+      )}
+      {loaded.value.more && (
+        <InlineMessage tone="note" className={styles.first}>
+          {firstShown(loaded.value.grievances.length)}
+        </InlineMessage>
+      )}
+      {said !== null && <Toast>{said}</Toast>}
+      {opened !== null && (
+        <FormDrawer title={opened.name} onClose={close}>
+          <Answer
+            each={opened}
+            now={now}
+            mayAnswer={mayAnswer}
+            onAnswered={() => {
+              setAnswered((already) => [...already, opened.id]);
+              setSaid(copy.closed(opened.name));
+              setAnsweredLast(opened.id);
+              close();
+            }}
+          />
+        </FormDrawer>
+      )}
+    </Panel>
   );
 }

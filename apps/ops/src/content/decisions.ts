@@ -18,6 +18,12 @@ export const grievances = {
     send: "Record and close",
     sending: "Closing…",
     empty: "No open concerns.",
+    /** A row each, as the redesign draws them; the client's name opens the concern in a drawer. */
+    columns: ["Client", "Concern", "Raised", "Answer by"] as const,
+    /** Beside the page's title. */
+    openCount: (count: number) => `${String(count)} open`,
+    openLabel: (name: string) => `Open ${name}’s concern`,
+    closed: (name: string) => `${name}’s concern closed.`,
     /** Recording an answer sends nothing: the client hears from whoever answers them, and reads it in the app. */
     errors: {
       not_permitted: NOT_PERMITTED,
