@@ -53,6 +53,40 @@
   padding-left: var(--sp-24);
 }
 
+/* Whose stock, the chips and Find an item, on one line above On hand as the redesign draws them. */
+.onHandTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8) var(--sp-12);
+}
+
+/* Whose stock's words beside its choice, not over it. */
+.whose {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+}
+
+.whoseLabel {
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: var(--fs-13);
+  white-space: nowrap;
+}
+
+/* Find an item at the line's end; on a phone, a line of its own across the page. */
+.find {
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  .find {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
 /* A consumable no longer offered, still held somewhere. */
 .retired {
   display: block;

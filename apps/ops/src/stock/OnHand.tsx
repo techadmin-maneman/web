@@ -4,9 +4,7 @@
 
 import { Badge } from "@maneman/ui/Badge";
 import { ListRow, ListRows } from "@maneman/ui/ListRow";
-import { SearchInput } from "@maneman/ui/SearchInput";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
-import { Toolbar } from "@maneman/ui/Toolbar";
 import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
@@ -17,7 +15,6 @@ import { ViewRows, type EndTone } from "@maneman/ui/ListRow";
 import { useIsPhone } from "../lib/media.ts";
 import { useTableView } from "@maneman/ui/useTableView";
 import { addDays, indiaDate, listDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
 import { type Stock } from "../api.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { shell } from "../content/shell.ts";
@@ -50,7 +47,7 @@ export function Grouping(props: { stock: Stock; showing: Showing; onShow: (showi
   const { stock, showing } = props;
   const value = showing.by === "place" ? `place:${showing.place ?? ""}` : showing.by;
   return (
-    <Field label={copy.totalsBy} labelHidden>
+    <Field label={copy.totalsBy} className={styles.whose} look={{ label: styles.whoseLabel }}>
       {(control) => (
         <Select
           {...control}
@@ -186,7 +183,7 @@ function ItemName({ consumable }: { consumable: Stock["consumables"][number] }) 
 }
 
 /** One place: each item's figure, its soonest expiry and when it was last counted. */
-type Narrowing = "all" | "short" | "expiring";
+export type Narrowing = "all" | "short" | "expiring";
 
 /** Whether the item's soonest lot at the place expires within the warning's days, or has. */
 function expiringSoon(stock: Stock, holding: Holding | undefined): boolean {
@@ -201,62 +198,49 @@ function narrowed(stock: Stock, place: string, narrowing: Narrowing): Consumable
   return stock.consumables.filter((each) => expiringSoon(stock, holdingOf(stock, each.code, place)));
 }
 
-/** The chips that narrow a place's items, each with how many it holds, and the box that finds one by name. */
-function NarrowItems(props: {
+/** The chips that narrow a place's items, each with how many it holds. */
+export function NarrowChips(props: {
   stock: Stock;
   place: string;
   narrowing: Narrowing;
   onNarrow: (narrowing: Narrowing) => void;
-  found: string;
-  onFind: (found: string) => void;
 }) {
   const { stock, place } = props;
   return (
-    <Toolbar label={copy.narrow.label} className={styles.narrow}>
-      <SearchInput label={copy.narrow.find} value={props.found} maxLength={60} onChange={props.onFind} />
-      <div role="radiogroup" aria-label={copy.narrow.label} className={styles.narrowChips}>
-        {(["all", "short", "expiring"] as const).map((each) => (
-          <ToggleButton
-            key={each}
-            asRadio
-            filled
-            pressed={props.narrowing === each}
-            count={narrowed(stock, place, each).length}
-            onClick={() => {
-              props.onNarrow(each);
-            }}
-          >
-            {copy.narrow[each]}
-          </ToggleButton>
-        ))}
-      </div>
-    </Toolbar>
+    <div role="radiogroup" aria-label={copy.narrow.label} className={styles.narrowChips}>
+      {(["all", "short", "expiring"] as const).map((each) => (
+        <ToggleButton
+          key={each}
+          asRadio
+          filled
+          pressed={props.narrowing === each}
+          count={narrowed(stock, place, each).length}
+          onClick={() => {
+            props.onNarrow(each);
+          }}
+        >
+          {copy.narrow[each]}
+        </ToggleButton>
+      ))}
+    </div>
   );
 }
 
-function OnePlace({ stock, place }: { stock: Stock; place: string }) {
+/** How a place's items are narrowed above them: a chip's way, and the words an item's name holds. */
+export interface Narrowed {
+  readonly narrowing: Narrowing;
+  readonly found: string;
+}
+
+function OnePlace({ stock, place, narrowing, found }: { stock: Stock; place: string } & Narrowed) {
   const year = Number(stock.today.slice(0, 4));
-  const [narrowing, setNarrowing] = useState<Narrowing>("all");
-  const [found, setFound] = useState("");
   const shown = narrowed(stock, place, narrowing).filter((each) =>
     each.name.toLowerCase().includes(found.trim().toLowerCase()),
   );
-  return (
-    <>
-      <NarrowItems
-        stock={stock}
-        place={place}
-        narrowing={narrowing}
-        onNarrow={setNarrowing}
-        found={found}
-        onFind={setFound}
-      />
-      {shown.length === 0 ? (
-        <EmptyState look="panel" line={copy.narrow.none} />
-      ) : (
-        <PlaceTable stock={stock} place={place} shown={shown} year={year} />
-      )}
-    </>
+  return shown.length === 0 ? (
+    <EmptyState look="panel" line={copy.narrow.none} />
+  ) : (
+    <PlaceTable stock={stock} place={place} shown={shown} year={year} />
   );
 }
 
@@ -376,7 +360,7 @@ function EveryPlace({ stock }: { stock: Stock }) {
   );
 }
 
-export function OnHand({ stock, place }: { stock: Stock; place: string | null }) {
+export function OnHand({ stock, place, narrowed }: { stock: Stock; place: string | null; narrowed: Narrowed }) {
   if (stock.consumables.length === 0) {
     return (
       <Note>
@@ -386,7 +370,7 @@ export function OnHand({ stock, place }: { stock: Stock; place: string | null })
   }
   return (
     <TableScroll labelledBy="stock-on-hand">
-      {place === null ? <EveryPlace stock={stock} /> : <OnePlace stock={stock} place={place} />}
+      {place === null ? <EveryPlace stock={stock} /> : <OnePlace stock={stock} place={place} {...narrowed} />}
     </TableScroll>
   );
 }

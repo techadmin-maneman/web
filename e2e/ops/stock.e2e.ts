@@ -481,7 +481,7 @@ test("adds up every place, and each city, and lists the lots that expire soon", 
   await answer(page, { "GET /api/stock/demand": json(NO_DEMAND), "GET /api/stock": json(expiring) });
   await page.goto("/stock");
   const table = onHand(page);
-  await table.getByLabel(stock.totalsBy).selectOption({ label: stock.byCity });
+  await page.getByLabel(stock.totalsBy).selectOption({ label: stock.byCity });
   await expect(table.getByRole("columnheader")).toHaveText([
     stock.record.consumable,
     stockViews.totals.national,

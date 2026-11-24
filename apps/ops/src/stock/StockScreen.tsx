@@ -21,7 +21,9 @@ import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { placeName } from "./StockForm.tsx";
 import { RecordMovement } from "./RecordMovement.tsx";
 import type { LabelsFor } from "./Labels.tsx";
-import { Attention, firstShowing, Grouping, OnHand, type Showing } from "./OnHand.tsx";
+import { Attention, firstShowing, Grouping, NarrowChips, OnHand, type Narrowed, type Showing } from "./OnHand.tsx";
+import { SearchInput } from "@maneman/ui/SearchInput";
+import { Toolbar } from "@maneman/ui/Toolbar";
 import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
 import { mayOpenView } from "./views.ts";
@@ -101,19 +103,58 @@ function Movements({ stock }: { stock: Stock }) {
   );
 }
 
+/**
+ * Whose stock the table shows, and, for one place, the chips that narrow its items and the box that finds one, on one
+ * line above it as the redesign draws them.
+ */
+function OnHandTools(props: {
+  stock: Stock;
+  showing: Showing;
+  onShow: (showing: Showing) => void;
+  narrowed: Narrowed;
+  onNarrow: (narrowed: Narrowed) => void;
+}) {
+  const { stock, showing, narrowed } = props;
+  const place = showing.by === "place" ? showing.place : null;
+  return (
+    <Toolbar label={copy.narrow.label} className={styles.onHandTools}>
+      <Grouping stock={stock} showing={showing} onShow={props.onShow} />
+      {place !== null && (
+        <>
+          <NarrowChips
+            stock={stock}
+            place={place}
+            narrowing={narrowed.narrowing}
+            onNarrow={(narrowing) => {
+              props.onNarrow({ ...narrowed, narrowing });
+            }}
+          />
+          <SearchInput
+            label={copy.narrow.find}
+            value={narrowed.found}
+            maxLength={60}
+            className={styles.find}
+            onChange={(found) => {
+              props.onNarrow({ ...narrowed, found });
+            }}
+          />
+        </>
+      )}
+    </Toolbar>
+  );
+}
+
 /** What each place holds, by place or in totals, and what is wanted and on its way. */
 function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stock) => void }) {
   const [showing, setShowing] = useState<Showing>(() => firstShowing(stock));
+  const [narrowed, setNarrowed] = useState<Narrowed>({ narrowing: "all", found: "" });
   return (
     <>
       <Attention stock={stock} onShow={setShowing} />
-      <Panel
-        titleId="stock-on-hand"
-        title={copy.onHand}
-        actions={<Grouping stock={stock} showing={showing} onShow={setShowing} />}
-      >
+      <OnHandTools stock={stock} showing={showing} onShow={setShowing} narrowed={narrowed} onNarrow={setNarrowed} />
+      <Panel titleId="stock-on-hand" title={copy.onHand}>
         {showing.by === "place" ? (
-          <OnHand stock={stock} place={showing.place} />
+          <OnHand stock={stock} place={showing.place} narrowed={narrowed} />
         ) : (
           <Suspense fallback={<PanelLoading />}>
             <Totals stock={stock} by={showing.by} />
