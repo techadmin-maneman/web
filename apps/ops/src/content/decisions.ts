@@ -134,8 +134,8 @@ export const numberChanges = {
     heldBy: (name: string, client: boolean) => {
       const whose = name === "" ? "another record" : `${name}’s record`;
       return client
-        ? `This number is on ${whose}, a client. It can’t be confirmed while they hold it.`
-        : `This number is on ${whose}, never a client. Confirming moves it here.`;
+        ? `This number is on ${whose}, a client. It can’t be approved while they hold it.`
+        : `This number is on ${whose}, never a client. Approving moves it here.`;
     },
     confirm: "Approve",
     reject: "Decline",

@@ -50,6 +50,8 @@ const copy = numberChanges.queue;
 const ROW = "change";
 /** A row's check cell, which says why its Approve is off. */
 const HELD = "number-check";
+/** The drawer's line on a held number, which says why its Approve is off. */
+const HELD_NOTE = "number-held";
 
 interface ChangeProps {
   readonly change: NumberChange;
@@ -77,7 +79,10 @@ function ChangeFacts({ change, now }: { change: ChangeProps["change"]; now: Date
       <Reach name={change.name} mobile={change.new_mobile} />
       <p className={styles.proven}>{copy.proven}</p>
       {change.new_number_held_by !== null && (
-        <p className={styles.proven}>{copy.heldBy(change.new_number_held_by.name, change.new_number_held_by.client)}</p>
+        // It says why the drawer's Approve is off, where the holder is a client, and describes that button.
+        <p className={styles.proven} id={rowId(HELD_NOTE, change.id)}>
+          {copy.heldBy(change.new_number_held_by.name, change.new_number_held_by.client)}
+        </p>
       )}
     </>
   );
@@ -175,6 +180,7 @@ function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps)
               size="small"
               // As in the row: a number another client holds can't be moved here while they hold it.
               disabled={sending || change.new_number_held_by?.client === true}
+              aria-describedby={change.new_number_held_by?.client === true ? rowId(HELD_NOTE, change.id) : undefined}
               onClick={() => void decide("confirm")}
             >
               {sending ? copy.deciding : copy.confirm}

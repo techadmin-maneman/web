@@ -174,8 +174,11 @@ function StatementTable({ lines, pay }: { lines: readonly Line[]; pay: Pay }) {
                   </td>
                 ))}
                 <td className={FIGURE}>
-                  {rupees(technician.total)}
-                  {technician.unpriced && <span className={styles.unpriced}>{copy.unpriced}</span>}
+                  {/* The amount and, beneath it, why it falls short: one block, so a phone's card keeps the amount at its edge. */}
+                  <span className={styles.amount}>
+                    {rupees(technician.total)}
+                    {technician.unpriced && <span className={styles.unpriced}>{copy.unpriced}</span>}
+                  </span>
                 </td>
               </tr>
             ))}
@@ -217,7 +220,7 @@ function Ungraded({ pay }: { pay: Pay }) {
 /** The month shown, of the twelve to today's. */
 function MonthPick(props: { months: readonly string[]; month: string; onMonth: (month: string) => void }) {
   return (
-    <Field label={copy.month} labelHidden>
+    <Field label={copy.month} labelHidden className={styles.month}>
       {(control) => (
         <Select
           {...control}
