@@ -9,6 +9,10 @@ import { Button } from "@maneman/ui/Button";
 import { Checkbox, type Choice, ChoiceGroup, ChoiceOptions, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
+import { NoValue } from "@maneman/ui/NoValue";
+import { RowHead } from "@maneman/ui/RowHead";
+import { Table, TableScroll } from "@maneman/ui/Table";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -106,6 +110,64 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
   );
 }
 
+/**
+ * The pieces the place holds, a label a row as the redesign draws them: its lot, when it was labelled, and a way to
+ * print that one label again.
+ */
+function UnitTable({ units, name }: { units: readonly Unit[]; name: string }) {
+  const [printing, setPrinting] = useState<readonly PrintedLabel[] | null>(null);
+  if (units.length === 0) return null;
+  const [label, lot, received] = copy.columns;
+  return (
+    <>
+      <TableScroll labelledBy="stock-labels">
+        <Table>
+          <thead>
+            <tr>
+              <th scope="col">{label}</th>
+              <th scope="col">{lot}</th>
+              <th scope="col">{received}</th>
+              <th scope="col">
+                <VisuallyHidden>{copy.printOne}</VisuallyHidden>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {units.map((unit) => (
+              <tr key={unit.code}>
+                <RowHead>{unit.code}</RowHead>
+                <td>{unit.lot_code ?? <NoValue />}</td>
+                <td>{shortDate(indiaDate(unit.labelled_at))}</td>
+                <td className={styles.printOne}>
+                  <Button
+                    variant="outline"
+                    size="compact"
+                    aria-label={copy.printOneLabel(unit.code)}
+                    disabled={printing !== null}
+                    onClick={() => {
+                      setPrinting([{ code: unit.code, name, lot: lotLine(unit.lot_code, unit.expires_on, true) }]);
+                    }}
+                  >
+                    {copy.printOne}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableScroll>
+      {printing !== null && (
+        <LabelSheet
+          labels={printing}
+          onPrinted={() => {
+            setPrinting(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
   const load = useCallback(() => stockApi.units({ consumable_code: at.code, place_id: at.place }), [at.code, at.place]);
   const [loaded, retry] = useLoad(load);
@@ -144,6 +206,7 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
       )}
       {labelling === "failed" && <Refusal className={form.error} said={copy.notLabelled} />}
       <Batches key={String(after?.times ?? 0)} units={units.units} name={name} />
+      <UnitTable units={units.units} name={name} />
     </>
   );
 }

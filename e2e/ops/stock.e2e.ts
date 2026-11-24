@@ -604,6 +604,9 @@ test("opens a hair system’s labels after its delivery, the latest batch ticked
       `MM-ESS-0000003-D${HAIR.name}HS-1 · Exp 31 Mar 2028`,
       `MM-ESS-0000002-C${HAIR.name}HS-1 · Exp 31 Mar 2028`,
     ]);
+  // A piece a row, its own label printed again from its row (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+  await labels.getByRole("button", { name: stockLabels.printOneLabel("MM-ESS-0000002-C") }).click();
+  await expect.poll(printed).toContain(`MM-ESS-0000002-C${HAIR.name}HS-1 · Exp 31 Mar 2028`);
   expect(await axeViolations(page)).toEqual([]);
 });
 

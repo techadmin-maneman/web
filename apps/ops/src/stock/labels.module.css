@@ -13,3 +13,8 @@
 .batches {
   margin-top: var(--sp-8);
 }
+
+/* A piece's Print label, at its row's end. */
+.printOne {
+  text-align: right;
+}
