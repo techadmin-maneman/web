@@ -7,6 +7,7 @@
 // The refusals are the API's own shape: invalid_request, with the fields it
 // names (src/http/errors.ts).
 
+import { WAITING_FOR } from "../../apps/ops/src/content/common.ts";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { BLACKOUTS, empty, fails, json, SERVICE_AREA, type Answer, type OpsReply } from "./fixtures.ts";
@@ -132,6 +133,7 @@ test.describe("the service area", () => {
   test("serves or stops the pincodes chosen, once asked", async ({ page }) => {
     await open(page, "/settings/areas", {
       "POST /api/service-area": json({ changed: 1, served: 0, alerted: 0 }),
+      "GET /api/service-area/stop-impact": json({ visits: 0, clients: 0 }),
     });
     await expect(page.getByRole("button", { name: served.chosen.stop })).toHaveCount(0);
     await page.getByRole("checkbox", { name: served.chosen.one("110017") }).check();
@@ -350,6 +352,7 @@ test.describe("the service area", () => {
     };
     await open(page, "/settings/areas", { "POST /api/pincodes": json(added, 201) });
     const form = page.getByRole("group", { name: opsCopy.areas.add.title });
+    await expect(form.getByText(WAITING_FOR.pincode, { exact: true })).toBeVisible();
     await form.getByLabel(opsCopy.areas.add.pincode).fill("400050");
     await form.getByLabel(opsCopy.areas.add.area).fill("Bandra West");
     await form.getByLabel(opsCopy.areas.add.city).selectOption("Mumbai");

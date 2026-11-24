@@ -279,7 +279,14 @@ test("switches a technician off only once asked, and lists the visits they no lo
       },
     ],
   };
-  await main.getByRole("button", { name: opsCopy.technicians.switchOff.open }).click();
+  // Drawn as its icon in a class that pads it, it keeps its square and its icon whole.
+  const switchOff = main.getByRole("button", { name: opsCopy.technicians.switchOff.open });
+  const offBox = await switchOff.boundingBox();
+  const offIcon = await switchOff.locator("svg").boundingBox();
+  if (offBox === null || offIcon === null) throw new Error("Switch off is not drawn");
+  expect(offBox.width).toBeGreaterThanOrEqual(offBox.height - 1);
+  expect(offIcon.width).toBeGreaterThanOrEqual(14);
+  await switchOff.click();
 
   // The drawer shuts once switched, and the page says what went back on the board.
   await expect(main).toBeHidden();
