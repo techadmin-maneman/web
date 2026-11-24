@@ -7,8 +7,11 @@ import type { Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
+import { DAY_MONEY, TASKS } from "./fixtures.ts";
+import { today } from "../../apps/ops/src/content/today.ts";
+import { noShows } from "../../apps/ops/src/content/no-shows.ts";
 import { ledger as copy } from "../../apps/ops/src/content/ledger.ts";
-import { clients, tables } from "../../apps/ops/src/content.ts";
+import { clients, tasks } from "../../apps/ops/src/content.ts";
 
 const LEDGER = {
   from: "2026-08-23",
@@ -57,6 +60,23 @@ const LEDGER = {
   more_links: false,
 } satisfies OpsReply<"/api/payments/ledger">;
 
+// The redesign's figures above the ledger: the UPI payments to record say what makes one, and open their task.
+test("leads from the payments owed and the UPI to record to their tasks", async ({ page }) => {
+  await answer(page, {
+    "GET /api/payments/ledger": json(LEDGER),
+    "GET /api/payments": json(DAY_MONEY),
+    "GET /api/tasks": json(TASKS),
+  });
+  await page.goto("/ledger");
+  const upi = page.getByRole("link", { name: new RegExp(today.tiles.upi) });
+  await expect(upi).toHaveAttribute("href", "/tasks?kind=upi_due");
+  await expect(upi).toContainText(noShows.money.figures.upiNote);
+  await expect(page.getByRole("link", { name: new RegExp(tasks.groups.payment_owed) })).toHaveAttribute(
+    "href",
+    "/tasks?kind=payment_owed",
+  );
+});
+
 test("lists the days' payments, finds one by client, exports them, and shows the links unpaid", async ({ page }) => {
   await answer(page, { "GET /api/payments/ledger": json(LEDGER) });
   await page.goto("/ledger");
@@ -68,7 +88,7 @@ test("lists the days' payments, finds one by client, exports them, and shows the
   await expect(payments.getByRole("row").nth(2)).toContainText(copy.statuses.partially_refunded ?? "");
   await expect(payments.getByRole("row").nth(2)).toContainText(copy.books.applied);
 
-  await payments.getByRole("searchbox", { name: tables.search }).fill("rohit");
+  await payments.getByRole("searchbox", { name: copy.find }).fill("rohit");
   await expect(payments.getByRole("row")).toHaveCount(2);
   await expect(payments.getByRole("row").nth(1)).toContainText("Rohit Malhotra");
 

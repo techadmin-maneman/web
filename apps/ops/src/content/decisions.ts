@@ -18,6 +18,12 @@ export const grievances = {
     send: "Record and close",
     sending: "Closing…",
     empty: "No open concerns.",
+    /** A row each, as the redesign draws them; the client's name opens the concern in a drawer. */
+    columns: ["Client", "Concern", "Raised", "Answer by"] as const,
+    /** Beside the page's title. */
+    openCount: (count: number) => `${String(count)} open`,
+    openLabel: (name: string) => `Open ${name}’s concern`,
+    closed: (name: string) => `${name}’s concern closed.`,
     /** Recording an answer sends nothing: the client hears from whoever answers them, and reads it in the app. */
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -38,14 +44,14 @@ export const deletions = {
     requested: (mobile: string, date: string) => `${mobile} · requested ${date}`,
     /** A visit the client booked after asking: they may want to keep their account. */
     bookedSince: (visit: string) => `Booked a visit for ${visit} since asking. Ask whether they still want this.`,
-    delete: "Erase client",
-    reject: "Reject",
+    delete: "Erase",
+    reject: "Keep, with reason",
     /**
      * A queue holds many rows and each button says the same thing, so the
      * destructive one names whose account it is, as the Technicians page's revoke does.
      */
     deleteLabel: (name: string) => `Erase client: ${name}`,
-    rejectLabel: (name: string) => `Reject the request of ${name}`,
+    rejectLabel: (name: string) => `Keep, with reason: ${name}`,
     confirmLabel: (name: string) => `Erasing ${name}`,
     warning: "This erases the client now and tells them on WhatsApp. It can’t be undone.",
     /** What the erasure destroys, in the order src/domain/privacy/erasure.ts destroys it. */
@@ -77,15 +83,28 @@ export const deletions = {
     reason: {
       label: "Reason",
       // The client is sent this reason on WhatsApp, and their app shows it for thirty days.
-      confirm: "Reject request",
+      confirm: "Keep account",
     },
-    rejecting: "Rejecting…",
+    rejecting: "Keeping…",
     /** Above the queue once a decision is made. */
     done: {
       delete: "Client erased. They’re told on WhatsApp.",
-      reject: "Request rejected. The client is told why on WhatsApp.",
+      reject: "Kept. The client is told why on WhatsApp.",
     },
     empty: "No deletion requests.",
+    /** A row each, as the redesign draws them; the client's name opens the request in a drawer. */
+    columns: ["Client", "Asked", "Decide by", "To settle"] as const,
+    actions: "Decision",
+    /** Beside the page's title. */
+    toDecide: (count: number) => `${String(count)} to decide`,
+    openLabel: (name: string) => `Open ${name}’s deletion request`,
+    /** What the API would refuse an erasure for, in a row: nothing, or what to settle first. */
+    settle: {
+      none: "None",
+      visit_booked: "A visit booked",
+      payment_held: "A refund owed",
+      payment_owed: "A link unpaid",
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already decided."),
@@ -115,18 +134,33 @@ export const numberChanges = {
     heldBy: (name: string, client: boolean) => {
       const whose = name === "" ? "another record" : `${name}’s record`;
       return client
-        ? `This number is on ${whose}, a client. It can’t be confirmed while they hold it.`
-        : `This number is on ${whose}, never a client. Confirming moves it here.`;
+        ? `This number is on ${whose}, a client. It can’t be approved while they hold it.`
+        : `This number is on ${whose}, never a client. Approving moves it here.`;
     },
-    confirm: "Confirm",
-    reject: "Reject",
+    confirm: "Approve",
+    reject: "Decline",
     reason: {
       label: "Reason",
       // The client's profile shows this reason for thirty days.
-      confirm: "Reject change",
+      confirm: "Decline change",
     },
     deciding: "Saving…",
     empty: "No number changes.",
+    /** A row each, as the redesign draws them; the client's name opens the change in a drawer. */
+    columns: ["Client", "From", "To", "Asked", "Check", "Answer by"] as const,
+    actions: "Decision",
+    /** Beside the page's title. */
+    toDecide: (count: number) => `${String(count)} to decide`,
+    openLabel: (name: string) => `Open ${name}’s number change`,
+    confirmLabel: (name: string) => `Approve ${name}’s number change`,
+    /** The row's check where the new number is a client's, which is why its Approve is off. */
+    heldByClient: (name: string) => `On ${name === "" ? "another record" : `${name}’s record`}, a client`,
+    rejectLabel: (name: string) => `Decline ${name}’s number change`,
+    /** The row's check: both numbers proven, or the new one on another record. */
+    checked: "Both numbers verified",
+    heldShort: (name: string) => `On ${name === "" ? "another record" : `${name}’s record`}`,
+    confirmed: (name: string) => `${name}’s number changed.`,
+    rejected: (name: string) => `${name}’s number change declined.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       number_in_use: "Another client already has that number.",

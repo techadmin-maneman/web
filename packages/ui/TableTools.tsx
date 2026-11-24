@@ -81,11 +81,14 @@ function SortChoice<Row>({ view }: { view: TableView<Row> }) {
 export function Narrowing<Row>({
   view,
   label,
+  search,
   className,
   children,
 }: {
   view: TableView<Row>;
   label: string;
+  /** The search box's own name, where the page words it; "Search" otherwise. */
+  search?: string;
   className?: string;
   /** A choice of the page's own after the table's, as the period its figures count over. */
   children?: ReactNode;
@@ -107,7 +110,7 @@ export function Narrowing<Row>({
         ) : undefined
       }
     >
-      {view.searchable && <SearchInput label={copy.search} value={view.search} onChange={view.setSearch} />}
+      {view.searchable && <SearchInput label={search ?? copy.search} value={view.search} onChange={view.setSearch} />}
       {view.columns.map(
         (column, at) =>
           column.choice !== undefined && (

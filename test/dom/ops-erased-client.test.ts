@@ -10,6 +10,7 @@ import { ErasedRecord } from "../../apps/ops/src/clients/Erase.tsx";
 import { DeletionsScreen } from "../../apps/ops/src/deletion-requests/DeletionsScreen.tsx";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 
@@ -144,7 +145,7 @@ async function show(element: React.ReactElement) {
 }
 
 const buttonNamed = (name: string) =>
-  [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === name);
+  [...document.querySelectorAll("button")].find((each) => each.textContent.trim() === name);
 
 describe("an erased client’s page", () => {
   it("says when they were erased, and keeps their visits and money, with nothing to call or message", async () => {
@@ -166,16 +167,18 @@ describe("an erased client’s page", () => {
   });
 });
 
-describe("a deletion decided in the queue", () => {
+describe("a deletion decided in the list", () => {
   it("says the client is erased, and what follows", async () => {
+    openDialogsAsJsdomCan();
     answers.set("GET /api/deletion-requests", () => Response.json({ requests: [REQUEST] }));
     answers.set(`POST /api/deletion-requests/${REQUEST.id}/decision`, () => Response.json({ state: "done" }));
     await show(createElement(DeletionsScreen));
 
+    // The row's Erase opens the erasure's confirmation in a drawer, which is drawn on the document's body.
     act(() => {
-      buttonNamed("Erase client")?.click();
+      buttonNamed("Erase")?.click();
     });
-    const ticks = [...page.querySelectorAll("label")].filter(
+    const ticks = [...document.querySelectorAll("label")].filter(
       (label) =>
         label.textContent.includes("confirmed this with the client") ||
         label.textContent.includes("deleted their chat"),
@@ -188,7 +191,7 @@ describe("a deletion decided in the queue", () => {
       await answered();
     });
 
-    expect(page.querySelector('[role="status"]')?.textContent).toBe("Client erased. They’re told on WhatsApp.");
+    expect(document.querySelector('[role="status"]')?.textContent).toBe("Client erased. They’re told on WhatsApp.");
     expect(page.textContent).toContain("No deletion requests.");
     expect(page.textContent).not.toContain("Rohit Malhotra");
   });

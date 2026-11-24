@@ -61,6 +61,8 @@ const row = (page: Page) =>
 test("shows last month’s fits, what refunds took back, what is due and what is owed", async ({ page }) => {
   await open(page);
   await expect(page.getByLabel(copy.month, { exact: true })).toHaveValue("2026-08");
+  // The month beside the title, ahead of the month's own choice, which names it too.
+  await expect(page.getByRole("main").getByText("August 2026", { exact: true }).first()).toBeVisible();
   await expect(row(page).getByRole("cell")).toHaveText([
     "2",
     "Rs. 2,500",

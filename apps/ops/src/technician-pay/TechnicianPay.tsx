@@ -149,7 +149,7 @@ export function TechnicianPay({ part }: { readonly part: "grades" | "statements"
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const pay = changed ?? loaded.value;
-  if (part === "statements") return <PayStatement today={pay.today} />;
+  if (part === "statements") return <PayStatement pay={pay} />;
   return (
     <>
       <PayRates pay={pay} mayAdd={access.mayCall("POST /api/technician-pay/grades")} onChanged={setChanged} />

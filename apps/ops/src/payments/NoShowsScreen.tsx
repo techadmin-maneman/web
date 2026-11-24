@@ -1,12 +1,10 @@
-// Payments: the day's money over the charges kept on it, then the disputed charges (Disputes.tsx), then each no-show
-// case with its evidence, charged or waived here, then today's rulings
+// Money › Charges: each no-show case with its evidence, charged or waived here, beside the disputed charges
+// (Disputes.tsx), as the redesign draws them; today's rulings beneath, then the day's money over the charges kept on it
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). A ruling needs a reason and a charge is asked about once
 // more; the server never charges by itself (src/policy/no-show.ts).
 
 import { typeLook } from "@maneman/ui/type";
 import { BackButton } from "@maneman/ui/CancelButton";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, DateInput, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
@@ -16,11 +14,12 @@ import { Panel } from "@maneman/ui/Panel";
 import { type Loaded, useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, minutesBetween, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { type ReactNode, useCallback, useRef, useState } from "react";
-import { type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useHeaderSub } from "../frame/PageHead.tsx";
+import { type ChargePreview, type NoShowCase } from "../api.ts";
 import { DecisionQueue } from "@maneman/ui/DecisionQueue";
 import { OpsLink } from "../frame/Shell.tsx";
-import { firstShown, noShows } from "../content.ts";
+import { noShows } from "../content.ts";
 import { useAccess, WAIVING_A_NO_SHOW } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
 import { clientPath } from "../route.ts";
@@ -32,6 +31,7 @@ import styles from "./no-shows.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import { paymentsApi } from "./payments-api.ts";
 import { DoorPhoto } from "./DoorPhoto.tsx";
+import { DecidedToday } from "./Decided.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
 
 type Choice = "charged" | "waived";
@@ -365,9 +365,16 @@ function Case({ each, now, may, onDecided }: CaseProps) {
   );
 }
 
-function NoShowQueue({ onDecided }: { onDecided: () => void }) {
+function NoShowQueue({ onDecided, onCount }: { onDecided: () => void; onCount: (waiting: number) => void }) {
   const [loaded, retry] = useLoad(paymentsApi.noShows);
   const access = useAccess();
+  // By id: a ruling reads the list again, which leaves the case out once the server has it.
+  const [ruledHere, setRuledHere] = useState<readonly string[]>([]);
+  const waiting =
+    loaded.state === "loaded" ? loaded.value.cases.filter((each) => !ruledHere.includes(each.id)).length : 0;
+  useEffect(() => {
+    onCount(waiting);
+  }, [onCount, waiting]);
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
@@ -390,56 +397,12 @@ function NoShowQueue({ onDecided }: { onDecided: () => void }) {
           may={may}
           onDecided={() => {
             ruled();
+            setRuledHere((ids) => [...ids, each.id]);
             onDecided();
           }}
         />
       )}
     </DecisionQueue>
-  );
-}
-
-/** What a ruling did: a charge, with what it kept, or a waiver. */
-function rulingOf(each: DecidedNoShow): string {
-  const decided = noShows.decided;
-  if (each.decision === "waived") return decided.waived;
-  if (each.charge === null) return decided.chargedUnrecorded;
-  if (each.charge.kept > 0) return decided.charged(rupees(each.charge.kept));
-  return each.charge.credit_spent ? decided.chargedCredit : decided.chargedNothing;
-}
-
-/** The cases ruled on today, the latest first, so a case ops have just charged or waived can still be seen. */
-function DecidedToday() {
-  const [loaded, retry] = useLoad(paymentsApi.decidedNoShows);
-  const decided = noShows.decided;
-  if (loaded.state === "loading") return <PanelLoading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-
-  const { cases, more } = loaded.value;
-  return (
-    <Panel titleId="decided-today" title={decided.title}>
-      {cases.length === 0 ? (
-        <EmptyState look="panel" line={decided.empty} />
-      ) : (
-        <ul className={styles.charges}>
-          {cases.map((each) => (
-            <li className={styles.chargeRow} key={each.id}>
-              <div className={styles.chargeLine}>
-                <span className={styles.who}>{each.person?.name ?? copy.erased}</span>
-                <span className={styles.ruling}>{decided.at(rulingOf(each), indiaClock(each.decided_at))}</span>
-              </div>
-              <p className={styles.evidence}>
-                {each.visit_date === null ? copy.undated : copy.visit(shortDate(each.visit_date))}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-      {more && (
-        <InlineMessage tone="note" className={styles.first}>
-          {firstShown(cases.length)}
-        </InlineMessage>
-      )}
-    </Panel>
   );
 }
 
@@ -449,12 +412,19 @@ export function NoShowsScreen() {
   const ruled = useCallback(() => {
     setRulings((count) => count + 1);
   }, []);
+  // How many wait on a ruling, said beside the page's title: the no-shows and the disputed charges.
+  const [noShowsWaiting, setNoShowsWaiting] = useState(0);
+  const [disputesWaiting, setDisputesWaiting] = useState(0);
+  const waiting = noShowsWaiting + disputesWaiting;
+  useHeaderSub(waiting === 0 ? undefined : noShows.toDecide(waiting));
   return (
-    <div className={styles.column}>
-      <Money key={`money-${String(rulings)}`} />
-      <Disputes onRuled={ruled} />
-      <NoShowQueue onDecided={ruled} />
+    <div className={styles.screen}>
+      <div className={styles.toDecide}>
+        <NoShowQueue onDecided={ruled} onCount={setNoShowsWaiting} />
+        <Disputes onRuled={ruled} onCount={setDisputesWaiting} />
+      </div>
       <DecidedToday key={`decided-${String(rulings)}`} />
+      <Money key={`money-${String(rulings)}`} />
     </div>
   );
 }

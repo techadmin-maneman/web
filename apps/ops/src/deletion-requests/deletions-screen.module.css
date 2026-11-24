@@ -9,3 +9,8 @@
   color: inherit;
   text-decoration: underline;
 }
+
+/* The day a request falls due, with how long is left beneath it. */
+.due {
+  display: block;
+}
