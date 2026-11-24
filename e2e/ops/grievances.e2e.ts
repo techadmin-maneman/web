@@ -7,7 +7,23 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, fails, GRIEVANCES, json, TASKS_READ_ON, type Call } from "./fixtures.ts";
+import { answer, fails, GRIEVANCES, json, TASKS_READ_ON, type Call, type OpsReply } from "./fixtures.ts";
+import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
+import { states } from "../../packages/ui/words.ts";
+/** Someone who may read the concerns but not decide them: every call but the decision. */
+const READ_ONLY = json({
+  signed_in_as: "care@localhost",
+  sign_out: null,
+  staff: {
+    enforced: true,
+    listed: true,
+    grants: [{ department: "operations", level: "view", geography: "national", place: null }],
+    may_call: Object.keys(ROUTE_NEEDS).filter((call) => call !== "POST /api/grievances/{id}/resolve"),
+  },
+  cities: ["Gurgaon"],
+  every_city: true,
+} satisfies OpsReply<"/api/whoami">);
+
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const FIRST = GRIEVANCES.grievances[0];
@@ -21,7 +37,8 @@ async function open(page: Page, resolve = json({ state: "resolved" })): Promise<
   await expect(page.getByRole("heading", { level: 1, name: opsCopy.grievances.title })).toBeVisible();
 }
 
-const queue = (page: Page) => page.getByRole("region", { name: opsCopy.grievances.queue.title });
+// The list's panel is titled as its page, its heading read rather than shown again.
+const queue = (page: Page) => page.getByRole("region", { name: opsCopy.grievances.title });
 const row = (page: Page, name: string) => queue(page).getByRole("row").filter({ hasText: name });
 
 /** Opens a concern from its row, in a drawer by the client's name. */
@@ -89,7 +106,7 @@ test("records the answer, and the concern leaves the list", async ({ page }) => 
     page.getByRole("status").filter({ hasText: opsCopy.grievances.queue.closed("Rohit Malhotra") }),
   ).toBeVisible();
   // The row is gone, so the keyboard goes to the list's heading and not to the top of the page.
-  await expect(page.getByRole("heading", { name: opsCopy.grievances.queue.title })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 2, name: opsCopy.grievances.title })).toBeFocused();
   await expect(page.getByRole("main").getByText(opsCopy.grievances.queue.openCount(1), { exact: true })).toBeVisible();
 });
 
@@ -121,6 +138,28 @@ test("says so when no concern is open, and nothing beside the title", async ({ p
   await page.goto("/grievances");
   await expect(page.getByText(opsCopy.grievances.queue.empty)).toBeVisible();
   await expect(page.getByRole("main").getByText(opsCopy.grievances.queue.openCount(0), { exact: true })).toHaveCount(0);
+});
+
+test("offers no answer to someone who may only read the concerns", async ({ page }) => {
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, { "GET /api/grievances": json(GRIEVANCES), "GET /api/whoami": READ_ONLY });
+  await page.goto("/grievances");
+  const drawer = await opened(page, "Rohit Malhotra");
+  await expect(drawer.getByText(FIRST?.text ?? "")).toBeVisible();
+  await expect(drawer.getByRole("textbox", { name: opsCopy.grievances.queue.label })).toHaveCount(0);
+  await expect(drawer.getByRole("button", { name: opsCopy.grievances.queue.send })).toHaveCount(0);
+});
+
+test("holds the list's room while it is read", async ({ page }) => {
+  await answer(page, {
+    "GET /api/grievances": async (route) => {
+      await new Promise((done) => setTimeout(done, 1500));
+      return json(GRIEVANCES)(route);
+    },
+  });
+  await page.goto("/grievances");
+  await expect(page.getByRole("main").getByText(states.loading)).toBeVisible();
+  await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });
 
 test("says so when the list cannot be loaded, and loads it on Try again", async ({ page }) => {

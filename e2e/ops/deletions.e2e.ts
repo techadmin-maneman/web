@@ -9,11 +9,26 @@
 // confirmation not usable until ops say they have checked the request.
 
 import type { Page } from "@playwright/test";
-import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, DELETION_REQUESTS, fails, json, TASKS_READ_ON, type Call, type OpsReply } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
+import { DISMISS, states } from "../../packages/ui/words.ts";
+
+/** Someone who may read the deletion requests but not decide them: every call but the decision. */
+const READ_ONLY = json({
+  signed_in_as: "care@localhost",
+  sign_out: null,
+  staff: {
+    enforced: true,
+    listed: true,
+    grants: [{ department: "operations", level: "view", geography: "national", place: null }],
+    may_call: Object.keys(ROUTE_NEEDS).filter((call) => call !== "POST /api/deletion-requests/{id}/decision"),
+  },
+  cities: ["Gurgaon"],
+  every_city: true,
+} satisfies OpsReply<"/api/whoami">);
 
 const FIRST = DELETION_REQUESTS.requests[0];
 const DECISION = `/api/deletion-requests/${FIRST?.id ?? ""}/decision` as const;
@@ -48,7 +63,8 @@ async function open(page: Page, decision = json({ state: "done" })): Promise<voi
 }
 
 const words = opsCopy.deletions.queue;
-const queue = (page: Page) => page.getByRole("region", { name: words.title });
+// The list's panel is titled as its page, its heading read rather than shown again.
+const queue = (page: Page) => page.getByRole("region", { name: opsCopy.deletions.title });
 const row = (page: Page, name: string) => queue(page).getByRole("row").filter({ hasText: name });
 const drawer = (page: Page, name = "Rohit Malhotra") => page.getByRole("dialog", { name });
 
@@ -162,7 +178,7 @@ test("moves the keyboard to the list’s heading once a request is decided", asy
   await open(page);
   await ask(page);
   await erase(page);
-  await expect(page.getByRole("heading", { name: words.title })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 2, name: opsCopy.deletions.title })).toBeFocused();
 });
 
 // The Tasks board links an erasure request to its row here.
@@ -227,6 +243,29 @@ test("says so when nothing is waiting, and nothing beside the title", async ({ p
   await page.goto("/deletion-requests");
   await expect(page.getByText(words.empty)).toBeVisible();
   await expect(page.getByRole("main").getByText(words.toDecide(0), { exact: true })).toHaveCount(0);
+});
+
+test("offers no Erase or Keep to someone who may only read the requests", async ({ page }) => {
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, { "GET /api/deletion-requests": json(DELETION_REQUESTS), "GET /api/whoami": READ_ONLY });
+  await page.goto("/deletion-requests");
+  await expect(row(page, "Rohit Malhotra")).toBeVisible();
+  await expect(queue(page).getByRole("button", { name: DELETE })).toHaveCount(0);
+  await expect(queue(page).getByRole("button", { name: words.rejectLabel("Rohit Malhotra") })).toHaveCount(0);
+  const rohit = await opened(page, "Rohit Malhotra");
+  await expect(rohit.getByRole("button", { name: DELETE })).toHaveCount(0);
+});
+
+test("holds the list's room while it is read", async ({ page }) => {
+  await answer(page, {
+    "GET /api/deletion-requests": async (route) => {
+      await new Promise((done) => setTimeout(done, 1500));
+      return json(DELETION_REQUESTS)(route);
+    },
+  });
+  await page.goto("/deletion-requests");
+  await expect(page.getByRole("main").getByText(states.loading)).toBeVisible();
+  await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });
 
 test("says so when the list cannot be loaded, and loads it on Try again", async ({ page }) => {

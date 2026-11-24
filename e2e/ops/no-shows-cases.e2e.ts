@@ -260,6 +260,31 @@ test("lists the cases ruled on today with their ruling, and reads them and the d
   await readAgain;
 });
 
+// The count beside the title once took a ruled case off twice: once as ruled here, and again from the list read
+// again after the ruling, which leaves it out.
+test("counts what still waits once a ruling reads the list again, the case ruled counted off once", async ({
+  page,
+}) => {
+  await open(page);
+  const waiting = NO_SHOWS.cases.length + DISPUTES.disputes.length;
+  const head = (count: number) => page.getByRole("main").getByText(opsCopy.noShows.toDecide(count), { exact: true });
+  await expect(head(waiting)).toBeVisible();
+
+  // FIRST, the visit of Sun 19 Sep.
+  const ruled = NO_SHOWS.cases.find((each) => each.visit_date === "2027-09-19")?.id;
+  await answer(page, {
+    "GET /api/no-shows": json({ ...NO_SHOWS, cases: NO_SHOWS.cases.filter((each) => each.id !== ruled) }),
+  });
+  const reread = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/api/no-shows" && request.method() === "GET",
+  );
+  const first = caseOf(page, FIRST);
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("They were stuck in the lift; we have their call");
+  await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
+  await reread;
+  await expect(head(waiting - 1)).toBeVisible();
+});
+
 test("says so when nothing has been decided today", async ({ page }) => {
   await answer(page, {
     "GET /api/payments": json(DAY_MONEY),

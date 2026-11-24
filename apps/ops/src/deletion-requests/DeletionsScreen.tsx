@@ -306,14 +306,16 @@ function RowDecision({ request, onOpen }: { request: DeletionRequest; onOpen: (i
   return (
     <td className={ACTIONS}>
       <RowActions>
-        <RowButton
+        <Button
+          variant="destructive"
+          size="compact"
           aria-label={copy.deleteLabel(request.name)}
           onClick={() => {
             onOpen(request.id, "delete");
           }}
         >
           {copy.delete}
-        </RowButton>
+        </Button>
         <RowButton
           aria-label={copy.rejectLabel(request.name)}
           onClick={() => {
@@ -387,7 +389,8 @@ export function DeletionsScreen() {
   const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
   const [decided, setDecided] = useState<readonly string[]>([]);
   const [open, setOpen] = useState<{ readonly id: string; readonly start: Choice | null } | null>(null);
-  const [said, setSaid] = useState<string | null>(null);
+  // Keyed by how many were said, so the same words said again show again.
+  const [said, setSaid] = useState<{ readonly words: string; readonly count: number } | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const focusHeading = useHeadingAfter(heading);
   const requests = loaded.state === "loaded" ? loaded.value.requests.filter((each) => !decided.includes(each.id)) : [];
@@ -405,7 +408,8 @@ export function DeletionsScreen() {
   const now = new Date(apiNow());
   const opened = requests.find((each) => each.id === open?.id) ?? null;
   return (
-    <Panel titleId="deletions" title={copy.title} count={requests.length} headingRef={heading}>
+    // Titled as its page, so its heading is read, not shown again, and its count stands beside the page's title.
+    <Panel titleId="deletions" title={deletions.title} count={requests.length} headingRef={heading}>
       {requests.length === 0 ? (
         <EmptyState look="panel" line={copy.empty} />
       ) : (
@@ -418,7 +422,7 @@ export function DeletionsScreen() {
           }}
         />
       )}
-      {said !== null && <Toast>{said}</Toast>}
+      {said !== null && <Toast key={said.count}>{said.words}</Toast>}
       {opened !== null && (
         <FormDrawer
           title={opened.name}
@@ -433,7 +437,7 @@ export function DeletionsScreen() {
             start={open?.start ?? null}
             onDecided={(choice) => {
               setDecided((already) => [...already, opened.id]);
-              setSaid(copy.done[choice]);
+              setSaid((was) => ({ words: copy.done[choice], count: (was?.count ?? 0) + 1 }));
               focusHeading(opened.id);
               setOpen(null);
             }}

@@ -80,6 +80,10 @@ export const technicianPay = {
     },
     /** Beneath an amount, where a visit had no rate: the amount leaves it out. */
     unpriced: "Some visits have no rate",
+    /** A technician's name opens their lines, by city and rate, as the CSV has them. */
+    openLabel: (name: string) => `Open ${name}’s pay by visit`,
+    lineColumns: ["City", "Visit", "Visits", "Rate", "Amount"],
+    noRate: "No rate",
     totalOf: (count: number) => `${String(count)} ${count === 1 ? "technician" : "technicians"}`,
     /** Above the month: those with no grade, whose visits are not paid. */
     ungraded: (names: readonly string[]) =>

@@ -7,7 +7,9 @@ export const ledger = {
   noneInRange: "No payments between these dates.",
   from: "From",
   to: "To",
-  narrow: "Client or reference",
+  narrow: "Filter payments",
+  /** The ledger's search box, as the redesign words it. */
+  find: "Client or reference",
   export: "Download CSV",
   /** The file's name: "payments-2026-09-01-to-2026-09-30.csv". */
   fileName: (from: string, to: string) => `payments-${from}-to-${to}.csv`,

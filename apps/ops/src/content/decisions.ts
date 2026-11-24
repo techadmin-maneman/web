@@ -51,7 +51,7 @@ export const deletions = {
      * destructive one names whose account it is, as the Technicians page's revoke does.
      */
     deleteLabel: (name: string) => `Erase client: ${name}`,
-    rejectLabel: (name: string) => `Keep ${name}’s account, with reason`,
+    rejectLabel: (name: string) => `Keep, with reason: ${name}`,
     confirmLabel: (name: string) => `Erasing ${name}`,
     warning: "This erases the client now and tells them on WhatsApp. It can’t be undone.",
     /** What the erasure destroys, in the order src/domain/privacy/erasure.ts destroys it. */
@@ -153,6 +153,8 @@ export const numberChanges = {
     toDecide: (count: number) => `${String(count)} to decide`,
     openLabel: (name: string) => `Open ${name}’s number change`,
     confirmLabel: (name: string) => `Approve ${name}’s number change`,
+    /** The row's check where the new number is a client's, which is why its Approve is off. */
+    heldByClient: (name: string) => `A client’s: ${name === "" ? "another record" : name}`,
     rejectLabel: (name: string) => `Decline ${name}’s number change`,
     /** The row's check: both numbers proven, or the new one on another record. */
     checked: "Both numbers verified",

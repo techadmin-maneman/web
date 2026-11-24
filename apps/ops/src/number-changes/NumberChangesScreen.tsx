@@ -48,6 +48,8 @@ type Deciding =
 const copy = numberChanges.queue;
 /** A row's kind in its id, as a task's link names it: "change-…". */
 const ROW = "change";
+/** A row's check cell, which says why its Approve is off. */
+const HELD = "number-check";
 
 interface ChangeProps {
   readonly change: NumberChange;
@@ -193,39 +195,57 @@ function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps)
 }
 
 /** The row's check: both numbers proven by code, or the new one on another record. */
-const checkOf = (change: NumberChange) =>
-  change.new_number_held_by === null ? copy.checked : copy.heldShort(change.new_number_held_by.name);
+function checkOf(change: NumberChange): string {
+  const held = change.new_number_held_by;
+  if (held === null) return copy.checked;
+  return held.client ? copy.heldByClient(held.name) : copy.heldShort(held.name);
+}
+
+/** An Approve from a row the API refused: whose, and why. */
+interface Refused {
+  readonly id: string;
+  readonly said: string;
+}
 
 interface RowsProps {
   readonly changes: readonly NumberChange[];
   readonly now: Date;
   readonly mayDecide: boolean;
   readonly busy: string | null;
+  readonly refused: Refused | null;
   readonly onOpen: (id: string, asking: boolean) => void;
   readonly onConfirm: (change: NumberChange) => void;
 }
 
-/** Approve and Decline at a row's end, for those who may decide. */
+/**
+ * Approve and Decline at a row's end, for those who may decide; an Approve refused is said in its row. Approve is off
+ * where the new number is another client's, which the change can't take while they hold it.
+ */
 function RowDecision({
   change,
   busy,
+  refused,
   onOpen,
   onConfirm,
 }: Omit<RowsProps, "changes" | "now" | "mayDecide"> & {
   readonly change: NumberChange;
 }) {
+  const heldByClient = change.new_number_held_by?.client === true;
   return (
     <td className={ACTIONS}>
       <RowActions>
-        <RowButton
+        <Button
+          variant="primary"
+          size="compact"
           aria-label={copy.confirmLabel(change.name)}
-          disabled={busy !== null}
+          aria-describedby={heldByClient ? rowId(HELD, change.id) : undefined}
+          disabled={busy !== null || heldByClient}
           onClick={() => {
             onConfirm(change);
           }}
         >
           {copy.confirm}
-        </RowButton>
+        </Button>
         <RowButton
           aria-label={copy.rejectLabel(change.name)}
           disabled={busy !== null}
@@ -236,12 +256,13 @@ function RowDecision({
           {copy.reject}
         </RowButton>
       </RowActions>
+      {refused?.id === change.id && <Refusal inline said={refused.said} />}
     </td>
   );
 }
 
 /** The changes waiting, a row each: whose, from which number to which, when, its check, and its decision. */
-function ChangeRows({ changes, now, mayDecide, busy, onOpen, onConfirm }: RowsProps) {
+function ChangeRows({ changes, now, mayDecide, busy, refused, onOpen, onConfirm }: RowsProps) {
   return (
     <TableScroll labelledBy="number-changes">
       <Table>
@@ -276,11 +297,13 @@ function ChangeRows({ changes, now, mayDecide, busy, onOpen, onConfirm }: RowsPr
               <td className={styles.number}>{phoneWords(change.old_mobile)}</td>
               <td className={styles.number}>{phoneWords(change.new_mobile)}</td>
               <td>{shortDate(indiaDate(change.requested_at))}</td>
-              <td>{checkOf(change)}</td>
+              <td id={rowId(HELD, change.id)}>{checkOf(change)}</td>
               <td>
                 <Left due={change.due} now={now} />
               </td>
-              {mayDecide && <RowDecision change={change} busy={busy} onOpen={onOpen} onConfirm={onConfirm} />}
+              {mayDecide && (
+                <RowDecision change={change} busy={busy} refused={refused} onOpen={onOpen} onConfirm={onConfirm} />
+              )}
             </tr>
           ))}
         </tbody>
@@ -295,8 +318,9 @@ export function NumberChangesScreen() {
   const [decided, setDecided] = useState<readonly string[]>([]);
   const [open, setOpen] = useState<{ readonly id: string; readonly asking: boolean } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
-  const [said, setSaid] = useState<string | null>(null);
+  const [refused, setRefused] = useState<Refused | null>(null);
+  // Keyed by how many were said, so the same words said again show again.
+  const [said, setSaid] = useState<{ readonly words: string; readonly count: number } | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const focusHeading = useHeadingAfter(heading);
   const changes = loaded.state === "loaded" ? loaded.value.changes.filter((each) => !decided.includes(each.id)) : [];
@@ -314,21 +338,24 @@ export function NumberChangesScreen() {
   const now = new Date(apiNow());
   const leave = (change: NumberChange, choice: Choice) => {
     setDecided((already) => [...already, change.id]);
-    setSaid(choice === "confirm" ? copy.confirmed(change.name) : copy.rejected(change.name));
+    setRefused((was) => (was?.id === change.id ? null : was));
+    const words = choice === "confirm" ? copy.confirmed(change.name) : copy.rejected(change.name);
+    setSaid((was) => ({ words, count: (was?.count ?? 0) + 1 }));
     focusHeading(change.id);
     setOpen(null);
   };
   const confirm = async (change: NumberChange) => {
     setBusy(change.id);
-    setFailure(null);
+    setRefused(null);
     const answer = await numberChangesApi.decideNumberChange(change.id, "confirm", null);
     setBusy(null);
     if (answer.ok) leave(change, "confirm");
-    else setFailure(errorText(copy.errors, { code: answer.code }));
+    else setRefused({ id: change.id, said: errorText(copy.errors, { code: answer.code }) });
   };
   const opened = changes.find((each) => each.id === open?.id) ?? null;
   return (
-    <Panel titleId="number-changes" title={copy.title} count={changes.length} headingRef={heading}>
+    // Titled as its page, so its heading is read, not shown again, and its count stands beside the page's title.
+    <Panel titleId="number-changes" title={numberChanges.title} count={changes.length} headingRef={heading}>
       {changes.length === 0 ? (
         <EmptyState look="panel" line={copy.empty} />
       ) : (
@@ -337,14 +364,14 @@ export function NumberChangesScreen() {
           now={now}
           mayDecide={mayDecide}
           busy={busy}
+          refused={refused}
           onOpen={(id, asking) => {
             setOpen({ id, asking });
           }}
           onConfirm={(change) => void confirm(change)}
         />
       )}
-      {failure !== null && <Refusal className={styles.error} said={failure} />}
-      {said !== null && <Toast>{said}</Toast>}
+      {said !== null && <Toast key={said.count}>{said.words}</Toast>}
       {opened !== null && (
         <FormDrawer
           title={opened.name}

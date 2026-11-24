@@ -11,7 +11,7 @@ import { DAY_MONEY, TASKS } from "./fixtures.ts";
 import { today } from "../../apps/ops/src/content/today.ts";
 import { noShows } from "../../apps/ops/src/content/no-shows.ts";
 import { ledger as copy } from "../../apps/ops/src/content/ledger.ts";
-import { clients, tables, tasks } from "../../apps/ops/src/content.ts";
+import { clients, tasks } from "../../apps/ops/src/content.ts";
 
 const LEDGER = {
   from: "2026-08-23",
@@ -88,7 +88,7 @@ test("lists the days' payments, finds one by client, exports them, and shows the
   await expect(payments.getByRole("row").nth(2)).toContainText(copy.statuses.partially_refunded ?? "");
   await expect(payments.getByRole("row").nth(2)).toContainText(copy.books.applied);
 
-  await payments.getByRole("searchbox", { name: tables.search }).fill("rohit");
+  await payments.getByRole("searchbox", { name: copy.find }).fill("rohit");
   await expect(payments.getByRole("row")).toHaveCount(2);
   await expect(payments.getByRole("row").nth(1)).toContainText("Rohit Malhotra");
 

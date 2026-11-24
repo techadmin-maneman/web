@@ -8,7 +8,23 @@ import type { Page } from "@playwright/test";
 import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, fails, json, NUMBER_CHANGES, TASKS_READ_ON, type Call } from "./fixtures.ts";
+import { answer, fails, json, NUMBER_CHANGES, TASKS_READ_ON, type Call, type OpsReply } from "./fixtures.ts";
+import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
+import { states } from "../../packages/ui/words.ts";
+/** Someone who may read the number changes but not decide them: every call but the decision. */
+const READ_ONLY = json({
+  signed_in_as: "care@localhost",
+  sign_out: null,
+  staff: {
+    enforced: true,
+    listed: true,
+    grants: [{ department: "operations", level: "view", geography: "national", place: null }],
+    may_call: Object.keys(ROUTE_NEEDS).filter((call) => call !== "POST /api/number-changes/{id}/decision"),
+  },
+  cities: ["Gurgaon"],
+  every_city: true,
+} satisfies OpsReply<"/api/whoami">);
+
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const CHANGE = NUMBER_CHANGES.changes[0]?.id ?? "";
@@ -23,7 +39,8 @@ async function open(page: Page, decision = json({ state: "confirmed" }), path = 
 }
 
 const words = opsCopy.numberChanges.queue;
-const queue = (page: Page) => page.getByRole("region", { name: words.title });
+// The list's panel is titled as its page, its heading read rather than shown again.
+const queue = (page: Page) => page.getByRole("region", { name: opsCopy.numberChanges.title });
 const row = (page: Page) => queue(page).getByRole("row").filter({ hasText: "Rohit Malhotra" });
 
 /** Opens the change from the client's name, in a drawer by their name. */
@@ -129,7 +146,7 @@ test("moves the keyboard into the reason as it opens, and to the heading once de
   await expect(reason).toBeFocused();
   await reason.fill("The client says they did not ask.");
   await drawer.getByRole("button", { name: words.reason.confirm }).click();
-  await expect(page.getByRole("heading", { name: words.title })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 2, name: opsCopy.numberChanges.title })).toBeFocused();
 });
 
 // The Tasks board links a number change to its row here.
@@ -144,8 +161,8 @@ test("says so when another client already holds the new number", async ({ page }
   await queue(page)
     .getByRole("button", { name: words.confirmLabel("Rohit Malhotra") })
     .click();
-  await expect(page.getByRole("alert")).toContainText(words.errors.number_in_use);
-  await expect(row(page)).toBeVisible();
+  // Said in the row it answers, so with several waiting it is plain whose it is.
+  await expect(row(page).getByRole("alert")).toContainText(words.errors.number_in_use);
 });
 
 test("says so when someone has decided it already", async ({ page }) => {
@@ -161,6 +178,43 @@ test("says so when nothing is waiting, and nothing beside the title", async ({ p
   await page.goto("/number-changes");
   await expect(page.getByText(words.empty)).toBeVisible();
   await expect(page.getByRole("main").getByText(words.toDecide(0), { exact: true })).toHaveCount(0);
+});
+
+test("offers no Approve or Decline to someone who may only read the changes", async ({ page }) => {
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, { "GET /api/number-changes": json(NUMBER_CHANGES), "GET /api/whoami": READ_ONLY });
+  await page.goto("/number-changes");
+  await expect(row(page)).toBeVisible();
+  await expect(queue(page).getByRole("button", { name: words.confirmLabel("Rohit Malhotra") })).toHaveCount(0);
+  await expect(queue(page).getByRole("button", { name: words.rejectLabel("Rohit Malhotra") })).toHaveCount(0);
+  const drawer = await opened(page);
+  await expect(drawer.getByRole("button", { name: words.confirm, exact: true })).toHaveCount(0);
+});
+
+test("keeps Approve off where the new number is another client's, and says so in the row", async ({ page }) => {
+  const held = {
+    changes: NUMBER_CHANGES.changes.map((each) => ({
+      ...each,
+      new_number_held_by: { name: "Vikram Sethi", client: true },
+    })),
+  } satisfies OpsReply<"/api/number-changes">;
+  await open(page);
+  await answer(page, { "GET /api/number-changes": json(held) });
+  await page.reload();
+  await expect(row(page)).toContainText(words.heldByClient("Vikram Sethi"));
+  await expect(queue(page).getByRole("button", { name: words.confirmLabel("Rohit Malhotra") })).toBeDisabled();
+});
+
+test("holds the list's room while it is read", async ({ page }) => {
+  await answer(page, {
+    "GET /api/number-changes": async (route) => {
+      await new Promise((done) => setTimeout(done, 1500));
+      return json(NUMBER_CHANGES)(route);
+    },
+  });
+  await page.goto("/number-changes");
+  await expect(page.getByRole("main").getByText(states.loading)).toBeVisible();
+  await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });
 
 test("says so when the list cannot be loaded, and loads it on Try again", async ({ page }) => {

@@ -12,6 +12,8 @@ import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type DecidedNoShow } from "../api.ts";
 import { firstShown, noShows } from "../content.ts";
+import { OpsLink } from "../frame/Shell.tsx";
+import { clientPath } from "../route.ts";
 import styles from "./no-shows.module.css";
 import { paymentsApi } from "./payments-api.ts";
 
@@ -53,7 +55,13 @@ export function DecidedToday() {
             <tbody>
               {cases.map((each) => (
                 <tr key={each.id}>
-                  <RowHead>{each.person?.name ?? copy.erased}</RowHead>
+                  <RowHead>
+                    {each.person === null ? (
+                      copy.erased
+                    ) : (
+                      <OpsLink to={clientPath(each.person.id, "visits")}>{each.person.name}</OpsLink>
+                    )}
+                  </RowHead>
                   <td>{each.visit_date === null ? copy.undated : shortDate(each.visit_date)}</td>
                   <td>{rulingOf(each)}</td>
                   <td>{indiaClock(each.decided_at)}</td>

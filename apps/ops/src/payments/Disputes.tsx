@@ -184,8 +184,10 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
 export function Disputes({ onRuled, onCount }: { onRuled: () => void; onCount: (waiting: number) => void }) {
   const [loaded, retry] = useLoad(paymentsApi.disputes);
   const access = useAccess();
-  const [ruledHere, setRuledHere] = useState(0);
-  const waiting = loaded.state === "loaded" ? loaded.value.disputes.length - ruledHere : 0;
+  // By id: a ruling reads the list again, which leaves the dispute out once the server has it.
+  const [ruledHere, setRuledHere] = useState<readonly string[]>([]);
+  const waiting =
+    loaded.state === "loaded" ? loaded.value.disputes.filter((each) => !ruledHere.includes(each.id)).length : 0;
   useEffect(() => {
     onCount(waiting);
   }, [onCount, waiting]);
@@ -211,7 +213,7 @@ export function Disputes({ onRuled, onCount }: { onRuled: () => void; onCount: (
           may={may}
           onRuled={() => {
             ruled();
-            setRuledHere((count) => count + 1);
+            setRuledHere((ids) => [...ids, each.id]);
             onRuled();
           }}
         />

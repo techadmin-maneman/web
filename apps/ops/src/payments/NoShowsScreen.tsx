@@ -368,8 +368,10 @@ function Case({ each, now, may, onDecided }: CaseProps) {
 function NoShowQueue({ onDecided, onCount }: { onDecided: () => void; onCount: (waiting: number) => void }) {
   const [loaded, retry] = useLoad(paymentsApi.noShows);
   const access = useAccess();
-  const [ruledHere, setRuledHere] = useState(0);
-  const waiting = loaded.state === "loaded" ? loaded.value.cases.length - ruledHere : 0;
+  // By id: a ruling reads the list again, which leaves the case out once the server has it.
+  const [ruledHere, setRuledHere] = useState<readonly string[]>([]);
+  const waiting =
+    loaded.state === "loaded" ? loaded.value.cases.filter((each) => !ruledHere.includes(each.id)).length : 0;
   useEffect(() => {
     onCount(waiting);
   }, [onCount, waiting]);
@@ -395,7 +397,7 @@ function NoShowQueue({ onDecided, onCount }: { onDecided: () => void; onCount: (
           may={may}
           onDecided={() => {
             ruled();
-            setRuledHere((count) => count + 1);
+            setRuledHere((ids) => [...ids, each.id]);
             onDecided();
           }}
         />

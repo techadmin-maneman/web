@@ -1,12 +1,15 @@
 // Money › Technician pay (docs/decisions/0122-technician-pay-per-visit.md): a row each technician, as the redesign
-// draws it, with their grade, visits by kind and pay at the rates per visit; the same by city and rate as a CSV for
-// payroll. A technician with no grade is named above, as nothing they do is paid, and a visit no rate covered is
+// draws it, with their grade, visits by kind and pay; a name opens their lines by city and rate, as the CSV for payroll
+// has them. A technician with no grade is named above, as nothing they do is paid, and a visit no rate covered is
 // marked, so the gap is seen before anyone is paid.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Badge } from "@maneman/ui/Badge";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { NoValue } from "@maneman/ui/NoValue";
+import { TextButton } from "@maneman/ui/TextLink";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -69,6 +72,7 @@ function byTechnician(lines: readonly Line[]) {
   return [...groups].map(([id, group]) => ({
     id,
     name: group.name,
+    lines: group.lines,
     visits: (kind: Kind) =>
       group.lines.filter((line) => line.kind === kind).reduce((sum, line) => sum + line.visits, 0),
     total: group.lines.reduce((sum, line) => sum + (line.amount ?? 0), 0),
@@ -76,59 +80,125 @@ function byTechnician(lines: readonly Line[]) {
   }));
 }
 
-/** A technician's grade by its name, or none. */
-function gradeOf(pay: Pay, technicianId: string): string | null {
-  const gradeId = pay.technicians.find((each) => each.id === technicianId)?.grade_id ?? null;
-  return pay.grades.find((grade) => grade.id === gradeId)?.name ?? null;
+/**
+ * A technician's grade by its name; the warning where they have none, so nothing they do is paid; a gap for one
+ * switched off since, whom the grades no longer list, though the month priced their visits on their grade then.
+ */
+function GradeCell({ pay, technicianId }: { pay: Pay; technicianId: string }) {
+  const technician = pay.technicians.find((each) => each.id === technicianId);
+  if (technician === undefined) return <NoValue />;
+  const grade = pay.grades.find((each) => each.id === technician.grade_id)?.name;
+  return grade ?? <Badge tone="warning">{technicianPay.technicians.noGrade}</Badge>;
+}
+
+const amountOf = (paise: number | null): string => (paise === null ? copy.noRate : rupees(paise));
+
+/** A technician's month line by line, by city, kind and rate, as payroll reads it; a visit no rate covered says so. */
+function TechnicianLines({ lines }: { lines: readonly Line[] }) {
+  const [city, kind, visits, rate, amount] = copy.lineColumns;
+  return (
+    <Table>
+      <thead>
+        <tr>
+          <th scope="col">{city}</th>
+          <th scope="col">{kind}</th>
+          <th scope="col" className={FIGURE}>
+            {visits}
+          </th>
+          <th scope="col" className={FIGURE}>
+            {rate}
+          </th>
+          <th scope="col" className={FIGURE}>
+            {amount}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((line) => (
+          <tr key={`${line.city ?? ""}-${line.kind}-${String(line.rate)}`}>
+            <RowHead>{line.city ?? copy.noCity}</RowHead>
+            <td>{technicianPay.kinds[line.kind]}</td>
+            <td className={FIGURE}>{line.visits}</td>
+            <td className={FIGURE}>{amountOf(line.rate)}</td>
+            <td className={FIGURE}>{amountOf(line.amount)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
 }
 
 function StatementTable({ lines, pay }: { lines: readonly Line[]; pay: Pay }) {
   const kinds = KINDS.filter((kind) => lines.some((line) => line.kind === kind));
   const technicians = byTechnician(lines);
+  const [open, setOpen] = useState<string | null>(null);
+  const opened = technicians.find((each) => each.id === open);
   return (
-    <TableScroll labelledBy="pay-statement">
-      <Table>
-        <thead>
-          <tr>
-            <th scope="col">{copy.technician}</th>
-            <th scope="col">{copy.grade}</th>
-            {kinds.map((kind) => (
-              <th scope="col" key={kind} className={FIGURE}>
-                {copy.kindHeads[kind]}
-              </th>
-            ))}
-            <th scope="col" className={FIGURE}>
-              {copy.amount}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {technicians.map((technician) => (
-            <tr key={technician.id}>
-              <RowHead>{technician.name}</RowHead>
-              <td>
-                {gradeOf(pay, technician.id) ?? <Badge tone="warning">{technicianPay.technicians.noGrade}</Badge>}
-              </td>
+    <>
+      <TableScroll labelledBy="pay-statement">
+        <Table>
+          <thead>
+            <tr>
+              <th scope="col">{copy.technician}</th>
+              <th scope="col">{copy.grade}</th>
               {kinds.map((kind) => (
-                <td key={kind} className={FIGURE}>
-                  {technician.visits(kind)}
-                </td>
+                <th scope="col" key={kind} className={FIGURE}>
+                  {copy.kindHeads[kind]}
+                </th>
               ))}
-              <td className={FIGURE}>
-                {rupees(technician.total)}
-                {technician.unpriced && <span className={styles.unpriced}>{copy.unpriced}</span>}
-              </td>
+              <th scope="col" className={FIGURE}>
+                {copy.amount}
+              </th>
             </tr>
-          ))}
-          <tr className={styles.total}>
-            <th scope="row" colSpan={kinds.length + 2}>
-              {copy.totalOf(technicians.length)}
-            </th>
-            <td className={FIGURE}>{rupees(technicians.reduce((sum, each) => sum + each.total, 0))}</td>
-          </tr>
-        </tbody>
-      </Table>
-    </TableScroll>
+          </thead>
+          <tbody>
+            {technicians.map((technician) => (
+              <tr key={technician.id}>
+                <RowHead>
+                  <TextButton
+                    compact
+                    aria-label={copy.openLabel(technician.name)}
+                    onClick={() => {
+                      setOpen(technician.id);
+                    }}
+                  >
+                    {technician.name}
+                  </TextButton>
+                </RowHead>
+                <td>
+                  <GradeCell pay={pay} technicianId={technician.id} />
+                </td>
+                {kinds.map((kind) => (
+                  <td key={kind} className={FIGURE}>
+                    {technician.visits(kind)}
+                  </td>
+                ))}
+                <td className={FIGURE}>
+                  {rupees(technician.total)}
+                  {technician.unpriced && <span className={styles.unpriced}>{copy.unpriced}</span>}
+                </td>
+              </tr>
+            ))}
+            <tr className={styles.total}>
+              <th scope="row" colSpan={kinds.length + 2}>
+                {copy.totalOf(technicians.length)}
+              </th>
+              <td className={FIGURE}>{rupees(technicians.reduce((sum, each) => sum + each.total, 0))}</td>
+            </tr>
+          </tbody>
+        </Table>
+      </TableScroll>
+      {opened !== undefined && (
+        <FormDrawer
+          title={opened.name}
+          onClose={() => {
+            setOpen(null);
+          }}
+        >
+          <TechnicianLines lines={opened.lines} />
+        </FormDrawer>
+      )}
+    </>
   );
 }
 

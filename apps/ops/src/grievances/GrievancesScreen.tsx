@@ -157,7 +157,8 @@ export function GrievancesScreen() {
   const mayAnswer = useAccess().mayCall("POST /api/grievances/{id}/resolve");
   const [answered, setAnswered] = useState<readonly string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
-  const [said, setSaid] = useState<string | null>(null);
+  // Keyed by how many were said, so the same words said again show again.
+  const [said, setSaid] = useState<{ readonly words: string; readonly count: number } | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const focusHeading = useHeadingAfter(heading);
   const items = loaded.state === "loaded" ? loaded.value.grievances.filter((each) => !answered.includes(each.id)) : [];
@@ -176,7 +177,8 @@ export function GrievancesScreen() {
     setOpen(null);
   };
   return (
-    <Panel titleId="grievances" title={copy.title} count={items.length} headingRef={heading}>
+    // Titled as its page, so its heading is read, not shown again, and its count stands beside the page's title.
+    <Panel titleId="grievances" title={grievances.title} count={items.length} headingRef={heading}>
       {items.length === 0 ? (
         <EmptyState look="panel" line={copy.empty} />
       ) : (
@@ -187,7 +189,7 @@ export function GrievancesScreen() {
           {firstShown(loaded.value.grievances.length)}
         </InlineMessage>
       )}
-      {said !== null && <Toast>{said}</Toast>}
+      {said !== null && <Toast key={said.count}>{said.words}</Toast>}
       {opened !== null && (
         <FormDrawer title={opened.name} onClose={close}>
           <Answer
@@ -196,7 +198,7 @@ export function GrievancesScreen() {
             mayAnswer={mayAnswer}
             onAnswered={() => {
               setAnswered((already) => [...already, opened.id]);
-              setSaid(copy.closed(opened.name));
+              setSaid((was) => ({ words: copy.closed(opened.name), count: (was?.count ?? 0) + 1 }));
               focusHeading(opened.id);
               close();
             }}

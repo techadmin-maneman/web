@@ -35,12 +35,14 @@ export function MoneyFigures() {
   if (loaded.state !== "loaded") return null;
   return (
     <StatTiles className={styles.figures}>
-      <StatTile label={words.collected(true)} value={rupees(loaded.value.collected)} />
+      {/* Each with a line beneath, if an empty one, so the figures stand level with the UPI's. */}
+      <StatTile label={words.collected(true)} value={rupees(loaded.value.collected)} note="" />
       {owed !== null && (
         <StatTile
           label={tasks.groups.payment_owed}
           value={owed}
           tone={owed > 0 ? "attention" : "plain"}
+          note=""
           to={kindPath("payment_owed")}
         />
       )}
@@ -54,7 +56,7 @@ export function MoneyFigures() {
           to={kindPath("upi_due")}
         />
       )}
-      <StatTile label={words.processing} value={rupees(loaded.value.refunds_processing)} />
+      <StatTile label={words.processing} value={rupees(loaded.value.refunds_processing)} note="" />
     </StatTiles>
   );
 }

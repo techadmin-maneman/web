@@ -4,7 +4,8 @@
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { answer, json, type OpsReply } from "./answer.ts";
+import { answer, fails, json, type Answer, type OpsReply } from "./answer.ts";
+import { states } from "../../packages/ui/words.ts";
 import { chooseCity, signedInLocally } from "./fixtures/whoami.ts";
 import { deleting, EDITING } from "../../apps/ops/src/content/common.ts";
 import { technicianPay as copy } from "../../apps/ops/src/content/technician-pay.ts";
@@ -189,6 +190,67 @@ test("names a technician with no pay grade above the month, with the way to set 
     "href",
     "/settings/pay-grades",
   );
+});
+
+/** Money's Technician pay, its statement answered as given. */
+async function statement(page: Page, read: Answer) {
+  await answer(page, { "GET /api/technician-pay": json(PAY), "GET /api/technician-pay/statement": read });
+  await page.goto("/technician-pay");
+}
+
+test("opens a technician's pay by visit, by city and rate, a visit no rate covered said so", async ({ page }) => {
+  await statement(page, json(STATEMENT));
+  await page.getByRole("button", { name: copy.statement.openLabel("Test technician One") }).click();
+  const lines = page.getByRole("dialog", { name: "Test technician One" });
+  const service = lines.getByRole("row").filter({ hasText: copy.kinds.service });
+  await expect(service).toContainText("Delhi");
+  await expect(service).toContainText("Rs. 400");
+  await expect(service).toContainText("Rs. 4,800");
+  await expect(lines.getByRole("row").filter({ hasText: copy.kinds.replacement })).toContainText(copy.statement.noRate);
+});
+
+// The month priced a switched-off technician's visits on their grade then; the grades list only those working now.
+test("gives no warning for a technician switched off since the month", async ({ page }) => {
+  const gone = {
+    ...STATEMENT,
+    lines: [
+      {
+        technician_id: "t9",
+        technician: "Test technician Gone",
+        city: "Delhi",
+        kind: "service",
+        visits: 12,
+        rate: 40_000,
+        amount: 480_000,
+      },
+    ],
+  } satisfies OpsReply<"/api/technician-pay/statement">;
+  await statement(page, json(gone));
+  const row = page.getByRole("region", { name: copy.statement.title }).getByRole("row").filter({
+    hasText: "Test technician Gone",
+  });
+  await expect(row).toContainText("Rs. 4,800");
+  await expect(row).not.toContainText(copy.technicians.noGrade);
+});
+
+test("says so when no visit closed in the month", async ({ page }) => {
+  await statement(page, json({ month: "2026-08", lines: [] }));
+  await expect(page.getByRole("region", { name: copy.statement.title })).toContainText(copy.statement.none);
+  await expect(page.getByRole("button", { name: copy.statement.download })).toHaveCount(0);
+});
+
+test("holds the month's room while it is read, and says so when it cannot be read", async ({ page }) => {
+  await statement(page, async (route) => {
+    await new Promise((done) => setTimeout(done, 1500));
+    return fails(503, "unavailable")(route);
+  });
+  const panel = page.getByRole("region", { name: copy.statement.title });
+  await expect(panel.getByText(states.loading)).toBeVisible();
+  await expect(panel.getByRole("alert")).toContainText(states.failed);
+
+  await answer(page, { "GET /api/technician-pay/statement": json(STATEMENT) });
+  await panel.getByRole("button", { name: states.retry }).click();
+  await expect(panel.getByRole("row").filter({ hasText: "Test technician One" })).toBeVisible();
 });
 
 test("adds a grade, and gives a technician one", async ({ page }) => {
