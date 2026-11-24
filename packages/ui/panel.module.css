@@ -33,6 +33,12 @@
     margin-top: 0;
   }
 
+  /* Nothing in the head runs past the panel's edge: a long choice is cut short inside its own box. */
+  .head > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .title {
     flex: 1;
     min-width: 0;

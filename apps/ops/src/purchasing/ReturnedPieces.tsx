@@ -12,6 +12,8 @@ import { ACTIONS, RowActions, Table } from "@maneman/ui/Table";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { Refusal } from "@maneman/ui/Refusal";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "@maneman/ui/forms.module.css";
@@ -29,7 +31,7 @@ function warrantyOf(piece: ReturnedPiece): string {
   return piece.in_warranty ? copy.returns.until(day) : copy.returns.ended(day);
 }
 
-/** Writing a piece off, with why and a photograph, in a drawer beside the list. */
+/** Writing a piece off, with why and a photograph, in a drawer beside the list; a refusal said in the drawer. */
 function WriteOffForm({
   piece,
   onAnswer,
@@ -41,6 +43,7 @@ function WriteOffForm({
 }) {
   const [reason, setReason] = useState("");
   const [photoId, setPhotoId] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
   return (
     <>
       <div className={form.fields}>
@@ -58,6 +61,7 @@ function WriteOffForm({
         </Field>
         <StockPhoto label={copy.photo.writeOff} photoId={photoId} onPhoto={setPhotoId} />
       </div>
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       <FormActions>
         <Button
           variant="destructive"
@@ -67,7 +71,8 @@ function WriteOffForm({
             void purchasingApi
               .writeOffReturned(piece.id, { reason: reason.trim(), photo_id: photoId ?? "" })
               .then((answer) => {
-                onAnswer(answer, copy.returns.writtenOff);
+                if (answer.ok) onAnswer(answer, copy.returns.writtenOff);
+                else setFailure({ code: answer.code, fields: answer.fields });
               })
           }
         >

@@ -78,7 +78,19 @@ export interface Click {
 export const followsHere = (click: Click): boolean =>
   click.button === 0 && !click.metaKey && !click.ctrlKey && !click.shiftKey && !click.altKey;
 
-/** A link within the app. `current` marks the page it names as the one shown, as navigation does. */
+/**
+ * Said to a screen reader of a link that is current: "page" for the page shown; "true" for one that holds it, as a
+ * navigation entry whose pages are listed beneath it.
+ */
+function ariaCurrent(current: boolean | "within" | undefined): "page" | "true" | undefined {
+  if (current === "within") return "true";
+  return current === true ? "page" : undefined;
+}
+
+/**
+ * A link within the app. `current` marks the page it names as the one shown, as navigation does; "within", a link
+ * holding the page shown.
+ */
 export function Link({
   to,
   className,
@@ -89,7 +101,7 @@ export function Link({
 }: {
   to: string;
   className?: string;
-  current?: boolean;
+  current?: boolean | "within";
   /** Its name, where the words inside it are not enough: an icon alone, or a back arrow. */
   label?: string;
   /** Shown to a pointer resting on it, where its words are folded away. */
@@ -101,7 +113,7 @@ export function Link({
       className={className}
       href={to}
       title={title}
-      aria-current={current === true ? "page" : undefined}
+      aria-current={ariaCurrent(current)}
       aria-label={label}
       onClick={(event) => {
         if (!followsHere(event)) return;

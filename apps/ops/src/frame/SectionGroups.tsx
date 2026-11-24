@@ -1,6 +1,7 @@
 // The navigation's entries over the pages of work (../route.ts, NAV): each entry opens on the first of its pages the
-// person may open and counts what waits across them; and, at the head of each page of an entry of several, the
-// entry's pages as tabs.
+// person may open, counts what waits across them, and, where it has several, lists them beneath it while it is the
+// current one. Their pages are tabs at the head of each, too, but Inventory's on a desk with the navigation open,
+// where only Stock's views are tabs, on Stock, as the redesign draws it.
 
 import { Link } from "@maneman/ui/router";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
@@ -23,6 +24,7 @@ import {
 import { stock } from "../content/stock.ts";
 import { mayOpenView } from "../stock/views.ts";
 import type { Waiting } from "../tasks/decided.ts";
+import styles from "./group-tabs.module.css";
 
 /** One entry of the navigation, as the person may open it. */
 export interface NavLine {
@@ -31,6 +33,13 @@ export interface NavLine {
   readonly to: SectionPath;
   readonly current: boolean;
   readonly waiting: Waiting | undefined;
+  /** Its pages the person may open, where it has more than one; none where it has one. */
+  readonly pages: readonly {
+    readonly page: Page;
+    readonly to: SectionPath;
+    readonly name: string;
+    readonly current: boolean;
+  }[];
 }
 
 /** What waits across an entry's pages: their counts together, overdue if any is; one page's own as it is. */
@@ -61,6 +70,15 @@ export function navLines(
         to: sectionOf(first).path,
         current: current !== null && pages.includes(current),
         waiting: together(pages.map((page) => waiting.get(sectionOf(page).path))),
+        pages:
+          pages.length < 2
+            ? []
+            : pages.map((page) => ({
+                page,
+                to: sectionOf(page).path,
+                name: SECTION_NAMES[page],
+                current: page === current,
+              })),
       },
     ];
   });
@@ -80,23 +98,34 @@ function StockTabs({ route }: { readonly route: WorkRoute }) {
 /** A page of work's route: one with a group's tabs over it, not Settings or More. */
 type WorkRoute = Exclude<Route, { readonly page: "more" | "settings" }>;
 
-/** The entry's pages as tabs at the head of one of them, Stock as its views; nothing for an entry of one page. */
+/**
+ * At the head of a page of an entry of several, the entry's pages as tabs, Stock as its views. Inventory's, on a desk
+ * with the navigation open, give way to Stock's views alone, on Stock. Nothing for an entry of one page.
+ */
 export function GroupTabs({ route }: { readonly route: WorkRoute }) {
   const mayCall = useMayCall();
   const entry = navOf(route.page);
   const open = (entry.pages as readonly Page[]).filter((each) => mayOpen(mayCall, each));
   if (open.length < 2) return null;
+  const inventory = entry.entry === "inventory";
   return (
-    <Tabs label={NAV_NAMES[entry.entry]}>
-      {open.map((each) =>
-        each === "stock" ? (
-          <StockTabs key={each} route={route} />
-        ) : (
-          <Link key={each} className={TAB} to={sectionOf(each).path} current={each === route.page}>
-            {SECTION_NAMES[each]}
-          </Link>
-        ),
+    <>
+      <Tabs label={NAV_NAMES[entry.entry]} className={inventory ? styles.inventoryPages : undefined}>
+        {open.map((each) =>
+          each === "stock" ? (
+            <StockTabs key={each} route={route} />
+          ) : (
+            <Link key={each} className={TAB} to={sectionOf(each).path} current={each === route.page}>
+              {SECTION_NAMES[each]}
+            </Link>
+          ),
+        )}
+      </Tabs>
+      {inventory && route.page === "stock" && (
+        <Tabs label={stock.title} className={styles.stockViews}>
+          <StockTabs route={route} />
+        </Tabs>
       )}
-    </Tabs>
+    </>
   );
 }

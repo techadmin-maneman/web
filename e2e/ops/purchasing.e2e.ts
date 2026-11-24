@@ -91,6 +91,17 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
+test("says beside its title how many orders await approval, an order sent not among them", async ({ page }) => {
+  const sent = { ...ORDER, id: "po-2", number: 8, state: "sent" as const };
+  await open(page, { "GET /api/purchase-orders": json({ ...BOOK, orders: [ORDER, sent] }) });
+  await expect(page.getByRole("main").getByText(copy.toApprove(1), { exact: true })).toBeVisible();
+  // With no orders, the list says so and the head says nothing.
+  await answer(page, { "GET /api/purchase-orders": json({ ...BOOK, orders: [] }) });
+  await page.reload();
+  await expect(page.getByRole("main").getByText(copy.none, { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText(copy.toApprove(0), { exact: true })).toHaveCount(0);
+});
+
 // A custom order's purchase order was drafted with no word of whose it was, and a task could not open it.
 test("names the client a custom order's purchase order is for, and opens it from its task", async ({ page }) => {
   const PO = "7b000000-0000-4000-8000-000000000002";
@@ -389,8 +400,10 @@ test("a manager sets the letterhead, and a printed order carries it with what th
     orders: [{ ...ORDER, approved_by: "ops@maneman.in", approved_by_name: "Ops desk" }],
   };
   await open(page, { "POST /api/purchase-orders/letterhead": json(set) });
-  const letterhead = page.getByRole("region", { name: copy.letterhead.title });
-  await expect(letterhead).toContainText(copy.letterhead.missing);
+  // Unset, a line above the orders, and Set it opens its form in a drawer (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+  await expect(page.getByText(copy.letterhead.missing)).toBeVisible();
+  await page.getByRole("button", { name: copy.letterhead.set }).click();
+  const letterhead = page.getByRole("dialog", { name: copy.letterhead.title });
   await letterhead.getByLabel(copy.letterhead.legalName).fill(LETTERHEAD.legal_name);
   await letterhead.getByLabel(copy.letterhead.registeredOffice).fill(LETTERHEAD.registered_office);
   await letterhead.getByLabel(copy.letterhead.cin).fill("u74999dl2026ptc123456");
@@ -399,6 +412,9 @@ test("a manager sets the letterhead, and a printed order carries it with what th
   const sent = posted(page, "/api/purchase-orders/letterhead");
   await letterhead.getByRole("button", { name: copy.letterhead.save }).click();
   expect((await sent).postDataJSON()).toEqual(LETTERHEAD);
+  // Set, it is the page's Letterhead, its lines changed where they read.
+  await expect(letterhead).toBeHidden();
+  await expect(page.getByRole("button", { name: copy.letterhead.title })).toBeVisible();
 
   await page.getByRole("button", { name: copy.open("PO-0007") }).click();
   await page
@@ -421,7 +437,8 @@ test("a manager sets the letterhead, and a printed order carries it with what th
 test("changes a line of the letterhead where it reads, the rest sent as they stand", async ({ page }) => {
   const set = { ...BOOK, letterhead: LETTERHEAD };
   await open(page, { "GET /api/purchase-orders": json(set), "POST /api/purchase-orders/letterhead": json(set) });
-  const letterhead = page.getByRole("region", { name: copy.letterhead.title });
+  await page.getByRole("button", { name: copy.letterhead.title }).click();
+  const letterhead = page.getByRole("dialog", { name: copy.letterhead.title });
   await letterhead.getByRole("button", { name: `${EDITING.change} ${copy.letterhead.gstin}` }).click();
   const gstin = letterhead.getByRole("textbox", { name: copy.letterhead.gstin });
   await gstin.fill("07aabcm1234a1z5");

@@ -1,6 +1,7 @@
 // Operations · Usage (docs/decisions/0186-usage-and-shrinkage.md): over the last weeks, each technician's consumables
 // against what their visits were expected to use, each opened to its items; and each place's losses, the flagged first.
 
+import { Badge } from "@maneman/ui/Badge";
 import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -14,7 +15,6 @@ import { EmptyState } from "@maneman/ui/EmptyState";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { useLoad } from "@maneman/ui/useLoad";
 import { quantity } from "@maneman/web-kit/figures";
-import { BarChart } from "@maneman/ui/BarChart";
 import { roundRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
@@ -67,20 +67,6 @@ function Items({ technician }: { technician: Technician }) {
       </tbody>
     </Table>
   );
-}
-
-/** Each technician's use over what their visits expected, the furthest over first. */
-function OverChart({ usage }: { usage: Usage }) {
-  const bars = usage.technicians
-    .filter((technician) => technician.over_percent !== null)
-    .sort((one, other) => (other.over_percent ?? 0) - (one.over_percent ?? 0))
-    .map((technician) => ({
-      key: technician.technician_id,
-      label: technician.name,
-      value: technician.over_percent ?? 0,
-      shown: copy.over(technician.over_percent),
-    }));
-  return bars.length === 0 ? null : <BarChart label={copy.chart} bars={bars} />;
 }
 
 const [techHead, visitsHead, expectedHead, usedHead, overHead] = copy.technicianColumns;
@@ -137,7 +123,14 @@ function TechnicianTable({ usage, onOpen }: { usage: Usage; onOpen: (id: string)
                 <td className={FIGURE}>{technician.visits}</td>
                 <td className={FIGURE}>{roundRupees(technician.expected_value)}</td>
                 <td className={FIGURE}>{roundRupees(technician.used_value)}</td>
-                <td className={FIGURE}>{copy.over(technician.over_percent)}</td>
+                <td className={FIGURE}>
+                  {/* Flagged, the figure is a pill in the warning's tone, as the redesign draws it. */}
+                  {technician.flagged ? (
+                    <Badge tone="warning">{copy.over(technician.over_percent)}</Badge>
+                  ) : (
+                    copy.over(technician.over_percent)
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -157,7 +150,6 @@ function Technicians({ usage }: { usage: Usage }) {
         <EmptyState look="panel" line={copy.noTechnicians} />
       ) : (
         <>
-          <OverChart usage={usage} />
           <TechnicianTable usage={usage} onOpen={setOpen} />
         </>
       )}

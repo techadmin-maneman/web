@@ -39,7 +39,19 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
-const opener = (place: string) => `${copy.open} ${copy.heading(place, copy.classes.weekly)}`;
+/** A row's action, by where its count stands, named with the count it opens. */
+const opener = (place: string, act: string = copy.act.open) => `${act} · ${copy.heading(place, copy.classes.weekly)}`;
+
+test("says beside its title how many counts are still due, a done one not among them", async ({ page }) => {
+  const done = { ...KIT, id: "ct-3", place_id: "room-2", place: "Gurgaon stockroom", state: "done" as const };
+  await open(page, { "GET /api/count-tasks": json({ ...BOOK, tasks: [KIT, ROOM, done] }) });
+  await expect(page.getByRole("main").getByText(copy.due(2), { exact: true })).toBeVisible();
+  // With none due, the list says so and the head says nothing.
+  await answer(page, { "GET /api/count-tasks": json({ ...BOOK, tasks: [] }) });
+  await page.reload();
+  await expect(page.getByRole("main").getByText(copy.none, { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText(copy.due(0), { exact: true })).toHaveCount(0);
+});
 
 test("opens a task and counts it blind", async ({ page }) => {
   const task = {
@@ -131,7 +143,7 @@ test("signs off a difference with why", async ({ page }) => {
     "GET /api/count-tasks/{id}/differences": json(lines),
     "POST /api/count-tasks/{id}/sign-off": json(done),
   });
-  await page.getByRole("button", { name: opener("Delhi stockroom") }).click();
+  await page.getByRole("button", { name: opener("Delhi stockroom", copy.act.sign_off) }).click();
   const panel = page.getByRole("dialog", { name: copy.heading("Delhi stockroom", copy.classes.weekly) });
   await expect(panel.getByRole("row").filter({ hasText: PIECE.name })).toContainText("2");
   await expect(panel).toContainText(copy.notScanned(["MM-ESS-0000041-R"]));
@@ -189,7 +201,8 @@ test("starts a count of one item at one place, and opens it", async ({ page }) =
     "POST /api/count-tasks": json(started, 201),
     "GET /api/count-tasks/{id}": json(started),
   });
-  const form = page.getByRole("region", { name: copy.startTitle });
+  await page.getByRole("button", { name: copy.startTitle }).click();
+  const form = page.getByRole("dialog", { name: copy.startTitle });
   await form.getByLabel(copy.place).selectOption("room-1");
   await form.getByLabel(copy.item).selectOption("solvent");
   const request = posted(page, "/api/count-tasks");
@@ -198,4 +211,20 @@ test("starts a count of one item at one place, and opens it", async ({ page }) =
   await expect(page.getByRole("dialog", { name: copy.heading("Delhi stockroom", "Solvent") })).toContainText(
     copy.counted("Solvent"),
   );
+});
+
+// Each item's class read beside the counts, and changed in a drawer (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+test("reads each item's count class beside the counts, and changes one in its drawer", async ({ page }) => {
+  const changed = { ...BOOK, classes: [{ ...BOOK.classes[0], count_class: "weekly" as const, set: true }] };
+  await open(page, { "POST /api/consumables/{code}/count-class": json(changed) });
+  const classes = page.getByRole("region", { name: copy.classesTitle });
+  await expect(classes.getByRole("term")).toHaveText(["Solvent"]);
+  await expect(classes.getByRole("definition")).toHaveText([copy.classes.quarterly]);
+  await classes.getByRole("button", { name: copy.change }).click();
+  const drawer = page.getByRole("dialog", { name: copy.classesTitle });
+  const request = posted(page, "/api/consumables/solvent/count-class");
+  await drawer.getByLabel("Solvent").selectOption("weekly");
+  expect((await request).postDataJSON()).toEqual({ count_class: "weekly" });
+  await drawer.getByRole("button", { name: CLOSE }).click();
+  await expect(classes.getByRole("definition")).toHaveText([copy.classes.weekly]);
 });

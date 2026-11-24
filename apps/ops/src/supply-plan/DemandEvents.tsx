@@ -1,6 +1,7 @@
 // The events calendar on the Supply plan (docs/decisions/0182-the-events-calendar.md): the events still to end, each
 // taken off with a press, and one added with its city, its days and how much it lifts or drops demand.
 
+import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
@@ -87,17 +88,13 @@ function CityPick(props: {
   );
 }
 
-/** An event added: its name, its city or every city, its days, and how much it changes demand. */
-function AddEvent({
-  cities,
-  failure,
-  onAnswer,
-}: {
-  cities: readonly string[];
-  failure: Failure | null;
-  onAnswer: (answer: Answer) => boolean;
-}) {
+/**
+ * An event added: its name, its city or every city, its days, and how much it changes demand; a refusal said in the
+ * drawer it is added in, beside the box it names.
+ */
+function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (answer: Answer) => boolean }) {
   const [draft, setDraft] = useState(EMPTY);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const refused = (box: string) => boxError(copy.errors, failure, box);
   const edit = (field: keyof typeof EMPTY) => (text: string) => {
     setDraft((was) => ({ ...was, [field]: text }));
@@ -117,11 +114,14 @@ function AddEvent({
       ends_on: draft.endsOn,
       uplift_percent: percent,
     });
+    if (!answer.ok) {
+      setFailure({ code: answer.code, fields: answer.fields });
+      return;
+    }
     if (onAnswer(answer)) setDraft(EMPTY);
   };
   return (
     <div className={form.group}>
-      <h3 className={form.ruleTitle}>{copy.add}</h3>
       <DemandEntry label={copy.name} value={draft.name} onChange={edit("name")} error={refused("name")} />
       <CityPick cities={cities} city={draft.city} onCity={edit("city")} error={refused("city")} />
       <DemandEntry
@@ -145,6 +145,7 @@ function AddEvent({
         onChange={edit("percent")}
         error={refused("uplift_percent")}
       />
+      <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={EVENT_BOXES} />
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {copy.save}
@@ -203,8 +204,23 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
     return true;
   };
   const mayRemove = access.mayCall("POST /api/demand-events/{id}/remove");
+  // Added in a drawer from the panel's head, as the redesign draws it; it closes once the event is on the list.
+  const adding = access.mayCall("POST /api/demand-events") && (
+    <DrawerButton label={copy.add}>
+      {(close) => (
+        <AddEvent
+          cities={demand.cities}
+          onAnswer={(answer) => {
+            const added = answered(copy.added)(answer);
+            if (added) close();
+            return added;
+          }}
+        />
+      )}
+    </DrawerButton>
+  );
   return (
-    <Panel titleId="plan-events" title={copy.title}>
+    <Panel titleId="plan-events" title={copy.title} actions={adding}>
       {demand.events.length === 0 ? (
         <EmptyState look="panel" line={copy.none} />
       ) : (
@@ -224,9 +240,6 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
             ))}
           </tbody>
         </Table>
-      )}
-      {access.mayCall("POST /api/demand-events") && (
-        <AddEvent cities={demand.cities} failure={failure} onAnswer={answered(copy.added)} />
       )}
       {said !== null && <Toast>{said}</Toast>}
       <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={EVENT_BOXES} />

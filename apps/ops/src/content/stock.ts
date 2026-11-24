@@ -24,17 +24,20 @@ export const stock = {
   noLongerInUse: "No longer in use",
   /** A place whose name another shares, told apart by its city. */
   inCity: (name: string, city: string) => `${name} (${city})`,
-  /** Above On hand, each place with something below zero, out or low, and how many items; its name shows it. */
-  attention: {
-    title: "Needs attention",
-    columns: ["Items below zero", "Items out", "Items low"],
-    /** Beneath a place's name: "4 below zero · 5 out · 2 low", what it has none of left out. */
-    counts: (below: number, out: number, low: number) =>
-      [
-        ...(below === 0 ? [] : [`${String(below)} below zero`]),
-        ...(out === 0 ? [] : [`${String(out)} out`]),
-        ...(low === 0 ? [] : [`${String(low)} low`]),
-      ].join(" · "),
+  /** Above On hand, as the redesign draws them; the value only for those who may read unit costs. */
+  figures: {
+    reorder: "Items to reorder",
+    kitsShort: "Kits short for booked visits",
+    value: "Stock value",
+    atCost: "At cost",
+    /** The costs, or the weeks ahead, did not come: the figure is a gap, and the line says why. */
+    noValue: "—",
+    unread: "Couldn’t load the costs.",
+    /** Short enough for a phone's half-width tile, its line one line. */
+    unreadKits: "Couldn’t load.",
+    /** The kits short by their technicians: one by name, several by the first's first name, "Imran and 2 more". */
+    kitsNamed: (first: string, more: number) =>
+      more === 0 ? first : `${first.split(/\s+/)[0] ?? first} and ${String(more)} more`,
   },
   /** A place's items narrowed: every one, those low or out, or those with a lot expiring soon; and found by name. */
   narrow: {
@@ -45,9 +48,9 @@ export const stock = {
     find: "Find an item",
     none: "No item matches.",
   },
-  totalsBy: "Show",
+  totalsBy: "Whose stock",
   /** With a handful of places, every one side by side. */
-  allPlaces: "All places",
+  allPlaces: "Every place, side by side",
   byZone: "Totals by zone",
   byCity: "Totals by city",
   /** "12 strips", and a mark for a place at or below its level. */
@@ -63,11 +66,22 @@ export const stock = {
   none: "No consumables yet. Add them in",
   retired: "retired",
   /** One place's columns: what it holds and its state, the soonest of its lots to expire, and when last counted. */
-  columns: { held: "On hand", status: "Status", expires: "Soonest expiry", counted: "Last counted" },
+  columns: {
+    held: "On hand",
+    reorderAt: "Reorder at",
+    status: "Status",
+    expires: "Soonest expiry",
+    counted: "Last counted",
+  },
+  /** More than the place's level, as the redesign's On hand writes it. */
+  enough: "Enough",
+  /** No level set for the item in that kind of place. */
+  noLevel: "—",
   noExpiry: "—",
   neverCounted: "Not yet",
   /** A phone's row, where the columns' names are not there to say what each date is. */
   phone: {
+    reorderAt: (amount: string) => `Reorder at ${amount}`,
     expires: (date: string) => `Expires ${date}`,
     counted: (date: string) => `Counted ${date}`,
     notCounted: "Not counted yet",

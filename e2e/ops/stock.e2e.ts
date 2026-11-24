@@ -21,7 +21,7 @@ import { activity } from "../../apps/ops/src/content/activity.ts";
 const WAREHOUSE = "National warehouse";
 
 /** Nothing booked ahead uses stock. */
-const NO_DEMAND = { days: 28, demand: [], at_risk: [] };
+const NO_DEMAND = { days: 28, demand: [], at_risk: [], kits_short: [] };
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/stock": json(STOCK), "GET /api/stock/demand": json(NO_DEMAND), ...extra });
@@ -29,10 +29,9 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: stock.title })).toBeVisible();
 }
 
-/** Opens one of the page's views by its tab. */
-/** Stock's views are tabs of Inventory's own row, beside its other pages. */
-const inventoryTabs = (page: Page) => page.getByRole("navigation", { name: opsCopy.shell.nav.inventory });
-const showView = (page: Page, name: string) => inventoryTabs(page).getByRole("link", { name, exact: true }).click();
+/** Stock's views, tabs of their own on a desk with the navigation open; one opened by its tab. */
+const viewTabs = (page: Page) => page.getByRole("navigation", { name: stock.title, exact: true });
+const showView = (page: Page, name: string) => viewTabs(page).getByRole("link", { name, exact: true }).click();
 
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
@@ -47,7 +46,7 @@ async function recording(page: Page) {
 test("is a section of its own beside the technicians, titled by what it is, on On hand", async ({ page }) => {
   await open(page);
   await expect(page).toHaveTitle("Stock · Mane Man Ops");
-  await expect(inventoryTabs(page).getByRole("link", { name: stock.views.names["on-hand"] })).toHaveAttribute(
+  await expect(viewTabs(page).getByRole("link", { name: stock.views.names["on-hand"] })).toHaveAttribute(
     "aria-current",
     "page",
   );
@@ -58,6 +57,9 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
 }) => {
   await open(page);
   const table = onHand(page);
+  // It opens on the warehouse; every place side by side is one choice of Whose stock.
+  await expect(page.getByLabel(stock.totalsBy)).toHaveValue("place:central");
+  await page.getByLabel(stock.totalsBy).selectOption("place:");
   await expect(table.getByRole("columnheader", { name: WAREHOUSE })).toBeVisible();
   await expect(table.getByRole("columnheader", { name: "Sameer Bhatt (left)" })).toBeVisible();
 
@@ -74,11 +76,12 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
   await expect(table.getByRole("columnheader")).toHaveText([
     stock.consumable,
     stock.columns.held,
+    stock.columns.reorderAt,
     stock.columns.status,
     stock.columns.expires,
     stock.columns.counted,
   ]);
-  await expect(tape.getByRole("cell").nth(3)).toHaveText("20 Sep");
+  await expect(tape.getByRole("cell").nth(4)).toHaveText("20 Sep");
 });
 
 // A kit with none left read Low.
@@ -87,6 +90,7 @@ test("says a place with none left of something it keeps is out, not low", async 
     each.consumable_code === "tape_strips" && each.place_id === IMRAN ? { ...each, quantity: 0 } : each,
   );
   await open(page, { "GET /api/stock": json({ ...STOCK, holdings: empty }) });
+  await page.getByLabel(stock.totalsBy).selectOption("place:");
   const tape = onHand(page)
     .getByRole("row")
     .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
@@ -153,6 +157,7 @@ test("past six places, shows the warehouse and one place, picked, saying above w
   const onePlace = [
     stock.consumable,
     stock.columns.held,
+    stock.columns.reorderAt,
     stock.columns.status,
     stock.columns.expires,
     stock.columns.counted,
@@ -160,21 +165,19 @@ test("past six places, shows the warehouse and one place, picked, saying above w
   await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   await expect(page.getByLabel(stock.totalsBy)).toHaveValue("place:central");
 
-  // One control: each place by its name alone, among the totals; what needs attention is a row of cards above.
+  // One control: each place by its name alone, among the totals.
   const show = page.getByLabel(stock.totalsBy);
   await expect(show.getByRole("option", { name: "Technician 5", exact: true })).toHaveCount(1);
   await expect(show.getByRole("option", { name: /low|below|zero|·/i })).toHaveCount(0);
   await expect(table.getByLabel(stockLabels.place)).toHaveCount(0);
-  // What needs attention is a card a place, saying what it is short of, the worst first.
-  const attention = page.getByRole("list", { name: stock.attention.title });
-  const five = attention.getByRole("button", { name: /^Technician 5/ });
-  await expect(five).toContainText(stock.attention.counts(0, 0, 1));
-  await five.click();
-  await expect(show).toHaveValue(`place:${kits[4]?.id ?? ""}`);
+  // Above the table, the redesign's figures alone; a place is picked in Whose stock
+  // (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+  await expect(page.getByText(stock.figures.reorder)).toBeVisible();
+  await show.selectOption(`place:${kits[4]?.id ?? ""}`);
   await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
   await expect(tape.getByRole("cell").nth(0)).toHaveText("5 strips");
-  await expect(tape.getByRole("cell").nth(1)).toHaveText(stock.low);
+  await expect(tape.getByRole("cell").nth(2)).toHaveText(stock.low);
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -233,7 +236,7 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
   const tape = onHand(page)
     .getByRole("row")
     .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(2)).toContainText("31 Oct");
+  await expect(tape.getByRole("cell").nth(3)).toContainText("31 Oct");
 
   const form = await recording(page);
   await form.getByLabel(stock.record.kinds.write_off).check();
@@ -342,7 +345,7 @@ test("lists the latest movements, a job’s use under the technician who recorde
 test("keeps its views' tabs whole on a view taller than the window", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 480 });
   await open(page);
-  const views = inventoryTabs(page);
+  const views = viewTabs(page);
   for (const view of [stock.views.names.movements, stock.views.names.places]) {
     await views.getByRole("link", { name: view, exact: true }).click();
     await expect(views.getByRole("link", { name: view, exact: true })).toHaveAttribute("aria-current", "page");
@@ -407,6 +410,8 @@ test("adds a stockroom under the warehouse, and closes it again", async ({ page 
   await showView(page, stock.views.names.places);
   const places = page.getByRole("region", { name: stockPlaces.title });
   await expect(places.getByRole("button", { name: stockPlaces.open(WAREHOUSE) })).toBeVisible();
+  await expect(places.getByRole("columnheader", { name: stockPlaces.itemsHeld })).toBeVisible();
+  await expect(places.getByRole("row").filter({ hasText: "Imran Qureshi" }).getByRole("cell").last()).toHaveText("2");
   await places.getByRole("button", { name: stockPlaces.add.title }).click();
   const add = page.getByRole("dialog", { name: stockPlaces.add.title });
   await add.getByLabel(stockPlaces.add.name).fill("Gurgaon stockroom");
@@ -475,7 +480,7 @@ test("adds up every place, and each city, and lists the lots that expire soon", 
   await answer(page, { "GET /api/stock/demand": json(NO_DEMAND), "GET /api/stock": json(expiring) });
   await page.goto("/stock");
   const table = onHand(page);
-  await table.getByLabel(stock.totalsBy).selectOption({ label: stock.byCity });
+  await page.getByLabel(stock.totalsBy).selectOption({ label: stock.byCity });
   await expect(table.getByRole("columnheader")).toHaveText([
     stock.record.consumable,
     stockViews.totals.national,
@@ -499,11 +504,44 @@ test("shows what the next four weeks will use beside what each city holds, and t
     at_risk: [
       { appointment_id: "ap-9", window_start: "2027-09-24T05:30:00.000Z", city: "Gurgaon", consumable_code: null },
     ],
+    kits_short: [],
   } satisfies OpsReply<"/api/stock/demand">;
   await open(page, { "GET /api/stock/demand": json(ahead) });
   const panel = page.getByRole("region", { name: stockViews.demand.title });
-  await expect(panel.getByRole("row").filter({ hasText: "Solvent" })).toContainText(stockViews.demand.short(6));
+  await expect(panel.getByRole("row").filter({ hasText: "Solvent" })).toContainText(stockViews.demand.short("6 ml"));
   await expect(panel).toContainText(stockViews.demand.fit("Fri 24 Sep", "Gurgaon", stockViews.demand.noProfile));
+});
+
+// The weeks ahead (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md): a kit short for its
+// technician's visits already allotted is named with what to send it, beside the city's own shortfall over the weeks.
+test("names a kit short for its technician's allotted visits beside the city's shortfall, and Enough where neither is", async ({
+  page,
+}) => {
+  const ahead = {
+    days: 28,
+    demand: [
+      { consumable_code: "solvent", city: "Gurgaon", expected: 156, held: 150 },
+      { consumable_code: "tape_strips", city: "Gurgaon", expected: 20, held: 120 },
+    ],
+    at_risk: [],
+    kits_short: [
+      {
+        technician_id: IMRAN,
+        technician: "Imran Qureshi",
+        city: "Gurgaon",
+        consumable_code: "solvent",
+        expected: 40,
+        held: 25,
+      },
+    ],
+  } satisfies OpsReply<"/api/stock/demand">;
+  await open(page, { "GET /api/stock/demand": json(ahead) });
+  const panel = page.getByRole("region", { name: stockViews.demand.title });
+  const solvent = panel.getByRole("row").filter({ hasText: "Solvent" });
+  await expect(solvent).toContainText(stockViews.demand.send("15 ml", "Imran"));
+  await expect(solvent).toContainText(stockViews.demand.short("6 ml"));
+  await expect(solvent).not.toContainText(stockViews.demand.enough);
+  await expect(panel.getByRole("row").filter({ hasText: "Tape strips" })).toContainText(stockViews.demand.enough);
 });
 
 const HAIR = {
@@ -568,6 +606,9 @@ test("opens a hair system’s labels after its delivery, the latest batch ticked
       `MM-ESS-0000003-D${HAIR.name}HS-1 · Exp 31 Mar 2028`,
       `MM-ESS-0000002-C${HAIR.name}HS-1 · Exp 31 Mar 2028`,
     ]);
+  // A piece a row, its own label printed again from its row (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+  await labels.getByRole("button", { name: stockLabels.printOneLabel("MM-ESS-0000002-C") }).click();
+  await expect.poll(printed).toContain(`MM-ESS-0000002-C${HAIR.name}HS-1 · Exp 31 Mar 2028`);
   expect(await axeViolations(page)).toEqual([]);
 });
 

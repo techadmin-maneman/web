@@ -5,10 +5,14 @@
 
 import { Panel } from "@maneman/ui/Panel";
 import { plainDate } from "@maneman/web-kit/plain-date";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Checkbox, type Choice, ChoiceGroup, ChoiceOptions, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
+import { NoValue } from "@maneman/ui/NoValue";
+import { RowHead } from "@maneman/ui/RowHead";
+import { ACTIONS, RowActions, Table, TableScroll } from "@maneman/ui/Table";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -65,8 +69,8 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
     setTicked(next);
   };
   return (
-    <>
-      <ChoiceGroup className={styles.batches} legend={copy.batchesLegend} legendLook="hidden">
+    <div className={styles.batches}>
+      <ChoiceGroup className={styles.batchList} legend={copy.batchesLegend} legendLook="hidden">
         {batches.map((batch) => (
           <Checkbox
             key={batch.at}
@@ -94,6 +98,64 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
           </Button>
         </FormActions>
       )}
+      {printing !== null && (
+        <LabelSheet
+          labels={printing}
+          onPrinted={() => {
+            setPrinting(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * The pieces the place holds, a label a row as the redesign draws them: its lot, when it was labelled, and a way to
+ * print that one label again.
+ */
+function UnitTable({ units, name }: { units: readonly Unit[]; name: string }) {
+  const [printing, setPrinting] = useState<readonly PrintedLabel[] | null>(null);
+  if (units.length === 0) return null;
+  const [label, lot, received] = copy.columns;
+  return (
+    <>
+      <TableScroll labelledBy="stock-labels">
+        <Table>
+          <thead>
+            <tr>
+              <th scope="col">{label}</th>
+              <th scope="col">{lot}</th>
+              <th scope="col">{received}</th>
+              <th scope="col">
+                <VisuallyHidden>{copy.printOne}</VisuallyHidden>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {units.map((unit) => (
+              <tr key={unit.code}>
+                <RowHead>{unit.code}</RowHead>
+                <td>{unit.lot_code ?? <NoValue />}</td>
+                <td>{shortDate(indiaDate(unit.labelled_at))}</td>
+                <td className={ACTIONS}>
+                  <RowActions>
+                    <RowButton
+                      aria-label={copy.printOneLabel(unit.code)}
+                      disabled={printing !== null}
+                      onClick={() => {
+                        setPrinting([{ code: unit.code, name, lot: lotLine(unit.lot_code, unit.expires_on, true) }]);
+                      }}
+                    >
+                      {copy.printOne}
+                    </RowButton>
+                  </RowActions>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableScroll>
       {printing !== null && (
         <LabelSheet
           labels={printing}
@@ -144,6 +206,7 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
       )}
       {labelling === "failed" && <Refusal className={form.error} said={copy.notLabelled} />}
       <Batches key={String(after?.times ?? 0)} units={units.units} name={name} />
+      <UnitTable units={units.units} name={name} />
     </>
   );
 }

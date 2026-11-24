@@ -206,9 +206,17 @@ test.describe("a consumable's record", () => {
 });
 
 test.describe("what each service uses", () => {
-  test("shows the chosen service’s figures, each changed where it reads, the list sent whole", async ({ page }) => {
+  test("reads each service's figures in a grid, and changes them a service at a time in a drawer", async ({ page }) => {
     await open(page, { "POST /api/service-usage": json(CONSUMABLES) });
-    const uses = page.getByRole("region", { name: copy.usage.title });
+    const grid = page.getByRole("region", { name: copy.usage.title });
+    // A service offered a row, an item offered a column (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+    const serviceVisit = CONSUMABLES.services.find((each) => each.visit_type === "service")?.name ?? "";
+    const visit = grid.getByRole("row").filter({ has: page.getByRole("rowheader", { name: serviceVisit }) });
+    await expect(visit).toContainText("4 strips");
+    await expect(visit).toContainText("10 ml");
+    await expect(grid.getByRole("rowheader", { name: "Premium first fit" })).toHaveCount(0);
+    await grid.getByRole("button", { name: copy.usage.change }).click();
+    const uses = page.getByRole("dialog", { name: copy.usage.title });
     const service = uses.getByLabel(copy.usage.service);
     // Each service by its name alone, a kind at a time; a retired one apart beneath, for a visit sold before.
     await expect(service.locator("optgroup")).toHaveCount(5);
@@ -237,6 +245,21 @@ test.describe("what each service uses", () => {
       ],
     });
   });
+});
+
+test("keeps a column for an item no longer offered that a service still expects", async ({ page }) => {
+  const services = CONSUMABLES.services.map((each) =>
+    each.visit_type === "service"
+      ? { ...each, expected: [...each.expected, { code: "shampoo_sachet", quantity: 2 }] }
+      : each,
+  );
+  await open(page, { "GET /api/consumables": json({ ...CONSUMABLES, services }) });
+  const grid = page.getByRole("region", { name: copy.usage.title });
+  const shampoo = CONSUMABLES.consumables.find((each) => each.code === "shampoo_sachet")?.name ?? "";
+  await expect(grid.getByRole("columnheader", { name: shampoo })).toContainText(copy.usage.retired);
+  // A phone reads each figure as a card, labelled by its column's head, the words apart.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(grid.locator(`td[data-label="${shampoo} ${copy.usage.retired}"]`).first()).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA, with a record open and a value being changed", async ({ page }) => {

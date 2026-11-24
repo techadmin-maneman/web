@@ -5,7 +5,9 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const counts = {
   title: "Counts",
-  tasks: "Count tasks",
+  /** Beside the title: how many are still to count, sign off or count again. */
+  due: (count: number) => `${String(count)} due`,
+  tasks: "To count",
   none: "Nothing to count today.",
   columns: ["Place", "What", "Due", "Status"] as const,
   find: "Find a place or item",
@@ -18,7 +20,10 @@ export const counts = {
     sign_off: "Waiting for sign-off",
     done: "Done",
   },
-  open: "Open",
+  /** A row's action, by where its count stands: to count or count again, to sign off, or done. */
+  act: { open: "Count now", recount: "Count now", sign_off: "Review", done: "Open" },
+  /** The rows' actions column, named for a screen reader. */
+  next: "Next step",
   /** "Imran Qureshi · Weekly" */
   heading: (place: string, countClass: string) => `${place} · ${countClass}`,
   countNote: "Count every item on the shelf, whatever the system says.",
@@ -50,10 +55,12 @@ export const counts = {
   waiting: "Waiting for a manager’s sign-off.",
   done: "Done.",
   classesTitle: "Count classes",
+  change: "Change",
   /** "Default (weekly)" */
   ownClass: (countClass: string) => `Default (${countClass.toLowerCase()})`,
   classSaid: "Class saved.",
-  startTitle: "Count now",
+  /** The page's action, and the drawer it opens. */
+  startTitle: "Start a count",
   place: "Place",
   item: "Item",
   choose: "Choose",

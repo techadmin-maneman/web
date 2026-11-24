@@ -6,7 +6,7 @@
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { Table, TableScroll, FIGURE } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -227,6 +227,10 @@ function PlaceRecord(props: { stock: Stock; place: Place; onChanged: (stock: Sto
   );
 }
 
+/** How many items a place holds any of. */
+const itemsHeldAt = (stock: Stock, place: string): number =>
+  stock.holdings.filter((holding) => holding.place_id === place && holding.quantity > 0).length;
+
 function PlaceRows({ stock, onOpen }: { stock: Stock; onOpen: (id: string) => void }) {
   return (
     <Table>
@@ -237,6 +241,9 @@ function PlaceRows({ stock, onOpen }: { stock: Stock; onOpen: (id: string) => vo
               {column}
             </th>
           ))}
+          <th scope="col" className={FIGURE}>
+            {copy.itemsHeld}
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -258,6 +265,7 @@ function PlaceRows({ stock, onOpen }: { stock: Stock; onOpen: (id: string) => vo
               {!place.active && place.kind !== "kit" && <span className={shared.retired}>{copy.closed}</span>}
             </td>
             <td>{place.kind === "hub" ? place.zone : place.city}</td>
+            <td className={FIGURE}>{itemsHeldAt(stock, place.id)}</td>
           </tr>
         ))}
       </tbody>

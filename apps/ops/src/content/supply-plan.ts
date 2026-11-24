@@ -9,6 +9,8 @@ export const supplyPlan = {
   orders: "Orders",
   /** The panel that says so when no line waits on a decision. */
   toApprove: "To approve",
+  /** Beside the title: the lines still to approve. */
+  linesToApprove: (count: number) => `${String(count)} to approve`,
   none: "Nothing to approve.",
   transferColumns: ["Item", "From", "To", "For", "Quantity", "Status"],
   orderColumns: ["Item", "Supplier", "For", "Quantity", "Status"],
@@ -71,7 +73,7 @@ export const supplyPlan = {
     },
   },
   events: {
-    title: "Events",
+    title: "Events that change demand",
     none: "No events ahead.",
     columns: ["Event", "City", "Days", "Change", ""],
     /** "+20%", "−10%" */

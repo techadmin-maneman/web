@@ -6,7 +6,7 @@ import { plainDate } from "@maneman/web-kit/plain-date";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { FIGURE, Table } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { roundRupees } from "@maneman/web-kit/money";
 import type { paths } from "../api-schema.ts";
@@ -43,26 +43,28 @@ function LotTable({ lots }: { lots: readonly Lot[] }) {
   return (
     <>
       <Narrowing view={view} label={copy.findLot} />
-      <Table>
-        <thead>
-          <tr>
-            <SortHeads view={view} />
-          </tr>
-        </thead>
-        <tbody>
-          {view.shown.map((lot) => (
-            <tr key={`${lot.place_id}-${lot.lot_code}-${lot.consumable_code}`}>
-              <RowHead>{lot.place}</RowHead>
-              <td>{lot.name}</td>
-              <td>{lot.lot_code}</td>
-              <td>{plainDate(lot.expires_on)}</td>
-              <td className={FIGURE}>{quantity(lot.quantity)}</td>
-              <td className={FIGURE}>{roundRupees(lot.value)}</td>
-              <td>{todo(lot)}</td>
+      <TableScroll labelledBy="quality-risk">
+        <Table>
+          <thead>
+            <tr>
+              <SortHeads view={view} />
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {view.shown.map((lot) => (
+              <tr key={`${lot.place_id}-${lot.lot_code}-${lot.consumable_code}`}>
+                <RowHead>{lot.place}</RowHead>
+                <td>{lot.name}</td>
+                <td>{lot.lot_code}</td>
+                <td>{plainDate(lot.expires_on)}</td>
+                <td className={FIGURE}>{quantity(lot.quantity)}</td>
+                <td className={FIGURE}>{roundRupees(lot.value)}</td>
+                <td>{todo(lot)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableScroll>
       <TableEnd view={view} />
     </>
   );
@@ -78,10 +80,10 @@ function Lots({ risk }: { risk: Risk }) {
   );
 }
 
-export function ExpiryRiskPanel() {
+export function ExpiryRiskPanel({ className }: { readonly className?: string }) {
   const [loaded, retry] = useLoad(loadRisk);
   return (
-    <Panel titleId="quality-risk" title={copy.risk}>
+    <Panel titleId="quality-risk" title={copy.risk} className={className}>
       {loaded.state === "loading" && <PanelLoading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Lots risk={loaded.value} />}
