@@ -129,7 +129,7 @@ test("changes a technician's grade on their details", async ({ page }) => {
   await main.getByLabel(words.label).selectOption({ label: "Senior" });
   const graded = page.waitForRequest((request) => request.url().includes(`/api/technician-pay/technicians/${IMRAN}`));
   await main.getByRole("button", { name: EDITING.save }).click();
-  expect((await graded).postDataJSON()).toEqual({ grade_id: SENIOR });
+  expect((await graded).postDataJSON()).toEqual({ grade_id: SENIOR, from: PAY.today });
   await expect(row).toContainText("Senior");
 });
 

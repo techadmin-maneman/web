@@ -12,14 +12,14 @@ import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton } from "@maneman/ui/TextLink";
 import { classes } from "@maneman/ui/classes";
-import { errorText } from "@maneman/web-kit/refusal";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { type TechnicianPay as Pay } from "../api.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { useAccess } from "../lib/access.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
-import { ChoiceRow } from "@maneman/ui/RecordRows";
+import { shortDate } from "@maneman/web-kit/dates";
+import { GradeFromRow, GradeHistory } from "./GradeFrom.tsx";
 import { PayRates } from "./PayRates.tsx";
 import { PayStatement } from "./PayStatement.tsx";
 import form from "@maneman/ui/forms.module.css";
@@ -31,7 +31,7 @@ const copy = technicianPay.technicians;
 
 type PayTechnician = Pay["technicians"][number];
 
-/** A technician's grade, changed where it reads; with no grade, their visits are not paid. */
+/** A technician's grade from a day, with the grades they held before; with no grade, their visits are not paid. */
 function GradeOf({
   pay,
   technician,
@@ -42,21 +42,28 @@ function GradeOf({
   onChanged: (pay: Pay) => void;
 }) {
   return (
-    <div className={form.record}>
-      <ChoiceRow
-        label={copy.grade}
-        value={technician.grade_id ?? ""}
-        choices={[["", copy.noGrade], ...pay.grades.map((grade) => [grade.id, grade.name] as const)]}
-        mayChange={useAccess().mayCall("POST /api/technician-pay/technicians/{id}")}
-        save={async (chosen) => {
-          const answer = await technicianPayApi.setPayGradeOf(technician.id, chosen === "" ? null : chosen);
-          if (!answer.ok) return errorText(technicianPay.errors, answer);
-          onChanged(answer.body);
-          return null;
-        }}
-      />
-    </div>
+    <>
+      <div className={form.record}>
+        <GradeFromRow
+          pay={pay}
+          technicianId={technician.id}
+          mayChange={useAccess().mayCall("POST /api/technician-pay/technicians/{id}")}
+          onSaved={onChanged}
+        />
+      </div>
+      <GradeHistory pay={pay} technicianId={technician.id} />
+    </>
   );
+}
+
+/** A grade set to start later, beneath the one held today. */
+function LaterGrade({ pay, technician }: { pay: Pay; technician: PayTechnician }) {
+  const next = pay.grade_history
+    .filter((each) => each.technician_id === technician.id && each.effective_from > pay.today)
+    .at(-1);
+  if (next === undefined) return null;
+  const name = pay.grades.find((grade) => grade.id === next.grade_id)?.name ?? technicianPay.grading.none;
+  return <span className={styles.later}>{technicianPay.grading.later(name, shortDate(next.effective_from))}</span>;
 }
 
 /** A technician's grade by its name, or none. */
@@ -101,7 +108,10 @@ function PayTable({ pay, onOpen }: { pay: Pay; onOpen: (id: string) => void }) {
                 </th>
                 <td>{technician.city ?? <NoValue />}</td>
                 {/* With no grade, a warning: nothing they do is paid until they have one. */}
-                <td>{gradeName(pay, technician) ?? <Badge tone="warning">{copy.noGrade}</Badge>}</td>
+                <td>
+                  {gradeName(pay, technician) ?? <Badge tone="warning">{copy.noGrade}</Badge>}
+                  <LaterGrade pay={pay} technician={technician} />
+                </td>
               </tr>
             ))}
           </tbody>

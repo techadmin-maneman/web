@@ -18,3 +18,10 @@
 .table td.figure {
   padding-block: var(--sp-4);
 }
+
+/* A grade set to start later, on its own line beneath the one held today. */
+.later {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--ui-text-muted);
+}

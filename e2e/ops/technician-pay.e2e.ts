@@ -6,6 +6,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, fails, json, type Answer, type OpsReply } from "./answer.ts";
 import { states } from "../../packages/ui/words.ts";
+import { shortDate } from "../../packages/web-kit/dates.ts";
 import { chooseCity, signedInLocally } from "./fixtures/whoami.ts";
 import { deleting, EDITING } from "../../apps/ops/src/content/common.ts";
 import { technicianPay as copy } from "../../apps/ops/src/content/technician-pay.ts";
@@ -294,7 +295,46 @@ test("adds a grade, and gives a technician one", async ({ page }) => {
   await record.getByRole("button", { name: `${EDITING.change} ${copy.technicians.grade}` }).click();
   await record.getByRole("combobox", { name: copy.technicians.grade }).selectOption("Trainee");
   await record.getByRole("button", { name: EDITING.save }).click();
-  await expect.poll(() => posts).toEqual([{ name: "Lead" }, { grade_id: TRAINEE }]);
+  await expect.poll(() => posts).toEqual([{ name: "Lead" }, { grade_id: TRAINEE, from: PAY.today }]);
+});
+
+// A grade applies from a day (docs/decisions/0311-dated-technician-grades.md): a change to come shows beneath the grade
+// held today, the technician's record lists the grades they held, and a grade's record every rate it was given.
+test("gives a technician a grade from a later day, listing the grades they held and each grade's rates", async ({
+  page,
+}) => {
+  const sent: unknown[] = [];
+  const later = {
+    technician_id: "t1",
+    grade_id: TRAINEE,
+    effective_from: "2026-10-01",
+    set_by: "finance@maneman.in",
+    set_at: "2026-09-20T05:00:00.000Z",
+  };
+  await open(page, {
+    "GET /api/technician-pay": json({ ...PAY, grade_history: [later, ...PAY.grade_history] }),
+    "POST /api/technician-pay/technicians/{id}": (route) => {
+      sent.push(route.request().postDataJSON());
+      return json(PAY)(route);
+    },
+  });
+  const row = page.getByRole("row").filter({ hasText: "Test technician One" });
+  await expect(row).toContainText(copy.grading.later("Trainee", shortDate("2026-10-01")));
+
+  await page.getByRole("button", { name: copy.technicians.open("Test technician One") }).click();
+  const record = page.getByRole("dialog", { name: "Test technician One" });
+  const grades = record.getByRole("region", { name: copy.grading.history.title });
+  await expect(grades.getByRole("row")).toHaveCount(4);
+  await expect(grades).toContainText(copy.grading.always);
+  await record.getByRole("button", { name: `${EDITING.change} ${copy.grading.grade}` }).click();
+  await record.getByRole("combobox", { name: copy.grading.grade }).selectOption("Senior");
+  await record.getByLabel(copy.grading.from).fill("2026-10-15");
+  await record.getByRole("button", { name: EDITING.save }).click();
+  await expect.poll(() => sent).toEqual([{ grade_id: SENIOR, from: "2026-10-15" }]);
+  await page.keyboard.press("Escape");
+
+  const senior = await recordOf(page, "Senior");
+  await expect(senior.getByRole("region", { name: copy.rates.history.title }).getByRole("row")).toHaveCount(6);
 });
 
 test("deletes a grade no technician holds, and says why one in use stays", async ({ page }) => {

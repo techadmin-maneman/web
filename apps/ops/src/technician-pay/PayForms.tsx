@@ -17,6 +17,7 @@ import { EDITING } from "../content/common.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { useAccess } from "../lib/access.ts";
 import { rateLines } from "./pay-rates.ts";
+import { RateHistory } from "./GradeFrom.tsx";
 import styles from "./pay-rates.module.css";
 import { technicianPayApi } from "./technician-pay-api.ts";
 
@@ -159,6 +160,7 @@ export function GradeRecord(props: {
           <RateRow key={kind} pay={pay} grade={grade} kind={kind} city={city} onSaved={onSaved} />
         ))}
       </div>
+      <RateHistory pay={pay} gradeId={grade.id} />
       {mayChange && grade.technicians === 0 && (
         <div className={form.recordFoot}>
           <DeleteAction
