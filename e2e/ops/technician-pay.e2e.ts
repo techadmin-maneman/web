@@ -143,7 +143,7 @@ test("renames a grade where its name reads", async ({ page }) => {
   await expect.poll(() => sent).toEqual({ name: "Lead" });
 });
 
-test("shows last month’s pay at the rates per visit, says what no rate covered, and gives it as a CSV", async ({
+test("shows last month’s pay a row each technician, says what no rate covered, and gives it as a CSV", async ({
   page,
 }) => {
   await answer(page, {
@@ -152,15 +152,43 @@ test("shows last month’s pay at the rates per visit, says what no rate covered
   });
   await page.goto("/technician-pay");
   await expect(page.getByRole("heading", { level: 1, name: shell.sections["technician-pay"] })).toBeVisible();
+  // Beside the title, above the month's own choice, which names it too.
+  await expect(
+    page.getByRole("main").getByText(copy.statement.monthHead("2026-08", false), { exact: true }).first(),
+  ).toBeVisible();
   const panel = page.getByRole("region", { name: copy.statement.title });
   await expect(panel.getByRole("combobox", { name: copy.statement.month })).toHaveValue("2026-08");
-  await expect(panel.getByRole("row").filter({ hasText: copy.kinds.service })).toContainText("Rs. 4,800");
-  await expect(panel.getByRole("row").filter({ hasText: copy.kinds.replacement })).toContainText(copy.statement.noRate);
-  await expect(panel).toContainText(copy.statement.totalUnpriced("Test technician One"));
+  // A row each technician, as the redesign draws it: their grade, their visits by kind, and their pay.
+  await expect(panel.getByRole("columnheader")).toHaveText([
+    copy.statement.technician,
+    copy.statement.grade,
+    copy.statement.kindHeads.service,
+    copy.statement.kindHeads.replacement,
+    copy.statement.amount,
+  ]);
+  const one = panel.getByRole("row").filter({ hasText: "Test technician One" });
+  await expect(one).toContainText("Senior");
+  await expect(one).toContainText("12");
+  await expect(one).toContainText("Rs. 4,800");
+  await expect(one).toContainText(copy.statement.unpriced);
+  await expect(panel.getByRole("row").last()).toContainText(copy.statement.totalOf(1));
 
   const download = page.waitForEvent("download");
-  await panel.getByRole("button", { name: copy.statement.download }).click();
+  await page.getByRole("button", { name: copy.statement.download }).click();
   expect((await download).suggestedFilename()).toBe("technician-pay-2026-08.csv");
+});
+
+test("names a technician with no pay grade above the month, with the way to set one", async ({ page }) => {
+  await answer(page, {
+    "GET /api/technician-pay": json(PAY),
+    "GET /api/technician-pay/statement": json(STATEMENT),
+  });
+  await page.goto("/technician-pay");
+  await expect(page.getByText(copy.statement.ungraded(["Test technician Two"]))).toBeVisible();
+  await expect(page.getByRole("link", { name: copy.statement.setGrades })).toHaveAttribute(
+    "href",
+    "/settings/pay-grades",
+  );
 });
 
 test("adds a grade, and gives a technician one", async ({ page }) => {
