@@ -159,6 +159,26 @@ function ItemPanel(props: {
   );
 }
 
+/** Add a consumable, the page's action, in a drawer that closes once it is on the list. */
+function AddAction({ current, onAdded }: { current: ConsumableList; onAdded: (next: ConsumableList) => void }) {
+  return (
+    <PageActions>
+      <DrawerButton primary label={copy.add}>
+        {(done) => (
+          <AddConsumable
+            maxUnitCost={current.max_unit_cost}
+            onAdded={(next) => {
+              onAdded(next);
+              done();
+            }}
+            onCancel={done}
+          />
+        )}
+      </DrawerButton>
+    </PageActions>
+  );
+}
+
 export function Consumables() {
   const [loaded, retry] = useLoad(itemsApi.consumables);
   /** The list after a change, so the table follows without reading it again. */
@@ -181,59 +201,55 @@ export function Consumables() {
 
   return (
     <>
-      <PageActions>
-        {mayAdd && (
-          <DrawerButton primary label={copy.add}>
-            {(done) => (
-              <AddConsumable
-                maxUnitCost={current.max_unit_cost}
-                onAdded={(next) => {
-                  setConsumables(next);
-                  setSaid(copy.form.added);
-                  done();
-                }}
-                onCancel={done}
-              />
-            )}
-          </DrawerButton>
-        )}
-      </PageActions>
+      {mayAdd && (
+        <AddAction
+          current={current}
+          onAdded={(next) => {
+            setConsumables(next);
+            setSaid(copy.form.added);
+          }}
+        />
+      )}
       {/* The consumables and the hair systems side by side at a desk, as the redesign draws them. */}
       <div className={styles.lists}>
-        <ItemPanel
-          titleId="consumables"
-          title={copy.title}
-          retiredTitle={copy.retiredConsumables}
-          rows={current.consumables.filter((each) => each.hair_system === null)}
-          first={copy.consumableColumn}
-          none={copy.none}
-          onOpen={opening}
-        >
-          {said !== null && <Toast>{said}</Toast>}
-          {opened !== undefined && (
-            <FormDrawer title={opened.name} onClose={close}>
-              <ConsumableRecord
-                consumable={opened}
-                consumables={current}
-                onSaved={setConsumables}
-                onDeleted={(next) => {
-                  setConsumables(next);
-                  setSaid(copy.deleted);
-                  close();
-                }}
-              />
-            </FormDrawer>
-          )}
-        </ItemPanel>
-        <ItemPanel
-          titleId="hair-systems"
-          title={copy.hairSystems}
-          retiredTitle={copy.retiredHairSystems}
-          rows={current.consumables.filter((each) => each.hair_system !== null)}
-          first={copy.hairSystemColumn}
-          none={copy.noHairSystems}
-          onOpen={opening}
-        />
+        <div className={styles.list}>
+          <ItemPanel
+            titleId="consumables"
+            title={copy.title}
+            retiredTitle={copy.retiredConsumables}
+            rows={current.consumables.filter((each) => each.hair_system === null)}
+            first={copy.consumableColumn}
+            none={copy.none}
+            onOpen={opening}
+          >
+            {said !== null && <Toast>{said}</Toast>}
+            {opened !== undefined && (
+              <FormDrawer title={opened.name} onClose={close}>
+                <ConsumableRecord
+                  consumable={opened}
+                  consumables={current}
+                  onSaved={setConsumables}
+                  onDeleted={(next) => {
+                    setConsumables(next);
+                    setSaid(copy.deleted);
+                    close();
+                  }}
+                />
+              </FormDrawer>
+            )}
+          </ItemPanel>
+        </div>
+        <div className={styles.list}>
+          <ItemPanel
+            titleId="hair-systems"
+            title={copy.hairSystems}
+            retiredTitle={copy.retiredHairSystems}
+            rows={current.consumables.filter((each) => each.hair_system !== null)}
+            first={copy.hairSystemColumn}
+            none={copy.noHairSystems}
+            onOpen={opening}
+          />
+        </div>
       </div>
       <ServiceUsage consumables={current} onSaved={setConsumables} />
     </>

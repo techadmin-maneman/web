@@ -210,7 +210,8 @@ test.describe("what each service uses", () => {
     await open(page, { "POST /api/service-usage": json(CONSUMABLES) });
     const grid = page.getByRole("region", { name: copy.usage.title });
     // A service offered a row, an item offered a column (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
-    const visit = grid.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Service visit" }) });
+    const serviceVisit = CONSUMABLES.services.find((each) => each.visit_type === "service")?.name ?? "";
+    const visit = grid.getByRole("row").filter({ has: page.getByRole("rowheader", { name: serviceVisit }) });
     await expect(visit).toContainText("4 strips");
     await expect(visit).toContainText("10 ml");
     await expect(grid.getByRole("rowheader", { name: "Premium first fit" })).toHaveCount(0);

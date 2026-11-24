@@ -95,11 +95,7 @@
   color: var(--ui-text-muted);
 }
 
-/* A place's items narrowed: the search, then the chips, above the table. */
-.narrow {
-  margin: var(--sp-12) var(--form-inset);
-}
-
+/* The chips that narrow a place's items, on Whose stock's line. */
 .narrowChips {
   display: flex;
   flex-wrap: wrap;

@@ -2,6 +2,7 @@
 // quarterly, or the one ops set. Read beside the counts as the redesign draws them; changed in a drawer, for those
 // who may.
 
+import styles from "./counts.module.css";
 import { Toast } from "@maneman/ui/Toast";
 import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
@@ -51,6 +52,7 @@ export function CountClasses(props: {
     >
       <DescriptionList
         layout="ends"
+        className={styles.classes}
         items={countTasks.classes.map((item) => ({ term: item.name, details: classOf(item) }))}
       />
     </Panel>
