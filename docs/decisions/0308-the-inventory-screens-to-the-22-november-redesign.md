@@ -27,8 +27,27 @@ value.
    stock's value at cost. The per-place cards that went to a place are gone, as the owner ruled; a place is picked in
    Whose stock. The value is shown only to those who may already read unit costs, worked out in the console from
    `GET /api/consumables`.
+6. **The other pages take the prototype's shape, keeping what they do**:
+   - Counts says how many are due, starts a count from the page's action, and reads each item's class beside the list,
+     changed in a drawer; each count's action (Count now, Review, Open) ends its row.
+   - Purchasing says how many await approval ("Awaiting approval" for a drafted order); an unset letterhead is a line
+     above the orders whose Set it opens its form, a set one the page's Letterhead; claims and returned pieces are drawn
+     only while they hold something.
+   - Supply plan says how many lines await approval, its lines beside the forecast on a wide desk; an event is added in
+     a drawer.
+   - Quality starts a recall from the page's action, its three panels side by side.
+   - Usage marks a flagged technician's overage as a pill; the bars above the table, which said again what it says,
+     are gone.
+   - Items lists its consumables and hair systems side by side, and reads each service's expected use in a grid,
+     changed in a drawer.
+   - Suppliers names each country, and, for those who read the scorecard, how many orders came on time this year.
+   - Stock's views stand under Stock in the trail ("Inventory / Stock / Expiring"); Labels lists each piece with its
+     own Print label beside the batches printed together; Places counts the items each holds.
+7. **What the prototype does not draw stays where it serves**: the lists' search and filters, a delivery's labels
+   printed together, a lot's labels, and "Add a consumable", which adds a consumable alone.
 
 ## Consequences
 
 - A kit is named only a day ahead at most; over four weeks the city's figure is the one to plan by.
 - `GET /api/stock` carries no cost.
+- Movements names whoever recorded a change by their sign-in, where the prototype names the person.
