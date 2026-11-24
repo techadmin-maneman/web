@@ -9,6 +9,10 @@ const common = {
   unknown: FAILED,
 };
 
+/** Names as a sentence lists them: "Delhi", "Delhi and Noida", "Delhi, Noida and Ghaziabad". */
+const namesList = (names: readonly string[]): string =>
+  names.length < 2 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names.at(-1) ?? ""}`;
+
 export const cities = {
   title: "Cities",
   list: {
@@ -27,6 +31,9 @@ export const cities = {
     notServed: "Not served",
     /** A city served that no active technician works in: clients there can book, and nobody can go. */
     noTechnician: "Served, but no technician works here",
+    /** Beneath the cities: those that take bookings with nobody to send, named, as the redesign says it. */
+    noTechnicians: (names: readonly string[]) =>
+      `${namesList(names)} ${names.length === 1 ? "takes" : "take"} bookings but ${names.length === 1 ? "has" : "have"} no technician.`,
     hidden: "Not offered",
     noZone: "No zone",
     add: "Add a city",

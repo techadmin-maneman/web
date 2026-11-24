@@ -2,7 +2,8 @@
 // what a first fit comes to and what it leaves us; a row opens its record beneath the list, where each value changes in
 // place (docs/decisions/0212-editing-in-place.md). Every write answers every package as it stands, so the page follows.
 
-import { PageActions } from "../frame/PageHead.tsx";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -75,6 +76,15 @@ function PackageFigures({ each, costs }: { readonly each: Package; readonly cost
       <td className={FIGURE}>{margin === null ? copy.gap : rupees(margin)}</td>
     </>
   );
+}
+
+/** Beneath the list: the packages on sale but not yet sold, for want of a priced hair system, named. */
+function Unsellable({ packages: { packages, today } }: { readonly packages: Packages }) {
+  useHeaderSub(copy.inclusive);
+  const names = packages
+    .filter((each) => !each.offered && (each.retired_date === null || each.retired_date > today))
+    .map((each) => each.name);
+  return names.length === 0 ? null : <InlineMessage tone="note">{copy.unsellable(names)}</InlineMessage>;
 }
 
 function PackageList(props: {
@@ -217,6 +227,7 @@ export function PackagesScreen() {
           />
         )}
         <PackageList packages={current} costs={costsShown} opener={opener} />
+        <Unsellable packages={current} />
       </Panel>
       {opened !== undefined && (
         <PackageRecord

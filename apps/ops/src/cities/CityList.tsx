@@ -11,6 +11,7 @@ import { useIsPhone } from "../lib/media.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { Badge } from "@maneman/ui/Badge";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useState } from "react";
 import { quantity } from "@maneman/web-kit/figures";
@@ -114,6 +115,14 @@ function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) 
   );
 }
 
+/** The cities that take bookings with no technician to send, named above the list. */
+function NoTechnicians({ cities }: { cities: Cities }) {
+  const names = cities.cities
+    .filter((city) => city.served && city.active && city.technicians === 0)
+    .map((city) => city.name);
+  return names.length === 0 ? null : <InlineMessage tone="note">{copy.noTechnicians(names)}</InlineMessage>;
+}
+
 export function CityList({ cities, reread }: { cities: Cities; reread: () => Promise<void> }) {
   const mayAdd = useAccess().mayCall("POST /api/cities");
   const [open, setOpen] = useState<string | null>(null);
@@ -141,6 +150,7 @@ export function CityList({ cities, reread }: { cities: Cities; reread: () => Pro
         )}
       </PageActions>
       <Panel titleId="cities" title={copy.panel} count={cities.cities.length}>
+        <NoTechnicians cities={cities} />
         <CityTable
           cities={cities}
           onOpen={(name) => {

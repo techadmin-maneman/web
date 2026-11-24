@@ -10,6 +10,11 @@ export const packagesCopy = {
   code: "Code",
   create: "Add",
   none: "No packages yet.",
+  /** Beside the page's title: what every price on it holds. */
+  inclusive: "Prices include GST",
+  /** Beneath the list: packages not yet sold for want of a priced hair system, named. */
+  unsellable: (names: readonly string[]) =>
+    `${names.length < 2 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names.at(-1) ?? ""}`} can’t be sold until ${names.length === 1 ? "it has" : "they have"} a priced hair system.`,
   /** The list's columns: each part's price, what a first fit comes to for the client, and what it leaves us. */
   columns: {
     name: "Package",
