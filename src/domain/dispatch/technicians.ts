@@ -6,7 +6,7 @@
 // the number is looked up among the technicians and nowhere else, and their
 // session is bound to one phone.
 
-import { gradeOnSql } from "../field/grade-on.ts";
+import { gradeOnSql } from "../../lib/grade-on.ts";
 import type { Settings } from "../../config/settings.ts";
 import { sha256Hex } from "../../lib/hash.ts";
 import { mobileHashOf } from "../clients/number-codes.ts";

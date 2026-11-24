@@ -6,7 +6,7 @@
 // the visit; a month with a fitting whose product has no cost set has none. The current month stands as of tonight.
 // Records marked as tests are left out.
 
-import { gradeOnSql } from "../field/grade-on.ts";
+import { gradeOnSql } from "../../lib/grade-on.ts";
 import { addDays, addMonths, indiaDate, indiaDateSql, monthOf } from "../../lib/india-time.ts";
 import { standingOn, type StandingDays, type StandingRules } from "../../policy/client-standing.ts";
 import { everyDaysSql } from "../booking/packages.ts";

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-11-24
-- Topic: Technician pay
+- Topic: Field work
 
 ## Context
 
@@ -18,7 +18,7 @@ both.
 1. **A grade applies from a day.** `technician_grades` keeps each technician's grade by the India date it applies
    from. A grade of none from a day takes theirs away. Migration 0238 gives every graded technician their grade from
    2000-01-01, so every past statement prices as it did.
-2. **Every reader takes the grade in force on its day** (`src/domain/field/grade-on.ts`):
+2. **Every reader takes the grade in force on its day** (`src/lib/grade-on.ts`):
    - the pay statement and the technician's own month, on each visit's day;
    - a client's cost in the analytics months, on the visit's day;
    - Pay grades' technicians and each grade's count, and the grade the technician app names, on today.

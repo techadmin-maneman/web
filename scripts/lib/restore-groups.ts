@@ -1,6 +1,5 @@
-// What a restore of D1 to an earlier minute undoes, group of tables by group (docs/runbook.md, "Restoring D1"), as
-// docs/schema.md lists it (./schema-doc.ts). Every table is in one group, and may be in more; the schema's test fails on
-// a table in none.
+// What a restore of D1 to an earlier minute undoes, group by group (docs/runbook.md, "Restoring D1"), as docs/schema.md
+// lists it (./schema-doc.ts). Every table is in a group or more; the schema's test fails on a table in none.
 
 export interface RestoreGroup {
   readonly what: string;

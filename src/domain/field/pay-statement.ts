@@ -3,7 +3,7 @@
 // read it. A city's rate stands in for every city's there, and a city's rate of none falls back to every city's. A
 // visit with no rate at all still counts, at none, so the gap shows.
 
-import { gradeOnSql } from "./grade-on.ts";
+import { gradeOnSql } from "../../lib/grade-on.ts";
 import { indiaDateSql, indiaInstant } from "../../lib/india-time.ts";
 import { NO_PIECE } from "../../policy/in-job-steps.ts";
 import type { VISIT_PAY_KINDS } from "./technician-pay.ts";

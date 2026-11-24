@@ -5,7 +5,7 @@
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { DateInput, Select } from "@maneman/ui/Field";
 import { Table, TableScroll } from "@maneman/ui/Table";
-import { fullDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import type { TechnicianPay } from "../api.ts";
@@ -128,7 +128,7 @@ export function GradeHistory({ pay, technicianId }: { readonly pay: TechnicianPa
               <tr key={each.effective_from}>
                 <td>{fromWords(each.effective_from)}</td>
                 <td>{nameOf(pay, each.grade_id) ?? copy.none}</td>
-                <td className={styles.setBy}>{words.setOn(each.set_by, fullDate(each.set_at.slice(0, 10)))}</td>
+                <td className={styles.setBy}>{words.setOn(each.set_by, fullDate(indiaDate(each.set_at)))}</td>
               </tr>
             ))}
           </tbody>
@@ -166,7 +166,7 @@ export function RateHistory({ pay, gradeId }: { readonly pay: TechnicianPay; rea
                 <td>{technicianPay.kinds[each.kind]}</td>
                 <td>{each.city ?? words.everyCity}</td>
                 <td>{each.amount === null ? words.none : rupees(each.amount)}</td>
-                <td className={styles.setBy}>{copy.history.setOn(each.set_by, fullDate(each.set_at.slice(0, 10)))}</td>
+                <td className={styles.setBy}>{copy.history.setOn(each.set_by, fullDate(indiaDate(each.set_at)))}</td>
               </tr>
             ))}
           </tbody>

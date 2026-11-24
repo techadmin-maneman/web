@@ -5,7 +5,7 @@
 
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { read, readAll } from "../../lib/read-all.ts";
-import { gradeOnSql } from "./grade-on.ts";
+import { gradeOnSql } from "../../lib/grade-on.ts";
 
 export const VISIT_PAY_KINDS = ["consultation", "one_visit", "first_fit", "service", "replacement", "no_show"] as const;
 type VisitPayKind = (typeof VISIT_PAY_KINDS)[number];

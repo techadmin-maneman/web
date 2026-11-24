@@ -173,6 +173,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0291](0291-pieces-without-labels.md) A piece without a label never stops the fit
 - [0296](0296-no-empty-reference-photograph.md) A guided task draws no reference photograph until it has one
 - [0298](0298-past-weeks-on-schedule.md) Schedule goes back to past weeks, and never past this one
+- [0311](0311-dated-technician-grades.md) Dated technician grades
 
 ### Money and Books
 
