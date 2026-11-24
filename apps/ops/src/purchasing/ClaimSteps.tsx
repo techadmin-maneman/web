@@ -132,30 +132,32 @@ function Sent({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAnswe
   };
   return (
     <div className={form.group}>
-      <Field label={copy.claims.credit(claim.currency)} className={form.field}>
-        {(control) => (
-          <TextInput
-            {...control}
-            inputMode="decimal"
-            value={credit}
-            onChange={(event) => {
-              setCredit(event.target.value);
-            }}
-          />
-        )}
-      </Field>
-      <Field label={copy.claims.note} className={form.field}>
-        {(control) => (
-          <TextInput
-            {...control}
-            maxLength={200}
-            value={note}
-            onChange={(event) => {
-              setNote(event.target.value);
-            }}
-          />
-        )}
-      </Field>
+      <div className={form.fields}>
+        <Field label={copy.claims.credit(claim.currency)} className={form.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              inputMode="decimal"
+              value={credit}
+              onChange={(event) => {
+                setCredit(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+        <Field label={copy.claims.note} className={form.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              maxLength={200}
+              value={note}
+              onChange={(event) => {
+                setNote(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+      </div>
       <FormActions>
         <Button
           variant="primary"

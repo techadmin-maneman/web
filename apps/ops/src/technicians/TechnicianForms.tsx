@@ -19,6 +19,7 @@ import { technicians, CLOSE } from "../content.ts";
 import { GIVING_NO_CITY, useAccess } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
 import styles from "./technicians.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 import { technicianPayApi } from "../technician-pay/index.ts";
@@ -54,8 +55,8 @@ function Fields({
   const copy = technicians.fields;
   const mayGiveNone = useAccess().reaches(GIVING_NO_CITY);
   return (
-    <>
-      <Field label={copy.name} className={styles.formField}>
+    <div className={form.fields}>
+      <Field label={copy.name}>
         {(control) => (
           <TextInput
             {...control}
@@ -72,7 +73,7 @@ function Fields({
           />
         )}
       </Field>
-      <Field label={copy.mobile} className={styles.formField}>
+      <Field label={copy.mobile}>
         {(control) => (
           <TextInput
             {...control}
@@ -86,7 +87,7 @@ function Fields({
           />
         )}
       </Field>
-      <Field label={copy.zone} className={styles.formField}>
+      <Field label={copy.zone}>
         {(control) => (
           <TextInput
             {...control}
@@ -100,7 +101,7 @@ function Fields({
           />
         )}
       </Field>
-      <Field label={copy.city} className={styles.formField}>
+      <Field label={copy.city}>
         {(control) => (
           <Select
             {...control}
@@ -127,7 +128,7 @@ function Fields({
           onType({ ...typed, fitsTrained: event.target.checked });
         }}
       />
-    </>
+    </div>
   );
 }
 

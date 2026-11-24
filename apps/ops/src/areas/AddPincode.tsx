@@ -11,6 +11,7 @@ import { type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import shared from "./areas.module.css";
 import styles from "./add-pincode.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { AREA_NAME, PINCODE } from "./rules.ts";
 import { Refusal } from "@maneman/ui/Refusal";
 import { areasApi } from "./areas-api.ts";
@@ -32,6 +33,31 @@ const boxRefusals = (pincode: string, area: string) => ({
   pincode: pincode !== "" && !PINCODE.test(pincode) ? copy.badPincode : null,
   area: area !== "" && !AREA_NAME.test(area) ? copy.badName : null,
 });
+
+/** The city it goes in, one of ours. */
+function CityChoice(props: { cities: readonly string[]; city: string; onCity: (city: string) => void }) {
+  return (
+    <Field label={copy.city}>
+      {(control) => (
+        <Select
+          {...control}
+          className={styles.box}
+          value={props.city}
+          onChange={(event) => {
+            props.onCity(event.target.value);
+          }}
+        >
+          <option value="">{copy.chooseCity}</option>
+          {props.cities.map((each) => (
+            <option key={each} value={each}>
+              {each}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
+  );
+}
 
 export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
   const [typed, setTyped] = useState("");
@@ -63,7 +89,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
 
   if (cities.length === 0) {
     return (
-      <div className={shared.addForm}>
+      <div>
         <p className={shared.note}>{copy.noCity}</p>
         {cancel}
       </div>
@@ -71,55 +97,39 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
   }
 
   return (
-    <div className={shared.addForm}>
-      {pincode === null && (
-        <Field label={copy.pincode} className={shared.field} error={refusals.pincode} announce>
+    <div>
+      <div className={form.fields}>
+        {pincode === null && (
+          <Field label={copy.pincode} error={refusals.pincode} announce>
+            {(control) => (
+              <TextInput
+                {...control}
+                className={styles.box}
+                inputMode="numeric"
+                maxLength={6}
+                value={typed}
+                onChange={(event) => {
+                  setTyped(event.target.value);
+                }}
+              />
+            )}
+          </Field>
+        )}
+        <Field label={copy.area} error={refusals.area} announce>
           {(control) => (
             <TextInput
               {...control}
               className={styles.box}
-              inputMode="numeric"
-              maxLength={6}
-              value={typed}
+              maxLength={40}
+              value={area}
               onChange={(event) => {
-                setTyped(event.target.value);
+                setArea(event.target.value);
               }}
             />
           )}
         </Field>
-      )}
-      <Field label={copy.area} className={shared.field} error={refusals.area} announce>
-        {(control) => (
-          <TextInput
-            {...control}
-            className={styles.box}
-            maxLength={40}
-            value={area}
-            onChange={(event) => {
-              setArea(event.target.value);
-            }}
-          />
-        )}
-      </Field>
-      <Field label={copy.city} className={shared.field}>
-        {(control) => (
-          <Select
-            {...control}
-            className={styles.box}
-            value={city}
-            onChange={(event) => {
-              setCity(event.target.value);
-            }}
-          >
-            <option value="">{copy.chooseCity}</option>
-            {cities.map((each) => (
-              <option key={each} value={each}>
-                {each}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
+        <CityChoice cities={cities} city={city} onCity={setCity} />
+      </div>
       <div className={shared.actions}>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {busy ? copy.adding : copy.add}

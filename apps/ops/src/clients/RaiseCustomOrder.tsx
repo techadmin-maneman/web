@@ -9,6 +9,7 @@ import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
 import form from "@maneman/ui/forms.module.css";
+import { classes } from "@maneman/ui/classes";
 import { clients } from "../content.ts";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
@@ -39,11 +40,13 @@ function OrderEntry(props: {
   label: string;
   value: string;
   type?: string;
+  /** A long one, the note, which takes the form's whole row. */
+  wide?: boolean;
   onChange: (text: string) => void;
   error: string | null;
 }) {
   return (
-    <Field label={props.label} className={form.field} error={props.error}>
+    <Field label={props.label} className={classes(form.field, props.wide === true && form.wide)} error={props.error}>
       {(control) => (
         <TextInput
           {...control}
@@ -74,7 +77,7 @@ function OrderBoxes({
   const refused = (box: string) => boxError(copy.errors, failure, box);
   const currency = customOrders.suppliers.find((each) => each.id === draft.supplierId)?.currency ?? "";
   return (
-    <>
+    <div className={form.fields}>
       <Field label={copy.raise.supplier} className={form.field} error={refused("supplier_id")}>
         {(control) => (
           <Select
@@ -124,8 +127,8 @@ function OrderBoxes({
           </Select>
         )}
       </Field>
-      <OrderEntry label={copy.raise.note} value={draft.note} onChange={edit("note")} error={refused("note")} />
-    </>
+      <OrderEntry label={copy.raise.note} wide value={draft.note} onChange={edit("note")} error={refused("note")} />
+    </div>
   );
 }
 

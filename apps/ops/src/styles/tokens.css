@@ -53,6 +53,7 @@
   --ops-aside: 18.75rem; /* a record's column of facts beside its page: a client's figures, address and notes */
   --ops-split-side: 21.25rem; /* a column beside a page's main part, as the Waitlist's pincodes to open next */
   --ops-area: 200px; /* an area's name, and a tier's, as ops type them */
+  --ops-field: var(--ops-area); /* a form's short field at its narrowest: two to a drawer's row, three to a panel's */
   --ops-date: var(--skeleton-card); /* a date box that shows the whole year beside the picker's button */
   --ops-scroll-max-h: 70dvh; /* the dispatch grid on a narrow screen, with the tray beneath it */
   /* A dispatch block is this tall for each slot it takes. The board draws 22, 34 and 46 px, under two lines of type
@@ -92,6 +93,8 @@
   --box-date: var(--ops-date);
   --box-area: var(--ops-area);
   --box-text-max: var(--measure-form);
+  --field-cell: var(--ops-field);
+  --fields-max: calc(var(--ops-field) * 3 + var(--sp-16) * 2);
   --box-note-max: var(--measure-column);
   /*
    * The November redesign's look (docs/prompts/ops-redesign.md): white panels on a canvas, navy for the frame and the

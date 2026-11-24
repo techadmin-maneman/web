@@ -12,7 +12,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fails, json, SETTINGS } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
-import { expectOneBoxALine } from "./one-box-a-line.ts";
+import { expectNoBoxInATable } from "./no-box-in-a-table.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 import {
   cities,
@@ -433,7 +433,7 @@ test.describe("the rules", () => {
 });
 
 // The fields ran past the panel and cut "consultation" and the date's year.
-test("keeps every panel inside its frame, a box to a line, at the width the console is drawn", async ({ page }) => {
+test("keeps every panel inside its frame, no box in a table, at the width the console is drawn", async ({ page }) => {
   for (const path of PANELS) {
     await open(page, path);
     const overflow = await page.getByRole("main").evaluate((main) =>
@@ -446,7 +446,7 @@ test("keeps every panel inside its frame, a box to a line, at the width the cons
         .map((element) => element.id || element.tagName),
     );
     expect(overflow, path).toEqual([]);
-    await expectOneBoxALine(page, path);
+    await expectNoBoxInATable(page, path);
   }
 });
 

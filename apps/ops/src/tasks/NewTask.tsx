@@ -17,6 +17,7 @@ import { staffName } from "../lib/who.ts";
 import { ClientChoice, type Found } from "./ClientChoice.tsx";
 import { tasksApi } from "./tasks-api.ts";
 import styles from "./task-actions.module.css";
+import form from "@maneman/ui/forms.module.css";
 
 const copy = tasks.write;
 const TITLE_ID = "new-task-title";
@@ -38,7 +39,7 @@ interface Due {
 function DueChoice(props: { due: Due; busy: boolean; failure: Failure | null; onDue: (due: Due) => void }) {
   const { due, busy } = props;
   return (
-    <div className={styles.due}>
+    <>
       <Field label={copy.day} error={boxError(copy.errors, props.failure, "due")}>
         {(control) => (
           <DateInput
@@ -66,7 +67,7 @@ function DueChoice(props: { due: Due; busy: boolean; failure: Failure | null; on
           />
         )}
       </Field>
-    </div>
+    </>
   );
 }
 
@@ -82,7 +83,7 @@ const shownBoxes = (mayFind: boolean, asksCity: boolean): string[] => [
 /** What needs doing, in the writer's words. */
 function WhatBox(props: { value: string; busy: boolean; failure: Failure | null; onWhat: (what: string) => void }) {
   return (
-    <Field label={copy.what} error={boxError(copy.errors, props.failure, "what")}>
+    <Field label={copy.what} className={form.wide} error={boxError(copy.errors, props.failure, "what")}>
       {(control) => (
         <TextInput
           {...control}
@@ -245,7 +246,7 @@ export function NewTask(props: {
         </div>
       }
     >
-      <div className={styles.newTask}>
+      <div className={form.fields}>
         <WhatBox value={what} busy={busy} failure={failure} onWhat={setWhat} />
         <DepartmentChoice value={department} busy={busy} onChoose={setDepartment} />
         {props.mayFind && <ClientChoice chosen={client} busy={busy} failure={failure} onChoose={setClient} />}

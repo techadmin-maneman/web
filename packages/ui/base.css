@@ -155,6 +155,10 @@
     /* The widest a line of words and a note may run, which the console caps: elsewhere they fill their room. */
     --box-text-max: none;
     --box-note-max: none;
+    /* A form's short field at its narrowest, and its fields' row at its widest (./forms.module.css): one to a line,
+       no wider than a form runs, unless the app stands them side by side. */
+    --field-cell: 100%;
+    --fields-max: var(--measure-form);
     /* A screen's widest (./forms.module.css): its room, unless the app caps it. */
     --screen-max: none;
     /* A note's distance from the edge of what holds it (./Note.tsx): nothing on the page, a panel's own inset inside

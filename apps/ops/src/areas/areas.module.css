@@ -228,10 +228,6 @@
 
 /* ---- Adding a pincode the service area does not hold --------------------- */
 
-.addForm .field:first-child {
-  margin-top: var(--sp-12);
-}
-
 /* ---- Launches scheduled, and what a city needs first ---------------------- */
 
 .launchList {
