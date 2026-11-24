@@ -4,6 +4,7 @@
 // mistake; the month's file goes to the payout tool.
 
 import { Toast } from "@maneman/ui/Toast";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -215,6 +216,10 @@ function StatementsTable(row: RowProps) {
   );
 }
 
+/** A month by name, "so far" while it runs. */
+const monthWords = (statements: PartnerStatements): string =>
+  statements.month === statements.this_month ? copy.soFar(fullMonth(statements.month)) : fullMonth(statements.month);
+
 function MonthChoice({ statements, onMonth }: { statements: PartnerStatements; onMonth: (month: string) => void }) {
   return (
     <Field label={copy.month} labelHidden>
@@ -247,6 +252,9 @@ export function PartnerCommission() {
   const [acting, setActing] = useState<Acting>(null);
   const [said, setSaid] = useState<string | null>(null);
   const mayPay = useAccess().mayCall("POST /api/partner-statements/{id}/payouts");
+  // Beside the page's title, the month shown, as the redesign says it: "November 2026, so far" while it runs.
+  const shown = changed ?? (loaded.state === "loaded" ? loaded.value : null);
+  useHeaderSub(shown === null ? undefined : monthWords(shown));
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const statements = changed ?? loaded.value;
