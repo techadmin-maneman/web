@@ -20,6 +20,7 @@ import {
   visitRow,
 } from "./clients-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 import { stockMatch as matchCopy } from "../../apps/ops/src/content/stock-match.ts";
 import { customOrders as customCopy } from "../../apps/ops/src/content/custom-orders.ts";
 
@@ -29,18 +30,25 @@ const SUGGEST: Call = `POST ${RECORD_PATH}/address/suggestions`;
 
 const SAVE_ADDRESS: Call = `POST ${RECORD_PATH}/address`;
 
-// The client's hair profile, which no board draws, above the pieces (docs/decisions/0106-a-clients-hair-profile.md).
+// The client's hair profile, which no board draws, above the pieces (docs/decisions/0106-a-clients-hair-profile.md),
+// each row corrected from its own Change as a new version of the whole.
 test.describe("the client’s hair profile", () => {
-  const section = (page: Page) => page.getByRole("region", { name: opsCopy.clients.profile.title });
+  const words = opsCopy.clients.profile;
+  const section = (page: Page) => page.getByRole("region", { name: words.title });
+  const change = (page: Page, label: string) =>
+    section(page).getByRole("button", { name: `${EDITING.change} ${label}`, exact: true });
+  /** A row's value, beside its Change. */
+  const shown = (page: Page, label: string) => change(page, label).locator("..");
 
   test("stands above the pieces: the latest, its history, and every version with who recorded it", async ({ page }) => {
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
     const profile = section(page);
-    await expect(profile.getByRole("definition").first()).toHaveText(opsCopy.clients.profile.stages.IV);
-    await expect(profile.locator("dl").first()).toContainText("Colour#2");
+    await expect(change(page, words.rows.norwood_stage)).toHaveAccessibleDescription(words.stages.IV);
+    await expect(shown(page, words.rows.colour)).toContainText(words.colours["2"]);
     // The correction changed the colour alone, which says what it was at the consultation.
-    await expect(profile.locator("dl").first().getByText(/^was /)).toHaveText([opsCopy.clients.profile.was("#1B")]);
-    await expect(profile.locator("dl").first()).toContainText("Skin conditions and allergiesDry at the crown");
+    await expect(shown(page, words.rows.colour)).toContainText(words.was("#1B"));
+    await expect(shown(page, words.rows.norwood_stage)).not.toContainText("was");
+    await expect(shown(page, words.rows.skin_and_allergies)).toContainText("Dry at the crown");
     await expect(profile.getByRole("listitem")).toHaveText([
       /^22 Sep 2027 · ops@maneman\.in, correction/,
       /^21 Sep 2027 · Imran, at the consultation/,
@@ -50,18 +58,18 @@ test.describe("the client’s hair profile", () => {
   });
 
   // The custom range sells 130%: it read as a bare "130", and a correction could not keep it.
-  test("reads a density of 130%, and the correction starts from it", async ({ page }) => {
+  test("reads a density of 130%, and its Change starts from it", async ({ page }) => {
     const at130 = {
       ...HAIR_PROFILE,
       latest: { ...HAIR_PROFILE.latest, fit: { ...HAIR_PROFILE.latest.fit, density_percent: 130 as const } },
     };
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(at130) });
-    await expect(section(page).locator("dl").first()).toContainText("Density130%");
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
-    await expect(page.getByRole("combobox", { name: opsCopy.clients.profile.rows.density_percent })).toHaveValue("130");
+    await expect(shown(page, words.rows.density_percent)).toContainText(words.densities[130]);
+    await change(page, words.rows.density_percent).click();
+    await expect(page.getByRole("combobox", { name: words.rows.density_percent })).toHaveValue("130");
   });
 
-  test("corrects it as a new version, the form starting from the latest", async ({ page }) => {
+  test("corrects a row as a new version of the whole, its box starting from the latest", async ({ page }) => {
     const corrected = {
       ...HAIR_PROFILE,
       latest: { ...HAIR_PROFILE.latest, fit: { ...HAIR_PROFILE.latest.fit, colour: "3" as const } },
@@ -70,22 +78,24 @@ test.describe("the client’s hair profile", () => {
       [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
       [CORRECT_HAIR_PROFILE]: json(corrected),
     });
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
-    const colour = page.getByRole("combobox", { name: opsCopy.clients.profile.rows.colour });
+    await change(page, words.rows.colour).click();
+    const colour = page.getByRole("combobox", { name: words.rows.colour });
     await expect(colour).toHaveValue("2");
+    await expect(colour).toBeFocused();
     expect(await axeViolations(page)).toEqual([]);
 
     await colour.selectOption({ label: "#3" });
     const sent = page.waitForRequest(
       (request) => request.method() === "POST" && request.url().endsWith("/hair-profile"),
     );
-    await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
+    await page.getByRole("button", { name: words.save }).click();
     const body = (await sent).postDataJSON() as { fit: Record<string, unknown>; history: unknown; based_on: unknown };
     expect(body.fit).toEqual({ ...HAIR_PROFILE.latest.fit, colour: "3", product_name: undefined });
     expect(body.history).toEqual(HAIR_PROFILE.latest.history);
-    // The version the form was read from, so a correction never silently replaces a newer one.
+    // The version the row was read from, so a correction never silently replaces a newer one.
     expect(body.based_on).toBe(HAIR_PROFILE.latest.id);
-    await expect(section(page).locator("dl").first()).toContainText("Colour#3");
+    await expect(shown(page, words.rows.colour)).toContainText(words.colours["3"]);
+    await expect(change(page, words.rows.colour)).toBeFocused();
   });
 
   test("reads the profile again, saving nothing, when another version became the latest meanwhile", async ({
@@ -107,11 +117,11 @@ test.describe("the client’s hair profile", () => {
       },
       [CORRECT_HAIR_PROFILE]: fails(409, "superseded"),
     });
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
-    await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
+    await change(page, words.rows.colour).click();
+    await page.getByRole("button", { name: words.save }).click();
 
     await expect(section(page).getByRole("alert")).toContainText("The profile changed while you were editing.");
-    await expect(section(page).locator("dl").first()).toContainText("Colour#4");
+    await expect(shown(page, words.rows.colour)).toContainText(words.colours["4"]);
   });
 
   test("sends nothing while a figure is no number at all, and marks it", async ({ page }) => {
@@ -120,30 +130,26 @@ test.describe("the client’s hair profile", () => {
       if (request.method() === "POST" && request.url().endsWith("/hair-profile")) sent += 1;
     });
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
-    await page.getByRole("textbox", { name: opsCopy.clients.profile.rows.grey_percent }).fill("twenty");
-    await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
-    await expect(page.getByRole("textbox", { name: opsCopy.clients.profile.rows.grey_percent })).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    );
-    await expect(page.getByRole("alert")).toHaveText(opsCopy.clients.profile.refused);
+    await change(page, words.rows.grey_percent).click();
+    const grey = page.getByRole("textbox", { name: words.rows.grey_percent });
+    await grey.fill("twenty");
+    await page.getByRole("button", { name: words.save }).click();
+    await expect(grey).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByRole("alert")).toHaveText(words.invalid);
     expect(sent).toBe(0);
   });
 
-  test("marks the field the API refused", async ({ page }) => {
+  test("marks the figure the API refused", async ({ page }) => {
     await openClient(page, `/clients/${CLIENT.id}/pieces`, {
       [READ_HAIR_PROFILE]: json(HAIR_PROFILE),
       [CORRECT_HAIR_PROFILE]: fails(400, "invalid_request", ["fit.base_width_in"]),
     });
-    await section(page).getByRole("button", { name: opsCopy.clients.profile.correct }).click();
-    await page.getByRole("textbox", { name: opsCopy.clients.profile.rows.base_width_in }).fill("80");
-    await page.getByRole("button", { name: opsCopy.clients.profile.save }).click();
-    await expect(page.getByRole("alert")).toHaveText(opsCopy.clients.profile.refused);
-    await expect(page.getByRole("textbox", { name: opsCopy.clients.profile.rows.base_width_in })).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    );
+    await change(page, words.rows.base_width_in).click();
+    const width = page.getByRole("textbox", { name: words.rows.base_width_in });
+    await width.fill("80");
+    await page.getByRole("button", { name: words.save }).click();
+    await expect(page.getByRole("alert")).toHaveText(words.invalid);
+    await expect(width).toHaveAttribute("aria-invalid", "true");
   });
 });
 

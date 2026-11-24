@@ -810,7 +810,6 @@ export const clients = {
     unnamed: "A technician",
     aVisit: "visit",
     fit: "Fit spec",
-    history: "Health history",
     versions: "Every version",
     rows: {
       norwood_stage: "Norwood stage",
@@ -848,18 +847,12 @@ export const clients = {
       other_systems: "Other hair systems",
       other: "Other",
     },
-    /** Beneath the Hair profile heading, which says what it corrects. */
-    correct: "Correct it",
-    record: "Add a profile",
-    formTitle: "Correct hair profile",
     notRecorded: "Not recorded",
     product: "Hair system",
     invalid: "Check this field.",
-    refused: "Check the marked fields.",
     failed: FAILED,
     moved: "The profile changed while you were editing. Review it and try again.",
     save: "Save new version",
-    saving: "Saving…",
   },
   photos: {
     locked: "Locked",
