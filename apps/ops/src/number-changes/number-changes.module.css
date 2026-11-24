@@ -9,6 +9,12 @@
   white-space: nowrap;
 }
 
+/* An Approve refused, beneath the row's buttons it answers, its words wrapping in the cell. */
+.rowRefusal {
+  margin-top: var(--sp-8);
+  white-space: normal;
+}
+
 /* ---- One change ------------------------------------------------------------ */
 
 .head {

@@ -256,7 +256,7 @@ function RowDecision({
           {copy.reject}
         </RowButton>
       </RowActions>
-      {refused?.id === change.id && <Refusal inline said={refused.said} />}
+      {refused?.id === change.id && <Refusal className={styles.rowRefusal} said={refused.said} />}
     </td>
   );
 }

@@ -13,6 +13,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { type DecidedNoShow } from "../api.ts";
 import { firstShown, noShows } from "../content.ts";
 import { OpsLink } from "../frame/Shell.tsx";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { clientPath } from "../route.ts";
 import styles from "./no-shows.module.css";
 import { paymentsApi } from "./payments-api.ts";
@@ -59,7 +60,9 @@ export function DecidedToday() {
                     {each.person === null ? (
                       copy.erased
                     ) : (
-                      <OpsLink to={clientPath(each.person.id, "visits")}>{each.person.name}</OpsLink>
+                      <OpsLink className={textLinkLook({ compact: true })} to={clientPath(each.person.id, "visits")}>
+                        {each.person.name}
+                      </OpsLink>
                     )}
                   </RowHead>
                   <td>{each.visit_date === null ? copy.undated : shortDate(each.visit_date)}</td>

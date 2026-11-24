@@ -244,6 +244,11 @@ test("lists the cases ruled on today with their ruling, and reads them and the d
   const decided = page.getByRole("region", { name: DECIDED_TODAY });
   // A row each, as the redesign draws them: who, the visit, the ruling and when.
   const karan = decided.getByRole("row").filter({ hasText: "Karan Bose" });
+  // Every client's name reaches their record.
+  await expect(karan.getByRole("link", { name: "Karan Bose" })).toHaveAttribute(
+    "href",
+    "/clients/11000000-0000-4000-8000-000000000005/visits",
+  );
   await expect(karan).toContainText("Charged Rs. 2,360");
   await expect(karan).toContainText("10:30 am");
   const arjun = decided.getByRole("row").filter({ hasText: "Arjun Mehra" });
