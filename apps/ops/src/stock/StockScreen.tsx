@@ -3,6 +3,7 @@
 // the places. A place holds the sum of its movements; a job's use comes out of its technician's kit. Low raises one
 // alert (src/domain/inventory/stock.ts), so Tasks has no group for it.
 
+import { classes } from "@maneman/ui/classes";
 import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -86,12 +87,15 @@ function Movements({ stock }: { stock: Stock }) {
               <tbody>
                 {view.shown.map((movement, index) => (
                   <tr key={`${movement.at}-${String(index)}`}>
-                    <td className={FIGURE}>
+                    <td>
                       {shortDate(indiaDate(movement.at))}, {indiaClock(movement.at)}
                     </td>
                     <td>{consumable(movement)}</td>
                     <td>{place(movement)}</td>
-                    <td className={FIGURE}>{words.change(movement.quantity)}</td>
+                    {/* What left a place in the error's red, as the redesign draws it. */}
+                    <td className={classes(FIGURE, movement.quantity < 0 && styles.taken)}>
+                      {words.change(movement.quantity)}
+                    </td>
                     <td>{why(movement)}</td>
                     <td>{who(movement)}</td>
                   </tr>

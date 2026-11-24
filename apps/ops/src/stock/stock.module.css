@@ -105,3 +105,8 @@
   flex-wrap: wrap;
   gap: var(--sp-8);
 }
+
+/* A movement out of a place, in the error's red, as the redesign draws Movements. */
+.taken {
+  color: var(--ui-error);
+}
