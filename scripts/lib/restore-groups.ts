@@ -1,5 +1,6 @@
-// What a restore of D1 to an earlier minute undoes, group by group (docs/runbook.md, "Restoring D1"), as docs/schema.md
-// lists it (./schema-doc.ts). Every table is in a group or more; the schema's test fails on a table in none.
+// What a restore of D1 to an earlier minute undoes, group of tables by group (docs/runbook.md, "Restoring D1"), as
+// docs/schema.md lists it (./schema-doc.ts). Every table is in one group, and may be in more; the schema's test fails on
+// a table in none.
 
 export interface RestoreGroup {
   readonly what: string;
@@ -280,12 +281,11 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "failure_reasons",
       "pay_grades",
       "visit_pay_rates",
-      "technician_grades",
       "word_versions",
       "site_word_publishes",
     ],
     leftAtT:
-      "A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate, technician's grade or wording set since goes back",
+      "A price, package, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back",
     putBackBy: "Setting it again in the console, which audits it",
   },
   {
@@ -315,8 +315,8 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Technicians, and the old catalogue table",
-    tables: ["technicians", "fsm_items"],
-    leftAtT: "A technician added or changed since goes back",
+    tables: ["technicians", "technician_grades", "fsm_items"],
+    leftAtT: "A technician added or changed since, or a grade given them, goes back",
     putBackBy: "The rows since `<T>`; ops can add one again on the Technicians page",
   },
   {
