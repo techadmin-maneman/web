@@ -154,7 +154,7 @@ export const numberChanges = {
     openLabel: (name: string) => `Open ${name}’s number change`,
     confirmLabel: (name: string) => `Approve ${name}’s number change`,
     /** The row's check where the new number is a client's, which is why its Approve is off. */
-    heldByClient: (name: string) => `A client’s: ${name === "" ? "another record" : name}`,
+    heldByClient: (name: string) => `On ${name === "" ? "another record" : `${name}’s record`}, a client`,
     rejectLabel: (name: string) => `Decline ${name}’s number change`,
     /** The row's check: both numbers proven, or the new one on another record. */
     checked: "Both numbers verified",

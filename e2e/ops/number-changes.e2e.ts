@@ -203,6 +203,9 @@ test("keeps Approve off where the new number is another client's, and says so in
   await page.reload();
   await expect(row(page)).toContainText(words.heldByClient("Vikram Sethi"));
   await expect(queue(page).getByRole("button", { name: words.confirmLabel("Rohit Malhotra") })).toBeDisabled();
+  // The drawer agrees with the row.
+  const drawer = await opened(page);
+  await expect(drawer.getByRole("button", { name: words.confirm, exact: true })).toBeDisabled();
 });
 
 test("holds the list's room while it is read", async ({ page }) => {

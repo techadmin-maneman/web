@@ -170,7 +170,13 @@ function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps)
       {!asking && mayDecide && (
         <div className={styles.decide}>
           <div className={styles.actions}>
-            <Button variant="primary" size="small" disabled={sending} onClick={() => void decide("confirm")}>
+            <Button
+              variant="primary"
+              size="small"
+              // As in the row: a number another client holds can't be moved here while they hold it.
+              disabled={sending || change.new_number_held_by?.client === true}
+              onClick={() => void decide("confirm")}
+            >
               {sending ? copy.deciding : copy.confirm}
             </Button>
             <Button

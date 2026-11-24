@@ -275,11 +275,9 @@ test("counts what still waits once a ruling reads the list again, the case ruled
   const head = (count: number) => page.getByRole("main").getByText(opsCopy.noShows.toDecide(count), { exact: true });
   await expect(head(waiting)).toBeVisible();
 
-  // FIRST, the visit of Sun 19 Sep.
-  const ruled = NO_SHOWS.cases.find((each) => each.visit_date === "2027-09-19")?.id;
-  await answer(page, {
-    "GET /api/no-shows": json({ ...NO_SHOWS, cases: NO_SHOWS.cases.filter((each) => each.id !== ruled) }),
-  });
+  // The list read again leaves out the case ruled here (FIRST) and the other, ruled meanwhile on another desk: what
+  // waits then is the dispute alone. Counting the case ruled here off again would say one fewer still.
+  await answer(page, { "GET /api/no-shows": json({ ...NO_SHOWS, cases: [] }) });
   const reread = page.waitForRequest(
     (request) => new URL(request.url()).pathname === "/api/no-shows" && request.method() === "GET",
   );
@@ -287,7 +285,8 @@ test("counts what still waits once a ruling reads the list again, the case ruled
   await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("They were stuck in the lift; we have their call");
   await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
   await reread;
-  await expect(head(waiting - 1)).toBeVisible();
+  await expect(head(DISPUTES.disputes.length)).toBeVisible();
+  expect(DISPUTES.disputes.length).toBe(waiting - NO_SHOWS.cases.length);
 });
 
 test("says so when nothing has been decided today", async ({ page }) => {
