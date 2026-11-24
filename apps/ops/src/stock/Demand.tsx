@@ -10,19 +10,16 @@ import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView } from "@maneman/ui/useTableView";
 import type { Success } from "@maneman/web-kit/api";
 import type { paths } from "../api-schema.ts";
-import { useLoad } from "@maneman/ui/useLoad";
+import type { Loaded } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { amountOf } from "@maneman/web-kit/figures";
-import { type Stock } from "../api.ts";
+import { type Stock, type StockDemand } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "@maneman/ui/forms.module.css";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./demand.module.css";
 import { unitOf } from "./holdings.ts";
 import { RowHead } from "@maneman/ui/RowHead";
-import { stockApi } from "./stock-api.ts";
-
-const loadDemand = () => stockApi.demand();
 
 type DemandRow = Success<paths["/api/stock/demand"]["get"]>["demand"][number];
 type KitShort = Success<paths["/api/stock/demand"]["get"]>["kits_short"][number];
@@ -100,8 +97,8 @@ function DemandTable(props: {
   );
 }
 
-export function Demand({ stock }: { stock: Stock }) {
-  const [loaded, retry] = useLoad(loadDemand);
+/** The next four weeks, from the read the page makes for its figures too. */
+export function Demand({ stock, loaded, retry }: { stock: Stock; loaded: Loaded<StockDemand>; retry: () => void }) {
   const words = stockViews.demand;
   const named = (code: string | null) =>
     code === null ? words.noProfile : (stock.consumables.find((each) => each.code === code)?.name ?? code);

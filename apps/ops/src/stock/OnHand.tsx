@@ -3,13 +3,12 @@
 // last counted, each in a column of its own. With a handful of places, every place side by side as well.
 
 import { Badge } from "@maneman/ui/Badge";
-import { ListRow, ListRows } from "@maneman/ui/ListRow";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { ChoiceOptions, Field, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { RowHead } from "@maneman/ui/RowHead";
-import { FIGURE, Table, TableScroll, type RuleTone } from "@maneman/ui/Table";
+import { FIGURE, Table, TableScroll } from "@maneman/ui/Table";
 import { SortHeads } from "@maneman/ui/TableTools";
 import { ViewRows, type EndTone } from "@maneman/ui/ListRow";
 import { useIsPhone } from "../lib/media.ts";
@@ -22,7 +21,7 @@ import { stock as copy } from "../content/stock.ts";
 import form from "@maneman/ui/forms.module.css";
 import { placeChoices, placeName } from "./StockForm.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
-import { PlaceState, reorderAt, StateBadge, stateOf, type Consumable, type State } from "./stock-state.tsx";
+import { PlaceState, reorderAt, StateBadge, stateOf, type Consumable } from "./stock-state.tsx";
 import styles from "./stock.module.css";
 
 /** Past this many places, every place side by side grows too wide to read: one place at a time, then. */
@@ -87,54 +86,6 @@ function Held({ stock, consumable, place }: { stock: Stock; consumable: Consumab
         </span>
       )}
     </td>
-  );
-}
-
-interface PlaceNeeds {
-  readonly place: Stock["places"][number];
-  readonly below: number;
-  readonly out: number;
-  readonly low: number;
-}
-
-/** The places with something below zero, out or low, the worst first, and how many items each; Today counts them too. */
-function placesNeedingAttention(stock: Stock): PlaceNeeds[] {
-  return stock.places
-    .map((place) => {
-      const needs = stock.consumables.map((consumable) => stateOf(stock, consumable, place.id)?.need);
-      const count = (need: State["need"]) => needs.filter((each) => each === need).length;
-      return { place, below: count("below"), out: count("out"), low: count("low") };
-    })
-    .filter((row) => row.below + row.out + row.low > 0)
-    .sort((one, other) => other.below - one.below || other.out - one.out || other.low - one.low);
-}
-
-/** A place's rule: below zero in the error's red, out in the warning's, low in brass. */
-const ruleOf = (row: PlaceNeeds): RuleTone => {
-  if (row.below > 0) return "error";
-  return row.out > 0 ? "warning" : "attention";
-};
-
-/** The places with something below zero, out or low, the worst first, a card each: pressing one shows its stock. A
- * card is the button, its name saying whose stock it shows. */
-export function Attention({ stock, onShow }: { stock: Stock; onShow: (showing: Showing) => void }) {
-  const rows = placesNeedingAttention(stock);
-  if (rows.length === 0) return null;
-  return (
-    <ListRows label={copy.attention.title} className={styles.attentionCards}>
-      {rows.map((row) => (
-        <ListRow
-          key={row.place.id}
-          title={placeName(stock, row.place.id)}
-          meta={copy.attention.counts(row.below, row.out, row.low)}
-          rule={ruleOf(row)}
-          onClick={() => {
-            onShow({ by: "place", place: row.place.id });
-            document.getElementById("stock-on-hand")?.scrollIntoView({ block: "start" });
-          }}
-        />
-      ))}
-    </ListRows>
   );
 }
 

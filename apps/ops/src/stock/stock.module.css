@@ -95,31 +95,6 @@
   color: var(--ui-text-muted);
 }
 
-/* The places needing attention (./OnHand.tsx), a card each, as many to a row as fit. */
-.attentionCards {
-  --local-card: 16rem; /* the narrowest a place's card runs, its name whole */
-
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--local-card), 1fr));
-  gap: var(--sp-12);
-  border: 0;
-  background: none;
-}
-
-/* Up to six at a desk, one even row, so none is left alone beneath the rest. */
-@media (min-width: 1024px) {
-  .attentionCards:not(:has(> li:nth-child(7))) {
-    grid-template-columns: none;
-    grid-auto-columns: minmax(0, 1fr);
-    grid-auto-flow: column;
-  }
-}
-
-.attentionCards > li {
-  border: var(--hairline) solid var(--ui-line);
-  background: var(--ui-raised);
-}
-
 /* A place's items narrowed: the search, then the chips, above the table. */
 .narrow {
   margin: var(--sp-12) var(--form-inset);

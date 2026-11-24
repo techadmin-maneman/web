@@ -24,17 +24,15 @@ export const stock = {
   noLongerInUse: "No longer in use",
   /** A place whose name another shares, told apart by its city. */
   inCity: (name: string, city: string) => `${name} (${city})`,
-  /** Above On hand, each place with something below zero, out or low, and how many items; its name shows it. */
-  attention: {
-    title: "Needs attention",
-    columns: ["Items below zero", "Items out", "Items low"],
-    /** Beneath a place's name: "4 below zero · 5 out · 2 low", what it has none of left out. */
-    counts: (below: number, out: number, low: number) =>
-      [
-        ...(below === 0 ? [] : [`${String(below)} below zero`]),
-        ...(out === 0 ? [] : [`${String(out)} out`]),
-        ...(low === 0 ? [] : [`${String(low)} low`]),
-      ].join(" · "),
+  /** Above On hand, as the redesign draws them; the value only for those who may read unit costs. */
+  figures: {
+    reorder: "Items to reorder",
+    kitsShort: "Kits short for booked visits",
+    value: "Stock value",
+    atCost: "At cost",
+    /** The costs did not come: the figure is a gap, and the line says why. */
+    noValue: "—",
+    unread: "Couldn’t load the costs.",
   },
   /** A place's items narrowed: every one, those low or out, or those with a lot expiring soon; and found by name. */
   narrow: {

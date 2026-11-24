@@ -21,7 +21,10 @@ import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { placeName } from "./StockForm.tsx";
 import { RecordMovement } from "./RecordMovement.tsx";
 import type { LabelsFor } from "./Labels.tsx";
-import { Attention, firstShowing, Grouping, NarrowChips, OnHand, type Narrowed, type Showing } from "./OnHand.tsx";
+import { firstShowing, Grouping, NarrowChips, OnHand, type Narrowed, type Showing } from "./OnHand.tsx";
+import { StockFigures } from "./StockFigures.tsx";
+import { useLoad } from "@maneman/ui/useLoad";
+import { stockApi } from "./stock-api.ts";
 import { SearchInput } from "@maneman/ui/SearchInput";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import styles from "./stock.module.css";
@@ -148,9 +151,11 @@ function OnHandTools(props: {
 function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stock) => void }) {
   const [showing, setShowing] = useState<Showing>(() => firstShowing(stock));
   const [narrowed, setNarrowed] = useState<Narrowed>({ narrowing: "all", found: "" });
+  // One read of the weeks ahead, for the figures and the table both.
+  const [demand, retryDemand] = useLoad(stockApi.demand);
   return (
     <>
-      <Attention stock={stock} onShow={setShowing} />
+      <StockFigures stock={stock} showing={showing} demand={demand} />
       <OnHandTools stock={stock} showing={showing} onShow={setShowing} narrowed={narrowed} onNarrow={setNarrowed} />
       <Panel titleId="stock-on-hand" title={copy.onHand}>
         {showing.by === "place" ? (
@@ -162,7 +167,7 @@ function OnHandView({ stock, onChanged }: { stock: Stock; onChanged: (next: Stoc
         )}
       </Panel>
       <Suspense fallback={<PanelLoading />}>
-        <Demand stock={stock} />
+        <Demand stock={stock} loaded={demand} retry={retryDemand} />
       </Suspense>
       {stock.in_transit.length > 0 && (
         <Suspense fallback={<PanelLoading />}>
