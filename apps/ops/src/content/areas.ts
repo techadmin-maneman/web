@@ -1,5 +1,6 @@
 // Areas: the waitlist by area, a launch, and the pincodes we serve.
 
+import { quantity } from "@maneman/web-kit/figures";
 import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 const SMALL = new Set(["and", "of"]);
@@ -373,7 +374,7 @@ export const areas = {
 /** The Waitlist: who waits in each pincode, the longest wait first. */
 export const waitlist = {
   /** Beside the page's title: everyone waiting, "and more" where the list holds only the first. */
-  waitingCount: (count: number, more: boolean) => `${String(count)}${more ? "+" : ""} waiting`,
+  waitingCount: (count: number, more: boolean) => `${quantity(count)}${more ? "+" : ""} waiting`,
   columns: ["Pincode", "Area", "Waiting", "Oldest", "Referred", "Opted in"],
   narrow: "Filter the waitlist",
   /** An area or a date the pincode table has nothing for, written as the design's tables write a gap. */

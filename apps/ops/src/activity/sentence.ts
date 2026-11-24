@@ -83,10 +83,15 @@ const RANDOM = /^[0-9a-f]{8}-[0-9a-f]{4}-/i;
 /** A client's records, which a client's own entry never names: their words say "their". */
 const THEIRS = new Set(["person", "client", "appointment", "visit", "hold", "slot_hold"]);
 
-/** The record an entry touched, as its sentence names it; none where it has no name a reader would know. */
-function namedOf(subject: Entry["subject"], actor: Entry["actor"]): Named | null {
+/** Whether the record is the actor's own, which their sentence never names after their name: their kit, their visit. */
+function theirOwn(subject: NonNullable<Entry["subject"]>, actor: Entry["actor"]): boolean {
+  if (subject.id === actor.id) return true;
+  return actor.kind === "client" && (THEIRS.has(subject.kind) || subject.label === actor.name);
+}
+
+/** A record as a sentence or a row's details name it; none where it has no name a reader would know. */
+export function recordNamed(subject: Entry["subject"]): Named | null {
   if (subject === null) return null;
-  if (actor.kind === "client" && (THEIRS.has(subject.kind) || subject.label === actor.name)) return null;
   const { kind, id, label } = subject;
   if (kind === "person" || kind === "client") return { words: label ?? copy.someClient, opens: { kind: "client", id } };
   if (kind === "appointment" || kind === "visit") {
@@ -106,7 +111,7 @@ export function sentenceOf(entry: Entry): Sentence {
   const refused = entry.detail?.refused !== undefined;
   const at = phrase.indexOf(PLACE);
   if (at === -1) return { who, before: phrase, named: null, after: "", refused };
-  const named = namedOf(entry.subject, entry.actor);
+  const named = entry.subject === null || theirOwn(entry.subject, entry.actor) ? null : recordNamed(entry.subject);
   if (named === null) {
     const before = phrase.slice(0, at).replace(/\s*\b(for|of|on|to|from|with|at|in)?\s*$/, "");
     return { who, before, named: null, after: phrase.slice(at + PLACE.length), refused };
@@ -117,6 +122,10 @@ export function sentenceOf(entry: Entry): Sentence {
 /** The sentence as words alone, as the file writes it. */
 export const sentenceText = (sentence: Sentence): string =>
   `${sentence.who.words} ${sentence.before}${sentence.named?.words ?? ""}${sentence.after}`.trim();
+
+/** An action's name, as the What filter lists it; one an earlier build logged, by its code. */
+export const actionWords = (action: Entry["action"]): string =>
+  Object.hasOwn(copy.actions, action) ? copy.actions[action] : action;
 
 /** The entries as the file's rows: the sentence, then what a row's details show, one column each. */
 export function csvRows(entries: readonly Entry[]): string[][] {
@@ -129,7 +138,9 @@ export function csvRows(entries: readonly Entry[]): string[][] {
     columns.what,
     columns.action,
     columns.call,
+    columns.path,
     columns.record,
+    columns.recordName,
     columns.recordId,
     columns.refused,
   ];
@@ -144,9 +155,11 @@ export function csvRows(entries: readonly Entry[]): string[][] {
         copy.filters.kinds[entry.actor.kind],
         copy.surfaces[entry.surface],
         sentenceText(sentence),
-        copy.actions[entry.action],
+        actionWords(entry.action),
         call === null ? "" : `${call.method} ${call.route}`,
+        typeof entry.detail?.path === "string" ? entry.detail.path : "",
         entry.subject === null ? "" : (copy.kinds[entry.subject.kind] ?? entry.subject.kind),
+        entry.subject?.label ?? "",
         entry.subject?.id ?? "",
         sentence.refused ? copy.yes : "",
       ];

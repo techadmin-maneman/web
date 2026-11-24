@@ -16,6 +16,7 @@ import { care } from "../content/care.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
 import shared from "./care.module.css";
+import { Split } from "@maneman/ui/Layout";
 import styles from "./care-numbers.module.css";
 import { Stack } from "@maneman/ui/Layout";
 import { StatTile, StatTiles } from "@maneman/ui/StatTile";
@@ -119,7 +120,7 @@ function PeopleTable({ numbers }: { numbers: CareNumbers }) {
   const view = useTableView(numbers.by_person, PEOPLE_COLUMNS);
   return (
     <TableScroll labelledBy="care-numbers">
-      <Table className={shared.table}>
+      <Table className={styles.people}>
         <thead>
           <tr>
             <SortHeads view={view} />
@@ -159,10 +160,10 @@ function Numbers({ period }: { period: CarePeriod }) {
       <Span from={numbers.from} to={numbers.to} />
       <Figures numbers={numbers} />
       {/* What chats were about beside who answered them, the remedies given beneath, as the redesign draws them. */}
-      <div className={styles.beside}>
+      <Split look="even">
         <Reasons numbers={numbers} />
         <ByPerson numbers={numbers} />
-      </div>
+      </Split>
       <Remedies numbers={numbers} />
     </>
   );

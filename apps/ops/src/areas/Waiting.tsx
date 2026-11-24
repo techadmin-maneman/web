@@ -11,6 +11,7 @@ import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Table } from "@maneman/ui/Table";
+import { Split } from "@maneman/ui/Layout";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate, todayInIndia, yearInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
@@ -346,14 +347,14 @@ export function Waiting() {
 }
 
 /**
- * The waitlist page: who waits where, with how many beside the title, and the pincodes to open next beside it on a
- * wide desk, as the redesign draws them (ADR 0224).
+ * The waitlist page: who waits where, with how many beside the title, and the pincodes to open next in a column beside
+ * it on a wide desk, as the redesign draws them (ADR 0224).
  */
 export function WaitlistPage() {
   return (
-    <div className={styles.page}>
+    <Split look="side">
       <Waiting />
       <NextToOpen />
-    </div>
+    </Split>
   );
 }

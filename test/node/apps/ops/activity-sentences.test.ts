@@ -106,6 +106,27 @@ describe("an entry as a sentence", () => {
     expect(sentenceText(said)).toBe("ops.lead@maneman.in opened the record of Neha Kapoor");
   });
 
+  it("never names an actor's own record after their name: a technician handing back their kit", () => {
+    const said = sentenceOf(
+      entry({
+        surface: "tech",
+        actor: { kind: "technician", id: "t-1", name: "Sandeep Yadav" },
+        action: "stock.hand_back",
+        subject: { kind: "technician", id: "t-1", label: "Sandeep Yadav" },
+      }),
+    );
+    expect(sentenceText(said)).toBe(`Sandeep Yadav ${DONE["stock.hand_back"]}`);
+    expect(said.named).toBeNull();
+  });
+
+  it("names the client whose visit a discount code went on or came off", () => {
+    for (const action of ["discount_code.apply", "discount_code.remove"] as const) {
+      const said = sentenceOf(entry({ action, subject: { kind: "appointment", id: "a-1", label: "Neha Kapoor" } }));
+      expect(sentenceText(said), action).toBe(`ops.lead@maneman.in ${DONE[action].replace("{name}", "Neha Kapoor")}`);
+      expect(said.named?.opens, action).toEqual({ kind: "visit", id: "a-1" });
+    }
+  });
+
   it("marks a refused call as refused", () => {
     const refused = { method: "POST", route: "/api/spend", path: "/api/spend", refused: { status: "409" } };
     expect(sentenceOf(entry({ detail: refused })).refused).toBe(true);
@@ -129,9 +150,16 @@ describe("the file Activity downloads", () => {
       "ops.lead@maneman.in wrote a note on Neha Kapoor",
       activity.actions["ops.call"],
       "POST /api/clients/{id}/notes",
+      "/api/clients/p-1/notes",
       activity.kinds.person ?? "person",
+      "Neha Kapoor",
       "p-1",
       "",
     ]);
+  });
+
+  it("names an action an earlier build logged by its code", () => {
+    const old = entry({ action: "retired.action" as Entry["action"] });
+    expect(csvRows([old])[1]?.[5]).toBe("retired.action");
   });
 });

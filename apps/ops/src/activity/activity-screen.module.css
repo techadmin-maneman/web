@@ -9,10 +9,9 @@
   gap: var(--sp-16);
 }
 
+/* The sentence in the row's title, in the text's own weight; the person who acted stands out. */
 .sentence {
   font-weight: var(--weight-regular);
-  white-space: normal;
-  overflow-wrap: anywhere;
 }
 
 .who {
@@ -29,9 +28,19 @@
   overflow-wrap: anywhere;
 }
 
-/* Beneath the days, at their edge. */
+/* Beneath the days, at their edge; inside a record's panel, in from it as the days' headings are. */
 .older {
   align-self: flex-start;
+}
+
+.olderWithin {
+  align-self: flex-start;
+  margin: 0 var(--sp-20) var(--sp-16);
+}
+
+/* A row's details' values that can run long: an e-mail address, a client ID. */
+.wraps {
+  overflow-wrap: anywhere;
 }
 
 /* A day's heading inside a record's panel, in from its edges as the record's own lines are. */

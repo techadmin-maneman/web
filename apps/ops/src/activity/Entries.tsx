@@ -16,7 +16,7 @@ import type { ActivityEntry } from "../api.ts";
 import { activity } from "../content/activity.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { clientPath, dispatchPath, technicianPath } from "../route.ts";
-import { routeOf, sentenceOf, type Named } from "./sentence.ts";
+import { actionWords, recordNamed, routeOf, sentenceOf, type Named } from "./sentence.ts";
 import styles from "./activity-screen.module.css";
 
 const copy = activity;
@@ -48,6 +48,7 @@ function Entry({ entry, onOpen }: { entry: ActivityEntry; onOpen: () => void }) 
   return (
     <ListRow
       mark={<Initials name={initialsName(sentence.who.words)} small />}
+      wrap
       title={
         <span className={styles.sentence}>
           <span className={styles.who}>
@@ -64,11 +65,23 @@ function Entry({ entry, onOpen }: { entry: ActivityEntry; onOpen: () => void }) 
         </span>
       }
       end={
-        <TextButton tone="muted" compact aria-label={copy.details(clock)} onClick={onOpen}>
+        <TextButton tone="muted" aria-label={copy.details(clock)} onClick={onOpen}>
           {clock}
         </TextButton>
       }
     />
+  );
+}
+
+/** The record an entry touched, by its kind and its name, the name a link where the console has a page for it. */
+function Record({ subject }: { subject: NonNullable<ActivityEntry["subject"]> }) {
+  const kind = copy.kinds[subject.kind] ?? subject.kind;
+  const named = recordNamed(subject);
+  if (named === null) return kind;
+  return (
+    <>
+      {kind} · <Name named={named} />
+    </>
   );
 }
 
@@ -86,29 +99,34 @@ function Details({ entry, onClose }: { entry: ActivityEntry; onClose: () => void
   const columns = copy.columns;
   const call = routeOf(entry.detail);
   const kept = keptOf(entry.detail);
+  const path = typeof entry.detail?.path === "string" ? entry.detail.path : null;
   const { subject } = entry;
+  const code = (words: string) => <code className={styles.call}>{words}</code>;
   const items = [
     { term: columns.when, details: `${longDate(entry.at)}, ${indiaClock(entry.at)}` },
-    { term: columns.who, details: <Name named={sentenceOf(entry).who} /> },
-    { term: columns.whoIs, details: `${copy.filters.kinds[entry.actor.kind]} · ${entry.actor.id}` },
-    { term: columns.from, details: copy.surfaces[entry.surface] },
     {
-      term: columns.action,
-      details: Object.hasOwn(copy.actions, entry.action) ? copy.actions[entry.action] : entry.action,
+      term: columns.who,
+      details: (
+        <span className={styles.wraps}>
+          <Name named={sentenceOf(entry).who} />
+        </span>
+      ),
     },
-    ...(call === null
-      ? []
-      : [{ term: columns.call, details: <code className={styles.call}>{`${call.method} ${call.route}`}</code> }]),
+    {
+      term: columns.whoIs,
+      details: <span className={styles.wraps}>{`${copy.filters.kinds[entry.actor.kind]} · ${entry.actor.id}`}</span>,
+    },
+    { term: columns.from, details: copy.surfaces[entry.surface] },
+    { term: columns.action, details: actionWords(entry.action) },
+    ...(call === null ? [] : [{ term: columns.call, details: code(`${call.method} ${call.route}`) }]),
+    ...(path === null ? [] : [{ term: columns.path, details: code(path) }]),
     ...(subject === null
       ? []
       : [
-          {
-            term: columns.record,
-            details: `${copy.kinds[subject.kind] ?? subject.kind}${subject.label === null ? "" : ` · ${subject.label}`}`,
-          },
-          { term: columns.recordId, details: <code className={styles.call}>{subject.id}</code> },
+          { term: columns.record, details: <Record subject={subject} /> },
+          { term: columns.recordId, details: code(subject.id) },
         ]),
-    ...(kept === null ? [] : [{ term: copy.kept, details: <code className={styles.call}>{kept}</code> }]),
+    ...(kept === null ? [] : [{ term: copy.kept, details: code(kept) }]),
     ...(entry.detail?.refused === undefined ? [] : [{ term: columns.refused, details: copy.yes }]),
   ];
   return (

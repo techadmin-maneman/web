@@ -47,6 +47,11 @@
     margin: calc(var(--hairline) * -1) 0 0 calc(var(--hairline) * -1);
   }
 
+  /* StatTiles' `stacked`: one tile to a row, on a phone as at a desk. */
+  .stripRow.stacked {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .stripRow > .tile {
     border: 0;
     border-top: var(--hairline) solid var(--ui-line);
@@ -78,6 +83,10 @@
 
     .stripRow > .tile:last-child:nth-child(odd) {
       grid-column: 1 / -1;
+    }
+
+    .stripRow.stacked {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .tile {

@@ -66,6 +66,7 @@ export function ListRow({
   current = false,
   chevron = false,
   download = false,
+  wrap = false,
 }: {
   /** Before the words, in a column of its own down the list: a time, or what the row is. */
   readonly lead?: ReactNode;
@@ -96,6 +97,8 @@ export function ListRow({
   readonly current?: boolean;
   /** A chevron at the end, saying the row opens a page of its own. */
   readonly chevron?: boolean;
+  /** Its title run on to as many lines as it takes, never cut short: a sentence, its links' rings drawn whole. */
+  readonly wrap?: boolean;
 }) {
   const inside = (
     <>
@@ -103,7 +106,7 @@ export function ListRow({
       {icon !== undefined && <Icon className={styles.icon} d={icon} size="lg" />}
       {mark}
       <span className={styles.words}>
-        <span className={styles.title}>{title}</span>
+        <span className={classes(styles.title, wrap && styles.titleWraps)}>{title}</span>
         {meta !== undefined && <span className={styles.meta}>{meta}</span>}
       </span>
       {end !== undefined && <span className={classes(styles.end, END_TONES[endTone])}>{end}</span>}

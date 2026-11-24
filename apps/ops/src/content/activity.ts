@@ -262,7 +262,9 @@ export const activity = {
     what: "What",
     action: "Action",
     call: "Request",
+    path: "Path",
     record: "Record",
+    recordName: "Record name",
     recordId: "Record ID",
     refused: "Refused",
   },
@@ -287,6 +289,7 @@ export const activity = {
   today: "Today",
   yesterday: "Yesterday",
   days: (from: string, to: string) => `${from} to ${to}`,
+  untilToday: (from: string) => `${from} to today`,
   /** Each row's time, which opens what was logged: "Details, 11:14 am". */
   details: (time: string) => `Details, ${time}`,
   detailsTitle: "What was logged",

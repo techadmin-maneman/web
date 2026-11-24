@@ -4,20 +4,3 @@
 .narrow {
   margin-inline: 0;
 }
-
-/*
- * The page: who waits where, and the pincodes to open next beside it on a wide desk, as the redesign draws them. Until
- * those pincodes are drawn, or where they cannot be read, who waits takes the whole width.
- */
-.page {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-  gap: var(--sp-24);
-}
-
-@media (min-width: 1280px) {
-  .page:has(> :nth-child(2)) {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  }
-}

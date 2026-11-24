@@ -1,12 +1,13 @@
 // The Campaign links page's words (docs/decisions/0288-attribution-and-conversions.md, docs/tracking.md). No design
 // draws it; every word here is ours.
 
+import { quantity } from "@maneman/web-kit/figures";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const campaignLinks = {
   title: "Campaign links",
   /** Beside the page's title: the links not retired. */
-  live: (count: number) => `${String(count)} live`,
+  live: (count: number) => `${quantity(count)} live`,
   newSociety: "New society activation",
   newOffer: "New offer link",
   kinds: { society: "Society", offer: "Offer" },

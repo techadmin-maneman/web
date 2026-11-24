@@ -4,6 +4,7 @@
 // channel or one. The Zoho Analytics dashboards beyond it (src/domain/analytics/acquisition.ts).
 
 import { BarChart } from "@maneman/ui/BarChart";
+import { Split } from "@maneman/ui/Layout";
 import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { roundRupees, rupees } from "@maneman/web-kit/money";
 import { quantity } from "@maneman/web-kit/figures";
@@ -63,7 +64,7 @@ function Returns({ figures }: { figures: Acquisition }) {
   const { spend, first_fits: fits, first_fit_revenue: revenue } = figures.totals;
   const words = copy.figures;
   return (
-    <StatTiles>
+    <StatTiles stacked>
       <StatTile label={words.spend} value={rupees(spend)} />
       <StatTile label={words.perFit} value={fits === 0 ? words.none : roundRupees(spend / fits)} />
       <StatTile label={words.revenue} value={rupees(revenue)} />
@@ -173,10 +174,10 @@ export function FunnelScreen() {
         <>
           <Counted figures={loaded.value} />
           {/* The steps beside what the period spent and what its first fits brought back, as the redesign draws them. */}
-          <div className={styles.split}>
+          <Split look="wide">
             <Steps figures={loaded.value} />
             <Returns figures={loaded.value} />
-          </div>
+          </Split>
           <ChannelFigures figures={loaded.value} />
           <Cohorts figures={loaded.value} />
           <Heard figures={loaded.value} />

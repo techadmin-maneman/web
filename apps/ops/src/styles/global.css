@@ -36,6 +36,7 @@
   --setting-label-width: var(--ops-setting-label);
   --columns-tile: var(--ops-tile);
   --settings-menu-width: var(--ops-settings-menu);
+  --split-side: var(--ops-split-side);
 }
 
 /* On a phone, Today's tiles two to a row, every box and button a finger's height, and a toast above the tab bar. */

@@ -56,12 +56,20 @@ export function StatTile({
 
 /**
  * A row of figures joined into one strip, as the console draws them: one edge round them all, a rule between each, as
- * many to a row as fit.
+ * many to a row as fit; `stacked`, one to a row, where amounts in the lakhs and crores would not share one.
  */
-export function StatTiles({ children, className }: { readonly children: ReactNode; readonly className?: string }) {
+export function StatTiles({
+  stacked = false,
+  children,
+  className,
+}: {
+  readonly stacked?: boolean;
+  readonly children: ReactNode;
+  readonly className?: string;
+}) {
   return (
     <div className={classes(styles.strip, className)}>
-      <div className={styles.stripRow}>{children}</div>
+      <div className={classes(styles.stripRow, stacked && styles.stacked)}>{children}</div>
     </div>
   );
 }

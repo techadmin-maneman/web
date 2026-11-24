@@ -7,6 +7,7 @@ import { Button } from "@maneman/ui/Button";
 import { Chip } from "@maneman/ui/Chip";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
+import { Panel } from "@maneman/ui/Panel";
 import { Checkbox } from "@maneman/ui/Field";
 import { PanelFailed, PanelLoading } from "@maneman/ui/States";
 import { Toolbar } from "@maneman/ui/Toolbar";
@@ -39,14 +40,11 @@ function useDaysShown(entries: readonly ActivityEntry[], shown: boolean) {
   const today = todayInIndia(apiNow());
   const newest = entries.at(0);
   const oldest = entries.at(-1);
-  const words = (at: string) => {
-    const day = indiaDate(at);
-    return day === today ? copy.today : dayMonth(day);
-  };
   let sub: string | undefined;
   if (shown && newest !== undefined && oldest !== undefined) {
-    const [first, last] = [words(oldest.at), words(newest.at)];
-    sub = first === last ? last : copy.days(first, last);
+    const [first, last] = [indiaDate(oldest.at), indiaDate(newest.at)];
+    if (first === last) sub = first === today ? copy.today : dayMonth(first);
+    else sub = last === today ? copy.untilToday(dayMonth(first)) : copy.days(dayMonth(first), dayMonth(last));
   }
   useHeaderSub(sub);
 }
@@ -96,7 +94,14 @@ function Log({ filters, empty = copy.empty, page = false }: { filters: Filters; 
     if (!answer.ok) return;
     setOlder({ entries: [...(older?.entries ?? []), ...answer.body.entries], next: answer.body.next_cursor });
   };
-  if (entries.length === 0) return <EmptyState look="panel" line={empty} />;
+  if (entries.length === 0 && !page) return <EmptyState look="panel" line={empty} />;
+  if (entries.length === 0) {
+    return (
+      <Panel titleId="activity" title={copy.title}>
+        <EmptyState look="panel" line={empty} />
+      </Panel>
+    );
+  }
   return (
     <>
       {page && <DownloadCsv entries={entries} />}
@@ -108,7 +113,7 @@ function Log({ filters, empty = copy.empty, page = false }: { filters: Filters; 
         <Button
           variant="outline"
           size="small"
-          className={styles.older}
+          className={page ? styles.older : styles.olderWithin}
           busy={loadingOlder}
           onClick={() => void showOlder(next)}
         >
