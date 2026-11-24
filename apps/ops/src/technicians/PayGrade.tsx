@@ -30,14 +30,14 @@ const choicesOf = (pay: TechnicianPay): (readonly [string, string])[] => [
 /** While the grades are read, the one choice says so. */
 const READING: (readonly [string, string])[] = [["", copy.reading]];
 
-/** The grades did not come: said where the field stands, with a way to read them again. */
-function Unread({ onRetry }: { onRetry: () => void }) {
-  return <Failed message={copy.failed} retry={states.retry} onRetry={onRetry} className={styles.gradesUnread} />;
+/** The grades did not come: said where the field or the row stands, with a way to read them again. */
+function Unread({ onRetry, className }: { onRetry: () => void; className?: string }) {
+  return <Failed message={copy.failed} retry={states.retry} onRetry={onRetry} className={className} />;
 }
 
 function GradeSelect({ value, onChange }: { value: string; onChange: (grade: string) => void }) {
   const [loaded, retry] = useLoad(technicianPayApi.technicianPay);
-  if (loaded.state === "failed") return <Unread onRetry={retry} />;
+  if (loaded.state === "failed") return <Unread onRetry={retry} className={styles.gradesUnread} />;
   return (
     <Field label={copy.optional} className={styles.formField}>
       {(control) => (
@@ -70,6 +70,7 @@ function GradeRow({ technicianId }: { technicianId: string }) {
   const [loaded, retry] = useLoad(technicianPayApi.technicianPay);
   const [saved, setSaved] = useState<TechnicianPay | null>(null);
   const pay = saved ?? (loaded.state === "loaded" ? loaded.value : null);
+  // At the panel's own inset, as the rows beside it are.
   if (pay === null && loaded.state === "failed") return <Unread onRetry={retry} />;
   if (pay === null) {
     return (

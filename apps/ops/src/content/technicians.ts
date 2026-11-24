@@ -239,8 +239,8 @@ export const technicians = {
     label: "Pay grade",
     optional: "Pay grade (optional)",
     none: "No grade, so not paid",
-    reading: "Reading the grades…",
-    failed: "The pay grades did not load.",
+    reading: "Loading grades…",
+    failed: "Couldn’t load the pay grades.",
   },
   /** The day they started with us (docs/decisions/0305-a-technicians-start-date.md). */
   started: {
