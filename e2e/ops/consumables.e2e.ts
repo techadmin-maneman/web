@@ -256,7 +256,7 @@ test("keeps a column for an item no longer offered that a service still expects"
   await open(page, { "GET /api/consumables": json({ ...CONSUMABLES, services }) });
   const grid = page.getByRole("region", { name: copy.usage.title });
   const shampoo = CONSUMABLES.consumables.find((each) => each.code === "shampoo_sachet")?.name ?? "";
-  await expect(grid.getByRole("columnheader", { name: shampoo })).toBeVisible();
+  await expect(grid.getByRole("columnheader", { name: shampoo })).toContainText(copy.usage.retired);
 });
 
 test("meets WCAG 2.2 AA, with a record open and a value being changed", async ({ page }) => {

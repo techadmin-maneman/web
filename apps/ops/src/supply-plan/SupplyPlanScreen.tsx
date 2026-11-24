@@ -139,11 +139,8 @@ export function SupplyPlanScreen() {
   const [failure, setFailure] = useState<Failure | null>(null);
   const access = useAccess();
   const current = plan ?? (loaded.state === "loaded" ? loaded.value : null);
-  useHeaderSub(
-    current === null
-      ? undefined
-      : copy.linesToApprove(current.lines.filter((line) => line.state === "proposed").length),
-  );
+  const proposed = current?.lines.filter((line) => line.state === "proposed").length ?? 0;
+  useHeaderSub(proposed === 0 ? undefined : copy.linesToApprove(proposed));
   const answered = (answer: Answer, words: string) => {
     if (answer.ok) {
       setPlan(answer.body);

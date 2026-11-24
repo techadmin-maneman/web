@@ -102,7 +102,8 @@ export function CountsScreen() {
   const { open, setOpen, panelId, opener } = useRowPanel();
   const access = useAccess();
   const current = countTasks ?? (loaded.state === "loaded" ? loaded.value : null);
-  useHeaderSub(current === null ? undefined : copy.due(current.tasks.filter((task) => task.state !== "done").length));
+  const due = current?.tasks.filter((task) => task.state !== "done").length ?? 0;
+  useHeaderSub(due === 0 ? undefined : copy.due(due));
   // The list read again after a count changed: a failed read says so, with the way to read it again.
   const [rereadFailed, setRereadFailed] = useState<{ requestId: string | null } | null>(null);
   const reload = () => {

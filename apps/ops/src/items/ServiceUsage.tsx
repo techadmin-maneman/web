@@ -20,6 +20,7 @@ import { dispatch } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { itemsApi } from "./items-api.ts";
+import styles from "./consumables.module.css";
 
 const copy = settings.consumables;
 const words = copy.usage;
@@ -104,6 +105,7 @@ export function ServiceUsage({
                 {items.map((item) => (
                   <th key={item.code} scope="col" className={FIGURE}>
                     {item.name}
+                    {!item.offered && <span className={styles.retired}>{words.retired}</span>}
                   </th>
                 ))}
               </tr>

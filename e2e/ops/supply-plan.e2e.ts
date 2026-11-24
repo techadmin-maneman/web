@@ -105,6 +105,11 @@ test("says beside its title how many lines await approval, one approved not amon
   const approved = { ...ORDER, id: "pl-3", state: "approved" as const };
   await open(page, { "GET /api/supply-plan": json({ lines: [LOAN, ORDER, approved] }) });
   await expect(page.getByRole("main").getByText(copy.linesToApprove(2), { exact: true })).toBeVisible();
+  // With none waiting, the panel says so and the head says nothing.
+  await answer(page, { "GET /api/supply-plan": json({ lines: [] }) });
+  await page.reload();
+  await expect(page.getByRole("main").getByText(copy.none, { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText(copy.linesToApprove(0), { exact: true })).toHaveCount(0);
 });
 
 test("lists each transfer and order with why, and approves one at a changed quantity", async ({ page }) => {

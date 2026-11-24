@@ -60,3 +60,11 @@
   align-content: start;
   gap: var(--sp-24);
 }
+
+/* A column for an item no longer offered that a service still expects, marked so beneath its name. */
+.retired {
+  display: block;
+  font-size: var(--fs-13);
+  font-weight: var(--weight-regular);
+  color: var(--ui-text-muted);
+}

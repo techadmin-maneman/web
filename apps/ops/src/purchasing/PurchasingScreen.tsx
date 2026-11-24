@@ -116,9 +116,8 @@ export function PurchasingScreen() {
   const [said, setSaid] = useState<string | null>(null);
   const access = useAccess();
   const current = orders ?? (loaded.state === "loaded" ? loaded.value : null);
-  useHeaderSub(
-    current === null ? undefined : copy.toApprove(current.orders.filter((each) => each.state === "drafted").length),
-  );
+  const drafted = current?.orders.filter((each) => each.state === "drafted").length ?? 0;
+  useHeaderSub(drafted === 0 ? undefined : copy.toApprove(drafted));
   const changed = (next: Orders, words: string) => {
     setOrders(next);
     setSaid(words);
