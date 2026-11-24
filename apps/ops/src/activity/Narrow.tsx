@@ -1,8 +1,9 @@
 // What Activity's log is narrowed to: who, what and the days, applied when Show is pressed. A client or a visit is
-// narrowed to from a link to it (../route.ts, activityPath), and shown above the form as a filter to take off.
+// narrowed to from a link to it (../route.ts, activityPath), and shown above the form as a filter to take off; pages
+// opened are shown by a box of their own in the bar.
 
 import { Button } from "@maneman/ui/Button";
-import { Checkbox, DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
+import { DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { activity } from "../content/activity.ts";
 import styles from "./narrow.module.css";
@@ -104,13 +105,6 @@ export function Narrow({ filters, onApply }: { filters: Filters; onApply: (filte
       <NarrowChoice label={copy.action} any={copy.anyAction} options={ACTION_OPTIONS} {...box("action")} />
       <DateBox label={copy.from} {...box("from")} />
       <DateBox label={copy.to} {...box("to")} />
-      <Checkbox
-        label={copy.reads}
-        checked={draft.reads === "include"}
-        onChange={(event) => {
-          setDraft({ ...draft, reads: event.target.checked ? "include" : undefined });
-        }}
-      />
       <div className={styles.apply}>
         <Button variant="primary" size="small" type="submit">
           {copy.show}
@@ -120,7 +114,7 @@ export function Narrow({ filters, onApply }: { filters: Filters; onApply: (filte
           size="small"
           onClick={() => {
             setDraft({});
-            onApply({ person: filters.person, visit: filters.visit });
+            onApply({ person: filters.person, visit: filters.visit, reads: filters.reads });
           }}
         >
           {copy.clear}

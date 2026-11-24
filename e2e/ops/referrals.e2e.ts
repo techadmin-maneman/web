@@ -33,6 +33,10 @@ test("lists every held grant with the rule it met, and counts them", async ({ pa
   await expect(queue.getByText(opsCopy.referrals.queue.signals.shared_address)).toBeVisible();
   await expect(queue.getByText(opsCopy.referrals.queue.signals.shared_upi)).toBeVisible();
   await expect(queue.getByText(opsCopy.referrals.queue.signals.monthly_cap)).toBeVisible();
+  // Beside the page's title, as the redesign draws it.
+  await expect(
+    page.getByRole("main").getByText(opsCopy.referrals.queue.heldCount(HELD.held.length), { exact: true }),
+  ).toBeVisible();
 });
 
 // The design writes how long a grant has waited; the queue once wrote the day of the first fit.

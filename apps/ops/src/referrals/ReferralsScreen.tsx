@@ -2,6 +2,7 @@
 // (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts), over every referrer's figures. The partners who
 // refer on their own code are Settings' (./Partners.tsx). Approving a grant releases its credits.
 
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
 import { textLinkLook } from "@maneman/ui/TextLink";
@@ -169,6 +170,9 @@ function ReviewQueue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(referralsApi.held);
   const mayDecide = useAccess().mayCall("POST /api/referrals/{id}/decision");
   const copy = referrals.queue;
+  // Read again once a decision lands, so the count follows the queue.
+  const held = loaded.state === "loaded" ? loaded.value.held.length : 0;
+  useHeaderSub(held === 0 ? undefined : copy.heldCount(held));
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 

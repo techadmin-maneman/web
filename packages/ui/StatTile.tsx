@@ -56,12 +56,21 @@ export function StatTile({
 
 /**
  * A row of figures joined into one strip, as the console draws them: one edge round them all, a rule between each, as
- * many to a row as fit.
+ * many to a row as fit (`fit`); two to a row where the strip has room for amounts in the lakhs, else one (`pairs`);
+ * or one to a row everywhere (`stacked`), for amounts of ten lakh and more.
  */
-export function StatTiles({ children, className }: { readonly children: ReactNode; readonly className?: string }) {
+export function StatTiles({
+  layout = "fit",
+  children,
+  className,
+}: {
+  readonly layout?: "fit" | "pairs" | "stacked";
+  readonly children: ReactNode;
+  readonly className?: string;
+}) {
   return (
-    <div className={classes(styles.strip, className)}>
-      <div className={styles.stripRow}>{children}</div>
+    <div className={classes(styles.strip, layout === "pairs" && styles.pairsBox, className)}>
+      <div className={classes(styles.stripRow, layout !== "fit" && styles[layout])}>{children}</div>
     </div>
   );
 }

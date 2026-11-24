@@ -47,6 +47,20 @@ async function open(page: Page, size: { width: number; height: number }): Promis
 
 const row = (page: Page) => page.getByRole("row").filter({ hasText: "Green Valley Towers" });
 
+// The redesign says beside the title how many links are live; a retired one is not.
+test("says beside its title how many links are live", async ({ page }) => {
+  const retired = {
+    ...LINKS.links[0],
+    id: "55555555-5555-4555-8555-555555555555",
+    name: "An old stall",
+    retired_at: "2027-09-01T06:00:00.000Z",
+  };
+  await answer(page, { "GET /api/campaign-links": json({ ...LINKS, links: [...LINKS.links, retired] }) });
+  await page.goto("/campaign-links");
+  // The fixture's own links are all live; the one added here is retired.
+  await expect(page.getByRole("main").getByText(copy.live(LINKS.links.length), { exact: true })).toBeVisible();
+});
+
 test("draws a link's buttons on a phone as a line of its card, with no edge of their own", async ({ page }) => {
   await open(page, { width: 390, height: 844 });
   const buttons = row(page).getByRole("cell").last();

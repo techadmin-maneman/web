@@ -1,169 +1,90 @@
-// Activity: the audit log, read in the console by Admin's View (src/routes/ops/activity.ts). Every entry, newest
-// first: when, who, what, and the record it touched; a call with no words of its own has its route beneath. Its
+// Activity: the audit log, read in the console by Admin's View (src/routes/ops/activity.ts). Every entry a sentence,
+// newest first, a panel a day (./Entries.tsx), as the redesign draws it; a row's time opens what the log kept. Its
 // filters live in the page's address (./filters.ts), so a client's whole record, linked from their History tab, opens
-// already narrowed. The design draws no board for it; it is built as Areas' tables are.
+// already narrowed; what is shown can be downloaded as a file.
 
-import { ROUTE_NEEDS } from "@rules/policy/console-routes.ts";
-import { Panel } from "@maneman/ui/Panel";
-import { EmptyState } from "@maneman/ui/EmptyState";
-import { Chip } from "@maneman/ui/Chip";
 import { Button } from "@maneman/ui/Button";
-import { Table } from "@maneman/ui/Table";
+import { Chip } from "@maneman/ui/Chip";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { EmptyState } from "@maneman/ui/EmptyState";
+import { Panel } from "@maneman/ui/Panel";
+import { Checkbox } from "@maneman/ui/Field";
+import { PanelFailed, PanelLoading } from "@maneman/ui/States";
 import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
-import { indiaClock, longDate } from "@maneman/web-kit/dates";
+import { apiNow } from "@maneman/web-kit/clock";
+import { dayMonth, indiaDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useMemo, useState } from "react";
 import { type ActivityEntry } from "../api.ts";
-import { DrawerButton } from "@maneman/ui/DrawerButton";
-import { OpsLink } from "../frame/Shell.tsx";
 import { activity } from "../content/activity.ts";
-import { activityPath, clientPath, dispatchPath, technicianPath } from "../route.ts";
-import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
+import { csvText } from "../lib/csv.ts";
+import { saveFile } from "../lib/save-file.ts";
+import { activityPath } from "../route.ts";
 import styles from "./activity-screen.module.css";
+import { activityApi } from "./activity-api.ts";
+import { Entries } from "./Entries.tsx";
 import { appliedOf, askedOf, filtersOf, type Filters } from "./filters.ts";
 import { Narrow } from "./Narrow.tsx";
-import { activityApi } from "./activity-api.ts";
+import { csvRows } from "./sentence.ts";
 
 const copy = activity;
-
-/** Where the console shows the person who made an entry: a client's page or a technician's; none for staff. */
-function pageOf(actor: ActivityEntry["actor"]): string | null {
-  if (actor.kind === "client") return clientPath(actor.id, "visits");
-  if (actor.kind === "technician") return technicianPath(actor.id);
-  return null;
-}
-
-/** Who made the entry, linked to their page where the console has one. */
-function Who({ actor, surface }: Pick<ActivityEntry, "actor" | "surface">) {
-  const named = actor.name ?? (actor.kind === "client" ? copy.unnamedClient : actor.id);
-  const page = pageOf(actor);
-  return (
-    <>
-      {page === null ? <span className={styles.who}>{named}</span> : <OpsLink to={page}>{named}</OpsLink>}
-      <span className={styles.sub}>
-        {copy.filters.kinds[actor.kind]} · {copy.surfaces[surface]}
-      </span>
-    </>
-  );
-}
-
-const TEMPLATES = Object.keys(ROUTE_NEEDS).map((key) => {
-  const [method = "", template = ""] = key.split(" ");
-  return { method, template, pattern: new RegExp(`^${template.replace(/\{[^}]+\}/g, "[^/]+")}$`) };
-});
-
-/** A call's path as the route it reached, "/api/stock/lots/{id}": the record it touched is named beside it. */
-const routeOf = (method: string, path: string): string =>
-  TEMPLATES.find((each) => each.method === method && each.pattern.test(path))?.template ??
-  path.replace(/[0-9a-f-]{36}/g, "{id}");
-
-/** The app each kind of call was made from. */
-const CALL_SURFACES: Readonly<Record<string, keyof typeof copy.surfaces>> = {
-  "ops.call": "ops",
-  "client.call": "client",
-  "tech.call": "tech",
-};
-
-/** The route a call reached, "/api/tech/jobs/{id}/outcome": as the log names it, else from its path. */
-function templateOf(method: string, detail: ActivityEntry["detail"]): string | null {
-  if (typeof detail?.route === "string") return detail.route.replace(/:(\w+)/g, "{$1}");
-  return typeof detail?.path === "string" ? routeOf(method, detail.path) : null;
-}
-
-/** What the entry was: a call from either app as what the person did, any other call with its method and route. */
-function What({ action, detail }: Pick<ActivityEntry, "action" | "detail">) {
-  const method = typeof detail?.method === "string" ? detail.method : "";
-  const route = templateOf(method, detail);
-  const did = route === null ? undefined : copy.calls[`${method} ${route}`];
-  // The log keeps actions an earlier build wrote under names this one no longer has words for.
-  const named = Object.hasOwn(copy.actions, action) ? copy.actions[action] : action;
-  const surface = CALL_SURFACES[action];
-  const said = did ?? (surface !== undefined && method === "GET" ? copy.opened(copy.surfaces[surface]) : named);
-  const refused = detail?.refused !== undefined;
-  return (
-    <>
-      <span>{refused ? copy.refused(said) : said}</span>
-      {did === undefined && route !== null && (
-        <code className={styles.call}>
-          {method} {route}
-        </code>
-      )}
-    </>
-  );
-}
-
-/** A record's ID as the log shows it: a random one's start, any other whole, as a code or a day is. */
-const shortId = (id: string) => (/^[0-9a-f]{8}-?[0-9a-f]{4}/i.test(id) ? id.slice(0, 8) : id);
-
-/** The record the entry touched: a client's page, a visit on the board, or its kind and its name or ID. */
-function Record({ subject }: Pick<ActivityEntry, "subject">) {
-  if (subject === null) return null;
-  if (subject.kind === "person") {
-    return <OpsLink to={clientPath(subject.id, "visits")}>{subject.label ?? copy.records.person}</OpsLink>;
-  }
-  if (subject.kind === "appointment") {
-    const named = subject.label === null ? copy.records.appointment : copy.records.visitOf(subject.label);
-    return <OpsLink to={dispatchPath({ visit: subject.id })}>{named}</OpsLink>;
-  }
-  const kind = copy.kinds[subject.kind] ?? subject.kind;
-  return (
-    <span className={styles.sub}>
-      {kind} {subject.label ?? shortId(subject.id)}
-    </span>
-  );
-}
-
-function Rows({ entries }: { entries: readonly ActivityEntry[] }) {
-  return (
-    <Table className={styles.table}>
-      <thead>
-        <tr>
-          <th className={styles.when}>{copy.columns.when}</th>
-          <th>{copy.columns.who}</th>
-          <th>{copy.columns.what}</th>
-          <th className={styles.record}>{copy.columns.record}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map((entry) => (
-          <tr key={entry.id}>
-            <td className={styles.when}>
-              {longDate(entry.at)}, {indiaClock(entry.at)}
-            </td>
-            <td className={styles.stack}>
-              <Who actor={entry.actor} surface={entry.surface} />
-            </td>
-            <td className={styles.stack}>
-              <What action={entry.action} detail={entry.detail} />
-            </td>
-            <td className={styles.record}>
-              <Record subject={entry.subject} />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
-  );
-}
 
 interface Older {
   readonly entries: readonly ActivityEntry[];
   readonly next: string | null;
 }
 
+/** The days the entries shown cover, beside the page's title: "Today", or "18 Nov to Today". */
+function useDaysShown(entries: readonly ActivityEntry[], shown: boolean) {
+  const today = todayInIndia(apiNow());
+  const newest = entries.at(0);
+  const oldest = entries.at(-1);
+  let sub: string | undefined;
+  if (shown && newest !== undefined && oldest !== undefined) {
+    const [first, last] = [indiaDate(oldest.at), indiaDate(newest.at)];
+    if (first === last) sub = first === today ? copy.today : dayMonth(first);
+    else sub = last === today ? copy.untilToday(dayMonth(first)) : copy.days(dayMonth(first), dayMonth(last));
+  }
+  useHeaderSub(sub);
+}
+
+/** The entries shown as a file, the sentence and what each row's details show. */
+function DownloadCsv({ entries }: { entries: readonly ActivityEntry[] }) {
+  const oldest = entries.at(-1);
+  const newest = entries.at(0);
+  if (oldest === undefined || newest === undefined) return null;
+  return (
+    <PageActions>
+      <Button
+        variant="outline"
+        size="small"
+        onClick={() => {
+          const file = copy.fileName(indiaDate(oldest.at), indiaDate(newest.at));
+          saveFile(file, csvText(csvRows(entries)), "text/csv");
+        }}
+      >
+        {copy.export}
+      </Button>
+    </PageActions>
+  );
+}
+
 /**
  * The log as narrowed, a page at a time: older pages are added beneath as they are asked for. `empty` says there is
- * nothing, in words fit for where it stands.
+ * nothing, in words fit for where it stands; `page` says it is Activity's own, whose head says the days and offers
+ * the file.
  */
-function Log({ filters, empty = copy.empty }: { filters: Filters; empty?: string }) {
+function Log({ filters, empty = copy.empty, page = false }: { filters: Filters; empty?: string; page?: boolean }) {
   const [loaded, retry] = useLoad(useCallback(() => activityApi.activity(askedOf(filters)), [filters]));
   const [older, setOlder] = useState<Older | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [olderFailed, setOlderFailed] = useState<{ requestId: string | null } | null>(null);
+  const entries = loaded.state === "loaded" ? [...loaded.value.entries, ...(older?.entries ?? [])] : [];
+  useDaysShown(entries, page);
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const entries = [...loaded.value.entries, ...(older?.entries ?? [])];
   const next = older === null ? loaded.value.next_cursor : older.next;
   const showOlder = async (cursor: string) => {
     setLoadingOlder(true);
@@ -173,10 +94,18 @@ function Log({ filters, empty = copy.empty }: { filters: Filters; empty?: string
     if (!answer.ok) return;
     setOlder({ entries: [...(older?.entries ?? []), ...answer.body.entries], next: answer.body.next_cursor });
   };
-  if (entries.length === 0) return <EmptyState look="panel" line={empty} />;
+  if (entries.length === 0 && !page) return <EmptyState look="panel" line={empty} />;
+  if (entries.length === 0) {
+    return (
+      <Panel titleId="activity" title={copy.title}>
+        <EmptyState look="panel" line={empty} />
+      </Panel>
+    );
+  }
   return (
     <>
-      <Rows entries={entries} />
+      {page && <DownloadCsv entries={entries} />}
+      <Entries entries={entries} within={!page} />
       {olderFailed !== null && next !== null && (
         <PanelFailed onRetry={() => void showOlder(next)} requestId={olderFailed.requestId} />
       )}
@@ -184,7 +113,7 @@ function Log({ filters, empty = copy.empty }: { filters: Filters; empty?: string
         <Button
           variant="outline"
           size="small"
-          className={styles.older}
+          className={page ? styles.older : styles.olderWithin}
           busy={loadingOlder}
           onClick={() => void showOlder(next)}
         >
@@ -198,7 +127,11 @@ function Log({ filters, empty = copy.empty }: { filters: Filters; empty?: string
 /** What was done on one client's record and by them, the latest first: their page's History tab. */
 export function RecordActivity({ person }: { person: string }) {
   const filters = useMemo(() => ({ person }), [person]);
-  return <Log filters={filters} empty={copy.recordEmpty} />;
+  return (
+    <div className={styles.log}>
+      <Log filters={filters} empty={copy.recordEmpty} />
+    </div>
+  );
 }
 
 /** Each filter set, a chip with its way off: a client or visit a link narrowed to, and what Filter chose. */
@@ -223,7 +156,7 @@ export function ActivityScreen() {
     setFilters(next);
   };
   return (
-    <Panel titleId="activity" title={copy.title}>
+    <div className={styles.log}>
       <Toolbar label={copy.filters.label}>
         <DrawerButton label={copy.filters.filter}>
           {(close) => (
@@ -237,8 +170,15 @@ export function ActivityScreen() {
           )}
         </DrawerButton>
         <Applied filters={filters} onApply={apply} />
+        <Checkbox
+          label={copy.filters.reads}
+          checked={filters.reads === "include"}
+          onChange={(event) => {
+            apply({ ...filters, reads: event.target.checked ? "include" : undefined });
+          }}
+        />
       </Toolbar>
-      <Log key={activityPath(filters)} filters={filters} />
-    </Panel>
+      <Log key={activityPath(filters)} filters={filters} page />
+    </div>
   );
 }

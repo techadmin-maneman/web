@@ -43,6 +43,14 @@ export const funnel = {
   },
   /** Revenue for each rupee spent: "2.4×". */
   roas: (revenue: number, spend: number) => `${(revenue / spend).toFixed(1)}×`,
+  /** Beside the steps, as the redesign draws them: the period's spend and what its first fits brought back. */
+  figures: {
+    spend: "Spend",
+    perFit: "Per first fit",
+    revenue: "Fit revenue",
+    roas: "Return on spend",
+    none: "—",
+  },
   cohorts: {
     title: "Revenue after the first fit",
     columns: ["Channel", "Clients fitted", "30 days", "90 days", "180 days"] as const,

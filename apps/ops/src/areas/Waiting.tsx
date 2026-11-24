@@ -11,6 +11,7 @@ import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Table } from "@maneman/ui/Table";
+import { Split } from "@maneman/ui/Layout";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate, todayInIndia, yearInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
@@ -19,6 +20,7 @@ import { OpsLink } from "../frame/Shell.tsx";
 import { areas, waitlist } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { settingsPath } from "../route.ts";
+import { useHeaderSub } from "../frame/PageHead.tsx";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
@@ -227,8 +229,17 @@ function Pincodes({
   );
 }
 
-export function Waiting() {
+/** The waitlist, read, with everyone waiting across the pincodes listed said beside the page's title. */
+function useWaitlist() {
   const [loaded, retry] = useLoad(areasApi.waitlist);
+  const list = loaded.state === "loaded" ? loaded.value : null;
+  const total = list?.areas.reduce((sum, each) => sum + each.waiting, 0) ?? 0;
+  useHeaderSub(list === null || total === 0 ? undefined : waitlist.waitingCount(total, list.more));
+  return [loaded, retry] as const;
+}
+
+export function Waiting() {
+  const [loaded, retry] = useWaitlist();
   const [launching, setLaunching] = useState<Launching | null>(null);
   const [adding, setAdding] = useState<Area | null>(null);
   /** An error code from asking what a launch would send, before there is a panel to hold it. */
@@ -335,12 +346,15 @@ export function Waiting() {
   );
 }
 
-/** The waitlist page: who waits where, then the pincodes to open next (ADR 0224). */
+/**
+ * The waitlist page: who waits where, with how many beside the title, and the pincodes to open next in a column beside
+ * it on a wide desk, as the redesign draws them (ADR 0224).
+ */
 export function WaitlistPage() {
   return (
-    <div className={shared.column}>
+    <Split look="side">
       <Waiting />
       <NextToOpen />
-    </div>
+    </Split>
   );
 }
