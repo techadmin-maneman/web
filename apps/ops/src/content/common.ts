@@ -44,7 +44,8 @@ export const WAITING_FOR = {
   reason: "Write a reason.",
   note: "Write a note.",
   ticks: "Tick both boxes.",
-  pincode: "Type a six-digit pincode, its area and its city.",
+  pincode: "Type a six-digit pincode and its area, and choose its city.",
+  areaAndCity: "Type its area and choose its city.",
 } as const;
 
 /** A length of time as the console writes it: "1 h 30 min", "45 min", "3 h", "1,250 h". */

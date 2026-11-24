@@ -101,6 +101,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
   const cancel = onCancel === undefined ? null : <CancelButton disabled={busy} onClick={onCancel} />;
 
   if (cities.length === 0) return <NoCity cancel={cancel} />;
+  const waits = pincode === null ? WAITING_FOR.pincode : WAITING_FOR.areaAndCity;
 
   return (
     <div>
@@ -149,7 +150,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
         </Button>
         {cancel}
       </div>
-      <Missing id="pincode-waits" what={!ready && !busy ? WAITING_FOR.pincode : null} />
+      <Missing id="pincode-waits" what={!ready && !busy ? waits : null} />
       {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
     </div>
   );

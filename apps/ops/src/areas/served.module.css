@@ -14,3 +14,10 @@
   font-size: var(--fs-14);
   font-weight: var(--weight-medium);
 }
+
+/* How many are chosen, and Clear beside it, kept on one line however the bar wraps. */
+.countLine {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+}

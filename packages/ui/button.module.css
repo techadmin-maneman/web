@@ -65,26 +65,32 @@
     font-size: var(--small-text);
   }
 
-  /* An action drawn as its icon alone (./icon-actions.ts): a square of its size's height, the icon at its middle, a
-     narrow one's padding left off too. */
+  /* An action drawn as its icon alone (./icon-actions.ts): at least a square of its size's height, the icon at its
+     middle. A screen's own class may place it but not pad or narrow it, since an icon squeezed out of its square is
+     gone: the padding is held here over any page's rule, and the square is a least width a page's width cannot
+     undercut. */
   .button.iconOnly {
-    padding: 0;
+    padding: 0 !important;
+  }
+
+  .button.iconOnly > svg {
+    flex-shrink: 0;
   }
 
   .iconOnly.action {
-    width: var(--action-height);
+    min-width: var(--action-height);
   }
 
   .iconOnly.control {
-    width: var(--control-height);
+    min-width: var(--control-height);
   }
 
   .iconOnly.small {
-    width: var(--small-height);
+    min-width: var(--small-height);
   }
 
   .iconOnly.compact {
-    width: var(--compact-height);
+    min-width: var(--compact-height);
   }
 
   /* Under a finger, every icon is at least a finger's square, and a long press shows its words (./ActionTips.tsx)

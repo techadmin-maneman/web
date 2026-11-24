@@ -114,16 +114,13 @@ export function ChosenBar(props: {
     );
   }
   return (
-    <Toolbar
-      label={copy.count(count)}
-      className={styles.chosen}
-      end={
+    <Toolbar label={copy.count(count)} className={styles.chosen}>
+      <span className={styles.countLine}>
+        <span className={styles.count}>{copy.count(count)}</span>
         <TextButton icon={ACTION_ICONS.x} tone="muted" compact onClick={props.onClear}>
           {copy.clear}
         </TextButton>
-      }
-    >
-      <span className={styles.count}>{copy.count(count)}</span>
+      </span>
       <ChosenButtons
         chosen={props.chosen}
         busy={busy}

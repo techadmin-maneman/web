@@ -79,7 +79,7 @@ function LinkActions(props: {
         {copy.copy}
       </RowButton>
       <RowButton
-        icon={ACTION_ICONS.download}
+        icon={ACTION_ICONS.fileDown}
         beside
         aria-label={copy.qrLabel(link.name, "SVG")}
         onClick={() => {
@@ -89,7 +89,7 @@ function LinkActions(props: {
         {copy.qrSvg}
       </RowButton>
       <RowButton
-        icon={ACTION_ICONS.download}
+        icon={ACTION_ICONS.image}
         beside
         aria-label={copy.qrLabel(link.name, "PNG")}
         onClick={() => {

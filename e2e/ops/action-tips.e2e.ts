@@ -58,6 +58,25 @@ test("shows an action's words above it as the pointer rests, and takes them away
   await expect(tip(page)).toBeHidden();
 });
 
+test("shows no words for an action the pointer passed over without resting", async ({ page }) => {
+  await open(page);
+  await publish(page).hover();
+  await page.getByRole("heading", { level: 1, name: copy.title }).hover();
+  await page.waitForTimeout(700);
+  await expect(tip(page)).toBeHidden();
+});
+
+test("leaves a right-click at a desk to the browser's menu", async ({ page }) => {
+  await open(page);
+  await page.evaluate(() => {
+    window.addEventListener("contextmenu", (event) => {
+      document.body.dataset.menuKept = String(!event.defaultPrevented);
+    });
+  });
+  await publish(page).click({ button: "right" });
+  await expect(page.locator("body")).toHaveAttribute("data-menu-kept", "true");
+});
+
 test("shows an action's words as the keyboard comes to it", async ({ page }) => {
   await open(page);
   await publish(page).focus();
@@ -78,6 +97,7 @@ test.describe("under a finger", () => {
     const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
     const touch = await page.context().newCDPSession(page);
     await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [at] });
+    await expect(tip(page)).toBeVisible();
     await expect(tip(page)).toHaveText(copy.publish.openCount(1));
     await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     // Long enough for a click that follows the press to have opened Publish's question.

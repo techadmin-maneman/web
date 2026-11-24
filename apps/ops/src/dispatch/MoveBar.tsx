@@ -78,6 +78,12 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
   const destinations = checking ? [] : destinationsOf(inHand, rows, dates);
   const choice = destinations.find((each) => each.key === chosen);
 
+  // Beside Go where there is a list, so the pair never parts on a phone; alone where there is none.
+  const stop = (
+    <Button icon={ACTION_ICONS.x} variant="outline" size="small" onClick={onStop}>
+      {copy.stop}
+    </Button>
+  );
   return (
     <div className={styles.bar} ref={ref} tabIndex={-1}>
       <p className={styles.barText}>{copy.moving(nameOf(inHand.job), sizeOf(inHand))}</p>
@@ -116,11 +122,10 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
           >
             {copy.listGo}
           </Button>
+          {stop}
         </div>
       )}
-      <Button icon={ACTION_ICONS.x} variant="outline" size="small" onClick={onStop}>
-        {copy.stop}
-      </Button>
+      {(checking || destinations.length === 0) && stop}
     </div>
   );
 }

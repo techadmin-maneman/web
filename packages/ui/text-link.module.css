@@ -133,19 +133,19 @@
   }
 
   @media (hover: hover) {
-    .plain:hover:not(:disabled),
-    .muted:hover:not(:disabled),
-    .brass:hover:not(:disabled) {
+    .plain:hover:not(:disabled, [aria-disabled="true"]),
+    .muted:hover:not(:disabled, [aria-disabled="true"]),
+    .brass:hover:not(:disabled, [aria-disabled="true"]) {
       color: var(--ui-text);
       text-decoration-color: currentcolor;
     }
 
-    .ink:hover:not(:disabled) {
+    .ink:hover:not(:disabled, [aria-disabled="true"]) {
       color: var(--on-ink);
       text-decoration-color: currentcolor;
     }
 
-    .danger:hover:not(:disabled) {
+    .danger:hover:not(:disabled, [aria-disabled="true"]) {
       text-decoration-thickness: var(--rule-strong);
     }
   }
