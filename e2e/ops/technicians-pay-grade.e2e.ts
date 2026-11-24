@@ -124,13 +124,13 @@ test("changes a technician's grade on their details", async ({ page }) => {
   await page.getByRole("button", { name: opsCopy.technicians.head.edit }).click();
   const main = page.getByRole("dialog", { name: "Imran Qureshi" });
   const row = main.getByRole("button", { name: `${EDITING.change} ${words.label}` });
-  await expect(row).toContainText(words.none);
+  await expect(row.locator("..")).toContainText(words.none);
   await row.click();
   await main.getByLabel(words.label).selectOption({ label: "Senior" });
   const graded = page.waitForRequest((request) => request.url().includes(`/api/technician-pay/technicians/${IMRAN}`));
   await main.getByRole("button", { name: EDITING.save }).click();
   expect((await graded).postDataJSON()).toEqual({ grade_id: SENIOR, from: PAY.today });
-  await expect(row).toContainText("Senior");
+  await expect(row.locator("..")).toContainText("Senior");
 });
 
 test("shows no grade, and reads none, to someone whose access gives none", async ({ page }) => {

@@ -11,6 +11,7 @@ import { technicians } from "../../apps/ops/src/content/technicians.ts";
 import { EDITING } from "../../apps/ops/src/content/common.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 
 const copy = technicians.hours;
 
@@ -62,6 +63,7 @@ function show(technician: Technician) {
 }
 
 beforeEach(() => {
+  openDialogsAsJsdomCan();
   sent = [];
   changed = 0;
   vi.stubGlobal(

@@ -5,7 +5,7 @@
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { NumberInput, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
-import { SettingValue } from "@maneman/ui/SettingRow";
+import { ReadRow } from "@maneman/ui/RecordRows";
 import { errorText } from "@maneman/web-kit/refusal";
 import type { ReactNode } from "react";
 import { PriceRow, priceText } from "../prices/index.ts";
@@ -175,11 +175,8 @@ function FirstFit({ chosen, changing, costOf, onCosts }: Parts) {
         changing={changing}
         field="first_fit_minutes"
       />
-      <SettingValue
-        label={copy.rows.hairSystemFrom}
-        value={hairSystem === null ? copy.unpriced : priceText(hairSystem)}
-      />
-      <SettingValue label={copy.rows.firstFitTotal} value={from === null ? copy.unpriced : priceText(from)} />
+      <ReadRow label={copy.rows.hairSystemFrom} value={hairSystem === null ? copy.unpriced : priceText(hairSystem)} />
+      <ReadRow label={copy.rows.firstFitTotal} value={from === null ? copy.unpriced : priceText(from)} />
       <CostRow cost={costOf("first_fit")} onCosts={onCosts} />
     </Section>
   );
@@ -248,7 +245,7 @@ function Replacement({ chosen, changing, today, mayPrice, refresh, costOf, onCos
         onSaved={refresh}
         unpriced={copy.unpriced}
       />
-      <SettingValue label={copy.rows.total} value={total === null ? copy.unpriced : priceText(total)} />
+      <ReadRow label={copy.rows.total} value={total === null ? copy.unpriced : priceText(total)} />
       <CostRow cost={costOf("replacement")} onCosts={onCosts} />
     </Section>
   );

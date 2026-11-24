@@ -224,9 +224,9 @@ test.describe("what each service uses", () => {
     await expect(service.getByRole("option", { name: /retired/i })).toHaveCount(0);
     await service.selectOption({ label: "Service visit" });
 
-    await expect(change(uses, "Tape strips")).toContainText("4 strips");
-    await expect(change(uses, "Solvent")).toContainText("10 ml");
-    await expect(change(uses, "Bonding glue")).toContainText(copy.usage.none);
+    await expect(change(uses, "Tape strips").locator("..")).toContainText("4 strips");
+    await expect(change(uses, "Solvent").locator("..")).toContainText("10 ml");
+    await expect(change(uses, "Bonding glue").locator("..")).toContainText(copy.usage.none);
     // Retired, and expected by no service: nothing to set.
     await expect(change(uses, "Shampoo sachet")).toHaveCount(0);
 

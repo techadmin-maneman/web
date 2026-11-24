@@ -17,9 +17,7 @@ export function SettingsLayout({ menu, children }: { readonly menu?: ReactNode; 
   return (
     <div className={menu === undefined ? undefined : styles.layout}>
       {menu}
-      <div className={styles.page}>
-        <ChangeInDialog.Provider value>{children}</ChangeInDialog.Provider>
-      </div>
+      <div className={styles.page}>{children}</div>
     </div>
   );
 }

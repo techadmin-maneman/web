@@ -143,9 +143,9 @@ test("shows a city’s own rule beside the national one, and gives it back to th
   await open(page, { "DELETE /api/cities/{name}/rules/{rule}": empty() });
   const record = await recordOf(page, "Mumbai");
   const radius = record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.checkin_radius_m}` });
-  await expect(radius).toContainText("400 metres");
+  await expect(radius).toHaveAccessibleDescription(/400 metres/);
   await expect(
-    record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.reminder_hour}` }),
+    record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.reminder_hour}` }).locator(".."),
   ).toContainText(copy.rules.national("6 pm"));
 
   await radius.click();

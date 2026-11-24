@@ -1,8 +1,8 @@
 /*
- * One value changed where it reads (./EditableRow.tsx): the name in a column as wide as the app sets
- * (--setting-label-width, ./base.css), the value as words beside it, a rule beneath. The value is its own button,
- * marked by a pencil that shows as the pointer or the keyboard comes to it; opened, its box and Save and Cancel take
- * its place. Short of a desk the name stands above.
+ * One value and its Change (./EditableRow.tsx): the name in a column as wide as the app sets (--setting-label-width,
+ * ./base.css), the value as words beside it and Change at the row's end, a rule beneath; opened in place, its box and
+ * Save and Cancel take the row's place. On a page the row is drawn as the redesign draws a setting. Short of a desk
+ * the name stands above.
  */
 
 @layer base, ui;
@@ -53,42 +53,18 @@
     min-width: 0;
   }
 
-  .value {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-8);
-    min-height: var(--small-height);
-    margin-left: calc(-1 * var(--sp-8));
-    padding: 0 var(--sp-8);
-    border: var(--hairline) solid transparent;
-    background: none;
-    font: inherit;
+  /* The value as words; in a drawer it takes the row's room, so Change stands at the row's end. */
+  .shown {
+    flex: 1 1 auto;
+    min-width: 0;
     font-size: var(--fs-14);
     font-variant-numeric: tabular-nums;
     color: var(--ui-text);
-    text-align: left;
+    overflow-wrap: anywhere;
   }
 
-  button.value {
-    cursor: pointer;
-    transition: border-color var(--duration-quick) var(--ease-house);
-  }
-
-  button.value:hover,
-  button.value:focus-visible {
-    border-color: var(--ui-line-control);
-  }
-
-  /* The pencil shows at rest, quiet, so a value that changes reads as one before the pointer finds it, and on touch. */
-  .cue {
+  .change {
     flex: none;
-    color: var(--ui-text-quiet);
-    transition: color var(--duration-quick) var(--ease-house);
-  }
-
-  button.value:hover .cue,
-  button.value:focus-visible .cue {
-    color: var(--ui-text);
   }
 
   .saved {
@@ -134,13 +110,6 @@
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    button.value,
-    .cue {
-      transition: none;
-    }
-  }
-
   /* A setting as the redesign draws it: its name in the text's own colour, then the value and Change at the row's end. */
   .setting .label {
     font-weight: var(--weight-medium);
@@ -151,10 +120,15 @@
     justify-content: flex-end;
   }
 
-  .settingValue {
-    font-size: var(--fs-14);
-    color: var(--ui-text);
-    overflow-wrap: anywhere;
+  .setting .shown {
+    flex: 0 1 auto;
+  }
+
+  /* Short of a desk, as the design's phone draws a setting: the value and Change under the name, from its start. */
+  @media (max-width: 760px) {
+    .setting .reading {
+      justify-content: flex-start;
+    }
   }
 
   /* Change's own dialog, small and in the middle of the window, its box, the value now, and Cancel and Save. */
