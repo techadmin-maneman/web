@@ -44,14 +44,14 @@ export const deletions = {
     requested: (mobile: string, date: string) => `${mobile} · requested ${date}`,
     /** A visit the client booked after asking: they may want to keep their account. */
     bookedSince: (visit: string) => `Booked a visit for ${visit} since asking. Ask whether they still want this.`,
-    delete: "Erase client",
-    reject: "Reject",
+    delete: "Erase",
+    reject: "Keep, with reason",
     /**
      * A queue holds many rows and each button says the same thing, so the
      * destructive one names whose account it is, as the Technicians page's revoke does.
      */
     deleteLabel: (name: string) => `Erase client: ${name}`,
-    rejectLabel: (name: string) => `Reject the request of ${name}`,
+    rejectLabel: (name: string) => `Keep ${name}’s account, with reason`,
     confirmLabel: (name: string) => `Erasing ${name}`,
     warning: "This erases the client now and tells them on WhatsApp. It can’t be undone.",
     /** What the erasure destroys, in the order src/domain/privacy/erasure.ts destroys it. */
@@ -83,15 +83,28 @@ export const deletions = {
     reason: {
       label: "Reason",
       // The client is sent this reason on WhatsApp, and their app shows it for thirty days.
-      confirm: "Reject request",
+      confirm: "Keep account",
     },
-    rejecting: "Rejecting…",
+    rejecting: "Keeping…",
     /** Above the queue once a decision is made. */
     done: {
       delete: "Client erased. They’re told on WhatsApp.",
-      reject: "Request rejected. The client is told why on WhatsApp.",
+      reject: "Kept. The client is told why on WhatsApp.",
     },
     empty: "No deletion requests.",
+    /** A row each, as the redesign draws them; the client's name opens the request in a drawer. */
+    columns: ["Client", "Asked", "Decide by", "To settle"] as const,
+    actions: "Decision",
+    /** Beside the page's title. */
+    toDecide: (count: number) => `${String(count)} to decide`,
+    openLabel: (name: string) => `Open ${name}’s deletion request`,
+    /** What the API would refuse an erasure for, in a row: nothing, or what to settle first. */
+    settle: {
+      none: "Nothing",
+      visit_booked: "A visit booked",
+      payment_held: "A refund owed",
+      payment_owed: "A link unpaid",
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already decided."),

@@ -1,17 +1,8 @@
 /*
- * The deletion queue, on the panel and at the width the boards' own queues use
- * (C1 and D1). The design draws no board for it, so nothing here is new
- * except the confirmation, which is the Technicians page's revoke carried further: the
- * warning in oxblood, then what is destroyed and what is kept, then a check
- * that the request came from the client, before the button is usable at all.
+ * A deletion request, opened in its drawer (./DeletionsScreen.tsx). The erasure's confirmation is the Technicians
+ * page's revoke carried further: the warning in oxblood, then what is destroyed and what is kept, then a check that the
+ * request came from the client, before the button is usable at all.
  */
-
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-20);
-  max-width: var(--ops-list);
-}
 
 /* ---- One request ----------------------------------------------------------- */
 

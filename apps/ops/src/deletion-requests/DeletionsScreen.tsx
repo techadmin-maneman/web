@@ -1,19 +1,29 @@
-// Deletion requests a client made in their app, decided here (docs/decisions/0049-dpdp.md; the runbook's Erasure within
-// the day). An erasure cannot be undone, so deleting takes two steps, the second offered only once ops confirm the
-// request with the client on their own number. The API refuses while a visit is booked or a payment held, and says
-// which.
+// Requests › Deletion requests a client made in their app, decided here (docs/decisions/0049-dpdp.md; the runbook's
+// Erasure within the day). A row each, as the redesign draws them, its decision opened in a drawer. An erasure cannot be
+// undone, so erasing takes two steps, the second offered only once ops confirm the request with the client on their
+// own number. The API refuses while a visit is booked or a payment held, and says which.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
-import { longDate } from "@maneman/web-kit/dates";
-import { useRef, useState } from "react";
+import { indiaDate, longDate, shortDate } from "@maneman/web-kit/dates";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { EmptyState } from "@maneman/ui/EmptyState";
+import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { Panel } from "@maneman/ui/Panel";
+import { RowHead } from "@maneman/ui/RowHead";
+import { ACTIONS, RowActions, Table, TableScroll } from "@maneman/ui/Table";
+import { TextButton } from "@maneman/ui/TextLink";
+import { Toast } from "@maneman/ui/Toast";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { rowId, useTargetRow } from "@maneman/ui/target";
+import { useHeaderSub } from "../frame/PageHead.tsx";
+import { useHeadingAfter } from "../lib/heading-after.ts";
 import { type DeletionRequest } from "../api.ts";
-import { DecisionQueue } from "@maneman/ui/DecisionQueue";
 import { Reach } from "../clients/index.ts";
 import { OpsLink } from "../frame/Shell.tsx";
 import { deletions } from "../content.ts";
@@ -39,6 +49,8 @@ type Deciding =
   | { readonly step: "failed"; readonly code: string };
 
 const copy = deletions.queue;
+/** A row's kind in its id, as a task's link names it: "request-…". */
+const ROW = "request";
 
 /**
  * The second of the two steps: what the erasure destroys, what it leaves, and
@@ -97,6 +109,8 @@ interface RequestProps {
   readonly now: Date;
   /** Whether the person's access lets them delete the account or reject the request. */
   readonly mayDecide: boolean;
+  /** Opened from a row's Erase or Keep, that step is asked at once. */
+  readonly start: Choice | null;
   readonly onDecided: (choice: Choice) => void;
 }
 
@@ -109,16 +123,17 @@ function RejectReason(props: {
   onCancel: () => void;
 }) {
   const { reason, sending } = props;
+  // The field stands where the button that asked for it stood, so the keyboard goes to it, once the drawer has opened.
+  const box = useFocusOnMount<HTMLTextAreaElement>();
   return (
     <div className={shared.reason}>
       <Field label={copy.reason.label}>
         {(control) => (
           <TextArea
             {...control}
+            ref={box}
             className={styles.reasonField}
             maxLength={REASON_MAX_CHARS}
-            // The field stands where the button that asked for it stood, so the keyboard goes to it.
-            autoFocus
             value={reason}
             onChange={(event) => {
               props.onReason(event.target.value);
@@ -157,8 +172,44 @@ function Asked({ request }: { request: DeletionRequest }) {
   );
 }
 
-function Request({ request, now, mayDecide, onDecided }: RequestProps) {
-  const [deciding, setDeciding] = useState<Deciding>({ step: "listed" });
+/** The two decisions in the drawer, each asked about before it is sent. */
+function Choices(props: {
+  readonly name: string;
+  readonly openers: Readonly<Record<Choice, RefObject<HTMLButtonElement | null>>>;
+  readonly onAsk: (choice: Choice) => void;
+}) {
+  return (
+    <div className={shared.actions}>
+      <Button
+        variant="destructive"
+        size="small"
+        ref={props.openers.delete}
+        aria-label={copy.deleteLabel(props.name)}
+        onClick={() => {
+          props.onAsk("delete");
+        }}
+      >
+        {copy.delete}
+      </Button>
+      <Button
+        variant="outline"
+        size="small"
+        ref={props.openers.reject}
+        aria-label={copy.rejectLabel(props.name)}
+        onClick={() => {
+          props.onAsk("reject");
+        }}
+      >
+        {copy.reject}
+      </Button>
+    </div>
+  );
+}
+
+function Request({ request, now, mayDecide, start, onDecided }: RequestProps) {
+  const [deciding, setDeciding] = useState<Deciding>(
+    start === null ? { step: "listed" } : { step: "asking", choice: start },
+  );
   const [reason, setReason] = useState("");
   const openers = { delete: useRef<HTMLButtonElement>(null), reject: useRef<HTMLButtonElement>(null) };
 
@@ -214,30 +265,13 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
         />
       )}
       {asking === null && mayDecide && (
-        <div className={shared.actions}>
-          <Button
-            variant="destructive"
-            size="small"
-            ref={openers.delete}
-            aria-label={copy.deleteLabel(request.name)}
-            onClick={() => {
-              setDeciding({ step: "asking", choice: "delete" });
-            }}
-          >
-            {copy.delete}
-          </Button>
-          <Button
-            variant="outline"
-            size="small"
-            ref={openers.reject}
-            aria-label={copy.rejectLabel(request.name)}
-            onClick={() => {
-              setDeciding({ step: "asking", choice: "reject" });
-            }}
-          >
-            {copy.reject}
-          </Button>
-        </div>
+        <Choices
+          name={request.name}
+          openers={openers}
+          onAsk={(choice) => {
+            setDeciding({ step: "asking", choice });
+          }}
+        />
       )}
       {deciding.step === "failed" && (
         <Refusal className={shared.error} said={errorText(copy.errors, { code: deciding.code })}>
@@ -267,42 +301,145 @@ function SettleOn({ personId, code }: { personId: string; code: string }) {
   );
 }
 
-function DeletionQueue() {
-  const [loaded, retry] = useLoad(deletionRequestsApi.deletionRequests);
-  const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
-  const [done, setDone] = useState<string | null>(null);
-  if (loaded.state === "loading") return <PanelLoading />;
-  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-
-  const now = new Date(apiNow());
+/** A row each's decision for those who may decide: Erase, or keep the account with a reason, each in the drawer. */
+function RowDecision({ request, onOpen }: { request: DeletionRequest; onOpen: (id: string, start: Choice) => void }) {
   return (
-    <DecisionQueue
-      titleId="deletions"
-      title={copy.title}
-      items={loaded.value.requests}
-      rowKind="request"
-      empty={copy.empty}
-      done={done}
-    >
-      {(request, decided) => (
-        <Request
-          request={request}
-          now={now}
-          mayDecide={mayDecide}
-          onDecided={(choice) => {
-            setDone(copy.done[choice]);
-            decided();
+    <td className={ACTIONS}>
+      <RowActions>
+        <RowButton
+          aria-label={copy.deleteLabel(request.name)}
+          onClick={() => {
+            onOpen(request.id, "delete");
           }}
-        />
-      )}
-    </DecisionQueue>
+        >
+          {copy.delete}
+        </RowButton>
+        <RowButton
+          aria-label={copy.rejectLabel(request.name)}
+          onClick={() => {
+            onOpen(request.id, "reject");
+          }}
+        >
+          {copy.reject}
+        </RowButton>
+      </RowActions>
+    </td>
+  );
+}
+
+interface RowsProps {
+  readonly requests: readonly DeletionRequest[];
+  readonly now: Date;
+  readonly mayDecide: boolean;
+  readonly onOpen: (id: string, start: Choice | null) => void;
+}
+
+/** The requests waiting, a row each: whose, when they asked, when it falls due, and what to settle first. */
+function RequestRows({ requests, now, mayDecide, onOpen }: RowsProps) {
+  return (
+    <TableScroll labelledBy="deletions">
+      <Table>
+        <thead>
+          <tr>
+            {copy.columns.map((column) => (
+              <th key={column} scope="col">
+                {column}
+              </th>
+            ))}
+            {mayDecide && (
+              <th scope="col">
+                <VisuallyHidden>{copy.actions}</VisuallyHidden>
+              </th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {requests.map((request) => (
+            <tr key={request.id} id={rowId(ROW, request.id)} tabIndex={-1}>
+              <RowHead>
+                <TextButton
+                  compact
+                  aria-label={copy.openLabel(request.name)}
+                  onClick={() => {
+                    onOpen(request.id, null);
+                  }}
+                >
+                  {request.name}
+                </TextButton>
+              </RowHead>
+              <td>{shortDate(indiaDate(request.requested_at))}</td>
+              <td>
+                <span className={styles.due}>{shortDate(indiaDate(request.due))}</span>
+                <Left due={request.due} now={now} />
+              </td>
+              <td>{copy.settle[request.settle_first ?? "none"]}</td>
+              {mayDecide && <RowDecision request={request} onOpen={onOpen} />}
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </TableScroll>
   );
 }
 
 export function DeletionsScreen() {
+  const [loaded, retry] = useLoad(deletionRequestsApi.deletionRequests);
+  const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
+  const [decided, setDecided] = useState<readonly string[]>([]);
+  const [open, setOpen] = useState<{ readonly id: string; readonly start: Choice | null } | null>(null);
+  const [said, setSaid] = useState<string | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const focusHeading = useHeadingAfter(heading);
+  const requests = loaded.state === "loaded" ? loaded.value.requests.filter((each) => !decided.includes(each.id)) : [];
+  useHeaderSub(requests.length === 0 ? undefined : copy.toDecide(requests.length));
+  // A task links to its request's row ("#request-…"), which opens it once the list is read.
+  const target = useTargetRow(loaded.state === "loaded");
+  useEffect(() => {
+    if (loaded.state === "loaded" && target?.startsWith(`${ROW}-`) === true) {
+      setOpen({ id: target.slice(ROW.length + 1), start: null });
+    }
+  }, [loaded.state, target]);
+  if (loaded.state === "loading") return <PanelLoading />;
+  if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
+
+  const now = new Date(apiNow());
+  const opened = requests.find((each) => each.id === open?.id) ?? null;
   return (
-    <div className={shared.column}>
-      <DeletionQueue />
-    </div>
+    <Panel titleId="deletions" title={copy.title} count={requests.length} headingRef={heading}>
+      {requests.length === 0 ? (
+        <EmptyState look="panel" line={copy.empty} />
+      ) : (
+        <RequestRows
+          requests={requests}
+          now={now}
+          mayDecide={mayDecide}
+          onOpen={(id, start) => {
+            setOpen({ id, start });
+          }}
+        />
+      )}
+      {said !== null && <Toast>{said}</Toast>}
+      {opened !== null && (
+        <FormDrawer
+          title={opened.name}
+          onClose={() => {
+            setOpen(null);
+          }}
+        >
+          <Request
+            request={opened}
+            now={now}
+            mayDecide={mayDecide}
+            start={open?.start ?? null}
+            onDecided={(choice) => {
+              setDecided((already) => [...already, opened.id]);
+              setSaid(copy.done[choice]);
+              focusHeading(opened.id);
+              setOpen(null);
+            }}
+          />
+        </FormDrawer>
+      )}
+    </Panel>
   );
 }
