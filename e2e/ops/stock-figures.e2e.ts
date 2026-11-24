@@ -9,6 +9,7 @@ import { answer, CONSUMABLES, IMRAN, json, STOCK, type Answers, type OpsReply } 
 import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 import { rupees } from "../../packages/web-kit/money.ts";
 import { stock } from "../../apps/ops/src/content/stock.ts";
+import { shell } from "../../apps/ops/src/content.ts";
 
 const words = stock.figures;
 
@@ -85,4 +86,15 @@ test("shows the stock's value to nobody who may not read unit costs, and reads n
 test("says where the costs did not load, rather than waiting on them", async ({ page }) => {
   await open(page, { "GET /api/consumables": (route) => route.abort() });
   await expect(tile(page, words.value)).toContainText(words.unread);
+});
+
+test("stands a view of Stock's beneath Stock in the trail, as the redesign's Inventory / Stock / Expiring", async ({
+  page,
+}) => {
+  await open(page);
+  await page.goto("/stock/expiring");
+  const trail = page.getByRole("navigation", { name: shell.crumbs });
+  await expect(trail).toContainText(shell.nav.inventory);
+  await expect(trail.getByRole("link", { name: stock.title })).toHaveAttribute("href", "/stock");
+  await expect(trail).toContainText(stock.views.names.expiring);
 });

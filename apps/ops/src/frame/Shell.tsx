@@ -27,8 +27,11 @@ import {
   SETTINGS_GROUP_NAMES,
   settingsPageOf,
   SETTINGS_PAGE_NAMES,
+  STOCK_VIEWS,
+  stockPath,
   type Route,
 } from "../route.ts";
+import { stock } from "../content/stock.ts";
 import { Account } from "./Account.tsx";
 import { SosBanner } from "./SosBanner.tsx";
 import { CityChips, CityPicker } from "./City.tsx";
@@ -142,9 +145,17 @@ function crumbsOf(route: Route, record: string | undefined): Crumb[] {
   }
   const section = sectionOf(route.page);
   if (record !== undefined) return [{ label: SECTION_NAMES[route.page], to: section.path }];
+  // A view of Stock's beyond On hand stands under Stock, as the redesign's "Inventory / Stock / Expiring".
+  if (route.page === "stock" && route.view !== STOCK_VIEWS[0]) {
+    return [{ label: NAV_NAMES.inventory }, { label: SECTION_NAMES.stock, to: stockPath(STOCK_VIEWS[0]) }];
+  }
   const entry = navOf(route.page);
   return entry.pages.length > 1 ? [{ label: NAV_NAMES[entry.entry] }] : [];
 }
+
+/** The trail's last step: a view of Stock's beyond On hand by its own name, else the page's title. */
+const lastCrumbOf = (route: Route, title: string): string =>
+  route.page === "stock" && route.view !== STOCK_VIEWS[0] ? stock.views.names[route.view] : title;
 
 /** The page's title: a record's own name, Settings' page, or the page's. */
 function pageTitleOf(route: Route, record: string | undefined): string {
@@ -236,7 +247,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
       </SkipLink>
       <Navigation route={route} open={menu.open} className={styles.nav} />
       <div className={styles.body}>
-        <Bar menu={menu} crumbs={[...crumbs, { label: title }]} />
+        <Bar menu={menu} crumbs={[...crumbs, { label: lastCrumbOf(route, title) }]} />
         {lapsed && <Lapsed />}
         <SosBanner />
         <NotListed />
