@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0310. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0311. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -342,6 +342,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0307](0307-the-people-rulings.md) The People rulings
 - [0308](0308-the-inventory-screens-to-the-22-november-redesign.md) The Inventory screens, to the 22 November redesign
 - [0309](0309-the-requests-and-money-screens-to-the-22-november-redesign.md) The Requests and Money screens, to the 22 November redesign
+- [0310](0310-the-growth-and-reports-screens-to-the-22-november-redesign.md) The Growth and Reports screens, to the 22 November redesign
 
 ## Every decision, oldest first
 
@@ -654,3 +655,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0307](0307-the-people-rulings.md) | The People rulings | 2026-11-24 | accepted |  |
 | [0308](0308-the-inventory-screens-to-the-22-november-redesign.md) | The Inventory screens, to the 22 November redesign | 2026-11-24 | accepted |  |
 | [0309](0309-the-requests-and-money-screens-to-the-22-november-redesign.md) | The Requests and Money screens, to the 22 November redesign | 2026-11-24 | accepted |  |
+| [0310](0310-the-growth-and-reports-screens-to-the-22-november-redesign.md) | The Growth and Reports screens, to the 22 November redesign | 2026-11-24 | accepted |  |
