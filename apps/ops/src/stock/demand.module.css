@@ -7,3 +7,10 @@
   line-height: var(--lh-160);
   color: var(--ui-text-muted);
 }
+
+/* A pill a kit short for its technician's allotted visits, wrapping beneath each other where there are several. */
+.sends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+}

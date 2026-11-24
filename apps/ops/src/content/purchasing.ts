@@ -8,13 +8,15 @@ export const purchasing = {
   title: "Purchasing",
   orders: "Orders",
   // Open orders first, each group newest first, with the day it was drafted: the numbers are random to suppliers.
-  columns: ["Order", "Drafted", "Supplier", "Status", "Total", "Expected"] as const,
+  columns: ["Order", "Supplier", "Drafted", "Status", "Total", "Expected"] as const,
   find: "Find an order or supplier",
   none: "No orders yet.",
   /** "PO-0007" */
   number: (number: number) => `PO-${String(number).padStart(4, "0")}`,
+  /** Beside the title: the orders waiting for a manager's approval. */
+  toApprove: (count: number) => `${String(count)} to approve`,
   states: {
-    drafted: "Drafted",
+    drafted: "Awaiting approval",
     approved: "Approved",
     sent: "Sent",
     part_received: "Part received",
@@ -90,7 +92,9 @@ export const purchasing = {
   /** What a printed order says of us, which a manager sets once. */
   letterhead: {
     title: "Letterhead",
-    missing: "Set the letterhead to print it on orders.",
+    missing: "Set the letterhead to print orders.",
+    /** The banner's way to the letterhead's drawer, and the page's action once it is set. */
+    set: "Set it",
     legalName: "Legal name",
     registeredOffice: "Registered office",
     cin: "CIN",

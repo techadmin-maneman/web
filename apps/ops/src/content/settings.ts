@@ -527,7 +527,18 @@ export const settings = {
   /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
   suppliers: {
     title: "Suppliers",
-    columns: { supplier: "Supplier", country: "Country · currency", terms: "Terms", warranty: "Warranty" },
+    columns: {
+      supplier: "Supplier",
+      country: "Country and currency",
+      terms: "Terms",
+      warranty: "Warranty",
+      onTime: "On time, in full",
+    },
+    /** "India, INR" */
+    countryCurrency: (country: string, currency: string) => `${country}, ${currency}`,
+    /** The share of a supplier's orders over the scorecard's window that came on time and whole: "92%". */
+    onTime: (percent: number) => `${String(percent)}%`,
+    onTimeMeta: (percent: number) => `${String(percent)}% on time, in full`,
     find: "Find a supplier",
     /** Those no longer bought from, folded in a panel beneath those who are. */
     retiredTitle: "Retired suppliers",
@@ -703,7 +714,10 @@ export const settings = {
       question: (name: string, from: string) => `Technicians can’t log ${name} from ${from}. Past jobs keep it.`,
     },
     usage: {
-      title: "Expected use per service",
+      title: "Expected use per visit",
+      /** The grid's first column, a service a row. */
+      visit: "Visit",
+      change: "Change",
       service: "Service",
       /** Beneath the services offered, those retired, whose visits sold before are still done. */
       retired: "Retired",

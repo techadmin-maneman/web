@@ -8,7 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QualityScreen } from "../../apps/ops/src/quality/QualityScreen.tsx";
 import { quality as copy } from "../../apps/ops/src/content/quality.ts";
 import { answered } from "./render-hook.ts";
+import { PageHead } from "../../apps/ops/src/frame/PageHead.tsx";
 import { contractChecked } from "./contract-fetch.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 
 const RECALL = {
   id: "rc-1",
@@ -72,7 +74,9 @@ let root: Root;
 let posted: { path: string; body: unknown }[];
 let answers: unknown[];
 
-const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+// Start a recall opens its form in a drawer, drawn over the page: buttons are looked for in the document.
+const button = (text: string) =>
+  [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
 async function press(element: Element | null | undefined) {
   await act(async () => {
@@ -91,6 +95,7 @@ function type(input: HTMLInputElement | null, value: string) {
 }
 
 beforeEach(() => {
+  openDialogsAsJsdomCan();
   posted = [];
   answers = [];
   vi.stubGlobal(
@@ -121,9 +126,21 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** The page in a head with room for its actions, as the frame draws it: Start a recall is the page's own. */
 async function show() {
+  const actions = document.createElement("div");
+  document.body.append(actions);
+  const head = {
+    setSub: () => undefined,
+    setOver: () => undefined,
+    setRecord: () => undefined,
+    setHeading: () => undefined,
+    setRecordHead: () => undefined,
+    actions,
+    aside: null,
+  };
   act(() => {
-    root.render(createElement(QualityScreen));
+    root.render(createElement(PageHead.Provider, { value: head }, createElement(QualityScreen)));
   });
   await answered();
 }
@@ -144,7 +161,8 @@ describe("the Quality page", () => {
 
   it("recalls a lot with why", async () => {
     await show();
-    type(page.querySelector<HTMLInputElement>('input[maxlength="200"]'), "Supplier warned of shedding");
+    await press(button(copy.raise));
+    type(document.body.querySelector<HTMLInputElement>('input[maxlength="200"]'), "Supplier warned of shedding");
     answers = [{ ...DETAIL, id: "rc-2", number: 2, lot_id: "lot-2", lot_code: "OK-1" }];
     await press(button(copy.confirmRaise));
     expect(posted).toEqual([

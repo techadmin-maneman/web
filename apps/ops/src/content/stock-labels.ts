@@ -4,6 +4,10 @@
 const pieces = (count: number) => `${String(count)} ${count === 1 ? "piece" : "pieces"}`;
 
 export const stockLabels = {
+  /** A piece a row, as the redesign draws Labels. */
+  columns: ["Label", "Lot", "Received"] as const,
+  printOne: "Print label",
+  printOneLabel: (code: string) => `Print label ${code}`,
   title: "Labels",
   item: "Item",
   place: "Place",

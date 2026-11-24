@@ -101,6 +101,17 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
+test("says beside its title how many lines await approval, one approved not among them", async ({ page }) => {
+  const approved = { ...ORDER, id: "pl-3", state: "approved" as const };
+  await open(page, { "GET /api/supply-plan": json({ lines: [LOAN, ORDER, approved] }) });
+  await expect(page.getByRole("main").getByText(copy.linesToApprove(2), { exact: true })).toBeVisible();
+  // With none waiting, the panel says so and the head says nothing.
+  await answer(page, { "GET /api/supply-plan": json({ lines: [] }) });
+  await page.reload();
+  await expect(page.getByRole("main").getByText(copy.none, { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText(copy.linesToApprove(0), { exact: true })).toHaveCount(0);
+});
+
 test("lists each transfer and order with why, and approves one at a changed quantity", async ({ page }) => {
   const approved = { lines: [{ ...LOAN, state: "approved" as const, quantity: 4 }, ORDER] };
   await open(page, { "POST /api/supply-plan/lines/{id}/approve": json(approved) });
@@ -189,12 +200,15 @@ test("shows a city’s forecast, and adds an event to the calendar", async ({ pa
 
   const events = page.getByRole("region", { name: copy.events.title });
   await expect(events).toContainText("Wedding season");
-  await events.getByLabel(copy.events.name, { exact: true }).fill("Diwali");
-  await events.getByLabel(copy.events.startsOn).fill("2026-11-08");
-  await events.getByLabel(copy.events.endsOn).fill("2026-11-12");
-  await events.getByLabel(copy.events.percent).fill("25");
+  // Added in a drawer from the list's head (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+  await events.getByRole("button", { name: copy.events.add }).click();
+  const adding = page.getByRole("dialog", { name: copy.events.add });
+  await adding.getByLabel(copy.events.name, { exact: true }).fill("Diwali");
+  await adding.getByLabel(copy.events.startsOn).fill("2026-11-08");
+  await adding.getByLabel(copy.events.endsOn).fill("2026-11-12");
+  await adding.getByLabel(copy.events.percent).fill("25");
   const request = posted(page, "/api/demand-events");
-  await events.getByRole("button", { name: copy.events.save }).click();
+  await adding.getByRole("button", { name: copy.events.save }).click();
   expect((await request).postDataJSON()).toEqual({
     name: "Diwali",
     city: null,

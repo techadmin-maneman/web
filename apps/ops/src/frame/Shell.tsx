@@ -20,6 +20,7 @@ import { useIsPhone } from "../lib/media.ts";
 import { useLapsed } from "../lib/session.ts";
 import {
   mayFollow,
+  mayOpen,
   NAV_NAMES,
   navOf,
   SECTION_NAMES,
@@ -27,8 +28,13 @@ import {
   SETTINGS_GROUP_NAMES,
   settingsPageOf,
   SETTINGS_PAGE_NAMES,
+  STOCK_VIEWS,
+  stockPath,
+  type MayCall,
+  type Page,
   type Route,
 } from "../route.ts";
+import { stock } from "../content/stock.ts";
 import { Account } from "./Account.tsx";
 import { SosBanner } from "./SosBanner.tsx";
 import { CityChips, CityPicker } from "./City.tsx";
@@ -130,11 +136,19 @@ function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: 
   }, [heading, page, path]);
 }
 
+/** An entry of several pages, in the trail: a way back to the first of them the person may open. */
+function entryCrumb(route: Exclude<Route, { readonly page: "more" | "settings" }>, mayCall: MayCall): Crumb[] {
+  const entry = navOf(route.page);
+  if (entry.pages.length < 2) return [];
+  const first = (entry.pages as readonly Page[]).find((page) => mayOpen(mayCall, page)) ?? route.page;
+  return [{ label: NAV_NAMES[entry.entry], to: sectionOf(first).path }];
+}
+
 /**
  * What stands above the page where it sits: its entry above a page of several, its section above a record, Settings'
  * group above its page. The page's own name follows, alone where nothing stands above it.
  */
-function crumbsOf(route: Route, record: string | undefined): Crumb[] {
+function crumbsOf(route: Route, record: string | undefined, mayCall: MayCall): Crumb[] {
   if (route.page === "more") return [];
   if (route.page === "settings") {
     const page = settingsPageOf(route.tab);
@@ -142,9 +156,16 @@ function crumbsOf(route: Route, record: string | undefined): Crumb[] {
   }
   const section = sectionOf(route.page);
   if (record !== undefined) return [{ label: SECTION_NAMES[route.page], to: section.path }];
-  const entry = navOf(route.page);
-  return entry.pages.length > 1 ? [{ label: NAV_NAMES[entry.entry] }] : [];
+  // A view of Stock's beyond On hand stands under Stock, as the redesign's "Inventory / Stock / Expiring".
+  if (route.page === "stock" && route.view !== STOCK_VIEWS[0]) {
+    return [...entryCrumb(route, mayCall), { label: SECTION_NAMES.stock, to: stockPath(STOCK_VIEWS[0]) }];
+  }
+  return entryCrumb(route, mayCall);
 }
+
+/** The trail's last step: a view of Stock's beyond On hand by its own name, else the page's title. */
+const lastCrumbOf = (route: Route, title: string): string =>
+  route.page === "stock" && route.view !== STOCK_VIEWS[0] ? stock.views.names[route.view] : title;
 
 /** The page's title: a record's own name, Settings' page, or the page's. */
 function pageTitleOf(route: Route, record: string | undefined): string {
@@ -223,7 +244,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
   const menu = useMenu();
   const phone = useIsPhone();
   useFocusOnArrival(headingRef, main);
-  const crumbs = crumbsOf(route, record);
+  const crumbs = crumbsOf(route, record, useMayCall());
   const title = pageTitleOf(route, record);
   return (
     <div className={styles.console}>
@@ -236,7 +257,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
       </SkipLink>
       <Navigation route={route} open={menu.open} className={styles.nav} />
       <div className={styles.body}>
-        <Bar menu={menu} crumbs={[...crumbs, { label: title }]} />
+        <Bar menu={menu} crumbs={[...crumbs, { label: lastCrumbOf(route, title) }]} />
         {lapsed && <Lapsed />}
         <SosBanner />
         <NotListed />

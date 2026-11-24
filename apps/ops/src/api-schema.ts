@@ -34025,6 +34025,18 @@ export interface components {
                 /** @description The hair system it needs; null where the client has no profile to match one by. */
                 consumable_code: string | null;
             }[];
+            /** @description Each kit short of a stock code for its technician's visits already allotted (not drafts); the visits not yet allotted are in the city's demand alone. */
+            kits_short: {
+                technician_id: string;
+                /** @description The technician's name. */
+                technician: string;
+                city: string | null;
+                consumable_code: string;
+                /** @description What their visits allotted ahead are expected to use. */
+                expected: number;
+                /** @description What their kit holds now. */
+                held: number;
+            }[];
         };
         StockUnits: {
             consumable_code: string;

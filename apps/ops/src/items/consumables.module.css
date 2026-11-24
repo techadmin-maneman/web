@@ -18,7 +18,7 @@
 
 /* Every list on Items at the same widths, the hair systems' long names room to breathe. */
 .table th:nth-child(1) {
-  width: 54%;
+  width: 38%;
 }
 
 .table th:nth-child(2) {
@@ -26,9 +26,45 @@
 }
 
 .table th:nth-child(3) {
-  width: 16%;
+  width: 18%;
 }
 
+/* Room for "In use until 1 Oct 2027" at half a desk's width. */
 .table th:nth-child(4) {
-  width: 18%;
+  width: 32%;
+}
+
+/* A hair system's long name wraps within its column at half a desk's width, rather than running into the next. */
+.table th[scope="row"] {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The consumables and the hair systems side by side at a desk, stacked short of one. */
+.lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--sp-24);
+}
+
+@media (max-width: 1023px) {
+  .lists {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* One list and what it holds apart, kept together in its column. */
+.list {
+  display: grid;
+  align-content: start;
+  gap: var(--sp-24);
+}
+
+/* A column for an item no longer offered that a service still expects, marked so beneath its name. */
+.retired {
+  display: block;
+  font-size: var(--fs-13);
+  font-weight: var(--weight-regular);
+  color: var(--ui-text-muted);
 }

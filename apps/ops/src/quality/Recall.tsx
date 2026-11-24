@@ -14,6 +14,8 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { SortHeads } from "@maneman/ui/TableTools";
 import { useTableView } from "@maneman/ui/useTableView";
 import { useState } from "react";
+import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { Refusal } from "@maneman/ui/Refusal";
 import type { paths } from "../api-schema.ts";
 import form from "@maneman/ui/forms.module.css";
 import { BookVisit } from "../clients/index.ts";
@@ -171,6 +173,7 @@ export function RecallDetail({
   );
 }
 
+/** Raising a recall on a lot, in the page's drawer; a refusal said in the drawer, the drawer left open. */
 export function RaiseRecall({
   quality,
   onAnswer,
@@ -180,10 +183,10 @@ export function RaiseRecall({
 }) {
   const [lot, setLot] = useState(quality.lots[0]?.id ?? "");
   const [reason, setReason] = useState("");
+  const [failure, setFailure] = useState<Failure | null>(null);
   if (quality.lots.length === 0) return null;
   return (
     <div className={form.group}>
-      <h3 className={form.ruleTitle}>{copy.raise}</h3>
       <Field label={copy.lot} className={form.field}>
         {(control) => (
           <Select
@@ -214,6 +217,7 @@ export function RaiseRecall({
           />
         )}
       </Field>
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       <FormActions>
         <Button
           variant="destructive"
@@ -221,8 +225,12 @@ export function RaiseRecall({
           disabled={lot === "" || reason.trim() === ""}
           onClick={() =>
             void qualityApi.raiseRecall({ lot_id: lot, reason: reason.trim() }).then((answer) => {
+              if (!answer.ok) {
+                setFailure({ code: answer.code, fields: answer.fields });
+                return;
+              }
               onAnswer(answer, copy.raisedSaid);
-              if (answer.ok) setReason("");
+              setReason("");
             })
           }
         >

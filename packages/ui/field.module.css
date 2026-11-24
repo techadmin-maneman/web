@@ -124,6 +124,7 @@
   .widthChoice {
     width: auto;
     min-width: var(--box-area);
+    max-width: 100%;
   }
 
   .select {

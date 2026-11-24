@@ -137,6 +137,7 @@ export type JobSheetList = JobSheet["partial_reasons"];
 /** An item a list's save sends: a checklist's may also say what the client reads. */
 export type JobSheetItemSent = Sent<paths["/api/job-sheet/checklists/{visit_type}"]["post"]>["items"][number];
 export type Stock = Body<paths["/api/stock"]["get"]>;
+export type StockDemand = Body<paths["/api/stock/demand"]["get"]>;
 export type StockUnits = Body<paths["/api/stock/units"]["get"]>;
 export type StockDelivery = Sent<paths["/api/stock/deliveries"]["post"]>;
 export type StockTransfer = Sent<paths["/api/stock/transfers"]["post"]>;

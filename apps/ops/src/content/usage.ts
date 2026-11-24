@@ -8,8 +8,6 @@ export const usage = {
   /** "Since 24 Aug 2026", of the day as YYYY-MM-DD. */
   since: (day: string) => `Since ${plainDate(day)}`,
   technicians: "Against expected",
-  /** Above the table: each technician's use over what their visits expected, the furthest over first. */
-  chart: "Used over expected",
   noTechnicians: "No visits done in these weeks.",
   technicianColumns: ["Technician", "Visits", "Expected", "Used", "Over by"] as const,
   find: "Find a technician",

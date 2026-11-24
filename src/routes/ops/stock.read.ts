@@ -4,6 +4,7 @@
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
+import { kitShortfalls } from "../../domain/purchasing/kit-shortfalls.ts";
 import { stockDemand } from "../../domain/purchasing/stock-demand.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
@@ -38,6 +39,27 @@ const DemandSchema = z
           .strict(),
       )
       .openapi({ description: "Fits booked whose hair system no place in their city holds enough of, soonest first." }),
+    kits_short: z
+      .array(
+        z
+          .object({
+            technician_id: z.string(),
+            technician: z.string().openapi({ description: "The technician's name." }),
+            city: z.union([z.string(), z.null()]),
+            consumable_code: z.string(),
+            expected: z
+              .number()
+              .int()
+              .openapi({ description: "What their visits allotted ahead are expected to use." }),
+            held: z.number().int().openapi({ description: "What their kit holds now." }),
+          })
+          .strict(),
+      )
+      .openapi({
+        description:
+          "Each kit short of a stock code for its technician's visits already allotted (not drafts); the visits not " +
+          "yet allotted are in the city's demand alone.",
+      }),
   })
   .strict()
   .openapi("StockDemand");
@@ -57,7 +79,11 @@ export function registerOpsStockDemand(app: App): void {
     const within = (city: string | null) =>
       reached.kind === "everywhere" || (city !== null && reached.cities.has(city));
     const days = (await opsInputs(c)).stockWatch.demand_days;
-    const { demand, atRisk } = await stockDemand(c.env.DB, indiaDate(c.var.deps.now()), days);
+    const today = indiaDate(c.var.deps.now());
+    const [{ demand, atRisk }, kits] = await Promise.all([
+      stockDemand(c.env.DB, today, days),
+      kitShortfalls(c.env.DB, today, days),
+    ]);
     return c.json(
       {
         days,
@@ -71,6 +97,16 @@ export function registerOpsStockDemand(app: App): void {
             window_start: fit.date,
             city: fit.city,
             consumable_code: fit.code,
+          })),
+        kits_short: kits
+          .filter((kit) => within(kit.city))
+          .map((kit) => ({
+            technician_id: kit.technicianId,
+            technician: kit.name,
+            city: kit.city,
+            consumable_code: kit.code,
+            expected: kit.expected,
+            held: kit.held,
           })),
       },
       200,

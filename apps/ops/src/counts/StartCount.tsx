@@ -1,7 +1,6 @@
 // A count of one item at one place, started now rather than waiting for the morning's tasks
-// (docs/decisions/0185-cycle-counts.md).
+// (docs/decisions/0185-cycle-counts.md), in the drawer the page's action opens.
 
-import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
@@ -25,7 +24,7 @@ export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; 
     } else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <Panel titleId="count-now" title={copy.startTitle}>
+    <>
       <div className={form.group}>
         <Field label={copy.place} className={form.field} error={boxError(copy.errors, failure, "place_id")}>
           {(control) => (
@@ -75,6 +74,6 @@ export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; 
         failure={failure}
         boxes={["place_id", "consumable_code"]}
       />
-    </Panel>
+    </>
   );
 }

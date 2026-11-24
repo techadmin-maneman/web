@@ -16,10 +16,8 @@ test("says beside its title how many no-shows and disputed charges wait on a rul
 test("is the console’s Charges, at the address No-shows had", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("heading", { level: 1, name: opsCopy.noShows.title })).toBeVisible();
-  await expect(page.getByRole("navigation").getByRole("link", { name: opsCopy.noShows.title })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+  const sideNav = page.getByRole("navigation", { name: opsCopy.shell.title });
+  await expect(sideNav.getByRole("link", { name: opsCopy.noShows.title })).toHaveAttribute("aria-current", "page");
 });
 
 test("shows another day’s money when asked, and names the day it is for", async ({ page }) => {

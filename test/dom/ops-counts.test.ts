@@ -123,8 +123,8 @@ async function show() {
   await settle();
 }
 
-const opener = (place: string) =>
-  document.body.querySelector(`button[aria-label="${copy.open} ${copy.heading(place, copy.classItems.weekly)}"]`);
+const opener = (place: string, act: string = copy.act.open) =>
+  document.body.querySelector(`button[aria-label="${act} · ${copy.heading(place, copy.classItems.weekly)}"]`);
 
 describe("the Counts page", () => {
   it("counts a task blind, then counts again what differed", async () => {
@@ -152,7 +152,7 @@ describe("the Counts page", () => {
 
   it("signs off a difference with why, beside what the ledger held, and changes an item’s class", async () => {
     await show();
-    await press(opener("Delhi stockroom"));
+    await press(opener("Delhi stockroom", copy.act.sign_off));
     expect(document.body.textContent).toContain(copy.differencesColumns[1]);
     answers = [{ task: { ...ROOM, state: "done" }, items: [{ ...PIECE, state: "settled" }] }];
     type(labelled(copy.why), "One piece not found");
@@ -161,6 +161,8 @@ describe("the Counts page", () => {
     expect(document.body.textContent).toContain(copy.signedSaid);
 
     answers = [{ ...BOOK, classes: [{ ...BOOK.classes[0], count_class: "monthly", set: true }, BOOK.classes[1]] }];
+    // The classes are read beside the counts, and set in the drawer Change opens.
+    await press(button(copy.change));
     type(document.body.querySelector<HTMLSelectElement>(`select[id="${labelled("Solvent")?.id ?? ""}"]`), "monthly");
     await settle();
     expect(posted[1]).toEqual({ path: "/api/consumables/solvent/count-class", body: { count_class: "monthly" } });

@@ -1,0 +1,18 @@
+/* Counts (./CountsScreen.tsx): what to count, and each item's class beside it, as the redesign draws them. */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--sp-24);
+}
+
+@media (max-width: 1023px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Each item's class, inset as the panel's other rows are. */
+.classes {
+  padding: var(--sp-8) var(--form-inset);
+}

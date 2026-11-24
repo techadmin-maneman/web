@@ -16,7 +16,7 @@ import { useState } from "react";
 import form from "@maneman/ui/forms.module.css";
 import { stock } from "../content/stock.ts";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
-import { PageActions } from "../frame/PageHead.tsx";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 import { useAccess } from "../lib/access.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { LineState, PlanLineSteps, type Answer, type Line, type Plan } from "./PlanLine.tsx";
@@ -139,6 +139,8 @@ export function SupplyPlanScreen() {
   const [failure, setFailure] = useState<Failure | null>(null);
   const access = useAccess();
   const current = plan ?? (loaded.state === "loaded" ? loaded.value : null);
+  const proposed = current?.lines.filter((line) => line.state === "proposed").length ?? 0;
+  useHeaderSub(proposed === 0 ? undefined : copy.linesToApprove(proposed));
   const answered = (answer: Answer, words: string) => {
     if (answer.ok) {
       setPlan(answer.body);

@@ -10,6 +10,7 @@ import type { Orders } from "../../apps/ops/src/purchasing/types.ts";
 import { purchasing } from "../../apps/ops/src/content/purchasing.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 
 const copy = purchasing.letterhead;
 
@@ -36,11 +37,15 @@ let posted: unknown[];
 let answer: () => Response;
 let saved: { orders: Orders; said: string }[];
 
-const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+// The form opens in a drawer, drawn over the page rather than inside the letterhead's line: looked for in the document.
+const button = (text: string) =>
+  [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
 function type(label: string, value: string) {
-  const field = [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === label);
-  const box = page.querySelector<HTMLInputElement | HTMLTextAreaElement>(`#${CSS.escape(field?.htmlFor ?? "")}`);
+  const field = [...document.body.querySelectorAll("label")].find((each) => each.textContent.trim() === label);
+  const box = document.body.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+    `#${CSS.escape(field?.htmlFor ?? "")}`,
+  );
   act(() => {
     if (box === null) return;
     const prototype = box instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
@@ -50,6 +55,7 @@ function type(label: string, value: string) {
 }
 
 beforeEach(() => {
+  openDialogsAsJsdomCan();
   posted = [];
   saved = [];
   answer = () => Response.json({ ...BOOK, letterhead: SET });
@@ -83,6 +89,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** Set it, on the line above the orders, opens the letterhead's form. */
+function openForm() {
+  act(() => {
+    button(copy.set)?.click();
+  });
+}
+
 async function save() {
   await act(async () => {
     button(copy.save)?.click();
@@ -93,12 +106,17 @@ async function save() {
 describe("the letterhead", () => {
   it("asks to be set, and sends the CIN and GSTIN in capitals, or none for an empty box", async () => {
     expect(page.textContent).toContain(copy.missing);
+    openForm();
     type(copy.legalName, SET.legal_name);
     type(copy.deliverTo, SET.deliver_to);
     await save();
     expect(posted).toEqual([SET]);
     expect(saved.map((each) => each.said)).toEqual([copy.saved]);
 
+    // Saved, the drawer closes; opened again, the form starts afresh.
+    openForm();
+    type(copy.legalName, SET.legal_name);
+    type(copy.deliverTo, SET.deliver_to);
     type(copy.registeredOffice, "Plot 2, Lajpat Nagar\nNew Delhi 110024");
     type(copy.cin, "u74999dl2026ptc123456");
     type(copy.gstin, "06aabcm1234a1z5");
@@ -114,11 +132,12 @@ describe("the letterhead", () => {
   it("says a refused box beside it", async () => {
     answer = () =>
       Response.json({ error: { code: "invalid_request", request_id: "r", fields: ["gstin"] } }, { status: 400 });
+    openForm();
     type(copy.legalName, SET.legal_name);
     type(copy.deliverTo, SET.deliver_to);
     type(copy.gstin, "123");
     await save();
-    expect(page.textContent).toContain(copy.errors.gstin);
+    expect(document.body.textContent).toContain(copy.errors.gstin);
     expect(saved).toEqual([]);
   });
 });

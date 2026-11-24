@@ -22738,12 +22738,59 @@
               "additionalProperties": false
             },
             "description": "Fits booked whose hair system no place in their city holds enough of, soonest first."
+          },
+          "kits_short": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "technician_id": {
+                  "type": "string"
+                },
+                "technician": {
+                  "type": "string",
+                  "description": "The technician's name."
+                },
+                "city": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "consumable_code": {
+                  "type": "string"
+                },
+                "expected": {
+                  "type": "integer",
+                  "description": "What their visits allotted ahead are expected to use."
+                },
+                "held": {
+                  "type": "integer",
+                  "description": "What their kit holds now."
+                }
+              },
+              "required": [
+                "technician_id",
+                "technician",
+                "city",
+                "consumable_code",
+                "expected",
+                "held"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Each kit short of a stock code for its technician's visits already allotted (not drafts); the visits not yet allotted are in the city's demand alone."
           }
         },
         "required": [
           "days",
           "demand",
-          "at_risk"
+          "at_risk",
+          "kits_short"
         ],
         "additionalProperties": false
       },

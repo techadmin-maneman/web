@@ -59,7 +59,7 @@ async function recordOf(page: Page) {
 test("lists each supplier with its terms, and adds one", async ({ page }) => {
   await open(page, { "POST /api/suppliers": json(BOOK) });
   const row = page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open("Lumina Hair Co") }) });
-  await expect(row).toContainText("CN · USD");
+  await expect(row).toContainText(copy.countryCurrency("China", "USD"));
   await expect(row).toContainText(copy.terms(30));
   await expect(row).toContainText(copy.warranty(90));
 
@@ -155,4 +155,29 @@ test("shows what a supplier supplies, sets a price where it reads, and adds an i
     lead_time_days: 14,
   });
   expect(await axeViolations(page)).toEqual([]);
+});
+
+// The redesign's on-time column, from the scorecard (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+test("says what share of each supplier's orders came on time and whole", async ({ page }) => {
+  const scores = {
+    suppliers: [
+      {
+        supplier_id: "sup-1",
+        name: "Lumina Hair Co",
+        currency: "USD",
+        orders: 2,
+        on_time_in_full_percent: 50,
+        lead_days: 12,
+        promised_days: 10,
+        failed_check_percent: 0,
+        damaged_percent: 0,
+        claims_settled: 0,
+        claims_accepted: 0,
+        credited: 0,
+      },
+    ],
+  } satisfies OpsReply<"/api/supplier-scorecard">;
+  await open(page, { "GET /api/supplier-scorecard": json(scores) });
+  await expect(page.getByRole("columnheader", { name: copy.columns.onTime })).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "Lumina Hair Co" })).toContainText(copy.onTime(50));
 });

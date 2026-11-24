@@ -2,7 +2,9 @@
 // office and CIN, the GSTIN and where the supplier delivers, which a manager sets once and each printed order carries.
 // Once set, each line changes where it reads (docs/decisions/0212-editing-in-place.md), the rest sent as they stand.
 
-import { Panel } from "@maneman/ui/Panel";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { PageActions } from "../frame/PageHead.tsx";
+import styles from "./purchasing.module.css";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -173,18 +175,34 @@ function LetterheadRows({ letter, onSaved }: { letter: Letter; onSaved: (next: O
   );
 }
 
+/**
+ * The letterhead as the redesign draws it: unset, a line above the orders and Set it, which opens its form in a
+ * drawer; set, the page's Letterhead, its lines changed where they read.
+ */
 export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next: Orders, said: string) => void }) {
   const letter = orders.letterhead;
+  if (letter !== null) {
+    return (
+      <PageActions>
+        <DrawerButton label={copy.title}>{() => <LetterheadRows letter={letter} onSaved={onSaved} />}</DrawerButton>
+      </PageActions>
+    );
+  }
   return (
-    <Panel titleId="letterhead" title={copy.title}>
-      {letter === null ? (
-        <>
-          <Note>{copy.missing}</Note>
-          <SetLetterhead onSaved={onSaved} />
-        </>
-      ) : (
-        <LetterheadRows letter={letter} onSaved={onSaved} />
-      )}
-    </Panel>
+    <Note>
+      <span className={styles.letterheadNote}>
+        {copy.missing}{" "}
+        <DrawerButton label={copy.set} title={copy.title}>
+          {(close) => (
+            <SetLetterhead
+              onSaved={(next, said) => {
+                onSaved(next, said);
+                close();
+              }}
+            />
+          )}
+        </DrawerButton>
+      </span>
+    </Note>
   );
 }

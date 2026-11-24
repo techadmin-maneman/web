@@ -73,7 +73,10 @@ function ExpiringTable({ stock }: { stock: Stock }) {
                     {lot.quantity} {consumable?.unit ?? ""}
                   </td>
                   <td>
-                    {listDate(lot.expires_on ?? stock.today, Number(stock.today.slice(0, 4)))}
+                    {/* The day as a pill, as the redesign draws it: brass ahead, the error's red and Expired once past. */}
+                    <Badge tone={expired ? "error" : "attention"}>
+                      {listDate(lot.expires_on ?? stock.today, Number(stock.today.slice(0, 4)))}
+                    </Badge>
                     {expired && (
                       <Badge tone="error" className={styles.state}>
                         {words.expired}
