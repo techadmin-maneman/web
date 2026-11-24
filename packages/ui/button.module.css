@@ -65,10 +65,10 @@
     font-size: var(--small-text);
   }
 
-  /* An action drawn as its icon alone (./icon-actions.ts): at least a square of its size's height, the icon at its
-     middle. A screen's own class may place it but not pad or narrow it, since an icon squeezed out of its square is
-     gone: the padding is held here over any page's rule, and the square is a least width a page's width cannot
-     undercut. */
+  /* An action drawn as its icon alone (./icon-actions.ts): a square of its size's height, the icon at its middle. A
+     screen's own class may place it but not pad it or change its width, since an icon squeezed out of its square is
+     gone and one stretched past it is a bar: the padding is held here over any page's rule, and the width is held to
+     the square both ways. */
   .button.iconOnly {
     padding: 0 !important;
   }

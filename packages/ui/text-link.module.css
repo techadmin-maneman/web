@@ -49,14 +49,16 @@
     }
   }
 
-  /* Lit under a pointer that rests, so a tap leaves no mark behind; lit for the keyboard everywhere. */
+  /* Lit under a pointer that rests, so a tap leaves no mark behind; lit while pressed, and for the keyboard,
+     everywhere. */
   @media (hover: hover) {
     .iconOnly:hover:not(:disabled, [aria-disabled="true"]) {
       background: var(--ui-box-off);
     }
   }
 
-  .iconOnly:focus-visible {
+  .iconOnly:focus-visible,
+  .iconOnly:active:not(:disabled, [aria-disabled="true"]) {
     background: var(--ui-box-off);
   }
 

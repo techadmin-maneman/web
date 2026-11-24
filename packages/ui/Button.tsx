@@ -2,8 +2,8 @@
 // the colours the boards draw it in, and a size, which each app sets for
 // itself (./base.css): the client app's primary action is 56 px, the
 // technician app's 64. A screen's own class places the button -- its margin,
-// its width -- and wins over everything here, so it never colours one: that
-// would erase the button's states (./README.md).
+// its width -- and wins over everything here but an icon's square, so it never
+// colours one: that would erase the button's states (./README.md).
 
 import type { IconSize } from "@maneman/brand/icons";
 import { useContext, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type MouseEvent, type Ref } from "react";

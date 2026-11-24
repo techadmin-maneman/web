@@ -85,6 +85,32 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeFocused();
 });
 
+// Go and Stop are one pair: where the bar's line has room beside the list for Go alone, both go to the next line.
+test("keeps Go and Stop on one line however the list's line breaks", async ({ page }) => {
+  await open(page);
+  await press(page, ROHIT_BLOCK);
+  await press(page, "Move visit");
+  const go = page.getByRole("button", { name: opsCopy.dispatch.landing.listGo });
+  const stop = page.getByRole("button", { name: opsCopy.dispatch.landing.stop });
+  await expect(stop).toBeVisible();
+  // The line holding the list and Go, narrowed to the list, a gap and Go: room for Go beside the list, not Stop too.
+  const select = await page.getByLabel(opsCopy.dispatch.landing.list).elementHandle();
+  await go.evaluate(
+    (button, [list, room]) => {
+      let line = button.parentElement;
+      while (line !== null && !line.contains(list)) line = line.parentElement;
+      const field = line === null ? undefined : [...line.children].find((each) => each.contains(list));
+      if (line === null || field === undefined) throw new Error("no line holds the list and Go");
+      line.style.width = `${String(field.getBoundingClientRect().width + room)}px`;
+    },
+    [select, 8 + 28 + 4] as const,
+  );
+  const goBox = await go.boundingBox();
+  const stopBox = await stop.boundingBox();
+  if (goBox === null || stopBox === null) throw new Error("Go or Stop is not drawn");
+  expect(stopBox.y).toBeCloseTo(goBox.y, 0);
+});
+
 // A free visit, or one paid once the client is fitted, has no payment to carry over.
 // ADR 0115: a client's visit goes to another day for ops' own reasons only once the client agrees.
 test("asks the client to confirm a move to another day, sending it as a proposal the visit waits on", async ({

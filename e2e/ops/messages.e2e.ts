@@ -122,6 +122,39 @@ test("names a Care person by the name clients know them by, once a manager has s
   await expect(carePerson(page)).toHaveText("Asha");
 });
 
+// The panel beside a chat is a narrow column; every action in it is drawn as its icon, and stays a square in it.
+test("keeps each of the client panel's icons a square, at a desk and on a phone", async ({ page }) => {
+  await answer(page, {
+    "GET /api/conversations": json({ conversations: [ARJUN], next_cursor: null }),
+    "GET /api/conversations/{id}": json({ conversation: ARJUN, items: [], close_reason: null, piece_report: null }),
+    "GET /api/conversations/{id}/report-photos": json({
+      photos: [
+        {
+          report_id: "9a1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e",
+          reference: "MM-ISS-0032",
+          n: 1,
+          at: "2026-09-20T04:00:00.000Z",
+        },
+      ],
+    }),
+  });
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto("/messages");
+    await chatRow(page, "Arjun Mehta").click();
+    const panel = page.getByRole("complementary", { name: copy.panel.title });
+    await expect(panel.getByRole("button", { name: copy.reportPhotos.show(1) })).toBeVisible();
+    // The page links, free visits, a matter for the city, and the report's photographs.
+    const icons = await panel
+      .locator("[data-tip]")
+      .evaluateAll((all) =>
+        all.map((each) => each.getBoundingClientRect()).map(({ width, height }) => ({ width, height })),
+      );
+    expect(icons.length).toBeGreaterThanOrEqual(7);
+    for (const icon of icons) expect(Math.abs(icon.width - icon.height)).toBeLessThanOrEqual(1);
+  }
+});
+
 // Four ways to search: Messages took a box and a Find; it now finds as it is typed.
 test("finds a chat by the client's name as it is typed, with no Find to press", async ({ page }) => {
   await answer(page, {

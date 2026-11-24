@@ -84,6 +84,19 @@ test("says a link is copied above the phone's tab bar, clear of its names", asyn
   expect(tabs.y - (toast.y + toast.height)).toBeCloseTo(24, 0);
 });
 
+test("keeps a link's Retire on its row's line, beside its other buttons", async ({ page }) => {
+  await open(page, { width: 1440, height: 900 });
+  const copied = await row(page)
+    .getByRole("button", { name: copy.copyLabel("Green Valley Towers") })
+    .boundingBox();
+  const retire = await row(page)
+    .getByRole("button", { name: copy.retiring.label("Green Valley Towers") })
+    .boundingBox();
+  if (copied === null || retire === null) throw new Error("Copy or Retire is not drawn");
+  expect(retire.y).toBeCloseTo(copied.y, 0);
+  expect(retire.x).toBeGreaterThan(copied.x);
+});
+
 test("lights a row pointed at to its buttons, at a desk", async ({ page }) => {
   await open(page, { width: 1440, height: 900 });
   const cells = row(page).getByRole("cell");
