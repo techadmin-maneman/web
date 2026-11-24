@@ -165,6 +165,22 @@ describe("a button that names an icon", () => {
     expect(drawn(false, waiting).disabled).toBe(true);
   });
 
+  it("as a text button that cannot act yet, stays reachable and does nothing on a tap", () => {
+    let taps = 0;
+    const waiting = createElement(
+      TextButton,
+      { icon: ACTION_ICONS.x, disabled: true, onClick: () => (taps += 1) },
+      "Clear",
+    );
+    const button = drawn(true, waiting);
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    act(() => {
+      button.click();
+    });
+    expect(taps).toBe(0);
+  });
+
   it("as a text button, does the same", () => {
     const more = createElement(TextButton, { icon: ACTION_ICONS.chevronDown }, "Show 4 more");
     const button = drawn(true, more);

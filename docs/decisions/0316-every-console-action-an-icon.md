@@ -29,10 +29,11 @@ and Book a visit among them, with icons of the first rank, the long actions cove
    the pointer rests on it, the keyboard comes to it, or a finger presses and holds it, when the press does not act
    (`@maneman/ui/ActionTips`); gone on Escape, a scroll or the next touch. A button's own `aria-label`, where it names
    the record it acts on, is that label.
-4. **One that cannot act yet still says what it is, and what it waits for.** Drawn as its icon it is marked
-   `aria-disabled` rather than `disabled`, so the pointer and the keyboard still reach it, and a tap does nothing. Its
-   label carries a second line, the `Missing` line beneath the form that its `aria-describedby` names ("Write a
-   reason.").
+4. **One that cannot act yet still says what it is.** Drawn as its icon it is marked `aria-disabled` rather than
+   `disabled`, so the pointer and the keyboard still reach it, its label shows, and a tap does nothing. Where its form
+   says what it waits for, in a `Missing` line beneath it that its `aria-describedby` names ("Write a reason."), the
+   label carries that line too. Ten forms say so: those whose wait was not otherwise plain, such as a reason box
+   below the fold, two ticks, or a pincode, an area and a city.
 5. **Every icon is a finger's square** on a phone or under a coarse pointer (`--tap`), however compact its row.
 6. **A record's name, or a piece of content, keeps its words.** A client's name or a purchase order's number that opens
    it, a visit's time on the board, a quick reply's title: these are what the console shows, not what it does.

@@ -80,6 +80,8 @@ test.describe("under a finger", () => {
     await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [at] });
     await expect(tip(page)).toHaveText(copy.publish.openCount(1));
     await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    // Long enough for a click that follows the press to have opened Publish's question.
+    await page.waitForTimeout(500);
     await expect(page.getByRole("heading", { name: copy.publish.title })).toHaveCount(0);
   });
 });

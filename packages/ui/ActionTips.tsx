@@ -64,10 +64,14 @@ function labelOf(element: HTMLElement) {
 type Label = ReturnType<typeof labelOf>;
 type Handler = readonly [Document | Window, string, (event: Event) => void, boolean];
 
-/** A wait under way, and the action a held finger showed the words of, whose ending tap does not act on it. */
+/**
+ * A wait under way; the action a held finger showed the words of, whose ending tap does not act on it; and whether the
+ * last press was a finger's, the only press whose menu the label keeps away.
+ */
 interface Hold {
   timer?: ReturnType<typeof setTimeout>;
   held: HTMLElement | null;
+  touch: boolean;
 }
 
 /** What the pointer and the finger do to the label: a rest shows the words, a hold shows them instead of acting. */
@@ -83,25 +87,28 @@ function pointerHandlers(label: Label, hold: Hold, hide: () => void): Handler[] 
   };
   const over = (event: Event) => {
     const at = tipped(event.target);
-    if ((event as PointerEvent).pointerType === "touch" || label.showing(at)) return;
+    if ((event as PointerEvent).pointerType === "touch" || (at !== null && label.showing(at))) return;
     hide();
     if (at !== null) later(at, REST, false);
   };
   const down = (event: Event) => {
     hide();
     hold.held = null;
+    hold.touch = (event as PointerEvent).pointerType === "touch";
     const at = tipped(event.target);
-    if ((event as PointerEvent).pointerType === "touch" && at !== null) later(at, HOLD, true);
+    if (hold.touch && at !== null) later(at, HOLD, true);
   };
   const tap = (event: Event) => {
     const { held } = hold;
-    if (held === null || !(event.target instanceof Node) || !held.contains(event.target)) return;
+    if (held === null) return;
     hold.held = null;
+    // A click from the keyboard (no pointer, detail 0) is always the person's own.
+    if ((event as MouseEvent).detail === 0 || !(event.target instanceof Node) || !held.contains(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
   };
   const menu = (event: Event) => {
-    if (hold.held !== null || tipped(event.target) !== null) event.preventDefault();
+    if (hold.held !== null || (hold.touch && tipped(event.target) !== null)) event.preventDefault();
   };
   return [
     [document, "pointerover", over, false],
@@ -110,6 +117,7 @@ function pointerHandlers(label: Label, hold: Hold, hide: () => void): Handler[] 
     [document, "pointercancel", stop, false],
     [document, "click", tap, true],
     [document, "contextmenu", menu, false],
+    [document, "keydown", () => (hold.held = null), true],
   ];
 }
 
@@ -134,7 +142,7 @@ function otherHandlers(label: Label, hide: () => void): Handler[] {
 /** The label following the page's actions; the cleanup that stops it. */
 function follow(element: HTMLElement): () => void {
   const label = labelOf(element);
-  const hold: Hold = { held: null };
+  const hold: Hold = { held: null, touch: false };
   const hide = () => {
     clearTimeout(hold.timer);
     label.hide();

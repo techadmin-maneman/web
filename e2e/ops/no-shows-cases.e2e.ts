@@ -5,6 +5,7 @@
 // e2e/ops/fixtures.ts, since no route can open a case from outside: a
 // technician's phone closes a job as a no-show.
 
+import { WAITING_FOR } from "../../apps/ops/src/content/common.ts";
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -181,6 +182,9 @@ test("offers neither ruling until a reason is written", async ({ page }) => {
   const first = caseOf(page, FIRST);
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge })).toBeDisabled();
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.waive })).toBeDisabled();
+  // Drawn as its icon, Charge still says what it is, and what it waits for, above it on a pointer's rest.
+  await first.getByRole("button", { name: opsCopy.noShows.queue.charge }).hover();
+  await expect(page.locator("[popover]")).toHaveText(`${opsCopy.noShows.queue.charge}${WAITING_FOR.reason}`);
   await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("   ");
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge })).toBeDisabled();
 });
