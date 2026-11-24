@@ -9,3 +9,17 @@
 .links li + li {
   margin-top: var(--sp-8);
 }
+
+/* The steps beside the period's returns on a wide desk, as the redesign draws them; one above the other short of it. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--sp-24);
+}
+
+@media (max-width: 1279px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

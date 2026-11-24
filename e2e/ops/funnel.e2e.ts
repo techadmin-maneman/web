@@ -6,7 +6,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { funnel as copy } from "../../apps/ops/src/content/funnel.ts";
-import { rupees } from "../../packages/web-kit/money.ts";
+import { roundRupees, rupees } from "../../packages/web-kit/money.ts";
 import { channelNamed } from "../../src/policy/channels.ts";
 
 const NONE = { spend: 0, leads: 0, consults_booked: 0, consults_done: 0, first_fits: 0, first_fit_revenue: 0 };
@@ -45,6 +45,20 @@ const FIGURES = {
   ],
   tryons: 40,
 } satisfies OpsReply<"/api/growth/acquisition">;
+
+// Beside the steps, as the redesign draws them: the period's spend, each first fit's cost, their revenue, the return.
+test("sets the period's spend and what its first fits brought back beside the steps", async ({ page }) => {
+  await answer(page, { "GET /api/growth/acquisition": json(FIGURES) });
+  await page.goto("/funnel");
+  // A figure's tile: its name with its value, as "Spend" also names a tab and a column of the channels' table.
+  const tile = (label: string, value: string) =>
+    page.getByText(label, { exact: true }).locator("..").filter({ hasText: value });
+  const { spend, first_fits: fits, first_fit_revenue: revenue } = FIGURES.totals;
+  await expect(tile(copy.figures.spend, rupees(spend))).toBeVisible();
+  await expect(tile(copy.figures.perFit, roundRupees(spend / fits))).toBeVisible();
+  await expect(tile(copy.figures.revenue, rupees(revenue))).toBeVisible();
+  await expect(tile(copy.figures.roas, copy.roas(revenue, spend))).toBeVisible();
+});
 
 test("shows try-on to fit, each channel's spend and what it brought, cohorts, what clients said, and the dashboards", async ({
   page,
