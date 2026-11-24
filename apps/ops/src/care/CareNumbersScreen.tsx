@@ -16,6 +16,7 @@ import { care } from "../content/care.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
 import shared from "./care.module.css";
+import styles from "./care-numbers.module.css";
 import { Stack } from "@maneman/ui/Layout";
 import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { useHeaderSub } from "../frame/PageHead.tsx";
@@ -86,16 +87,11 @@ function Reasons({ numbers }: { numbers: CareNumbers }) {
   );
 }
 
-function Lists({ numbers }: { numbers: CareNumbers }) {
+function Remedies({ numbers }: { numbers: CareNumbers }) {
   const remedies = numbers.remedies.map((row) =>
     copy.remedied(care.remedy.reasons[row.reason as keyof typeof care.remedy.reasons], row.remedies, row.visits),
   );
-  return (
-    <>
-      <Reasons numbers={numbers} />
-      <Counted titleId="care-remedies" title={copy.remedies} lines={remedies} empty={copy.noRemedies} />
-    </>
-  );
+  return <Counted titleId="care-remedies" title={copy.remedies} lines={remedies} empty={copy.noRemedies} />;
 }
 
 function ByPerson({ numbers }: { numbers: CareNumbers }) {
@@ -162,8 +158,12 @@ function Numbers({ period }: { period: CarePeriod }) {
     <>
       <Span from={numbers.from} to={numbers.to} />
       <Figures numbers={numbers} />
-      <Lists numbers={numbers} />
-      <ByPerson numbers={numbers} />
+      {/* What chats were about beside who answered them, the remedies given beneath, as the redesign draws them. */}
+      <div className={styles.beside}>
+        <Reasons numbers={numbers} />
+        <ByPerson numbers={numbers} />
+      </div>
+      <Remedies numbers={numbers} />
     </>
   );
 }

@@ -1,0 +1,16 @@
+/* What ./CareNumbersScreen.tsx alone draws. */
+
+/* What chats were about beside who answered them on a desk, as the redesign draws them; one above the other short of
+   one. */
+.beside {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--sp-24);
+}
+
+@media (max-width: 1023px) {
+  .beside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
