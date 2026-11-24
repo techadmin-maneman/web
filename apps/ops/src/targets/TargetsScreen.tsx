@@ -1,8 +1,7 @@
 // Admin · Targets (docs/decisions/0154-targets-and-reporting-access.md): each month's plan, city by city, by measure,
-// which the nightly reporting copy carries for every scorecard to set beside the actual. Beneath each measure's name,
-// how far the city has come, with a line filling towards its target (docs/decisions/0317-targets-progress.md). A city's
-// measures are each changed where they read; an emptied one is taken off. Beneath, every target the month holds, to
-// compare.
+// beneath each measure's name how far the city has come, a line filling towards its target (docs/decisions/0317-
+// targets-progress.md). A measure is changed where it reads; an emptied one is taken off. Beneath, every target the
+// month holds, to compare.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { whoWords } from "../lib/who.ts";

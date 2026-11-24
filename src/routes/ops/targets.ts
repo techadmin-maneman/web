@@ -5,7 +5,7 @@ import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { removeTarget, setTarget, targetsFor } from "../../domain/ops/targets.ts";
-import { targetProgress } from "../../domain/ops/target-progress.ts";
+import { targetProgress } from "../../domain/analytics/target-progress.ts";
 import { opsInputs, stageDays } from "../../http/ops-inputs.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";

@@ -1,6 +1,6 @@
 // What each city has done towards a month's targets, for the Targets page (docs/decisions/0317-targets-progress.md):
-// each measure counted as the Funnel (../analytics/acquisition.ts) and the reporting copy (../analytics/rows.ts,
-// ../analytics/capacity.ts) count it, so the page and the dashboards agree. Records marked as tests are left out.
+// each measure counted as the Funnel (./acquisition.ts) and the reporting copy (./rows.ts, ./capacity.ts) count it,
+// so the page and the dashboards agree. Records marked as tests are left out.
 //
 // - Leads: the clients whose first lead came in the month, in that lead's city.
 // - Consultations done and new clients: the consultations done and first fits paid in the month, in the visit's city
@@ -13,8 +13,8 @@
 
 import { addDays, addMonths, indiaDate, indiaInstant, monthOf } from "../../lib/india-time.ts";
 import { TARGET_MEASURE_NAMES, type TargetMeasure } from "../../policy/targets.ts";
-import { NET } from "../analytics/acquisition.ts";
-import { capacityRows } from "../analytics/capacity.ts";
+import { NET } from "./acquisition.ts";
+import { capacityRows } from "./capacity.ts";
 import { activeClientsBy } from "../clients/active-clients.ts";
 import type { StageDays } from "../clients/client-stage.ts";
 import { paymentCityOf, visitCity } from "../clients/places.ts";
@@ -84,7 +84,7 @@ const SPEND = `SELECT city, SUM(amount) AS n FROM spend_entries
     AND COALESCE(spent_date, month || '-01') >= ?1 AND COALESCE(spent_date, month || '-01') <= ?2
   GROUP BY city`;
 
-/** A visit done, and whether it was on time, as the reporting copy's `is_on_time` (../analytics/rows.ts). */
+/** A visit done, and whether it was on time, as the reporting copy's `is_on_time` (./rows.ts). */
 const VISITS = `SELECT ${visitCity("a")} AS city, COUNT(*) AS n,
     SUM(EXISTS (SELECT 1 FROM checkins c WHERE c.appointment_id = a.id AND c.passed = 1
       AND c.at <= strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '+' || ?3 || ' minutes'))) AS on_time

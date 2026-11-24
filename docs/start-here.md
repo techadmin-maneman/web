@@ -258,7 +258,8 @@ this map, or when the map names something that no longer exists.
 
 ### Reports
 
-- **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `acquisition` (the Funnel page's figures), `rows`
+- **Database work** (`src/domain/analytics/`): `nightly` (the copy Zoho Analytics reads, once a night), `acquisition` (the Funnel page's figures),
+  `target-progress` (how far each city has come towards the month's targets), `rows`
   (what each of its tables holds), `capacity` (each technician's day, from the dispatch board), `message-days`,
   `care-cases` (grievances and tasks, opened and closed), `leads`, `spend` (offline spend, partner payments and
   invites' free visits), `client-months` (where each client stood each month), `stock` (the stock ledger, and each week's position),

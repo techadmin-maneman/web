@@ -73,20 +73,21 @@ const progressOf = (month: string, figures: Readonly<Record<string, number>>): P
 
 /** A measure's row on the city's panel, by its Change. */
 const rowOf = (page: Page, measure: keyof typeof copy.measures) =>
-  page
-    .getByRole("button", { name: `${EDITING.change} ${copy.measures[measure]}` })
-    .locator("xpath=ancestor::div[1]/..");
+  page.getByRole("button", { name: `${EDITING.change} ${copy.measures[measure]}` }).locator("xpath=ancestor::div[1]");
 
 test("says beneath each measure how far the month has come, with a line towards a target set", async ({ page }) => {
+  const askedFor = (route: Route) => new URL(route.request().url()).searchParams.get("month");
   await open(page, {
+    "GET /api/targets": (route: Route) =>
+      json(askedFor(route) === "2026-08" ? { ...SEPTEMBER, month: "2026-08" } : SEPTEMBER)(route),
     "GET /api/targets/progress": (route: Route) =>
       json(
-        new URL(route.request().url()).searchParams.get("month") === "2026-08"
+        askedFor(route) === "2026-08"
           ? progressOf("2026-08", { new_clients: 31 })
           : progressOf("2026-09", { leads: 612, new_clients: 9, cac: 3500 }),
       )(route),
   });
-  // New clients has a target of 40: nine so far, its line a little filled, in the accent as it is below half.
+  // New clients has a target of 40: nine so far, and its line filled to nine fortieths.
   const newClients = rowOf(page, "new_clients");
   await expect(newClients).toContainText(copy.soFar("9"));
   await expect(newClients).toContainText(copy.target("40"));
@@ -99,7 +100,6 @@ test("says beneath each measure how far the month has come, with a line towards 
   // A measure with nothing to count by says nothing beneath its name.
   await expect(rowOf(page, "on_time")).not.toContainText("so far");
   // A month gone says what it came to.
-  await answer(page, { "GET /api/targets": json({ ...SEPTEMBER, month: "2026-08" }) });
-  await page.getByRole("main").getByLabel(copy.month).selectOption("2026-08");
+  await page.getByRole("combobox", { name: copy.month }).selectOption("2026-08");
   await expect(rowOf(page, "new_clients")).toContainText(copy.inMonth("31", "August 2026"));
 });

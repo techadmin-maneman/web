@@ -1,4 +1,4 @@
-// What each city has done towards a month's targets (src/domain/ops/target-progress.ts, src/routes/ops/targets.ts;
+// What each city has done towards a month's targets (src/domain/analytics/target-progress.ts, src/routes/ops/targets.ts;
 // docs/decisions/0317-targets-progress.md), each measure as the Funnel and the reporting copy count it. NOW is Monday
 // 21 September 2026, 12 noon in India; the arrival window is the default 30 minutes.
 
