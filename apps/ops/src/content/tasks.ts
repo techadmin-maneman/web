@@ -27,7 +27,6 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   move_unanswered: "Open in Dispatch",
   reschedule_request: "Move in Dispatch",
   unanswered_chat: "Answer in Messages",
-  remedy_approval: "Decide in Remedies",
   leave_conflict: "Move in Dispatch",
   unassigned_visit: "Assign in Dispatch",
   visit_not_begun: "Open in Dispatch",
@@ -475,6 +474,18 @@ export const tasks = {
     errors: {
       not_permitted: NOT_PERMITTED,
       superseded: changed("Already decided."),
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
+  /** A remedy past Care's limit, decided in its task's drawer. */
+  remedy: {
+    approve: "Approve",
+    decline: "Decline",
+    sending: "Saving…",
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: changed("Already decided."),
       offline: OFFLINE,
       unknown: FAILED,
     },

@@ -5,7 +5,7 @@ import { ROUTE_NEEDS } from "@rules/policy/console-routes.ts";
 import { indiaDate, indiaTimeOf } from "@maneman/web-kit/dates";
 import type { components } from "../api-schema.ts";
 import { activity } from "../content/activity.ts";
-import { CONSOLE_CALLS, DONE, SESSION_CALLS } from "../content/activity-sentences.ts";
+import { CONSOLE_CALLS, DONE, REMEDY_PAST_LIMIT, SESSION_CALLS } from "../content/activity-sentences.ts";
 
 type Entry = components["schemas"]["ActivityEntry"];
 
@@ -65,6 +65,8 @@ function phraseOf(entry: Entry): string {
     if (said !== undefined) return said;
     if (call?.method === "GET" || /\/(find|search)$/.test(call?.route ?? "")) return readOf(entry);
   }
+  // A remedy given past the limit says so, its giver's approval read from the entry's own words.
+  if (entry.action === "remedy.give" && entry.detail?.past_limit === true) return REMEDY_PAST_LIMIT;
   // The log keeps actions an earlier build wrote under names this one no longer has words for.
   return Object.hasOwn(DONE, entry.action) ? DONE[entry.action] : entry.action;
 }

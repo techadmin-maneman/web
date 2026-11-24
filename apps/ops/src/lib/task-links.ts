@@ -6,7 +6,7 @@ import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import type { Task, TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
 import { rowPath } from "@maneman/ui/target";
-import { clientPath, dispatchPath, settingsPath, type ClientTab } from "../route.ts";
+import { clientPath, dispatchPath, type ClientTab } from "../route.ts";
 import { DECIDED_IN } from "../tasks/decided.ts";
 
 type Group = TaskGroup["group"];
@@ -38,8 +38,6 @@ function onTheBoard(task: Task): string {
 
 /** The section and row a task is decided on; null for a group done from its row or on the client's page. */
 export function decidedAt(group: Group, task: Task): string | null {
-  // A remedy past the limit is approved or declined on Settings' Remedies, at its row.
-  if (task.facts.group === "remedy_approval") return rowPath(settingsPath("remedies"), "remedy", task.id);
   // A paid custom order is sent from its purchase order, on Purchasing.
   if (task.facts.group === "custom_order_to_send") return rowPath("/purchasing", "order", task.facts.purchase_order_id);
   // A claim is closed from its row; its way on is the client's chat, where Care read the photographs sent with it.

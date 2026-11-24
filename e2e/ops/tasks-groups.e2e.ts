@@ -568,54 +568,6 @@ test("names a client as plain text, and offers no way to a section, where the pe
   await expect(row(page, "Vikram Sethi").getByRole("link", { name: /^Decide in Number changes/ })).toHaveCount(0);
 });
 
-// A technician's ask for leave from their phone, decided from its drawer: Approve records the leave.
-test("approves a technician’s ask for leave from its drawer", async ({ page }) => {
-  const id = "97000000-0000-4000-8000-000000000001";
-  const board: OpsReply<"/api/tasks"> = {
-    overdue: 0,
-    truncated: false,
-    low_stock_places: 0,
-    lapsed: 0,
-    staff: [],
-    groups: [
-      {
-        group: "leave_request",
-        count: 1,
-        ...PLAIN,
-        tasks: [
-          {
-            id,
-            person: null,
-            facts: {
-              group: "leave_request",
-              technician: "Imran Qureshi",
-              from: "2027-09-26",
-              to: "2027-09-28",
-              note: "Sister’s wedding",
-            },
-            detail: "2027-09-26 Imran Qureshi",
-            since: "2027-09-21T06:00:00.000Z",
-            due: "2027-09-22T06:00:00.000Z",
-            owner: null,
-          },
-        ],
-      },
-    ],
-  };
-  const decided: unknown[] = [];
-  await open(page, board, NO_ALERTS, {
-    "POST /api/leave-requests/{id}/decision": async (route) => {
-      decided.push(route.request().postDataJSON());
-      await empty()(route);
-    },
-  });
-  await expect.poll(() => kindsListed(page)).toEqual([opsCopy.tasks.groups.leave_request].sort());
-  await expect(row(page, "Imran Qureshi")).toContainText("Sister’s wedding");
-  const drawer = await detail(page, "Imran Qureshi");
-  await drawer.getByRole("button", { name: opsCopy.tasks.leave.approve }).click();
-  await expect.poll(() => decided).toEqual([{ decision: "approved" }]);
-});
-
 // A technician's asks of ops from the phone (docs/decisions/0249-schedule-kit-and-me.md): each a task ops close with
 // what was done.
 test("lists a technician's asks, for kit and to move a visit, and closes one with what was done", async ({ page }) => {

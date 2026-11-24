@@ -18,6 +18,7 @@ import { BookFromTask } from "./BookFromTask.tsx";
 import { DecideLink } from "./DecideLink.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
 import { LeaveDecision } from "./LeaveDecision.tsx";
+import { RemedyDecision } from "./RemedyDecision.tsx";
 import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
 import { subOf } from "./task-subs.ts";
 import { TaskActions } from "./TaskActions.tsx";
@@ -137,6 +138,7 @@ export function TaskDrawer({ group, task, subject, now, acting, onDismiss }: Pro
         )}
         <CallAboutMove group={group} task={task} subject={subject} onTold={done} />
         <LeaveDecision group={group} task={task} onDecided={done} />
+        <RemedyDecision group={group} task={task} onDecided={done} />
         {task.facts.group === "fit_guarantee_claim" && task.facts.conversation_id !== null && (
           <Suspense fallback={null}>
             <ReportPhotos conversationId={task.facts.conversation_id} only={task.facts.references} />

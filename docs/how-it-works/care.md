@@ -17,7 +17,7 @@ The reply clock counts in Care's hours, set in Settings · Rules (`care_hours`):
 ## What Care can do
 
 - **Send a matter to a city**, when it needs a technician's visit or a word with the city team: a City matter on that city's board, closed with what was done (`src/domain/care/city-matters.ts`).
-- **Give a remedy**: free service visits with why, granted at once within the limit ops set (`remedy_limit`), above it waiting on a Customer Care manager (`src/domain/care/remedies.ts`).
+- **Give a remedy**: free service visits with why, granted at once within the limit ops set (`remedy_limit`). Above it, a remedy waits on a Customer Care manager, who decides it from its task's drawer; one given by a manager or an admin is granted at once, and Activity says it went past the limit (`src/domain/care/remedies.ts`, ADR 0315).
 - **Take a grievance**, answered within the 30 days the app promises (`src/domain/ops/grievances.ts`).
 
 ## The Tasks board

@@ -1,7 +1,6 @@
 // Remedies (docs/decisions/0143-remedies.md): free service visits Care give a client from their chat, with why, and
 // the panel on the Messages page where a Customer Care manager approves or declines those above the limit.
 
-import { rowId, useTargetRow } from "@maneman/ui/target";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Toast } from "@maneman/ui/Toast";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -197,7 +196,7 @@ function RemediesTable(props: { remedies: readonly Remedy[]; mayDecide: boolean;
         </thead>
         <tbody>
           {view.shown.map((remedy) => (
-            <tr key={remedy.id} id={rowId("remedy", remedy.id)} tabIndex={-1}>
+            <tr key={remedy.id}>
               <RowHead>{remedy.person.name}</RowHead>
               <td className={FIGURE}>{remedy.visits}</td>
               <td>{copy.reasons[remedy.reason]}</td>
@@ -238,8 +237,6 @@ export function RemediesPanel() {
   const load = useCallback(() => careApi.remedies(), []);
   const [loaded, retry] = useLoad(load);
   const mayDecide = useAccess().mayCall("POST /api/remedies/{id}/approve");
-  // A task's link names a remedy past the limit: its row is brought into view once the list is read.
-  useTargetRow(loaded.state === "loaded");
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { remedies } = loaded.value;
