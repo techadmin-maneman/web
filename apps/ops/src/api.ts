@@ -308,4 +308,9 @@ export const api = {
     client.get("/api/tasks", { query: { lapsed: "include", ...setOnly({ city }) } }),
   /** What each place holds, what is low, and the latest movements. */
   stock: () => client.get("/api/stock"),
+  /** A remedy past the limit approved or declined: from its task's drawer, and from Settings' Remedies. */
+  decideRemedy: (id: string, approve: boolean) =>
+    approve
+      ? client.post("/api/remedies/{id}/approve", { path: { id } })
+      : client.post("/api/remedies/{id}/decline", { path: { id } }),
 };

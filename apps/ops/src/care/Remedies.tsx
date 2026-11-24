@@ -28,6 +28,7 @@ import { care } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
 import { Refused } from "@maneman/ui/Refusal";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
+import { api } from "../api.ts";
 import { careApi, type RemedyReason } from "./care-api.ts";
 import styles from "./care.module.css";
 
@@ -210,13 +211,13 @@ function RemediesTable(props: { remedies: readonly Remedy[]; mayDecide: boolean;
                   <RowActions>
                     <RowButton
                       aria-label={copy.approveLabel(remedy.person.name)}
-                      onClick={() => void careApi.decideRemedy(remedy.id, true).then(retry)}
+                      onClick={() => void api.decideRemedy(remedy.id, true).then(retry)}
                     >
                       {copy.approve}
                     </RowButton>
                     <RowButton
                       aria-label={copy.declineLabel(remedy.person.name)}
-                      onClick={() => void careApi.decideRemedy(remedy.id, false).then(retry)}
+                      onClick={() => void api.decideRemedy(remedy.id, false).then(retry)}
                     >
                       {copy.decline}
                     </RowButton>

@@ -59,10 +59,6 @@ export const careApi = {
     client.post("/api/clients/{id}/remedies", { path: { id: personId }, body: remedy }),
   remedies: () => client.get("/api/remedies"),
   careNumbers: (days: CarePeriod) => client.get("/api/care-numbers", { query: { days } }),
-  decideRemedy: (id: string, approve: boolean) =>
-    approve
-      ? client.post("/api/remedies/{id}/approve", { path: { id } })
-      : client.post("/api/remedies/{id}/decline", { path: { id } }),
   addQuickReply: (title: string, text: string) => client.post("/api/quick-replies", { body: { title, text } }),
   retireQuickReply: (id: string) => client.post("/api/quick-replies/{id}/retire", { path: { id } }),
   changeQuickReply: (id: string, title: string, text: string) =>

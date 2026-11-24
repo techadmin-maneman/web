@@ -6,12 +6,11 @@ import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import type { Task, TaskGroup } from "../api.ts";
+import { api, type Task, type TaskGroup } from "../api.ts";
 import { Refusal } from "@maneman/ui/Refusal";
 import { tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import shared from "./tasks.module.css";
-import { decideRemedy } from "../care/index.ts";
 
 const copy = tasks.remedy;
 
@@ -23,7 +22,7 @@ export function RemedyDecision(props: { group: TaskGroup["group"]; task: Task; o
   const decide = (approve: boolean) =>
     once(async () => {
       setRefused(null);
-      const answer = await decideRemedy(props.task.id, approve);
+      const answer = await api.decideRemedy(props.task.id, approve);
       if (answer.ok) props.onDecided();
       else setRefused(errorText(copy.errors, answer));
     });
