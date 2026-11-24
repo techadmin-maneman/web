@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Planning } from "../../apps/ops/src/supply-plan/Planning.tsx";
 import { supplyPlan as copy } from "../../apps/ops/src/content/supply-plan.ts";
 import { answered } from "./render-hook.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 import { contractChecked } from "./contract-fetch.ts";
 
 const WEDDINGS = {
@@ -54,7 +55,9 @@ let posted: { path: string; body: unknown }[];
 let asked: string[];
 let next: unknown;
 
-const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+// Add an event opens its form in a drawer, drawn over the page: buttons and boxes are looked for in the document.
+const button = (text: string) =>
+  [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
 async function settle() {
   await answered();
@@ -70,11 +73,13 @@ function type(input: HTMLInputElement | HTMLSelectElement | null | undefined, va
 }
 
 const box = (label: string) => {
-  const id = [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === label)?.htmlFor ?? "";
-  return page.querySelector<HTMLInputElement>(`[id="${id}"]`);
+  const id =
+    [...document.body.querySelectorAll("label")].find((each) => each.textContent.trim() === label)?.htmlFor ?? "";
+  return document.body.querySelector<HTMLInputElement>(`[id="${id}"]`);
 };
 
 beforeEach(() => {
+  openDialogsAsJsdomCan();
   // The forecast's first week, so neither of its periods is over.
   vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-22T06:00:00.000Z"));
   posted = [];
@@ -147,6 +152,9 @@ describe("the forecast and the events calendar", () => {
     await show();
     expect(page.textContent).toContain("Wedding season");
     expect(page.textContent).toContain(copy.events.change(25));
+    act(() => {
+      button(copy.events.add)?.click();
+    });
     type(box(copy.events.name), "Diwali");
     type(box(copy.events.startsOn), "2026-11-08");
     type(box(copy.events.endsOn), "2026-11-12");
@@ -156,7 +164,7 @@ describe("the forecast and the events calendar", () => {
       button(copy.events.save)?.click();
       await answered();
     });
-    expect(page.textContent).toContain(copy.events.errors.ends_on);
+    expect(document.body.textContent).toContain(copy.events.errors.ends_on);
 
     const diwali = { ...WEDDINGS, id: "ev-2", name: "Diwali", city: null, uplift_percent: -10 };
     next = { ...CALENDAR, events: [WEDDINGS, diwali] };

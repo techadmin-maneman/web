@@ -189,12 +189,15 @@ test("shows a city’s forecast, and adds an event to the calendar", async ({ pa
 
   const events = page.getByRole("region", { name: copy.events.title });
   await expect(events).toContainText("Wedding season");
-  await events.getByLabel(copy.events.name, { exact: true }).fill("Diwali");
-  await events.getByLabel(copy.events.startsOn).fill("2026-11-08");
-  await events.getByLabel(copy.events.endsOn).fill("2026-11-12");
-  await events.getByLabel(copy.events.percent).fill("25");
+  // Added in a drawer from the list's head (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+  await events.getByRole("button", { name: copy.events.add }).click();
+  const adding = page.getByRole("dialog", { name: copy.events.add });
+  await adding.getByLabel(copy.events.name, { exact: true }).fill("Diwali");
+  await adding.getByLabel(copy.events.startsOn).fill("2026-11-08");
+  await adding.getByLabel(copy.events.endsOn).fill("2026-11-12");
+  await adding.getByLabel(copy.events.percent).fill("25");
   const request = posted(page, "/api/demand-events");
-  await events.getByRole("button", { name: copy.events.save }).click();
+  await adding.getByRole("button", { name: copy.events.save }).click();
   expect((await request).postDataJSON()).toEqual({
     name: "Diwali",
     city: null,
