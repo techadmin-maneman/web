@@ -6,7 +6,9 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 export const stockPlaces = {
   title: "Places",
   columns: ["Place", "Kind", "Area"],
-  kinds: { warehouse: "Warehouse", hub: "Hub", stockroom: "Stockroom", kit: "Kit" },
+  /** How many items a place holds any of, as the redesign's Places counts them. */
+  itemsHeld: "Items held",
+  kinds: { warehouse: "Warehouse", hub: "Hub", stockroom: "Stockroom", kit: "Technician kit" },
   closed: "Closed",
   /** A row's name, read as what pressing it does. */
   open: (name: string) => `Open ${name}`,
