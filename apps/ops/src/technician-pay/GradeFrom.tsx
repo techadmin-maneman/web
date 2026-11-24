@@ -89,6 +89,7 @@ export function GradeFromRow(props: {
               </option>
             ))}
           </Select>
+          <span className={styles.starts}>{copy.from}</span>
           <DateInput
             width="date"
             aria-label={copy.from}

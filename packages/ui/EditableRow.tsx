@@ -42,6 +42,8 @@ interface EditableRowProps<Draft> {
   readonly label: string;
   /** The value as it reads: "90 minutes", "Rs. 2,200 from 1 Nov". */
   readonly value: ReactNode;
+  /** The value as the dialog's Now says it, where the row says more beside it, as what it was before. */
+  readonly now?: ReactNode;
   readonly words: EditingWords;
   /** False for a person who may only look. */
   readonly mayChange?: boolean;
@@ -78,25 +80,29 @@ function useEditing<Draft>(start: () => Draft, save: (draft: Draft) => Promise<s
     setRefusal(null);
     setDraft(null);
   };
-  // Opened, the box takes the keyboard and Escape closes it; closed, Change takes the keyboard back.
+  // Opened, the box takes the keyboard; closed, Change takes the keyboard back.
   useEffect(() => {
     if (!editing) {
       if (returning.current) changeButton.current?.focus();
       returning.current = false;
       return;
     }
+    form.current?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+  }, [editing]);
+  // Escape puts the value back, but not while a save is on its way: what it answers is never lost.
+  useEffect(() => {
     const editor = form.current;
-    editor?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+    if (!editing || editor === null) return;
     const escape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
-      close();
+      if (!busy) close();
     };
-    editor?.addEventListener("keydown", escape);
+    editor.addEventListener("keydown", escape);
     return () => {
-      editor?.removeEventListener("keydown", escape);
+      editor.removeEventListener("keydown", escape);
     };
-  }, [editing]);
+  }, [editing, busy]);
   useEffect(() => {
     if (!saved) return;
     const timer = setTimeout(() => {
@@ -123,7 +129,11 @@ function useEditing<Draft>(start: () => Draft, save: (draft: Draft) => Promise<s
       setSaved(true);
       close();
     });
-  return { draft, setDraft, refusal, saved, busy, changeButton, form, open, close, keep };
+  /** Cancel, Escape or the dialog dismissed: the value put back, once any save on its way has answered. */
+  const dismiss = () => {
+    if (!busy) close();
+  };
+  return { draft, setDraft, refusal, saved, busy, changeButton, form, open, dismiss, keep };
 }
 
 /**
@@ -228,7 +238,7 @@ function InlineEditing<Draft>(props: OpenProps<Draft> & { readonly id?: string; 
           <Button variant="primary" size="small" type="submit" busy={row.busy}>
             {words.save}
           </Button>
-          <Button variant="quiet" size="small" narrow onClick={row.close}>
+          <Button variant="quiet" size="small" narrow disabled={row.busy} onClick={row.dismiss}>
             {words.cancel}
           </Button>
         </span>
@@ -248,7 +258,7 @@ function ChangeDialog<Draft>({ label, value, words, unit, row, children }: OpenP
   const { control, errorId } = useControl(row.refusal !== null);
   if (row.draft === null) return null;
   return (
-    <Dialog labelledBy={titleId} className={styles.dialog} canClose={!row.busy} onDismiss={row.close}>
+    <Dialog labelledBy={titleId} className={styles.dialog} canClose={!row.busy} onDismiss={row.dismiss}>
       <form
         ref={row.form}
         noValidate
@@ -275,7 +285,7 @@ function ChangeDialog<Draft>({ label, value, words, unit, row, children }: OpenP
           </p>
         )}
         <span className={styles.dialogActions}>
-          <Button variant="quiet" size="small" onClick={row.close}>
+          <Button variant="quiet" size="small" disabled={row.busy} onClick={row.dismiss}>
             {words.cancel}
           </Button>
           <Button variant="primary" size="small" type="submit" busy={row.busy}>
@@ -290,6 +300,7 @@ function ChangeDialog<Draft>({ label, value, words, unit, row, children }: OpenP
 export function EditableRow<Draft>({
   label,
   value,
+  now,
   words,
   mayChange = true,
   start,
@@ -320,7 +331,7 @@ export function EditableRow<Draft>({
         className={look}
       >
         {onPage && mayChange && (
-          <ChangeDialog label={label} value={value} words={words} unit={unit} row={row}>
+          <ChangeDialog label={label} value={now ?? value} words={words} unit={unit} row={row}>
             {children}
           </ChangeDialog>
         )}

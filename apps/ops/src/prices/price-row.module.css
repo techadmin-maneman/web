@@ -31,8 +31,19 @@
   color: var(--ui-text-muted);
 }
 
+/* On a page, beneath the price at its row's end. */
+.onPage {
+  justify-items: end;
+  padding-left: var(--sp-20);
+}
+
 @media (max-width: 760px) {
   .list {
     padding-left: var(--sp-20);
+  }
+
+  /* Short of a desk a setting's value stands under its name, from its start: so do those to come. */
+  .onPage {
+    justify-items: start;
   }
 }

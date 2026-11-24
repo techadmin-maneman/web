@@ -24,6 +24,11 @@
   display: none;
 }
 
+/* With the navigation folded, its groups are not drawn beneath Settings: they stand as tabs, as on a phone. */
+:global(body:has(#console-nav[data-folded="true"])) .groups {
+  display: flex;
+}
+
 @media (max-width: 1023px) {
   .groups {
     display: flex;

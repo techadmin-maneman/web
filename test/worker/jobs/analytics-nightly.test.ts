@@ -323,6 +323,31 @@ describe("the copy's client months", () => {
       .run();
     expect(await marginNow()).toBe(4000);
   });
+
+  it("takes the technician's pay off the margin at the grade they held on the visit's day, not a later one", async () => {
+    await env.DB.batch([
+      env.DB.prepare("UPDATE appointments SET type = 'service' WHERE id = 'v-rohit'"),
+      env.DB.prepare(
+        `INSERT INTO pay_grades (id, name, created_by, created_at) VALUES
+           ('pg-junior', 'Junior', 'finance@maneman.test', ?1), ('pg-senior', 'Senior', 'finance@maneman.test', ?1)`,
+      ).bind(NOW.toISOString()),
+      env.DB.prepare(
+        `INSERT INTO visit_pay_rates (id, grade_id, city, visit_kind, amount, effective_from, set_by, set_at) VALUES
+           ('r-junior', 'pg-junior', NULL, 'service', 20000, '2026-01-01', 'finance@maneman.test', ?1),
+           ('r-senior', 'pg-senior', NULL, 'service', 50000, '2026-01-01', 'finance@maneman.test', ?1)`,
+      ).bind(NOW.toISOString()),
+      // Junior on the visit's day, 20 September; Senior from the day after.
+      env.DB.prepare(
+        `INSERT INTO technician_grades (technician_id, grade_id, effective_from, set_by, set_at) VALUES
+           (?1, 'pg-junior', '2000-01-01', 'finance@maneman.test', ?2),
+           (?1, 'pg-senior', '2026-09-21', 'finance@maneman.test', ?2)`,
+      ).bind(IMRAN, NOW.toISOString()),
+    ]);
+    const warehouse = createStubWarehouse();
+    await copyTonight(env.DB, warehouse, night);
+    const [rohit] = (await clientKeys(SECRET, ["p-rohit"])).values();
+    expect(warehouse.tables.get("fact_client_month")?.get(`2026-09-01|${rohit ?? ""}`)?.margin).toBe(9800);
+  });
 });
 
 describe("the copy's stock and credits", () => {

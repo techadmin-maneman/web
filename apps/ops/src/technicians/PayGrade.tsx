@@ -38,7 +38,7 @@ function GradeSelect({ value, onChange }: { value: string; onChange: (grade: str
   const [loaded, retry] = useLoad(technicianPayApi.technicianPay);
   if (loaded.state === "failed") return <Unread onRetry={retry} className={styles.gradesUnread} />;
   return (
-    <Field label={copy.optional} className={styles.formField}>
+    <Field label={copy.optional}>
       {(control) => (
         <Select
           {...control}

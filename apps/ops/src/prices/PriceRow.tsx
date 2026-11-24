@@ -7,6 +7,9 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { DateInput, NumberInput } from "@maneman/ui/Field";
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { ChangeInDialog } from "@maneman/ui/change-in-dialog";
+import { classes } from "@maneman/ui/classes";
+import { useContext } from "react";
 import { addDays, shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -148,10 +151,12 @@ function PricesToCome(props: {
   readonly onSaved: () => Promise<void>;
 }) {
   const [busy, once] = useOneAtATime();
+  // On a page the price reads at its row's end, as a setting does; those to come stand beneath it there.
+  const onPage = useContext(ChangeInDialog);
   const toCome = props.prices.filter((price) => price.valid_from > props.today).reverse();
   if (toCome.length === 0) return null;
   return (
-    <ul className={styles.list}>
+    <ul className={classes(styles.list, onPage && styles.onPage)}>
       {toCome.map((price) => (
         <li key={price.valid_from} className={styles.line}>
           <span>{copy.upcoming(priceText(price), shortDate(price.valid_from))}</span>

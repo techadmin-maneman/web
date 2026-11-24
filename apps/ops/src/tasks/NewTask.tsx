@@ -248,12 +248,8 @@ export function NewTask(props: {
     >
       <div className={form.fields}>
         <WhatBox value={what} busy={busy} failure={failure} onWhat={setWhat} />
-        <DepartmentChoice value={department} busy={busy} onChoose={setDepartment} />
         {props.mayFind && <ClientChoice chosen={client} busy={busy} failure={failure} onChoose={setClient} />}
-        {asksCity && (
-          <CityChoice cities={props.cities} value={chosenCity} busy={busy} failure={failure} onChoose={setChosenCity} />
-        )}
-        <DueChoice due={due} busy={busy} failure={failure} onDue={setDue} />
+        <DepartmentChoice value={department} busy={busy} onChoose={setDepartment} />
         <OwnerChoice
           value={owner}
           me={props.me}
@@ -262,6 +258,10 @@ export function NewTask(props: {
           failure={failure}
           onChoose={setOwner}
         />
+        <DueChoice due={due} busy={busy} failure={failure} onDue={setDue} />
+        {asksCity && (
+          <CityChoice cities={props.cities} value={chosenCity} busy={busy} failure={failure} onChoose={setChosenCity} />
+        )}
       </div>
       <Refused failed={failure} errors={copy.errors} boxes={shownBoxes(props.mayFind, asksCity)} />
     </Drawer>

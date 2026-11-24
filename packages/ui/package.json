@@ -20,6 +20,7 @@
     "./CheckRow": "./CheckRow.tsx",
     "./Chip": "./Chip.tsx",
     "./ChoiceCard": "./ChoiceCard.tsx",
+    "./change-in-dialog": "./change-in-dialog.ts",
     "./classes": "./classes.ts",
     "./CodeField": "./CodeField.tsx",
     "./Compare": "./Compare.tsx",

@@ -294,6 +294,17 @@ test.describe("the rules", () => {
     expect(await axeViolations(page)).toEqual([]);
   });
 
+  // With the navigation folded its groups are not drawn beneath Settings: they stand as tabs, as on a phone.
+  test("offers Settings' groups as tabs once the navigation is folded, and only then on a desk", async ({ page }) => {
+    await open(page, "/settings/booking");
+    const groups = page.getByRole("main").getByRole("navigation", { name: settingsCopy.groups, exact: true });
+    await expect(groups).toHaveCount(0);
+    await page.getByRole("button", { name: shell.fold }).click();
+    await groups.getByRole("link", { name: settingsGroupNames.growth }).click();
+    await expect(page).toHaveURL(/\/settings\/referrals$/);
+    expect(await axeViolations(page)).toEqual([]);
+  });
+
   // Twenty-nine pages in a menu longer than the screen, and a rule found only by knowing its page.
   test("finds a page by its name and a rule by its title or note, above the page", async ({ page }) => {
     await open(page, "/settings/booking");

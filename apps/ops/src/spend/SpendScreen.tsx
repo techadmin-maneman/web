@@ -31,6 +31,7 @@ import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { spendApi, type SpendChannel, type SpendEntry, type SpendList } from "./spend-api.ts";
 import { SpendImport } from "./SpendImport.tsx";
 import form from "@maneman/ui/forms.module.css";
+import { classes } from "@maneman/ui/classes";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { PageActions } from "../frame/PageHead.tsx";
 
@@ -117,7 +118,7 @@ function SpendFields(props: {
         }}
       />
       <TextField
-        className={form.field}
+        className={classes(form.field, form.wide)}
         label={copy.note}
         error={refused("note")}
         value={draft.note}

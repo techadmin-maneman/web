@@ -29,7 +29,7 @@ export function NotReady({
   return (
     <>
       <div className={form.fields}>
-        <Field label={copy.label}>
+        <Field label={copy.label} className={form.wide}>
           {(control) => (
             <TextInput
               {...control}

@@ -2,8 +2,8 @@
 // what a first fit comes to and what it leaves us; a row opens its record beneath the list, where each value changes in
 // place (docs/decisions/0212-editing-in-place.md). Every write answers every package as it stands, so the page follows.
 
+import { Note } from "@maneman/ui/Note";
 import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -84,7 +84,7 @@ function Unsellable({ packages: { packages, today } }: { readonly packages: Pack
   const names = packages
     .filter((each) => !each.offered && (each.retired_date === null || each.retired_date > today))
     .map((each) => each.name);
-  return names.length === 0 ? null : <InlineMessage tone="note">{copy.unsellable(names)}</InlineMessage>;
+  return names.length === 0 ? null : <Note>{copy.unsellable(names)}</Note>;
 }
 
 function PackageList(props: {

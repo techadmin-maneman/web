@@ -2,6 +2,7 @@
 // none. A row opens its record beside the list, where each value, and each rule the city sets for itself, changes where
 // it reads (docs/decisions/0212-editing-in-place.md).
 
+import { Note } from "@maneman/ui/Note";
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { Panel } from "@maneman/ui/Panel";
@@ -11,7 +12,6 @@ import { useIsPhone } from "../lib/media.ts";
 import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { Badge } from "@maneman/ui/Badge";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useState } from "react";
 import { quantity } from "@maneman/web-kit/figures";
@@ -120,7 +120,7 @@ function NoTechnicians({ cities }: { cities: Cities }) {
   const names = cities.cities
     .filter((city) => city.served && city.active && city.technicians === 0)
     .map((city) => city.name);
-  return names.length === 0 ? null : <InlineMessage tone="note">{copy.noTechnicians(names)}</InlineMessage>;
+  return names.length === 0 ? null : <Note>{copy.noTechnicians(names)}</Note>;
 }
 
 export function CityList({ cities, reread }: { cities: Cities; reread: () => Promise<void> }) {

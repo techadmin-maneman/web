@@ -68,9 +68,10 @@ test("lists every line with the wording in force, who changed it, and whether th
     `Hair, fitted at home.Changed by growth@maneman.test, Mon 5 Oct${copy.notOnSite}`,
   );
   await expect(row(page, "Top of the page · Title").getByRole("cell").nth(2)).toHaveText(copy.review.notReviewed);
-  await expect(page.getByText(copy.publish.never, { exact: true })).toBeVisible();
-  // As the redesign says it: how many lines wait for a publish, above the table and on the head's button.
-  await expect(page.getByText(copy.publish.waiting(1))).toBeVisible();
+  // As the redesign says it: how many lines wait for a publish, above the table and on the head's button; never
+  // published, the line that waits says it all.
+  await expect(page.getByText(copy.publish.waiting(1), { exact: true })).toBeVisible();
+  await expect(page.getByText(copy.publish.never, { exact: true })).toHaveCount(0);
   await expect(row(page, "Visit reminder")).toBeVisible();
 });
 

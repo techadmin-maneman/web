@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0315. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0316. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -249,6 +249,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0259](0259-the-issue-log.md) The issue log
 - [0260](0260-ratings.md) Ratings
 - [0276](0276-a-message-whatsapp-refuses.md) A message WhatsApp refuses
+- [0315](0315-a-remedy-past-the-limit-given-by-one-who-may-approve-it.md) A remedy past the limit, given by one who may approve it
 
 ### Referrals
 
@@ -471,7 +472,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted | [0278](0278-a-technician-in-training-takes-no-visits.md) |
 | [0120](0120-the-board-sees-the-road.md) | The board sees the road | 2026-10-11 | accepted |  |
 | [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) | The site and the app book with the same parts | 2026-10-11 | accepted |  |
-| [0122](0122-technician-pay-per-visit.md) | Technician pay per visit | 2026-10-11 | accepted |  |
+| [0122](0122-technician-pay-per-visit.md) | Technician pay per visit | 2026-10-11 | accepted | [0311](0311-dated-technician-grades.md) |
 | [0123](0123-partner-referral-channels.md) | Partner referral channels | 2026-10-11 | accepted |  |
 | [0124](0124-partner-statements.md) | Partners' monthly statements | 2026-10-11 | accepted |  |
 | [0125](0125-partner-discount-codes.md) | A partner's discount code | 2026-10-11 | accepted |  |
@@ -492,7 +493,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0140](0140-the-client-panel.md) | The client beside their chat | 2026-10-12 | accepted |  |
 | [0141](0141-quick-replies.md) | Quick replies | 2026-10-12 | accepted | [0283](0283-changed-and-deleted-while-unused.md) |
 | [0142](0142-moving-every-client.md) | Moving every client, and technicians in the inbox | 2026-10-12 | accepted |  |
-| [0143](0143-remedies.md) | Remedies | 2026-10-12 | accepted |  |
+| [0143](0143-remedies.md) | Remedies | 2026-10-12 | accepted | [0315](0315-a-remedy-past-the-limit-given-by-one-who-may-approve-it.md) |
 | [0144](0144-care-numbers.md) | The Care numbers | 2026-10-12 | accepted |  |
 | [0145](0145-technician-presets.md) | A technician's word from the job card | 2026-10-12 | accepted |  |
 | [0146](0146-the-nightly-analytics-copy.md) | The nightly analytics copy | 2026-10-12 | accepted | [0196](0196-long-work-in-workflows.md) |
@@ -664,3 +665,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0312](0312-the-consoles-favicon-everywhere.md) | The console's favicon, everywhere | 2026-11-24 | accepted, on the owner's ruling of 24 November 2026 |  |
 | [0313](0313-the-settings-screens-to-the-22-november-redesign.md) | The Settings screens, to the 22 November redesign | 2026-11-24 | accepted |  |
 | [0314](0314-change-everywhere-and-forms-in-a-grid.md) | Change everywhere, and forms in a grid | 2026-11-24 | accepted |  |
+| [0315](0315-a-remedy-past-the-limit-given-by-one-who-may-approve-it.md) | A remedy past the limit, given by one who may approve it | 2026-11-24 | accepted |  |

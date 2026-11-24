@@ -11,6 +11,7 @@ import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "@maneman/ui/forms.module.css";
+import { classes } from "@maneman/ui/classes";
 import type { Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
 import { FormRefusal, Refusal } from "@maneman/ui/Refusal";
@@ -204,7 +205,7 @@ function WhenAndNote(props: {
           />
         )}
       </Field>
-      <Field label={copy.draft.note} className={form.field} error={props.refused("note")}>
+      <Field label={copy.draft.note} className={classes(form.field, form.wide)} error={props.refused("note")}>
         {(control) => (
           <TextInput
             {...control}

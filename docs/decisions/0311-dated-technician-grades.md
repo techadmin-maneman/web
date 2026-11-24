@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-11-24
 - Topic: Field work
+- Amends [0122](0122-technician-pay-per-visit.md), decision 1: a technician's grade is held by the day it starts
 
 ## Context
 

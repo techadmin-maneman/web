@@ -4,6 +4,7 @@
 import { type Choice, ChoiceOptions, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { stock as copy } from "../content/stock.ts";
 import form from "@maneman/ui/forms.module.css";
+import { classes } from "@maneman/ui/classes";
 
 /** Words for a box the API refused, by the name it refused it by. */
 export type Refused = (box: string) => string | null;
@@ -77,7 +78,11 @@ export function Quantity(props: {
 /** What the movement was, or what was lost: optional for a delivery or a count, asked for a loss. */
 export function NoteBox(props: { lost: boolean; note: string; onNote: (note: string) => void; error: string | null }) {
   return (
-    <Field label={props.lost ? copy.record.lossNote : copy.record.note} className={form.field} error={props.error}>
+    <Field
+      label={props.lost ? copy.record.lossNote : copy.record.note}
+      className={classes(form.field, form.wide)}
+      error={props.error}
+    >
       {(control) => (
         <TextInput
           {...control}

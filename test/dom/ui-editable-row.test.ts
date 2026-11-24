@@ -16,6 +16,8 @@ let page: HTMLDivElement;
 let root: Root;
 let sent: string[];
 let answer: string | null;
+/** A save still on its way, answered when the test says. */
+let held: Promise<string | null> | null;
 
 /** The row, in a drawer unless said to stand on a page. */
 function show({ mayChange = true, onPage = false } = {}) {
@@ -32,7 +34,7 @@ function show({ mayChange = true, onPage = false } = {}) {
           start: () => "90",
           save: (typed: string) => {
             sent.push(typed);
-            return Promise.resolve(answer);
+            return held ?? Promise.resolve(answer);
           },
           children: (control, typed, type) =>
             createElement("input", {
@@ -77,6 +79,7 @@ beforeEach(() => {
   openDialogsAsJsdomCan();
   sent = [];
   answer = null;
+  held = null;
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -139,6 +142,27 @@ describe("a value and its Change", () => {
     act(() => buttonNamed("Cancel")?.click());
     expect(box()).toBeNull();
     expect(sent).toEqual([]);
+  });
+
+  it("keeps the box open while a save is on its way, Escape and Cancel waiting on its answer", async () => {
+    let answerIt: (why: string | null) => void = () => undefined;
+    held = new Promise((resolve) => {
+      answerIt = resolve;
+    });
+    show({ onPage: true });
+    act(() => change()?.click());
+    type("75");
+    await submit();
+    act(() => {
+      page.querySelector("form")?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    expect(box()).not.toBeNull();
+    expect(buttonNamed("Cancel")?.disabled).toBe(true);
+    await act(async () => {
+      answerIt("Between 30 minutes and the length of a day.");
+      await Promise.resolve();
+    });
+    expect(page.querySelector('[role="alert"]')?.textContent).toBe("Between 30 minutes and the length of a day.");
   });
 
   it("says a refusal under the box, marks the box, and keeps it open", async () => {

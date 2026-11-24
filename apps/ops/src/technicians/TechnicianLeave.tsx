@@ -197,14 +197,14 @@ function LeaveWhen({ entry, onChange }: { entry: Entry; onChange: (entry: Entry)
             />
           </>
         )}
+        <Checkbox
+          label={copy.partDay}
+          checked={entry.partDay}
+          onChange={(event) => {
+            setEntry({ ...entry, partDay: event.target.checked });
+          }}
+        />
       </div>
-      <Checkbox
-        label={copy.partDay}
-        checked={entry.partDay}
-        onChange={(event) => {
-          setEntry({ ...entry, partDay: event.target.checked });
-        }}
-      />
     </>
   );
 }

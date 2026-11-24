@@ -24,7 +24,6 @@ import form from "@maneman/ui/forms.module.css";
 import styles from "./words-screen.module.css";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { Badge } from "@maneman/ui/Badge";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { wordsApi } from "./words-api.ts";
 
 function WordRow({ word, onOpen }: { word: Word; onOpen: (key: string) => void }) {
@@ -130,8 +129,7 @@ function Words() {
           </Button>
         </PageActions>
       )}
-      {unpublished > 0 && <InlineMessage tone="note">{copy.publish.waiting(unpublished)}</InlineMessage>}
-      <LastPublished published={loaded.value.published} />
+      <LastPublished published={loaded.value.published} unpublished={unpublished} />
       {publishing && (
         <PublishCheck
           unpublished={unpublished}

@@ -28,3 +28,9 @@
   color: var(--ui-text-muted);
   overflow-wrap: anywhere;
 }
+
+/* "Starts", before a grade's day in its row's box, as a price's From stands before its day. */
+.starts {
+  font-size: var(--fs-14);
+  color: var(--ui-text-muted);
+}

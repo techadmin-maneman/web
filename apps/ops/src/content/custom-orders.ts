@@ -8,7 +8,7 @@ export const customOrders = {
   none: "None yet.",
   columns: ["Order", "Made to", "Price", "Status"],
   /** The actions' column, read aloud. */
-  actions: "Change",
+  actions: "Actions",
   /** "CU-0007" */
   number: (number: number) => `CU-${String(number).padStart(4, "0")}`,
   /** "8x10 1B, 20% grey, 100%, slight wave" */

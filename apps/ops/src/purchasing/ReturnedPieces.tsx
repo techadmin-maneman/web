@@ -17,6 +17,7 @@ import { Refusal } from "@maneman/ui/Refusal";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "@maneman/ui/forms.module.css";
+import { classes } from "@maneman/ui/classes";
 import { useAccess } from "../lib/access.ts";
 import type { ClaimAnswer } from "./ClaimSteps.tsx";
 import { StockPhoto } from "./StockPhoto.tsx";
@@ -47,7 +48,7 @@ function WriteOffForm({
   return (
     <>
       <div className={form.fields}>
-        <Field label={copy.returns.why} className={form.field}>
+        <Field label={copy.returns.why} className={classes(form.field, form.wide)}>
           {(control) => (
             <TextInput
               {...control}
