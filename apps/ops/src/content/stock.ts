@@ -33,7 +33,11 @@ export const stock = {
     /** The costs, or the weeks ahead, did not come: the figure is a gap, and the line says why. */
     noValue: "—",
     unread: "Couldn’t load the costs.",
-    unreadKits: "Couldn’t load the weeks ahead.",
+    /** Short enough for a phone's half-width tile, its line one line. */
+    unreadKits: "Couldn’t load.",
+    /** The kits short by their technicians: one by name, several by the first's first name, "Imran and 2 more". */
+    kitsNamed: (first: string, more: number) =>
+      more === 0 ? first : `${first.split(/\s+/)[0] ?? first} and ${String(more)} more`,
   },
   /** A place's items narrowed: every one, those low or out, or those with a lot expiring soon; and found by name. */
   narrow: {

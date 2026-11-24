@@ -59,7 +59,7 @@ export function StockFigures(props: { stock: Stock; showing: Showing; demand: Lo
           label={copy.figures.kitsShort}
           value={kits?.length ?? null}
           tone={kits !== null && kits.length > 0 ? "warning" : "plain"}
-          note={kits === null || kits.length === 0 ? "" : kits.join(", ")}
+          note={kits?.[0] === undefined ? "" : copy.figures.kitsNamed(kits[0], kits.length - 1)}
         />
       )}
       {mayCost && <StockValue stock={stock} />}

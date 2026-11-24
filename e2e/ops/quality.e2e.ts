@@ -3,7 +3,7 @@
 
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, json, type OpsReply } from "./fixtures.ts";
+import { answer, fails, json, type OpsReply } from "./fixtures.ts";
 import { quality as copy } from "../../apps/ops/src/content/quality.ts";
 import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
 
@@ -62,6 +62,26 @@ const RISK = {
     },
   ],
 } satisfies OpsReply<"/api/stock/expiry-risk">;
+
+test("says why a recall was refused in its drawer, and offers none with no lot to recall", async ({ page }) => {
+  await answer(page, {
+    "GET /api/recalls": json(BOOK),
+    "POST /api/recalls": fails(403, "not_permitted"),
+    "GET /api/quality/failures": json(RATES),
+    "GET /api/stock/expiry-risk": json(RISK),
+  });
+  await page.goto("/quality");
+  await page.getByRole("button", { name: copy.raise }).click();
+  const raising = page.getByRole("dialog", { name: copy.raise });
+  await raising.getByLabel(copy.reason).fill("Supplier warned of shedding");
+  await raising.getByRole("button", { name: copy.confirmRaise }).click();
+  await expect(raising.getByText(copy.errors.not_permitted, { exact: true })).toBeVisible();
+
+  await answer(page, { "GET /api/recalls": json({ ...BOOK, lots: [] }) });
+  await page.reload();
+  await expect(page.getByRole("region", { name: copy.recalls })).toBeVisible();
+  await expect(page.getByRole("button", { name: copy.raise })).toHaveCount(0);
+});
 
 test("recalls a lot with why, and shows where it is and who wears it", async ({ page }) => {
   await answer(page, {

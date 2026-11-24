@@ -34,6 +34,12 @@
   width: 32%;
 }
 
+/* A hair system's long name wraps within its column at half a desk's width, rather than running into the next. */
+.table th[scope="row"] {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* The consumables and the hair systems side by side at a desk, stacked short of one. */
 .lists {
   display: grid;

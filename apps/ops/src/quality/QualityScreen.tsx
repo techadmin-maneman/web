@@ -168,14 +168,14 @@ export function QualityScreen() {
               </DrawerButton>
             </PageActions>
           )}
-          {/* Recalls, failure rates and the value at risk side by side, as the redesign draws them. */}
+          {/* Recalls and failure rates side by side, as the redesign draws them; the value at risk beneath. */}
           <div className={styles.cards}>
             <Panel titleId="quality-recalls" title={copy.recalls}>
               <Recalls quality={current} opener={opener} onOpen={open} />
               {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
             </Panel>
             <FailuresPanel />
-            {access.mayCall("GET /api/stock/expiry-risk") && <ExpiryRiskPanel />}
+            {access.mayCall("GET /api/stock/expiry-risk") && <ExpiryRiskPanel className={styles.wide} />}
           </div>
           {said !== null && <Toast>{said}</Toast>}
           {opened !== null && opened.id === openId && (

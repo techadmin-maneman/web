@@ -351,9 +351,10 @@ test("lists an entry's pages beneath it, marks the one open, and has Inventory's
     "page",
   );
   await expect(pages.getByRole("link", { name: opsCopy.shell.sections.items })).toBeVisible();
+  // The entry holds the page shown; the page's own line is the current page.
   await expect(navigation(page).getByRole("link", { name: opsCopy.shell.nav.inventory })).toHaveAttribute(
     "aria-current",
-    "page",
+    "true",
   );
   const tabs = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.nav.inventory });
   await expect(tabs).toHaveCount(0);

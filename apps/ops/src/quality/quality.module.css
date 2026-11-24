@@ -1,9 +1,20 @@
-/* Quality (./QualityScreen.tsx): its three panels side by side at a desk, as many to a row as fit, else stacked. */
+/*
+ * Quality (./QualityScreen.tsx): recalls and failure rates side by side at a desk, and the value at risk beneath them
+ * across the row, its table of lots too wide for a third of it; one above another short of a desk.
+ */
 .cards {
-  --local-card: 20rem; /* the narrowest a panel runs, its table whole */
-
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(var(--local-card), 100%), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   gap: var(--sp-24);
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1023px) {
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

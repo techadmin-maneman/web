@@ -33,7 +33,7 @@ export type Showing = { readonly by: "place"; readonly place: string | null } | 
 const fewPlaces = (stock: Stock) => stock.places.length <= SIDE_BY_SIDE;
 
 /**
- * The warehouse, where the stock comes in, as the redesign opens it (its change A8); every place side by side is one
+ * The warehouse, where the stock comes in, as the redesign opens it; every place side by side is one
  * choice of Whose stock.
  */
 export function firstShowing(stock: Stock): Showing {

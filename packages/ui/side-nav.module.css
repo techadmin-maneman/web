@@ -130,7 +130,7 @@
     cursor: pointer;
   }
 
-  .item[aria-current="page"] {
+  .item[aria-current] {
     background: var(--nav-current);
     color: var(--nav-text-current);
     box-shadow: inset var(--rule-strong) 0 0 0 var(--nav-mark);
@@ -285,6 +285,11 @@
     .nav[data-open="true"] {
       transform: none;
       visibility: visible;
+    }
+
+    /* Opened over the page, as on a tablet, a page's line is a finger's height. */
+    .subItem {
+      min-height: var(--tap);
     }
   }
 }

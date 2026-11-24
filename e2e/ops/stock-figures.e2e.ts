@@ -72,6 +72,12 @@ test("says what to reorder, the kits short by name, and the stock's value at cos
   expect(await axeViolations(page)).toEqual([]);
 });
 
+test("names the first kit short and how many more, on one line", async ({ page }) => {
+  const second = { ...AHEAD.kits_short[0], technician_id: "tech-2", technician: "Sameer Bhatt" };
+  await open(page, { "GET /api/stock/demand": json({ ...AHEAD, kits_short: [...AHEAD.kits_short, second] }) });
+  await expect(tile(page, words.kitsShort)).toContainText(words.kitsNamed("Imran Qureshi", 1));
+});
+
 test("counts the items to reorder where the table looks: the warehouse's, then any place's", async ({ page }) => {
   await open(page);
   await expect(tile(page, words.reorder).getByText("1", { exact: true })).toBeVisible();

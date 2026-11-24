@@ -64,8 +64,9 @@ function ServiceChoice(props: { consumables: Consumables; chosen: string; onChoo
 }
 
 /**
- * What each service offered expects of each consumable, as the redesign draws it: a service a row, an item a column;
- * Change, for those who may, opens the figures to be set a service at a time.
+ * What each service offered expects of each consumable, as the redesign draws it: a service a row, an item a column,
+ * each item offered or still expected by a service, retired or not, as demand counts it; Change, for those who may,
+ * opens the figures to be set a service at a time.
  */
 export function ServiceUsage({
   consumables,
@@ -76,7 +77,10 @@ export function ServiceUsage({
 }) {
   const mayChange = useAccess().mayCall("POST /api/service-usage");
   const services = consumables.services.filter((each) => each.retired_date === null);
-  const items = consumables.consumables.filter((each) => each.hair_system === null && each.offered);
+  const stillExpected = new Set(services.flatMap((service) => service.expected.map((each) => each.code)));
+  const items = consumables.consumables.filter(
+    (each) => each.hair_system === null && (each.offered || stillExpected.has(each.code)),
+  );
   return (
     <Panel
       titleId="service-usage"

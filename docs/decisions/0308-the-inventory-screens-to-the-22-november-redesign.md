@@ -35,9 +35,10 @@ value.
    - Purchasing says how many await approval ("Awaiting approval" for a drafted order); an unset letterhead is a line
      above the orders whose Set it opens its form, a set one the page's Letterhead; claims and returned pieces are drawn
      only while they hold something.
-   - Supply plan says how many lines await approval, its lines beside the forecast on a wide desk; an event is added in
-     a drawer.
-   - Quality starts a recall from the page's action, its three panels side by side.
+   - Supply plan says how many lines await approval; an event is added in a drawer. Its forecast reads item by week,
+     wider than the prototype's, so it stays beneath the lines rather than beside them.
+   - Quality starts a recall from the page's action, recalls and failure rates side by side and the value at risk
+     beneath them, its table of lots too wide for a third of the row.
    - Usage marks a flagged technician's overage as a pill; the bars above the table, which said again what it says,
      are gone.
    - Items lists its consumables and hair systems side by side, and reads each service's expected use in a grid,

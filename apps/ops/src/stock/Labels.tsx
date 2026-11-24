@@ -69,8 +69,8 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
     setTicked(next);
   };
   return (
-    <>
-      <ChoiceGroup className={styles.batches} legend={copy.batchesLegend} legendLook="hidden">
+    <div className={styles.batches}>
+      <ChoiceGroup className={styles.batchList} legend={copy.batchesLegend} legendLook="hidden">
         {batches.map((batch) => (
           <Checkbox
             key={batch.at}
@@ -106,7 +106,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 

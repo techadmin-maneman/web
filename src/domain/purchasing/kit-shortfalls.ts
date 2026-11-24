@@ -51,7 +51,7 @@ export async function kitShortfalls(db: D1Database, today: string, days: number)
       db.prepare(
         `SELECT p.technician_id AS tech, b.consumable_code AS code, b.quantity AS held
          FROM stock_balances b JOIN stock_places p ON p.id = b.place
-         WHERE p.kind = 'kit' AND p.technician_id IS NOT NULL`,
+         WHERE p.kind = 'kit' AND p.technician_id IS NOT NULL AND b.quantity > 0`,
       ),
     ),
     technicians: read<Pick<Rows["technicians"], "id" | "name" | "city">>(

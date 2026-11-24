@@ -5,7 +5,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test, TINY_JPEG } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, jpeg, json, type Answers, type OpsReply } from "./fixtures.ts";
+import { answer, fails, jpeg, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { purchasing as copy } from "../../apps/ops/src/content/purchasing.ts";
 
 const ORDERS = {
@@ -178,6 +178,41 @@ test("claims a returned piece inside its warranty, and writes off another with w
   expect((await writeOff).postDataJSON()).toEqual({ reason: "Torn base", photo_id: PHOTO_ID });
   // With none left, the list is not drawn at all, as the redesign's Purchasing draws neither list empty.
   await expect(pieces).toHaveCount(0);
+});
+
+// A refusal is said where it is seen: in the drawer it came from, or above the pieces while no claim is listed.
+test("says why a write-off was refused in its drawer, and why a claim was, with no claims listed", async ({ page }) => {
+  const late = { ...PIECE, id: "ret-2", piece_code: "MM-ESS-0000002-C", in_warranty: false };
+  await answer(page, {
+    "GET /api/purchase-orders": json(ORDERS),
+    "GET /api/supplier-claims": json({ claims: [], returns: [PIECE, late] }),
+    "GET /api/supplier-scorecard": json(SCORES),
+    "POST /api/returned-pieces/{id}/claim": fails(403, "not_permitted"),
+    "POST /api/returned-pieces/{id}/write-off": fails(403, "not_permitted"),
+    "POST /api/stock-photos": json({ photo_id: PHOTO_ID }, 201),
+    "GET /api/stock-photos/{id}": jpeg(TINY_JPEG.buffer),
+  });
+  await page.goto("/purchasing");
+  const pieces = page.getByRole("region", { name: copy.returns.title });
+  await expect(page.getByRole("region", { name: copy.claims.title })).toHaveCount(0);
+  await pieces
+    .getByRole("row")
+    .filter({ hasText: PIECE.piece_code })
+    .getByRole("button", { name: copy.returns.claim })
+    .click();
+  await expect(page.getByRole("main").getByText(copy.errors.not_permitted, { exact: true })).toBeVisible();
+
+  await pieces
+    .getByRole("row")
+    .filter({ hasText: late.piece_code })
+    .getByRole("button", { name: copy.returns.writeOff })
+    .click();
+  const drawer = page.getByRole("dialog", { name: copy.returns.writeOffLabel(late.piece_code) });
+  await drawer.getByLabel(copy.returns.why).fill("Torn base");
+  await drawer.getByLabel(copy.photo.writeOff).setInputFiles(TINY_JPEG);
+  await expect(drawer.getByRole("img", { name: copy.photo.alt })).toBeVisible();
+  await drawer.getByRole("button", { name: copy.returns.confirmWriteOff }).click();
+  await expect(drawer.getByText(copy.errors.not_permitted, { exact: true })).toBeVisible();
 });
 
 test("scores each supplier’s year: on time in full, lead time against promised, quality and claims", async ({

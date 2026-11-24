@@ -96,9 +96,11 @@ export function NavItem({
   /** Its name with its count, read out, where the count alone would not say what it counts. */
   readonly label?: string | undefined;
 }) {
+  // With its pages listed beneath it, the entry holds the page shown, and the page's own line is the current one.
+  const within = current && Boolean(children);
   return (
     <li>
-      <Link className={styles.item} to={to} current={current} label={label} title={name}>
+      <Link className={styles.item} to={to} current={within ? "within" : current} label={label} title={name}>
         <Icon className={styles.icon} d={icon} size="sm" />
         <span className={styles.name}>{name}</span>
         {count !== undefined && count > 0 && <span className={urgent ? styles.urgent : styles.count}>{count}</span>}

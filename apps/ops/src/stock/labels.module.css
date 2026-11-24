@@ -9,7 +9,14 @@
   margin: 0;
 }
 
-/* Each batch of pieces labelled together, ticked to print. */
+/* Each batch of pieces labelled together, ticked to print, and its Print beneath, apart from the table of pieces. */
 .batches {
-  margin-top: var(--sp-8);
+  display: grid;
+  gap: var(--sp-12);
+  margin: var(--sp-8) 0 var(--sp-16);
+}
+
+/* The batches inset as the panel's search, its Print and its table are. */
+.batchList {
+  padding: 0 var(--form-inset);
 }

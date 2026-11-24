@@ -57,7 +57,7 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
 }) => {
   await open(page);
   const table = onHand(page);
-  // It opens on the warehouse (the redesign's A8); every place side by side is one choice of Whose stock.
+  // It opens on the warehouse; every place side by side is one choice of Whose stock.
   await expect(page.getByLabel(stock.totalsBy)).toHaveValue("place:central");
   await page.getByLabel(stock.totalsBy).selectOption("place:");
   await expect(table.getByRole("columnheader", { name: WAREHOUSE })).toBeVisible();
@@ -512,7 +512,7 @@ test("shows what the next four weeks will use beside what each city holds, and t
   await expect(panel).toContainText(stockViews.demand.fit("Fri 24 Sep", "Gurgaon", stockViews.demand.noProfile));
 });
 
-// The redesign's C10 (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md): a kit short for its
+// The weeks ahead (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md): a kit short for its
 // technician's visits already allotted is named with what to send it, beside the city's own shortfall over the weeks.
 test("names a kit short for its technician's allotted visits beside the city's shortfall, and Enough where neither is", async ({
   page,

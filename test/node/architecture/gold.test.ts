@@ -45,6 +45,6 @@ describe("gold", () => {
     ]);
     expect(readFileSync("packages/ui/base.css", "utf8")).toContain("--nav-mark: var(--gilt);");
     const nav = readFileSync("packages/ui/side-nav.module.css", "utf8");
-    expect(nav).toMatch(/\.item\[aria-current="page"\] \{[^}]*var\(--nav-mark\)/);
+    expect(nav).toMatch(/\.item\[aria-current\] \{[^}]*var\(--nav-mark\)/);
   });
 });

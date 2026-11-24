@@ -1,5 +1,5 @@
-// A place's state in an item, by one rule wherever it shows: Stock's On hand and Needs attention, and a technician's
-// Kit tab. In words, never by colour alone.
+// A place's state in an item, by one rule wherever it shows: Stock's On hand, its figures above it, and a
+// technician's Kit tab. In words, never by colour alone.
 
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { type Stock } from "../api.ts";

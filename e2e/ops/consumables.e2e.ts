@@ -247,6 +247,18 @@ test.describe("what each service uses", () => {
   });
 });
 
+test("keeps a column for an item no longer offered that a service still expects", async ({ page }) => {
+  const services = CONSUMABLES.services.map((each) =>
+    each.visit_type === "service"
+      ? { ...each, expected: [...each.expected, { code: "shampoo_sachet", quantity: 2 }] }
+      : each,
+  );
+  await open(page, { "GET /api/consumables": json({ ...CONSUMABLES, services }) });
+  const grid = page.getByRole("region", { name: copy.usage.title });
+  const shampoo = CONSUMABLES.consumables.find((each) => each.code === "shampoo_sachet")?.name ?? "";
+  await expect(grid.getByRole("columnheader", { name: shampoo })).toBeVisible();
+});
+
 test("meets WCAG 2.2 AA, with a record open and a value being changed", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
