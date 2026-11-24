@@ -527,7 +527,17 @@ export const settings = {
   /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
   suppliers: {
     title: "Suppliers",
-    columns: { supplier: "Supplier", country: "Country · currency", terms: "Terms", warranty: "Warranty" },
+    columns: {
+      supplier: "Supplier",
+      country: "Country and currency",
+      terms: "Terms",
+      warranty: "Warranty",
+      onTime: "On time, 12 months",
+    },
+    /** "India, INR" */
+    countryCurrency: (country: string, currency: string) => `${country}, ${currency}`,
+    /** Of a supplier's orders over the year, how many came on time and whole: "2 of 2". */
+    onTime: (kept: number, orders: number) => `${String(kept)} of ${String(orders)}`,
     find: "Find a supplier",
     /** Those no longer bought from, folded in a panel beneath those who are. */
     retiredTitle: "Retired suppliers",

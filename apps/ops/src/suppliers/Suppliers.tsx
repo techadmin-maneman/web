@@ -14,10 +14,12 @@ import { Narrowing, SortHeads, TableEnd } from "@maneman/ui/TableTools";
 import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { RowHead } from "@maneman/ui/RowHead";
+import { NoValue } from "@maneman/ui/NoValue";
+import { purchasingApi } from "../purchasing/index.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
@@ -31,19 +33,70 @@ const loadSuppliers = () => suppliersApi.suppliers();
 
 type Supplier = SupplierList["suppliers"][number];
 
-const COLUMNS: readonly Column<Supplier>[] = [
+/** A country by its name, as the redesign writes it: "India" for IN; the code where the browser names none. */
+function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames(["en-IN"], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+const whereOf = (row: Supplier) => copy.countryCurrency(countryName(row.country), row.currency);
+
+/** Each supplier's orders over the year that came on time and whole, by its ID, from the scorecard. */
+type OnTime = ReadonlyMap<string, { readonly kept: number; readonly orders: number }>;
+
+const columnsOf = (onTime: OnTime | null): readonly Column<Supplier>[] => [
   { label: copy.columns.supplier, sort: (row) => row.name },
-  {
-    label: copy.columns.country,
-    sort: (row) => `${row.country} ${row.currency}`,
-    choice: (row) => `${row.country} · ${row.currency}`,
-  },
+  { label: copy.columns.country, sort: whereOf, choice: whereOf },
   { label: copy.columns.terms, sort: (row) => row.payment_terms_days, figure: true },
   { label: copy.columns.warranty, sort: (row) => row.warranty_days, figure: true },
+  ...(onTime === null
+    ? []
+    : [{ label: copy.columns.onTime, sort: (row: Supplier) => onTime.get(row.id)?.kept ?? -1, figure: true }]),
 ];
 
-function SupplierTable(props: { rows: readonly Supplier[]; onOpen: (id: string) => void }) {
-  const view = useTableView(props.rows, COLUMNS, { search: (row) => row.name });
+/**
+ * The scorecard's on-time orders, for those whose access reads it: none for anyone else, nor while it is read or
+ * where it did not come, the column then left out.
+ */
+function useOnTime(): OnTime | null {
+  const may = useAccess().mayCall("GET /api/supplier-scorecard");
+  const [onTime, setOnTime] = useState<OnTime | null>(null);
+  useEffect(() => {
+    if (!may) return;
+    void purchasingApi.scorecard().then((answer) => {
+      if (!answer.ok) return;
+      setOnTime(
+        new Map(
+          answer.body.suppliers.map((each) => [
+            each.supplier_id,
+            {
+              kept: Math.round(((each.on_time_in_full_percent ?? 0) * each.orders) / 100),
+              orders: each.orders,
+            },
+          ]),
+        ),
+      );
+    });
+  }, [may]);
+  return onTime;
+}
+
+/** A supplier's on-time figure, or a gap where it had no order over the year. */
+function OnTimeCell({ onTime, id }: { onTime: OnTime; id: string }) {
+  const figure = onTime.get(id);
+  return (
+    <td className={FIGURE}>
+      {figure === undefined || figure.orders === 0 ? <NoValue /> : copy.onTime(figure.kept, figure.orders)}
+    </td>
+  );
+}
+
+function SupplierTable(props: { rows: readonly Supplier[]; onTime: OnTime | null; onOpen: (id: string) => void }) {
+  const columns = useMemo(() => columnsOf(props.onTime), [props.onTime]);
+  const view = useTableView(props.rows, columns, { search: (row) => row.name });
   const phone = useIsPhone();
   if (phone) {
     return (
@@ -55,7 +108,7 @@ function SupplierTable(props: { rows: readonly Supplier[]; onOpen: (id: string) 
           row={(supplier) => ({
             key: supplier.id,
             title: supplier.name,
-            meta: `${supplier.country} · ${supplier.currency} · ${copy.warranty(supplier.warranty_days)}`,
+            meta: `${whereOf(supplier)} · ${copy.warranty(supplier.warranty_days)}`,
             end: copy.terms(supplier.payment_terms_days),
             label: copy.open(supplier.name),
             onClick: () => {
@@ -90,11 +143,10 @@ function SupplierTable(props: { rows: readonly Supplier[]; onOpen: (id: string) 
                   {supplier.name}
                 </TextButton>
               </RowHead>
-              <td>
-                {supplier.country} · {supplier.currency}
-              </td>
+              <td>{whereOf(supplier)}</td>
               <td className={FIGURE}>{copy.terms(supplier.payment_terms_days)}</td>
               <td className={FIGURE}>{copy.warranty(supplier.warranty_days)}</td>
+              {props.onTime !== null && <OnTimeCell onTime={props.onTime} id={supplier.id} />}
             </tr>
           ))}
         </tbody>
@@ -106,6 +158,7 @@ function SupplierTable(props: { rows: readonly Supplier[]; onOpen: (id: string) 
 
 export function Suppliers() {
   const [loaded, retry] = useLoad(loadSuppliers);
+  const onTime = useOnTime();
   const [suppliers, setSuppliers] = useState<SupplierList | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
@@ -141,7 +194,11 @@ export function Suppliers() {
       <Panel titleId="suppliers" title={copy.title}>
         {current.suppliers.length === 0 && <EmptyState look="panel" line={copy.none} />}
         {current.suppliers.some((each) => each.retired_at === null) && (
-          <SupplierTable rows={current.suppliers.filter((each) => each.retired_at === null)} onOpen={opening} />
+          <SupplierTable
+            rows={current.suppliers.filter((each) => each.retired_at === null)}
+            onTime={onTime}
+            onOpen={opening}
+          />
         )}
         {said !== null && <Toast>{said}</Toast>}
         {opened !== undefined && (
@@ -161,7 +218,11 @@ export function Suppliers() {
           title={copy.retiredTitle}
           count={current.suppliers.filter((each) => each.retired_at !== null).length}
         >
-          <SupplierTable rows={current.suppliers.filter((each) => each.retired_at !== null)} onOpen={opening} />
+          <SupplierTable
+            rows={current.suppliers.filter((each) => each.retired_at !== null)}
+            onTime={onTime}
+            onOpen={opening}
+          />
         </Apart>
       )}
     </>
