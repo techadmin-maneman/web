@@ -306,3 +306,9 @@
   margin: 0 var(--form-inset);
   padding: var(--sp-16) 0 var(--sp-4);
 }
+
+/* The grades that did not load, in the add form's column rather than a panel's padding. */
+.gradesUnread {
+  margin-block: var(--sp-12);
+  padding: 0;
+}

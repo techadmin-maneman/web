@@ -157,6 +157,7 @@ function actingOnRows(on: {
     closable:
       (on.board.groups.find((group) => group.group === row.group)?.closable ?? false) &&
       on.access.mayCall("POST /api/tasks/{group}/{id}/close"),
+    snoozable: on.board.groups.find((group) => group.group === row.group)?.snoozable ?? false,
     owner: row.owner,
     onOwner: (owner) => {
       on.onOwner(row, owner);

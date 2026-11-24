@@ -212,6 +212,35 @@ describe("a lead taken on a call", () => {
     expect(found).toMatchObject({ attributed_channel: "partner", touches: 1, heard_from: null });
   });
 
+  // The pincode asked on Add a client is their city until they give an address (docs/decisions/0307-the-people-rulings.md).
+  it("keeps the pincode they gave, and leaves a number we hold as it was", async () => {
+    const answer = await post(care(), "/api/leads/call", {
+      name: "Vikram Rao",
+      mobile: "9811113333",
+      channel: "partner",
+      pincode: "122018",
+    });
+    const { person_id: personId } = await answer.json<{ person_id: string }>();
+    await post(care(), "/api/leads/call", {
+      name: "Arjun",
+      mobile: "9810000001",
+      channel: "direct",
+      pincode: "110001",
+    });
+    const pincodeOf = async (id: string) =>
+      (await env.DB.prepare("SELECT pincode FROM people WHERE id = ?1").bind(id).first<{ pincode: string | null }>())
+        ?.pincode;
+    expect(await pincodeOf(personId)).toBe("122018");
+    expect(await pincodeOf(KNOWN)).toBeNull();
+    const refused = await post(care(), "/api/leads/call", {
+      name: "Kabir",
+      mobile: "9811114444",
+      channel: "partner",
+      pincode: "012345",
+    });
+    expect(refused.status).toBe(400);
+  });
+
   it("from a number we hold adds a touch and makes no lead", async () => {
     const answer = await post(care(), "/api/leads/call", {
       name: "Arjun",

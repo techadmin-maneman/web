@@ -34,6 +34,8 @@ export const foundUs = {
     open: "Add a client",
     name: "Name",
     mobile: "Mobile number",
+    /** Their city until they give an address (docs/decisions/0307-the-people-rulings.md). */
+    pincode: "Pincode (optional)",
     channel: "How they heard of us",
     choose: "Choose",
     save: "Add client",
@@ -53,6 +55,7 @@ export const foundUs = {
     missing: {
       name: "Type their name.",
       mobile: "Type their ten-digit mobile.",
+      pincode: "Check the pincode, or leave it blank.",
       channel: "Pick how they heard of us.",
     },
     saved: "Client added.",
@@ -63,6 +66,7 @@ export const foundUs = {
     heard_from_other: "Type what they said.",
     name: "Type their name.",
     mobile: "Type a ten-digit Indian mobile number.",
+    pincode: "Check the pincode.",
     invalid_request: "Check the fields marked.",
     not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,

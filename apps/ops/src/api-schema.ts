@@ -134,8 +134,8 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description Where they stand; any, left out. */
-                    state?: "fitted" | "lead" | "nothing_booked";
+                    /** @description The leads, those with a visit to come, those fitted, those with none to come, or those a task on the caller's board waits on; everyone, left out. */
+                    view?: "lead" | "booked" | "fitted" | "nothing_booked" | "needs";
                     city?: string;
                     /** @description The next page: `next_cursor` from the last one. Left out, the first. */
                     cursor?: string;
@@ -15836,7 +15836,7 @@ export interface paths {
                         "application/json": components["schemas"]["TaskSnoozed"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: a request about a client's own data, which cannot be snoozed (group) */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -28736,8 +28736,11 @@ export interface components {
                 id: string;
                 name: string;
                 mobile: string;
-                /** @enum {string} */
-                state: "fitted" | "lead" | "nothing_booked";
+                /**
+                 * @description How far along they are: a lead, consulted, fitted, or active while within their service cadence and its grace.
+                 * @enum {string}
+                 */
+                stage: "lead" | "consulted" | "fitted" | "active";
                 /** @description Their address's city, else where they last booked or asked to be told. */
                 city: string | null;
                 next_visit: string | null;
@@ -28748,12 +28751,15 @@ export interface components {
                 /** @description What they have paid, less what was refunded, in paise. */
                 paid: number;
             }[];
-            /** @description How many in the city asked for stand where; on the first page, else null. */
+            /** @description How many in the city asked for each view holds; on the first page, else null. */
             counts: {
                 all: number;
                 lead: number;
+                booked: number;
                 fitted: number;
                 nothing_booked: number;
+                /** @description Those a task waits on; null where the board was read only in part. */
+                needs: number | null;
             } | null;
             /** @description The next page of 50; null on the last. */
             next_cursor: string | null;
@@ -28769,8 +28775,11 @@ export interface components {
                 id: string;
                 name: string;
                 mobile: string;
-                /** @enum {string} */
-                state: "fitted" | "lead" | "nothing_booked";
+                /**
+                 * @description How far along they are: a lead, consulted, fitted, or active while within their service cadence and its grace.
+                 * @enum {string}
+                 */
+                stage: "lead" | "consulted" | "fitted" | "active";
                 /** @description When the client's next visit not yet closed starts; null for none. */
                 next_visit: string | null;
                 /** @description Whether a visit of theirs has begun and is not yet closed. */
@@ -28789,8 +28798,11 @@ export interface components {
             name: string;
             /** @description E.164, as ops need it to call or message. */
             mobile: string;
-            /** @enum {string} */
-            state: "fitted" | "lead" | "nothing_booked";
+            /**
+             * @description How far along they are: a lead, consulted, fitted, or active while within their service cadence.
+             * @enum {string}
+             */
+            stage: "lead" | "consulted" | "fitted" | "active";
             /**
              * Format: date-time
              * @description When the person's record was first written.
@@ -31083,6 +31095,8 @@ export interface components {
              * @enum {string}
              */
             channel: "google_ads" | "meta_ads" | "referral" | "partner" | "society" | "organic_search" | "organic_social" | "direct";
+            /** @description Where they are, as they said: their city until they give an address. */
+            pincode?: string;
         };
         ClientAttribution: {
             attributed_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
@@ -32249,6 +32263,8 @@ export interface components {
                 count: number;
                 /** @description Ops may close a task of the group without doing its thing, with a reason. */
                 closable: boolean;
+                /** @description Its tasks may be snoozed: all but the requests about a client's own data. */
+                snoozable: boolean;
                 /** @description The longest wait first, at most 50. */
                 tasks: components["schemas"]["Task"][];
             }[];

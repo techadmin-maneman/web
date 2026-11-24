@@ -70,6 +70,12 @@
     --initials-type: var(--fs-24);
     --initials-small-size: var(--sp-36);
     --initials-small-type: var(--fs-14);
+    /* A line of steps (./Progress.tsx): those done in the strong ink and those to come on the tint, square, their
+       names in the 13 px, unless the app's look draws its own. Unset where they read another role. */
+    --progress-done: initial;
+    --progress-todo: initial;
+    --progress-radius: 0;
+    --progress-name-size: var(--fs-13);
     /* A panel's figures (./FigureGrid.tsx): each in the serif over its name, unless the app's look names it first. */
     --figure-direction: initial;
     --figure-font: initial;

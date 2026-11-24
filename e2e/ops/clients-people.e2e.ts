@@ -1,11 +1,12 @@
 // A client's page as the People screens draw it (docs/decisions/0306-the-people-screens-to-the-22-november-redesign.md):
-// the Care person in its head, alerts and notes added from their cards' heads, and the clients recently opened.
+// the Care person in its head, their stage on the journey beneath it (docs/decisions/0307-the-people-rulings.md), alerts
+// and notes added from their cards' heads, and the clients recently opened.
 // Every name and number here is made up.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
-import { CLIENT, fails, json, type OpsReply } from "./fixtures.ts";
-import { NAME, openClient } from "./clients-fixtures.ts";
+import { CLIENT, fails, json, NEW_RECORD, RECORD, type OpsReply } from "./fixtures.ts";
+import { NAME, openClient, READ_RECORD } from "./clients-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const words = opsCopy.clients;
@@ -106,16 +107,16 @@ test("keeps a note's drawer open with the reason when it is refused, and says no
   await expect(page.getByText(words.notes.added)).toHaveCount(0);
 });
 
-// A client kept with a standing the page does not know is left out of the strip, not drawn with a blank pill.
-test("leaves out of the recently opened a client kept with a standing it does not know", async ({ page }) => {
+// A client kept with a stage the page does not know is left out of the strip, not drawn with a blank pill.
+test("leaves out of the recently opened a client kept with a stage it does not know", async ({ page }) => {
   await page.addInitScript(
     ([kept]) => {
       sessionStorage.setItem("ops.recent-clients", kept);
     },
     [
       JSON.stringify([
-        { id: "22000000-0000-4000-8000-000000000099", name: "Kabir Anand", state: "unheard_of" },
-        { id: CLIENT.id, name: CLIENT.name, state: "fitted" },
+        { id: "22000000-0000-4000-8000-000000000099", name: "Kabir Anand", stage: "unheard_of" },
+        { id: CLIENT.id, name: CLIENT.name, stage: "active" },
       ]),
     ] as const,
   );
@@ -142,4 +143,14 @@ test("says why a note changed in place to nothing is refused, keeping it open", 
   await notes.getByRole("button", { name: words.notes.save }).click();
   await expect(notes.getByText(words.notes.errors.body)).toBeVisible();
   await expect(notes.getByLabel(words.notes.label, { exact: true })).toBeVisible();
+});
+
+test("marks the client's stage on the journey beneath the head, from lead to active", async ({ page }) => {
+  const journey = page.getByRole("list", { name: words.journey.label });
+  await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json({ ...RECORD, stage: "consulted" }) });
+  await expect(journey.getByRole("listitem")).toHaveText(Object.values(words.journey.steps));
+  await expect(journey.locator("[aria-current=step]")).toHaveText(words.journey.steps.consulted);
+
+  await openClient(page, `/clients/${CLIENT.id}/visits`, { [READ_RECORD]: json(NEW_RECORD) });
+  await expect(journey.locator("[aria-current=step]")).toHaveText(words.journey.steps.lead);
 });

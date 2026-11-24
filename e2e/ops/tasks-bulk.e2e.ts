@@ -23,6 +23,7 @@ const BOARD: OpsReply<"/api/tasks"> = {
       group: "partial_visit",
       count: 3,
       closable: true,
+      snoozable: true,
       tasks: PEOPLE.map((name, at) => ({
         id: `98000000-0000-4000-8000-00000000000${String(at + 1)}`,
         person: { id: `22000000-0000-4000-8000-00000000001${String(at + 1)}`, name },
@@ -55,6 +56,7 @@ const ERASURES: OpsReply<"/api/tasks"> = {
       group: "erasure_follow_up",
       count: 2,
       closable: true,
+      snoozable: false,
       tasks: [1, 2].map((n) => ({
         id: `99000000-0000-4000-8000-00000000000${String(n)}`,
         person: { id: `11000000-0000-4000-8000-00000000000${String(n)}`, name: "Erased" },
@@ -84,6 +86,7 @@ const CLAIMS: OpsReply<"/api/tasks"> = {
       group: "fit_guarantee_claim",
       count: 2,
       closable: true,
+      snoozable: true,
       tasks: PEOPLE.slice(0, 2).map((name, at) => ({
         id: `98000000-0000-4000-8000-00000000001${String(at)}`,
         person: { id: `22000000-0000-4000-8000-00000000002${String(at)}`, name },

@@ -19,6 +19,7 @@ import {
 } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { DISMISS } from "../../packages/ui/words.ts";
+import { PLAIN } from "./tasks-fixtures.ts";
 import {
   AVAILABILITY,
   HOLD,
@@ -258,7 +259,7 @@ test("books a consultation asked for from its Tasks row, at the first start in t
       {
         group: "consultation_request",
         count: 1,
-        closable: false,
+        ...PLAIN,
         tasks: [
           {
             id: "95000000-0000-4000-8000-000000000001",
@@ -353,6 +354,7 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
         group: "partial_visit",
         count: 1,
         closable: true,
+        snoozable: true,
         tasks: [
           {
             id: FIT,
@@ -444,7 +446,7 @@ test("books the fit of an arrived custom piece from its Tasks row, as a replacem
       {
         group: "custom_piece_to_fit",
         count: 1,
-        closable: false,
+        ...PLAIN,
         tasks: [
           {
             id: ORDER,

@@ -100,7 +100,7 @@ export async function personalDataStatements(
     db
       .prepare(
         `UPDATE people SET erased_at = ?2, name = 'Erased', email = NULL, mobile_e164 = ${goneNumberSql("erased")},
-           contactable = 0
+           contactable = 0, pincode = NULL
          WHERE id = ?1`,
       )
       .bind(personId, at),

@@ -17,14 +17,8 @@ import { jobSheet, type JobSheet, type JobSheetList } from "../../domain/field/j
 import { lostReasonsOf } from "../../domain/visits/lost-reasons.ts";
 import { clientInviteOf } from "../../domain/referrals/referrals.ts";
 import { clientHistory } from "../../domain/visits/client-history.ts";
-import {
-  CLIENT_STATES,
-  clientStateOf,
-  isFitted,
-  listVisits,
-  notFittedReasonsOf,
-  visitOutcomes,
-} from "../../domain/visits/client-visits.ts";
+import { CLIENT_STAGES, clientStage } from "../../domain/clients/client-stage.ts";
+import { listVisits, notFittedReasonsOf, visitOutcomes } from "../../domain/visits/client-visits.ts";
 import { VISIT_OUTCOMES } from "../../domain/visits/visit-status.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -35,7 +29,7 @@ import { clientAddressOf, ClientAddressSchema, clientId } from "../schemas/clien
 import { HISTORY_FIGURES, VisitSummarySchema } from "../schemas/visits.ts";
 import { ClientInviteSchema } from "./client-referral.ts";
 import { nextVisitFacts, type NextOffer } from "../../domain/visits/next-visit.ts";
-import { opsInputs } from "../../http/ops-inputs.ts";
+import { opsInputs, stageDays } from "../../http/ops-inputs.ts";
 
 const LostReasonSchema = z.object({ code: z.string(), label: z.string() }).strict();
 
@@ -193,7 +187,9 @@ const ClientRecordSchema = z
     id: z.uuid(),
     name: z.string(),
     mobile: z.string().openapi({ description: "E.164, as ops need it to call or message." }),
-    state: z.enum(CLIENT_STATES),
+    stage: z.enum(CLIENT_STAGES).openapi({
+      description: "How far along they are: a lead, consulted, fitted, or active while within their service cadence.",
+    }),
     known_since: z.iso.datetime().openapi({ description: "When the person's record was first written." }),
     address: z.union([ClientAddressSchema, z.null()]).openapi({ description: "The address visits go to now." }),
     credits: z
@@ -342,11 +338,11 @@ export function registerOpsClientRecord(app: App): void {
     const sheet = jobSheet(db);
     const next = opsInputs(c).then((inputs) => nextVisitFacts(db, id, now, inputs.nextVisitDays));
     const onPackage = packageOfRecord(db, id, indiaDate(now));
-    const [address, credits, visits, fitted, payments, links, invoices, history, invite, refunded] = await Promise.all([
+    const [address, credits, visits, stage, payments, links, invoices, history, invite, refunded] = await Promise.all([
       currentAddress(db, id),
       creditBalance(db, id, now),
       recordVisits(db, id, now, sheet),
-      isFitted(db, id),
+      stageDays(c).then((days) => clientStage(db, id, days)),
       paymentEntries(db, id, now),
       paymentLinksOf(db, id, now),
       visitInvoicesOf(db, id),
@@ -360,8 +356,7 @@ export function registerOpsClientRecord(app: App): void {
         id: person.id,
         name: person.name,
         mobile: person.mobile_e164,
-        // Booked only while a visit is to come: a booking the site's form left that booked nothing is not one.
-        state: clientStateOf(fitted, visits.upcoming.length > 0),
+        stage,
         known_since: person.created_at,
         address: address === null ? null : clientAddressOf(address),
         credits: credits.visits > 0 ? { visits: credits.visits, earliest_expiry: credits.earliestExpiry } : null,

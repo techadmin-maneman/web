@@ -134,6 +134,15 @@ export const isWrittenTask = (group: string): boolean => group.startsWith("staff
 export const SNOOZE_UNTIL = "10:00";
 
 /**
+ * The groups that cannot be snoozed: the requests about a client's own data, whose time the law or our promise sets
+ * (docs/decisions/0307-the-people-rulings.md).
+ */
+const UNSNOOZABLE_GROUPS: readonly TaskGroup[] = ["erasure_request", "erasure_follow_up", "grievance", "number_change"];
+
+/** Whether a group's tasks may be snoozed. */
+export const isSnoozable = (group: TaskGroup): boolean => !UNSNOOZABLE_GROUPS.includes(group);
+
+/**
  * How many days a task may wait before it leaves the board for the lapsed list, so the board shows what can still be
  * done. A lapsed task is still there to open and close, and is counted beside the board. Ops set it in Settings.
  */

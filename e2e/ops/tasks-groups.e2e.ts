@@ -1,7 +1,7 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, empty, json, TASKS, type OpsReply } from "./fixtures.ts";
-import { detail, kindsListed, NO_ALERTS, open, row } from "./tasks-fixtures.ts";
+import { CLOSABLE, detail, kindsListed, NO_ALERTS, open, PLAIN, row, STATUTORY } from "./tasks-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 /** What a task turns on, as the board answers it. */
@@ -21,7 +21,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
       {
         group: "consultation_request",
         count: 1,
-        closable: false,
+        ...PLAIN,
         tasks: [
           {
             id: "96000000-0000-4000-8000-000000000001",
@@ -62,7 +62,7 @@ test("names an At-risk client’s weeks since the last visit, a first fit to boo
       {
         group: "consultation_request",
         count: 1,
-        closable: false,
+        ...PLAIN,
         tasks: [
           {
             id: "96000000-0000-4000-8000-000000000011",
@@ -85,7 +85,7 @@ test("names an At-risk client’s weeks since the last visit, a first fit to boo
       {
         group: "first_fit_to_book",
         count: 1,
-        closable: false,
+        ...PLAIN,
         tasks: [
           {
             id: "22000000-0000-4000-8000-000000000012",
@@ -106,7 +106,7 @@ test("names an At-risk client’s weeks since the last visit, a first fit to boo
       {
         group: "at_risk_client",
         count: 1,
-        closable: false,
+        ...PLAIN,
         tasks: [
           {
             id: "96000000-0000-4000-8000-000000000013",
@@ -157,7 +157,7 @@ test("names a draft invoice’s visit", async ({ page }) => {
       {
         group: "draft_invoice",
         count: 1,
-        closable: false,
+        ...PLAIN,
         tasks: [
           {
             id: "96000000-0000-4000-8000-000000000002",
@@ -200,7 +200,7 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
       {
         group: "consultation_request",
         count: 1,
-        closable: false,
+        ...PLAIN,
         tasks: [
           task("96000000-0000-4000-8000-000000000020", "Arjun Kapoor", "2027-09-24 morning one_visit", {
             group: "consultation_request",
@@ -215,7 +215,7 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
       {
         group: "payment_owed",
         count: 3,
-        closable: false,
+        ...PLAIN,
         tasks: [
           task(
             "96000000-0000-4000-8000-000000000021",
@@ -316,7 +316,7 @@ test("lists each payment to refund, why, and what is owed back, and leads to the
       {
         group: "payment_to_refund",
         count: 2,
-        closable: false,
+        ...PLAIN,
         tasks: [
           task("96000000-0000-4000-8000-000000000031", "Nikhil Suri", "let_go 200000 pay_Q1late", {
             group: "payment_to_refund",
@@ -377,7 +377,7 @@ test("names a disputed charge and what it kept, and leads to the dispute in Char
       {
         group: "no_show_dispute",
         count: 2,
-        closable: false,
+        ...PLAIN,
         tasks: [
           dispute(
             "dd000000-0000-4000-8000-000000000001",
@@ -450,7 +450,7 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
       {
         group: "grievance",
         count: 1,
-        closable: false,
+        ...STATUTORY,
         tasks: [
           {
             id: "97000000-0000-4000-8000-000000000001",
@@ -581,7 +581,7 @@ test("approves a technician’s ask for leave from its drawer", async ({ page })
       {
         group: "leave_request",
         count: 1,
-        closable: false,
+        ...PLAIN,
         tasks: [
           {
             id,
@@ -630,7 +630,7 @@ test("lists a technician's asks, for kit and to move a visit, and closes one wit
       {
         group: "reschedule_request",
         count: 1,
-        closable: true,
+        ...CLOSABLE,
         tasks: [
           {
             id: "97000000-0000-4000-8000-000000000012",
@@ -652,7 +652,7 @@ test("lists a technician's asks, for kit and to move a visit, and closes one wit
       {
         group: "kit_request",
         count: 1,
-        closable: true,
+        ...CLOSABLE,
         tasks: [
           {
             id: kitAsk,
@@ -710,7 +710,7 @@ test("lists a client's ask for a hair system made to order, and closes it once o
       {
         group: "made_to_order_ask",
         count: 1,
-        closable: true,
+        ...CLOSABLE,
         tasks: [
           {
             id: ask,

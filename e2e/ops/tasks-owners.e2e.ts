@@ -98,6 +98,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
         group: "partial_visit",
         count: 2,
         closable: true,
+        snoozable: true,
         tasks: [
           {
             id: "98000000-0000-4000-8000-000000000001",
@@ -171,6 +172,7 @@ test("says why a fit closed with Canâ€™t fit today was not fitted", async ({ pag
         group: "partial_visit",
         count: 1,
         closable: true,
+        snoozable: true,
         tasks: [
           {
             id: "98000000-0000-4000-8000-000000000003",
@@ -215,6 +217,7 @@ test("records a call about a move from its drawer, and opens each of the boardâ€
         group: "untold_move",
         count: 1,
         closable: false,
+        snoozable: true,
         tasks: [
           {
             id: MOVE,
@@ -232,6 +235,7 @@ test("records a call about a move from its drawer, and opens each of the boardâ€
         group: "leave_conflict",
         count: 1,
         closable: false,
+        snoozable: true,
         tasks: [
           {
             id: ON_LEAVE,

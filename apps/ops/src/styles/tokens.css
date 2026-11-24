@@ -126,6 +126,13 @@
   --initials-type: var(--fs-17);
   --initials-small-size: 30px;
   --initials-small-type: var(--ops-caption);
+  /* A client's way from lead to active: steps 4 px high with round ends, each reached in the brass, their names in
+     12 px. */
+  --progress-line: var(--sp-4);
+  --progress-done: var(--ui-accent);
+  --progress-todo: var(--ui-line);
+  --progress-radius: var(--sp-2);
+  --progress-name-size: var(--ops-caption);
   /* A panel's figures: the name first in 12 px, then the figure in Plex's semibold at 18 px. */
   --figure-direction: column;
   --figure-font: var(--font-plex);

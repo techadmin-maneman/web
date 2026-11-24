@@ -27,6 +27,7 @@ import { CancelVisit } from "./CancelVisit.tsx";
 import { CloseVisit } from "./CloseVisit.tsx";
 import { LostReason, LostReasonLine } from "./LostReason.tsx";
 import { VisitCode } from "./VisitCode.tsx";
+import { isFittedStage } from "./client-states.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = clients.visits;
@@ -225,7 +226,7 @@ function NothingBooked({ record, booking }: { record: ClientRecord; booking: Boo
   const next = record.next_visit;
   const kind = next === null ? null : copy.book.kinds[next.type];
   const due = next === null || kind === null ? null : copy.dueOn(kind, shortDate(next.due_on));
-  const free = record.state === "fitted" ? copy.freeLeft(record.credits?.visits ?? 0) : null;
+  const free = isFittedStage(record.stage) ? copy.freeLeft(record.credits?.visits ?? 0) : null;
   const detail = [due, free].filter((line) => line !== null).join(" ");
   return (
     <EmptyState

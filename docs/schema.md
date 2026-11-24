@@ -2313,7 +2313,7 @@ Triggers: `people_client_by_payment`, `people_client_by_payment_given`.
 
 One row per person, keyed by mobile number. D1 owns the identity; the CRM's and Books' IDs are only references (ADR 0011, ADR 0110).
 
-Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0077_books_customer_upkeep.sql`, `0099_retention.sql`, `0100_test_record_flag.sql`, `0103_crm_contact_erasure.sql`, `0163_threads_found_their_client.sql`, `0190_packages.sql`.
+Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0077_books_customer_upkeep.sql`, `0099_retention.sql`, `0100_test_record_flag.sql`, `0103_crm_contact_erasure.sql`, `0163_threads_found_their_client.sql`, `0190_packages.sql`, `0237_client_pincode.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2343,6 +2343,7 @@ Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sq
 | `crm_contact_erased_at` | TEXT | yes |  |  |  |
 | `crm_contact_erasure_attempts` | INTEGER | no | `0` |  |  |
 | `package` | TEXT | yes |  |  | The package a client is on: the one they last booked a first fit or a replacement of, or ops chose. Null for one who has booked neither, whose consultation's recommendation, in their hair profile, stands in. |
+| `pincode` | TEXT | yes |  |  | The pincode they told ops on the call; null where none was asked. |
 
 Indexes:
 

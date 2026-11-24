@@ -357,13 +357,15 @@
                 "mobile": {
                   "type": "string"
                 },
-                "state": {
+                "stage": {
                   "type": "string",
                   "enum": [
-                    "fitted",
                     "lead",
-                    "nothing_booked"
-                  ]
+                    "consulted",
+                    "fitted",
+                    "active"
+                  ],
+                  "description": "How far along they are: a lead, consulted, fitted, or active while within their service cadence and its grace."
                 },
                 "city": {
                   "anyOf": [
@@ -411,7 +413,7 @@
                 "id",
                 "name",
                 "mobile",
-                "state",
+                "stage",
                 "city",
                 "next_visit",
                 "under_way",
@@ -434,6 +436,10 @@
                     "type": "integer",
                     "minimum": 0
                   },
+                  "booked": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
                   "fitted": {
                     "type": "integer",
                     "minimum": 0
@@ -441,13 +447,27 @@
                   "nothing_booked": {
                     "type": "integer",
                     "minimum": 0
+                  },
+                  "needs": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Those a task waits on; null where the board was read only in part."
                   }
                 },
                 "required": [
                   "all",
                   "lead",
+                  "booked",
                   "fitted",
-                  "nothing_booked"
+                  "nothing_booked",
+                  "needs"
                 ],
                 "additionalProperties": false
               },
@@ -455,7 +475,7 @@
                 "type": "null"
               }
             ],
-            "description": "How many in the city asked for stand where; on the first page, else null."
+            "description": "How many in the city asked for each view holds; on the first page, else null."
           },
           "next_cursor": {
             "anyOf": [
@@ -515,13 +535,15 @@
                 "mobile": {
                   "type": "string"
                 },
-                "state": {
+                "stage": {
                   "type": "string",
                   "enum": [
-                    "fitted",
                     "lead",
-                    "nothing_booked"
-                  ]
+                    "consulted",
+                    "fitted",
+                    "active"
+                  ],
+                  "description": "How far along they are: a lead, consulted, fitted, or active while within their service cadence and its grace."
                 },
                 "next_visit": {
                   "anyOf": [
@@ -544,7 +566,7 @@
                 "id",
                 "name",
                 "mobile",
-                "state",
+                "stage",
                 "next_visit",
                 "under_way"
               ],
@@ -590,13 +612,15 @@
             "type": "string",
             "description": "E.164, as ops need it to call or message."
           },
-          "state": {
+          "stage": {
             "type": "string",
             "enum": [
-              "fitted",
               "lead",
-              "nothing_booked"
-            ]
+              "consulted",
+              "fitted",
+              "active"
+            ],
+            "description": "How far along they are: a lead, consulted, fitted, or active while within their service cadence."
           },
           "known_since": {
             "type": "string",
@@ -831,7 +855,7 @@
           "id",
           "name",
           "mobile",
-          "state",
+          "stage",
           "known_since",
           "address",
           "credits",
@@ -10273,6 +10297,11 @@
               "direct"
             ],
             "description": "Where the caller came from, as ops picked it."
+          },
+          "pincode": {
+            "type": "string",
+            "pattern": "^[1-8]\\d{5}$",
+            "description": "Where they are, as they said: their city until they give an address."
           }
         },
         "required": [
@@ -15461,6 +15490,10 @@
                   "type": "boolean",
                   "description": "Ops may close a task of the group without doing its thing, with a reason."
                 },
+                "snoozable": {
+                  "type": "boolean",
+                  "description": "Its tasks may be snoozed: all but the requests about a client's own data."
+                },
                 "tasks": {
                   "type": "array",
                   "items": {
@@ -15473,6 +15506,7 @@
                 "group",
                 "count",
                 "closable",
+                "snoozable",
                 "tasks"
               ],
               "additionalProperties": false
@@ -25418,15 +25452,17 @@
             "schema": {
               "type": "string",
               "enum": [
-                "fitted",
                 "lead",
-                "nothing_booked"
+                "booked",
+                "fitted",
+                "nothing_booked",
+                "needs"
               ],
-              "description": "Where they stand; any, left out."
+              "description": "The leads, those with a visit to come, those fitted, those with none to come, or those a task on the caller's board waits on; everyone, left out."
             },
             "required": false,
-            "description": "Where they stand; any, left out.",
-            "name": "state",
+            "description": "The leads, those with a visit to come, those fitted, those with none to come, or those a task on the caller's board waits on; everyone, left out.",
+            "name": "view",
             "in": "query"
           },
           {
@@ -50960,7 +50996,7 @@
             }
           },
           "400": {
-            "description": "invalid_request",
+            "description": "invalid_request: a request about a client's own data, which cannot be snoozed (group)",
             "content": {
               "application/json": {
                 "schema": {

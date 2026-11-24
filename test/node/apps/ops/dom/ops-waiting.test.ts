@@ -14,6 +14,7 @@ function group(name: TaskGroup["group"], count: number, dues: readonly string[])
     group: name,
     count,
     closable: false,
+    snoozable: true,
     tasks: dues.map((due, index) => ({
       id: `${name}-${String(index)}`,
       person: null,

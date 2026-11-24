@@ -1,30 +1,45 @@
 // The console's list of clients (GET /api/clients): everyone in the caller's cities, the soonest next visit first,
-// narrowed to where they stand and to a city, a page at a time. NOW is Monday 21 September 2026, 12 noon in India.
-// Every name and number here is made up.
+// each at their stage, narrowed to a view and to a city, a page at a time (docs/decisions/0307-the-people-rulings.md).
+// NOW is Monday 21 September 2026, 12 noon in India. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { CLIENTS_PER_PAGE } from "../../../src/domain/clients/client-list.ts";
+import { READ_CAP } from "../../../src/domain/ops/tasks.ts";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
 import { person } from "./ops-clients-fixtures.ts";
-import { aPackage, aPayment, aRefund } from "../fixtures/index.ts";
+import { anAddress, aPackage, aPayment, aRefund } from "../fixtures/index.ts";
+import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
 
 const ROHIT = "11111111-1111-4111-8111-111111111111";
 const VIKRAM = "11111111-1111-4111-8111-111111111112";
 const KABIR = "11111111-1111-4111-8111-111111111113";
 const ANIL = "11111111-1111-4111-8111-111111111114";
+const ARJUN = "11111111-1111-4111-8111-111111111115";
 
 let ops: App;
 
 interface Listed {
-  clients: { id: string; name: string; state: string; city: string | null; next_visit: string | null }[];
+  clients: { id: string; name: string; stage: string; city: string | null; next_visit: string | null }[];
   next_cursor: string | null;
   cities: string[];
 }
 
-const list = async (query = ""): Promise<Listed> => (await request(ops, `/api/clients${query}`)).json<Listed>();
-const names = async (query = "") => (await list(query)).clients.map((client) => client.name);
+const list = async (query = "", as: App = ops): Promise<Listed> =>
+  (await request(as, `/api/clients${query}`)).json<Listed>();
+const names = async (query = "", as: App = ops) => (await list(query, as)).clients.map((client) => client.name);
+/** The clients the caller's board names, by name, in the list's order. */
+async function onTheBoard(): Promise<string[]> {
+  const board = await (
+    await request(ops, "/api/tasks")
+  ).json<{ groups: { tasks: { person: { id: string } | null }[] }[] }>();
+  const ids = new Set(board.groups.flatMap((group) => group.tasks.flatMap((task) => task.person?.id ?? [])));
+  return (await list()).clients.filter((client) => ids.has(client.id)).map((client) => client.name);
+}
+
+const counted = async (query: string) =>
+  (await (await request(ops, `/api/clients${query}`)).json<{ counts: unknown }>()).counts;
 
 async function visit(personId: string, type: string, status: string, start: string): Promise<void> {
   const id = crypto.randomUUID();
@@ -37,35 +52,57 @@ async function visit(personId: string, type: string, status: string, start: stri
     .run();
 }
 
+/** A task written by hand for a department, about the client given. */
+const staffTask = (department: string, personId: string) =>
+  env.DB.prepare(
+    `INSERT INTO staff_tasks (id, department, what, person_id, due_at, created_by, created_at)
+     VALUES (?1, ?2, 'Call back', ?3, ?4, 'priya@maneman.in', ?4)`,
+  )
+    .bind(crypto.randomUUID(), department, personId, NOW.toISOString())
+    .run();
+
+/** Rohit's first fit moved to the day given. */
+const fittedOn = (start: string) =>
+  env.DB.prepare("UPDATE appointments SET window_start = ?2 WHERE person_id = ?1 AND type = 'first_fit'")
+    .bind(ROHIT, start)
+    .run();
+
 beforeEach(async () => {
   captureLogs();
   ops = appFor("local", fakeDependencies(), {}, "ops");
   await markDatabase();
-  // Rohit: fitted, their next service on the 30th. Vikram: a consultation on the 24th. Kabir: nothing booked, in
-  // Gurgaon. Anil: nothing booked, and nowhere known.
+  // Rohit: fitted on 20 August, within his 30 days and the week's grace, his next service on the 30th. Vikram: a
+  // consultation on the 24th. Kabir: consulted on the 10th, nothing booked. Anil: nothing booked, and nowhere known.
+  // Arjun: fitted in March, long past his service, nothing booked.
   for (const [id, name, mobile] of [
     [ROHIT, "Rohit Malhotra", "+919810000001"],
     [VIKRAM, "Vikram Sethi", "+919810000002"],
     [KABIR, "Kabir Suri", "+919810000003"],
     [ANIL, "Anil Kapoor", "+919810000004"],
+    [ARJUN, "Arjun Shah", "+919810000005"],
   ] as const) {
     await person(id, name, mobile);
   }
-  for (const id of [ROHIT, VIKRAM, KABIR]) await savedAddress(id);
+  for (const id of [ROHIT, VIKRAM, KABIR, ARJUN]) await savedAddress(id);
+  await aPackage({ code: "natural", name: "Natural hair system", firstFit: 3_000_000, everyDays: 30 });
+  await env.DB.prepare("UPDATE people SET package = 'natural' WHERE id IN (?1, ?2)").bind(ROHIT, ARJUN).run();
   await visit(ROHIT, "first_fit", "completed", "2026-08-20T04:30:00.000Z");
   await visit(ROHIT, "service", "scheduled", "2026-09-30T04:30:00.000Z");
   await visit(VIKRAM, "consultation", "scheduled", "2026-09-24T04:30:00.000Z");
+  await visit(KABIR, "consultation", "completed", "2026-09-10T04:30:00.000Z");
+  await visit(ARJUN, "first_fit", "completed", "2026-03-02T04:30:00.000Z");
   await env.DB.prepare("INSERT OR IGNORE INTO cities (name, served, active, sort) VALUES ('Gurgaon', 1, 1, 1)").run();
 });
 
 describe("GET /api/clients", () => {
-  it("lists the soonest next visit first, then those with none, each with where they stand and their city", async () => {
+  it("lists the soonest next visit first, then those with none, each with their stage and their city", async () => {
     const page = await list();
-    expect(page.clients.map(({ name, state, city }) => ({ name, state, city }))).toEqual([
-      { name: "Vikram Sethi", state: "lead", city: "Gurgaon" },
-      { name: "Rohit Malhotra", state: "fitted", city: "Gurgaon" },
-      { name: "Kabir Suri", state: "nothing_booked", city: "Gurgaon" },
-      { name: "Anil Kapoor", state: "nothing_booked", city: null },
+    expect(page.clients.map(({ name, stage, city }) => ({ name, stage, city }))).toEqual([
+      { name: "Vikram Sethi", stage: "lead", city: "Gurgaon" },
+      { name: "Rohit Malhotra", stage: "active", city: "Gurgaon" },
+      { name: "Kabir Suri", stage: "consulted", city: "Gurgaon" },
+      { name: "Anil Kapoor", stage: "lead", city: null },
+      { name: "Arjun Shah", stage: "fitted", city: "Gurgaon" },
     ]);
     expect(page.clients[0]?.next_visit).toBe("2026-09-24T04:30:00.000Z");
     expect(page.next_cursor).toBeNull();
@@ -81,15 +118,67 @@ describe("GET /api/clients", () => {
     expect((await list()).cities).toContain("Mumbai");
   });
 
-  it("narrows to where they stand, and to a city", async () => {
-    expect(await names("?state=fitted")).toEqual(["Rohit Malhotra"]);
-    expect(await names("?state=lead")).toEqual(["Vikram Sethi"]);
-    expect(await names("?state=nothing_booked&city=Gurgaon")).toEqual(["Kabir Suri"]);
+  it("narrows to a view, and to a city", async () => {
+    expect(await names("?view=lead")).toEqual(["Vikram Sethi", "Anil Kapoor"]);
+    expect(await names("?view=booked")).toEqual(["Vikram Sethi", "Rohit Malhotra"]);
+    expect(await names("?view=fitted")).toEqual(["Rohit Malhotra", "Arjun Shah"]);
+    expect(await names("?view=nothing_booked&city=Gurgaon")).toEqual(["Kabir Suri", "Arjun Shah"]);
+  });
+
+  // 30 days and the week's grace after 14 August end on 20 September, so a fit on the 14th is fitted again today,
+  // and one on the 15th still active.
+  it("holds a fitted client active until their cadence and its grace run out, and fitted after", async () => {
+    const rohit = async () => (await list()).clients.find((client) => client.id === ROHIT)?.stage;
+    await fittedOn("2026-08-14T04:30:00.000Z");
+    expect(await rohit()).toBe("fitted");
+    await fittedOn("2026-08-15T04:30:00.000Z");
+    expect(await rohit()).toBe("active");
+  });
+
+  it("lists those a task on the caller's board waits on, and counts them", async () => {
+    await staffTask("customer_care", KABIR);
+    const waited = await onTheBoard();
+    expect(waited).toContain("Kabir Suri");
+    expect(await names("?view=needs")).toEqual(waited);
+    expect(await counted("")).toMatchObject({ all: 5, needs: waited.length });
+  });
+
+  // Needs something reads the caller's own board: a task in a department they may not see names nobody to them.
+  it("lists only those a task the caller may see waits on", async () => {
+    await staffTask("finance", KABIR);
+    await enforce();
+    await listStaff("farah.khan@maneman.in", ["customer_care:view:national"]);
+    await listStaff("dev.malik@maneman.in", ["customer_care:view:national", "finance:view:national"]);
+    expect(await names("?view=needs", opsAs(staffPerson("farah.khan@maneman.in")))).not.toContain("Kabir Suri");
+    expect(await names("?view=needs", opsAs(staffPerson("dev.malik@maneman.in")))).toContain("Kabir Suri");
+  });
+
+  it("leaves out the count of those a task waits on where the board was read only in part", async () => {
+    await env.DB.prepare(
+      `WITH RECURSIVE n(i) AS (SELECT 0 UNION ALL SELECT i + 1 FROM n WHERE i < ?2)
+       INSERT INTO grievances (id, person_id, text, state, created_at)
+       SELECT printf('55555555-5555-4555-8555-%012d', i), ?1, 'Words', 'open',
+              strftime('%Y-%m-%dT%H:%M:%fZ', '2026-09-01T06:00:00.000Z', '+' || i || ' minutes')
+         FROM n`,
+    )
+      .bind(KABIR, READ_CAP)
+      .run();
+    expect(await counted("")).toMatchObject({ all: 5, needs: null });
+  });
+
+  // The pincode told on Add a client places a client until anything else does (docs/decisions/0307-the-people-rulings.md).
+  it("places a client by the pincode told on Add a client, until an address says another city", async () => {
+    await env.DB.prepare("UPDATE people SET pincode = '122018' WHERE id = ?1").bind(ANIL).run();
+    expect(await names("?city=Gurgaon")).toContain("Anil Kapoor");
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('400050', 'Bandra West', 'Mumbai', 1)",
+    ).run();
+    await anAddress(ANIL, { pincode: "400050" });
+    expect(await names("?city=Gurgaon")).not.toContain("Anil Kapoor");
+    expect(await names("?city=Mumbai")).toEqual(["Anil Kapoor"]);
   });
 
   it("gives each one's package by name and what they have paid, less refunds, as their page does", async () => {
-    await aPackage({ code: "natural", name: "Natural hair system", firstFit: 3_000_000 });
-    await env.DB.prepare("UPDATE people SET package = 'natural' WHERE id = ?1").bind(ROHIT).run();
     const kept = crypto.randomUUID();
     await aPayment({ id: kept, person_id: ROHIT, amount: 236_000 });
     await aPayment({ person_id: ROHIT, amount: 50_000, status: "failed" });
@@ -108,11 +197,17 @@ describe("GET /api/clients", () => {
     expect(rows.find((row) => row.name === "Kabir Suri")).toMatchObject({ package: null, paid: 0 });
   });
 
-  it("counts how many stand where on the first page, in the city asked for, and not on the pages after", async () => {
-    const counted = async (query: string) =>
-      (await (await request(ops, `/api/clients${query}`)).json<{ counts: unknown }>()).counts;
-    expect(await counted("")).toEqual({ all: 4, lead: 1, fitted: 1, nothing_booked: 2 });
-    expect(await counted("?city=Gurgaon&state=fitted")).toEqual({ all: 3, lead: 1, fitted: 1, nothing_booked: 1 });
+  it("counts each view on the first page, in the city asked for, and not on the pages after", async () => {
+    const needs = (await onTheBoard()).length;
+    expect(await counted("")).toEqual({ all: 5, lead: 2, booked: 2, fitted: 2, nothing_booked: 3, needs });
+    expect(await counted("?city=Gurgaon&view=fitted")).toEqual({
+      all: 4,
+      lead: 1,
+      booked: 2,
+      fitted: 2,
+      nothing_booked: 2,
+      needs,
+    });
     expect(await counted("?cursor=MQ")).toBeNull();
   });
 
@@ -131,7 +226,7 @@ describe("GET /api/clients", () => {
     expect(first.clients).toHaveLength(CLIENTS_PER_PAGE);
     expect(first.next_cursor).not.toBeNull();
     const second = await list(`?cursor=${first.next_cursor ?? ""}`);
-    expect(second.clients).toHaveLength(4);
+    expect(second.clients).toHaveLength(5);
     expect(second.next_cursor).toBeNull();
   });
 });

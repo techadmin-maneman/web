@@ -16,7 +16,7 @@ const HAIR_SYSTEM = (row: string) =>
 
 /** Each part of the export one query reads, by its key in the file. */
 export const EXPORT_QUERIES = {
-  person: `SELECT name, mobile_e164 AS mobile, email, contactable, created_at,
+  person: `SELECT name, mobile_e164 AS mobile, email, contactable, pincode, created_at,
     (SELECT s.name FROM services s WHERE s.kind = 'first_fit' AND s.tier = people.package) AS package_name
     FROM people WHERE id = ?1`,
   // Whether they gave it to us on the phone, never which member of staff took it down.
