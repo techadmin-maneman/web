@@ -25,6 +25,8 @@ export const noShows = {
       collected: (today: boolean) => (today ? "Collected today" : "Collected"),
       processing: "Refunds processing",
       charged: "Charges and no-shows",
+      /** Under "UPI to record": what makes one, as the redesign words it. */
+      upiNote: "Paid to the QR, not matched",
     },
     /** Under "Refunds processing", which counts what has not gone back yet. */
     refunded: (amount: string, today: boolean) => `${amount} refunded ${today ? "today" : "that day"}`,
