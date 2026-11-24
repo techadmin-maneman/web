@@ -4,6 +4,9 @@
 // channel or one. The Zoho Analytics dashboards beyond it (src/domain/analytics/acquisition.ts).
 
 import { BarChart } from "@maneman/ui/BarChart";
+import { Split } from "@maneman/ui/Layout";
+import { StatTile, StatTiles } from "@maneman/ui/StatTile";
+import { roundRupees, rupees } from "@maneman/web-kit/money";
 import { quantity } from "@maneman/web-kit/figures";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { todayInIndia } from "@maneman/web-kit/dates";
@@ -53,6 +56,25 @@ function Steps({ figures }: { figures: Acquisition }) {
     <Panel titleId="funnel-steps" title={copy.steps.title}>
       <BarChart label={copy.steps.title} bars={bars} />
     </Panel>
+  );
+}
+
+/** Rs. 10,00,000 in paise: the least amount written in seven figures. */
+const TEN_LAKH_PAISE = 100_000_000;
+
+/** The period's spend, what each first fit cost, their revenue and the return on the spend, all channels together. */
+function Returns({ figures }: { figures: Acquisition }) {
+  const { spend, first_fits: fits, first_fit_revenue: revenue } = figures.totals;
+  const words = copy.figures;
+  // Two to a row, as the redesign draws them, until an amount runs to seven figures, which takes a row of its own.
+  const crores = Math.max(spend, revenue) >= TEN_LAKH_PAISE;
+  return (
+    <StatTiles layout={crores ? "stacked" : "pairs"}>
+      <StatTile label={words.spend} value={rupees(spend)} />
+      <StatTile label={words.perFit} value={fits === 0 ? words.none : roundRupees(spend / fits)} />
+      <StatTile label={words.revenue} value={rupees(revenue)} />
+      <StatTile label={words.roas} value={spend === 0 ? words.none : copy.roas(revenue, spend)} />
+    </StatTiles>
   );
 }
 
@@ -156,7 +178,11 @@ export function FunnelScreen() {
       {loaded.state === "loaded" && (
         <>
           <Counted figures={loaded.value} />
-          <Steps figures={loaded.value} />
+          {/* The steps beside what the period spent and what its first fits brought back, as the redesign draws them. */}
+          <Split look="wide">
+            <Steps figures={loaded.value} />
+            <Returns figures={loaded.value} />
+          </Split>
           <ChannelFigures figures={loaded.value} />
           <Cohorts figures={loaded.value} />
           <Heard figures={loaded.value} />

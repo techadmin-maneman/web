@@ -26,6 +26,15 @@ async function open(page: Page, confirmed?: ReturnType<typeof json>): Promise<vo
   await expect(page.getByRole("heading", { level: 1, name: opsCopy.shell.sections.waitlist })).toBeVisible();
 }
 
+// The redesign says beside the title how many wait, across the pincodes listed.
+test("says beside its title how many are waiting", async ({ page }) => {
+  await open(page);
+  const total = AREAS.areas.reduce((sum, each) => sum + each.waiting, 0);
+  await expect(
+    page.getByRole("main").getByText(opsCopy.waitlist.waitingCount(total, AREAS.more), { exact: true }),
+  ).toBeVisible();
+});
+
 test("lists the pincodes with their counts, and marks the ones we already come to", async ({ page }) => {
   await open(page);
   const bandra = page.getByRole("row").filter({ hasText: "400050" });

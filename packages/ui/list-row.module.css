@@ -156,6 +156,13 @@
     font-weight: var(--row-title-weight);
   }
 
+  /* ListRow's `wrap`: the title runs on, and nothing in it is clipped. */
+  .titleWraps {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .meta {
     font-size: var(--row-meta-text);
     color: var(--ui-text-muted);

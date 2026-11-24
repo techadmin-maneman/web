@@ -43,12 +43,12 @@ describe("Activity’s filters", () => {
     expect(askedOf({ person: CLIENT, actor: undefined }, "MTIw")).toEqual({ person: CLIENT, cursor: "MTIw" });
   });
 
+  // Whether pages opened are shown has its own box in the bar, which says so: no chip repeats it.
   it("name each filter set, as its chip says it, in the order the form asks for them", () => {
     expect(appliedOf({ to: "2026-10-07", actor_kind: "technician", person: CLIENT, reads: "include" })).toEqual([
       { name: "person", words: `Client · ${CLIENT.slice(0, 8)}` },
       { name: "actor_kind", words: "Who · Technician" },
       { name: "to", words: "To · 2026-10-07" },
-      { name: "reads", words: "Show pages opened and searches too" },
     ]);
     expect(appliedOf({})).toEqual([]);
   });

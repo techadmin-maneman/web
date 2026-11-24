@@ -16,6 +16,8 @@ import { care } from "../content/care.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
 import shared from "./care.module.css";
+import { Split } from "@maneman/ui/Layout";
+import styles from "./care-numbers.module.css";
 import { Stack } from "@maneman/ui/Layout";
 import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import { useHeaderSub } from "../frame/PageHead.tsx";
@@ -86,16 +88,11 @@ function Reasons({ numbers }: { numbers: CareNumbers }) {
   );
 }
 
-function Lists({ numbers }: { numbers: CareNumbers }) {
+function Remedies({ numbers }: { numbers: CareNumbers }) {
   const remedies = numbers.remedies.map((row) =>
     copy.remedied(care.remedy.reasons[row.reason as keyof typeof care.remedy.reasons], row.remedies, row.visits),
   );
-  return (
-    <>
-      <Reasons numbers={numbers} />
-      <Counted titleId="care-remedies" title={copy.remedies} lines={remedies} empty={copy.noRemedies} />
-    </>
-  );
+  return <Counted titleId="care-remedies" title={copy.remedies} lines={remedies} empty={copy.noRemedies} />;
 }
 
 function ByPerson({ numbers }: { numbers: CareNumbers }) {
@@ -123,7 +120,7 @@ function PeopleTable({ numbers }: { numbers: CareNumbers }) {
   const view = useTableView(numbers.by_person, PEOPLE_COLUMNS);
   return (
     <TableScroll labelledBy="care-numbers">
-      <Table className={shared.table}>
+      <Table className={styles.people}>
         <thead>
           <tr>
             <SortHeads view={view} />
@@ -133,7 +130,7 @@ function PeopleTable({ numbers }: { numbers: CareNumbers }) {
           {view.shown.map((row) => (
             <tr key={row.email}>
               <th scope="row" className={shared.who}>
-                {row.email}
+                <span className={styles.address}>{row.email}</span>
               </th>
               <td className={shared.figure}>{quantity(row.chats)}</td>
               <td className={shared.figure}>{minutes(row.median_minutes)}</td>
@@ -162,8 +159,12 @@ function Numbers({ period }: { period: CarePeriod }) {
     <>
       <Span from={numbers.from} to={numbers.to} />
       <Figures numbers={numbers} />
-      <Lists numbers={numbers} />
-      <ByPerson numbers={numbers} />
+      {/* What chats were about beside who answered them, the remedies given beneath, as the redesign draws them. */}
+      <Split look="even">
+        <Reasons numbers={numbers} />
+        <ByPerson numbers={numbers} />
+      </Split>
+      <Remedies numbers={numbers} />
     </>
   );
 }

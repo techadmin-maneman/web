@@ -54,7 +54,10 @@ export interface Applied {
 
 const words = activity.filters;
 
-/** Each filter that is set, in the order the form asks for them, the client or visit a link set first. */
+/**
+ * Each filter that is set, in the order the form asks for them, the client or visit a link set first. Whether pages
+ * opened are shown has its own box in the bar.
+ */
 export function appliedOf(filters: Filters): Applied[] {
   const applied: Applied[] = [];
   if (filters.person !== undefined)
@@ -70,6 +73,5 @@ export function appliedOf(filters: Filters): Applied[] {
   }
   if (filters.from !== undefined) applied.push({ name: "from", words: `${words.from} · ${filters.from}` });
   if (filters.to !== undefined) applied.push({ name: "to", words: `${words.to} · ${filters.to}` });
-  if (filters.reads !== undefined) applied.push({ name: "reads", words: words.reads });
   return applied;
 }

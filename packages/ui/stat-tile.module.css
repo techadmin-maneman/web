@@ -47,6 +47,25 @@
     margin: calc(var(--hairline) * -1) 0 0 calc(var(--hairline) * -1);
   }
 
+  /* StatTiles' `pairs`, two tiles to a row where the strip has the room, and `stacked`, one, at any width. */
+  .pairsBox {
+    container: stat-pairs / inline-size;
+  }
+
+  .stripRow.pairs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @container stat-pairs (width < 27rem) {
+    .stripRow.pairs {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .stripRow.stacked {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .stripRow > .tile {
     border: 0;
     border-top: var(--hairline) solid var(--ui-line);

@@ -30,6 +30,32 @@
     }
   }
 
+  /* Split: side by side once both parts are drawn; one above the other short of a desk. */
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--sp-24);
+  }
+
+  .splitSide:has(> :nth-child(2)) {
+    grid-template-columns: minmax(0, 1fr) var(--split-side);
+  }
+
+  .splitWide:has(> :nth-child(2)) {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+
+  .splitEven:has(> :nth-child(2)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 1279px) {
+    .split:has(> :nth-child(2)) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
   .gap8 {
     gap: var(--sp-8);
   }

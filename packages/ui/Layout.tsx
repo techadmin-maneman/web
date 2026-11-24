@@ -3,6 +3,7 @@
 //
 //   <Stack gap="20">{panels}</Stack>
 //   <Columns>{tiles}</Columns>
+//   <Split look="side">{main}{beside}</Split>
 
 import type { ReactNode } from "react";
 import { classes } from "./classes.ts";
@@ -30,6 +31,24 @@ export function Stack({
   readonly children: ReactNode;
 }) {
   return <div className={classes(styles.stack, GAPS[gap], className)}>{children}</div>;
+}
+
+const SPLITS = { side: styles.splitSide, wide: styles.splitWide, even: styles.splitEven } as const;
+
+/**
+ * Two parts side by side on a wide desk, one above the other short of it: the second a column of its own (`side`),
+ * the first the wider (`wide`), or both alike (`even`). Until the second is drawn, the first takes the whole width.
+ */
+export function Split({
+  look,
+  className,
+  children,
+}: {
+  readonly look: keyof typeof SPLITS;
+  readonly className?: string | undefined;
+  readonly children: ReactNode;
+}) {
+  return <div className={classes(styles.split, SPLITS[look], className)}>{children}</div>;
 }
 
 /** Side by side, as many to a row as fit at their narrowest (--columns-tile, ./base.css), each row filled. */

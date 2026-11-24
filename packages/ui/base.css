@@ -167,6 +167,8 @@
     --setting-label-width: 40%;
     /* Settings' own menu (./SettingsLayout.tsx). */
     --settings-menu-width: var(--skeleton-card);
+    /* The column beside a page's main part (./Layout.tsx's Split, `side`), which the app that draws one sets. */
+    --split-side: auto;
     /* The narrowest a tile goes in a row of them (./Layout.tsx's Columns). */
     --columns-tile: var(--skeleton-card);
     /* A search box's width (./SearchInput.tsx): its room, unless the app sets its own. */

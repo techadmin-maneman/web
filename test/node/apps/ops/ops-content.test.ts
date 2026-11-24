@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { profile } from "../../../../apps/app/src/content.ts";
 import { settings } from "../../../../apps/ops/src/content/settings.ts";
 import * as ops from "../../../../apps/ops/src/content.ts";
-import { activity } from "../../../../apps/ops/src/content/activity.ts";
+import { SESSION_CALLS } from "../../../../apps/ops/src/content/activity-sentences.ts";
 import { areas, BOOKING_URL, deletions, dispatch, grievances } from "../../../../apps/ops/src/content.ts";
 import { DELETION_ALERT_AFTER_MS } from "../../../../src/domain/privacy/deletion.ts";
 import { GRIEVANCE_ANSWERED_WITHIN_DAYS } from "../../../../src/policy/grievances.ts";
@@ -78,7 +78,7 @@ describe("the dispatch board’s words", () => {
       for (const [path, methods] of Object.entries(paths)) {
         for (const method of Object.keys(methods).filter((each) => each !== "get" && !unlogged.test(path))) {
           const call = `${method.toUpperCase()} ${path}`;
-          expect(activity.calls[call], call).toBeTruthy();
+          expect(SESSION_CALLS[call], call).toBeTruthy();
         }
       }
     }

@@ -1,0 +1,17 @@
+/* What ./CareNumbersScreen.tsx alone draws. */
+
+/* Who answered the chats: its own width beside the reasons on a desk, a full table's least where it has the page's. */
+.people {
+  min-width: 0;
+}
+
+@media (max-width: 1279px) {
+  .people {
+    min-width: var(--ops-table-min);
+  }
+}
+
+/* A Care person's address, broken where it must be so the table keeps to its half of a desk. */
+.address {
+  overflow-wrap: anywhere;
+}
