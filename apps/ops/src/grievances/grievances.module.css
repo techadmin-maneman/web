@@ -1,18 +1,28 @@
 /*
- * The grievance queue, on the panel and at the width the boards' own queues use
- * (C1 and D1). The design draws no board for it, so nothing here is new: the
- * head with its count, a row for each, the client's words quoted between
- * hairlines, and the field the answer is written in, as a held grant's reason is.
+ * Requests › Concerns (./GrievancesScreen.tsx): a row each, as the redesign draws them, and one opened in a drawer with
+ * the client's words quoted between hairlines and the field the answer is written in.
  */
 
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-20);
-  max-width: var(--ops-list);
+/* ---- The rows -------------------------------------------------------------- */
+
+/* The client's words in a row, on one line; the drawer has them whole. */
+.concern {
+  max-width: calc(var(--sp-64) * 6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ---- One grievance --------------------------------------------------------- */
+/* The day the answer is due, with how long is left beneath it. */
+.due {
+  display: block;
+}
+
+.first {
+  margin: var(--sp-12) var(--form-inset) 0;
+}
+
+/* ---- One concern, opened ----------------------------------------------------- */
 
 .head {
   display: flex;

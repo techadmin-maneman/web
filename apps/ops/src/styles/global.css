@@ -45,6 +45,7 @@
     --action-height: var(--tap);
     --control-height: var(--tap);
     --small-height: var(--tap);
+    --compact-height: var(--tap);
     --field-height: var(--tap);
     /* A toast stands as far above the tab bar as it stands above the window's foot at a desk. */
     --toast-lift: calc(var(--ops-tab-bar) + var(--sp-24) + env(safe-area-inset-bottom));

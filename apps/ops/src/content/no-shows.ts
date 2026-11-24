@@ -25,6 +25,8 @@ export const noShows = {
       collected: (today: boolean) => (today ? "Collected today" : "Collected"),
       processing: "Refunds processing",
       charged: "Charges and no-shows",
+      /** Under "UPI to record": what makes one, as the redesign words it. */
+      upiNote: "Not matched yet",
     },
     /** Under "Refunds processing", which counts what has not gone back yet. */
     refunded: (amount: string, today: boolean) => `${amount} refunded ${today ? "today" : "that day"}`,
@@ -200,16 +202,19 @@ export const noShows = {
       unknown: FAILED,
     },
   },
+  /** Beside the page's title: the no-shows and disputed charges waiting on a ruling. */
+  toDecide: (count: number) => `${String(count)} to decide`,
   /** The board draws no list of the day's rulings. Each case ruled on today, the latest first. */
   decided: {
     title: "Decided today",
+    /** A row each, as the redesign draws them. */
+    columns: ["Client", "Visit", "Decision", "At"] as const,
     charged: (kept: string) => `Charged ${kept}`,
     chargedCredit: "Charged a free service visit",
     chargedNothing: "Closed as a no-show",
     // A charge ruled before charges recorded what they kept.
     chargedUnrecorded: "Charged",
     waived: "Waived",
-    at: (ruling: string, time: string) => `${ruling} · ${time}`,
     empty: "Nothing decided today.",
   },
   /**

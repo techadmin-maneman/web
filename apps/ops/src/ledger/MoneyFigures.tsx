@@ -15,6 +15,7 @@ import { today } from "../content/today.ts";
 import { useAccess } from "../lib/access.ts";
 import { useCity } from "../lib/city.ts";
 import { useTaskBoard } from "../lib/waiting.ts";
+import { kindPath } from "../tasks/index.ts";
 import { ledgerApi } from "./ledger-api.ts";
 import styles from "./ledger.module.css";
 
@@ -34,12 +35,28 @@ export function MoneyFigures() {
   if (loaded.state !== "loaded") return null;
   return (
     <StatTiles className={styles.figures}>
-      <StatTile label={words.collected(true)} value={rupees(loaded.value.collected)} />
+      {/* Each with a line beneath, if an empty one, so the figures stand level with the UPI's. */}
+      <StatTile label={words.collected(true)} value={rupees(loaded.value.collected)} note="" />
       {owed !== null && (
-        <StatTile label={tasks.groups.payment_owed} value={owed} tone={owed > 0 ? "attention" : "plain"} />
+        <StatTile
+          label={tasks.groups.payment_owed}
+          value={owed}
+          tone={owed > 0 ? "attention" : "plain"}
+          note=""
+          to={kindPath("payment_owed")}
+        />
       )}
-      {upi !== null && <StatTile label={today.tiles.upi} value={upi} tone={upi > 0 ? "attention" : "plain"} />}
-      <StatTile label={words.processing} value={rupees(loaded.value.refunds_processing)} />
+      {/* Recorded from its task, which the figure opens on. */}
+      {upi !== null && (
+        <StatTile
+          label={today.tiles.upi}
+          value={upi}
+          tone={upi > 0 ? "attention" : "plain"}
+          note={words.upiNote}
+          to={kindPath("upi_due")}
+        />
+      )}
+      <StatTile label={words.processing} value={rupees(loaded.value.refunds_processing)} note="" />
     </StatTiles>
   );
 }

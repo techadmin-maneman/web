@@ -61,11 +61,36 @@ export const technicianPay = {
     none: "No visits closed that month.",
     download: "Download CSV",
     fileName: (month: string) => `technician-pay-${month}.csv`,
+    /** The CSV's columns, a line each by city and rate, as payroll reads them. */
     columns: ["Technician", "City", "Visit", "Visits", "Rate", "Amount"],
     noCity: "No city",
+    /** Beside the page's title: the month shown, and whether it is still running. */
+    monthHead: (month: string, current: boolean) => (current ? `${fullMonth(month)}, so far` : fullMonth(month)),
+    /** The table's columns, a row each technician, as the redesign draws them. */
+    technician: "Technician",
+    grade: "Grade",
+    amount: "Amount",
+    kindHeads: {
+      consultation: "Consultations",
+      one_visit: "Consultations and fits",
+      first_fit: "First fits",
+      service: "Service visits",
+      replacement: "Replacements",
+      no_show: "No-shows",
+    },
+    /** Beneath an amount, where a visit had no rate: the amount leaves it out. */
+    unpriced: "Some visits have no rate",
+    /** A technician's name opens their lines, by city and rate, as the CSV has them. */
+    openLabel: (name: string) => `Open ${name}’s pay by visit`,
+    lineColumns: ["City", "Visit", "Visits", "Rate", "Amount"],
     noRate: "No rate",
-    total: (name: string) => `${name}: total`,
-    totalUnpriced: (name: string) => `${name}: total, without the visits no rate covers`,
+    totalOf: (count: number) => `${String(count)} ${count === 1 ? "technician" : "technicians"}`,
+    /** Above the month: those with no grade, whose visits are not paid. */
+    ungraded: (names: readonly string[]) =>
+      names.length === 1
+        ? `${names[0] ?? ""} has no pay grade and isn’t being paid.`
+        : `${String(names.length)} technicians have no pay grade and aren’t being paid.`,
+    setGrades: "Set pay grades",
   },
   done: { saved: "Saved.", deleted: "Grade deleted." },
   errors: {

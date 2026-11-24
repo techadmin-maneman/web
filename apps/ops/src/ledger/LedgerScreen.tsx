@@ -104,7 +104,7 @@ function Payments({ loaded, retry, days }: { loaded: Loaded<Ledger>; retry: () =
   });
   return (
     <Panel titleId="ledger-payments" title={copy.payments.title}>
-      <Narrowing view={view} label={copy.narrow}>
+      <Narrowing view={view} label={copy.narrow} search={copy.find}>
         {days}
       </Narrowing>
       {loaded.state === "loading" && <PanelLoading />}

@@ -1,5 +1,5 @@
-// Finance's Payments page, the ledger: every payment over a period and the links still unpaid. No design draws it;
-// every word here is ours.
+// Money › Payments, the ledger: every payment over a period and the links still unpaid, in the redesign's words where
+// it draws them.
 
 export const ledger = {
   title: "Payments",
@@ -8,7 +8,9 @@ export const ledger = {
   from: "From",
   to: "To",
   narrow: "Filter payments",
-  export: "Export CSV",
+  /** The ledger's search box, as the redesign words it. */
+  find: "Client or reference",
+  export: "Download CSV",
   /** The file's name: "payments-2026-09-01-to-2026-09-30.csv". */
   fileName: (from: string, to: string) => `payments-${from}-to-${to}.csv`,
   /** Beside the title: the days listed. */
@@ -16,7 +18,7 @@ export const ledger = {
   failed: "Couldn’t load the payments.",
   payments: {
     title: "Payments",
-    columns: ["Date", "Reference", "Client", "For", "Method", "Amount", "Refunded", "Status", "Books"],
+    columns: ["Date", "Reference", "Client", "For", "Method", "Amount", "Refunded", "Status", "In the books"],
     /** The last column, named aloud only: a refund given from the row. */
     refund: "Refund",
     more: (cap: number) => `Showing the latest ${String(cap)}. Choose fewer days to see the rest.`,
@@ -32,7 +34,7 @@ export const ledger = {
     refunded: "Refunded",
     partially_refunded: "Partly refunded",
   } as Readonly<Record<string, string | undefined>>,
-  books: { applied: "In Books", waiting: "Not yet", none: "—" },
+  books: { applied: "Synced", waiting: "Not yet", none: "—" },
   /** A client erased since, or a payment no client of ours made. */
   noClient: "—",
   links: {

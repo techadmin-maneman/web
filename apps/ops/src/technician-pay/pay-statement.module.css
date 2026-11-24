@@ -1,8 +1,31 @@
-/* What ./PayStatement.tsx alone draws; what it shares is in ./technician-pay.module.css. */
+/* What ./PayStatement.tsx alone draws. */
 
-/* A technician's total beneath their month's lines. */
+/* The month's total, beneath every technician. */
 .total > th,
 .total > td {
   font-weight: var(--weight-medium);
   border-top: var(--hairline) solid var(--ui-line);
+}
+
+/* Beneath an amount a visit with no rate left short. */
+.unpriced {
+  display: block;
+  font-size: var(--fs-13);
+  font-weight: var(--weight-regular);
+  color: var(--ui-attention);
+  white-space: nowrap;
+}
+
+/* An amount and the line beneath it, stacked and set right, at a desk and in a phone's card alike. */
+.amount {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* On a phone the month's choice takes a line of its own beneath the panel's title, which stays on one. */
+@media (max-width: 600px) {
+  .month {
+    flex-basis: 100%;
+  }
 }

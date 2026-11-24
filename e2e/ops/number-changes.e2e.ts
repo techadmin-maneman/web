@@ -8,7 +8,23 @@ import type { Page } from "@playwright/test";
 import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, fails, json, NUMBER_CHANGES, TASKS_READ_ON, type Call } from "./fixtures.ts";
+import { answer, fails, json, NUMBER_CHANGES, TASKS_READ_ON, type Call, type OpsReply } from "./fixtures.ts";
+import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
+import { states } from "../../packages/ui/words.ts";
+/** Someone who may read the number changes but not decide them: every call but the decision. */
+const READ_ONLY = json({
+  signed_in_as: "care@localhost",
+  sign_out: null,
+  staff: {
+    enforced: true,
+    listed: true,
+    grants: [{ department: "operations", level: "view", geography: "national", place: null }],
+    may_call: Object.keys(ROUTE_NEEDS).filter((call) => call !== "POST /api/number-changes/{id}/decision"),
+  },
+  cities: ["Gurgaon"],
+  every_city: true,
+} satisfies OpsReply<"/api/whoami">);
+
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const CHANGE = NUMBER_CHANGES.changes[0]?.id ?? "";
@@ -22,26 +38,52 @@ async function open(page: Page, decision = json({ state: "confirmed" }), path = 
   await expect(page.getByRole("heading", { level: 1, name: opsCopy.numberChanges.title })).toBeVisible();
 }
 
-const queue = (page: Page) => page.getByRole("region", { name: opsCopy.numberChanges.queue.title });
+const words = opsCopy.numberChanges.queue;
+// The list's panel is titled as its page, its heading read rather than shown again.
+const queue = (page: Page) => page.getByRole("region", { name: opsCopy.numberChanges.title });
+const row = (page: Page) => queue(page).getByRole("row").filter({ hasText: "Rohit Malhotra" });
 
-test("shows both numbers, the day it was asked for, and that each was proven", async ({ page }) => {
+/** Opens the change from the client's name, in a drawer by their name. */
+async function opened(page: Page) {
+  await queue(page)
+    .getByRole("button", { name: words.openLabel("Rohit Malhotra") })
+    .click();
+  return page.getByRole("dialog", { name: "Rohit Malhotra" });
+}
+
+/** Declines from the row, which opens the drawer at its reason. */
+async function declining(page: Page) {
+  await queue(page)
+    .getByRole("button", { name: words.rejectLabel("Rohit Malhotra") })
+    .click();
+  return page.getByRole("dialog", { name: "Rohit Malhotra" });
+}
+
+test("lists each change a row: both numbers, when it was asked, its check; says how many beside the title", async ({
+  page,
+}) => {
   await open(page);
-  const only = queue(page).getByRole("listitem");
-  await expect(only).toHaveCount(1);
-  await expect(only).toContainText("+91 98100 04417 → +91 98100 04421");
-  await expect(only).toContainText("Requested 21 Sep 2027");
-  await expect(only).toContainText(opsCopy.numberChanges.queue.proven);
+  await expect(queue(page).getByRole("rowheader")).toHaveCount(1);
+  await expect(row(page)).toContainText("+91 98100 04417");
+  await expect(row(page)).toContainText("+91 98100 04421");
+  await expect(row(page)).toContainText(words.checked);
+  await expect(page.getByRole("main").getByText(words.toDecide(1), { exact: true })).toBeVisible();
+
+  const drawer = await opened(page);
+  await expect(drawer).toContainText("+91 98100 04417 → +91 98100 04421");
+  await expect(drawer).toContainText("Requested 21 Sep 2027");
+  await expect(drawer).toContainText(words.proven);
 });
 
 // The change is confirmed with the client on the new number, which had to be copied by hand.
 test("reaches the client on the new number, on WhatsApp or by phone", async ({ page }) => {
   await open(page);
-  const only = queue(page).getByRole("listitem");
-  await expect(only.getByRole("link", { name: "WhatsApp Rohit Malhotra" })).toHaveAttribute(
+  const drawer = await opened(page);
+  await expect(drawer.getByRole("link", { name: "WhatsApp Rohit Malhotra" })).toHaveAttribute(
     "href",
     "https://wa.me/919810004421",
   );
-  await expect(only.getByRole("link", { name: "Call Rohit Malhotra on +91 98100 04421" })).toHaveAttribute(
+  await expect(drawer.getByRole("link", { name: "Call Rohit Malhotra on +91 98100 04421" })).toHaveAttribute(
     "href",
     "tel:+919810004421",
   );
@@ -50,84 +92,135 @@ test("reaches the client on the new number, on WhatsApp or by phone", async ({ p
 // A number change once showed no age at all; it falls due when the Tasks board says it does.
 test("says how long the change has left, as the Tasks board counts it", async ({ page }) => {
   await open(page);
-  await expect(queue(page).getByRole("listitem")).toContainText("1 day left");
+  await expect(row(page)).toContainText("1 day left");
 });
 
 test("reaches the client’s record from the name", async ({ page }) => {
   await open(page);
-  await queue(page).getByRole("link", { name: "Rohit Malhotra", exact: true }).click();
+  const drawer = await opened(page);
+  await drawer.getByRole("link", { name: "Rohit Malhotra", exact: true }).click();
   expect(new URL(page.url()).pathname).toBe("/clients/22000000-0000-4000-8000-000000000001/visits");
 });
 
-test("confirms the change, and it leaves the queue", async ({ page }) => {
+test("approves the change from its row, and it leaves the list", async ({ page }) => {
   await open(page);
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
-  await page.getByRole("button", { name: opsCopy.numberChanges.queue.confirm }).click();
+  await queue(page)
+    .getByRole("button", { name: words.confirmLabel("Rohit Malhotra") })
+    .click();
   expect((await sent).postDataJSON()).toEqual({ decision: "confirm", reason: null });
-  await expect(page.getByText("Rohit Malhotra")).toBeHidden();
+  await expect(row(page)).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: words.confirmed("Rohit Malhotra") })).toBeVisible();
+  await expect(page.getByText(words.empty)).toBeVisible();
+  await expect(page.getByRole("main").getByText(words.toDecide(0), { exact: true })).toHaveCount(0);
 });
 
-test("rejects with a reason, which it will not send without", async ({ page }) => {
+test("declines with a reason, which it will not send without", async ({ page }) => {
   await open(page, json({ state: "rejected" }));
-  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true }).click();
-  const send = page.getByRole("button", { name: opsCopy.numberChanges.queue.reason.confirm });
+  const drawer = await declining(page);
+  const send = drawer.getByRole("button", { name: words.reason.confirm });
   await expect(send).toBeDisabled();
 
-  await page
-    .getByRole("textbox", { name: opsCopy.numberChanges.queue.reason.label })
-    .fill("The client says they did not ask.");
+  await drawer.getByRole("textbox", { name: words.reason.label }).fill("The client says they did not ask.");
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
   await send.click();
   expect((await sent).postDataJSON()).toEqual({ decision: "reject", reason: "The client says they did not ask." });
-  await expect(page.getByText("Rohit Malhotra")).toBeHidden();
+  await expect(drawer).toBeHidden();
+  await expect(row(page)).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: words.rejected("Rohit Malhotra") })).toBeVisible();
 });
 
-test("leaves the change waiting when the rejection is called off", async ({ page }) => {
+test("leaves the change waiting when the decline is called off", async ({ page }) => {
   await open(page);
-  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true }).click();
-  await page.getByRole("button", { name: DISMISS.cancel }).click();
-  await expect(page.getByRole("button", { name: opsCopy.numberChanges.queue.confirm })).toBeVisible();
-  // The keyboard goes back to the button that asked, not to the top of the page.
-  await expect(page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true })).toBeFocused();
+  const drawer = await declining(page);
+  await drawer.getByRole("button", { name: DISMISS.cancel }).click();
+  await expect(drawer.getByRole("button", { name: words.confirm, exact: true })).toBeVisible();
+  // The keyboard goes back to the button that asked, not to the top of the drawer.
+  await expect(drawer.getByRole("button", { name: words.reject, exact: true })).toBeFocused();
 });
 
 test("moves the keyboard into the reason as it opens, and to the heading once decided", async ({ page }) => {
   await open(page, json({ state: "rejected" }));
-  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true }).click();
-  const reason = page.getByRole("textbox", { name: opsCopy.numberChanges.queue.reason.label });
+  const drawer = await declining(page);
+  const reason = drawer.getByRole("textbox", { name: words.reason.label });
   await expect(reason).toBeFocused();
   await reason.fill("The client says they did not ask.");
-  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reason.confirm }).click();
-  await expect(page.getByRole("heading", { name: opsCopy.numberChanges.queue.title })).toBeFocused();
+  await drawer.getByRole("button", { name: words.reason.confirm }).click();
+  await expect(page.getByRole("heading", { level: 2, name: opsCopy.numberChanges.title })).toBeFocused();
 });
 
 // The Tasks board links a number change to its row here.
-test("brings the change a task named into view, and gives it the keyboard", async ({ page }) => {
+test("opens the change a task named", async ({ page }) => {
   await open(page, undefined, `/number-changes#change-${CHANGE}`);
-  await expect(queue(page).getByRole("listitem")).toBeFocused();
+  await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
 });
 
 // The API answers with the code alone, so the console says whose number it is.
 test("says so when another client already holds the new number", async ({ page }) => {
   await open(page, fails(409, "number_in_use"));
-  await page.getByRole("button", { name: opsCopy.numberChanges.queue.confirm }).click();
-  await expect(page.getByRole("alert")).toContainText(opsCopy.numberChanges.queue.errors.number_in_use);
-  await expect(page.getByText("Rohit Malhotra")).toBeVisible();
+  await queue(page)
+    .getByRole("button", { name: words.confirmLabel("Rohit Malhotra") })
+    .click();
+  // Said in the row it answers, so with several waiting it is plain whose it is.
+  await expect(row(page).getByRole("alert")).toContainText(words.errors.number_in_use);
 });
 
 test("says so when someone has decided it already", async ({ page }) => {
   await open(page, fails(404, "not_found"));
-  await page.getByRole("button", { name: opsCopy.numberChanges.queue.confirm }).click();
+  await queue(page)
+    .getByRole("button", { name: words.confirmLabel("Rohit Malhotra") })
+    .click();
   await expect(page.getByText("Already decided. Here’s the latest.")).toBeVisible();
 });
 
-test("says so when nothing is waiting", async ({ page }) => {
+test("says so when nothing is waiting, and nothing beside the title", async ({ page }) => {
   await answer(page, { "GET /api/number-changes": json({ changes: [] }) });
   await page.goto("/number-changes");
-  await expect(page.getByText(opsCopy.numberChanges.queue.empty)).toBeVisible();
+  await expect(page.getByText(words.empty)).toBeVisible();
+  await expect(page.getByRole("main").getByText(words.toDecide(0), { exact: true })).toHaveCount(0);
 });
 
-test("says so when the queue cannot be loaded, and loads it on Try again", async ({ page }) => {
+test("offers no Approve or Decline to someone who may only read the changes", async ({ page }) => {
+  await page.clock.setFixedTime(TASKS_READ_ON);
+  await answer(page, { "GET /api/number-changes": json(NUMBER_CHANGES), "GET /api/whoami": READ_ONLY });
+  await page.goto("/number-changes");
+  await expect(row(page)).toBeVisible();
+  await expect(queue(page).getByRole("button", { name: words.confirmLabel("Rohit Malhotra") })).toHaveCount(0);
+  await expect(queue(page).getByRole("button", { name: words.rejectLabel("Rohit Malhotra") })).toHaveCount(0);
+  const drawer = await opened(page);
+  await expect(drawer.getByRole("button", { name: words.confirm, exact: true })).toHaveCount(0);
+});
+
+test("keeps Approve off where the new number is another client's, and says so in the row", async ({ page }) => {
+  const held = {
+    changes: NUMBER_CHANGES.changes.map((each) => ({
+      ...each,
+      new_number_held_by: { name: "Vikram Sethi", client: true },
+    })),
+  } satisfies OpsReply<"/api/number-changes">;
+  await open(page);
+  await answer(page, { "GET /api/number-changes": json(held) });
+  await page.reload();
+  await expect(row(page)).toContainText(words.heldByClient("Vikram Sethi"));
+  await expect(queue(page).getByRole("button", { name: words.confirmLabel("Rohit Malhotra") })).toBeDisabled();
+  // The drawer agrees with the row.
+  const drawer = await opened(page);
+  await expect(drawer.getByRole("button", { name: words.confirm, exact: true })).toBeDisabled();
+});
+
+test("holds the list's room while it is read", async ({ page }) => {
+  await answer(page, {
+    "GET /api/number-changes": async (route) => {
+      await new Promise((done) => setTimeout(done, 1500));
+      return json(NUMBER_CHANGES)(route);
+    },
+  });
+  await page.goto("/number-changes");
+  await expect(page.getByRole("main").getByText(states.loading)).toBeVisible();
+  await expect(page.getByText("Rohit Malhotra")).toBeVisible();
+});
+
+test("says so when the list cannot be loaded, and loads it on Try again", async ({ page }) => {
   await answer(page, { "GET /api/number-changes": fails(503, "unavailable") });
   await page.goto("/number-changes");
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
@@ -137,10 +230,10 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
   await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA with a queue, and with a rejection open", async ({ page }) => {
+test("meets WCAG 2.2 AA with the list, and with a decline open", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true }).click();
+  await declining(page);
   expect(await axeViolations(page)).toEqual([]);
 });

@@ -242,10 +242,18 @@ test("lists the cases ruled on today with their ruling, and reads them and the d
   await open(page);
   await expect(page.getByRole("region", { name: MONEY, exact: true })).toBeVisible();
   const decided = page.getByRole("region", { name: DECIDED_TODAY });
-  await expect(decided.getByRole("listitem").filter({ hasText: "Karan Bose" })).toContainText(
-    "Charged Rs. 2,360 · 10:30 am",
+  // A row each, as the redesign draws them: who, the visit, the ruling and when.
+  const karan = decided.getByRole("row").filter({ hasText: "Karan Bose" });
+  // Every client's name reaches their record.
+  await expect(karan.getByRole("link", { name: "Karan Bose" })).toHaveAttribute(
+    "href",
+    "/clients/11000000-0000-4000-8000-000000000005/visits",
   );
-  await expect(decided.getByRole("listitem").filter({ hasText: "Arjun Mehra" })).toContainText("Waived · 9:05 am");
+  await expect(karan).toContainText("Charged Rs. 2,360");
+  await expect(karan).toContainText("10:30 am");
+  const arjun = decided.getByRole("row").filter({ hasText: "Arjun Mehra" });
+  await expect(arjun).toContainText(opsCopy.noShows.decided.waived);
+  await expect(arjun).toContainText("9:05 am");
 
   const first = caseOf(page, FIRST);
   await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("They were stuck in the lift; we have their call");
@@ -255,6 +263,30 @@ test("lists the cases ruled on today with their ruling, and reads them and the d
   ]);
   await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
   await readAgain;
+});
+
+// The count beside the title once took a ruled case off twice: once as ruled here, and again from the list read
+// again after the ruling, which leaves it out.
+test("counts what still waits once a ruling reads the list again, the case ruled counted off once", async ({
+  page,
+}) => {
+  await open(page);
+  const waiting = NO_SHOWS.cases.length + DISPUTES.disputes.length;
+  const head = (count: number) => page.getByRole("main").getByText(opsCopy.noShows.toDecide(count), { exact: true });
+  await expect(head(waiting)).toBeVisible();
+
+  // The list read again leaves out the case ruled here (FIRST) and the other, ruled meanwhile on another desk: what
+  // waits then is the dispute alone. Counting the case ruled here off again would say one fewer still.
+  await answer(page, { "GET /api/no-shows": json({ ...NO_SHOWS, cases: [] }) });
+  const reread = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/api/no-shows" && request.method() === "GET",
+  );
+  const first = caseOf(page, FIRST);
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("They were stuck in the lift; we have their call");
+  await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
+  await reread;
+  await expect(head(DISPUTES.disputes.length)).toBeVisible();
+  expect(DISPUTES.disputes.length).toBe(waiting - NO_SHOWS.cases.length);
 });
 
 test("says so when nothing has been decided today", async ({ page }) => {
