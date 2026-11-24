@@ -13,9 +13,9 @@ import { Icon } from "./Icon.tsx";
 import { Link } from "./router.tsx";
 import styles from "./settings-layout.module.css";
 
-export function SettingsLayout({ menu, children }: { readonly menu: ReactNode; readonly children: ReactNode }) {
+export function SettingsLayout({ menu, children }: { readonly menu?: ReactNode; readonly children: ReactNode }) {
   return (
-    <div className={styles.layout}>
+    <div className={menu === undefined ? undefined : styles.layout}>
       {menu}
       <div className={styles.page}>
         <ChangeInDialog.Provider value>{children}</ChangeInDialog.Provider>

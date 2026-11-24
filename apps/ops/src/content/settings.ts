@@ -41,6 +41,13 @@ export const settings = {
   title: "Settings",
   find: "Find a setting",
   noneFound: "No setting matches.",
+  /** What a search finds, above the page: each page, and each rule, by the group and page it is in. */
+  matches: "Settings that match",
+  clear: "Clear",
+  pageIn: (group: string) => `${group} page`,
+  ruleIn: (group: string, page: string) => `${group}, ${page}`,
+  /** On a phone, where the navigation is not drawn: the groups, a tab each. */
+  groups: "Settings’ groups",
   /** What is held of what may be, each in the unit that reads best: "17 MB of 10 GB", "1.2 GB of 4 GB". */
   storage: (held: number, share: number) => `Photos and referral cards: ${size(held)} of ${size(share)}`,
   database: (held: number, limit: number) => `Database: ${size(held)} of ${size(limit)}`,

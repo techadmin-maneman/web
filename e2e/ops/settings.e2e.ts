@@ -266,10 +266,10 @@ test.describe("the rules", () => {
   });
 
   // Seventeen rules on one page, each with its own Save, in no order.
-  test("puts each subject's rules on a page of its own, a link away in Settings' menu", async ({ page }) => {
+  test("puts each subject's rules on a page of its own, a tab away in its group", async ({ page }) => {
     await open(page, "/settings/field");
-    const menu = page.getByRole("navigation", { name: shell.settings, exact: true });
-    await expect(menu.getByRole("link", { name: settingsPageNames.field })).toHaveAttribute("aria-current", "page");
+    const tabs = page.getByRole("navigation", { name: settingsGroupNames.visits, exact: true });
+    await expect(tabs.getByRole("link", { name: settingsPageNames.field })).toHaveAttribute("aria-current", "page");
     // The rules of one figure together under the subject; a rule of several, in a panel of its own beneath.
     const field = section(page, "Visits in the field");
     await expect(field.getByRole("group")).toHaveText([/^Check-in radius/]);
@@ -278,10 +278,16 @@ test.describe("the rules", () => {
     }
     await expect(page.getByRole("button", { name: EDITING.save, exact: true })).toHaveCount(0);
 
-    // At a desk every group shows its pages under its name, as the console's own navigation does; nothing folds.
-    await expect(menu.getByRole("list", { name: settingsGroupNames.visits })).toBeVisible();
-    await expect(menu.getByRole("button", { name: settingsGroupNames.growth })).toHaveCount(0);
-    await menu.getByRole("link", { name: settingsPageNames.referrals }).click();
+    // Settings' groups are beneath it in the navigation, each opening on its first page.
+    await page
+      .getByRole("list", { name: shell.settings, exact: true })
+      .getByRole("link", { name: settingsGroupNames.growth })
+      .click();
+    await expect(page).toHaveURL(/\/settings\/referrals$/);
+    await page
+      .getByRole("navigation", { name: settingsGroupNames.growth, exact: true })
+      .getByRole("link", { name: settingsPageNames.referrals })
+      .click();
     await expect(page).toHaveURL(/\/settings\/referrals$/);
     await expect(section(page, "Referrals")).toBeVisible();
     await expect(page.getByRole("group", { name: cities.rules.names.checkin_radius_m })).toHaveCount(0);
@@ -289,24 +295,27 @@ test.describe("the rules", () => {
   });
 
   // Twenty-nine pages in a menu longer than the screen, and a rule found only by knowing its page.
-  test("finds a page by its name and a rule by its title or note, from Settings' menu", async ({ page }) => {
+  test("finds a page by its name and a rule by its title or note, above the page", async ({ page }) => {
     await open(page, "/settings/booking");
-    const menu = page.getByRole("navigation", { name: shell.settings, exact: true });
+    const find = page.getByRole("searchbox", { name: settingsCopy.find });
+    const found = page.getByRole("region", { name: settingsCopy.matches });
     const radius = SETTINGS.settings[0];
     if (radius === undefined) throw new Error("the fixture has a rule");
-    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill(radius.note.split(" ").slice(0, 3).join(" "));
-    await expect(menu.getByRole("link", { name: radius.title })).toHaveAttribute(
+    await find.fill(radius.note.split(" ").slice(0, 3).join(" "));
+    await expect(found.getByRole("link", { name: new RegExp(`^${radius.title}`) })).toHaveAttribute(
       "href",
       `/settings/field#${radius.name}`,
     );
 
-    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill(settingsPageNames["pay-grades"]);
-    await expect(menu.getByRole("link")).toHaveText([settingsPageNames["pay-grades"]]);
+    await find.fill(settingsPageNames["pay-grades"]);
+    await expect(found.getByRole("link")).toHaveCount(1);
+    await expect(found.getByRole("link")).toContainText(settingsPageNames["pay-grades"]);
 
-    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill("zzz");
-    await expect(menu.getByText(settingsCopy.noneFound)).toBeVisible();
-    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill("");
-    await expect(menu.getByRole("link", { name: settingsPageNames.booking })).toHaveAttribute("aria-current", "page");
+    await find.fill("zzz");
+    await expect(found.getByText(settingsCopy.noneFound)).toBeVisible();
+    await found.getByRole("button", { name: settingsCopy.clear }).click();
+    await expect(found).toHaveCount(0);
+    await expect(find).toHaveValue("");
   });
 
   test("links each late-fee rule to where it is priced, and the late fees back to the rule", async ({ page }) => {

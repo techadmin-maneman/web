@@ -88,9 +88,12 @@ test("lists in Settings only the pages a person may open, a group with none left
   });
   await page.goto("/settings");
   await expect(page).toHaveURL(/\/settings\/care-team$/);
-  const menu = page.getByRole("navigation", { name: opsCopy.shell.settings });
-  await expectNames(menu.getByRole("link"), ["Care team"]);
-  await expect(menu).not.toContainText(opsCopy.settingsGroupNames.business);
+  // Settings' groups beneath it in the navigation, and the open group's pages a tab each, as the redesign draws them.
+  const groups = page.getByRole("list", { name: opsCopy.shell.settings });
+  await expectNames(groups.getByRole("link"), [opsCopy.settingsGroupNames.care]);
+  await expectNames(page.getByRole("navigation", { name: opsCopy.settingsGroupNames.care }).getByRole("link"), [
+    "Care team",
+  ]);
 });
 
 // A person who could only look at a rule saw it in a box they could not type in.

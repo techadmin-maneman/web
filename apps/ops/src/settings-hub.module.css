@@ -1,0 +1,37 @@
+/* What ./SettingsHub.tsx alone draws: the group's pages as tabs with the search at their right, as the redesign draws
+   Settings, and the groups' own tabs on a phone, where the navigation is not drawn. */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-12) var(--sp-24);
+}
+
+.bar > nav {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.find {
+  --search-width: var(--ops-setting-label);
+
+  margin-bottom: var(--sp-8);
+}
+
+.groups {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .groups {
+    display: flex;
+  }
+
+  .find {
+    --search-width: 100%;
+
+    flex: 1 1 100%;
+  }
+}
