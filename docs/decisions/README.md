@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0312. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0313. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -51,6 +51,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0286](0286-the-icons-are-the-mark.md) The browser's and the home screen's icons are the mark
 - [0288](0288-attribution-and-conversions.md) Attribution and conversions
 - [0295](0295-the-consoles-first-load.md) The console's first load is held to 175 KB
+- [0312](0312-the-consoles-favicon-everywhere.md) The console's favicon, everywhere
 
 ### Booking and visits
 
@@ -632,7 +633,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0283](0283-changed-and-deleted-while-unused.md) | What ops configure is changed, and deleted while nothing uses it | 2026-11-19 | accepted |  |
 | [0284](0284-the-first-screen-and-the-precache.md) | A phone app's budget counts its first screen, and its precache has a ceiling of its own | 2026-11-19 | accepted |  |
 | [0285](0285-every-site-booking-is-a-sign-in.md) | Every booking on the site asks the WhatsApp code, and signs the client in | 2026-11-19 | accepted, on the owner's rulings of 19 November 2026 |  |
-| [0286](0286-the-icons-are-the-mark.md) | The browser's and the home screen's icons are the mark | 2026-11-19 | accepted, on the owner's ruling of 19 November 2026 |  |
+| [0286](0286-the-icons-are-the-mark.md) | The browser's and the home screen's icons are the mark | 2026-11-19 | accepted, on the owner's ruling of 19 November 2026 | [0312](0312-the-consoles-favicon-everywhere.md) |
 | [0287](0287-a-start-googles-drive-refused-is-not-offered.md) | A start Google's drive leaves no room for is not offered again | 2026-11-19 | accepted, on the owner's go-ahead of 19 November 2026 | [0294](0294-learned-drive-times.md) |
 | [0288](0288-attribution-and-conversions.md) | Attribution and conversions | 2026-11-20 | accepted, on the owner's brief and rulings of 20 November 2026 |  |
 | [0289](0289-who-takes-a-visit.md) | Who takes a visit: a radius in km, an overflow ring, and the least cost | 2026-11-22 | accepted | [0290](0290-allotted-the-evening-before.md), [0293](0293-steering-booking-times.md) |
@@ -658,3 +659,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0309](0309-the-requests-and-money-screens-to-the-22-november-redesign.md) | The Requests and Money screens, to the 22 November redesign | 2026-11-24 | accepted |  |
 | [0310](0310-the-growth-and-reports-screens-to-the-22-november-redesign.md) | The Growth and Reports screens, to the 22 November redesign | 2026-11-24 | accepted |  |
 | [0311](0311-dated-technician-grades.md) | Dated technician grades | 2026-11-24 | accepted |  |
+| [0312](0312-the-consoles-favicon-everywhere.md) | The console's favicon, everywhere | 2026-11-24 | accepted, on the owner's ruling of 24 November 2026 |  |

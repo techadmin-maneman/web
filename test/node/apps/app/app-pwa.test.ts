@@ -35,8 +35,10 @@ describe("the client app’s manifest", () => {
     ]);
     const html = readFileSync("apps/app/index.html", "utf8");
     expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />');
-    // PNG favicons on ink, as the site's are: the bare drawing vanished on a dark tab.
+    // The console's tab icon, the gilt mark's SVG, with PNGs of it for a browser that reads no SVG icon.
     expect(html).toContain('<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />');
+    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="../../design/brand/mark-gilt.svg" />');
+    expect(ICONS.filter((icon) => icon.clear).map((icon) => icon.file)).toEqual(["favicon-32.png", "favicon-16.png"]);
   });
 
   it("keeps a maskable icon’s mark inside the circle a launcher may crop it to", () => {
