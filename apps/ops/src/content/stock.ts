@@ -45,9 +45,9 @@ export const stock = {
     find: "Find an item",
     none: "No item matches.",
   },
-  totalsBy: "Show",
+  totalsBy: "Whose stock",
   /** With a handful of places, every one side by side. */
-  allPlaces: "All places",
+  allPlaces: "Every place, side by side",
   byZone: "Totals by zone",
   byCity: "Totals by city",
   /** "12 strips", and a mark for a place at or below its level. */

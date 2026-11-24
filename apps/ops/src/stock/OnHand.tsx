@@ -36,9 +36,11 @@ export type Showing = { readonly by: "place"; readonly place: string | null } | 
 
 const fewPlaces = (stock: Stock) => stock.places.length <= SIDE_BY_SIDE;
 
-/** Every place side by side where there are few; else the warehouse, where the stock comes in. */
+/**
+ * The warehouse, where the stock comes in, as the redesign opens it (its change A8); every place side by side is one
+ * choice of Whose stock.
+ */
 export function firstShowing(stock: Stock): Showing {
-  if (fewPlaces(stock)) return { by: "place", place: null };
   const warehouse = stock.places.find((place) => place.kind === "warehouse") ?? stock.places[0];
   return { by: "place", place: warehouse?.id ?? null };
 }

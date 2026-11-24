@@ -58,6 +58,9 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
 }) => {
   await open(page);
   const table = onHand(page);
+  // It opens on the warehouse (the redesign's A8); every place side by side is one choice of Whose stock.
+  await expect(page.getByLabel(stock.totalsBy)).toHaveValue("place:central");
+  await page.getByLabel(stock.totalsBy).selectOption("place:");
   await expect(table.getByRole("columnheader", { name: WAREHOUSE })).toBeVisible();
   await expect(table.getByRole("columnheader", { name: "Sameer Bhatt (left)" })).toBeVisible();
 
@@ -87,6 +90,7 @@ test("says a place with none left of something it keeps is out, not low", async 
     each.consumable_code === "tape_strips" && each.place_id === IMRAN ? { ...each, quantity: 0 } : each,
   );
   await open(page, { "GET /api/stock": json({ ...STOCK, holdings: empty }) });
+  await page.getByLabel(stock.totalsBy).selectOption("place:");
   const tape = onHand(page)
     .getByRole("row")
     .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
