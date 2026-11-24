@@ -36,9 +36,9 @@ test("shows the times offered to clients under Booking, each figure with its own
   const group = page.getByRole("group", { name: STEERING.title });
   const labels = copy.rules.keyNames.steering;
   expect(labels).toBeDefined();
-  // Each figure is its own Change, read with its unit.
+  // Each figure reads with its unit beside its own Change.
   const change = (label: string) => group.getByRole("button", { name: `${EDITING.change} ${label}`, exact: true });
-  await expect(change(labels?.recommended ?? "")).toContainText("3 times a day");
-  await expect(change(labels?.drive_cap ?? "")).toContainText("30 minutes beyond the day’s best");
+  await expect(change(labels?.recommended ?? "").locator("..")).toContainText("3 times a day");
+  await expect(change(labels?.drive_cap ?? "").locator("..")).toContainText("30 minutes beyond the day’s best");
   expect(await axeViolations(page)).toEqual([]);
 });

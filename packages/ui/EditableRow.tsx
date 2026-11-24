@@ -13,6 +13,8 @@
 
 import { useContext, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { StackedRows } from "./stacked-rows.ts";
+import { ChangeInDialog } from "./change-in-dialog.ts";
+import { Dialog } from "./Dialog.tsx";
 import { GLYPHS } from "@maneman/brand/icons";
 import { Button } from "./Button.tsx";
 import { Icon } from "./Icon.tsx";
@@ -29,6 +31,8 @@ export interface EditingWords {
   readonly save: string;
   readonly cancel: string;
   readonly saved: string;
+  /** Before the value as it stands, in a setting's dialog: "Now". */
+  readonly now?: string;
 }
 
 /** How long "Saved" stays beside the value, in milliseconds. */
@@ -154,6 +158,149 @@ function Reading(props: {
   );
 }
 
+type Editing<Draft> = ReturnType<typeof useEditing<Draft>>;
+
+interface OpenProps<Draft> {
+  readonly label: string;
+  readonly value: ReactNode;
+  readonly words: EditingWords;
+  readonly unit: string | undefined;
+  readonly row: Editing<Draft>;
+  readonly children: EditableRowProps<Draft>["children"];
+}
+
+/** The box's ids, and its refusal's, for the control a row's children are given. */
+function useControl(refused: boolean): { readonly control: FieldControl; readonly errorId: string } {
+  const boxId = useId();
+  const errorId = useId();
+  return {
+    errorId,
+    control: {
+      id: boxId,
+      "aria-describedby": refused ? errorId : undefined,
+      "aria-invalid": refused ? true : undefined,
+    },
+  };
+}
+
+/** The row opened in place: its box beside its name, Save and Cancel, and why a change was refused beneath. */
+function InlineEditing<Draft>(props: OpenProps<Draft> & { readonly id?: string; readonly className?: string }) {
+  const { row, words, unit } = props;
+  const { control, errorId } = useControl(row.refusal !== null);
+  if (row.draft === null) return null;
+  return (
+    <form
+      ref={row.form}
+      className={classes(styles.row, styles.editing, props.className)}
+      id={props.id}
+      // The row says what will not hold in its own words, under the box, rather than the browser in a bubble.
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void row.keep();
+      }}
+    >
+      <label className={styles.label} htmlFor={control.id}>
+        {props.label}
+      </label>
+      <span className={styles.edit}>
+        <span className={styles.boxes}>
+          {props.children(control, row.draft, row.setDraft)}
+          {unit !== undefined && <span className={styles.unit}>{unit}</span>}
+        </span>
+        <span className={styles.actions}>
+          <Button variant="primary" size="small" type="submit" busy={row.busy}>
+            {words.save}
+          </Button>
+          <Button variant="quiet" size="small" narrow onClick={row.close}>
+            {words.cancel}
+          </Button>
+        </span>
+        {row.refusal !== null && (
+          <InlineMessage tone="error" id={errorId} className={styles.refusal}>
+            {row.refusal}
+          </InlineMessage>
+        )}
+      </span>
+    </form>
+  );
+}
+
+/** Change's dialog: the setting's box under its name, why a change was refused, the value now, Cancel and Save. */
+function ChangeDialog<Draft>({ label, value, words, unit, row, children }: OpenProps<Draft>) {
+  const titleId = useId();
+  const { control, errorId } = useControl(row.refusal !== null);
+  if (row.draft === null) return null;
+  return (
+    <Dialog labelledBy={titleId} className={styles.dialog} canClose={!row.busy} onDismiss={row.close}>
+      <form
+        ref={row.form}
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          void row.keep();
+        }}
+      >
+        <h2 id={titleId} className={styles.dialogTitle}>
+          <label htmlFor={control.id}>{label}</label>
+        </h2>
+        <span className={styles.boxes}>
+          {children(control, row.draft, row.setDraft)}
+          {unit !== undefined && <span className={styles.unit}>{unit}</span>}
+        </span>
+        {row.refusal !== null && (
+          <InlineMessage tone="error" id={errorId} className={styles.refusal}>
+            {row.refusal}
+          </InlineMessage>
+        )}
+        {words.now !== undefined && (
+          <p className={styles.now}>
+            {words.now}: {value}
+          </p>
+        )}
+        <span className={styles.dialogActions}>
+          <Button variant="quiet" size="small" onClick={row.close}>
+            {words.cancel}
+          </Button>
+          <Button variant="primary" size="small" type="submit" busy={row.busy}>
+            {words.save}
+          </Button>
+        </span>
+      </form>
+    </Dialog>
+  );
+}
+
+/** A setting as the redesign draws it: its name and value, and Change, which opens it in a small dialog of its own. */
+function DialogRow<Draft>(props: OpenProps<Draft> & { readonly id?: string; readonly className?: string }) {
+  const { row, words } = props;
+  return (
+    <div className={classes(styles.row, styles.setting, props.className)} id={props.id}>
+      <span className={styles.label}>{props.label}</span>
+      <span className={styles.reading}>
+        <span className={styles.settingValue}>{props.value}</span>
+        <Button
+          ref={row.valueButton}
+          variant="outline"
+          size="small"
+          aria-label={`${words.change} ${props.label}`}
+          onClick={row.open}
+        >
+          {words.change}
+        </Button>
+        {row.saved && (
+          <InlineMessage tone="saved" className={styles.saved}>
+            {words.saved}
+          </InlineMessage>
+        )}
+      </span>
+      <ChangeDialog label={props.label} value={props.value} words={words} unit={props.unit} row={row}>
+        {props.children}
+      </ChangeDialog>
+    </div>
+  );
+}
+
 export function EditableRow<Draft>({
   label,
   value,
@@ -169,10 +316,17 @@ export function EditableRow<Draft>({
   stacked: asked,
 }: EditableRowProps<Draft>) {
   const inPairs = useContext(StackedRows);
+  const inDialog = useContext(ChangeInDialog);
   const stacked = asked ?? inPairs;
-  const boxId = useId();
-  const errorId = useId();
   const row = useEditing(start, save, opened);
+
+  if (inDialog && mayChange) {
+    return (
+      <DialogRow label={label} value={value} words={words} unit={unit} id={id} className={className} row={row}>
+        {children}
+      </DialogRow>
+    );
+  }
 
   if (!mayChange || row.draft === null) {
     return (
@@ -194,46 +348,18 @@ export function EditableRow<Draft>({
     );
   }
 
-  const control: FieldControl = {
-    id: boxId,
-    "aria-describedby": row.refusal === null ? undefined : errorId,
-    "aria-invalid": row.refusal === null ? undefined : true,
-  };
   return (
-    <form
-      ref={row.form}
-      className={classes(styles.row, styles.editing, stacked && styles.stacked, className)}
+    <InlineEditing
+      label={label}
+      value={value}
+      words={words}
+      unit={unit}
+      row={row}
       id={id}
-      // The row says what will not hold in its own words, under the box, rather than the browser in a bubble.
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        void row.keep();
-      }}
+      className={classes(stacked && styles.stacked, className)}
     >
-      <label className={styles.label} htmlFor={boxId}>
-        {label}
-      </label>
-      <span className={styles.edit}>
-        <span className={styles.boxes}>
-          {children(control, row.draft, row.setDraft)}
-          {unit !== undefined && <span className={styles.unit}>{unit}</span>}
-        </span>
-        <span className={styles.actions}>
-          <Button variant="primary" size="small" type="submit" busy={row.busy}>
-            {words.save}
-          </Button>
-          <Button variant="quiet" size="small" narrow onClick={row.close}>
-            {words.cancel}
-          </Button>
-        </span>
-        {row.refusal !== null && (
-          <InlineMessage tone="error" id={errorId} className={styles.refusal}>
-            {row.refusal}
-          </InlineMessage>
-        )}
-      </span>
-    </form>
+      {children}
+    </InlineEditing>
   );
 }
 

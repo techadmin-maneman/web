@@ -4,6 +4,7 @@
 //   <SettingsLayout menu={<SubNav label={copy.menu} groups={groups} />}>{page}</SettingsLayout>
 
 import { StackedRows } from "./stacked-rows.ts";
+import { ChangeInDialog } from "./change-in-dialog.ts";
 import { capsLook } from "./Caps.tsx";
 import { classes } from "./classes.ts";
 import { GLYPHS } from "@maneman/brand/icons";
@@ -16,7 +17,9 @@ export function SettingsLayout({ menu, children }: { readonly menu: ReactNode; r
   return (
     <div className={styles.layout}>
       {menu}
-      <div className={styles.page}>{children}</div>
+      <div className={styles.page}>
+        <ChangeInDialog.Provider value>{children}</ChangeInDialog.Provider>
+      </div>
     </div>
   );
 }

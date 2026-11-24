@@ -40,7 +40,7 @@ export const isChanged = (said: string): boolean => CHANGED.has(said);
 export const LATEST = "Here’s the latest.";
 
 /** What a value changed where it reads says (@maneman/ui/EditableRow). */
-export const EDITING = { change: "Change", save: "Save", cancel: "Cancel", saved: "Saved" } as const;
+export const EDITING = { change: "Change", save: "Save", cancel: "Cancel", saved: "Saved", now: "Now" } as const;
 
 /** What stands in for a page that failed to draw (./ErrorBoundary.tsx). */
 export const broken = {

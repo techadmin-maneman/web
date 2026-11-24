@@ -140,4 +140,48 @@
       transition: none;
     }
   }
+
+  /* A setting as the redesign draws it: the value, then Change, at the row's end. */
+  .setting .reading {
+    justify-content: flex-end;
+  }
+
+  .settingValue {
+    font-size: var(--fs-14);
+    color: var(--ui-text);
+    overflow-wrap: anywhere;
+  }
+
+  /* Change's own dialog, small and in the middle of the window, its box, the value now, and Cancel and Save. */
+  .dialog {
+    width: min(var(--drawer-width), calc(100% - 2 * var(--sp-16)));
+    padding: var(--sp-20);
+    border: var(--hairline) solid var(--ui-line);
+    border-radius: var(--ui-radius-box);
+    background: var(--ui-raised);
+    color: var(--ui-text);
+  }
+
+  .dialog::backdrop {
+    background: var(--hero-scrim);
+  }
+
+  .dialogTitle {
+    margin: 0 0 var(--sp-16);
+    font-size: var(--fs-16);
+    font-weight: var(--weight-medium);
+  }
+
+  .now {
+    margin: var(--sp-12) 0 0;
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  .dialogActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--sp-8);
+    margin-top: var(--sp-20);
+  }
 }
