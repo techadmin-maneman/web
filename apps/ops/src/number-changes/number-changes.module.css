@@ -1,21 +1,12 @@
 /*
- * The number-change queue, on the panel and at the width the boards' own
- * queues use (C1 and D1). The design draws no board for it, so nothing here is
- * new: the head with its count, a row for each, the two numbers set in figures
- * so they can be read against one another, and the decision beneath.
+ * Requests › Number changes (./NumberChangesScreen.tsx): a row each, as the redesign draws them, the two numbers set
+ * in figures so they can be read against one another, and one opened in a drawer with the decision beneath.
  */
 
 /* A number in a row, whole on one line. */
 .number {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-
-.columnGone {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-20);
-  max-width: var(--ops-list);
 }
 
 /* ---- One change ------------------------------------------------------------ */

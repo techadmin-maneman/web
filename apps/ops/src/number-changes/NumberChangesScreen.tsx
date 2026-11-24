@@ -85,6 +85,11 @@ function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps)
   const [deciding, setDeciding] = useState<Deciding>({ step: startAsking ? "asking" : "open" });
   const [reason, setReason] = useState("");
   const rejectButton = useRef<HTMLButtonElement>(null);
+  const reasonBox = useRef<HTMLTextAreaElement>(null);
+  // Opened from the row's Decline, the drawer takes the keyboard as it opens; the reason, asked at once, takes it then.
+  useEffect(() => {
+    if (startAsking) reasonBox.current?.focus();
+  }, [startAsking]);
 
   const decide = async (choice: Choice) => {
     setDeciding({ step: "sending", choice });
@@ -110,6 +115,7 @@ function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps)
             {(control) => (
               <TextArea
                 {...control}
+                ref={reasonBox}
                 className={styles.reasonField}
                 maxLength={REASON_MAX_CHARS}
                 // The field stands where the button that asked for it stood, so the keyboard goes to it.
@@ -182,7 +188,12 @@ interface RowsProps {
 }
 
 /** Approve and Decline at a row's end, for those who may decide. */
-function RowDecision({ change, busy, onOpen, onConfirm }: Omit<RowsProps, "changes" | "now" | "mayDecide"> & {
+function RowDecision({
+  change,
+  busy,
+  onOpen,
+  onConfirm,
+}: Omit<RowsProps, "changes" | "now" | "mayDecide"> & {
   readonly change: NumberChange;
 }) {
   return (
