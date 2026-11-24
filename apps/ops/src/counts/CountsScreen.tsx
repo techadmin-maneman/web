@@ -23,6 +23,8 @@ import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { RowHead } from "@maneman/ui/RowHead";
 import { countsApi } from "./counts-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 
 const loadTasks = () => countsApi.countTasks();
 
@@ -93,6 +95,7 @@ export function CountsScreen() {
   const { open, setOpen, panelId, opener } = useRowPanel();
   const access = useAccess();
   const current = countTasks ?? (loaded.state === "loaded" ? loaded.value : null);
+  useHeaderSub(current === null ? undefined : copy.due(current.tasks.filter((task) => task.state !== "done").length));
   // The list read again after a count changed: a failed read says so, with the way to read it again.
   const [rereadFailed, setRereadFailed] = useState<{ requestId: string | null } | null>(null);
   const reload = () => {
@@ -112,13 +115,20 @@ export function CountsScreen() {
             <Tasks countTasks={current} opener={opener} />
           </Panel>
           {access.mayCall("POST /api/count-tasks") && (
-            <StartCount
-              countTasks={current}
-              onStarted={(id) => {
-                setOpen(id);
-                reload();
-              }}
-            />
+            <PageActions>
+              <DrawerButton label={copy.startTitle} primary>
+                {(close) => (
+                  <StartCount
+                    countTasks={current}
+                    onStarted={(id) => {
+                      close();
+                      setOpen(id);
+                      reload();
+                    }}
+                  />
+                )}
+              </DrawerButton>
+            </PageActions>
           )}
           {open !== null && (
             <CountTaskPanel

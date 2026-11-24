@@ -189,7 +189,8 @@ test("starts a count of one item at one place, and opens it", async ({ page }) =
     "POST /api/count-tasks": json(started, 201),
     "GET /api/count-tasks/{id}": json(started),
   });
-  const form = page.getByRole("region", { name: copy.startTitle });
+  await page.getByRole("button", { name: copy.startTitle }).click();
+  const form = page.getByRole("dialog", { name: copy.startTitle });
   await form.getByLabel(copy.place).selectOption("room-1");
   await form.getByLabel(copy.item).selectOption("solvent");
   const request = posted(page, "/api/count-tasks");
