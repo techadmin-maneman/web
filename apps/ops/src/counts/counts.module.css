@@ -1,0 +1,21 @@
+/* Counts (./CountsScreen.tsx): what to count, and each item's class beside it, as the redesign draws them. */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--sp-24);
+}
+
+@media (max-width: 1023px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A count's state, and at the row's end the way to act on it. */
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+}

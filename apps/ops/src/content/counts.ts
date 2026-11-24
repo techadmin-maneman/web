@@ -20,7 +20,8 @@ export const counts = {
     sign_off: "Waiting for sign-off",
     done: "Done",
   },
-  open: "Open",
+  /** A row's action, by where its count stands: to count or count again, to sign off, or done. */
+  act: { open: "Count now", recount: "Count now", sign_off: "Review", done: "Open" },
   /** "Imran Qureshi · Weekly" */
   heading: (place: string, countClass: string) => `${place} · ${countClass}`,
   countNote: "Count every item on the shelf, whatever the system says.",
@@ -52,6 +53,7 @@ export const counts = {
   waiting: "Waiting for a manager’s sign-off.",
   done: "Done.",
   classesTitle: "Count classes",
+  change: "Change",
   /** "Default (weekly)" */
   ownClass: (countClass: string) => `Default (${countClass.toLowerCase()})`,
   classSaid: "Class saved.",

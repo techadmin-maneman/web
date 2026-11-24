@@ -5,13 +5,12 @@ import { todayInIndia } from "@maneman/web-kit/dates";
 import { Badge, type BadgeTone } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Panel } from "@maneman/ui/Panel";
-import { TextButton } from "@maneman/ui/TextLink";
+import { Button } from "@maneman/ui/Button";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { useState } from "react";
-import form from "@maneman/ui/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
@@ -25,6 +24,7 @@ import { countsApi } from "./counts-api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
+import styles from "./counts.module.css";
 
 const loadTasks = () => countsApi.countTasks();
 
@@ -54,15 +54,7 @@ function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpen
         <tbody>
           {view.shown.map((task) => (
             <tr key={task.id}>
-              <RowHead>
-                <TextButton
-                  compact
-                  aria-label={`${copy.open} ${copy.heading(task.place, whatOf(task))}`}
-                  {...opener(task.id)}
-                >
-                  {task.place}
-                </TextButton>
-              </RowHead>
+              <RowHead>{task.place}</RowHead>
               <td>{whatOf(task)}</td>
               <td>
                 {task.state !== "done" && task.due_on < todayInIndia(apiNow())
@@ -70,7 +62,17 @@ function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpen
                   : plainDate(task.due_on)}
               </td>
               <td>
-                <Badge tone={STATE_TONES[task.state]}>{copy.states[task.state]}</Badge>
+                <span className={styles.status}>
+                  <Badge tone={STATE_TONES[task.state]}>{copy.states[task.state]}</Badge>
+                  <Button
+                    variant="outline"
+                    size="compact"
+                    aria-label={`${copy.act[task.state]} · ${copy.heading(task.place, whatOf(task))}`}
+                    {...opener(task.id)}
+                  >
+                    {copy.act[task.state]}
+                  </Button>
+                </span>
               </td>
             </tr>
           ))}
@@ -110,7 +112,7 @@ export function CountsScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {rereadFailed !== null && <PanelFailed onRetry={reload} requestId={rereadFailed.requestId} />}
       {current !== null && (
-        <div className={form.screen}>
+        <div className={styles.columns}>
           <Panel titleId="count-tasks" title={copy.tasks}>
             <Tasks countTasks={current} opener={opener} />
           </Panel>
@@ -141,9 +143,11 @@ export function CountsScreen() {
               }}
             />
           )}
-          {access.mayCall("POST /api/consumables/{code}/count-class") && (
-            <CountClasses countTasks={current} onChanged={setCountTasks} />
-          )}
+          <CountClasses
+            countTasks={current}
+            mayChange={access.mayCall("POST /api/consumables/{code}/count-class")}
+            onChanged={setCountTasks}
+          />
         </div>
       )}
     </>
