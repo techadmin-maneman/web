@@ -25,7 +25,7 @@ import { stock as copy } from "../content/stock.ts";
 import form from "@maneman/ui/forms.module.css";
 import { placeChoices, placeName } from "./StockForm.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
-import { StateBadge, stateOf, type Consumable, type State } from "./stock-state.tsx";
+import { PlaceState, reorderAt, StateBadge, stateOf, type Consumable, type State } from "./stock-state.tsx";
 import styles from "./stock.module.css";
 
 /** Past this many places, every place side by side grows too wide to read: one place at a time, then. */
@@ -272,6 +272,7 @@ function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string
   const view = useTableView(shown, [
     { label: copy.consumable, sort: (each: Consumable) => each.name },
     { label: copy.columns.held, sort: (each: Consumable) => holding(each)?.quantity ?? 0, figure: true },
+    { label: copy.columns.reorderAt, sort: (each: Consumable) => reorderAt(stock, each, place) ?? -1, figure: true },
     { label: copy.columns.status, sort: (each: Consumable) => stateOf(stock, each, place)?.word ?? "" },
     {
       label: copy.columns.expires,
@@ -327,8 +328,9 @@ function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string
                   <span className={styles.reserved}>{copy.reserved(held?.reserved ?? 0)}</span>
                 )}
               </td>
+              <ReorderAt stock={stock} consumable={consumable} place={place} />
               <td>
-                <StateBadge state={stateOf(stock, consumable, place)} />
+                <PlaceState stock={stock} consumable={consumable} place={place} />
               </td>
               <Expires stock={stock} holding={held} />
               <td>{counted === null ? copy.neverCounted : listDate(indiaDate(counted), year)}</td>
@@ -338,6 +340,12 @@ function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string
       </tbody>
     </Table>
   );
+}
+
+/** The level an item is low at in the place, in its unit; a gap where none is set. */
+function ReorderAt({ stock, consumable, place }: { stock: Stock; consumable: Consumable; place: string }) {
+  const level = reorderAt(stock, consumable, place);
+  return <td className={FIGURE}>{level === null ? copy.noLevel : copy.held(level, unitOf(stock, consumable.code))}</td>;
 }
 
 /** Every place side by side: each item's figure there. */

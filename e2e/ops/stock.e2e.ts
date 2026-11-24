@@ -77,11 +77,12 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
   await expect(table.getByRole("columnheader")).toHaveText([
     stock.consumable,
     stock.columns.held,
+    stock.columns.reorderAt,
     stock.columns.status,
     stock.columns.expires,
     stock.columns.counted,
   ]);
-  await expect(tape.getByRole("cell").nth(3)).toHaveText("20 Sep");
+  await expect(tape.getByRole("cell").nth(4)).toHaveText("20 Sep");
 });
 
 // A kit with none left read Low.
@@ -157,6 +158,7 @@ test("past six places, shows the warehouse and one place, picked, saying above w
   const onePlace = [
     stock.consumable,
     stock.columns.held,
+    stock.columns.reorderAt,
     stock.columns.status,
     stock.columns.expires,
     stock.columns.counted,
@@ -178,7 +180,7 @@ test("past six places, shows the warehouse and one place, picked, saying above w
   await expect(table.getByRole("columnheader")).toHaveText(onePlace);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
   await expect(tape.getByRole("cell").nth(0)).toHaveText("5 strips");
-  await expect(tape.getByRole("cell").nth(1)).toHaveText(stock.low);
+  await expect(tape.getByRole("cell").nth(2)).toHaveText(stock.low);
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -237,7 +239,7 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
   const tape = onHand(page)
     .getByRole("row")
     .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(2)).toContainText("31 Oct");
+  await expect(tape.getByRole("cell").nth(3)).toContainText("31 Oct");
 
   const form = await recording(page);
   await form.getByLabel(stock.record.kinds.write_off).check();

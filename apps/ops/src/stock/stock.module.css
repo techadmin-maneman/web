@@ -34,24 +34,22 @@
 
 /* One place's columns: the item room for a long hair system name, the rest even. */
 .onePlace th:nth-child(1) {
-  width: 36%;
+  width: 30%;
 }
 
-.onePlace th:nth-child(2) {
-  width: 14%;
+.onePlace th:nth-child(2),
+.onePlace th:nth-child(3),
+.onePlace th:nth-child(4) {
+  width: 13%;
 }
 
-.onePlace th:nth-child(3) {
-  width: 14%;
-}
-
-.onePlace th:nth-child(4),
-.onePlace th:nth-child(5) {
-  width: 18%;
+.onePlace th:nth-child(5),
+.onePlace th:nth-child(6) {
+  width: 15.5%;
 }
 
 /* The state sits in from the figure it follows. */
-.onePlace :is(th, td):nth-child(3) {
+.onePlace :is(th, td):nth-child(4) {
   padding-left: var(--sp-24);
 }
 

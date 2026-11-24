@@ -63,7 +63,17 @@ export const stock = {
   none: "No consumables yet. Add them in",
   retired: "retired",
   /** One place's columns: what it holds and its state, the soonest of its lots to expire, and when last counted. */
-  columns: { held: "On hand", status: "Status", expires: "Soonest expiry", counted: "Last counted" },
+  columns: {
+    held: "On hand",
+    reorderAt: "Reorder at",
+    status: "Status",
+    expires: "Soonest expiry",
+    counted: "Last counted",
+  },
+  /** More than the place's level, as the redesign's On hand writes it. */
+  enough: "Enough",
+  /** No level set for the item in that kind of place. */
+  noLevel: "—",
   noExpiry: "—",
   neverCounted: "Not yet",
   /** A phone's row, where the columns' names are not there to say what each date is. */
