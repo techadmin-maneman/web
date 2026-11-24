@@ -403,10 +403,9 @@ export const settings = {
    */
   windowTimes: {
     title: "Day times",
-    inForce: "In force",
+    /** The times in force, as their panel's title says it: "In force since 1 Nov"; the first times, as set. */
+    inForceSince: (date: string | null) => (date === null ? "In force as first set" : `In force since ${date}`),
     window: { morning: "Morning", afternoon: "Afternoon", evening: "Evening" },
-    /** "From Mon 2 Nov", or the times the console started with. */
-    since: (date: string | null) => (date === null ? "As first set" : `From ${date}`),
     formTitle: "Change the times",
     appliesFrom: "From",
     /** The first day a change may take, after the last a client can book and the last visit booked. */
