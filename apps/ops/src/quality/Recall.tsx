@@ -183,7 +183,6 @@ export function RaiseRecall({
   if (quality.lots.length === 0) return null;
   return (
     <div className={form.group}>
-      <h3 className={form.ruleTitle}>{copy.raise}</h3>
       <Field label={copy.lot} className={form.field}>
         {(control) => (
           <Select

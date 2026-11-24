@@ -14,7 +14,8 @@ export const quality = {
   open: "Open",
   closed: "Closed",
   view: (number: string) => `Open ${number}`,
-  raise: "Recall a lot",
+  /** The page's action, and the drawer it opens. */
+  raise: "Start a recall",
   lot: "Lot",
   /** "Essential 8x10 · BAD-0921" */
   lotLabel: (name: string, lotCode: string) => `${name} · ${lotCode}`,

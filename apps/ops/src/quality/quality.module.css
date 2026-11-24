@@ -1,0 +1,9 @@
+/* Quality (./QualityScreen.tsx): its three panels side by side at a desk, as many to a row as fit, else stacked. */
+.cards {
+  --local-card: 20rem; /* the narrowest a panel runs, its table whole */
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--local-card), 100%), 1fr));
+  align-items: start;
+  gap: var(--sp-24);
+}

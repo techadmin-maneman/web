@@ -74,9 +74,12 @@ test("recalls a lot with why, and shows where it is and who wears it", async ({ 
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
   const recalls = page.getByRole("region", { name: copy.recalls });
   await expect(recalls).toContainText(copy.none);
-  await recalls.getByLabel(copy.reason).fill("Supplier warned of shedding");
+  // Started from the page's head, in a drawer (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+  await page.getByRole("button", { name: copy.raise }).click();
+  const raising = page.getByRole("dialog", { name: copy.raise });
+  await raising.getByLabel(copy.reason).fill("Supplier warned of shedding");
   const request = page.waitForRequest((sent) => sent.url().endsWith("/api/recalls") && sent.method() === "POST");
-  await recalls.getByRole("button", { name: copy.confirmRaise }).click();
+  await raising.getByRole("button", { name: copy.confirmRaise }).click();
   expect((await request).postDataJSON()).toEqual({ lot_id: "lot-1", reason: "Supplier warned of shedding" });
   const detail = page.getByRole("region", {
     name: `${copy.number(1)} · ${copy.lotLabel("Essential 8x10", "BAD-0921")}`,

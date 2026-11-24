@@ -23,6 +23,9 @@ import { useAccess } from "../lib/access.ts";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import { ExpiryRiskPanel } from "./ExpiryRisk.tsx";
 import { FailuresPanel } from "./Failures.tsx";
+import { DrawerButton } from "@maneman/ui/DrawerButton";
+import { PageActions } from "../frame/PageHead.tsx";
+import styles from "./quality.module.css";
 import { RaiseRecall, RecallDetail, type Answer, type Quality, type Detail } from "./Recall.tsx";
 import { Refusal } from "@maneman/ui/Refusal";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -150,17 +153,34 @@ export function QualityScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
-          <Panel titleId="quality-recalls" title={copy.recalls}>
-            <Recalls quality={current} opener={opener} onOpen={open} />
-            {access.mayCall("POST /api/recalls") && <RaiseRecall quality={current} onAnswer={answered} />}
-            {said !== null && <Toast>{said}</Toast>}
-            {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
-          </Panel>
+          {access.mayCall("POST /api/recalls") && (
+            <PageActions>
+              <DrawerButton label={copy.raise}>
+                {(close) => (
+                  <RaiseRecall
+                    quality={current}
+                    onAnswer={(answer, words) => {
+                      answered(answer, words);
+                      if (answer.ok) close();
+                    }}
+                  />
+                )}
+              </DrawerButton>
+            </PageActions>
+          )}
+          {/* Recalls, failure rates and the value at risk side by side, as the redesign draws them. */}
+          <div className={styles.cards}>
+            <Panel titleId="quality-recalls" title={copy.recalls}>
+              <Recalls quality={current} opener={opener} onOpen={open} />
+              {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+            </Panel>
+            <FailuresPanel />
+            {access.mayCall("GET /api/stock/expiry-risk") && <ExpiryRiskPanel />}
+          </div>
+          {said !== null && <Toast>{said}</Toast>}
           {opened !== null && opened.id === openId && (
             <RecallDetail key={opened.id} id={panelId} recall={opened} onAnswer={answered} />
           )}
-          <FailuresPanel />
-          {access.mayCall("GET /api/stock/expiry-risk") && <ExpiryRiskPanel />}
         </div>
       )}
     </>
