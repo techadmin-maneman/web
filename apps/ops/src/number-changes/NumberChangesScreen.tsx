@@ -10,7 +10,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, longDate, shortDate } from "@maneman/web-kit/dates";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { Panel } from "@maneman/ui/Panel";
@@ -81,6 +81,48 @@ function ChangeFacts({ change, now }: { change: ChangeProps["change"]; now: Date
   );
 }
 
+/** A decline's reason, which the route will not take a decline without, and the decline it sends. */
+function ReasonStep(props: {
+  readonly reason: string;
+  readonly onReason: (reason: string) => void;
+  readonly reasonBox: RefObject<HTMLTextAreaElement | null>;
+  readonly sending: boolean;
+  readonly onDecline: () => void;
+  readonly onCancel: () => void;
+}) {
+  return (
+    <div className={styles.reason}>
+      <Field label={copy.reason.label} look={{ label: styles.reasonLabel }}>
+        {(control) => (
+          <TextArea
+            {...control}
+            ref={props.reasonBox}
+            className={styles.reasonField}
+            maxLength={REASON_MAX_CHARS}
+            // The field stands where the button that asked for it stood, so the keyboard goes to it.
+            autoFocus
+            value={props.reason}
+            onChange={(event) => {
+              props.onReason(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <div className={styles.actions}>
+        <Button
+          variant="outline"
+          size="small"
+          disabled={props.sending || props.reason.trim() === ""}
+          onClick={props.onDecline}
+        >
+          {props.sending ? copy.deciding : copy.reason.confirm}
+        </Button>
+        <CancelButton disabled={props.sending} onClick={props.onCancel} />
+      </div>
+    </div>
+  );
+}
+
 function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps) {
   const [deciding, setDeciding] = useState<Deciding>({ step: startAsking ? "asking" : "open" });
   const [reason, setReason] = useState("");
@@ -110,42 +152,18 @@ function Change({ change, now, mayDecide, startAsking, onDecided }: ChangeProps)
     <>
       <ChangeFacts change={change} now={now} />
       {asking && (
-        <div className={styles.reason}>
-          <Field label={copy.reason.label} look={{ label: styles.reasonLabel }}>
-            {(control) => (
-              <TextArea
-                {...control}
-                ref={reasonBox}
-                className={styles.reasonField}
-                maxLength={REASON_MAX_CHARS}
-                // The field stands where the button that asked for it stood, so the keyboard goes to it.
-                autoFocus
-                value={reason}
-                onChange={(event) => {
-                  setReason(event.target.value);
-                }}
-              />
-            )}
-          </Field>
-          <div className={styles.actions}>
-            <Button
-              variant="outline"
-              size="small"
-              disabled={sending || reason.trim() === ""}
-              onClick={() => void decide("reject")}
-            >
-              {sending ? copy.deciding : copy.reason.confirm}
-            </Button>
-            <CancelButton
-              disabled={sending}
-              onClick={() => {
-                setDeciding({ step: "open" });
-                // Back to the button that asked, rather than to the top of the page.
-                requestAnimationFrame(() => rejectButton.current?.focus());
-              }}
-            />
-          </div>
-        </div>
+        <ReasonStep
+          reason={reason}
+          onReason={setReason}
+          reasonBox={reasonBox}
+          sending={sending}
+          onDecline={() => void decide("reject")}
+          onCancel={() => {
+            setDeciding({ step: "open" });
+            // Back to the button that asked, rather than to the top of the drawer.
+            requestAnimationFrame(() => rejectButton.current?.focus());
+          }}
+        />
       )}
       {!asking && mayDecide && (
         <div className={styles.decide}>
