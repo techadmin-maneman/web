@@ -240,27 +240,28 @@ const gradeOfRoute = opsRoute({
   },
 });
 
-export function registerOpsTechnicianPay(app: App): void {
-  /** The pay as the caller may see it: every technician and city rate within their reach. */
-  const list = async (c: Context<AppEnv>) => {
-    const reach = await routeReach(c);
-    const today = indiaDate(c.var.deps.now());
-    const [pay, cities] = await Promise.all([technicianPay(c.env.DB, today), listCities(c.env.DB)]);
-    const technicians = pay.technicians.filter((technician) => reachesCity(reach, technician.city));
-    const reached = new Set(technicians.map((technician) => technician.id));
-    const inReach = (rate: { readonly city: string | null }) => rate.city === null || reachesCity(reach, rate.city);
-    return {
-      today,
-      kinds: [...VISIT_PAY_KINDS],
-      cities: cities.map((city) => city.name).filter((city) => reachesCity(reach, city)),
-      max_amount: MAX_VISIT_PAY,
-      grades: pay.grades,
-      technicians,
-      rates: pay.rates.filter(inReach),
-      rate_history: pay.rate_history.filter(inReach),
-      grade_history: pay.grade_history.filter((each) => reached.has(each.technician_id)),
-    };
+/** The pay as the caller may see it: every technician, their grades and the city rates within their reach. */
+async function list(c: Context<AppEnv>) {
+  const reach = await routeReach(c);
+  const today = indiaDate(c.var.deps.now());
+  const [pay, cities] = await Promise.all([technicianPay(c.env.DB, today), listCities(c.env.DB)]);
+  const technicians = pay.technicians.filter((technician) => reachesCity(reach, technician.city));
+  const reached = new Set(technicians.map((technician) => technician.id));
+  const inReach = (rate: { readonly city: string | null }) => rate.city === null || reachesCity(reach, rate.city);
+  return {
+    today,
+    kinds: [...VISIT_PAY_KINDS],
+    cities: cities.map((city) => city.name).filter((city) => reachesCity(reach, city)),
+    max_amount: MAX_VISIT_PAY,
+    grades: pay.grades,
+    technicians,
+    rates: pay.rates.filter(inReach),
+    rate_history: pay.rate_history.filter(inReach),
+    grade_history: pay.grade_history.filter((each) => reached.has(each.technician_id)),
   };
+}
+
+export function registerOpsTechnicianPay(app: App): void {
   const change = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
   app.openapi(listRoute, async (c) => c.json(await list(c), 200));
