@@ -176,7 +176,8 @@ test("claims a returned piece inside its warranty, and writes off another with w
   const writeOff = posted(page, "/api/returned-pieces/ret-2/write-off");
   await drawer.getByRole("button", { name: copy.returns.confirmWriteOff }).click();
   expect((await writeOff).postDataJSON()).toEqual({ reason: "Torn base", photo_id: PHOTO_ID });
-  await expect(pieces).toContainText(copy.returns.none);
+  // With none left, the list is not drawn at all, as the redesign's Purchasing draws neither list empty.
+  await expect(pieces).toHaveCount(0);
 });
 
 test("scores each supplier’s year: on time in full, lead time against promised, quality and claims", async ({

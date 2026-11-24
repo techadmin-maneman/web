@@ -124,32 +124,37 @@ export function Claims({ orders }: { orders: Orders }) {
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   if (current === null) return null;
+  // Each drawn only while it holds something, as the redesign's Purchasing draws neither empty.
   return (
     <>
-      <Panel titleId="claims" title={copy.claims.title}>
-        <ClaimsTable claims={current} supplierOf={supplierOf} onOpen={setOpen} />
-        {opened !== null && (
-          <div className={form.group}>
-            <Note>
-              {copy.claims.number(opened.number)} · {copy.claims.from(copy.number(opened.order_number))}
-              {opened.note !== null && ` · ${opened.note}`}
-            </Note>
-            {opened.photo_id !== null && (
+      {said !== null && <Toast>{said}</Toast>}
+      {current.claims.length > 0 && (
+        <Panel titleId="claims" title={copy.claims.title}>
+          <ClaimsTable claims={current} supplierOf={supplierOf} onOpen={setOpen} />
+          {opened !== null && (
+            <div className={form.group}>
               <Note>
-                <TextLink href={`/api/stock-photos/${opened.photo_id}`} newTab>
-                  {copy.photo.view}
-                </TextLink>
+                {copy.claims.number(opened.number)} · {copy.claims.from(copy.number(opened.order_number))}
+                {opened.note !== null && ` · ${opened.note}`}
               </Note>
-            )}
-            <ClaimSteps key={opened.id} claim={opened} onAnswer={answered} />
-          </div>
-        )}
-        {said !== null && <Toast>{said}</Toast>}
-        {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
-      </Panel>
-      <Panel titleId="returned-pieces" title={copy.returns.title}>
-        <ReturnedPieces pieces={current.returns} onAnswer={answered} />
-      </Panel>
+              {opened.photo_id !== null && (
+                <Note>
+                  <TextLink href={`/api/stock-photos/${opened.photo_id}`} newTab>
+                    {copy.photo.view}
+                  </TextLink>
+                </Note>
+              )}
+              <ClaimSteps key={opened.id} claim={opened} onAnswer={answered} />
+            </div>
+          )}
+          {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+        </Panel>
+      )}
+      {current.returns.length > 0 && (
+        <Panel titleId="returned-pieces" title={copy.returns.title}>
+          <ReturnedPieces pieces={current.returns} onAnswer={answered} />
+        </Panel>
+      )}
     </>
   );
 }

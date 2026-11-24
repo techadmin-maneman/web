@@ -31,7 +31,7 @@ import { SupplierScores } from "./SupplierScores.tsx";
 import type { Orders } from "./types.ts";
 import { RowHead } from "@maneman/ui/RowHead";
 import { purchasingApi } from "./purchasing-api.ts";
-import { PageActions } from "../frame/PageHead.tsx";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 
 const loadOrders = () => purchasingApi.orders();
@@ -51,11 +51,11 @@ type Order = Orders["orders"][number];
 
 function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) {
   const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;
-  const [order, drafted, supplier, state, total, expected] = copy.columns;
+  const [order, supplier, drafted, state, total, expected] = copy.columns;
   const columns: readonly Column<Order>[] = [
     { label: order, sort: (row) => row.number },
-    { label: drafted, sort: (row) => row.drafted_at },
     { label: supplier, sort: (row) => supplierOf(row.supplier_id), choice: (row) => supplierOf(row.supplier_id) },
+    { label: drafted, sort: (row) => row.drafted_at },
     { label: state, sort: (row) => copy.states[row.state], choice: (row) => copy.states[row.state] },
     { label: total, sort: (row) => row.total, figure: true },
     { label: expected, sort: (row) => row.expected_on ?? "" },
@@ -90,8 +90,8 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
                   {copy.number(row.number)}
                 </TextButton>
               </RowHead>
-              <td>{plainDate(indiaDate(row.drafted_at))}</td>
               <td>{supplierOf(row.supplier_id)}</td>
+              <td>{plainDate(indiaDate(row.drafted_at))}</td>
               <td>
                 <Badge tone={STATE_TONES[row.state]}>{copy.states[row.state]}</Badge>
               </td>
@@ -116,6 +116,9 @@ export function PurchasingScreen() {
   const [said, setSaid] = useState<string | null>(null);
   const access = useAccess();
   const current = orders ?? (loaded.state === "loaded" ? loaded.value : null);
+  useHeaderSub(
+    current === null ? undefined : copy.toApprove(current.orders.filter((each) => each.state === "drafted").length),
+  );
   const changed = (next: Orders, words: string) => {
     setOrders(next);
     setSaid(words);
@@ -134,6 +137,7 @@ export function PurchasingScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
+          {access.mayCall("POST /api/purchase-orders/letterhead") && <Letterhead orders={current} onSaved={changed} />}
           <Panel titleId="orders" title={copy.orders}>
             <OrdersTable orders={current} opener={opener} />
             {said !== null && <Toast>{said}</Toast>}
@@ -157,7 +161,6 @@ export function PurchasingScreen() {
               </DrawerButton>
             </PageActions>
           )}
-          {access.mayCall("POST /api/purchase-orders/letterhead") && <Letterhead orders={current} onSaved={changed} />}
           {access.mayCall("GET /api/supplier-claims") && <Claims orders={current} />}
           {access.mayCall("GET /api/supplier-scorecard") && <SupplierScores />}
         </div>
