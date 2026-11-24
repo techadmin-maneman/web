@@ -105,7 +105,13 @@ export function ServiceUsage({
                 {items.map((item) => (
                   <th key={item.code} scope="col" className={FIGURE}>
                     {item.name}
-                    {!item.offered && <span className={styles.retired}>{words.retired}</span>}
+                    {/* A word apart, where a phone's card reads the head as one line. */}
+                    {!item.offered && (
+                      <>
+                        {" "}
+                        <span className={styles.retired}>{words.retired}</span>
+                      </>
+                    )}
                   </th>
                 ))}
               </tr>

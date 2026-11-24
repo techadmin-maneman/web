@@ -95,6 +95,11 @@ test("says beside its title how many orders await approval, an order sent not am
   const sent = { ...ORDER, id: "po-2", number: 8, state: "sent" as const };
   await open(page, { "GET /api/purchase-orders": json({ ...BOOK, orders: [ORDER, sent] }) });
   await expect(page.getByRole("main").getByText(copy.toApprove(1), { exact: true })).toBeVisible();
+  // With no orders, the list says so and the head says nothing.
+  await answer(page, { "GET /api/purchase-orders": json({ ...BOOK, orders: [] }) });
+  await page.reload();
+  await expect(page.getByRole("main").getByText(copy.none, { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText(copy.toApprove(0), { exact: true })).toHaveCount(0);
 });
 
 // A custom order's purchase order was drafted with no word of whose it was, and a task could not open it.

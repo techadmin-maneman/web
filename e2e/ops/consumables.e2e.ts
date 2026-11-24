@@ -257,6 +257,9 @@ test("keeps a column for an item no longer offered that a service still expects"
   const grid = page.getByRole("region", { name: copy.usage.title });
   const shampoo = CONSUMABLES.consumables.find((each) => each.code === "shampoo_sachet")?.name ?? "";
   await expect(grid.getByRole("columnheader", { name: shampoo })).toContainText(copy.usage.retired);
+  // A phone reads each figure as a card, labelled by its column's head, the words apart.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(grid.locator(`td[data-label="${shampoo} ${copy.usage.retired}"]`).first()).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA, with a record open and a value being changed", async ({ page }) => {
