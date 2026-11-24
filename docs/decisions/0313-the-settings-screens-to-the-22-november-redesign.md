@@ -31,7 +31,9 @@ setting is changed, and what a few tables count. The owner ruled on 24 November:
    - A rule's figures stand one to a line.
    - A row inside a drawer, a record's, still changes in place (ADR 0212), so no dialog opens over a drawer.
 3. **Cities, Packages and Areas count active clients**: those whose stage is active (docs/decisions/0307), never one
-   erased or a test record, a city's by its pincodes, in a column of their own.
+   erased or a test record, a city's by its pincodes, in a column of their own. A package's count keeps to the cities
+   its reader's work reaches, so one who reads Packages from a city sees that city's clients, not the country's (the
+   owner's ruling of 24 November 2026).
 4. **What a page says waits, it says as the design does**:
    - Cities names those that take bookings with no technician;
    - Packages says beside its title that its prices include GST, and names those not yet sold for want of a priced

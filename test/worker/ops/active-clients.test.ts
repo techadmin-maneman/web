@@ -1,10 +1,11 @@
 // Settings' counts of active clients (src/domain/clients/active-clients.ts): a city's (by its pincodes), a package's
-// and a pincode's, each counting only clients whose stage is active. NOW is Monday 21 September 2026, noon in India.
+// and a pincode's, each counting only clients whose stage is active, a package's within its reader's reach. NOW is Monday 21 September 2026, noon in India.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { appFor, captureLogs, fakeDependencies, markDatabase, request } from "../helpers.ts";
+import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
+import { enforce, listStaff, opsAs, person as staff } from "./staff-fixtures.ts";
 import { person } from "./ops-clients-fixtures.ts";
 import { aPackage, aVisit } from "../fixtures/index.ts";
 
@@ -55,9 +56,31 @@ describe("the active clients Settings counts", () => {
     expect(area.active_clients).toEqual({ "122018": 1 });
   });
 
-  it("counts no client erased or kept for testing", async () => {
+  it("counts no client kept for testing", async () => {
     await env.DB.prepare("UPDATE people SET test_record = 1 WHERE id = ?1").bind(ROHIT).run();
     const area = await (await request(ops, "/api/service-area")).json<{ active_clients: Record<string, number> }>();
     expect(area.active_clients).toEqual({});
+  });
+
+  it("counts no client erased", async () => {
+    await env.DB.prepare("UPDATE people SET erased_at = ?2 WHERE id = ?1").bind(ROHIT, NOW.toISOString()).run();
+    const area = await (await request(ops, "/api/service-area")).json<{ active_clients: Record<string, number> }>();
+    expect(area.active_clients).toEqual({});
+  });
+
+  it("counts a package's clients in the cities its reader's work reaches", async () => {
+    await listStaff("delhi.finance@maneman.test", ["finance:view:city:Delhi"]);
+    await listStaff("gurgaon.finance@maneman.test", ["finance:view:city:Gurgaon"]);
+    await enforce();
+    const countFor = async (email: string) => {
+      const read = await (
+        await request(opsAs(staff(email)), "/api/packages")
+      ).json<{
+        packages: { code: string; active_clients: number }[];
+      }>();
+      return read.packages.find((each) => each.code === "natural")?.active_clients;
+    };
+    expect(await countFor("delhi.finance@maneman.test")).toBe(0);
+    expect(await countFor("gurgaon.finance@maneman.test")).toBe(1);
   });
 });

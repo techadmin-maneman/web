@@ -8,6 +8,8 @@
 
 import { opsInputs, stageDays } from "../../http/ops-inputs.ts";
 import { activeClientsBy } from "../../domain/clients/active-clients.ts";
+import { reachBinding } from "../../domain/clients/places.ts";
+import { reachOf } from "../../http/staff-access.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -285,7 +287,10 @@ async function packagesBody(c: Context<AppEnv>) {
     hairSystemsOfPackages(db),
     hairSystemPricesOn(db, today),
     packagesInUse(db),
-    stageDays(c).then((days) => activeClientsBy(db, "package", days)),
+    // One who reads Packages from a city counts the clients there, not the country's.
+    Promise.all([stageDays(c), reachOf(c, "finance", "view")]).then(([days, reached]) =>
+      activeClientsBy(db, "package", days, reachBinding(reached)),
+    ),
   ]);
   const pricesOf = (item: string, tier: string): PriceRow[] =>
     book.filter((row) => row.item === item && row.tier === tier);
