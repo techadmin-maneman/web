@@ -277,7 +277,7 @@ export const areas = {
      * The rows are for the one-at-a-time change, which is what a launch is.
      */
     city: (city: string, served: number, all: number) => `${city} · ${String(served)} of ${String(all)}`,
-    columns: ["Pincode", "Area name", "Served", "Launch date", "Waiting"],
+    columns: ["Pincode", "Area name", "Served", "Launch date", "Active clients", "Waiting"],
     narrow: "Filter pincodes",
     yes: "Yes",
     no: "No",

@@ -15,12 +15,18 @@ import { useTaskBoard } from "../lib/waiting.ts";
 import {
   firstSetting,
   mayOpen,
+  mayOpenSetting,
   NAV_GROUP_NAMES,
   NAV_GROUPS,
+  settingsPageOf,
   settingsPath,
+  SETTINGS_GROUP_NAMES,
+  SETTINGS_GROUPS,
+  SETTINGS_PAGES,
   type NavKey,
   type Route,
   type SectionPath,
+  type SettingsTab,
 } from "../route.ts";
 import { waitingIn, type Waiting } from "../tasks/decided.ts";
 import { FootAccount } from "./Account.tsx";
@@ -88,6 +94,27 @@ export function useNavLines(route: Route): NavLine[] {
   const waiting = board === null ? NOTHING_WAITING : waitingIn(board, new Date(apiNow()));
   const page = route.page === "settings" || route.page === "more" ? null : route.page;
   return navLines(mayCall, page, waiting);
+}
+
+/** Settings' groups beneath it while one of its pages is open, each opening on its first page the person may open. */
+function SettingsGroups({ tab }: { readonly tab: SettingsTab }) {
+  const mayCall = useMayCall();
+  const open = settingsPageOf(tab).group;
+  return (
+    <NavSubItems label={shell.settings}>
+      {SETTINGS_GROUPS.map((group) => {
+        const first = SETTINGS_PAGES.find((page) => page.group === group && mayOpenSetting(mayCall, page.tab));
+        return first === undefined ? null : (
+          <NavSubItem
+            key={group}
+            to={settingsPath(first.tab)}
+            name={SETTINGS_GROUP_NAMES[group]}
+            current={group === open}
+          />
+        );
+      })}
+    </NavSubItems>
+  );
 }
 
 function Entry({ line }: { readonly line: NavLine }) {
@@ -165,7 +192,9 @@ export function Navigation({ route, open, className }: { route: Route; open: boo
                 icon={GLYPHS.sliders}
                 name={shell.settings}
                 current={route.page === "settings"}
-              />
+              >
+                {route.page === "settings" && <SettingsGroups tab={route.tab} />}
+              </NavItem>
             )}
           </NavGroup>
         );

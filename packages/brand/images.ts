@@ -4,15 +4,16 @@
 
 import sharp from "sharp";
 
-/** `svg` drawn `artWidth` wide in the middle of a `size` image of `ground`. */
+/** `svg` drawn `artWidth` wide in the middle of a `size` image of `ground`, or of nothing where `ground` is null. */
 export async function onGround(
   svg: string,
   size: { readonly width: number; readonly height: number },
   artWidth: number,
-  ground: string,
+  ground: string | null,
 ): Promise<Uint8Array> {
   const art = await sharp(new TextEncoder().encode(svg), { density: 600 }).resize({ width: artWidth }).png().toBuffer();
-  return sharp({ create: { ...size, channels: 4, background: ground } })
+  const background = ground ?? { r: 0, g: 0, b: 0, alpha: 0 };
+  return sharp({ create: { ...size, channels: 4, background } })
     .composite([{ input: art, gravity: "centre" }])
     .png()
     .toBuffer();

@@ -44,7 +44,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks`, `staff_tasks`, `task_snoozes` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, a fit's stock risk is found or cleared again within the hour, a task written by hand since is gone, one marked done since open again, and one snoozed since is back on the board | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
 | New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs`, `crm_contact_updates` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
-| Technicians, and the old catalogue table | `technicians`, `fsm_items` | A technician added or changed since goes back | The rows since `<T>`; ops can add one again on the Technicians page |
+| Technicians, and the old catalogue table | `technicians`, `technician_grades`, `fsm_items` | A technician added or changed since, or a grade given them, goes back | The rows since `<T>`; ops can add one again on the Technicians page |
 | Recalls | `recalls`, `recall_pieces` | A recall raised since is gone though its lot stays blocked and its pieces stay due; one closed since is open again | Raising the recall again on the Quality page names the same lot, already blocked, so it is refused: ask the engineer |
 | Cycle counts | `count_tasks`, `count_lines` | A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning | Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought |
 | The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
@@ -218,6 +218,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [tech_alert_kinds_off](#tech_alert_kinds_off): The kinds of alert a technician turned off; every kind is on until then (ADR 0250).
 - [tech_alerts](#tech_alerts): A technician's alerts, the inbox the phone reads over the last seven days: time to leave, the day ahead, a job moved, called off or given to another, and running over; when each was pushed and read (ADR 0250).
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
+- [technician_grades](#technician_grades): A technician's pay grade from a day on, so each visit is paid on the grade held on its day (ADR 0311).
 - [technician_hours](#technician_hours): A technician's own week: a row for each day they work, with its hours. One with no rows works their city's hours every day (ADR 0210).
 - [technician_leave](#technician_leave): A technician's leave, in whole days or between two times of one day, which the clash check reads beside `slot_claims` (ADR 0062, ADR 0210).
 - [technician_updates](#technician_updates): A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).
@@ -3940,6 +3941,24 @@ Indexes:
 
 - A `UNIQUE` constraint: unique on (`technician_id`, `device_id`)
 - `technician_devices_by_session`: on (`session_id`)
+
+## technician_grades
+
+A technician's pay grade from a day on, so each visit is paid on the grade held on its day (ADR 0311).
+
+Made by `0238_technician_grades.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `technician_id` | TEXT | no |  | primary key; → `technicians.id` |  |
+| `grade_id` | TEXT | yes |  | → `pay_grades.id` |  |
+| `effective_from` | TEXT | no |  | primary key | India's date it applies from. |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `technician_grades_grade`: on (`grade_id`)
 
 ## technician_hours
 

@@ -55,7 +55,7 @@ test("sets a month’s target for a city, by measure", async ({ page }) => {
 test("takes a target off once its figure is emptied", async ({ page }) => {
   await open(page, { "POST /api/targets/remove": json({ ...SEPTEMBER, targets: [] }) });
   const change = page.getByRole("button", { name: `${EDITING.change} ${copy.measures.new_clients}` });
-  await expect(change).toContainText("40");
+  await expect(change.locator("..")).toContainText("40");
   await change.click();
   const box = page.getByRole("textbox", { name: copy.measures.new_clients });
   await box.fill("");

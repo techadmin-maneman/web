@@ -88,9 +88,12 @@ test("lists in Settings only the pages a person may open, a group with none left
   });
   await page.goto("/settings");
   await expect(page).toHaveURL(/\/settings\/care-team$/);
-  const menu = page.getByRole("navigation", { name: opsCopy.shell.settings });
-  await expectNames(menu.getByRole("link"), ["Care team"]);
-  await expect(menu).not.toContainText(opsCopy.settingsGroupNames.business);
+  // Settings' groups beneath it in the navigation, and the open group's pages a tab each, as the redesign draws them.
+  const groups = page.getByRole("list", { name: opsCopy.shell.settings });
+  await expectNames(groups.getByRole("link"), [opsCopy.settingsGroupNames.care]);
+  await expectNames(page.getByRole("navigation", { name: opsCopy.settingsGroupNames.care }).getByRole("link"), [
+    "Care team",
+  ]);
 });
 
 // A person who could only look at a rule saw it in a box they could not type in.
@@ -372,16 +375,19 @@ test("lists an entry's pages beneath it, marks the one open, and has Inventory's
   }
 });
 
-test("has Inventory's pages as tabs again with the navigation folded, and keeps every other entry's", async ({
+// A section's pages are in the navigation beneath it, as the redesign draws them, and tabs only where it is folded.
+test("lists a section's pages only in the navigation while it is open, and as tabs once it is folded", async ({
   page,
 }) => {
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/payments");
   const money = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.nav.money });
-  await expect(money.getByRole("link", { name: opsCopy.shell.sections.payments })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+  await expect(money).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("list", { name: opsCopy.shell.nav.money })
+      .getByRole("link", { name: opsCopy.shell.sections.payments }),
+  ).toHaveAttribute("aria-current", "page");
   await page.goto("/counts");
   const inventory = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.nav.inventory });
   await expect(inventory).toHaveCount(0);

@@ -8,7 +8,7 @@ import { answer, BOARD, CLIENT, HAIR_PROFILE, HELD, json, REFERRERS, TASKS, TASK
 import { READ_HAIR_PROFILE, openClient } from "./clients-fixtures.ts";
 import { open as openTechnicians } from "./technicians-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
-import { tables } from "../../packages/ui/words.ts";
+import { EDITING, tables } from "../../packages/ui/words.ts";
 import { today } from "../../apps/ops/src/content/today.ts";
 import { quality } from "../../apps/ops/src/content/quality.ts";
 import { partners } from "../../apps/ops/src/content/partners.ts";
@@ -164,20 +164,22 @@ test("keeps a long choice and a long link inside the screen", async ({ page }) =
   expect(await pageWidth(page)).toBeLessThanOrEqual(PHONE.width);
 });
 
-test("keeps each of a client's hair profile values whole, inside the profile", async ({ page }) => {
+test("keeps each of a client's hair profile values whole, and its Change, inside the profile", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
   const profile = page.getByRole("region", { name: opsCopy.clients.profile.title });
-  await expect(profile.getByRole("definition").first()).toBeVisible();
+  const changes = profile.getByRole("button", { name: new RegExp(`^${EDITING.change} `) });
+  await expect(changes.first()).toBeVisible();
   const edge = await profile.evaluate((region) => region.getBoundingClientRect().right);
-  const past = await profile
-    .getByRole("definition")
-    .evaluateAll(
-      (values, right) =>
-        values
-          .filter((value) => value.getBoundingClientRect().right > right || value.scrollWidth > value.clientWidth + 1)
-          .map((value) => value.textContent),
-      edge,
-    );
+  // Each row's value is what its Change is described by.
+  const past = await changes.evaluateAll(
+    (buttons, right) =>
+      buttons
+        .flatMap((button) => [button, document.getElementById(button.getAttribute("aria-describedby") ?? "")])
+        .filter((each) => each !== null)
+        .filter((each) => each.getBoundingClientRect().right > right || each.scrollWidth > each.clientWidth + 1)
+        .map((each) => each.textContent),
+    edge,
+  );
   expect(past).toEqual([]);
 });

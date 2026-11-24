@@ -22,8 +22,11 @@ function lastLine(published: WordsPublish | null): string {
   return published.by.includes("@") ? publish.last(day, published.by) : publish.lastAutomatic(day);
 }
 
-export function LastPublished({ published }: { published: WordsPublish | null }) {
-  return <Note>{lastLine(published)}</Note>;
+/** When the site's words were last published, and how many changes wait for the next, said once. */
+export function LastPublished({ published, unpublished }: { published: WordsPublish | null; unpublished: number }) {
+  if (unpublished === 0) return <Note>{lastLine(published)}</Note>;
+  const waiting = publish.waiting(unpublished);
+  return <Note>{published === null ? waiting : `${waiting} ${lastLine(published)}`}</Note>;
 }
 
 /** The check before a publish: the lines changed since the last, and when this environment's site shows them. */

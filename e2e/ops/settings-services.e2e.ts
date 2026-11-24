@@ -17,6 +17,12 @@ import { EDITING } from "../../apps/ops/src/content/common.ts";
 const change = (scope: Locator, label: string) =>
   scope.getByRole("button", { name: `${EDITING.change} ${label}`, exact: true });
 
+/** A setting's value as its row reads it, beside its Change. */
+const shown = (scope: Locator, label: string) => change(scope, label).locator("..");
+
+/** A box in the dialog a setting's Change opened. */
+const dialogBox = (page: Page, label: string) => page.getByRole("dialog").getByLabel(label, { exact: true });
+
 const panel = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
 
 test.describe("the consultation and the late fees", () => {
@@ -24,11 +30,11 @@ test.describe("the consultation and the late fees", () => {
     await open(page, "/settings/services");
     const consultation = panel(page, settingsCopy.services.consultation);
     const named = SERVICES.services.find((service) => service.kind === "consultation")?.name ?? "";
-    await expect(change(consultation, settingsCopy.services.rows.name)).toContainText(named);
-    await expect(change(consultation, settingsCopy.services.rows.length)).toContainText("60 min");
-    await expect(change(consultation, settingsCopy.services.rows.price)).toContainText("Rs. 0");
+    await expect(shown(consultation, settingsCopy.services.rows.name)).toContainText(named);
+    await expect(shown(consultation, settingsCopy.services.rows.length)).toContainText("60 min");
+    await expect(shown(consultation, settingsCopy.services.rows.price)).toContainText("Rs. 0");
     const fees = panel(page, settingsCopy.services.lateFees);
-    await expect(change(fees, settingsCopy.services.lateFeeNames.late_fee_first_fit)).toContainText("Rs. 4,000");
+    await expect(shown(fees, settingsCopy.services.lateFeeNames.late_fee_first_fit)).toContainText("Rs. 4,000");
     await expect(page.getByRole("main")).not.toContainText("Premium");
     expect(await axeViolations(page)).toEqual([]);
   });
@@ -37,13 +43,13 @@ test.describe("the consultation and the late fees", () => {
     await open(page, "/settings/services", { "POST /api/prices": json({ prices: PRICE_ROWS }) });
     const fees = panel(page, settingsCopy.services.lateFees);
     await change(fees, settingsCopy.services.lateFeeNames.late_fee_first_fit).click();
-    await expect(fees.getByLabel(packagesCopy.price.amount)).toHaveValue("4000");
-    await expect(fees.getByLabel(packagesCopy.price.gst)).toHaveValue("0");
-    const from = fees.getByLabel(packagesCopy.price.from);
+    await expect(dialogBox(page, packagesCopy.price.amount)).toHaveValue("4000");
+    await expect(dialogBox(page, packagesCopy.price.gst)).toHaveValue("0");
+    const from = dialogBox(page, packagesCopy.price.from);
     await expect(from).toHaveValue("2027-09-22");
     await expect(from).toHaveAttribute("min", "2027-09-22");
 
-    await fees.getByLabel(packagesCopy.price.amount).fill("4500");
+    await dialogBox(page, packagesCopy.price.amount).fill("4500");
     const request = posted(page, "/api/prices");
     await fees.getByRole("button", { name: EDITING.save }).click();
     expect((await request).postDataJSON()).toEqual({
@@ -61,7 +67,7 @@ test.describe("the consultation and the late fees", () => {
     await change(consultation, settingsCopy.services.rows.price).click();
     await consultation.getByRole("button", { name: EDITING.save }).click();
     await expect(consultation.getByRole("alert")).toHaveText(packagesCopy.errors.valid_from);
-    await expect(consultation.getByLabel(packagesCopy.price.amount)).toBeVisible();
+    await expect(dialogBox(page, packagesCopy.price.amount)).toBeVisible();
   });
 
   test("renames the consultation where it reads", async ({ page }) => {
@@ -75,11 +81,11 @@ test.describe("the consultation and the late fees", () => {
     });
     const consultation = panel(page, settingsCopy.services.consultation);
     await change(consultation, settingsCopy.services.rows.name).click();
-    await consultation.getByLabel(settingsCopy.services.rows.name).fill("Home consultation");
+    await dialogBox(page, settingsCopy.services.rows.name).fill("Home consultation");
     const request = posted(page, "/api/services/consultation/standard/name");
-    await consultation.getByLabel(settingsCopy.services.rows.name).press("Enter");
+    await dialogBox(page, settingsCopy.services.rows.name).press("Enter");
     expect((await request).postDataJSON()).toEqual({ name: "Home consultation" });
-    await expect(change(consultation, settingsCopy.services.rows.name)).toContainText("Home consultation");
+    await expect(shown(consultation, settingsCopy.services.rows.name)).toContainText("Home consultation");
   });
 });
 
@@ -97,6 +103,7 @@ test.describe("the packages", () => {
     const list = panel(page, packagesCopy.title);
     const essential = list.getByRole("row").filter({ hasText: "Mane Man Essential" });
     await expect(essential.getByRole("cell")).toHaveText([
+      "1,240",
       "Rs. 29,800",
       "Rs. 2,200 every 30 days",
       "Rs. 32,000",
@@ -112,7 +119,7 @@ test.describe("the packages", () => {
     expect(await axeViolations(page)).toEqual([]);
   });
 
-  test("opens a package's record beneath the list, each part's figures changed in place", async ({ page }) => {
+  test("opens a package's record beneath the list, each part's figures changed from its row", async ({ page }) => {
     await open(page, "/settings/packages", { "PATCH /api/packages/essential": json(PACKAGES) });
     const record = await opened(page, "Mane Man Essential");
     await expect(record).toContainText(`${packagesCopy.rows.hairSystemFrom}Rs. 29,800`);
@@ -121,7 +128,7 @@ test.describe("the packages", () => {
 
     const every = record.getByRole("button", { name: `${EDITING.change} ${packagesCopy.rows.every}` });
     await every.click();
-    const box = record.getByLabel(packagesCopy.rows.every);
+    const box = dialogBox(page, packagesCopy.rows.every);
     await expect(box).toHaveValue("30");
     await box.fill("21");
     const request = page.waitForRequest(
@@ -138,7 +145,7 @@ test.describe("the packages", () => {
     });
     const record = await opened(page, "Mane Man Essential");
     await record.getByRole("button", { name: `${EDITING.change} ${packagesCopy.rows.every}` }).click();
-    await record.getByLabel(packagesCopy.rows.every).fill("120");
+    await dialogBox(page, packagesCopy.rows.every).fill("120");
     await record.getByRole("button", { name: EDITING.save }).click();
     await expect(record.getByRole("alert")).toHaveText(packagesCopy.errors.service_every_days);
   });
@@ -209,7 +216,7 @@ test.describe("the packages", () => {
     await expect(form.getByRole("alert")).toHaveText(packagesCopy.errors.hair_system);
   });
 
-  test("lists a package's hair systems, and opens one's price and cost in place", async ({ page }) => {
+  test("lists a package's hair systems, and opens one's price and cost", async ({ page }) => {
     await open(page, "/settings/packages");
     const record = await opened(page, "Mane Man Essential");
     const spec = packagesCopy.hairSystems.spec({
@@ -222,7 +229,7 @@ test.describe("the packages", () => {
     await expect(record.getByRole("row").filter({ hasText: spec })).toContainText("Rs. 29,800");
     await record.getByRole("button", { name: packagesCopy.hairSystems.open(spec) }).click();
     const piece = record.getByRole("group", { name: PACKAGES.packages[0]?.hair_systems[0]?.name ?? "" });
-    await expect(change(piece, packagesCopy.hairSystems.columns.cost)).toContainText("Rs. 8,000");
+    await expect(shown(piece, packagesCopy.hairSystems.columns.cost)).toContainText("Rs. 8,000");
     // Stocked before, it may be retired, never deleted.
     await expect(piece.getByRole("button", { name: new RegExp(`^${packagesCopy.hairSystems.delete} `) })).toHaveCount(
       0,

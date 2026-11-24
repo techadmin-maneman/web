@@ -1,16 +1,19 @@
-// Settings: everything the console is set up with, a page each, under a menu of its own by group (route.ts,
-// SETTINGS_PAGES). The menu lists only the pages the person may open, folded but for the open page's group, with a
-// search across the pages and every rule; a page of policies draws its rule groups, and every other page is its own
-// screen, loaded the first time it opens.
+// Settings: everything the console is set up with, a page each, by group (route.ts, SETTINGS_PAGES), as the redesign
+// draws it: the groups beneath Settings in the navigation (a tab each on a phone), the open group's pages a tab each,
+// and a search across the pages and every rule beside them, what it finds above the page. A page of policies draws
+// its rule groups; every other page is its own screen, loaded the first time it opens.
 
-import { useIsBelowDesk } from "./lib/media.ts";
+import { Button } from "@maneman/ui/Button";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
-import { Note } from "@maneman/ui/Note";
+import { ListRow, ListRows } from "@maneman/ui/ListRow";
+import { Panel } from "@maneman/ui/Panel";
+import { Link } from "@maneman/ui/router";
 import { SearchInput } from "@maneman/ui/SearchInput";
-import { SettingsLayout, SubNav } from "@maneman/ui/SettingsLayout";
+import { SettingsLayout } from "@maneman/ui/SettingsLayout";
+import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { Suspense, useEffect, useState, type ComponentType } from "react";
 import type { OpsSetting } from "./api.ts";
-import { shell } from "./content.ts";
 import { settings as copy } from "./content/settings.ts";
 import { useMayCall } from "./lib/access.ts";
 import {
@@ -30,6 +33,7 @@ import {
 import { Rules } from "./settings/Rules.tsx";
 import { settingsApi } from "./settings/settings-api.ts";
 import { PanelLoading } from "@maneman/ui/States";
+import styles from "./settings-hub.module.css";
 
 /** Each page that is a screen of its own, loaded the first time it opens. */
 const SCREENS: Readonly<Record<ScreenTab, ComponentType>> = {
@@ -76,43 +80,105 @@ function useRules(wanted: boolean): readonly OpsSetting[] {
 
 const holds = (text: string, typed: string) => text.toLocaleLowerCase("en-IN").includes(typed);
 
-/**
- * The menu's groups: the pages a search names by their name and the rules by their title or note, or every page while
- * nothing is typed.
- */
-function menuOf(pages: readonly SettingsPage[], rules: readonly OpsSetting[], typed: string, tab: SettingsTab) {
-  return SETTINGS_GROUPS.map((group) => ({
-    name: SETTINGS_GROUP_NAMES[group],
-    items: [
-      ...pages
-        .filter((page) => page.group === group && holds(SETTINGS_PAGE_NAMES[page.tab], typed))
-        .map((page) => ({
-          name: SETTINGS_PAGE_NAMES[page.tab],
-          to: settingsPath(page.tab),
-          current: page.tab === tab,
-        })),
-      ...rules
-        .filter(
-          (rule) => rulePageOf(rule.name).group === group && (holds(rule.title, typed) || holds(rule.note, typed)),
-        )
-        .map((rule) => ({ name: rule.title, to: rulePath(rule.name), current: false })),
-    ],
-  }));
+/** A match a search finds: a page by its name, or a rule by its title or note, with the group and page it is in. */
+interface Match {
+  readonly key: string;
+  readonly name: string;
+  readonly where: string;
+  readonly to: string;
 }
 
-function Menu({ tab }: { tab: SettingsTab }) {
+function matchesOf(pages: readonly SettingsPage[], rules: readonly OpsSetting[], typed: string): Match[] {
+  return [
+    ...pages
+      .filter((page) => holds(SETTINGS_PAGE_NAMES[page.tab], typed))
+      .map((page) => ({
+        key: page.tab,
+        name: SETTINGS_PAGE_NAMES[page.tab],
+        where: copy.pageIn(SETTINGS_GROUP_NAMES[page.group]),
+        to: settingsPath(page.tab),
+      })),
+    ...rules
+      .filter((rule) => holds(rule.title, typed) || holds(rule.note, typed))
+      .map((rule) => {
+        const page = rulePageOf(rule.name);
+        return {
+          key: rule.name,
+          name: rule.title,
+          where: copy.ruleIn(SETTINGS_GROUP_NAMES[page.group], SETTINGS_PAGE_NAMES[page.tab]),
+          to: rulePath(rule.name),
+        };
+      }),
+  ];
+}
+
+/** What a search finds across every page the person may open, above the page, with the way to clear it. */
+function Matches({ typed, onClear }: { typed: string; onClear: () => void }) {
   const mayCall = useMayCall();
-  const [typed, setTyped] = useState("");
   const pages = SETTINGS_PAGES.filter((page) => mayOpenSetting(mayCall, page.tab));
-  const query = typed.trim().toLocaleLowerCase("en-IN");
-  const rules = useRules(query !== "" && pages.some((page) => "rules" in page));
-  const groups = menuOf(pages, query === "" ? [] : rules, query, tab);
-  const belowDesk = useIsBelowDesk();
+  const rules = useRules(pages.some((page) => "rules" in page));
+  const found = matchesOf(
+    pages,
+    rules.filter((rule) => pages.some((page) => page.tab === rulePageOf(rule.name).tab)),
+    typed,
+  );
   return (
-    <SubNav label={shell.settings} groups={groups} unfolded={query !== ""} flat={!belowDesk}>
-      <SearchInput label={copy.find} value={typed} maxLength={80} onChange={setTyped} />
-      {groups.every((group) => group.items.length === 0) && <Note>{copy.noneFound}</Note>}
-    </SubNav>
+    <Panel
+      titleId="settings-matches"
+      title={copy.matches}
+      actions={
+        <Button variant="outline" size="small" onClick={onClear}>
+          {copy.clear}
+        </Button>
+      }
+    >
+      {found.length === 0 ? (
+        <EmptyState look="panel" line={copy.noneFound} />
+      ) : (
+        <ListRows inPanel>
+          {found.map((each) => (
+            <ListRow key={each.key} title={each.name} meta={each.where} to={each.to} chevron />
+          ))}
+        </ListRows>
+      )}
+    </Panel>
+  );
+}
+
+/** The open page's group's pages, a tab each, and the search across every page, as the redesign draws Settings. */
+function SettingsBar({ tab, typed, onTyped }: { tab: SettingsTab; typed: string; onTyped: (typed: string) => void }) {
+  const mayCall = useMayCall();
+  const { group } = settingsPageOf(tab);
+  const pages = SETTINGS_PAGES.filter((page) => page.group === group && mayOpenSetting(mayCall, page.tab));
+  return (
+    <div className={styles.bar}>
+      <Tabs label={SETTINGS_GROUP_NAMES[group]}>
+        {pages.map((page) => (
+          <Link key={page.tab} className={TAB} to={settingsPath(page.tab)} current={page.tab === tab}>
+            {SETTINGS_PAGE_NAMES[page.tab]}
+          </Link>
+        ))}
+      </Tabs>
+      <SearchInput label={copy.find} value={typed} maxLength={80} onChange={onTyped} className={styles.find} />
+    </div>
+  );
+}
+
+/** On a phone, where the navigation is not drawn, Settings' groups, a tab each, opening each on its first page. */
+function GroupTabs({ tab }: { tab: SettingsTab }) {
+  const mayCall = useMayCall();
+  const { group: open } = settingsPageOf(tab);
+  return (
+    <Tabs label={copy.groups} className={styles.groups}>
+      {SETTINGS_GROUPS.map((group) => {
+        const first = SETTINGS_PAGES.find((page) => page.group === group && mayOpenSetting(mayCall, page.tab));
+        return first === undefined ? null : (
+          <Link key={group} className={TAB} to={settingsPath(first.tab)} current={group === open}>
+            {SETTINGS_GROUP_NAMES[group]}
+          </Link>
+        );
+      })}
+    </Tabs>
   );
 }
 
@@ -124,8 +190,20 @@ function Page({ tab }: { tab: SettingsTab }) {
 }
 
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {
+  const [typed, setTyped] = useState("");
+  const query = typed.trim().toLocaleLowerCase("en-IN");
   return (
-    <SettingsLayout menu={<Menu tab={tab} />}>
+    <SettingsLayout>
+      <GroupTabs tab={tab} />
+      <SettingsBar tab={tab} typed={typed} onTyped={setTyped} />
+      {query !== "" && (
+        <Matches
+          typed={query}
+          onClear={() => {
+            setTyped("");
+          }}
+        />
+      )}
       <Suspense fallback={<PanelLoading />}>
         <Page tab={tab} />
       </Suspense>

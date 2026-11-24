@@ -1,8 +1,9 @@
-// One value of a record or a setting on a line of its own, changed where it reads (docs/decisions/0212-editing-in-place.md).
-// Its name at the left and its value as words at the right; a click on the value, or Enter on it, opens its box in
-// place, already focused. Enter or Save keeps the change, Escape or Cancel puts it back, and focus returns to the
-// value. One value saves at a time: "Saved" shows beside it, and a refusal shows under the box in its own words, the
-// box still open. For a person who may only look, the value reads plainly, with nothing to press.
+// One value of a record or a setting on a line of its own (docs/decisions/0314-change-everywhere-and-forms-in-a-grid.md):
+// its name, its value as words, and Change. On a page Change opens the value's box in a small dialog of its own; in a
+// drawer, where no dialog opens over it, the box opens in the row's place. Either way the box is focused as it opens,
+// Enter or Save keeps the change, Escape or Cancel puts it back, and focus returns to Change. One value saves at a
+// time: "Saved" shows beside it, and a refusal shows under the box in its own words, the box still open. For a person
+// who may only look, the row reads without Change.
 //
 //   <EditableRow label={copy.length} value={`${minutes} min`} words={EDITING} start={() => String(minutes)}
 //     save={(typed) => saveLength(typed)}>
@@ -13,9 +14,10 @@
 
 import { useContext, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { StackedRows } from "./stacked-rows.ts";
-import { GLYPHS } from "@maneman/brand/icons";
+import { ChangeInDialog } from "./change-in-dialog.ts";
+import { Dialog } from "./Dialog.tsx";
 import { Button } from "./Button.tsx";
-import { Icon } from "./Icon.tsx";
+import { TextButton } from "./TextLink.tsx";
 import { InlineMessage } from "./InlineMessage.tsx";
 import { classes } from "./classes.ts";
 import type { FieldControl } from "./Field.tsx";
@@ -24,11 +26,13 @@ import styles from "./editable-row.module.css";
 
 /** The words a row says, in each app's own. */
 export interface EditingWords {
-  /** Read with the value's name, for a screen reader: "Change". */
+  /** The button that opens a value, read with its name: "Change". */
   readonly change: string;
   readonly save: string;
   readonly cancel: string;
   readonly saved: string;
+  /** Before the value as it stands, in a setting's dialog: "Now". */
+  readonly now?: string;
 }
 
 /** How long "Saved" stays beside the value, in milliseconds. */
@@ -38,6 +42,8 @@ interface EditableRowProps<Draft> {
   readonly label: string;
   /** The value as it reads: "90 minutes", "Rs. 2,200 from 1 Nov". */
   readonly value: ReactNode;
+  /** The value as the dialog's Now says it, where the row says more beside it, as what it was before. */
+  readonly now?: ReactNode;
   readonly words: EditingWords;
   /** False for a person who may only look. */
   readonly mayChange?: boolean;
@@ -64,7 +70,7 @@ function useEditing<Draft>(start: () => Draft, save: (draft: Draft) => Promise<s
   const [refusal, setRefusal] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, once] = useOneAtATime();
-  const valueButton = useRef<HTMLButtonElement>(null);
+  const changeButton = useRef<HTMLButtonElement>(null);
   const form = useRef<HTMLFormElement>(null);
   const returning = useRef(false);
   const editing = draft !== null;
@@ -74,25 +80,29 @@ function useEditing<Draft>(start: () => Draft, save: (draft: Draft) => Promise<s
     setRefusal(null);
     setDraft(null);
   };
-  // Opened, the box takes the keyboard and Escape closes it; closed, the value takes the keyboard back.
+  // Opened, the box takes the keyboard; closed, Change takes the keyboard back.
   useEffect(() => {
     if (!editing) {
-      if (returning.current) valueButton.current?.focus();
+      if (returning.current) changeButton.current?.focus();
       returning.current = false;
       return;
     }
+    form.current?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+  }, [editing]);
+  // Escape puts the value back, but not while a save is on its way: what it answers is never lost.
+  useEffect(() => {
     const editor = form.current;
-    editor?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+    if (!editing || editor === null) return;
     const escape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
-      close();
+      if (!busy) close();
     };
-    editor?.addEventListener("keydown", escape);
+    editor.addEventListener("keydown", escape);
     return () => {
-      editor?.removeEventListener("keydown", escape);
+      editor.removeEventListener("keydown", escape);
     };
-  }, [editing]);
+  }, [editing, busy]);
   useEffect(() => {
     if (!saved) return;
     const timer = setTimeout(() => {
@@ -119,91 +129,96 @@ function useEditing<Draft>(start: () => Draft, save: (draft: Draft) => Promise<s
       setSaved(true);
       close();
     });
-  return { draft, setDraft, refusal, saved, busy, valueButton, form, open, close, keep };
+  /** Cancel, Escape or the dialog dismissed: the value put back, once any save on its way has answered. */
+  const dismiss = () => {
+    if (!busy) close();
+  };
+  return { draft, setDraft, refusal, saved, busy, changeButton, form, open, dismiss, keep };
 }
 
-/** The value as it reads: its own button, which opens it, and "Saved" beside it once a change is kept. */
-function Reading(props: {
+/**
+ * The row as it reads: its name, its value, and Change for a person who may change it, "Saved" beside once a change
+ * is kept. On a page it is drawn as the redesign draws a setting, the value and Change at the row's end; in a drawer
+ * its name stands quiet in its column and Change at the row's end. `children` is Change's dialog, where it has one.
+ */
+function ReadingRow(props: {
   readonly label: string;
   readonly value: ReactNode;
   readonly words: EditingWords;
+  /** What Change does; null for a person who may only look. */
+  readonly onOpen: (() => void) | null;
   readonly saved: boolean;
-  readonly valueButton: RefObject<HTMLButtonElement | null>;
-  readonly onOpen: () => void;
+  readonly changeButton?: RefObject<HTMLButtonElement | null>;
+  readonly id?: string | undefined;
+  readonly className?: string | undefined;
+  readonly children?: ReactNode;
 }) {
-  const nowId = useId();
+  const onPage = useContext(ChangeInDialog);
+  const valueId = useId();
   return (
-    <span className={styles.reading}>
-      <button
-        ref={props.valueButton}
-        type="button"
-        className={styles.value}
-        aria-label={`${props.words.change} ${props.label}`}
-        aria-describedby={nowId}
-        onClick={props.onOpen}
-      >
-        <span id={nowId}>{props.value}</span>
-        <Icon className={styles.cue} d={GLYPHS.edit} size="xs" />
-      </button>
-      {props.saved && (
-        <InlineMessage tone="saved" className={styles.saved}>
-          {props.words.saved}
-        </InlineMessage>
-      )}
-    </span>
+    <div className={classes(styles.row, onPage && styles.setting, props.className)} id={props.id}>
+      <span className={styles.label}>{props.label}</span>
+      <span className={styles.reading}>
+        <span id={valueId} className={styles.shown}>
+          {props.value}
+        </span>
+        {props.onOpen !== null && (
+          <TextButton
+            ref={props.changeButton}
+            className={styles.change}
+            aria-label={`${props.words.change} ${props.label}`}
+            aria-describedby={valueId}
+            onClick={props.onOpen}
+          >
+            {props.words.change}
+          </TextButton>
+        )}
+        {props.saved && (
+          <InlineMessage tone="saved" className={styles.saved}>
+            {props.words.saved}
+          </InlineMessage>
+        )}
+      </span>
+      {props.children}
+    </div>
   );
 }
 
-export function EditableRow<Draft>({
-  label,
-  value,
-  words,
-  mayChange = true,
-  start,
-  save,
-  children,
-  unit,
-  id,
-  className,
-  opened = false,
-  stacked: asked,
-}: EditableRowProps<Draft>) {
-  const inPairs = useContext(StackedRows);
-  const stacked = asked ?? inPairs;
+type Editing<Draft> = ReturnType<typeof useEditing<Draft>>;
+
+interface OpenProps<Draft> {
+  readonly label: string;
+  readonly value: ReactNode;
+  readonly words: EditingWords;
+  readonly unit: string | undefined;
+  readonly row: Editing<Draft>;
+  readonly children: EditableRowProps<Draft>["children"];
+}
+
+/** The box's ids, and its refusal's, for the control a row's children are given. */
+function useControl(refused: boolean): { readonly control: FieldControl; readonly errorId: string } {
   const boxId = useId();
   const errorId = useId();
-  const row = useEditing(start, save, opened);
-
-  if (!mayChange || row.draft === null) {
-    return (
-      <div className={classes(styles.row, stacked && styles.stacked, className)} id={id}>
-        <span className={styles.label}>{label}</span>
-        {mayChange ? (
-          <Reading
-            label={label}
-            value={value}
-            words={words}
-            saved={row.saved}
-            valueButton={row.valueButton}
-            onOpen={row.open}
-          />
-        ) : (
-          <span className={styles.value}>{value}</span>
-        )}
-      </div>
-    );
-  }
-
-  const control: FieldControl = {
-    id: boxId,
-    "aria-describedby": row.refusal === null ? undefined : errorId,
-    "aria-invalid": row.refusal === null ? undefined : true,
+  return {
+    errorId,
+    control: {
+      id: boxId,
+      "aria-describedby": refused ? errorId : undefined,
+      "aria-invalid": refused ? true : undefined,
+    },
   };
+}
+
+/** The row opened in place: its box beside its name, Save and Cancel, and why a change was refused beneath. */
+function InlineEditing<Draft>(props: OpenProps<Draft> & { readonly id?: string; readonly className?: string }) {
+  const { row, words, unit } = props;
+  const { control, errorId } = useControl(row.refusal !== null);
+  if (row.draft === null) return null;
   return (
     <form
       ref={row.form}
-      className={classes(styles.row, styles.editing, stacked && styles.stacked, className)}
-      id={id}
+      className={classes(styles.row, styles.editing, props.className)}
+      id={props.id}
       // The row says what will not hold in its own words, under the box, rather than the browser in a bubble.
       noValidate
       onSubmit={(event) => {
@@ -211,19 +226,19 @@ export function EditableRow<Draft>({
         void row.keep();
       }}
     >
-      <label className={styles.label} htmlFor={boxId}>
-        {label}
+      <label className={styles.label} htmlFor={control.id}>
+        {props.label}
       </label>
       <span className={styles.edit}>
         <span className={styles.boxes}>
-          {children(control, row.draft, row.setDraft)}
+          {props.children(control, row.draft, row.setDraft)}
           {unit !== undefined && <span className={styles.unit}>{unit}</span>}
         </span>
         <span className={styles.actions}>
           <Button variant="primary" size="small" type="submit" busy={row.busy}>
             {words.save}
           </Button>
-          <Button variant="quiet" size="small" narrow onClick={row.close}>
+          <Button variant="quiet" size="small" narrow disabled={row.busy} onClick={row.dismiss}>
             {words.cancel}
           </Button>
         </span>
@@ -237,9 +252,103 @@ export function EditableRow<Draft>({
   );
 }
 
+/** Change's dialog: the setting's box under its name, why a change was refused, the value now, Cancel and Save. */
+function ChangeDialog<Draft>({ label, value, words, unit, row, children }: OpenProps<Draft>) {
+  const titleId = useId();
+  const { control, errorId } = useControl(row.refusal !== null);
+  if (row.draft === null) return null;
+  return (
+    <Dialog labelledBy={titleId} className={styles.dialog} canClose={!row.busy} onDismiss={row.dismiss}>
+      <form
+        ref={row.form}
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          void row.keep();
+        }}
+      >
+        <h2 id={titleId} className={styles.dialogTitle}>
+          <label htmlFor={control.id}>{label}</label>
+        </h2>
+        <span className={styles.boxes}>
+          {children(control, row.draft, row.setDraft)}
+          {unit !== undefined && <span className={styles.unit}>{unit}</span>}
+        </span>
+        {row.refusal !== null && (
+          <InlineMessage tone="error" id={errorId} className={styles.refusal}>
+            {row.refusal}
+          </InlineMessage>
+        )}
+        {words.now !== undefined && (
+          <p className={styles.now}>
+            {words.now}: {value}
+          </p>
+        )}
+        <span className={styles.dialogActions}>
+          <Button variant="quiet" size="small" disabled={row.busy} onClick={row.dismiss}>
+            {words.cancel}
+          </Button>
+          <Button variant="primary" size="small" type="submit" busy={row.busy}>
+            {words.save}
+          </Button>
+        </span>
+      </form>
+    </Dialog>
+  );
+}
+
+export function EditableRow<Draft>({
+  label,
+  value,
+  now,
+  words,
+  mayChange = true,
+  start,
+  save,
+  children,
+  unit,
+  id,
+  className,
+  opened = false,
+  stacked: asked,
+}: EditableRowProps<Draft>) {
+  const inPairs = useContext(StackedRows);
+  const onPage = useContext(ChangeInDialog);
+  // Name above value only in a drawer's pairs: on a page every row stands one to a line, as a setting does.
+  const look = classes(!onPage && (asked ?? inPairs) && styles.stacked, className);
+  const row = useEditing(start, save, opened);
+
+  if (!mayChange || onPage || row.draft === null) {
+    return (
+      <ReadingRow
+        label={label}
+        value={value}
+        words={words}
+        onOpen={mayChange ? row.open : null}
+        saved={row.saved}
+        changeButton={row.changeButton}
+        id={id}
+        className={look}
+      >
+        {onPage && mayChange && (
+          <ChangeDialog label={label} value={now ?? value} words={words} unit={unit} row={row}>
+            {children}
+          </ChangeDialog>
+        )}
+      </ReadingRow>
+    );
+  }
+
+  return (
+    <InlineEditing label={label} value={value} words={words} unit={unit} row={row} id={id} className={look}>
+      {children}
+    </InlineEditing>
+  );
+}
+
 /**
- * A value changed somewhere bigger than its row, as an address in a drawer: it reads, and opens, as an EditableRow's
- * does, so every row of a record is changed the one way.
+ * A value changed somewhere bigger than its row, as an address in a drawer: it reads, and opens from its Change, as an
+ * EditableRow's does, so every row of a record is changed the one way.
  */
 export function OpenRow(props: {
   readonly label: string;
@@ -249,22 +358,14 @@ export function OpenRow(props: {
   readonly onOpen: () => void;
 }) {
   const stacked = useContext(StackedRows);
-  const valueButton = useRef<HTMLButtonElement>(null);
   return (
-    <div className={classes(styles.row, stacked && styles.stacked)}>
-      <span className={styles.label}>{props.label}</span>
-      {props.mayChange ? (
-        <Reading
-          label={props.label}
-          value={props.value}
-          words={props.words}
-          saved={false}
-          valueButton={valueButton}
-          onOpen={props.onOpen}
-        />
-      ) : (
-        <span className={styles.value}>{props.value}</span>
-      )}
-    </div>
+    <ReadingRow
+      label={props.label}
+      value={props.value}
+      words={props.words}
+      onOpen={props.mayChange ? props.onOpen : null}
+      saved={false}
+      className={classes(stacked && styles.stacked)}
+    />
   );
 }

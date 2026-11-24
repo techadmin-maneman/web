@@ -2,11 +2,12 @@
 // what the head holds beside it, and the body beneath. A drawer that is one form has the form as its body. Every
 // drawer closes the same way: the cross at the head's right, which stays in view as the body scrolls, or Escape.
 // Its foot, where it has one, holds its actions at the window's foot however short the body. On a phone it fills
-// the window.
+// the window. A value in it changes in place (./EditableRow.tsx), never in a dialog over it.
 
 import { ICONS } from "@maneman/brand/icons";
 import type { ComponentProps, ReactNode } from "react";
 import { Dialog } from "./Dialog.tsx";
+import { ChangeInDialog } from "./change-in-dialog.ts";
 import { IconButton } from "./IconButton.tsx";
 import styles from "./drawer.module.css";
 import { typeLook } from "./type.ts";
@@ -94,7 +95,7 @@ export function Drawer(props: {
         </div>
       </div>
       <Body onSubmit={props.onSubmit} foot={props.foot}>
-        {props.children}
+        <ChangeInDialog.Provider value={false}>{props.children}</ChangeInDialog.Provider>
       </Body>
     </Dialog>
   );

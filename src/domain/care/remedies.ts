@@ -1,7 +1,9 @@
 // Remedies (docs/decisions/0143-remedies.md): free service visits Customer Care give a client, with why. Within the
 // limit ops set they are granted at once, a grant in the credit ledger; above it they await a Customer Care manager,
-// who approves or declines. An approval leaves a note in the client's chat for their Care person to tell them.
-// Each step is audited, never with Care's note.
+// who approves or declines, unless the one who gives them may approve them, whose giving is their approval
+// (docs/decisions/0315-a-remedy-past-the-limit-given-by-one-who-may-approve-it.md). An approval leaves a note in the
+// client's chat for their Care person to tell them. Each step is audited, never with Care's note; one given past the
+// limit says so.
 
 import { DAY_MS } from "../../lib/durations.ts";
 import { withinLimit, type RemedyLimit, type RemedyReason } from "../../policy/remedies.ts";
@@ -25,7 +27,11 @@ export interface Remedy {
   readonly state: "given" | "awaiting" | "declined";
 }
 
-const audited = (db: D1Database, change: Change, remedy: { action: AuditAction; id: string; visits: number }) =>
+const audited = (
+  db: D1Database,
+  change: Change,
+  remedy: { action: AuditAction; id: string; visits: number; pastLimit?: boolean },
+) =>
   auditStatement(
     db,
     {
@@ -34,7 +40,7 @@ const audited = (db: D1Database, change: Change, remedy: { action: AuditAction; 
       action: remedy.action,
       subject: { kind: "remedy", id: remedy.id },
       requestId: change.requestId,
-      detail: { visits: remedy.visits },
+      detail: remedy.pastLimit === true ? { visits: remedy.visits, past_limit: true } : { visits: remedy.visits },
     },
     change.now,
   );
@@ -58,7 +64,10 @@ export const REMEDIES_AWAITING = `SELECT 'remedy_approval' AS "group", r.id AS i
   FROM remedies r JOIN people pe ON pe.id = r.person_id
  WHERE r.state = 'awaiting' AND pe.erased_at IS NULL`;
 
-/** Gives a client free visits: at once within the limit, else awaiting a manager. Null for no such client. */
+/**
+ * Gives a client free visits: at once within the limit, or past it by one who may approve a remedy, whose giving is
+ * its approval; else awaiting a manager. Null for no such client.
+ */
 export async function giveRemedy(
   db: D1Database,
   change: Change & {
@@ -67,6 +76,8 @@ export async function giveRemedy(
     readonly reason: RemedyReason;
     readonly note: string;
     readonly limit: RemedyLimit;
+    /** Whether the giver may approve a remedy past the limit themselves: a Care manager, or an admin. */
+    readonly approves: boolean;
   },
 ): Promise<{ readonly id: string; readonly state: "given" | "awaiting" } | null> {
   const person = await db
@@ -74,14 +85,17 @@ export async function giveRemedy(
     .bind(change.personId)
     .first();
   if (person === null) return null;
-  const given = withinLimit(change.visits, await givenLately(db, change.personId, change.limit, change.now));
+  const within = withinLimit(change.visits, await givenLately(db, change.personId, change.limit, change.now));
+  const given = within || change.approves;
   const id = crypto.randomUUID();
   const state = given ? "given" : "awaiting";
+  // Past the limit, the giver's own approval is recorded as a manager's decision is.
+  const decided = given && !within ? change.actor.id : null;
   await db.batch([
     db
       .prepare(
-        `INSERT INTO remedies (id, person_id, visits, reason, note, given_by, given_at, state)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+        `INSERT INTO remedies (id, person_id, visits, reason, note, given_by, given_at, state, decided_by, decided_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
       )
       .bind(
         id,
@@ -92,9 +106,16 @@ export async function giveRemedy(
         change.actor.id,
         change.now.toISOString(),
         state,
+        decided,
+        decided === null ? null : change.now.toISOString(),
       ),
     ...(given ? [grantRemedy(db, { id, personId: change.personId, visits: change.visits }, change.now)] : []),
-    audited(db, change, { action: given ? "remedy.give" : "remedy.ask", id, visits: change.visits }),
+    audited(db, change, {
+      action: given ? "remedy.give" : "remedy.ask",
+      id,
+      visits: change.visits,
+      pastLimit: decided !== null,
+    }),
   ]);
   return { id, state };
 }

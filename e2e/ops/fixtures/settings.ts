@@ -452,6 +452,7 @@ export const SERVICE_AREA = {
     },
   ],
   cities: ["Gurgaon", "Delhi", "Mumbai"],
+  active_clients: { "110017": 1240 },
 } satisfies OpsReply<"/api/service-area">;
 
 /** A price row of the book, in force or still to come. */
@@ -476,6 +477,7 @@ export const PACKAGES = {
       name: "Mane Man Essential",
       description: "Built for everyday wear.",
       sort: 1,
+      active_clients: 1240,
       retired_date: null,
       offered: true,
       deletable: false,
@@ -520,6 +522,7 @@ export const PACKAGES = {
       code: "natural",
       name: "Mane Man Natural",
       description: null,
+      active_clients: 0,
       sort: 2,
       retired_date: null,
       offered: false,

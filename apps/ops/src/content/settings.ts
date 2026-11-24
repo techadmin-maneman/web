@@ -41,6 +41,13 @@ export const settings = {
   title: "Settings",
   find: "Find a setting",
   noneFound: "No setting matches.",
+  /** What a search finds, above the page: each page, and each rule, by the group and page it is in. */
+  matches: "Settings that match",
+  clear: "Clear",
+  pageIn: (group: string) => `${group} page`,
+  ruleIn: (group: string, page: string) => `${group}, ${page}`,
+  /** On a phone, where the navigation is not drawn: the groups, a tab each. */
+  groups: "Settings’ groups",
   /** What is held of what may be, each in the unit that reads best: "17 MB of 10 GB", "1.2 GB of 4 GB". */
   storage: (held: number, share: number) => `Photos and referral cards: ${size(held)} of ${size(share)}`,
   database: (held: number, limit: number) => `Database: ${size(held)} of ${size(limit)}`,
@@ -396,10 +403,9 @@ export const settings = {
    */
   windowTimes: {
     title: "Day times",
-    inForce: "In force",
+    /** The times in force, as their panel's title says it: "In force since 1 Nov"; the first times, as set. */
+    inForceSince: (date: string | null) => (date === null ? "In force as first set" : `In force since ${date}`),
     window: { morning: "Morning", afternoon: "Afternoon", evening: "Evening" },
-    /** "From Mon 2 Nov", or the times the console started with. */
-    since: (date: string | null) => (date === null ? "As first set" : `From ${date}`),
     formTitle: "Change the times",
     appliesFrom: "From",
     /** The first day a change may take, after the last a client can book and the last visit booked. */

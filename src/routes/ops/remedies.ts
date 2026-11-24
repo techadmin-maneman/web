@@ -1,5 +1,6 @@
 // Remedies, behind Access (Customer Care; docs/decisions/0143-remedies.md).
 
+import { grants } from "../../http/staff-access.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -91,12 +92,16 @@ const changeOf = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.
 export function registerOpsRemedies(app: App): void {
   app.openapi(giveRoute, async (c) => {
     const body = c.req.valid("json");
-    const { remedyLimit } = await opsInputs(c);
+    const [{ remedyLimit }, approves] = await Promise.all([
+      opsInputs(c),
+      grants(c, { department: "customer_care", level: "manage" }),
+    ]);
     const given = await giveRemedy(c.env.DB, {
       ...changeOf(c),
       ...body,
       personId: c.req.valid("param").id,
       limit: remedyLimit,
+      approves,
     });
     return given === null ? refuse(c, "not_found") : c.json(given, 200);
   });

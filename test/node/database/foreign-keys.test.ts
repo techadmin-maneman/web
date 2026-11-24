@@ -74,6 +74,10 @@ const HANDLED: Readonly<Record<string, string>> = {
   // A pay grade goes only once nothing uses it (docs/decisions/0122-technician-pay-per-visit.md).
   "technicians.pay_grade_id -> pay_grades":
     "src/domain/field/technician-pay.ts deletes a grade only while no technician holds it",
+  "technician_grades.grade_id -> pay_grades":
+    "src/domain/field/technician-pay.ts deletes a grade only while no technician's grade names it",
+  "technician_grades.technician_id -> technicians":
+    "src/domain/dispatch/technician-roster.ts deletes their grades first",
   "visit_pay_rates.grade_id -> pay_grades":
     "src/domain/field/technician-pay.ts deletes a grade only while no rate names it",
   "technician_devices.session_id -> sessions":

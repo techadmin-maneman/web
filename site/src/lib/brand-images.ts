@@ -1,7 +1,8 @@
 // The images the brand kit asks for beyond the page itself, drawn at build
 // time from design/brand: the card links show when shared (gilt lockup on
-// ink, the kit's pairing for ink grounds), the favicons, favicon.ico, and the
-// home-screen icons, each the gilt mark on ink at the sizes the kit's README
+// ink, the kit's pairing for ink grounds), the favicons and favicon.ico, the
+// console's gilt mark on nothing (docs/decisions/0312-the-consoles-favicon-everywhere.md),
+// and the home-screen icons, the gilt mark on ink at the sizes the kit's README
 // gives (docs/decisions/0286-the-icons-are-the-mark.md), by the apps' own
 // helper (packages/brand/images.ts).
 
@@ -43,7 +44,7 @@ export const FAVICON_SIZES = [16, 32, 48] as const;
 export type FaviconSize = (typeof FAVICON_SIZES)[number];
 
 export function faviconImage(size: FaviconSize): Promise<Uint8Array> {
-  return onInk(mark, { width: size, height: size }, Math.round(size * 0.875));
+  return onGround(mark, { width: size, height: size }, Math.round(size * 0.875), null);
 }
 
 /** The three favicons in one file, for the browsers and crawlers that ask for /favicon.ico whatever a page links. */

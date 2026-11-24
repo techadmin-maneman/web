@@ -18,6 +18,7 @@ import { useState } from "react";
 import { type Stock } from "../api.ts";
 import { stockTransit as copy } from "../content/stock-transit.ts";
 import form from "@maneman/ui/forms.module.css";
+import { classes } from "@maneman/ui/classes";
 import { useAccess } from "../lib/access.ts";
 import { PieceScans } from "./PieceScans.tsx";
 import { placeName } from "./StockForm.tsx";
@@ -75,7 +76,11 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
             />
           )}
         </Field>
-        <Field label={copy.note} className={form.field} error={boxError(copy.errors, failure, "note")}>
+        <Field
+          label={copy.note}
+          className={classes(form.field, form.wide)}
+          error={boxError(copy.errors, failure, "note")}
+        >
           {(control) => (
             <TextInput
               {...control}

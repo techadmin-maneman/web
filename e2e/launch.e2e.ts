@@ -103,19 +103,25 @@ test("every page is served with the security headers, and only /try may use the 
   }
 });
 
-// The kit's mark, drawn on ink at 16, 32 and 48 px, with no metadata.
-test("the tab icons are the kit’s mark on ink, and carry nothing else", async ({ page, request }) => {
+// The console's tab icon (docs/decisions/0312-the-consoles-favicon-everywhere.md): the gilt mark's SVG, and PNGs of it
+// on nothing at 16, 32 and 48 px for a browser that reads no SVG icon, with no metadata.
+test("the tab icons are the console’s gilt mark, and carry nothing else", async ({ page, request }) => {
   await page.goto("/");
   const icons = page.locator('link[rel="icon"]');
-  await expect(icons).toHaveCount(3);
+  await expect(icons).toHaveCount(4);
+  await expect(icons.nth(3)).toHaveAttribute("type", "image/svg+xml");
+  expect((await request.get((await icons.nth(3).getAttribute("href")) ?? "")).headers()["content-type"]).toMatch(
+    /^image\/svg\+xml/,
+  );
   for (const [index, size] of [16, 32, 48].entries()) {
     await expect(icons.nth(index)).toHaveAttribute("href", `/favicon-${String(size)}.png`);
     const response = await request.get(`/favicon-${String(size)}.png`);
     expect(response.headers()["content-type"]).toBe("image/png");
     const png = await response.body();
-    const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
+    const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     expect(info.width).toBe(size);
-    expect([...data.subarray(0, 3)]).toEqual([0x16, 0x23, 0x3a]);
+    // A corner is clear: the mark stands on the tab's own colour.
+    expect(data[3]).toBe(0);
     expect(png.includes("c2pa")).toBe(false);
   }
 });

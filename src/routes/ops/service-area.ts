@@ -3,6 +3,8 @@
 // launches it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { opsRoute } from "../../http/session-routes.ts";
+import { stageDays } from "../../http/ops-inputs.ts";
+import { activeClientsBy } from "../../domain/clients/active-clients.ts";
 import { z } from "@hono/zod-openapi";
 import { addPincode, serviceArea, setServiceArea } from "../../domain/clients/service-area.ts";
 import { deletePincode } from "../../domain/clients/pincode-delete.ts";
@@ -30,6 +32,9 @@ const serviceAreaRoute = opsRoute({
           .object({
             pincodes: z.array(AreaSchema),
             cities: z.array(z.string()).openapi({ description: "Our cities, which a pincode added must be in." }),
+            active_clients: z
+              .record(z.string(), z.number().int())
+              .openapi({ description: "Clients whose stage is active, by pincode; a pincode with none is left out." }),
           })
           .strict(),
       ),
@@ -149,8 +154,15 @@ const setServiceAreaRoute = opsRoute({
 
 export function registerOpsServiceArea(app: App): void {
   app.openapi(serviceAreaRoute, async (c) => {
-    const [pincodes, cities] = await Promise.all([serviceArea(c.env.DB), listCities(c.env.DB)]);
-    return c.json({ pincodes, cities: cities.map((city) => city.name) }, 200);
+    const [pincodes, cities, active] = await Promise.all([
+      serviceArea(c.env.DB),
+      listCities(c.env.DB),
+      stageDays(c).then((days) => activeClientsBy(c.env.DB, "pincode", days)),
+    ]);
+    return c.json(
+      { pincodes, cities: cities.map((city) => city.name), active_clients: Object.fromEntries(active) },
+      200,
+    );
   });
 
   app.openapi(setServiceAreaRoute, async (c) => {

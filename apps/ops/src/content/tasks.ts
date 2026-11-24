@@ -27,7 +27,6 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
   move_unanswered: "Open in Dispatch",
   reschedule_request: "Move in Dispatch",
   unanswered_chat: "Answer in Messages",
-  remedy_approval: "Decide in Messages",
   leave_conflict: "Move in Dispatch",
   unassigned_visit: "Assign in Dispatch",
   visit_not_begun: "Open in Dispatch",
@@ -443,8 +442,9 @@ export const tasks = {
       `${kind} · WhatsApp refused it${code === null ? "" : ` (${code})`}`,
     /** Care's note to the city team, as they wrote it. */
     city_matter: (note: string) => note,
-    /** "2 free service visits"; why is in the Remedies panel on Messages. */
-    remedy_approval: (visits: number) => `${String(visits)} free service ${visits === 1 ? "visit" : "visits"}`,
+    /** "2 free service visits · Technician late": the visits, and why Care gave them. */
+    remedy_approval: (visits: number, why: string | null) =>
+      `${String(visits)} free service ${visits === 1 ? "visit" : "visits"}${why === null ? "" : ` · ${why}`}`,
     number_change: "Both numbers verified",
     erasure_request: "Requested in the app",
     // A concern about their data, which the app promises an answer to within 30 days.
@@ -475,6 +475,18 @@ export const tasks = {
     errors: {
       not_permitted: NOT_PERMITTED,
       superseded: changed("Already decided."),
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
+  /** A remedy past Care's limit, decided in its task's drawer. */
+  remedy: {
+    approve: "Approve",
+    decline: "Decline",
+    sending: "Saving…",
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: changed("Already decided."),
       offline: OFFLINE,
       unknown: FAILED,
     },

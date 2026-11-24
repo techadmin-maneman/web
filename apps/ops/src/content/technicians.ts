@@ -232,6 +232,8 @@ export const technicians = {
   /** A technician in training takes no visit of any kind till ops clear the day. */
   training: {
     until: "In training until",
+    /** The box on Add a technician, which may be left blank. */
+    optional: "In training until (optional)",
     none: "Not in training",
   },
   /** Their pay grade, which only Finance give (docs/decisions/0307-the-people-rulings.md). */

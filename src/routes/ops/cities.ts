@@ -16,7 +16,8 @@ import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { opsInputs } from "../../http/ops-inputs.ts";
+import { opsInputs, stageDays } from "../../http/ops-inputs.ts";
+import { activeClientsBy } from "../../domain/clients/active-clients.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { CITY_SETTING_NAMES } from "../../policy/city-settings.ts";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
@@ -94,6 +95,10 @@ const citiesRoute = opsRoute({
             cities: z.array(
               CitySchema.extend({
                 technicians: z.number().int().openapi({ description: "Active technicians who work there." }),
+                active_clients: z
+                  .number()
+                  .int()
+                  .openapi({ description: "Clients whose stage is active, by their pincode's city." }),
                 deletable: z.boolean().openapi({ description: "Whether nothing but its own settings names it." }),
               }).openapi("ListedCity"),
             ),
@@ -286,7 +291,7 @@ export function registerOpsCities(app: App): void {
   app.openapi(citiesRoute, async (c) => {
     const db = c.env.DB;
     const today = indiaDate(c.var.deps.now());
-    const [cities, technicians, deletable, zones, registrations, rules, prices, inputs] = await Promise.all([
+    const [cities, technicians, deletable, zones, registrations, rules, prices, inputs, active] = await Promise.all([
       allCities(db),
       techniciansByCity(db),
       deletableCities(db),
@@ -295,6 +300,7 @@ export function registerOpsCities(app: App): void {
       cityRules(db),
       cityPrices(db, today),
       opsInputs(c),
+      stageDays(c).then((days) => activeClientsBy(db, "city", days)),
     ]);
     const ruleRows = [...rules].flatMap(([city, set]) =>
       CITY_SETTING_NAMES.flatMap((rule) => {
@@ -309,6 +315,7 @@ export function registerOpsCities(app: App): void {
         cities: cities.map((city) => ({
           ...city,
           technicians: technicians.get(city.name) ?? 0,
+          active_clients: active.get(city.name) ?? 0,
           deletable: deletable.has(city.name),
         })),
         zones: zones.results.map((row) => row.name),

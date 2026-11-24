@@ -30,8 +30,8 @@ const MUMBAI = {
 
 const BOOK = {
   cities: [
-    { ...GURGAON, technicians: 2, deletable: false },
-    { ...MUMBAI, technicians: 0, deletable: true },
+    { ...GURGAON, technicians: 2, active_clients: 1240, deletable: false },
+    { ...MUMBAI, technicians: 0, active_clients: 0, deletable: true },
   ],
   zones: ["NCR"],
   deletable_zones: [],
@@ -85,12 +85,13 @@ test("counts each city's technicians, and warns of one served with none", async 
     "GET /api/cities": json({
       ...BOOK,
       cities: [
-        { ...GURGAON, technicians: 2, deletable: false },
-        { ...MUMBAI, name: "Delhi", served: true, technicians: 0, deletable: false },
+        { ...GURGAON, technicians: 2, active_clients: 1240, deletable: false },
+        { ...MUMBAI, name: "Delhi", served: true, technicians: 0, active_clients: 0, deletable: false },
       ],
     }),
   });
   await expect(cityRow(page, "Gurgaon")).toContainText("2");
+  await expect(cityRow(page, "Gurgaon")).toContainText("1,240");
   await expect(cityRow(page, "Gurgaon")).not.toContainText(copy.list.noTechnician);
   await expect(cityRow(page, "Delhi")).toContainText(copy.list.noTechnician);
 });
@@ -142,9 +143,9 @@ test("shows a city’s own rule beside the national one, and gives it back to th
   await open(page, { "DELETE /api/cities/{name}/rules/{rule}": empty() });
   const record = await recordOf(page, "Mumbai");
   const radius = record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.checkin_radius_m}` });
-  await expect(radius).toContainText("400 metres");
+  await expect(radius).toHaveAccessibleDescription(/400 metres/);
   await expect(
-    record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.reminder_hour}` }),
+    record.getByRole("button", { name: `${EDITING.change} ${copy.rules.names.reminder_hour}` }).locator(".."),
   ).toContainText(copy.rules.national("6 pm"));
 
   await radius.click();

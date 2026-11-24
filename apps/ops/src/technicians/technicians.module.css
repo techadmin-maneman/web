@@ -82,6 +82,12 @@
   border-top: var(--hairline) solid var(--ui-line);
 }
 
+/* Straight under a panel's head, whose own rule stands above the first line. */
+:where([data-panel-head]) + .rows {
+  margin-top: 0;
+  border-top: 0;
+}
+
 /* Switch off and delete on one line beneath the details, each opening its own question in place. */
 .recordActions {
   display: flex;
@@ -89,10 +95,6 @@
   align-items: flex-start;
   gap: 0 var(--sp-8);
   margin: var(--sp-12) var(--form-inset) var(--sp-16);
-}
-
-.formField {
-  margin-top: var(--sp-12);
 }
 
 /* The city's choice, drawn as the text fields beside it are. */

@@ -6,14 +6,13 @@ import { DateInput, Field } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { technicians } from "../content.ts";
 import { EDITING } from "../content/common.ts";
-import styles from "./technicians.module.css";
 
 const copy = technicians.started;
 
 /** The day a new technician started; left blank, it is not given. */
 export function StartedField({ value, onChange }: { value: string; onChange: (day: string) => void }) {
   return (
-    <Field label={copy.optional} className={styles.formField}>
+    <Field label={copy.optional}>
       {(control) => (
         <DateInput
           {...control}

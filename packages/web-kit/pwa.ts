@@ -34,15 +34,15 @@ export function token(name: string, tokens = readFileSync(TOKENS, "utf8")): stri
 /**
  * The gilt mark on the app's ground, as the brand kit's README asks for every icon, at two thirds of the icon's width,
  * as the site's touch icon is. A maskable icon may be cropped to a circle 80% wide, so its mark is smaller. The tab's
- * favicons are the site's.
+ * favicons are the console's: the gilt mark on nothing (docs/decisions/0312-the-consoles-favicon-everywhere.md).
  */
 export const ICONS = [
-  { file: "icon-192.png", size: 192, art: 128, purpose: "any", drawing: "mark-gilt.svg" },
-  { file: "icon-512.png", size: 512, art: 340, purpose: "any", drawing: "mark-gilt.svg" },
-  { file: "icon-maskable-512.png", size: 512, art: 256, purpose: "maskable", drawing: "mark-gilt.svg" },
-  { file: "apple-touch-icon.png", size: 180, art: 120, purpose: null, drawing: "mark-gilt.svg" },
-  { file: "favicon-32.png", size: 32, art: 28, purpose: null, drawing: "mark-gilt.svg" },
-  { file: "favicon-16.png", size: 16, art: 14, purpose: null, drawing: "mark-gilt.svg" },
+  { file: "icon-192.png", size: 192, art: 128, purpose: "any", drawing: "mark-gilt.svg", clear: false },
+  { file: "icon-512.png", size: 512, art: 340, purpose: "any", drawing: "mark-gilt.svg", clear: false },
+  { file: "icon-maskable-512.png", size: 512, art: 256, purpose: "maskable", drawing: "mark-gilt.svg", clear: false },
+  { file: "apple-touch-icon.png", size: 180, art: 120, purpose: null, drawing: "mark-gilt.svg", clear: false },
+  { file: "favicon-32.png", size: 32, art: 28, purpose: null, drawing: "mark-gilt.svg", clear: true },
+  { file: "favicon-16.png", size: 16, art: 14, purpose: null, drawing: "mark-gilt.svg", clear: true },
 ] as const;
 
 export function manifest(app: PwaApp, ground: string) {
@@ -133,7 +133,7 @@ export function pwa(app: PwaApp): Plugin {
             readFileSync(`${BRAND}/${icon.drawing}`, "utf8"),
             { width: icon.size, height: icon.size },
             icon.art,
-            ground,
+            icon.clear ? null : ground,
           ),
         })),
       );

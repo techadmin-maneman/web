@@ -6,6 +6,7 @@
 // the visit; a month with a fitting whose product has no cost set has none. The current month stands as of tonight.
 // Records marked as tests are left out.
 
+import { gradeOnSql } from "../../lib/grade-on.ts";
 import { addDays, addMonths, indiaDate, indiaDateSql, monthOf } from "../../lib/india-time.ts";
 import { standingOn, type StandingDays, type StandingRules } from "../../policy/client-standing.ts";
 import { everyDaysSql } from "../booking/packages.ts";
@@ -34,11 +35,10 @@ interface Visit {
 
 const ON_ITS_DAY = indiaDateSql("a.window_start");
 
-/** The technician's rate for the visit: their grade's for its city, else for every city, from the rate in force. */
-const rateFor = (
-  city: string,
-) => `(SELECT r.amount FROM visit_pay_rates r JOIN technicians t ON t.pay_grade_id = r.grade_id
-    WHERE t.id = a.technician_id AND r.visit_kind = a.type AND ${city} AND r.effective_from <= ${ON_ITS_DAY}
+/** The technician's rate for the visit: their grade on its day's, for its city, else for every city, then in force. */
+const rateFor = (city: string) => `(SELECT r.amount FROM visit_pay_rates r
+    WHERE r.grade_id = ${gradeOnSql("a.technician_id", ON_ITS_DAY)} AND r.visit_kind = a.type AND ${city}
+      AND r.effective_from <= ${ON_ITS_DAY}
     ORDER BY r.effective_from DESC LIMIT 1)`;
 
 /** What the visit cost us: its hair system on a first fit or replacement, the consumables used, and the visit's pay. */

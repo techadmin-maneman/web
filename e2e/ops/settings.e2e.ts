@@ -12,7 +12,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { fails, json, SETTINGS } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
-import { expectOneBoxALine } from "./one-box-a-line.ts";
+import { expectNoBoxInATable } from "./no-box-in-a-table.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 import {
   cities,
@@ -36,9 +36,16 @@ const PANELS = [
 /** One subject's section of the rules, by its heading. */
 const section = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
 
-/** A value's own button, which opens its box in place: "Change Check-in radius". */
+/** A setting's Change, which opens its box in a dialog of its own: "Change Check-in radius". */
 const change = (scope: Locator, label: string) =>
   scope.getByRole("button", { name: `${EDITING.change} ${label}`, exact: true });
+
+/** A setting's value as its row reads it, beside its Change. */
+const shown = (scope: Locator, label: string) => change(scope, label).locator("..");
+
+/** A setting's box, in the dialog its Change opened. */
+const boxIn = (page: Page, label: string) =>
+  page.getByRole("dialog", { name: label }).getByLabel(label, { exact: true });
 
 /** Someone who may read Settings and change nothing. */
 const VIEW_ONLY = json({
@@ -85,7 +92,7 @@ test.describe("the rules", () => {
   test("shows each rule's figure as words with its unit, and no box until it is changed", async ({ page }) => {
     await open(page, "/settings/field");
     const radius = page.getByRole("group", { name: cities.rules.names.checkin_radius_m });
-    await expect(change(radius, cities.rules.names.checkin_radius_m)).toContainText("200 metres");
+    await expect(shown(radius, cities.rules.names.checkin_radius_m)).toContainText("200 metres");
     await expect(radius.getByRole("spinbutton")).toHaveCount(0);
     await expect(radius).not.toContainText("50–1000");
   });
@@ -120,8 +127,8 @@ test.describe("the rules", () => {
   test("names each box of a keyed rule as the rest of the console names it", async ({ page }) => {
     await open(page, "/settings/field");
     const wait = page.getByRole("group", { name: "No-show wait" });
-    await expect(change(wait, settingsCopy.discountCodes.coverShort.first_fit)).toContainText("20 minutes");
-    await expect(change(wait, dispatch.typeNames.service)).toContainText("15 minutes");
+    await expect(shown(wait, settingsCopy.discountCodes.coverShort.first_fit)).toContainText("20 minutes");
+    await expect(shown(wait, dispatch.typeNames.service)).toContainText("15 minutes");
     await expect(wait).not.toContainText("first_fit");
   });
 
@@ -137,7 +144,7 @@ test.describe("the rules", () => {
     });
     const radius = page.getByRole("group", { name: cities.rules.names.checkin_radius_m });
     await change(radius, cities.rules.names.checkin_radius_m).click();
-    const box = radius.getByLabel(cities.rules.names.checkin_radius_m);
+    const box = boxIn(page, cities.rules.names.checkin_radius_m);
     await expect(box).toBeFocused();
     await expect(box).toHaveValue("200");
 
@@ -146,7 +153,7 @@ test.describe("the rules", () => {
     await box.press("Enter");
     expect((await request).postDataJSON()).toEqual({ value: 150 });
     await expect(radius.getByRole("status")).toHaveText(EDITING.saved);
-    await expect(change(radius, cities.rules.names.checkin_radius_m)).toContainText(
+    await expect(shown(radius, cities.rules.names.checkin_radius_m)).toContainText(
       `150 ${cities.rules.units.checkin_radius_m}`,
     );
     await expect(change(radius, cities.rules.names.checkin_radius_m)).toBeFocused();
@@ -169,12 +176,12 @@ test.describe("the rules", () => {
     return sent;
   }
 
-  test("puts a rule back to its default when its default is typed, its pencil showing at rest", async ({ page }) => {
+  test("puts a rule back to its default when its default is typed", async ({ page }) => {
     const sent = await setByHand(page);
     const radius = page.getByRole("group", { name: cities.rules.names.checkin_radius_m });
-    await expect(change(radius, cities.rules.names.checkin_radius_m).locator("svg")).toBeVisible();
+    await expect(change(radius, cities.rules.names.checkin_radius_m)).toBeVisible();
     await change(radius, cities.rules.names.checkin_radius_m).click();
-    const box = radius.getByLabel(cities.rules.names.checkin_radius_m, { exact: true });
+    const box = boxIn(page, cities.rules.names.checkin_radius_m);
     await box.fill("200");
     await box.press("Enter");
     await expect.poll(() => sent).toEqual([null]);
@@ -201,9 +208,9 @@ test.describe("the rules", () => {
     });
     const radius = page.getByRole("group", { name: cities.rules.names.checkin_radius_m });
     await change(radius, cities.rules.names.checkin_radius_m).click();
-    await radius.getByLabel(cities.rules.names.checkin_radius_m).fill("150");
+    await boxIn(page, cities.rules.names.checkin_radius_m).fill("150");
     await page.keyboard.press("Escape");
-    await expect(change(radius, cities.rules.names.checkin_radius_m)).toContainText("200 metres");
+    await expect(shown(radius, cities.rules.names.checkin_radius_m)).toContainText("200 metres");
     await expect(change(radius, cities.rules.names.checkin_radius_m)).toBeFocused();
     expect(sent).toBe(0);
   });
@@ -221,7 +228,7 @@ test.describe("the rules", () => {
     });
     const radius = page.getByRole("group", { name: cities.rules.names.checkin_radius_m });
     await change(radius, cities.rules.names.checkin_radius_m).click();
-    const box = radius.getByLabel(cities.rules.names.checkin_radius_m);
+    const box = boxIn(page, cities.rules.names.checkin_radius_m);
     for (const typed of ["1440", ""]) {
       await box.fill(typed);
       await radius.getByRole("button", { name: EDITING.save }).click();
@@ -238,7 +245,7 @@ test.describe("the rules", () => {
     });
     const wait = page.getByRole("group", { name: "No-show wait" });
     await change(wait, settingsCopy.discountCodes.coverShort.first_fit).click();
-    await wait.getByLabel(settingsCopy.discountCodes.coverShort.first_fit, { exact: true }).fill("90");
+    await boxIn(page, settingsCopy.discountCodes.coverShort.first_fit).fill("90");
     await wait.getByRole("button", { name: EDITING.save }).click();
     await expect(wait.getByRole("alert")).toHaveText(/^First fit: Enter \d+–\d+ minutes\.$/);
   });
@@ -253,16 +260,16 @@ test.describe("the rules", () => {
     });
     const days = page.getByRole("group", { name: "Booking and next visits" });
     await change(days, "Bookable ahead").click();
-    await days.getByLabel("Bookable ahead").fill("20");
+    await boxIn(page, "Bookable ahead").fill("20");
     await days.getByRole("button", { name: EDITING.save }).click();
     await expect(days.getByRole("alert")).toHaveText("“Bookable ahead” must be at least “A package’s service visits”.");
   });
 
   // Seventeen rules on one page, each with its own Save, in no order.
-  test("puts each subject's rules on a page of its own, a link away in Settings' menu", async ({ page }) => {
+  test("puts each subject's rules on a page of its own, a tab away in its group", async ({ page }) => {
     await open(page, "/settings/field");
-    const menu = page.getByRole("navigation", { name: shell.settings, exact: true });
-    await expect(menu.getByRole("link", { name: settingsPageNames.field })).toHaveAttribute("aria-current", "page");
+    const tabs = page.getByRole("navigation", { name: settingsGroupNames.visits, exact: true });
+    await expect(tabs.getByRole("link", { name: settingsPageNames.field })).toHaveAttribute("aria-current", "page");
     // The rules of one figure together under the subject; a rule of several, in a panel of its own beneath.
     const field = section(page, "Visits in the field");
     await expect(field.getByRole("group")).toHaveText([/^Check-in radius/]);
@@ -271,35 +278,55 @@ test.describe("the rules", () => {
     }
     await expect(page.getByRole("button", { name: EDITING.save, exact: true })).toHaveCount(0);
 
-    // At a desk every group shows its pages under its name, as the console's own navigation does; nothing folds.
-    await expect(menu.getByRole("list", { name: settingsGroupNames.visits })).toBeVisible();
-    await expect(menu.getByRole("button", { name: settingsGroupNames.growth })).toHaveCount(0);
-    await menu.getByRole("link", { name: settingsPageNames.referrals }).click();
+    // Settings' groups are beneath it in the navigation, each opening on its first page.
+    await page
+      .getByRole("list", { name: shell.settings, exact: true })
+      .getByRole("link", { name: settingsGroupNames.growth })
+      .click();
+    await expect(page).toHaveURL(/\/settings\/referrals$/);
+    await page
+      .getByRole("navigation", { name: settingsGroupNames.growth, exact: true })
+      .getByRole("link", { name: settingsPageNames.referrals })
+      .click();
     await expect(page).toHaveURL(/\/settings\/referrals$/);
     await expect(section(page, "Referrals")).toBeVisible();
     await expect(page.getByRole("group", { name: cities.rules.names.checkin_radius_m })).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
   });
 
-  // Twenty-nine pages in a menu longer than the screen, and a rule found only by knowing its page.
-  test("finds a page by its name and a rule by its title or note, from Settings' menu", async ({ page }) => {
+  // With the navigation folded its groups are not drawn beneath Settings: they stand as tabs, as on a phone.
+  test("offers Settings' groups as tabs once the navigation is folded, and only then on a desk", async ({ page }) => {
     await open(page, "/settings/booking");
-    const menu = page.getByRole("navigation", { name: shell.settings, exact: true });
+    const groups = page.getByRole("main").getByRole("navigation", { name: settingsCopy.groups, exact: true });
+    await expect(groups).toHaveCount(0);
+    await page.getByRole("button", { name: shell.fold }).click();
+    await groups.getByRole("link", { name: settingsGroupNames.growth }).click();
+    await expect(page).toHaveURL(/\/settings\/referrals$/);
+    expect(await axeViolations(page)).toEqual([]);
+  });
+
+  // Twenty-nine pages in a menu longer than the screen, and a rule found only by knowing its page.
+  test("finds a page by its name and a rule by its title or note, above the page", async ({ page }) => {
+    await open(page, "/settings/booking");
+    const find = page.getByRole("searchbox", { name: settingsCopy.find });
+    const found = page.getByRole("region", { name: settingsCopy.matches });
     const radius = SETTINGS.settings[0];
     if (radius === undefined) throw new Error("the fixture has a rule");
-    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill(radius.note.split(" ").slice(0, 3).join(" "));
-    await expect(menu.getByRole("link", { name: radius.title })).toHaveAttribute(
+    await find.fill(radius.note.split(" ").slice(0, 3).join(" "));
+    await expect(found.getByRole("link", { name: new RegExp(`^${radius.title}`) })).toHaveAttribute(
       "href",
       `/settings/field#${radius.name}`,
     );
 
-    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill(settingsPageNames["pay-grades"]);
-    await expect(menu.getByRole("link")).toHaveText([settingsPageNames["pay-grades"]]);
+    await find.fill(settingsPageNames["pay-grades"]);
+    await expect(found.getByRole("link")).toHaveCount(1);
+    await expect(found.getByRole("link")).toContainText(settingsPageNames["pay-grades"]);
 
-    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill("zzz");
-    await expect(menu.getByText(settingsCopy.noneFound)).toBeVisible();
-    await menu.getByRole("searchbox", { name: settingsCopy.find }).fill("");
-    await expect(menu.getByRole("link", { name: settingsPageNames.booking })).toHaveAttribute("aria-current", "page");
+    await find.fill("zzz");
+    await expect(found.getByText(settingsCopy.noneFound)).toBeVisible();
+    await found.getByRole("button", { name: settingsCopy.clear }).click();
+    await expect(found).toHaveCount(0);
+    await expect(find).toHaveValue("");
   });
 
   test("links each late-fee rule to where it is priced, and the late fees back to the rule", async ({ page }) => {
@@ -329,12 +356,12 @@ test.describe("the rules", () => {
       },
     });
     const days = page.getByRole("group", { name: "Booking and next visits" });
-    await expect(change(days, "Consultation to first fit")).toContainText("0 days");
-    await expect(change(days, "Bookable ahead")).toContainText("45 days");
+    await expect(shown(days, "Consultation to first fit")).toContainText("0 days");
+    await expect(shown(days, "Bookable ahead")).toContainText("45 days");
     await expect(days).not.toContainText("first_fit_lead");
 
     await change(days, "Reminder before a service is due").click();
-    const box = days.getByLabel("Reminder before a service is due");
+    const box = boxIn(page, "Reminder before a service is due");
     await box.fill("5");
     const request = posted(page, "/api/settings/booking_days");
     await box.press("Enter");
@@ -363,11 +390,11 @@ test.describe("the rules", () => {
       },
     });
     const reward = page.getByRole("group", { name: "Referral reward" });
-    await expect(change(reward, referrals.table.columns.referrer)).toContainText("3");
-    await expect(change(reward, "Free service visits valid for")).toContainText("365");
+    await expect(shown(reward, referrals.table.columns.referrer)).toContainText("3");
+    await expect(shown(reward, "Free service visits valid for")).toContainText("365");
 
     await change(reward, "Friend").click();
-    await reward.getByLabel("Friend").fill("0");
+    await boxIn(page, "Friend").fill("0");
     const request = posted(page, "/api/settings/referral_reward");
     await reward.getByRole("button", { name: EDITING.save }).click();
     expect((await request).postDataJSON()).toEqual({
@@ -380,8 +407,8 @@ test.describe("the rules", () => {
   test("says each box’s own unit where a rule’s figures count in two", async ({ page }) => {
     await open(page, "/settings/field");
     const clock = page.getByRole("group", { name: "Phone clock limits" });
-    await expect(change(clock, "Earliest check-in before the start")).toContainText("60 minutes");
-    await expect(change(clock, "Longest a phone may stay offline")).toContainText("24 hours");
+    await expect(shown(clock, "Earliest check-in before the start")).toContainText("60 minutes");
+    await expect(shown(clock, "Longest a phone may stay offline")).toContainText("24 hours");
   });
 
   test("offers each kind of visit only what it may cost, in the console’s words, and sends the one chosen", async ({
@@ -395,9 +422,9 @@ test.describe("the rules", () => {
       },
     });
     const charges = page.getByRole("group", { name: "Late move or cancel charge" });
-    await expect(change(charges, dispatch.typeNames.service)).toContainText("The full visit");
+    await expect(shown(charges, dispatch.typeNames.service)).toContainText("The full visit");
     await change(charges, dispatch.typeNames.service).click();
-    const service = charges.getByLabel(dispatch.typeNames.service, { exact: true });
+    const service = boxIn(page, dispatch.typeNames.service);
     await expect(service.locator("option")).toHaveText(["Nothing", "The full visit"]);
     await service.selectOption("nothing");
     const request = posted(page, "/api/settings/late_change_charge");
@@ -417,7 +444,7 @@ test.describe("the rules", () => {
 });
 
 // The fields ran past the panel and cut "consultation" and the date's year.
-test("keeps every panel inside its frame, a box to a line, at the width the console is drawn", async ({ page }) => {
+test("keeps every panel inside its frame, no box in a table, at the width the console is drawn", async ({ page }) => {
   for (const path of PANELS) {
     await open(page, path);
     const overflow = await page.getByRole("main").evaluate((main) =>
@@ -430,7 +457,7 @@ test("keeps every panel inside its frame, a box to a line, at the width the cons
         .map((element) => element.id || element.tagName),
     );
     expect(overflow, path).toEqual([]);
-    await expectOneBoxALine(page, path);
+    await expectNoBoxInATable(page, path);
   }
 });
 

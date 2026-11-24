@@ -295,6 +295,9 @@ export const SESSION_CALLS: Readonly<Partial<Record<string, string>>> = {
   "POST /api/auth/logout": "signed out",
 };
 
+/** A remedy given past the limit by one who may approve it, whose giving was the approval. */
+export const REMEDY_PAST_LIMIT = "gave a remedy past the limit";
+
 /** What every other entry in the log says was done, by its action; a call with no words of its own reads by these. */
 export const DONE: Readonly<Record<ActivityAction, string>> = {
   "ops.call": "made a console request",

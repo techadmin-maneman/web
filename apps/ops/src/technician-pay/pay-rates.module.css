@@ -17,3 +17,20 @@
   font-size: var(--fs-15);
   font-weight: var(--weight-medium);
 }
+
+/* A record's history beneath its rows: the grades a technician held, the rates a grade paid. */
+.history {
+  margin-top: var(--sp-24);
+}
+
+/* Who set a grade or a rate, and when: an address that can run long. */
+.setBy {
+  color: var(--ui-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* "Starts", before a grade's day in its row's box, as a price's From stands before its day. */
+.starts {
+  font-size: var(--fs-14);
+  color: var(--ui-text-muted);
+}

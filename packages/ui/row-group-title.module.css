@@ -1,0 +1,13 @@
+/* The name over a group of a record's rows (./RowGroupTitle.tsx): small, medium and muted, set in as the rows' names. */
+
+@layer base, ui;
+
+@layer ui {
+  .title {
+    margin: 0;
+    padding: var(--sp-16) var(--sp-20) var(--sp-4);
+    font-size: var(--fs-13);
+    font-weight: var(--weight-medium);
+    color: var(--ui-text-muted);
+  }
+}

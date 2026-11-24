@@ -11,6 +11,7 @@
 // Technicians' codes have a day's ceiling of their own, so client traffic never
 // stops one signing in, and ops are told when an active technician is refused.
 
+import { indiaDate } from "../../lib/india-time.ts";
 import { techRoute } from "../../http/session-routes.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -297,7 +298,11 @@ function registerTechSession(app: App): void {
 
   app.openapi(meRoute, async (c) => {
     const { technicianId, deviceRowId } = technicianOf(c);
-    const signedIn = await signedInTechnician(c.env.DB, { technicianId, deviceRowId });
+    const signedIn = await signedInTechnician(c.env.DB, {
+      technicianId,
+      deviceRowId,
+      today: indiaDate(c.var.deps.now()),
+    });
     // The middleware found the device, so this is a technician deleted between the two reads.
     if (signedIn === null) return refuse(c, "session_required");
     return c.json(

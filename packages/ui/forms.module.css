@@ -102,14 +102,24 @@
     font-size: var(--fs-18);
   }
 
-  /* A form's fields, one to a line, no wider than a form runs. */
+  /*
+   * A form's fields as the redesign's forms stand them: the short ones, a line of words, a figure, a date or a choice,
+   * two or three to a row where there is room (--field-cell, ./base.css), one to a line on a phone; a long one, a
+   * note, a file to choose, ticks or choices, a group, and the form's actions and what it says, the whole row. A box
+   * the form knows is long, as a note on one line, says so with `wide`.
+   */
   .fields {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--field-cell)), 1fr));
+    align-items: start;
     gap: var(--sp-16);
-    max-width: var(--measure-form);
+    max-width: var(--fields-max);
     margin-top: var(--sp-16);
+  }
+
+  .fields > :not(:has(input:not([type="checkbox"], [type="radio"], [type="file"]), select)),
+  .fields > .wide {
+    grid-column: 1 / -1;
   }
 
   /* A panel has no room at its sides of its own (a drawer has): straight inside one, a form's fields stand in from
@@ -257,6 +267,12 @@
   .record {
     margin-top: var(--sp-8);
     border-top: var(--hairline) solid var(--ui-line);
+  }
+
+  /* Straight under a panel's head, whose own rule stands above the first line. */
+  :where([data-panel-head]) + .record {
+    margin-top: 0;
+    border-top: 0;
   }
 
   /* Retiring, restoring and deleting, on one line beneath a record's values, each asking in place. */

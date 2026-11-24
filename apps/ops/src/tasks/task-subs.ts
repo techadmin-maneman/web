@@ -8,6 +8,7 @@ import { rupees } from "@maneman/web-kit/money";
 import type { Task } from "../api.ts";
 import { dispatch, referrals, tasks } from "../content.ts";
 import { untoldMoveOf } from "./untold-move.ts";
+import { care } from "../content/care.ts";
 import { messageKindName } from "../lib/message-kind.ts";
 
 type Facts = Task["facts"];
@@ -47,10 +48,15 @@ const consultationAsked: Sub<"consultation_request"> = (facts) => {
   return facts.first_fit === null ? asked : `${asked} ${copy.withFirstFit(fitWindow(facts.first_fit.window))}`;
 };
 
+/** Care's words for why a remedy was given, or none for a reason this build has no words for. */
+const reasonOf = (reason: string): string | null =>
+  Object.hasOwn(care.remedy.reasons, reason) ? care.remedy.reasons[reason as keyof typeof care.remedy.reasons] : null;
+
 const SUBS: { readonly [G in Group]: Sub<G> } = {
   unanswered_chat: (_, task) => copy.unanswered_chat(dayAndTime(task.since)),
   city_matter: (facts) => (facts.note === null ? tasks.unknown : copy.city_matter(facts.note)),
-  remedy_approval: (facts) => copy.remedy_approval(facts.visits),
+  // The visits and why Care gave them, as the approver decides from the drawer.
+  remedy_approval: (facts) => copy.remedy_approval(facts.visits, reasonOf(facts.reason)),
   untold_move: (facts) => untoldMoveOf(facts),
   move_unanswered: (facts) => {
     const when = `${shortDate(facts.date)}, ${dispatch.windows[facts.window].toLowerCase()}`;

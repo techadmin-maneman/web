@@ -6,6 +6,7 @@
 // the number is looked up among the technicians and nowhere else, and their
 // session is bound to one phone.
 
+import { gradeOnSql } from "../../lib/grade-on.ts";
 import type { Settings } from "../../config/settings.ts";
 import { sha256Hex } from "../../lib/hash.ts";
 import { mobileHashOf } from "../clients/number-codes.ts";
@@ -120,17 +121,17 @@ interface SignedInTechnician {
 /** Who this session belongs to, and since when this phone has been enrolled. */
 export async function signedInTechnician(
   db: D1Database,
-  options: { technicianId: string; deviceRowId: string },
+  options: { technicianId: string; deviceRowId: string; today: string },
 ): Promise<SignedInTechnician | null> {
   const row = await db
     .prepare(
       `SELECT t.name, g.name AS grade, t.city, t.mobile_e164, d.device_id, d.label, d.created_at
          FROM technician_devices d
          JOIN technicians t ON t.id = d.technician_id
-         LEFT JOIN pay_grades g ON g.id = t.pay_grade_id
+         LEFT JOIN pay_grades g ON g.id = ${gradeOnSql("t.id", "?3")}
         WHERE d.id = ?1 AND d.technician_id = ?2`,
     )
-    .bind(options.deviceRowId, options.technicianId)
+    .bind(options.deviceRowId, options.technicianId, options.today)
     .first<{
       name: string;
       grade: string | null;

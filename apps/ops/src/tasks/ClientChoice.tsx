@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { tasks } from "../content.ts";
 import styles from "./task-actions.module.css";
+import form from "@maneman/ui/forms.module.css";
 
 const copy = tasks.write;
 const CHANGE_ID = "new-task-change";
@@ -104,7 +105,7 @@ export function ClientChoice(props: {
   };
   return (
     <>
-      <div id={BOX_ID}>
+      <div id={BOX_ID} className={form.wide}>
         <Field label={copy.client} error={boxError(copy.errors, props.failure, "client")}>
           {(control) => (
             // Find beside the box it searches, level with it whatever is said beneath.

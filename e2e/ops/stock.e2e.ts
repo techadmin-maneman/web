@@ -8,7 +8,7 @@ import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, IMRAN, json, STOCK, type Answers, type OpsReply } from "./fixtures.ts";
-import { expectOneBoxALine } from "./one-box-a-line.ts";
+import { expectNoBoxInATable } from "./no-box-in-a-table.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { stock } from "../../apps/ops/src/content/stock.ts";
 import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
@@ -744,12 +744,12 @@ test("says so when no camera opens, leaving the label to be typed", async ({ pag
   await expect(labels.getByLabel(stockLabels.find)).toBeEditable();
 });
 
-test("meets WCAG 2.2 AA, a box to a line, with a movement being checked as well", async ({ page }) => {
+test("meets WCAG 2.2 AA, no box in a table, with a movement being checked as well", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
 
   const form = await recording(page);
-  await expectOneBoxALine(page, stock.record.title);
+  await expectNoBoxInATable(page, stock.record.title);
   await form.getByLabel(stock.record.quantity).fill("5");
   await form.getByRole("button", { name: stock.record.check }).click();
   await expect(form.getByRole("group", { name: review.title })).toBeVisible();

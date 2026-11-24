@@ -128,36 +128,43 @@ function LineFields(props: {
   };
   return (
     <Fieldset className={styles.line} legend={props.name}>
-      <ReceiptEntry
-        label={copy.receive.received}
-        value={draft.received}
-        onChange={set("received")}
-        error={refused(LINE_BOXES.received)}
-      />
-      <ReceiptEntry
-        label={copy.receive.damaged}
-        value={draft.damaged}
-        onChange={set("damaged")}
-        error={refused(LINE_BOXES.damaged)}
-      />
-      <ReceiptEntry
-        label={copy.receive.failed}
-        value={draft.failed}
-        onChange={set("failed")}
-        error={refused(LINE_BOXES.failed)}
-      />
-      {props.checks !== null && namesPoints(draft, true) && (
-        <FailedPoints checks={props.checks} draft={draft} onDraft={onDraft} />
-      )}
-      {pointsRefused !== null && <Refusal className={form.error} said={pointsRefused} />}
-      <ReceiptEntry label={copy.receive.lot} value={draft.lot} onChange={set("lot")} error={refused(LINE_BOXES.lot)} />
-      <ReceiptEntry
-        label={copy.receive.expires}
-        value={draft.expires}
-        type="date"
-        onChange={set("expires")}
-        error={refused(LINE_BOXES.expires)}
-      />
+      <div className={form.fields}>
+        <ReceiptEntry
+          label={copy.receive.received}
+          value={draft.received}
+          onChange={set("received")}
+          error={refused(LINE_BOXES.received)}
+        />
+        <ReceiptEntry
+          label={copy.receive.damaged}
+          value={draft.damaged}
+          onChange={set("damaged")}
+          error={refused(LINE_BOXES.damaged)}
+        />
+        <ReceiptEntry
+          label={copy.receive.failed}
+          value={draft.failed}
+          onChange={set("failed")}
+          error={refused(LINE_BOXES.failed)}
+        />
+        {props.checks !== null && namesPoints(draft, true) && (
+          <FailedPoints checks={props.checks} draft={draft} onDraft={onDraft} />
+        )}
+        {pointsRefused !== null && <Refusal className={form.error} said={pointsRefused} />}
+        <ReceiptEntry
+          label={copy.receive.lot}
+          value={draft.lot}
+          onChange={set("lot")}
+          error={refused(LINE_BOXES.lot)}
+        />
+        <ReceiptEntry
+          label={copy.receive.expires}
+          value={draft.expires}
+          type="date"
+          onChange={set("expires")}
+          error={refused(LINE_BOXES.expires)}
+        />
+      </div>
     </Fieldset>
   );
 }

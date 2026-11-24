@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { csvRows, sentenceOf, sentenceText } from "../../../../apps/ops/src/activity/sentence.ts";
 import type { components } from "../../../../apps/ops/src/api-schema.ts";
 import { activity } from "../../../../apps/ops/src/content/activity.ts";
-import { CONSOLE_CALLS, DONE } from "../../../../apps/ops/src/content/activity-sentences.ts";
+import { CONSOLE_CALLS, DONE, REMEDY_PAST_LIMIT } from "../../../../apps/ops/src/content/activity-sentences.ts";
 
 type Entry = components["schemas"]["ActivityEntry"];
 
@@ -125,6 +125,15 @@ describe("an entry as a sentence", () => {
       expect(sentenceText(said), action).toBe(`ops.lead@maneman.in ${DONE[action].replace("{name}", "Neha Kapoor")}`);
       expect(said.named?.opens, action).toEqual({ kind: "visit", id: "a-1" });
     }
+  });
+
+  it("says a remedy was given past the limit, where its giver's giving was the approval", () => {
+    const given = (detail: Entry["detail"]) =>
+      sentenceText(
+        sentenceOf(entry({ action: "remedy.give", subject: { kind: "remedy", id: "r-1", label: null }, detail })),
+      );
+    expect(given({ visits: 1, past_limit: true })).toBe(`ops.lead@maneman.in ${REMEDY_PAST_LIMIT}`);
+    expect(given({ visits: 1 })).toBe(`ops.lead@maneman.in ${DONE["remedy.give"]}`);
   });
 
   it("marks a refused call as refused", () => {

@@ -37,21 +37,25 @@ test("shows a kind’s checklist in its order, who set it, and what was taken of
 
   const list = checklist(page);
   const first = list.getByRole("button", { name: `${EDITING.change} ${copy.item(1)}` });
-  await expect(first).toContainText("Piece removed");
-  await expect(first).toContainText("Hair system removed");
-  await expect(list.getByRole("button", { name: `${EDITING.change} ${copy.item(2)}` })).toHaveText("Scalp cleaned");
+  await expect(first.locator("..")).toContainText("Piece removed");
+  await expect(first.locator("..")).toContainText("Hair system removed");
+  await expect(list.getByRole("button", { name: `${EDITING.change} ${copy.item(2)}` })).toHaveAccessibleDescription(
+    "Scalp cleaned",
+  );
   await expect(list.getByRole("button", { name: copy.up("Piece removed") })).toBeDisabled();
   await expect(list.getByRole("button", { name: copy.down("Piece refitted") })).toBeDisabled();
-  await expect(list.getByRole("button", { name: `${EDITING.change} ${copy.item(3)}` })).toContainText("Piece refitted");
+  await expect(list.getByRole("button", { name: `${EDITING.change} ${copy.item(3)}` }).locator("..")).toContainText(
+    "Piece refitted",
+  );
   await expect(list).toContainText("Set by ops@maneman.in on 20 Sep 2027");
   await expect(list).toContainText("Adhesive renewed");
   await expect(list.getByRole("button", { name: copy.putBack("Adhesive renewed") })).toBeVisible();
 
   await page.getByLabel(copy.kind).selectOption({ label: "Replacement" });
   const replacement = page.getByRole("region", { name: "Replacement checklist" });
-  await expect(replacement.getByRole("button", { name: `${EDITING.change} ${copy.item(1)}` })).toContainText(
-    "Old piece removed",
-  );
+  await expect(
+    replacement.getByRole("button", { name: `${EDITING.change} ${copy.item(1)}` }).locator(".."),
+  ).toContainText("Old piece removed");
   await expect(replacement).toContainText(copy.committed);
 });
 

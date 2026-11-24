@@ -11,7 +11,7 @@ import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
 import { mobileDigits } from "@maneman/web-kit/mobile";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { type ReturnedVisit, type TechnicianChange, type TechnicianSummary } from "../api.ts";
 import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { ChoiceRow, TextRow } from "@maneman/ui/RecordRows";
@@ -19,6 +19,7 @@ import { technicians, CLOSE } from "../content.ts";
 import { GIVING_NO_CITY, useAccess } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
 import styles from "./technicians.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 import { technicianPayApi } from "../technician-pay/index.ts";
@@ -40,22 +41,51 @@ interface Typed {
 const zoneOf = (typed: string): string | null => (typed.trim() === "" ? null : typed.trim());
 const cityOf = (chosen: string): string | null => (chosen === "" ? null : chosen);
 
+/** The technician's city, one of ours, or none for one who may give none. */
+function CityField(props: { city: string; cities: readonly string[]; onCity: (city: string) => void }) {
+  const copy = technicians.fields;
+  const mayGiveNone = useAccess().reaches(GIVING_NO_CITY);
+  return (
+    <Field label={copy.city}>
+      {(control) => (
+        <Select
+          {...control}
+          className={styles.select}
+          value={props.city}
+          onChange={(event) => {
+            props.onCity(event.target.value);
+          }}
+        >
+          {mayGiveNone && <option value="">{copy.noCity}</option>}
+          {props.cities.map((city) => (
+            <option key={city} value={city}>
+              {city}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
+  );
+}
+
 function Fields({
   typed,
   cities,
   onType,
   focusFirst,
+  more,
 }: {
   typed: Typed;
   cities: readonly string[];
   onType: (typed: Typed) => void;
   focusFirst: boolean;
+  /** Fields of the form's own, on the same grid before the fitting tick. */
+  more?: ReactNode;
 }) {
   const copy = technicians.fields;
-  const mayGiveNone = useAccess().reaches(GIVING_NO_CITY);
   return (
-    <>
-      <Field label={copy.name} className={styles.formField}>
+    <div className={form.fields}>
+      <Field label={copy.name}>
         {(control) => (
           <TextInput
             {...control}
@@ -72,7 +102,7 @@ function Fields({
           />
         )}
       </Field>
-      <Field label={copy.mobile} className={styles.formField}>
+      <Field label={copy.mobile}>
         {(control) => (
           <TextInput
             {...control}
@@ -86,7 +116,7 @@ function Fields({
           />
         )}
       </Field>
-      <Field label={copy.zone} className={styles.formField}>
+      <Field label={copy.zone}>
         {(control) => (
           <TextInput
             {...control}
@@ -100,25 +130,14 @@ function Fields({
           />
         )}
       </Field>
-      <Field label={copy.city} className={styles.formField}>
-        {(control) => (
-          <Select
-            {...control}
-            className={styles.select}
-            value={typed.city}
-            onChange={(event) => {
-              onType({ ...typed, city: event.target.value });
-            }}
-          >
-            {mayGiveNone && <option value="">{copy.noCity}</option>}
-            {cities.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
+      <CityField
+        city={typed.city}
+        cities={cities}
+        onCity={(city) => {
+          onType({ ...typed, city });
+        }}
+      />
+      {more}
       <Checkbox
         className={styles.check}
         label={copy.fitsTrained}
@@ -127,7 +146,7 @@ function Fields({
           onType({ ...typed, fitsTrained: event.target.checked });
         }}
       />
-    </>
+    </div>
   );
 }
 
@@ -189,10 +208,19 @@ export function AddTechnician({
         void send();
       }}
     >
-      <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
-      <StartedField value={startDate} onChange={setStartDate} />
-      <TrainingField value={trainingEndDate} onChange={setTrainingEndsOn} />
-      <PayGradeField value={grade} onChange={setGrade} />
+      <Fields
+        typed={typed}
+        cities={cities}
+        onType={setTyped}
+        focusFirst={false}
+        more={
+          <>
+            <StartedField value={startDate} onChange={setStartDate} />
+            <TrainingField value={trainingEndDate} onChange={setTrainingEndsOn} />
+            <PayGradeField value={grade} onChange={setGrade} />
+          </>
+        }
+      />
       <div className={styles.actions}>
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}

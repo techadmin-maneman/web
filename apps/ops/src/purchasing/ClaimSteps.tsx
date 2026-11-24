@@ -7,6 +7,7 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "@maneman/ui/forms.module.css";
+import { classes } from "@maneman/ui/classes";
 import { useAccess } from "../lib/access.ts";
 import { StockPhoto } from "./StockPhoto.tsx";
 import type { Claim } from "./types.ts";
@@ -132,30 +133,32 @@ function Sent({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAnswe
   };
   return (
     <div className={form.group}>
-      <Field label={copy.claims.credit(claim.currency)} className={form.field}>
-        {(control) => (
-          <TextInput
-            {...control}
-            inputMode="decimal"
-            value={credit}
-            onChange={(event) => {
-              setCredit(event.target.value);
-            }}
-          />
-        )}
-      </Field>
-      <Field label={copy.claims.note} className={form.field}>
-        {(control) => (
-          <TextInput
-            {...control}
-            maxLength={200}
-            value={note}
-            onChange={(event) => {
-              setNote(event.target.value);
-            }}
-          />
-        )}
-      </Field>
+      <div className={form.fields}>
+        <Field label={copy.claims.credit(claim.currency)} className={form.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              inputMode="decimal"
+              value={credit}
+              onChange={(event) => {
+                setCredit(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+        <Field label={copy.claims.note} className={classes(form.field, form.wide)}>
+          {(control) => (
+            <TextInput
+              {...control}
+              maxLength={200}
+              value={note}
+              onChange={(event) => {
+                setNote(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+      </div>
       <FormActions>
         <Button
           variant="primary"

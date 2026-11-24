@@ -315,8 +315,8 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "Technicians, and the old catalogue table",
-    tables: ["technicians", "fsm_items"],
-    leftAtT: "A technician added or changed since goes back",
+    tables: ["technicians", "technician_grades", "fsm_items"],
+    leftAtT: "A technician added or changed since, or a grade given them, goes back",
     putBackBy: "The rows since `<T>`; ops can add one again on the Technicians page",
   },
   {

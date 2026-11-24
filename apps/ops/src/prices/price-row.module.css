@@ -14,12 +14,23 @@
   color: var(--ui-text-muted);
 }
 
+/* A price with prices to come draws no rule of its own: the rule stands under the last of them. */
+.followed {
+  border-bottom: 0;
+}
+
 .list {
   display: grid;
   gap: var(--sp-4);
   margin: 0;
   padding: 0 var(--sp-20) var(--sp-12) calc(var(--setting-label-width) + var(--sp-36));
+  border-bottom: var(--hairline) solid var(--ui-line);
   list-style: none;
+}
+
+/* At a section's end the section's own rule stands there already, as a last row draws none. */
+.list:last-child {
+  border-bottom: 0;
 }
 
 .line {
@@ -31,8 +42,19 @@
   color: var(--ui-text-muted);
 }
 
+/* On a page, beneath the price at its row's end. */
+.onPage {
+  justify-items: end;
+  padding-left: var(--sp-20);
+}
+
 @media (max-width: 760px) {
   .list {
     padding-left: var(--sp-20);
+  }
+
+  /* Short of a desk a setting's value stands under its name, from its start: so do those to come. */
+  .onPage {
+    justify-items: start;
   }
 }

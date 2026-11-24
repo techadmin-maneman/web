@@ -30,6 +30,16 @@ export const technicianPay = {
     inherited: (amount: string) => `${amount} (every city)`,
     later: (amount: string, date: string) => `${amount} from ${date}`,
     laterNone: (date: string) => `None from ${date}`,
+    /** Every rate a grade was given, in its record beneath the rates now. */
+    history: {
+      title: "Every rate set",
+      from: "From",
+      kind: "Visit",
+      city: "City",
+      amount: "Rate",
+      everyCity: "Every city",
+      none: "None",
+    },
     inUse: "In use: a technician holds it, or a rate names it.",
   },
   technicians: {
@@ -44,6 +54,23 @@ export const technicianPay = {
     noGrade: "No grade, so not paid",
     /** A row's name, read as what pressing it does. */
     open: (name: string) => `Open ${name}`,
+  },
+  /** A technician's grade from a day, and the grades they were given before. */
+  grading: {
+    grade: "Grade",
+    from: "Starts",
+    none: "No grade",
+    notPaid: "No grade, so not paid",
+    later: (grade: string, date: string) => `${grade} from ${date}`,
+    fromToday: "A grade starts today or later.",
+    /** The grade every technician held before grades had a start day. */
+    always: "From the start",
+    history: {
+      title: "Grades",
+      from: "From",
+      setBy: "Set",
+      setOn: (who: string, day: string) => `${who}, ${day}`,
+    },
   },
   form: {
     addTitle: "Add a grade",

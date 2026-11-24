@@ -23,6 +23,7 @@ import { LastPublished, PublishCheck } from "./WordsPublish.tsx";
 import form from "@maneman/ui/forms.module.css";
 import styles from "./words-screen.module.css";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { Badge } from "@maneman/ui/Badge";
 import { wordsApi } from "./words-api.ts";
 
 function WordRow({ word, onOpen }: { word: Word; onOpen: (key: string) => void }) {
@@ -49,7 +50,11 @@ function WordRow({ word, onOpen }: { word: Word; onOpen: (key: string) => void }
           </span>
         )}
         {word.on_site === false && <span className={styles.changed}>{copy.notOnSite}</span>}
-        {!word.reviewed && <span className={styles.changed}>{copy.review.notReviewed}</span>}
+      </td>
+      <td>
+        <Badge tone={word.reviewed ? "done" : "attention"}>
+          {word.reviewed ? copy.review.reviewed : copy.review.notReviewed}
+        </Badge>
       </td>
     </tr>
   );
@@ -63,6 +68,7 @@ const TABLE_COLUMNS: readonly Column<Word>[] = [
   { label: copy.columns.page, choice: (word) => word.group, sort: (word) => word.group },
   { label: copy.columns.where, sort: (word) => placeOf(word) },
   { label: copy.columns.wording },
+  { label: copy.columns.review, choice: (word) => (word.reviewed ? copy.review.reviewed : copy.review.notReviewed) },
 ];
 
 /** The table of lines, found by page or by what they say, a page at a time. */
@@ -106,6 +112,7 @@ function Words() {
     setChanged(new Map([...changed, [word.key, word]]));
   };
   const mayPublish = access.mayCall("POST /api/words/publish");
+  const unpublished = rows.filter((word) => word.on_site === false).length;
   return (
     <Panel titleId="words" title={copy.title}>
       {mayPublish && !publishing && (
@@ -118,14 +125,14 @@ function Words() {
               setPublishing(true);
             }}
           >
-            {copy.publish.open}
+            {unpublished === 0 ? copy.publish.open : copy.publish.openCount(unpublished)}
           </Button>
         </PageActions>
       )}
-      <LastPublished published={loaded.value.published} />
+      <LastPublished published={loaded.value.published} unpublished={unpublished} />
       {publishing && (
         <PublishCheck
-          unpublished={rows.filter((word) => word.on_site === false).length}
+          unpublished={unpublished}
           onDone={() => {
             setPublishing(false);
             setChanged(new Map());

@@ -7,14 +7,13 @@ import { DateInput, Field } from "@maneman/ui/Field";
 import { shortDate } from "@maneman/web-kit/dates";
 import { technicians } from "../content.ts";
 import { EDITING } from "../content/common.ts";
-import styles from "./technicians.module.css";
 
 const copy = technicians.training;
 
 /** The day a new technician's training is expected to end; left blank, they are not in training. */
 export function TrainingField({ value, onChange }: { value: string; onChange: (day: string) => void }) {
   return (
-    <Field label={copy.until} className={styles.formField}>
+    <Field label={copy.optional}>
       {(control) => (
         <DateInput
           {...control}

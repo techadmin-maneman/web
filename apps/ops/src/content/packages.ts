@@ -10,9 +10,15 @@ export const packagesCopy = {
   code: "Code",
   create: "Add",
   none: "No packages yet.",
+  /** Beside the page's title: what every price on it holds. */
+  inclusive: "Prices include GST",
+  /** Beneath the list: packages not yet sold for want of a priced hair system, named. */
+  unsellable: (names: readonly string[]) =>
+    `${names.length < 2 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names.at(-1) ?? ""}`} can’t be sold until ${names.length === 1 ? "it has" : "they have"} a priced hair system.`,
   /** The list's columns: each part's price, what a first fit comes to for the client, and what it leaves us. */
   columns: {
     name: "Package",
+    clients: "Active clients",
     hairSystem: "Hair system from",
     service: "Service visit",
     firstFit: "First fit, client pays",
@@ -22,7 +28,7 @@ export const packagesCopy = {
     status: "Status",
   },
   /** Which of the columns are figures, set right with their heads. */
-  figureColumns: ["hairSystem", "service", "firstFit", "replacement", "cost", "margin"],
+  figureColumns: ["clients", "hairSystem", "service", "firstFit", "replacement", "cost", "margin"],
   /** A service visit's price and how often it comes: "Rs. 2,000 every 30 days". */
   serviceEvery: (price: string, days: number) => `${price} every ${String(days)} days`,
   /** A replacement's price and when it falls due: "Rs. 15,000 after 6 months". */

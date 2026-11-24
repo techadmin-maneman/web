@@ -9,12 +9,11 @@ import { SettingPairs } from "@maneman/ui/SettingsLayout";
 import { Toast } from "@maneman/ui/Toast";
 import { PageActions } from "../frame/PageHead.tsx";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
 import { DeleteAction } from "@maneman/ui/DeleteAction";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
-import { longDate, shortDate } from "@maneman/web-kit/dates";
+import { dayMonth, longDate, shortDate } from "@maneman/web-kit/dates";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { windowTimesOf } from "@rules/policy/slot-times.ts";
 import { WINDOW_SLOT_MAP } from "@rules/config/scheduling.ts";
@@ -51,21 +50,18 @@ function startLabel(unit: number): string {
   return copy.start(copy.window[window], WINDOW_SLOT_MAP[window].indexOf(unit) + 1);
 }
 
-/** The windows in force, each with its hours. */
+/** The times in force, a window a row, under "In force since" their first day, as the redesign titles them. */
 function InForce({ times }: { times: SlotTimes }) {
   const hours = hoursOf({ unitStarts: times.in_force.unit_starts, dayEnd: times.in_force.day_end });
-  const since = times.in_force.applies_from === null ? null : shortDate(times.in_force.applies_from);
+  const since = times.in_force.applies_from === null ? null : dayMonth(times.in_force.applies_from);
   return (
-    <>
-      <Note>
-        {copy.inForce} · {copy.since(since)}
-      </Note>
+    <Panel titleId="window-times" title={copy.inForceSince(since)}>
       <SettingPairs>
         {WINDOWS.map((window) => (
           <ReadRow key={window} label={copy.window[window]} value={hours(window)} />
         ))}
       </SettingPairs>
-    </>
+    </Panel>
   );
 }
 
@@ -227,9 +223,7 @@ export function WindowTimes() {
           </DrawerButton>
         )}
       </PageActions>
-      <Panel titleId="window-times" title={copy.title}>
-        <InForce times={times} />
-      </Panel>
+      <InForce times={times} />
       {said !== null && <Toast>{said}</Toast>}
       <Panel titleId="window-times-changes" title={copy.history}>
         <Changes

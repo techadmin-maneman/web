@@ -1,7 +1,8 @@
 /*
  * The client's hair profile on their Pieces tab (HairProfile.tsx). No board draws it: it stands above the pieces
- * on the panel the credits and the invite stand on, with the address form's fields (address.module.css), and its
- * rows are the shared description list's, each name beside its value (docs/decisions/0106-a-clients-hair-profile.md).
+ * on the panel the credits and the invite stand on. Its latest rows are each a value and its Change
+ * (@maneman/ui/EditableRow); its versions' rows are the shared description list's, each name beside its value
+ * (docs/decisions/0106-a-clients-hair-profile.md).
  */
 
 /* Raised and full width, as every record on the page is; its rows read as the package's do above it. */
@@ -57,35 +58,23 @@
   border-bottom: var(--hairline) solid var(--ui-line);
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-12);
-}
-
-/* One to a line, in the panel's width. */
-.fields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-12);
-}
-
-.input,
-.select {
-  width: 100%;
-}
-
-.history {
-  margin: 0;
-}
-
 .error {
   margin: 0;
 }
 
-.actions {
-  display: flex;
-  gap: var(--sp-8);
+/* The latest's rows under their headings, two columns where there is room, as the design draws them; they reach the
+   panel's edges, their names in line with its title, as a setting's rows do. */
+.rows {
+  --setting-label-width: 40%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--ops-aside)), 1fr));
+  align-items: start;
+  column-gap: var(--sp-16);
+  margin-inline: calc(-1 * var(--sp-20));
+}
+
+.group {
+  min-width: 0;
 }
 
 /* What a field was in the version before, after what it is now. */
@@ -93,4 +82,10 @@
   margin-left: var(--sp-8);
   font-size: var(--fs-13);
   color: var(--ui-text-muted);
+}
+
+/* What the client has tried, in a row's dialog: the ticks the dialog's whole width, as any list of reasons. */
+.remedies {
+  flex: 1 1 100%;
+  min-width: 0;
 }

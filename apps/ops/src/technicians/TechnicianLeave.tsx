@@ -22,6 +22,7 @@ import { CheckPanel } from "@maneman/ui/CheckPanel";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import shared from "./technicians.module.css";
 import styles from "./technician-leave.module.css";
+import form from "@maneman/ui/forms.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
 import { TimeField } from "./TechnicianHours.tsx";
@@ -149,7 +150,7 @@ function LeaveWhen({ entry, onChange }: { entry: Entry; onChange: (entry: Entry)
   const setEntry = onChange;
   return (
     <>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <Field className={styles.field} label={copy.from}>
           {(control) => (
             <DateInput
@@ -196,14 +197,14 @@ function LeaveWhen({ entry, onChange }: { entry: Entry; onChange: (entry: Entry)
             />
           </>
         )}
+        <Checkbox
+          label={copy.partDay}
+          checked={entry.partDay}
+          onChange={(event) => {
+            setEntry({ ...entry, partDay: event.target.checked });
+          }}
+        />
       </div>
-      <Checkbox
-        label={copy.partDay}
-        checked={entry.partDay}
-        onChange={(event) => {
-          setEntry({ ...entry, partDay: event.target.checked });
-        }}
-      />
     </>
   );
 }

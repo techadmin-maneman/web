@@ -18040,7 +18040,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianPay"];
                     };
                 };
-                /** @description invalid_request */
+                /** @description invalid_request: a start before today */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -18595,6 +18595,10 @@ export interface paths {
                             pincodes: components["schemas"]["ServedPincode"][];
                             /** @description Our cities, which a pincode added must be in. */
                             cities: string[];
+                            /** @description Clients whose stage is active, by pincode; a pincode with none is left out. */
+                            active_clients: {
+                                [key: string]: number;
+                            };
                         };
                     };
                 };
@@ -33003,6 +33007,36 @@ export interface components {
                 /** Format: date-time */
                 set_at: string;
             }[];
+            /** @description Every rate set, the latest start first. */
+            rate_history: {
+                /** Format: uuid */
+                grade_id: string;
+                /** @description One city's rate; null for every city. */
+                city: string | null;
+                /**
+                 * @description consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show.
+                 * @enum {string}
+                 */
+                kind: "consultation" | "one_visit" | "first_fit" | "service" | "replacement" | "no_show";
+                /** @description Paise; null from that date for no rate of its own. */
+                amount: number | null;
+                /** Format: date */
+                effective_from: string;
+                set_by: string;
+                /** Format: date-time */
+                set_at: string;
+            }[];
+            /** @description Each technician's grades by the day each applies from, the latest first. */
+            grade_history: {
+                technician_id: string;
+                /** @description Null takes the grade away from that day. */
+                grade_id: string | null;
+                /** Format: date */
+                effective_from: string;
+                set_by: string;
+                /** Format: date-time */
+                set_at: string;
+            }[];
         };
         /** @description Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day. */
         PayStatement: {
@@ -33047,6 +33081,11 @@ export interface components {
         };
         TechnicianPayGrade: {
             grade_id: string | null;
+            /**
+             * Format: date
+             * @description India's date it applies from, today or later; today if left out.
+             */
+            from?: string;
         };
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
@@ -33227,6 +33266,8 @@ export interface components {
             sort: number;
             /** @description Active technicians who work there. */
             technicians: number;
+            /** @description Clients whose stage is active, by their pincode's city. */
+            active_clients: number;
             /** @description Whether nothing but its own settings names it. */
             deletable: boolean;
         };
@@ -33534,6 +33575,8 @@ export interface components {
             offered: boolean;
             /** @description Nothing sold under it, no client on it, no hair system in it. */
             deletable: boolean;
+            /** @description Its clients whose stage is active. */
+            active_clients: number;
             first_fit: {
                 minutes: number;
                 /** @description Its cheapest hair system and its service visit, today. */

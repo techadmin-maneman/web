@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0311. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0316. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -51,6 +51,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0286](0286-the-icons-are-the-mark.md) The browser's and the home screen's icons are the mark
 - [0288](0288-attribution-and-conversions.md) Attribution and conversions
 - [0295](0295-the-consoles-first-load.md) The console's first load is held to 175 KB
+- [0312](0312-the-consoles-favicon-everywhere.md) The console's favicon, everywhere
 
 ### Booking and visits
 
@@ -173,6 +174,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0291](0291-pieces-without-labels.md) A piece without a label never stops the fit
 - [0296](0296-no-empty-reference-photograph.md) A guided task draws no reference photograph until it has one
 - [0298](0298-past-weeks-on-schedule.md) Schedule goes back to past weeks, and never past this one
+- [0311](0311-dated-technician-grades.md) Dated technician grades
 
 ### Money and Books
 
@@ -247,6 +249,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0259](0259-the-issue-log.md) The issue log
 - [0260](0260-ratings.md) Ratings
 - [0276](0276-a-message-whatsapp-refuses.md) A message WhatsApp refuses
+- [0315](0315-a-remedy-past-the-limit-given-by-one-who-may-approve-it.md) A remedy past the limit, given by one who may approve it
 
 ### Referrals
 
@@ -343,6 +346,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0308](0308-the-inventory-screens-to-the-22-november-redesign.md) The Inventory screens, to the 22 November redesign
 - [0309](0309-the-requests-and-money-screens-to-the-22-november-redesign.md) The Requests and Money screens, to the 22 November redesign
 - [0310](0310-the-growth-and-reports-screens-to-the-22-november-redesign.md) The Growth and Reports screens, to the 22 November redesign
+- [0313](0313-the-settings-screens-to-the-22-november-redesign.md) The Settings screens, to the 22 November redesign
+- [0314](0314-change-everywhere-and-forms-in-a-grid.md) Change everywhere, and forms in a grid
 
 ## Every decision, oldest first
 
@@ -467,7 +472,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0119](0119-blackouts-by-city-and-trained-fitters.md) | Blackouts by city, and trained fitters | 2026-10-11 | accepted | [0278](0278-a-technician-in-training-takes-no-visits.md) |
 | [0120](0120-the-board-sees-the-road.md) | The board sees the road | 2026-10-11 | accepted |  |
 | [0121](0121-the-site-and-the-app-book-with-the-same-parts.md) | The site and the app book with the same parts | 2026-10-11 | accepted |  |
-| [0122](0122-technician-pay-per-visit.md) | Technician pay per visit | 2026-10-11 | accepted |  |
+| [0122](0122-technician-pay-per-visit.md) | Technician pay per visit | 2026-10-11 | accepted | [0311](0311-dated-technician-grades.md) |
 | [0123](0123-partner-referral-channels.md) | Partner referral channels | 2026-10-11 | accepted |  |
 | [0124](0124-partner-statements.md) | Partners' monthly statements | 2026-10-11 | accepted |  |
 | [0125](0125-partner-discount-codes.md) | A partner's discount code | 2026-10-11 | accepted |  |
@@ -488,7 +493,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0140](0140-the-client-panel.md) | The client beside their chat | 2026-10-12 | accepted |  |
 | [0141](0141-quick-replies.md) | Quick replies | 2026-10-12 | accepted | [0283](0283-changed-and-deleted-while-unused.md) |
 | [0142](0142-moving-every-client.md) | Moving every client, and technicians in the inbox | 2026-10-12 | accepted |  |
-| [0143](0143-remedies.md) | Remedies | 2026-10-12 | accepted |  |
+| [0143](0143-remedies.md) | Remedies | 2026-10-12 | accepted | [0315](0315-a-remedy-past-the-limit-given-by-one-who-may-approve-it.md) |
 | [0144](0144-care-numbers.md) | The Care numbers | 2026-10-12 | accepted |  |
 | [0145](0145-technician-presets.md) | A technician's word from the job card | 2026-10-12 | accepted |  |
 | [0146](0146-the-nightly-analytics-copy.md) | The nightly analytics copy | 2026-10-12 | accepted | [0196](0196-long-work-in-workflows.md) |
@@ -557,7 +562,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted | [0257](0257-razorpay-only.md) |
 | [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md), [0287](0287-a-start-googles-drive-refused-is-not-offered.md), [0289](0289-who-takes-a-visit.md), [0290](0290-allotted-the-evening-before.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
-| [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |
+| [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted | [0313](0313-the-settings-screens-to-the-22-november-redesign.md), [0314](0314-change-everywhere-and-forms-in-a-grid.md) |
 | [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted | [0263](0263-the-home-pages-order-and-bands.md), [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) |
 | [0214](0214-from-the-site-into-the-app.md) | From the site into the app, and the look on the page | 2026-10-19 | accepted | [0217](0217-the-try-ons-photo-taken-and-looked-at.md), [0285](0285-every-site-booking-is-a-sign-in.md) |
 | [0215](0215-the-range-as-a-table.md) | The range as a table | 2026-10-19 | accepted |  |
@@ -631,7 +636,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0283](0283-changed-and-deleted-while-unused.md) | What ops configure is changed, and deleted while nothing uses it | 2026-11-19 | accepted |  |
 | [0284](0284-the-first-screen-and-the-precache.md) | A phone app's budget counts its first screen, and its precache has a ceiling of its own | 2026-11-19 | accepted |  |
 | [0285](0285-every-site-booking-is-a-sign-in.md) | Every booking on the site asks the WhatsApp code, and signs the client in | 2026-11-19 | accepted, on the owner's rulings of 19 November 2026 |  |
-| [0286](0286-the-icons-are-the-mark.md) | The browser's and the home screen's icons are the mark | 2026-11-19 | accepted, on the owner's ruling of 19 November 2026 |  |
+| [0286](0286-the-icons-are-the-mark.md) | The browser's and the home screen's icons are the mark | 2026-11-19 | accepted, on the owner's ruling of 19 November 2026 | [0312](0312-the-consoles-favicon-everywhere.md) |
 | [0287](0287-a-start-googles-drive-refused-is-not-offered.md) | A start Google's drive leaves no room for is not offered again | 2026-11-19 | accepted, on the owner's go-ahead of 19 November 2026 | [0294](0294-learned-drive-times.md) |
 | [0288](0288-attribution-and-conversions.md) | Attribution and conversions | 2026-11-20 | accepted, on the owner's brief and rulings of 20 November 2026 |  |
 | [0289](0289-who-takes-a-visit.md) | Who takes a visit: a radius in km, an overflow ring, and the least cost | 2026-11-22 | accepted | [0290](0290-allotted-the-evening-before.md), [0293](0293-steering-booking-times.md) |
@@ -656,3 +661,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0308](0308-the-inventory-screens-to-the-22-november-redesign.md) | The Inventory screens, to the 22 November redesign | 2026-11-24 | accepted |  |
 | [0309](0309-the-requests-and-money-screens-to-the-22-november-redesign.md) | The Requests and Money screens, to the 22 November redesign | 2026-11-24 | accepted |  |
 | [0310](0310-the-growth-and-reports-screens-to-the-22-november-redesign.md) | The Growth and Reports screens, to the 22 November redesign | 2026-11-24 | accepted |  |
+| [0311](0311-dated-technician-grades.md) | Dated technician grades | 2026-11-24 | accepted |  |
+| [0312](0312-the-consoles-favicon-everywhere.md) | The console's favicon, everywhere | 2026-11-24 | accepted, on the owner's ruling of 24 November 2026 |  |
+| [0313](0313-the-settings-screens-to-the-22-november-redesign.md) | The Settings screens, to the 22 November redesign | 2026-11-24 | accepted |  |
+| [0314](0314-change-everywhere-and-forms-in-a-grid.md) | Change everywhere, and forms in a grid | 2026-11-24 | accepted |  |
+| [0315](0315-a-remedy-past-the-limit-given-by-one-who-may-approve-it.md) | A remedy past the limit, given by one who may approve it | 2026-11-24 | accepted |  |

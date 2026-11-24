@@ -141,7 +141,7 @@ test("moves a technician to another city, or to none", async ({ page }) => {
   await openWith(page, { [CHANGE]: json({ id: IMRAN }) });
   const main = await detailsOf(page, "Imran Qureshi");
   const change = main.getByRole("button", { name: `${EDITING.change} ${opsCopy.technicians.details.city}` });
-  await expect(change).toContainText("Gurgaon");
+  await expect(change.locator("..")).toContainText("Gurgaon");
 
   await change.click();
   const city = main.getByRole("combobox", { name: opsCopy.technicians.details.city });
@@ -217,7 +217,9 @@ test("says in a technician's head the day they started, and changes it on their 
   roster.current = TECHNICIANS;
   await main.getByRole("button", { name: EDITING.save }).click();
   expect((await cleared).postDataJSON()).toEqual({ start_date: null });
-  await expect(main.getByRole("button", { name: `${EDITING.change} ${words.label}` })).toContainText(words.none);
+  await expect(main.getByRole("button", { name: `${EDITING.change} ${words.label}` }).locator("..")).toContainText(
+    words.none,
+  );
 });
 
 test("shows the day a technician's training ends, and marks it done on their details", async ({ page }) => {
@@ -244,7 +246,9 @@ test("shows the day a technician's training ends, and marks it done on their det
   await main.getByRole("button", { name: EDITING.save }).click();
 
   expect((await sent).postDataJSON()).toEqual({ training_end_date: null });
-  await expect(main.getByRole("button", { name: `${EDITING.change} ${training.until}` })).toContainText(training.none);
+  await expect(main.getByRole("button", { name: `${EDITING.change} ${training.until}` }).locator("..")).toContainText(
+    training.none,
+  );
 });
 
 test("switches a technician off only once asked, and lists the visits they no longer hold", async ({ page }) => {

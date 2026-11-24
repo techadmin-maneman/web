@@ -214,9 +214,11 @@ describe("the Words page", () => {
       Response.json({ published: { at: "2026-10-11T06:30:00.000Z", by: "growth@maneman.test", lines: 1 } }),
     );
     await show();
-    expect(document.body.textContent).toContain(copy.publish.never);
+    // What waits, said once: never published, the change waiting says it all.
+    expect(document.body.textContent).toContain(copy.publish.waiting(1));
+    expect(document.body.textContent).not.toContain(copy.publish.never);
     expect(document.body.textContent).toContain(copy.notOnSite);
-    await press(copy.publish.open);
+    await press(copy.publish.openCount(1));
     expect(document.body.textContent).toContain(copy.publish.changed(1));
     await press(review.send);
     expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.publish.done);

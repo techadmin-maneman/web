@@ -16,6 +16,7 @@ import { PageHeader } from "../../packages/ui/PageHeader.tsx";
 import { Popover, PopoverItem } from "../../packages/ui/Popover.tsx";
 import { SettingRow, SettingValue } from "../../packages/ui/SettingRow.tsx";
 import { ChangeBar, SettingPairs, SubNav } from "../../packages/ui/SettingsLayout.tsx";
+import { ChangeInDialog } from "../../packages/ui/change-in-dialog.ts";
 import { NavItem, SideNav } from "../../packages/ui/SideNav.tsx";
 import { StatTile } from "../../packages/ui/StatTile.tsx";
 import { Toolbar } from "../../packages/ui/Toolbar.tsx";
@@ -336,16 +337,30 @@ describe("a record's figures, and a tab with nothing yet", () => {
   });
 });
 
-describe("a rule's figures, two to a row", () => {
-  it("names the pair's group where it is given a name, and holds its rows in order", () => {
-    const markup = renderToStaticMarkup(
-      createElement(SettingPairs, {
-        label: "No-show charge",
-        children: [createElement("div", { key: "a" }, "Consultation"), createElement("div", { key: "b" }, "First fit")],
-      }),
+describe("a rule's figures, two to a row in a drawer", () => {
+  const pairs = (inDrawer: boolean) =>
+    renderToStaticMarkup(
+      createElement(
+        ChangeInDialog.Provider,
+        { value: !inDrawer },
+        createElement(SettingPairs, {
+          label: "No-show charge",
+          children: [
+            createElement("div", { key: "a" }, "Consultation"),
+            createElement("div", { key: "b" }, "First fit"),
+          ],
+        }),
+      ),
     );
+
+  it("names the pair's group where it is given a name, and holds its rows in order", () => {
+    const markup = pairs(true);
     expect(markup).toMatch(/^<div class="[^"]+" role="group" aria-label="No-show charge">/);
     expect(markup.indexOf("Consultation")).toBeLessThan(markup.indexOf("First fit"));
     expect(renderToStaticMarkup(createElement(SettingPairs, { children: "x" }))).not.toContain("role=");
+  });
+
+  it("stands one to a line on a page, where each changes in its own dialog", () => {
+    expect(pairs(false)).toMatch(/^<div class="" role="group" aria-label="No-show charge">/);
   });
 });

@@ -65,9 +65,13 @@ async function recordOf(page: Page, place: string) {
 test("lists every line with the wording in force, who changed it, and whether the site has it", async ({ page }) => {
   await open(page);
   await expect(row(page, "Top of the page · Title").getByRole("cell").nth(1)).toHaveText(
-    `Hair, fitted at home.Changed by growth@maneman.test, Mon 5 Oct${copy.notOnSite}${copy.review.notReviewed}`,
+    `Hair, fitted at home.Changed by growth@maneman.test, Mon 5 Oct${copy.notOnSite}`,
   );
-  await expect(page.getByText(copy.publish.never)).toBeVisible();
+  await expect(row(page, "Top of the page · Title").getByRole("cell").nth(2)).toHaveText(copy.review.notReviewed);
+  // As the redesign says it: how many lines wait for a publish, above the table and on the head's button; never
+  // published, the line that waits says it all.
+  await expect(page.getByText(copy.publish.waiting(1), { exact: true })).toBeVisible();
+  await expect(page.getByText(copy.publish.never, { exact: true })).toHaveCount(0);
   await expect(row(page, "Visit reminder")).toBeVisible();
 });
 
@@ -169,7 +173,7 @@ test("publishes the site’s changed words once confirmed", async ({ page }) => 
       return json({ published: { at: "2026-10-11T06:30:00.000Z", by: "growth@maneman.test", lines: 1 } })(route);
     },
   });
-  await page.getByRole("button", { name: copy.publish.open }).click();
+  await page.getByRole("button", { name: copy.publish.openCount(1) }).click();
   await expect(page.getByText(copy.publish.changed(1))).toBeVisible();
   expect(published).toBe(false);
   await page.getByRole("button", { name: review.send, exact: true }).click();

@@ -10,8 +10,7 @@ import { useState } from "react";
 import type { TechnicianPay } from "../api.ts";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { technicianPayApi } from "../technician-pay/index.ts";
-import { refusal } from "./refusal.ts";
+import { GradeFromRow, technicianPayApi } from "../technician-pay/index.ts";
 import styles from "./technicians.module.css";
 
 const copy = technicians.payGrade;
@@ -39,7 +38,7 @@ function GradeSelect({ value, onChange }: { value: string; onChange: (grade: str
   const [loaded, retry] = useLoad(technicianPayApi.technicianPay);
   if (loaded.state === "failed") return <Unread onRetry={retry} className={styles.gradesUnread} />;
   return (
-    <Field label={copy.optional} className={styles.formField}>
+    <Field label={copy.optional}>
       {(control) => (
         <Select
           {...control}
@@ -78,25 +77,11 @@ function GradeRow({ technicianId }: { technicianId: string }) {
     );
   }
   // A technician switched off is not on pay's list, and has no grade to change.
-  const technician = pay.technicians.find((each) => each.id === technicianId);
-  if (technician === undefined) return null;
-  return (
-    <ChoiceRow
-      label={copy.label}
-      value={technician.grade_id ?? ""}
-      choices={choicesOf(pay)}
-      mayChange
-      save={async (grade) => {
-        const answer = await technicianPayApi.setPayGradeOf(technicianId, grade === "" ? null : grade);
-        if (!answer.ok) return refusal(answer.code);
-        setSaved(answer.body);
-        return null;
-      }}
-    />
-  );
+  if (!pay.technicians.some((each) => each.id === technicianId)) return null;
+  return <GradeFromRow label={copy.label} pay={pay} technicianId={technicianId} mayChange onSaved={setSaved} />;
 }
 
-/** Their grade on their details, changed where it reads; drawn only for those who may give one. */
+/** Their grade on their details, changed where it reads from a day; drawn only for those who may give one. */
 export function PayGradeRow({ technicianId }: { technicianId: string }) {
   return useMayGrade() ? <GradeRow technicianId={technicianId} /> : null;
 }

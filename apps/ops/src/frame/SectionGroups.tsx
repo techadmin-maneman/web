@@ -1,7 +1,7 @@
 // The navigation's entries over the pages of work (../route.ts, NAV): each entry opens on the first of its pages the
 // person may open, counts what waits across them, and, where it has several, lists them beneath it while it is the
-// current one. Their pages are tabs at the head of each, too, but Inventory's on a desk with the navigation open,
-// where only Stock's views are tabs, on Stock, as the redesign draws it.
+// current one. Their pages are tabs at the head of each only where the navigation is not drawn open, as the redesign
+// draws them; on Stock, its views are tabs.
 
 import { Link } from "@maneman/ui/router";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
@@ -110,7 +110,7 @@ export function GroupTabs({ route }: { readonly route: WorkRoute }) {
   const inventory = entry.entry === "inventory";
   return (
     <>
-      <Tabs label={NAV_NAMES[entry.entry]} className={inventory ? styles.inventoryPages : undefined}>
+      <Tabs label={NAV_NAMES[entry.entry]} className={styles.pages}>
         {open.map((each) =>
           each === "stock" ? (
             <StockTabs key={each} route={route} />

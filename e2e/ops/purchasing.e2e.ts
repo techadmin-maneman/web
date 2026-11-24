@@ -6,7 +6,7 @@ import { DISMISS } from "../../packages/ui/words.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, TASKS, TASKS_READ_ON, type Answers, type OpsReply } from "./fixtures.ts";
-import { expectOneBoxALine } from "./one-box-a-line.ts";
+import { expectNoBoxInATable } from "./no-box-in-a-table.ts";
 import { purchasing as copy } from "../../apps/ops/src/content/purchasing.ts";
 import { EDITING } from "../../apps/ops/src/content/common.ts";
 
@@ -234,10 +234,10 @@ async function newOrder(page: Page) {
   return page.getByRole("dialog", { name: copy.draft.title });
 }
 
-test("drafts an order from a supplier’s list, a box to a line, its total shown first", async ({ page }) => {
+test("drafts an order from a supplier’s list, no box in a table, its total shown first", async ({ page }) => {
   await open(page, { "POST /api/purchase-orders": json(BOOK) });
   const draft = await newOrder(page);
-  await expectOneBoxALine(page, copy.draft.title);
+  await expectNoBoxInATable(page, copy.draft.title);
   await expect(draft.getByLabel(copy.draft.quantity)).toHaveValue("24");
   await draft.getByLabel(copy.draft.quantity).fill("36");
   await expect(draft).toContainText(copy.draft.total("Rs. 1,620"));

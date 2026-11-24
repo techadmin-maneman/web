@@ -91,6 +91,29 @@ describe("a remedy", () => {
     expect(listed.remedies.find((remedy) => remedy.id === asked.id)?.state).toBe("declined");
   });
 
+  it("past the limit is given at once by one who may approve it, recorded as their decision and so audited", async () => {
+    await give(1);
+    const given = await (
+      await post(opsAs(person(LEAD)), `/api/clients/${ARJUN}/remedies`, {
+        visits: 1,
+        reason: "fit_problem",
+        note: "A second edge lifting.",
+      })
+    ).json<{ id: string; state: string }>();
+    expect(given.state).toBe("given");
+    expect(await granted()).toBe(2);
+    const row = await env.DB.prepare("SELECT decided_by FROM remedies WHERE id = ?1")
+      .bind(given.id)
+      .first<{ decided_by: string | null }>();
+    expect(row?.decided_by).toBe(LEAD);
+    const audit = await env.DB.prepare(
+      "SELECT detail FROM audit_log WHERE action = 'remedy.give' ORDER BY id DESC",
+    ).first<{ detail: string }>();
+    expect(JSON.parse(audit?.detail ?? "{}")).toEqual({ visits: 1, past_limit: true });
+    const tasks = (await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS)).tasks;
+    expect(tasks.filter((task) => task.group === "remedy_approval")).toEqual([]);
+  });
+
   it("is a manager's to approve, once the Staff list is enforced, and refused for an erased client", async () => {
     await give(1);
     const asked = await (await give(1)).json<{ id: string }>();

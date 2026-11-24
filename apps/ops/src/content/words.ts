@@ -6,7 +6,7 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 export const words = {
   title: "Words",
   narrow: "Find words",
-  columns: { page: "Page", where: "Where", wording: "Wording" },
+  columns: { page: "Page", where: "Where", wording: "Wording", review: "Review" },
   /** The site's parts as the Where column names them; any other is its own name in words. */
   places: {
     header: "Header",
@@ -83,9 +83,12 @@ export const words = {
   },
   notOnSite: "Not on the site yet",
   /** The code's wording a copy review has not read: a line written or changed since the last one. */
-  review: { notReviewed: "Not reviewed" },
+  review: { reviewed: "Reviewed", notReviewed: "Not reviewed" },
   publish: {
     open: "Publish the site",
+    /** The head's button where lines wait for a publish, and the line that says so above the table. */
+    openCount: (count: number) => `Publish ${String(count)} ${count === 1 ? "change" : "changes"}`,
+    waiting: (count: number) => `${String(count)} ${count === 1 ? "change" : "changes"} not published yet.`,
     title: "Publish the site’s words?",
     changed: (count: number) => `${String(count)} ${count === 1 ? "line" : "lines"} changed since the last publish.`,
     none: "Nothing changed since the last publish.",

@@ -2,7 +2,8 @@
 // what a first fit comes to and what it leaves us; a row opens its record beneath the list, where each value changes in
 // place (docs/decisions/0212-editing-in-place.md). Every write answers every package as it stands, so the page follows.
 
-import { PageActions } from "../frame/PageHead.tsx";
+import { Note } from "@maneman/ui/Note";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 import { Button } from "@maneman/ui/Button";
 import { CancelButton } from "@maneman/ui/CancelButton";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -15,6 +16,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
+import { quantity } from "@maneman/web-kit/figures";
 import { useState } from "react";
 import { Badge } from "@maneman/ui/Badge";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -76,6 +78,15 @@ function PackageFigures({ each, costs }: { readonly each: Package; readonly cost
   );
 }
 
+/** Beneath the list: the packages on sale but not yet sold, for want of a priced hair system, named. */
+function Unsellable({ packages: { packages, today } }: { readonly packages: Packages }) {
+  useHeaderSub(copy.inclusive);
+  const names = packages
+    .filter((each) => !each.offered && (each.retired_date === null || each.retired_date > today))
+    .map((each) => each.name);
+  return names.length === 0 ? null : <Note>{copy.unsellable(names)}</Note>;
+}
+
 function PackageList(props: {
   readonly packages: Packages;
   readonly costs: readonly ProductCost[];
@@ -107,6 +118,7 @@ function PackageList(props: {
                   {each.name}
                 </TextButton>
               </RowHead>
+              <td className={FIGURE}>{quantity(each.active_clients)}</td>
               <PackageFigures each={each} costs={props.costs} />
               <td>{statusOf(each, today)}</td>
             </tr>
@@ -215,6 +227,7 @@ export function PackagesScreen() {
           />
         )}
         <PackageList packages={current} costs={costsShown} opener={opener} />
+        <Unsellable packages={current} />
       </Panel>
       {opened !== undefined && (
         <PackageRecord

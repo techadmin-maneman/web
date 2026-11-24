@@ -62,6 +62,14 @@ export const requireStaffAccess = createMiddleware<AppEnv>(async (c, next) => {
   return refuse(c, "not_permitted");
 });
 
+/**
+ * Whether the caller's own grants reach `need`, whether or not the list is enforced: for what a route does differently
+ * by who the caller is, as a remedy past the limit is given at once by one who may approve it.
+ */
+export async function grants(c: Context<AppEnv>, need: RouteNeed): Promise<boolean> {
+  return meets(await callerAccess(c), need);
+}
+
 /** For a choice inside a route that asks more than the route does, as waiving a no-show's charge does. */
 export async function permits(c: Context<AppEnv>, need: RouteNeed): Promise<boolean> {
   const access = await callerAccess(c);
