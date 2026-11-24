@@ -35,7 +35,7 @@
 
 .olderWithin {
   align-self: flex-start;
-  margin: 0 var(--sp-20) var(--sp-16);
+  margin-inline: var(--sp-20);
 }
 
 /* A row's details' values that can run long: an e-mail address, a client ID. */

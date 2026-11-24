@@ -28,12 +28,12 @@ function pageOf(opens: Named["opens"]): string | null {
   return technicianPath(opens.id);
 }
 
-/** A name in a sentence, a link where it has a page, at the sentence's own line height. */
-function Name({ named }: { named: Named }) {
+/** A name, a link where it has a page: in a sentence at the line's own height, on its own a whole target. */
+function Name({ named, inline = false }: { named: Named; inline?: boolean }) {
   const page = pageOf(named.opens);
   if (page === null) return named.words;
   return (
-    <OpsLink to={page} className={textLinkLook({ inline: true })}>
+    <OpsLink to={page} className={inline ? textLinkLook({ inline: true }) : undefined}>
       {named.words}
     </OpsLink>
   );
@@ -52,10 +52,10 @@ function Entry({ entry, onOpen }: { entry: ActivityEntry; onOpen: () => void }) 
       title={
         <span className={styles.sentence}>
           <span className={styles.who}>
-            <Name named={sentence.who} />
+            <Name named={sentence.who} inline />
           </span>{" "}
           {sentence.before}
-          {sentence.named !== null && <Name named={sentence.named} />}
+          {sentence.named !== null && <Name named={sentence.named} inline />}
           {sentence.after}
           {sentence.refused && (
             <Badge tone="error" className={styles.refused}>
@@ -83,6 +83,12 @@ function Record({ subject }: { subject: NonNullable<ActivityEntry["subject"]> })
       {kind} · <Name named={named} />
     </>
   );
+}
+
+/** What kind of person acted, and their ID unless it is the name shown already, as a member of staff's address is. */
+function whoTheyAre(actor: ActivityEntry["actor"], shown: string): string {
+  const kind = copy.filters.kinds[actor.kind];
+  return actor.id === shown ? kind : `${kind} · ${actor.id}`;
 }
 
 /** What the log kept besides the call: IDs, counts and codes, each by its name. */
@@ -114,7 +120,7 @@ function Details({ entry, onClose }: { entry: ActivityEntry; onClose: () => void
     },
     {
       term: columns.whoIs,
-      details: <span className={styles.wraps}>{`${copy.filters.kinds[entry.actor.kind]} · ${entry.actor.id}`}</span>,
+      details: <span className={styles.wraps}>{whoTheyAre(entry.actor, sentenceOf(entry).who.words)}</span>,
     },
     { term: columns.from, details: copy.surfaces[entry.surface] },
     { term: columns.action, details: actionWords(entry.action) },
