@@ -26,3 +26,22 @@
 .groupTitle {
   font-weight: var(--weight-medium);
 }
+
+/* The lines and the forecast side by side on a wide desk, as the redesign draws them; one above the other short of it. */
+.beside {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+  gap: var(--sp-24);
+}
+
+@media (max-width: 1279px) {
+  .beside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.lines {
+  display: grid;
+  gap: var(--sp-24);
+}

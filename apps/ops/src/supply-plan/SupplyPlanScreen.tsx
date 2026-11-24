@@ -157,13 +157,6 @@ export function SupplyPlanScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
-          {current.lines.length === 0 && (
-            <Panel titleId="plan-lines" title={copy.toApprove}>
-              <EmptyState look="panel" line={copy.none} />
-            </Panel>
-          )}
-          <Lines lines={current.lines} kind="transfer" onAnswer={answered} />
-          <Lines lines={current.lines} kind="order" onAnswer={answered} />
           {said !== null && <Toast>{said}</Toast>}
           {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
           {access.mayCall("POST /api/supply-plan/draft") && (
@@ -181,7 +174,19 @@ export function SupplyPlanScreen() {
               </Button>
             </PageActions>
           )}
-          <Planning />
+          <Planning
+            lines={
+              <>
+                {current.lines.length === 0 && (
+                  <Panel titleId="plan-lines" title={copy.toApprove}>
+                    <EmptyState look="panel" line={copy.none} />
+                  </Panel>
+                )}
+                <Lines lines={current.lines} kind="transfer" onAnswer={answered} />
+                <Lines lines={current.lines} kind="order" onAnswer={answered} />
+              </>
+            }
+          />
         </div>
       )}
     </>
