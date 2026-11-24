@@ -6,6 +6,8 @@ export const referrals = {
   title: "Referrals",
   queue: {
     title: "Held for review",
+    /** Beside the page's title: the grants waiting on a decision. */
+    heldCount: (count: number) => `${String(count)} held for review`,
     /** The design writes "Rohit Malhotra → Vikram Sethi"; each name is a way to that client's page. */
     arrow: "→",
     /** How long the grant has waited, as the design writes it: "3 days held", "1 day held", "5 hours held". */
