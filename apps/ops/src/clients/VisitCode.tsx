@@ -1,10 +1,9 @@
-// A discount code on one of the client's visits, in the Visits tab's last column
-// (docs/decisions/0108-discount-codes.md). A code goes on or comes off only while the visit's price is open
-// (`price_open`), and a consultation takes none. A code the client typed on the site shows under None and starts the
-// box.
+// A discount code on one of the client's visits, beneath the visit in the Visits tab's Visit column, as the redesign has
+// no column of its own for it (docs/decisions/0108-discount-codes.md). A code goes on or comes off only while the
+// visit's price is open (`price_open`), and a consultation takes none. A code the client typed on the site shows
+// beneath the visit and starts the box.
 
 import { Field, TextInput } from "@maneman/ui/Field";
-import { NoValue } from "@maneman/ui/NoValue";
 import { plainDate } from "@maneman/web-kit/plain-date";
 import { Refusal } from "@maneman/ui/Refusal";
 import { CancelButton } from "@maneman/ui/CancelButton";
@@ -26,15 +25,54 @@ const copy = clients.visits.code;
 
 type Step = "showing" | "entering" | "applying" | "removing";
 
-/** The code on a visit, or a dash; one that takes a code and has none shows the way to enter one instead. */
+/** The code on a visit, or nothing; one that takes a code and has none shows the way to enter one instead. */
 function Shown({ code }: { code: VisitDiscountCode | null }) {
-  if (code === null) return <NoValue />;
+  if (code === null) return null;
   const off = code.amount_off === null ? null : rupees(code.amount_off);
   return (
-    <>
-      {copy.applied(code.code, off)}
-      <span className={shared.closedLine}>{copy.givenBy[code.given_by]}</span>
-    </>
+    <span className={shared.closedLine}>
+      {copy.applied(code.code, off)} · {copy.givenBy[code.given_by]}
+    </span>
+  );
+}
+
+/**
+ * A visit's code lines together, apart from its name: beneath it, or on a phone's card on a line of their own. Nothing
+ * where there is no code and none can be entered.
+ */
+function CodeLines(props: {
+  code: VisitDiscountCode | null;
+  requested: string | null;
+  when: string;
+  mayEnter: boolean;
+  mayRemove: boolean;
+  removing: boolean;
+  onEnter: () => void;
+  onRemove: () => void;
+}) {
+  const { code, requested, when, mayEnter, mayRemove } = props;
+  if (code === null && requested === null && !mayEnter) return null;
+  return (
+    <span className={shared.visitCode}>
+      {!(mayEnter && code === null) && <Shown code={code} />}
+      {requested !== null && <span className={shared.closedLine}>{copy.requested(requested)}</span>}
+      {mayEnter && code === null && (
+        <TextButton compact className={shared.rowAction} aria-label={copy.enterLabel(when)} onClick={props.onEnter}>
+          {copy.enter}
+        </TextButton>
+      )}
+      {mayRemove && code !== null && (
+        <TextButton
+          compact
+          className={shared.rowAction}
+          aria-label={copy.removeLabel(when)}
+          disabled={props.removing}
+          onClick={props.onRemove}
+        >
+          {props.removing ? copy.removing : copy.remove}
+        </TextButton>
+      )}
+    </span>
   );
 }
 
@@ -116,32 +154,19 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
   const requested = code === null ? visit.requested_code : null;
   return (
     <>
-      {!(mayEnter && code === null) && <Shown code={code} />}
-      {requested !== null && <span className={shared.closedLine}>{copy.requested(requested)}</span>}
-      {mayEnter && code === null && (
-        <TextButton
-          compact
-          className={shared.rowAction}
-          aria-label={copy.enterLabel(when)}
-          onClick={() => {
-            setTyped(requested ?? "");
-            setStep("entering");
-          }}
-        >
-          {copy.enter}
-        </TextButton>
-      )}
-      {mayRemove && code !== null && (
-        <TextButton
-          compact
-          className={shared.rowAction}
-          aria-label={copy.removeLabel(when)}
-          disabled={step === "removing"}
-          onClick={() => void remove()}
-        >
-          {step === "removing" ? copy.removing : copy.remove}
-        </TextButton>
-      )}
+      <CodeLines
+        code={code}
+        requested={requested}
+        when={when}
+        mayEnter={mayEnter}
+        mayRemove={mayRemove}
+        removing={step === "removing"}
+        onEnter={() => {
+          setTyped(requested ?? "");
+          setStep("entering");
+        }}
+        onRemove={() => void remove()}
+      />
       {problem}
       {entering}
     </>

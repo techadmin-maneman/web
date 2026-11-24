@@ -49,6 +49,8 @@
   --visit-service-ground: var(--console-dark-surface);
   --visit-consultation-edge: var(--console-dark-blue);
   --visit-consultation-ground: var(--console-dark-blue-wash);
+  --initials-ground: var(--console-dark-sel);
+  --initials-text: var(--console-dark-ink);
   --visit-replacement-ground: var(--console-dark-amber-wash);
   --pick-edge: var(--console-dark-control);
   --choice-edge: var(--console-dark-control);
@@ -99,6 +101,8 @@
     --visit-service-ground: var(--console-dark-surface);
     --visit-consultation-edge: var(--console-dark-blue);
     --visit-consultation-ground: var(--console-dark-blue-wash);
+    --initials-ground: var(--console-dark-sel);
+    --initials-text: var(--console-dark-ink);
     --visit-replacement-ground: var(--console-dark-amber-wash);
     --pick-edge: var(--console-dark-control);
     --choice-edge: var(--console-dark-control);

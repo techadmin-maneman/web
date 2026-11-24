@@ -53,12 +53,6 @@
   gap: var(--sp-8);
 }
 
-.openNone {
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
-}
-
 /* Staff's notes on the client (./StaffNotes.tsx) and the alerts for technicians (./ClientAlerts.tsx), in their
    panels at the right of the page, as far in as each panel's head. */
 .notes {
@@ -102,15 +96,11 @@
   max-width: var(--skeleton-card);
 }
 
-/* The box to add a note, across its panel, as far in as the notes above it. */
+/* A take-off refused, beneath the alerts, as far in as they are. */
 .addNote {
   box-sizing: border-box;
   padding: 0 var(--note-inset) var(--sp-16);
   max-width: none;
-}
-
-.addNote textarea {
-  width: 100%;
 }
 
 .noteActions {
@@ -153,11 +143,85 @@
   text-underline-offset: var(--sp-4);
 }
 
-.foundTitle {
+/* ---- The clients opened this session: a card each, six to a row, scrolling sideways where six do not fit ---- */
+
+.recent {
+  margin-bottom: var(--sp-20);
+}
+
+.recentTitle {
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-14);
   font-weight: var(--weight-regular);
   color: var(--ui-text-muted);
+}
+
+/* One row of six, each with room for a name and its pill, scrolling sideways where six do not fit. */
+.recentList {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(calc(var(--sp-8) * 22), 1fr));
+  overflow-x: auto;
+  gap: var(--sp-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* On a phone, where the row scrolls anyway, each card has room for a long first name whole. */
+@media (max-width: 600px) {
+  .recentList {
+    grid-template-columns: repeat(6, calc(var(--sp-8) * 26));
+  }
+}
+
+/* Each card as tall as the row's tallest, so their edges line up. */
+.recentCard {
+  box-sizing: border-box;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: var(--sp-12);
+  min-width: 0;
+  padding: var(--sp-12);
+  border: var(--hairline) solid var(--ui-line);
+  border-radius: var(--ui-radius-box);
+  background: var(--ui-raised);
+  color: var(--ui-text);
+  text-decoration: none;
+}
+
+.recentWho {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* A long name runs on to a second line, broken between its words; a word too long for the card ends in an ellipsis. */
+.recentName {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--fs-14);
+  font-weight: var(--weight-semibold);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.recentWord {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+@media (hover: hover) {
+  .recentCard:hover {
+    border-color: var(--ui-line-control);
+  }
 }
 
 .foundWho {
@@ -250,17 +314,24 @@
   color: var(--ui-text-muted);
 }
 
-/* A visit to come's way to the dispatch board, beneath its date, on a target 24 px tall (WCAG 2.5.8). */
-.boardLink {
+/* A visit's discount code, beneath the visit's name; on a phone's card, on a line of its own at the card's right. */
+.visitCode {
   display: flex;
-  align-items: center;
-  width: fit-content;
-  min-height: var(--sp-24);
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
-  text-decoration: underline;
-  text-decoration-color: var(--ui-line);
-  text-underline-offset: var(--sp-4);
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+@media (max-width: 600px) {
+  .visitCode {
+    flex-basis: 100%;
+    align-items: flex-end;
+  }
+}
+
+/* A visit's day, and its time from and to, each on one line. */
+.visitDate,
+.visitTime {
+  white-space: nowrap;
 }
 
 /* A visit's own action, beneath where it stands in its row. */
@@ -480,13 +551,15 @@
   margin-top: var(--sp-16);
 }
 
-/* Every list of a client's visits at the same widths, so overdue, to come and done line up one under another. */
+/* A client's visits, one table, each column as wide as its words need: the day, the time and the state keep one line,
+   and on a narrow window a visit's name, its technician and its buttons take a second rather than any being cut. A
+   visit's discount code sits beneath it. The widths below are what each column takes where there is room. */
 .visitTable th:nth-child(1) {
-  width: 16%;
+  width: 13%;
 }
 
 .visitTable th:nth-child(2) {
-  width: 13%;
+  width: 20%;
 }
 
 .visitTable th:nth-child(3) {
@@ -494,17 +567,13 @@
 }
 
 .visitTable th:nth-child(4) {
-  width: 13%;
+  width: 17%;
 }
 
 .visitTable th:nth-child(5) {
-  width: 14%;
+  width: 17%;
 }
 
 .visitTable th:nth-child(6) {
-  width: 12%;
-}
-
-.visitTable th:nth-child(7) {
-  width: 17%;
+  width: 18%;
 }

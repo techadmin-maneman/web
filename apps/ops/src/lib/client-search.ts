@@ -1,8 +1,8 @@
 // A client search, kept in the history entry rather than the address, so Back finds its results and a number never
-// reaches an address bar or a log. The clients opened this session, ids and names alone, are kept in sessionStorage for
-// the Clients page, and cleared on sign-out.
+// reaches an address bar or a log. The clients opened this session, their ids, names and where they stand alone, are
+// kept in sessionStorage for the Clients page, and cleared on sign-out.
 
-import type { ClientsFound } from "../api.ts";
+import type { ClientRecord, ClientsFound } from "../api.ts";
 
 /** The words searched for, and what they found; null until the search has answered. */
 export interface KeptSearch {
@@ -13,11 +13,13 @@ export interface KeptSearch {
 interface RecentClient {
   readonly id: string;
   readonly name: string;
+  /** Where they stood when opened; none for one kept before it was. */
+  readonly state?: ClientRecord["state"];
 }
 
 const SEARCH = "clientSearch";
 const RECENT = "ops.recent-clients";
-const RECENT_KEPT = 5;
+const RECENT_KEPT = 6;
 
 /** The search this history entry holds, if it holds one. */
 export function keptSearch(): KeptSearch | null {
@@ -36,13 +38,16 @@ export function keepSearch(search: KeptSearch): void {
   window.history.replaceState({ ...others, [SEARCH]: search }, "");
 }
 
+const STATES: readonly unknown[] = ["fitted", "lead", "nothing_booked"] satisfies ClientRecord["state"][];
+
 const isRecent = (each: unknown): each is RecentClient =>
   typeof each === "object" &&
   each !== null &&
   "id" in each &&
   typeof each.id === "string" &&
   "name" in each &&
-  typeof each.name === "string";
+  typeof each.name === "string" &&
+  (!("state" in each) || STATES.includes(each.state));
 
 /** The clients opened this session, the latest first. Empty where the browser keeps nothing for a page. */
 export function recentClients(): RecentClient[] {

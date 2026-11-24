@@ -124,7 +124,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await expect(page.getByRole("region", { name: opsCopy.clients.meta.credits })).toBeVisible();
   await clean("payments");
 
-  await clientTab(page, "Referrals").click();
+  await clientTab(page, opsCopy.clients.tabs[4].label).click();
   await expect(page.getByRole("region", { name: opsCopy.clients.invite.title })).toBeVisible();
   await clean("referrals");
 

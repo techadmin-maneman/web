@@ -38,7 +38,9 @@ export const technicians = {
     },
     /** Over how many days back the two columns count; ops's own period is the first choice. */
     over: "Over",
-    days: (days: number) => (days === 365 ? "The last 12 months" : `The last ${String(days)} days`),
+    days: (days: number) => (days === 365 ? "Last 12 months" : `Last ${String(days)} days`),
+    /** The same on a phone, where the period's segments share one row. */
+    shortDays: (days: number) => (days === 365 ? "1 year" : `${String(days)} days`),
     /** When the phone timed fewer jobs than were finished, the average says what it is of: "13 of 14 timed". */
     base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)} timed`,
     /** The jobs checked in by the end of the arrival window, of all done: "92%". */
@@ -56,6 +58,8 @@ export const technicians = {
     notTrained: "Not trained to fit",
     /** "In training till 18 Dec": no visits till ops mark it done (ADR 0278). */
     inTraining: (day: string) => `In training till ${day}`,
+    /** "Started 3 Mar 2026", where it was given. */
+    started: (day: string) => `Started ${day}`,
     call: "Call",
     edit: "Edit details",
   },
@@ -229,6 +233,13 @@ export const technicians = {
   training: {
     until: "In training until",
     none: "Not in training",
+  },
+  /** The day they started with us (docs/decisions/0305-a-technicians-start-date.md). */
+  started: {
+    label: "Start date",
+    /** On Add, where it may be left blank, as Zone may. */
+    optional: "Start date (optional)",
+    none: "Not given",
   },
   /**
    * A technician with no city takes no client bookings until ops set one: a visit goes only to a technician in its

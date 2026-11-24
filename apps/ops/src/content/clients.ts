@@ -28,7 +28,7 @@ export const clients = {
     underWay: "Visit under way",
     noVisit: "No visit booked",
     /** The clients opened this session, offered before anything is searched for. */
-    recent: "Recent",
+    recent: "Recently opened",
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "Type 2+ letters of a name, or 4+ digits.",
@@ -116,7 +116,7 @@ export const clients = {
     { tab: "pieces", label: "Hair systems" },
     { tab: "payments", label: "Payments" },
     { tab: "messages", label: "Messages" },
-    { tab: "referrals", label: "Referrals" },
+    { tab: "referrals", label: "How they found us" },
     { tab: "consents", label: "Consents" },
     { tab: "photos", label: "Photos" },
     { tab: "history", label: "History" },
@@ -124,6 +124,8 @@ export const clients = {
   /** The head's facts beneath the name, and a badge beside it once their replacement is past its day. */
   head: {
     since: (month: string) => `Client since ${month}`,
+    /** Their Care person, last among the head's facts. */
+    care: (who: string) => `Care: ${who}`,
     replacementLate: "Replacement overdue",
     call: "Call",
   },
@@ -131,7 +133,8 @@ export const clients = {
   glance: {
     title: "At a glance",
     paid: "Paid to date",
-    visits: "Visits",
+    /** The visits done, apart from the Visits tab's count of those to come as well. */
+    visits: "Visits done",
     replaceBy: "Replace by",
     freeVisits: "Free visits left",
   },
@@ -142,8 +145,13 @@ export const clients = {
   /** Staff's notes on the client, under the head of their page, each with who wrote it and when. */
   notes: {
     title: "Notes",
-    none: "No notes.",
+    none: "None.",
+    /** Add, in the card's head, named in full to a screen reader; the drawer it opens. */
+    open: "Add",
     add: "Add a note",
+    formTitle: "Add a note",
+    addNote: "Add note",
+    added: "Note added.",
     label: "Note",
     change: "Change",
     takeOff: "Take off",
@@ -155,23 +163,32 @@ export const clients = {
       not_permitted: NOT_PERMITTED,
       superseded: changed("Someone changed this note first."),
       invalid_request: "Write the note first.",
+      /** Said on the box an empty note was refused on. */
+      body: "Write the note first.",
       offline: OFFLINE,
       unknown: FAILED,
     },
   },
   alerts: {
     title: "Alerts for technicians",
-    none: "No alerts.",
+    none: "None.",
+    /** Add, in the card's head, named in full to a screen reader; the drawer it opens. */
+    open: "Add",
     add: "Add an alert",
+    formTitle: "Add an alert for technicians",
+    label: "Alert",
     takeOff: "Take off",
-    save: "Save",
-    saving: "Saving…",
+    save: "Add alert",
+    saving: "Adding…",
+    added: "Alert added.",
     /** "Priya · 12 Oct 2026", or "Imran at a visit · 12 Oct 2026" */
     by: (name: string, date: string) => `${name} · ${date}`,
     atVisit: (name: string) => `${name} at a visit`,
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "Write the alert first.",
+      /** Said on the box an empty alert was refused on. */
+      body: "Write the alert first.",
       offline: OFFLINE,
       unknown: FAILED,
     },
@@ -248,23 +265,26 @@ export const clients = {
     /** Visits whose day has passed and nobody has closed: each waits to be closed by hand. */
     overdue: "Overdue",
     past: "Done",
-    columns: ["Date", "Visit", "Technician", "Time", "Status", "Discount code"],
+    columns: ["Date", "Visit", "Technician", "Time", "Status"],
     /** The column of a visit's own buttons, named aloud only. */
     actionsColumn: "Change",
-    onBoard: "See on the board",
-    /** The link's whole name, since every row's says the same. */
-    onBoardLabel: (visit: string) => `See the visit of ${visit} on the board`,
+    onBoard: "Move",
+    /** The link's whole name, since every row's says the same: it opens the visit on the board, where it moves. */
+    onBoardLabel: (visit: string) => `Move the visit of ${visit} on the board`,
     /**
      * A discount code on a visit, which no board draws (docs/decisions/0108-discount-codes.md).
      * Entered or taken off only while the visit is not paid for or invoiced.
      */
     code: {
       none: "None",
-      /** "TENOFF, Rs. 1,234 off": what it takes off before GST, once the visit's price is known. */
-      applied: (code: string, off: string | null) => (off === null ? code : `${code}, ${off} off`),
+      /**
+       * Beneath the visit, with no column to name it: "Code TENOFF, Rs. 1,234 off", what it takes off before GST, once
+       * the visit's price is known.
+       */
+      applied: (code: string, off: string | null) => (off === null ? `Code ${code}` : `Code ${code}, ${off} off`),
       givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" },
       /** A one visit's code the client typed when booking on the site, which "Enter a code" starts from. */
-      requested: (code: string) => `Client entered ${code} when booking`,
+      requested: (code: string) => `Client entered code ${code} when booking`,
       enter: "Enter a code",
       drawerTitle: (visit: string) => `Discount code · visit of ${visit}`,
       /** The button's whole name, since every row's says the same. */
@@ -775,6 +795,8 @@ export const clients = {
     none: "No hair profile yet.",
     /** "21 Sep 2026 · Imran, at the consultation", as each version is headed. */
     version: (date: string, by: string) => `${date} · ${by}`,
+    /** What a field was in the version before, beside what it is now. */
+    was: (value: string) => `was ${value}`,
     atVisit: (name: string, visit: string) => `${name}, at the ${visit.toLowerCase()}`,
     byOps: (staff: string) => `${staff}, correction`,
     unnamed: "A technician",
@@ -818,8 +840,9 @@ export const clients = {
       other_systems: "Other hair systems",
       other: "Other",
     },
-    correct: "Correct profile",
-    record: "Add profile",
+    /** Beneath the Hair profile heading, which says what it corrects. */
+    correct: "Correct it",
+    record: "Add a profile",
     formTitle: "Correct hair profile",
     notRecorded: "Not recorded",
     product: "Hair system",

@@ -59,6 +59,23 @@
     /* A consultation and fit in one visit's edge (./DayTimeline.tsx): unset, so it is a consultation's, unless the
        app's look gives the kind its own. */
     --visit-one-visit-edge: initial;
+    /* A person's initials (./Initials.tsx): a square in the serif on the shade, unless the app's look draws a circle
+       in its own type and colours. Unset where they read another role, so each takes the value where it stands. */
+    --initials-radius: 0;
+    --initials-ground: initial;
+    --initials-text: initial;
+    --initials-font: initial;
+    --initials-weight: initial;
+    --initials-size: var(--sp-48);
+    --initials-type: var(--fs-24);
+    --initials-small-size: var(--sp-36);
+    --initials-small-type: var(--fs-14);
+    /* A panel's figures (./FigureGrid.tsx): each in the serif over its name, unless the app's look names it first. */
+    --figure-direction: initial;
+    --figure-font: initial;
+    --figure-weight: initial;
+    --figure-size: var(--fs-24);
+    --figure-label-size: var(--fs-13);
     /* A field's box: the tap's height, which the technician app raises on its body. */
     --field-height: var(--tap);
     --field-text: var(--fs-15);

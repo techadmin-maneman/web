@@ -4,6 +4,8 @@
 // to a colleague: "/clients?state=lead".
 
 import { ToggleButton } from "@maneman/ui/ToggleButton";
+import { Badge } from "@maneman/ui/Badge";
+import { Initials } from "@maneman/ui/Initials";
 import { Button } from "@maneman/ui/Button";
 import { NoValue } from "@maneman/ui/NoValue";
 import { textLinkLook } from "@maneman/ui/TextLink";
@@ -31,6 +33,7 @@ import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./client-list.module.css";
 import { RowHead } from "@maneman/ui/RowHead";
 import { clientsApi } from "./clients-api.ts";
+import { STATE_TONES } from "./client-states.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = clients.list;
@@ -126,6 +129,16 @@ function needsOf(board: Tasks | null): Needs {
 const stageOf = (client: Listed["clients"][number]): string =>
   client.package === null ? clients.states[client.state] : `${clients.states[client.state]} · ${client.package}`;
 
+/** Where they stand as a pill, and the package they are on beneath it. */
+function Stage({ client }: { client: Listed["clients"][number] }) {
+  return (
+    <>
+      <Badge tone={STATE_TONES[client.state]}>{clients.states[client.state]}</Badge>
+      {client.package !== null && <span className={styles.listPackage}>{client.package}</span>}
+    </>
+  );
+}
+
 /** A next visit past its day and not yet begun. */
 const isOverdue = (client: Listed["clients"][number], today: string): boolean =>
   !client.under_way && client.next_visit !== null && indiaDate(client.next_visit) < today;
@@ -153,6 +166,7 @@ function PhoneRows({ listed, needs }: { listed: Listed; needs: Needs }) {
         return (
           <ListRow
             key={client.id}
+            mark={<Initials name={client.name} small />}
             title={client.name}
             meta={[stageOf(client), ...(client.city === null ? [] : [client.city])].join(" · ")}
             end={need === undefined ? nextVisitOf(client, todayInIndia(now.getTime())) : tasks.groups[need.group]}
@@ -193,16 +207,20 @@ function Rows({ listed, needs }: { listed: Listed; needs: Needs }) {
             const rule = ruleOf(client, need, now);
             return (
               <tr key={client.id} className={rowRule(rule)}>
-                <RowHead meta={phoneWords(client.mobile)}>
+                <RowHead meta={phoneWords(client.mobile)} mark={<Initials name={client.name} small />}>
                   <OpsLink className={textLinkLook({ compact: true })} to={clientPath(client.id, "visits")}>
                     {client.name}
                   </OpsLink>
                 </RowHead>
                 <td>{client.city ?? <NoValue />}</td>
-                <td>{stageOf(client)}</td>
+                <td>
+                  <Stage client={client} />
+                </td>
                 <td>{nextVisitOf(client, today)}</td>
-                <td className={rule === "error" ? styles.listLate : styles.listNeed}>
-                  {need === undefined ? null : tasks.groups[need.group]}
+                <td>
+                  {need !== undefined && (
+                    <Badge tone={rule === "error" ? "error" : "attention"}>{tasks.groups[need.group]}</Badge>
+                  )}
                 </td>
                 <td className={styles.listPaid}>{client.paid === 0 ? <NoValue /> : rupees(client.paid)}</td>
               </tr>

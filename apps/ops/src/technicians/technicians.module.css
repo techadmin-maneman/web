@@ -4,7 +4,6 @@
  * does. A revoke stays quiet until it is asked for, since it ends a session and makes the phone drop its cached jobs.
  */
 
-.name,
 .city {
   font-weight: var(--weight-regular);
   text-align: left;

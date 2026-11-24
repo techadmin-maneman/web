@@ -35,6 +35,13 @@
     cursor: pointer;
   }
 
+  .tabCount {
+    margin-left: var(--sp-4);
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
   .tab[aria-current="page"],
   .tab[aria-current="true"] {
     border-bottom-color: var(--ui-strong);

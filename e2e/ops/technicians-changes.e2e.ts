@@ -167,6 +167,59 @@ test("adds a technician in training till a day", async ({ page }) => {
   expect((await sent).postDataJSON()).toMatchObject({ name: "Naveen Rao", training_end_date: "2026-10-20" });
 });
 
+test("adds a technician with the day they started, said in their head, and changed on their details", async ({
+  page,
+}) => {
+  await openWith(page, { [ADD]: json(TECHNICIAN_ADDED, 201) });
+  await page.getByRole("button", { name: opsCopy.technicians.add.open }).click();
+  const form = page.getByRole("dialog", { name: opsCopy.technicians.add.open });
+  await form.getByRole("textbox", { name: opsCopy.technicians.fields.name }).fill("Naveen Rao");
+  await form.getByRole("textbox", { name: opsCopy.technicians.fields.mobile }).fill("9810000007");
+  await form.getByLabel(opsCopy.technicians.started.optional).fill("2026-03-03");
+  const added = page.waitForRequest((request) => request.method() === "POST" && request.url().endsWith("/technicians"));
+  await form.getByRole("button", { name: opsCopy.technicians.add.save }).click();
+  expect((await added).postDataJSON()).toMatchObject({ name: "Naveen Rao", start_date: "2026-03-03" });
+});
+
+test("says in a technician's head the day they started, and changes it on their details", async ({ page }) => {
+  const started = {
+    ...TECHNICIANS,
+    technicians: TECHNICIANS.technicians.map((each) =>
+      each.id === IMRAN ? { ...each, start_date: "2026-03-03" } : each,
+    ),
+  };
+  const { roster, reply } = rosterOf(started);
+  await openWith(page, { [CHANGE]: json({ id: IMRAN }) }, reply);
+  await pageOf(page, "Imran Qureshi");
+  await expect(page.getByText(opsCopy.technicians.head.started("3 Mar 2026"))).toBeVisible();
+
+  await page.getByRole("button", { name: opsCopy.technicians.head.edit }).click();
+  const main = page.getByRole("dialog", { name: "Imran Qureshi" });
+  const words = opsCopy.technicians.started;
+  await main.getByRole("button", { name: `${EDITING.change} ${words.label}` }).click();
+  const day = main.getByLabel(words.label);
+  await expect(day).toHaveValue("2026-03-03");
+  await day.fill("2026-04-01");
+  const sent = page.waitForRequest((request) => request.method() === "PATCH");
+  roster.current = {
+    ...TECHNICIANS,
+    technicians: TECHNICIANS.technicians.map((each) =>
+      each.id === IMRAN ? { ...each, start_date: "2026-04-01" } : each,
+    ),
+  };
+  await main.getByRole("button", { name: EDITING.save }).click();
+  expect((await sent).postDataJSON()).toEqual({ start_date: "2026-04-01" });
+
+  // Cleared, it is not known: the day goes, and the row says so.
+  await main.getByRole("button", { name: `${EDITING.change} ${words.label}` }).click();
+  await main.getByLabel(words.label).fill("");
+  const cleared = page.waitForRequest((request) => request.method() === "PATCH");
+  roster.current = TECHNICIANS;
+  await main.getByRole("button", { name: EDITING.save }).click();
+  expect((await cleared).postDataJSON()).toEqual({ start_date: null });
+  await expect(main.getByRole("button", { name: `${EDITING.change} ${words.label}` })).toContainText(words.none);
+});
+
 test("shows the day a technician's training ends, and marks it done on their details", async ({ page }) => {
   const inTraining = {
     ...TECHNICIANS,
@@ -217,6 +270,7 @@ test("switches a technician off only once asked, and lists the visits they no lo
         mobile: "+919810000001",
         fits_trained: true,
         training_end_date: null,
+        start_date: null,
         visits_to_come: 0,
       },
     ],

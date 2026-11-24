@@ -23,6 +23,7 @@ const technician = (
   mobile: `+9198100000${String(n).padStart(2, "0")}`,
   fits_trained: true,
   training_end_date: null,
+  start_date: null,
   // Imran's two visits to come, which switching them off leaves with nobody.
   visits_to_come: n === 1 ? 2 : 0,
   sign_in_stopped_at: null,
@@ -96,6 +97,7 @@ export const RAVI = {
   mobile: "+919810000004",
   fits_trained: true,
   training_end_date: null,
+  start_date: null,
   visits_to_come: 0,
 } satisfies Roster["switched_off"][number];
 

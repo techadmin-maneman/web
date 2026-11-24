@@ -38,6 +38,8 @@ test.describe("the client’s hair profile", () => {
     const profile = section(page);
     await expect(profile.getByRole("definition").first()).toHaveText(opsCopy.clients.profile.stages.IV);
     await expect(profile.locator("dl").first()).toContainText("Colour#2");
+    // The correction changed the colour alone, which says what it was at the consultation.
+    await expect(profile.locator("dl").first().getByText(/^was /)).toHaveText([opsCopy.clients.profile.was("#1B")]);
     await expect(profile.locator("dl").first()).toContainText("Skin conditions and allergiesDry at the crown");
     await expect(profile.getByRole("listitem")).toHaveText([
       /^22 Sep 2027 · ops@maneman\.in, correction/,
@@ -159,7 +161,7 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   await expect(coming).toContainText("Booked · Prepaid");
   await expect(visitRow(page, "22 Aug 2027")).toBeVisible();
   // A visit to come opens on the dispatch board, on its week with its drawer open; a visit done does not.
-  await expect(coming.getByRole("link", { name: "See the visit of 25 Sep 2027 on the board" })).toHaveAttribute(
+  await expect(coming.getByRole("link", { name: "Move the visit of 25 Sep 2027 on the board" })).toHaveAttribute(
     "href",
     "/dispatch?from=2027-09-25&visit=33000000-0000-4000-8000-000000000002",
   );

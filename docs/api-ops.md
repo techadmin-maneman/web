@@ -54510,6 +54510,18 @@ Request body:
             ],
             "description": "The day their training is expected to end; null when not in training. In training, no visits (ADR 0278)."
           },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The day they started with us; null where it was never given (ADR 0305)."
+          },
           "visits_to_come": {
             "type": "integer",
             "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
@@ -54624,6 +54636,7 @@ Request body:
           "mobile",
           "fits_trained",
           "training_end_date",
+          "start_date",
           "visits_to_come",
           "sign_in_stopped_at",
           "out_of_codes",
@@ -54696,6 +54709,18 @@ Request body:
             ],
             "description": "The day their training is expected to end; null when not in training. In training, no visits (ADR 0278)."
           },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The day they started with us; null where it was never given (ADR 0305)."
+          },
           "visits_to_come": {
             "type": "integer",
             "description": "Their visits still to come and not begun, which switching them off leaves with nobody."
@@ -54709,6 +54734,7 @@ Request body:
           "mobile",
           "fits_trained",
           "training_end_date",
+          "start_date",
           "visits_to_come"
         ],
         "additionalProperties": false
@@ -57859,6 +57885,14 @@ Request body:
       ],
       "format": "date",
       "description": "The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training."
+    },
+    "start_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "The day they started with us, shown as \"Started ...\" in their head (ADR 0305); null says it is not known. Left out on adding: not given."
     }
   },
   "required": [
@@ -57923,6 +57957,14 @@ Request body:
       ],
       "format": "date",
       "description": "The day their training is expected to end, which the console shows: in training, they are offered and given no visit of any kind until ops send null, marking it done (ADR 0278). Left out on adding: not in training."
+    },
+    "start_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "The day they started with us, shown as \"Started ...\" in their head (ADR 0305); null says it is not known. Left out on adding: not given."
     }
   },
   "additionalProperties": false,

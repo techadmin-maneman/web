@@ -159,7 +159,10 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   await page.goto("/clients");
   const recent = page.getByRole("region", { name: opsCopy.clients.find.recent });
-  await expect(recent.getByRole("link", NAME)).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
+  // A card each: their name, and where they stood when opened.
+  const card = recent.getByRole("link", { name: new RegExp(`^${CLIENT.name}`) });
+  await expect(card).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
+  await expect(card).toContainText(opsCopy.clients.states[RECORD.state]);
 
   await page.route("**/cdn-cgi/access/logout", (route) => route.fulfill({ contentType: "text/html", body: "" }));
   await page.getByRole("button", { name: opsCopy.shell.account.named("") }).click();
@@ -218,7 +221,9 @@ test("heads the page with the client’s standing and the number to reach them o
 
 // Who invited a client was shown only under Payments, below the credits form; then in the head, which now carries
 // only the client's own facts.
-test("says on Referrals who invited the client, a way to their page, and the invite’s code", async ({ page }) => {
+test("says on How they found us who invited the client, a way to their page, and the invite’s code", async ({
+  page,
+}) => {
   await openClient(page, `/clients/${CLIENT.id}/referrals`);
   await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
   await expect(invitedBy(page).getByRole("link", { name: "Vikram Sethi" })).toHaveAttribute(
@@ -285,10 +290,14 @@ test("says a fitted client's hair system was not recorded, rather than that none
 
 // The page opened on an empty Pieces tab, a click away from the visit; then on an overview, whose figures now stand
 // at the page's right; and Book a visit lived on the Visits tab alone.
-test("opens on Visits, first, with Book a visit on every tab and the invite on a Referrals tab", async ({ page }) => {
+test("opens on Visits, first, with Book a visit on every tab and the invite on How they found us", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   const tabs = opsCopy.clients.tabs.map((each) => each.label);
-  await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText(tabs);
+  // Visits says how many it lists after its name.
+  const visits = RECORD.visits.upcoming.length + RECORD.visits.past.length;
+  await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText(
+    tabs.map((label, index) => (index === 0 ? `${label}${String(visits)}` : label)),
+  );
   expect(tabs[0]).toBe(opsCopy.clients.tabs[0].label);
   await expect(clientTab(page, opsCopy.clients.tabs[0].label)).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("button", { name: opsCopy.clients.visits.book.open })).toBeVisible();

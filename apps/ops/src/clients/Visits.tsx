@@ -8,8 +8,8 @@ import { Panel } from "@maneman/ui/Panel";
 import { NoValue } from "@maneman/ui/NoValue";
 import { Badge } from "@maneman/ui/Badge";
 import { plainDate } from "@maneman/web-kit/plain-date";
-import { Button, RowButton } from "@maneman/ui/Button";
-import { ACTIONS, CellDetail, RowActions, rowRule, Table } from "@maneman/ui/Table";
+import { Button, buttonLook, RowButton } from "@maneman/ui/Button";
+import { ACTIONS, CellDetail, RowActions, rowRule, Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { indiaClock, longDate, shortDate, todayInIndia } from "@maneman/web-kit/dates";
@@ -122,13 +122,13 @@ function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: str
   );
 }
 
-/** A visit to come on the dispatch board: its week, with its drawer open. */
+/** Move, for a visit to come: its week on the dispatch board, with its drawer open on the move. */
 function ShowOnBoard({ visit }: { visit: ClientVisit }) {
   const mayOpen = useAccess().mayCall("GET /api/dispatch");
   if (!mayOpen) return null;
   return (
     <OpsLink
-      className={styles.boardLink}
+      className={buttonLook({ variant: "outline", size: "compact" })}
       to={dispatchPath({ from: visit.date, visit: visit.id })}
       label={copy.onBoardLabel(plainDate(visit.date))}
     >
@@ -165,31 +165,27 @@ function VisitRow({
   const ahead = when !== "past";
   return (
     <tr className={rowRule(when === "overdue" ? "error" : undefined)}>
-      <td>
-        {plainDate(visit.date)}
-        {ahead && <ShowOnBoard visit={visit} />}
-      </td>
+      <td className={styles.visitDate}>{plainDate(visit.date)}</td>
       <td>
         {whatOf(visit)}
         {visit.client_note !== null && <p className={styles.note}>{copy.clientNote(visit.client_note)}</p>}
+        <VisitCode visit={visit} />
       </td>
       <td>
         {visit.technician?.name ?? <NoValue />}
         {visit.technician !== null && visit.technician_pending && <CellDetail>{copy.draft}</CellDetail>}
       </td>
-      <td>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
+      <td className={styles.visitTime}>{copy.time(indiaClock(visit.starts_at), indiaClock(visit.ends_at))}</td>
       <td>
         <StateBadge visit={visit} />
         <ClosedWithoutFollowUp visit={visit} />
         <NotFittedLine visit={visit} />
         <LostReasonLine visit={visit} />
       </td>
-      <td>
-        <VisitCode visit={visit} />
-      </td>
       <td className={ACTIONS}>
         <RowActions>
           <LostReason visit={visit} reasons={ahead ? null : lost} onChanged={changing.onChanged} />
+          {ahead && <ShowOnBoard visit={visit} />}
           {ahead && <ChangeVisit visit={visit} name={changing.name} onChanged={changing.onChanged} />}
         </RowActions>
       </td>
@@ -297,25 +293,27 @@ export function VisitRecords({
   if (rows.length === 0) return null;
   return (
     <Panel titleId="client-visits" title={clients.tabs[0].label}>
-      <Table fixed className={styles.visitTable}>
-        <thead>
-          <tr>
-            {copy.columns.map((column) => (
-              <th key={column} scope="col">
-                {column}
+      <TableScroll labelledBy="client-visits">
+        <Table className={styles.visitTable}>
+          <thead>
+            <tr>
+              {copy.columns.map((column) => (
+                <th key={column} scope="col">
+                  {column}
+                </th>
+              ))}
+              <th scope="col">
+                <VisuallyHidden>{copy.actionsColumn}</VisuallyHidden>
               </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((listed) => (
+              <VisitRow key={listed.visit.id} listed={listed} changing={{ name, onChanged }} lost={lostReasons} />
             ))}
-            <th scope="col">
-              <VisuallyHidden>{copy.actionsColumn}</VisuallyHidden>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((listed) => (
-            <VisitRow key={listed.visit.id} listed={listed} changing={{ name, onChanged }} lost={lostReasons} />
-          ))}
-        </tbody>
-      </Table>
+          </tbody>
+        </Table>
+      </TableScroll>
     </Panel>
   );
 }

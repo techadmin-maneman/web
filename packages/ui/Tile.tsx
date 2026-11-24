@@ -8,6 +8,9 @@ import styles from "./tile.module.css";
 
 type TileProps = ButtonHTMLAttributes<HTMLButtonElement> & { readonly ref?: Ref<HTMLButtonElement> };
 
+/** A tile's behaviour for a link the app draws itself, as a router's: no browser look, and the focus ring. */
+export const tileLook = (className?: string): string => classes(styles.tile, className);
+
 export function Tile({ className, type = "button", ...rest }: TileProps) {
   return <button {...rest} type={type} className={classes(styles.tile, className)} />;
 }

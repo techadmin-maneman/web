@@ -71,6 +71,8 @@ const PAIRS = [
   // A chosen day, and a time's name beside its slot (packages/ui/date-strip.module.css, time-choice.module.css).
   ["--pick-on-text", "--pick-on"] as const,
   ["--time-name-colour", "--ui-raised"] as const,
+  // A person's initials on their circle (packages/ui/initials.module.css).
+  ["--initials-text", "--initials-ground"] as const,
 ];
 const EDGES = ["--ui-line-control", "--pick-edge", "--choice-edge"];
 

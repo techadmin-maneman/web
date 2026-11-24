@@ -53,8 +53,10 @@ test("lists every client beneath the search, narrowed by status and the header's
   await expect(list.getByRole("row")).toHaveCount(3);
   await expect(list.getByRole("row").nth(1)).toContainText("Rohit Malhotra");
   await expect(list.getByRole("row").nth(1)).toContainText("Sat 25 Sep");
-  // Where they stand with their package, and what they have paid.
-  await expect(list.getByRole("row").nth(1)).toContainText("Fitted · Natural hair system");
+  // Where they stand, as a pill with their package beneath it, and what they have paid.
+  const stage = list.getByRole("row").nth(1).getByRole("cell").nth(1);
+  await expect(stage).toContainText(opsCopy.clients.states.fitted);
+  await expect(stage).toContainText("Natural hair system");
   await expect(list.getByRole("row").nth(1)).toContainText("Rs. 35,400");
   // No city and no visit booked: each a gap, said aloud as None, never words of the list's own.
   await expect(list.getByRole("row").nth(2).getByRole("cell").nth(0)).toHaveText("—None");
