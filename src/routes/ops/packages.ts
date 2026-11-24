@@ -6,7 +6,8 @@
 // replacement's under their kinds, each hair system's under hair_system. Every write answers the whole of GET's
 // answer, so the screen follows it without reading again.
 
-import { opsInputs } from "../../http/ops-inputs.ts";
+import { opsInputs, stageDays } from "../../http/ops-inputs.ts";
+import { activeClientsBy } from "../../domain/clients/active-clients.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -81,6 +82,7 @@ const PackageSchema = z
       .boolean()
       .openapi({ description: "Sold today: not retired, and a hair system and its service visit priced." }),
     deletable: z.boolean().openapi({ description: "Nothing sold under it, no client on it, no hair system in it." }),
+    active_clients: z.number().int().openapi({ description: "Its clients whose stage is active." }),
     first_fit: z
       .object({
         minutes: z.number().int(),
@@ -276,13 +278,14 @@ function hairSystemOf(
 async function packagesBody(c: Context<AppEnv>) {
   const db = c.env.DB;
   const today = indiaDate(c.var.deps.now());
-  const [packages, book, services, pieces, piecePrices, inUse] = await Promise.all([
+  const [packages, book, services, pieces, piecePrices, inUse, active] = await Promise.all([
     allPackages(db),
     priceBook(db, today),
     servicesOnDay(db, today),
     hairSystemsOfPackages(db),
     hairSystemPricesOn(db, today),
     packagesInUse(db),
+    stageDays(c).then((days) => activeClientsBy(db, "package", days)),
   ]);
   const pricesOf = (item: string, tier: string): PriceRow[] =>
     book.filter((row) => row.item === item && row.tier === tier);
@@ -303,6 +306,7 @@ async function packagesBody(c: Context<AppEnv>) {
       retired_date: each.retired_date,
       offered: isOffered(each.retired_date, today) && sold("first_fit", each.code) !== null,
       deletable: !inUse.has(each.code),
+      active_clients: active.get(each.code) ?? 0,
       first_fit: { minutes: each.first_fit_minutes, from: priceNow(sold("first_fit", each.code)) },
       service: {
         minutes: each.service_minutes,

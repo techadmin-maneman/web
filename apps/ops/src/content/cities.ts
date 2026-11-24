@@ -13,7 +13,14 @@ export const cities = {
   title: "Cities",
   list: {
     panel: "Cities",
-    columns: { city: "City", state: "State", zone: "Zone", technicians: "Technicians", status: "Status" },
+    columns: {
+      city: "City",
+      state: "State",
+      zone: "Zone",
+      technicians: "Technicians",
+      activeClients: "Active clients",
+      status: "Status",
+    },
     find: "Find a city",
     noState: "No state",
     served: "Served",

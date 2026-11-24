@@ -10,7 +10,8 @@ import { Field, Checkbox, FileInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
-import { useState } from "react";
+import { useContext, createContext, useState } from "react";
+import { quantity } from "@maneman/web-kit/figures";
 import { FIGURE, Table } from "@maneman/ui/Table";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
@@ -42,8 +43,12 @@ interface PincodeRowProps {
   readonly onDeleted: () => void;
 }
 
+/** Each pincode's active clients, as the service area's read counts them: where the page loads it, for every row. */
+export const ActiveClients = createContext<Readonly<Record<string, number>>>({});
+
 export function PincodeRow({ pincode, chosen, onChoose, onSave, onDeleted }: PincodeRowProps) {
   const id = pincode.pincode;
+  const activeClients = useContext(ActiveClients);
   const [editing, setEditing] = useState(false);
   return (
     <tr>
@@ -68,6 +73,7 @@ export function PincodeRow({ pincode, chosen, onChoose, onSave, onDeleted }: Pin
         {!pincode.served && <Badge tone="neutral">{copy.no}</Badge>}
       </td>
       <td>{pincode.launch_on === null ? "" : shortDate(pincode.launch_on)}</td>
+      <td className={FIGURE}>{quantity(activeClients[id] ?? 0)}</td>
       <td className={FIGURE}>{pincode.waiting}</td>
       {chosen !== null && (
         <td className={styles.actions}>

@@ -15,6 +15,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { shortDate } from "@maneman/web-kit/dates";
 import { errorText } from "@maneman/web-kit/refusal";
+import { quantity } from "@maneman/web-kit/figures";
 import { useState } from "react";
 import { Badge } from "@maneman/ui/Badge";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -107,6 +108,7 @@ function PackageList(props: {
                   {each.name}
                 </TextButton>
               </RowHead>
+              <td className={FIGURE}>{quantity(each.active_clients)}</td>
               <PackageFigures each={each} costs={props.costs} />
               <td>{statusOf(each, today)}</td>
             </tr>

@@ -35,7 +35,7 @@ import {
   type Row,
   type Upload,
 } from "./served-draft.ts";
-import { CityTabs, PincodeRow, SaveNotes, UploadFile } from "./ServedParts.tsx";
+import { ActiveClients, CityTabs, PincodeRow, SaveNotes, UploadFile } from "./ServedParts.tsx";
 import { AskingCheck, ChosenBar } from "./Chosen.tsx";
 import { useAreaSaves } from "./useAreaSaves.ts";
 import { areasApi } from "./areas-api.ts";
@@ -44,12 +44,13 @@ import { apiNow } from "@maneman/web-kit/clock";
 const copy = areas.served;
 
 const servedWord = (row: ServedPincode) => (row.served ? copy.yes : copy.no);
-const [PIN, NAME, SERVED, LAUNCH, WAITING] = copy.columns;
+const [PIN, NAME, SERVED, LAUNCH, CLIENTS, WAITING] = copy.columns;
 const COLUMNS: readonly Column<ServedPincode>[] = [
   { label: PIN, sort: (row) => row.pincode },
   { label: NAME, sort: (row) => row.area },
   { label: SERVED, sort: servedWord, choice: servedWord },
   { label: LAUNCH, sort: (row) => row.launch_on ?? "" },
+  { label: CLIENTS, figure: true },
   { label: WAITING, sort: (row) => row.waiting },
 ];
 
@@ -308,5 +309,9 @@ export function Served() {
   const [loaded, retry] = useLoad(areasApi.serviceArea);
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  return <Area pincodes={loaded.value.pincodes} cities={loaded.value.cities} />;
+  return (
+    <ActiveClients.Provider value={loaded.value.active_clients}>
+      <Area pincodes={loaded.value.pincodes} cities={loaded.value.cities} />
+    </ActiveClients.Provider>
+  );
 }

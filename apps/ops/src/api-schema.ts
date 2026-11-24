@@ -18595,6 +18595,10 @@ export interface paths {
                             pincodes: components["schemas"]["ServedPincode"][];
                             /** @description Our cities, which a pincode added must be in. */
                             cities: string[];
+                            /** @description Clients whose stage is active, by pincode; a pincode with none is left out. */
+                            active_clients: {
+                                [key: string]: number;
+                            };
                         };
                     };
                 };
@@ -33262,6 +33266,8 @@ export interface components {
             sort: number;
             /** @description Active technicians who work there. */
             technicians: number;
+            /** @description Clients whose stage is active, by their pincode's city. */
+            active_clients: number;
             /** @description Whether nothing but its own settings names it. */
             deletable: boolean;
         };
@@ -33569,6 +33575,8 @@ export interface components {
             offered: boolean;
             /** @description Nothing sold under it, no client on it, no hair system in it. */
             deletable: boolean;
+            /** @description Its clients whose stage is active. */
+            active_clients: number;
             first_fit: {
                 minutes: number;
                 /** @description Its cheapest hair system and its service visit, today. */

@@ -103,6 +103,7 @@ test.describe("the packages", () => {
     const list = panel(page, packagesCopy.title);
     const essential = list.getByRole("row").filter({ hasText: "Mane Man Essential" });
     await expect(essential.getByRole("cell")).toHaveText([
+      "1,240",
       "Rs. 29,800",
       "Rs. 2,200 every 30 days",
       "Rs. 32,000",

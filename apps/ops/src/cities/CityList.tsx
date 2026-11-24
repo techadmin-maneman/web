@@ -13,6 +13,7 @@ import { useTableView, type Column } from "@maneman/ui/useTableView";
 import { Badge } from "@maneman/ui/Badge";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useState } from "react";
+import { quantity } from "@maneman/web-kit/figures";
 import { DrawerButton } from "@maneman/ui/DrawerButton";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
 import { RowHead } from "@maneman/ui/RowHead";
@@ -44,6 +45,7 @@ const COLUMNS: readonly Column<City>[] = [
   { label: copy.columns.state, sort: (city) => city.state ?? "", choice: (city) => city.state ?? copy.noState },
   { label: copy.columns.zone, sort: (city) => city.zone ?? "", choice: (city) => city.zone ?? copy.noZone },
   { label: copy.columns.technicians, sort: (city) => city.technicians, figure: true },
+  { label: copy.columns.activeClients, sort: (city) => city.active_clients, figure: true },
   { label: copy.columns.status, sort: standingOf, choice: standingOf },
 ];
 
@@ -99,6 +101,7 @@ function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) 
               <td>{city.state === null ? copy.noState : `${city.state} (${city.state_code ?? ""})`}</td>
               <td>{city.zone ?? copy.noZone}</td>
               <td className={FIGURE}>{city.technicians}</td>
+              <td className={FIGURE}>{quantity(city.active_clients)}</td>
               <td>
                 <Status city={city} />
               </td>

@@ -30,8 +30,8 @@ const MUMBAI = {
 
 const BOOK = {
   cities: [
-    { ...GURGAON, technicians: 2, deletable: false },
-    { ...MUMBAI, technicians: 0, deletable: true },
+    { ...GURGAON, technicians: 2, active_clients: 1240, deletable: false },
+    { ...MUMBAI, technicians: 0, active_clients: 0, deletable: true },
   ],
   zones: ["NCR"],
   deletable_zones: [],
@@ -85,12 +85,13 @@ test("counts each city's technicians, and warns of one served with none", async 
     "GET /api/cities": json({
       ...BOOK,
       cities: [
-        { ...GURGAON, technicians: 2, deletable: false },
-        { ...MUMBAI, name: "Delhi", served: true, technicians: 0, deletable: false },
+        { ...GURGAON, technicians: 2, active_clients: 1240, deletable: false },
+        { ...MUMBAI, name: "Delhi", served: true, technicians: 0, active_clients: 0, deletable: false },
       ],
     }),
   });
   await expect(cityRow(page, "Gurgaon")).toContainText("2");
+  await expect(cityRow(page, "Gurgaon")).toContainText("1,240");
   await expect(cityRow(page, "Gurgaon")).not.toContainText(copy.list.noTechnician);
   await expect(cityRow(page, "Delhi")).toContainText(copy.list.noTechnician);
 });

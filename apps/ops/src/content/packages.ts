@@ -13,6 +13,7 @@ export const packagesCopy = {
   /** The list's columns: each part's price, what a first fit comes to for the client, and what it leaves us. */
   columns: {
     name: "Package",
+    clients: "Active clients",
     hairSystem: "Hair system from",
     service: "Service visit",
     firstFit: "First fit, client pays",
@@ -22,7 +23,7 @@ export const packagesCopy = {
     status: "Status",
   },
   /** Which of the columns are figures, set right with their heads. */
-  figureColumns: ["hairSystem", "service", "firstFit", "replacement", "cost", "margin"],
+  figureColumns: ["clients", "hairSystem", "service", "firstFit", "replacement", "cost", "margin"],
   /** A service visit's price and how often it comes: "Rs. 2,000 every 30 days". */
   serviceEvery: (price: string, days: number) => `${price} every ${String(days)} days`,
   /** A replacement's price and when it falls due: "Rs. 15,000 after 6 months". */
