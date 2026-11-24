@@ -44,8 +44,8 @@ function countryName(code: string): string {
 
 const whereOf = (row: Supplier) => copy.countryCurrency(countryName(row.country), row.currency);
 
-/** Each supplier's orders over the year that came on time and whole, by its ID, from the scorecard. */
-type OnTime = ReadonlyMap<string, { readonly kept: number; readonly orders: number }>;
+/** The share of each supplier's orders that came on time and whole, by its ID, from the scorecard; null where none came. */
+type OnTime = ReadonlyMap<string, number | null>;
 
 const columnsOf = (onTime: OnTime | null): readonly Column<Supplier>[] => [
   { label: copy.columns.supplier, sort: (row) => row.name },
@@ -54,7 +54,7 @@ const columnsOf = (onTime: OnTime | null): readonly Column<Supplier>[] => [
   { label: copy.columns.warranty, sort: (row) => row.warranty_days, figure: true },
   ...(onTime === null
     ? []
-    : [{ label: copy.columns.onTime, sort: (row: Supplier) => onTime.get(row.id)?.kept ?? -1, figure: true }]),
+    : [{ label: copy.columns.onTime, sort: (row: Supplier) => onTime.get(row.id) ?? -1, figure: true }]),
 ];
 
 /**
@@ -68,30 +68,23 @@ function useOnTime(): OnTime | null {
     if (!may) return;
     void purchasingApi.scorecard().then((answer) => {
       if (!answer.ok) return;
-      setOnTime(
-        new Map(
-          answer.body.suppliers.map((each) => [
-            each.supplier_id,
-            {
-              kept: Math.round(((each.on_time_in_full_percent ?? 0) * each.orders) / 100),
-              orders: each.orders,
-            },
-          ]),
-        ),
-      );
+      setOnTime(new Map(answer.body.suppliers.map((each) => [each.supplier_id, each.on_time_in_full_percent])));
     });
   }, [may]);
   return onTime;
 }
 
-/** A supplier's on-time figure, or a gap where it had no order over the year. */
+/** A supplier's on-time share, or a gap where none of its orders came over the scorecard's window. */
 function OnTimeCell({ onTime, id }: { onTime: OnTime; id: string }) {
-  const figure = onTime.get(id);
-  return (
-    <td className={FIGURE}>
-      {figure === undefined || figure.orders === 0 ? <NoValue /> : copy.onTime(figure.kept, figure.orders)}
-    </td>
-  );
+  const percent = onTime.get(id);
+  return <td className={FIGURE}>{percent === undefined || percent === null ? <NoValue /> : copy.onTime(percent)}</td>;
+}
+
+/** A supplier's line on a phone: where it is, its warranty, and its on-time share where the scorecard has one. */
+function metaOf(supplier: Supplier, onTime: OnTime | null): string {
+  const percent = onTime?.get(supplier.id);
+  const parts = [whereOf(supplier), copy.warranty(supplier.warranty_days)];
+  return [...parts, ...(percent === undefined || percent === null ? [] : [copy.onTimeMeta(percent)])].join(" · ");
 }
 
 function SupplierTable(props: { rows: readonly Supplier[]; onTime: OnTime | null; onOpen: (id: string) => void }) {
@@ -108,7 +101,7 @@ function SupplierTable(props: { rows: readonly Supplier[]; onTime: OnTime | null
           row={(supplier) => ({
             key: supplier.id,
             title: supplier.name,
-            meta: `${whereOf(supplier)} · ${copy.warranty(supplier.warranty_days)}`,
+            meta: metaOf(supplier, props.onTime),
             end: copy.terms(supplier.payment_terms_days),
             label: copy.open(supplier.name),
             onClick: () => {

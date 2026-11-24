@@ -20,6 +20,7 @@ import { useIsPhone } from "../lib/media.ts";
 import { useLapsed } from "../lib/session.ts";
 import {
   mayFollow,
+  mayOpen,
   NAV_NAMES,
   navOf,
   SECTION_NAMES,
@@ -29,6 +30,8 @@ import {
   SETTINGS_PAGE_NAMES,
   STOCK_VIEWS,
   stockPath,
+  type MayCall,
+  type Page,
   type Route,
 } from "../route.ts";
 import { stock } from "../content/stock.ts";
@@ -133,11 +136,19 @@ function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: 
   }, [heading, page, path]);
 }
 
+/** An entry of several pages, in the trail: a way back to the first of them the person may open. */
+function entryCrumb(route: Exclude<Route, { readonly page: "more" | "settings" }>, mayCall: MayCall): Crumb[] {
+  const entry = navOf(route.page);
+  if (entry.pages.length < 2) return [];
+  const first = (entry.pages as readonly Page[]).find((page) => mayOpen(mayCall, page)) ?? route.page;
+  return [{ label: NAV_NAMES[entry.entry], to: sectionOf(first).path }];
+}
+
 /**
  * What stands above the page where it sits: its entry above a page of several, its section above a record, Settings'
  * group above its page. The page's own name follows, alone where nothing stands above it.
  */
-function crumbsOf(route: Route, record: string | undefined): Crumb[] {
+function crumbsOf(route: Route, record: string | undefined, mayCall: MayCall): Crumb[] {
   if (route.page === "more") return [];
   if (route.page === "settings") {
     const page = settingsPageOf(route.tab);
@@ -147,10 +158,9 @@ function crumbsOf(route: Route, record: string | undefined): Crumb[] {
   if (record !== undefined) return [{ label: SECTION_NAMES[route.page], to: section.path }];
   // A view of Stock's beyond On hand stands under Stock, as the redesign's "Inventory / Stock / Expiring".
   if (route.page === "stock" && route.view !== STOCK_VIEWS[0]) {
-    return [{ label: NAV_NAMES.inventory }, { label: SECTION_NAMES.stock, to: stockPath(STOCK_VIEWS[0]) }];
+    return [...entryCrumb(route, mayCall), { label: SECTION_NAMES.stock, to: stockPath(STOCK_VIEWS[0]) }];
   }
-  const entry = navOf(route.page);
-  return entry.pages.length > 1 ? [{ label: NAV_NAMES[entry.entry] }] : [];
+  return entryCrumb(route, mayCall);
 }
 
 /** The trail's last step: a view of Stock's beyond On hand by its own name, else the page's title. */
@@ -234,7 +244,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
   const menu = useMenu();
   const phone = useIsPhone();
   useFocusOnArrival(headingRef, main);
-  const crumbs = crumbsOf(route, record);
+  const crumbs = crumbsOf(route, record, useMayCall());
   const title = pageTitleOf(route, record);
   return (
     <div className={styles.console}>

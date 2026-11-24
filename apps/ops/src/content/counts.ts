@@ -22,6 +22,8 @@ export const counts = {
   },
   /** A row's action, by where its count stands: to count or count again, to sign off, or done. */
   act: { open: "Count now", recount: "Count now", sign_off: "Review", done: "Open" },
+  /** The rows' actions column, named for a screen reader. */
+  next: "Next step",
   /** "Imran Qureshi · Weekly" */
   heading: (place: string, countClass: string) => `${place} · ${countClass}`,
   countNote: "Count every item on the shelf, whatever the system says.",

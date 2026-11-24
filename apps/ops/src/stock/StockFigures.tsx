@@ -5,7 +5,7 @@
 import { StatTile, StatTiles } from "@maneman/ui/StatTile";
 import type { Loaded } from "@maneman/ui/useLoad";
 import { useLoad } from "@maneman/ui/useLoad";
-import { rupees } from "@maneman/web-kit/money";
+import { roundRupees } from "@maneman/web-kit/money";
 import type { Stock, StockDemand } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
 import { itemsApi } from "../items/index.ts";
@@ -19,7 +19,7 @@ function toReorder(stock: Stock, showing: Showing): number {
   return stock.consumables.filter((each) => places.some((place) => stateOf(stock, each, place) !== null)).length;
 }
 
-/** What every place within reach holds, at each item's unit cost, from the items' own read. */
+/** What every place within reach holds, at each item's unit cost, from the items' own read, to the rupee. */
 function StockValue({ stock }: { stock: Stock }) {
   const [loaded] = useLoad(itemsApi.consumables);
   const value =
@@ -33,7 +33,11 @@ function StockValue({ stock }: { stock: Stock }) {
     return <StatTile label={copy.figures.value} value={copy.figures.noValue} note={copy.figures.unread} />;
   }
   return (
-    <StatTile label={copy.figures.value} value={value === null ? null : rupees(value)} note={copy.figures.atCost} />
+    <StatTile
+      label={copy.figures.value}
+      value={value === null ? null : roundRupees(value)}
+      note={copy.figures.atCost}
+    />
   );
 }
 
@@ -48,12 +52,16 @@ export function StockFigures(props: { stock: Stock; showing: Showing; demand: Lo
   return (
     <StatTiles>
       <StatTile label={copy.figures.reorder} value={reorder} tone={reorder > 0 ? "warning" : "plain"} note="" />
-      <StatTile
-        label={copy.figures.kitsShort}
-        value={kits?.length ?? null}
-        tone={kits !== null && kits.length > 0 ? "warning" : "plain"}
-        note={kits === null || kits.length === 0 ? "" : kits.join(", ")}
-      />
+      {demand.state === "failed" ? (
+        <StatTile label={copy.figures.kitsShort} value={copy.figures.noValue} note={copy.figures.unreadKits} />
+      ) : (
+        <StatTile
+          label={copy.figures.kitsShort}
+          value={kits?.length ?? null}
+          tone={kits !== null && kits.length > 0 ? "warning" : "plain"}
+          note={kits === null || kits.length === 0 ? "" : kits.join(", ")}
+        />
+      )}
       {mayCost && <StockValue stock={stock} />}
     </StatTiles>
   );

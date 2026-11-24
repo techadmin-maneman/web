@@ -109,7 +109,7 @@ function TechnicianTable({ usage, onOpen }: { usage: Usage; onOpen: (id: string)
           <tbody>
             {view.shown.map((technician) => (
               <tr key={technician.technician_id}>
-                <RowHead>
+                <RowHead meta={technician.flagged ? copy.flagged : undefined}>
                   <TextButton
                     compact
                     aria-label={copy.items(technician.name)}

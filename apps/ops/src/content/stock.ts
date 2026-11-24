@@ -30,9 +30,10 @@ export const stock = {
     kitsShort: "Kits short for booked visits",
     value: "Stock value",
     atCost: "At cost",
-    /** The costs did not come: the figure is a gap, and the line says why. */
+    /** The costs, or the weeks ahead, did not come: the figure is a gap, and the line says why. */
     noValue: "—",
     unread: "Couldn’t load the costs.",
+    unreadKits: "Couldn’t load the weeks ahead.",
   },
   /** A place's items narrowed: every one, those low or out, or those with a lot expiring soon; and found by name. */
   narrow: {
@@ -76,6 +77,7 @@ export const stock = {
   neverCounted: "Not yet",
   /** A phone's row, where the columns' names are not there to say what each date is. */
   phone: {
+    reorderAt: (amount: string) => `Reorder at ${amount}`,
     expires: (date: string) => `Expires ${date}`,
     counted: (date: string) => `Counted ${date}`,
     notCounted: "Not counted yet",

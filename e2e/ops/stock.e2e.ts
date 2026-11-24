@@ -29,10 +29,9 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: stock.title })).toBeVisible();
 }
 
-/** Opens one of the page's views by its tab. */
-/** Stock's views are tabs of Inventory's own row, beside its other pages. */
-const inventoryTabs = (page: Page) => page.getByRole("navigation", { name: opsCopy.shell.nav.inventory });
-const showView = (page: Page, name: string) => inventoryTabs(page).getByRole("link", { name, exact: true }).click();
+/** Stock's views, tabs of their own on a desk with the navigation open; one opened by its tab. */
+const viewTabs = (page: Page) => page.getByRole("navigation", { name: stock.title, exact: true });
+const showView = (page: Page, name: string) => viewTabs(page).getByRole("link", { name, exact: true }).click();
 
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
@@ -47,7 +46,7 @@ async function recording(page: Page) {
 test("is a section of its own beside the technicians, titled by what it is, on On hand", async ({ page }) => {
   await open(page);
   await expect(page).toHaveTitle("Stock · Mane Man Ops");
-  await expect(inventoryTabs(page).getByRole("link", { name: stock.views.names["on-hand"] })).toHaveAttribute(
+  await expect(viewTabs(page).getByRole("link", { name: stock.views.names["on-hand"] })).toHaveAttribute(
     "aria-current",
     "page",
   );
@@ -346,7 +345,7 @@ test("lists the latest movements, a job’s use under the technician who recorde
 test("keeps its views' tabs whole on a view taller than the window", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 480 });
   await open(page);
-  const views = inventoryTabs(page);
+  const views = viewTabs(page);
   for (const view of [stock.views.names.movements, stock.views.names.places]) {
     await views.getByRole("link", { name: view, exact: true }).click();
     await expect(views.getByRole("link", { name: view, exact: true })).toHaveAttribute("aria-current", "page");
@@ -411,6 +410,8 @@ test("adds a stockroom under the warehouse, and closes it again", async ({ page 
   await showView(page, stock.views.names.places);
   const places = page.getByRole("region", { name: stockPlaces.title });
   await expect(places.getByRole("button", { name: stockPlaces.open(WAREHOUSE) })).toBeVisible();
+  await expect(places.getByRole("columnheader", { name: stockPlaces.itemsHeld })).toBeVisible();
+  await expect(places.getByRole("row").filter({ hasText: "Imran Qureshi" }).getByRole("cell").last()).toHaveText("2");
   await places.getByRole("button", { name: stockPlaces.add.title }).click();
   const add = page.getByRole("dialog", { name: stockPlaces.add.title });
   await add.getByLabel(stockPlaces.add.name).fill("Gurgaon stockroom");
@@ -507,13 +508,13 @@ test("shows what the next four weeks will use beside what each city holds, and t
   } satisfies OpsReply<"/api/stock/demand">;
   await open(page, { "GET /api/stock/demand": json(ahead) });
   const panel = page.getByRole("region", { name: stockViews.demand.title });
-  await expect(panel.getByRole("row").filter({ hasText: "Solvent" })).toContainText(stockViews.demand.short(6));
+  await expect(panel.getByRole("row").filter({ hasText: "Solvent" })).toContainText(stockViews.demand.short("6 ml"));
   await expect(panel).toContainText(stockViews.demand.fit("Fri 24 Sep", "Gurgaon", stockViews.demand.noProfile));
 });
 
 // The redesign's C10 (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md): a kit short for its
-// technician's visits already allotted is named with what to send it; the rest of the weeks ahead stays the city's.
-test("names a kit short for its technician's allotted visits, and says Enough where the city holds what it uses", async ({
+// technician's visits already allotted is named with what to send it, beside the city's own shortfall over the weeks.
+test("names a kit short for its technician's allotted visits beside the city's shortfall, and Enough where neither is", async ({
   page,
 }) => {
   const ahead = {
@@ -538,7 +539,8 @@ test("names a kit short for its technician's allotted visits, and says Enough wh
   const panel = page.getByRole("region", { name: stockViews.demand.title });
   const solvent = panel.getByRole("row").filter({ hasText: "Solvent" });
   await expect(solvent).toContainText(stockViews.demand.send("15 ml", "Imran"));
-  await expect(solvent).not.toContainText(stockViews.demand.short(6));
+  await expect(solvent).toContainText(stockViews.demand.short("6 ml"));
+  await expect(solvent).not.toContainText(stockViews.demand.enough);
   await expect(panel.getByRole("row").filter({ hasText: "Tape strips" })).toContainText(stockViews.demand.enough);
 });
 

@@ -1,7 +1,7 @@
 // The navigation's entries over the pages of work (../route.ts, NAV): each entry opens on the first of its pages the
 // person may open, counts what waits across them, and, where it has several, lists them beneath it while it is the
-// current one. A phone, which has no side navigation, has them as tabs at the head of each; wider, only Stock's views
-// are tabs, on Stock.
+// current one. Their pages are tabs at the head of each, too, but Inventory's on a desk with the navigation open,
+// where only Stock's views are tabs, on Stock, as the redesign draws it.
 
 import { Link } from "@maneman/ui/router";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
@@ -99,17 +99,18 @@ function StockTabs({ route }: { readonly route: WorkRoute }) {
 type WorkRoute = Exclude<Route, { readonly page: "more" | "settings" }>;
 
 /**
- * At the head of a page of an entry of several: on a phone, the entry's pages as tabs, Stock as its views; wider, where
- * the navigation lists the pages, Stock's views alone, on Stock. Nothing for an entry of one page.
+ * At the head of a page of an entry of several, the entry's pages as tabs, Stock as its views. Inventory's, on a desk
+ * with the navigation open, give way to Stock's views alone, on Stock. Nothing for an entry of one page.
  */
 export function GroupTabs({ route }: { readonly route: WorkRoute }) {
   const mayCall = useMayCall();
   const entry = navOf(route.page);
   const open = (entry.pages as readonly Page[]).filter((each) => mayOpen(mayCall, each));
   if (open.length < 2) return null;
+  const inventory = entry.entry === "inventory";
   return (
     <>
-      <Tabs label={NAV_NAMES[entry.entry]} className={styles.everyPage}>
+      <Tabs label={NAV_NAMES[entry.entry]} className={inventory ? styles.inventoryPages : undefined}>
         {open.map((each) =>
           each === "stock" ? (
             <StockTabs key={each} route={route} />
@@ -120,8 +121,8 @@ export function GroupTabs({ route }: { readonly route: WorkRoute }) {
           ),
         )}
       </Tabs>
-      {route.page === "stock" && (
-        <Tabs label={NAV_NAMES[entry.entry]} className={styles.views}>
+      {inventory && route.page === "stock" && (
+        <Tabs label={stock.title} className={styles.stockViews}>
           <StockTabs route={route} />
         </Tabs>
       )}

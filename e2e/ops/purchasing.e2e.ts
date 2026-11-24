@@ -91,6 +91,12 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
+test("says beside its title how many orders await approval, an order sent not among them", async ({ page }) => {
+  const sent = { ...ORDER, id: "po-2", number: 8, state: "sent" as const };
+  await open(page, { "GET /api/purchase-orders": json({ ...BOOK, orders: [ORDER, sent] }) });
+  await expect(page.getByRole("main").getByText(copy.toApprove(1), { exact: true })).toBeVisible();
+});
+
 // A custom order's purchase order was drafted with no word of whose it was, and a task could not open it.
 test("names the client a custom order's purchase order is for, and opens it from its task", async ({ page }) => {
   const PO = "7b000000-0000-4000-8000-000000000002";

@@ -532,12 +532,13 @@ export const settings = {
       country: "Country and currency",
       terms: "Terms",
       warranty: "Warranty",
-      onTime: "On time, 12 months",
+      onTime: "On time, in full",
     },
     /** "India, INR" */
     countryCurrency: (country: string, currency: string) => `${country}, ${currency}`,
-    /** Of a supplier's orders over the year, how many came on time and whole: "2 of 2". */
-    onTime: (kept: number, orders: number) => `${String(kept)} of ${String(orders)}`,
+    /** The share of a supplier's orders over the scorecard's window that came on time and whole: "92%". */
+    onTime: (percent: number) => `${String(percent)}%`,
+    onTimeMeta: (percent: number) => `${String(percent)}% on time, in full`,
     find: "Find a supplier",
     /** Those no longer bought from, folded in a panel beneath those who are. */
     retiredTitle: "Retired suppliers",

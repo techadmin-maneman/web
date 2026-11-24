@@ -88,17 +88,13 @@ function CityPick(props: {
   );
 }
 
-/** An event added: its name, its city or every city, its days, and how much it changes demand. */
-function AddEvent({
-  cities,
-  failure,
-  onAnswer,
-}: {
-  cities: readonly string[];
-  failure: Failure | null;
-  onAnswer: (answer: Answer) => boolean;
-}) {
+/**
+ * An event added: its name, its city or every city, its days, and how much it changes demand; a refusal said in the
+ * drawer it is added in, beside the box it names.
+ */
+function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (answer: Answer) => boolean }) {
   const [draft, setDraft] = useState(EMPTY);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const refused = (box: string) => boxError(copy.errors, failure, box);
   const edit = (field: keyof typeof EMPTY) => (text: string) => {
     setDraft((was) => ({ ...was, [field]: text }));
@@ -118,6 +114,10 @@ function AddEvent({
       ends_on: draft.endsOn,
       uplift_percent: percent,
     });
+    if (!answer.ok) {
+      setFailure({ code: answer.code, fields: answer.fields });
+      return;
+    }
     if (onAnswer(answer)) setDraft(EMPTY);
   };
   return (
@@ -145,6 +145,7 @@ function AddEvent({
         onChange={edit("percent")}
         error={refused("uplift_percent")}
       />
+      <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={EVENT_BOXES} />
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {copy.save}
@@ -209,7 +210,6 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
       {(close) => (
         <AddEvent
           cities={demand.cities}
-          failure={failure}
           onAnswer={(answer) => {
             const added = answered(copy.added)(answer);
             if (added) close();

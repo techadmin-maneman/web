@@ -21,7 +21,7 @@ import { stock as copy } from "../content/stock.ts";
 import form from "@maneman/ui/forms.module.css";
 import { placeChoices, placeName } from "./StockForm.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
-import { PlaceState, reorderAt, StateBadge, stateOf, type Consumable } from "./stock-state.tsx";
+import { isEnough, PlaceState, reorderAt, StateBadge, stateOf, type Consumable } from "./stock-state.tsx";
 import styles from "./stock.module.css";
 
 /** Past this many places, every place side by side grows too wide to read: one place at a time, then. */
@@ -201,6 +201,37 @@ const endToneOf = (state: ReturnType<typeof stateOf>): EndTone => {
   return state.tone === "error" ? "error" : "warning";
 };
 
+/**
+ * An item's phone row in a place: its state, or Enough, at the end, else what it holds; beneath, what it holds where the
+ * end is a word, the level it is low at, and its soonest lot and last count.
+ */
+function phoneRowOf(stock: Stock, place: string, year: number, consumable: Consumable) {
+  const held = holdingOf(stock, consumable.code, place);
+  const unit = unitOf(stock, consumable.code);
+  const state = stateOf(stock, consumable, place);
+  const enough = isEnough(stock, consumable, place);
+  const level = reorderAt(stock, consumable, place);
+  const soonest = held?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? null;
+  const counted = held?.counted_at ?? null;
+  const amount = copy.held(held?.quantity ?? 0, unit);
+  const word = state?.word ?? (enough ? copy.enough : null);
+  return {
+    key: consumable.code,
+    title: consumable.name,
+    meta: [
+      word === null ? null : amount,
+      level === null ? null : copy.phone.reorderAt(copy.held(level, unit)),
+      (held?.reserved ?? 0) > 0 ? copy.reserved(held?.reserved ?? 0) : null,
+      soonest === null ? null : copy.phone.expires(listDate(soonest, year)),
+      counted === null ? copy.phone.notCounted : copy.phone.counted(listDate(indiaDate(counted), year)),
+    ]
+      .filter((part) => part !== null)
+      .join(" · "),
+    end: word ?? amount,
+    endTone: endToneOf(state),
+  };
+}
+
 /** The place's items, each column sorting: an item's state, its soonest lot and its last count. */
 function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string; shown: Consumable[]; year: number }) {
   const holding = (consumable: Consumable) => holdingOf(stock, consumable.code, place);
@@ -221,25 +252,7 @@ function PlaceTable({ stock, place, shown, year }: { stock: Stock; place: string
       <ViewRows
         rows={view.shown}
         label={copy.onHand}
-        row={(consumable) => {
-          const held = holding(consumable);
-          const state = stateOf(stock, consumable, place);
-          const soonest = held?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? null;
-          const counted = held?.counted_at ?? null;
-          return {
-            key: consumable.code,
-            title: consumable.name,
-            meta: [
-              (held?.reserved ?? 0) > 0 ? copy.reserved(held?.reserved ?? 0) : null,
-              soonest === null ? null : copy.phone.expires(listDate(soonest, year)),
-              counted === null ? copy.phone.notCounted : copy.phone.counted(listDate(indiaDate(counted), year)),
-            ]
-              .filter((part) => part !== null)
-              .join(" · "),
-            end: state === null ? copy.held(held?.quantity ?? 0, unitOf(stock, consumable.code)) : state.word,
-            endTone: endToneOf(state),
-          };
-        }}
+        row={(consumable) => phoneRowOf(stock, place, year, consumable)}
       />
     );
   }

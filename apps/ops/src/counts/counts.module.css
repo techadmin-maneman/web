@@ -12,14 +12,6 @@
   }
 }
 
-/* A count's state, and at the row's end the way to act on it. */
-.status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-12);
-}
-
 /* Each item's class, inset as the panel's other rows are. */
 .classes {
   padding: var(--sp-8) var(--form-inset);

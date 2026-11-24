@@ -118,6 +118,28 @@ describe("the weeks ahead", () => {
     await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 1, from: "central", to: IMRAN });
     expect((await demand()).at_risk.map((fit) => fit.appointment_id)).toEqual(["fit-2"]);
   });
+
+  it("names a kit short of the hair system its technician's allotted fit is made to, until the kit holds it", async () => {
+    const added = await job.opsPost("/api/hair-systems", { ...SPEC, unit_cost: 1_200_000 });
+    const code = (await added.json<{ code: string }>()).code;
+    const person = "44444444-4444-4444-8444-444444444443";
+    await fitBooked("fit-3", person);
+    await env.DB.prepare(
+      `INSERT INTO hair_profiles (id, person_id, staff, created_at, product, base_width_in, base_length_in, colour,
+         grey_percent, density_percent)
+       VALUES ('hp-3', ?1, 'ops@localhost', ?2, 'essential', 8, 10, '1B', 20, 100)`,
+    )
+      .bind(person, NOW.toISOString())
+      .run();
+    const short = async () =>
+      (await request(job.ops, "/api/stock/demand")).json<{ kits_short: { consumable_code: string }[] }>();
+    expect((await short()).kits_short).toContainEqual(
+      expect.objectContaining({ technician_id: IMRAN, consumable_code: code, expected: 1, held: 0 }),
+    );
+    await job.opsPost("/api/stock/deliveries", { consumable_code: code, quantity: 1 });
+    await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 1, from: "central", to: IMRAN });
+    expect((await short()).kits_short.map((kit) => kit.consumable_code)).not.toContain(code);
+  });
 });
 
 describe("a replacement", () => {

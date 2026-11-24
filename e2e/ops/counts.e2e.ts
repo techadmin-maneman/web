@@ -42,6 +42,12 @@ const posted = (page: Page, path: string) =>
 /** A row's action, by where its count stands, named with the count it opens. */
 const opener = (place: string, act: string = copy.act.open) => `${act} · ${copy.heading(place, copy.classes.weekly)}`;
 
+test("says beside its title how many counts are still due, a done one not among them", async ({ page }) => {
+  const done = { ...KIT, id: "ct-3", place_id: "room-2", place: "Gurgaon stockroom", state: "done" as const };
+  await open(page, { "GET /api/count-tasks": json({ ...BOOK, tasks: [KIT, ROOM, done] }) });
+  await expect(page.getByRole("main").getByText(copy.due(2), { exact: true })).toBeVisible();
+});
+
 test("opens a task and counts it blind", async ({ page }) => {
   const task = {
     task: KIT,

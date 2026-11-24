@@ -69,8 +69,17 @@
     white-space: nowrap;
   }
 
-  /* Two tiles to a phone's row: the figure smaller, and the tile closer about it, so an amount stays whole. */
+  /* Two tiles to a phone's row: the figure smaller, and the tile closer about it, so an amount stays whole. An odd
+     tile left at the end takes the row, so the strip has no empty room. */
   @media (max-width: 600px) {
+    .stripRow {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stripRow > .tile:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
     .tile {
       padding: var(--sp-12) var(--sp-16);
     }

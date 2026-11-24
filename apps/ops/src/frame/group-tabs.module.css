@@ -1,17 +1,26 @@
 /*
- * An entry's pages at the head of each (./SectionGroups.tsx): tabs on a phone, which has no side navigation; wider,
- * the navigation lists them beneath the entry, and only Stock's views are tabs.
+ * Inventory's pages at the head of each (./SectionGroups.tsx). On a desk with the navigation open, the navigation lists
+ * them beneath the entry, and only Stock's views are tabs; short of a desk, or with the navigation folded to its icons,
+ * the pages are tabs again, Stock's views among them.
  */
-.everyPage {
+.inventoryPages {
   display: none;
 }
 
-@media (max-width: 600px) {
-  .everyPage {
+@media (max-width: 1023px) {
+  .inventoryPages {
     display: flex;
   }
 
-  .views {
+  .stockViews {
     display: none;
   }
+}
+
+:global(body:has(#console-nav[data-folded="true"])) .inventoryPages {
+  display: flex;
+}
+
+:global(body:has(#console-nav[data-folded="true"])) .stockViews {
+  display: none;
 }

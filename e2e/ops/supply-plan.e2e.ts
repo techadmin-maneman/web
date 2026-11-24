@@ -101,6 +101,12 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
+test("says beside its title how many lines await approval, one approved not among them", async ({ page }) => {
+  const approved = { ...ORDER, id: "pl-3", state: "approved" as const };
+  await open(page, { "GET /api/supply-plan": json({ lines: [LOAN, ORDER, approved] }) });
+  await expect(page.getByRole("main").getByText(copy.linesToApprove(2), { exact: true })).toBeVisible();
+});
+
 test("lists each transfer and order with why, and approves one at a changed quantity", async ({ page }) => {
   const approved = { lines: [{ ...LOAN, state: "approved" as const, quantity: 4 }, ORDER] };
   await open(page, { "POST /api/supply-plan/lines/{id}/approve": json(approved) });

@@ -157,8 +157,8 @@ test("shows what a supplier supplies, sets a price where it reads, and adds an i
   expect(await axeViolations(page)).toEqual([]);
 });
 
-// The redesign's On time, 12 months, from the scorecard (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
-test("says how many of each supplier's orders this year came on time and whole", async ({ page }) => {
+// The redesign's on-time column, from the scorecard (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+test("says what share of each supplier's orders came on time and whole", async ({ page }) => {
   const scores = {
     suppliers: [
       {
@@ -179,5 +179,5 @@ test("says how many of each supplier's orders this year came on time and whole",
   } satisfies OpsReply<"/api/supplier-scorecard">;
   await open(page, { "GET /api/supplier-scorecard": json(scores) });
   await expect(page.getByRole("columnheader", { name: copy.columns.onTime })).toBeVisible();
-  await expect(page.getByRole("row").filter({ hasText: "Lumina Hair Co" })).toContainText(copy.onTime(1, 2));
+  await expect(page.getByRole("row").filter({ hasText: "Lumina Hair Co" })).toContainText(copy.onTime(50));
 });

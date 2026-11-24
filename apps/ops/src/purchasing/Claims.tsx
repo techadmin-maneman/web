@@ -147,9 +147,9 @@ export function Claims({ orders }: { orders: Orders }) {
               <ClaimSteps key={opened.id} claim={opened} onAnswer={answered} />
             </div>
           )}
-          {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
         </Panel>
       )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       {current.returns.length > 0 && (
         <Panel titleId="returned-pieces" title={copy.returns.title}>
           <ReturnedPieces pieces={current.returns} onAnswer={answered} />

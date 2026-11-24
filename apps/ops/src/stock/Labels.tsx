@@ -5,13 +5,13 @@
 
 import { Panel } from "@maneman/ui/Panel";
 import { plainDate } from "@maneman/web-kit/plain-date";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
 import { Checkbox, type Choice, ChoiceGroup, ChoiceOptions, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Note } from "@maneman/ui/Note";
 import { NoValue } from "@maneman/ui/NoValue";
 import { RowHead } from "@maneman/ui/RowHead";
-import { Table, TableScroll } from "@maneman/ui/Table";
+import { ACTIONS, RowActions, Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -138,18 +138,18 @@ function UnitTable({ units, name }: { units: readonly Unit[]; name: string }) {
                 <RowHead>{unit.code}</RowHead>
                 <td>{unit.lot_code ?? <NoValue />}</td>
                 <td>{shortDate(indiaDate(unit.labelled_at))}</td>
-                <td className={styles.printOne}>
-                  <Button
-                    variant="outline"
-                    size="compact"
-                    aria-label={copy.printOneLabel(unit.code)}
-                    disabled={printing !== null}
-                    onClick={() => {
-                      setPrinting([{ code: unit.code, name, lot: lotLine(unit.lot_code, unit.expires_on, true) }]);
-                    }}
-                  >
-                    {copy.printOne}
-                  </Button>
+                <td className={ACTIONS}>
+                  <RowActions>
+                    <RowButton
+                      aria-label={copy.printOneLabel(unit.code)}
+                      disabled={printing !== null}
+                      onClick={() => {
+                        setPrinting([{ code: unit.code, name, lot: lotLine(unit.lot_code, unit.expires_on, true) }]);
+                      }}
+                    >
+                      {copy.printOne}
+                    </RowButton>
+                  </RowActions>
                 </td>
               </tr>
             ))}

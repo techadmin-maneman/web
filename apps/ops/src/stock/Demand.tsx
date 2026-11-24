@@ -28,25 +28,25 @@ type KitShort = Success<paths["/api/stock/demand"]["get"]>["kits_short"][number]
 const firstName = (name: string): string => name.split(/\s+/)[0] ?? name;
 
 /**
- * A row's state: each kit short of the item for its technician's visits already allotted, named; else the city short;
- * else Enough (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+ * A row's state: each kit short of the item for its technician's visits already allotted, named, and the city short
+ * over the four weeks; Enough where neither is
+ * (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
  */
 function RowState({ row, kits, unit }: { row: DemandRow; kits: readonly KitShort[]; unit: string }) {
   const words = stockViews.demand;
   const short = kits.filter((kit) => kit.consumable_code === row.consumable_code && kit.city === row.city);
-  if (short.length > 0) {
-    return (
-      <span className={styles.sends}>
-        {short.map((kit) => (
-          <Badge key={kit.technician_id} tone="warning">
-            {words.send(amountOf(kit.expected - kit.held, unit), firstName(kit.technician))}
-          </Badge>
-        ))}
-      </span>
-    );
-  }
-  if (row.held < row.expected) return <Badge tone="warning">{words.short(row.expected - row.held)}</Badge>;
-  return <Badge tone="done">{words.enough}</Badge>;
+  const cityShort = row.held < row.expected;
+  if (short.length === 0 && !cityShort) return <Badge tone="done">{words.enough}</Badge>;
+  return (
+    <span className={styles.sends}>
+      {short.map((kit) => (
+        <Badge key={kit.technician_id} tone="warning">
+          {words.send(amountOf(kit.expected - kit.held, unit), firstName(kit.technician))}
+        </Badge>
+      ))}
+      {cityShort && <Badge tone="warning">{words.short(amountOf(row.expected - row.held, unit))}</Badge>}
+    </span>
+  );
 }
 
 /** What the next four weeks will use beside what each city holds, each column sorting, narrowed by city. */

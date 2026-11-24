@@ -7,7 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, CONSUMABLES, IMRAN, json, STOCK, type Answers, type OpsReply } from "./fixtures.ts";
 import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
-import { rupees } from "../../packages/web-kit/money.ts";
+import { roundRupees } from "../../packages/web-kit/money.ts";
 import { stock } from "../../apps/ops/src/content/stock.ts";
 import { shell } from "../../apps/ops/src/content.ts";
 
@@ -66,10 +66,35 @@ test("says what to reorder, the kits short by name, and the stock's value at cos
   );
   await expect(tile(page, words.kitsShort)).toContainText("1");
   await expect(tile(page, words.kitsShort)).toContainText("Imran Qureshi");
-  await expect(tile(page, words.value)).toContainText(rupees(value));
+  await expect(tile(page, words.value)).toContainText(roundRupees(value));
   await expect(tile(page, words.value)).toContainText(words.atCost);
   await expect(tile(page, words.reorder)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("counts the items to reorder where the table looks: the warehouse's, then any place's", async ({ page }) => {
+  await open(page);
+  await expect(tile(page, words.reorder).getByText("1", { exact: true })).toBeVisible();
+  await page.getByLabel(stock.totalsBy).selectOption("place:");
+  await expect(tile(page, words.reorder).getByText("2", { exact: true })).toBeVisible();
+});
+
+test("reads each item's reorder level for the kind of place, and Enough above it", async ({ page }) => {
+  await open(page);
+  const table = page.getByRole("region", { name: stock.onHand });
+  const cell = (name: string, column: number) =>
+    table
+      .getByRole("row")
+      .filter({ has: page.getByRole("rowheader", { name }) })
+      .getByRole("cell")
+      .nth(column);
+  await expect(cell("Tape strips", 1)).toHaveText(stock.held(50, "strip"));
+  await expect(cell("Tape strips", 2)).toHaveText(stock.enough);
+  await expect(cell("Solvent", 1)).toHaveText(stock.noLevel);
+  await page.getByLabel(stock.totalsBy).selectOption(`place:${IMRAN}`);
+  await expect(cell("Tape strips", 1)).toHaveText(stock.held(5, "strip"));
+  await expect(cell("Solvent", 1)).toHaveText(stock.held(50, "ml"));
+  await expect(cell("Solvent", 2)).toHaveText(stock.enough);
 });
 
 test("shows the stock's value to nobody who may not read unit costs, and reads none for them", async ({ page }) => {
@@ -86,6 +111,11 @@ test("shows the stock's value to nobody who may not read unit costs, and reads n
 test("says where the costs did not load, rather than waiting on them", async ({ page }) => {
   await open(page, { "GET /api/consumables": (route) => route.abort() });
   await expect(tile(page, words.value)).toContainText(words.unread);
+});
+
+test("says where the weeks ahead did not load, rather than waiting on the kits short", async ({ page }) => {
+  await open(page, { "GET /api/stock/demand": (route) => route.abort() });
+  await expect(tile(page, words.kitsShort)).toContainText(words.unreadKits);
 });
 
 test("stands a view of Stock's beneath Stock in the trail, as the redesign's Inventory / Stock / Expiring", async ({

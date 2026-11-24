@@ -14,7 +14,8 @@ export const stockViews = {
     none: "Nothing booked in the next four weeks uses stock.",
     noCity: "No city",
     noProfile: "No hair profile to match",
-    short: (by: number) => `${String(by)} short`,
+    /** "6 ml short" */
+    short: (by: string) => `${by} short`,
     /** The city holds what its booked visits use, and no kit is short for those allotted. */
     enough: "Enough",
     /** A kit short for its technician's visits already allotted: "Send 1 piece to Sandeep". */

@@ -153,7 +153,7 @@ export function QualityScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
-          {access.mayCall("POST /api/recalls") && (
+          {access.mayCall("POST /api/recalls") && current.lots.length > 0 && (
             <PageActions>
               <DrawerButton label={copy.raise}>
                 {(close) => (
@@ -161,7 +161,7 @@ export function QualityScreen() {
                     quality={current}
                     onAnswer={(answer, words) => {
                       answered(answer, words);
-                      if (answer.ok) close();
+                      close();
                     }}
                   />
                 )}

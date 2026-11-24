@@ -39,6 +39,13 @@ export function reorderAt(stock: Stock, consumable: Consumable, placeId: string)
   return kind === "warehouse" ? consumable.reorder_central : consumable.reorder_store;
 }
 
+/** Whether an open place holds more of a live item than the level it is low at, where one is set. */
+export function isEnough(stock: Stock, consumable: Consumable, place: string): boolean {
+  if (stateOf(stock, consumable, place) !== null) return false;
+  const open = stock.places.find((each) => each.id === place)?.active !== false;
+  return open && !consumable.retired && reorderAt(stock, consumable, place) !== null;
+}
+
 /**
  * The state in a place's own table: as everywhere, or Enough where it holds more than its level; nothing where the
  * item has no level there, is retired, or the place is closed.
@@ -46,7 +53,5 @@ export function reorderAt(stock: Stock, consumable: Consumable, placeId: string)
 export function PlaceState({ stock, consumable, place }: { stock: Stock; consumable: Consumable; place: string }) {
   const state = stateOf(stock, consumable, place);
   if (state !== null) return <StateBadge state={state} />;
-  const open = stock.places.find((each) => each.id === place)?.active !== false;
-  const enough = open && !consumable.retired && reorderAt(stock, consumable, place) !== null;
-  return enough ? <Badge tone="done">{copy.enough}</Badge> : null;
+  return isEnough(stock, consumable, place) ? <Badge tone="done">{copy.enough}</Badge> : null;
 }

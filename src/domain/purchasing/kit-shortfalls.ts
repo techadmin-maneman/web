@@ -7,6 +7,7 @@
 import { tierOf } from "../../config/visit-types.ts";
 import { bookedAhead } from "../../config/statuses.ts";
 import { read, readAll } from "../../lib/read-all.ts";
+import type { Rows } from "../../lib/rows.ts";
 import { codedFits, FIT_COLUMNS, weeksAhead, type FitRow } from "./stock-demand.ts";
 
 /** One kit short of one stock code for its technician's visits allotted ahead. */
@@ -53,7 +54,7 @@ export async function kitShortfalls(db: D1Database, today: string, days: number)
          WHERE p.kind = 'kit' AND p.technician_id IS NOT NULL`,
       ),
     ),
-    technicians: read<{ id: string; name: string; city: string | null }>(
+    technicians: read<Pick<Rows["technicians"], "id" | "name" | "city">>(
       db.prepare("SELECT id, name, city FROM technicians"),
     ),
   });

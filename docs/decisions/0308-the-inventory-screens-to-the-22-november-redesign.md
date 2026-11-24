@@ -14,8 +14,10 @@ value.
 ## Decision
 
 1. **An entry of several pages lists them beneath it in the navigation** while it is the current one, as the
-   prototype's sub-menu does (Inventory, and with it Requests, Money, Growth and Reports). A phone, which has no side
-   navigation, keeps them as tabs at the head of each page; wider, only Stock's own views are tabs.
+   prototype's sub-menu does (Inventory, and with it Requests, Money, Growth and Reports). Their pages stay tabs at the
+   head of each page too, but Inventory's on a desk with the navigation open: there only Stock's own views are tabs,
+   as the prototype draws it. Short of a desk, or with the navigation folded to its icons, Inventory's pages are tabs
+   again.
 2. **Stock opens on the warehouse** (A8). "Whose stock" switches to one kit, every place side by side, or totals by
    zone or city, on one line with the chips that narrow a place's items and Find an item.
 3. **A place's table says each item's reorder level** for that kind of place, as the server reads it, and Enough where
@@ -40,7 +42,8 @@ value.
      are gone.
    - Items lists its consumables and hair systems side by side, and reads each service's expected use in a grid,
      changed in a drawer.
-   - Suppliers names each country, and, for those who read the scorecard, how many orders came on time this year.
+   - Suppliers names each country, and, for those who read the scorecard, the share of orders that came on time and
+     whole over its window.
    - Stock's views stand under Stock in the trail ("Inventory / Stock / Expiring"); Labels lists each piece with its
      own Print label beside the batches printed together; Places counts the items each holds.
 7. **What the prototype does not draw stays where it serves**: the lists' search and filters, a delivery's labels
