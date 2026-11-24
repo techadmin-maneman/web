@@ -8,13 +8,25 @@
  * Every amount is lining and tabular, so a column of rupees reads as a column.
  */
 
-/* The board's cards side by side on a desktop, as D1 draws the disputed charge beside the day's money. */
-.column {
+/* The page, one part beneath another. */
+.screen {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--ops-panel)), 1fr));
+  gap: var(--sp-24);
+}
+
+/* The no-shows to decide beside the disputed charges on a wide desk, as the redesign draws them; one above the other
+   short of it. */
+.toDecide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
-  gap: var(--sp-20);
-  max-width: var(--ops-list);
+  gap: var(--sp-24);
+}
+
+@media (max-width: 1279px) {
+  .toDecide {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ---- The day's money, and the charges beneath it --------------------------- */
@@ -118,14 +130,6 @@
   font-size: var(--fs-14);
   line-height: var(--lh-145);
   color: var(--ui-text-muted);
-}
-
-/* A ruling of the day, and when it was made, where a charge's amount stands above. */
-.ruling {
-  font-size: var(--fs-14);
-  color: var(--ui-text-muted);
-  white-space: nowrap;
-  font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* ---- One case, with its three facts --------------------------------------- */

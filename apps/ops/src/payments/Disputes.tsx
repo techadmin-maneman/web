@@ -10,7 +10,7 @@ import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type DisputeRuling, type NoShowDispute } from "../api.ts";
 import { DecisionQueue } from "@maneman/ui/DecisionQueue";
 import { Reach } from "../clients/index.ts";
@@ -181,9 +181,14 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
 }
 
 /** `onRuled`: a dispute was ruled on, which may have refunded money today. */
-export function Disputes({ onRuled }: { onRuled: () => void }) {
+export function Disputes({ onRuled, onCount }: { onRuled: () => void; onCount: (waiting: number) => void }) {
   const [loaded, retry] = useLoad(paymentsApi.disputes);
   const access = useAccess();
+  const [ruledHere, setRuledHere] = useState(0);
+  const waiting = loaded.state === "loaded" ? loaded.value.disputes.length - ruledHere : 0;
+  useEffect(() => {
+    onCount(waiting);
+  }, [onCount, waiting]);
   if (loaded.state === "loading") return <PanelLoading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
@@ -206,6 +211,7 @@ export function Disputes({ onRuled }: { onRuled: () => void }) {
           may={may}
           onRuled={() => {
             ruled();
+            setRuledHere((count) => count + 1);
             onRuled();
           }}
         />

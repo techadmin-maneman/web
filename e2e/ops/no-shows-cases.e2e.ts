@@ -242,10 +242,13 @@ test("lists the cases ruled on today with their ruling, and reads them and the d
   await open(page);
   await expect(page.getByRole("region", { name: MONEY, exact: true })).toBeVisible();
   const decided = page.getByRole("region", { name: DECIDED_TODAY });
-  await expect(decided.getByRole("listitem").filter({ hasText: "Karan Bose" })).toContainText(
-    "Charged Rs. 2,360 · 10:30 am",
-  );
-  await expect(decided.getByRole("listitem").filter({ hasText: "Arjun Mehra" })).toContainText("Waived · 9:05 am");
+  // A row each, as the redesign draws them: who, the visit, the ruling and when.
+  const karan = decided.getByRole("row").filter({ hasText: "Karan Bose" });
+  await expect(karan).toContainText("Charged Rs. 2,360");
+  await expect(karan).toContainText("10:30 am");
+  const arjun = decided.getByRole("row").filter({ hasText: "Arjun Mehra" });
+  await expect(arjun).toContainText(opsCopy.noShows.decided.waived);
+  await expect(arjun).toContainText("9:05 am");
 
   const first = caseOf(page, FIRST);
   await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("They were stuck in the lift; we have their call");

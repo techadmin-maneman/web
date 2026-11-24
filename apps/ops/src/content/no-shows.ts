@@ -201,15 +201,18 @@ export const noShows = {
     },
   },
   /** The board draws no list of the day's rulings. Each case ruled on today, the latest first. */
+  /** Beside the page's title: the no-shows and disputed charges waiting on a ruling. */
+  toDecide: (count: number) => `${String(count)} to decide`,
   decided: {
     title: "Decided today",
+    /** A row each, as the redesign draws them. */
+    columns: ["Client", "Visit", "Decision", "At"] as const,
     charged: (kept: string) => `Charged ${kept}`,
     chargedCredit: "Charged a free service visit",
     chargedNothing: "Closed as a no-show",
     // A charge ruled before charges recorded what they kept.
     chargedUnrecorded: "Charged",
     waived: "Waived",
-    at: (ruling: string, time: string) => `${ruling} · ${time}`,
     empty: "Nothing decided today.",
   },
   /**

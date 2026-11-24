@@ -5,6 +5,13 @@ import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const DISPUTES_QUEUE = opsCopy.noShows.dispute.queueTitle;
 
+// The redesign says beside the title how many wait on a ruling, the no-shows and the disputed charges together.
+test("says beside its title how many no-shows and disputed charges wait on a ruling", async ({ page }) => {
+  await open(page);
+  const waiting = NO_SHOWS.cases.length + DISPUTES.disputes.length;
+  await expect(page.getByRole("main").getByText(opsCopy.noShows.toDecide(waiting), { exact: true })).toBeVisible();
+});
+
 // The money sat under "No-shows", only ever today's.
 test("is the console’s Charges, at the address No-shows had", async ({ page }) => {
   await open(page);
