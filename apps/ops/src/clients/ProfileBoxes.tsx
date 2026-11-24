@@ -16,6 +16,7 @@ import {
 import { isOneOf } from "@rules/lib/one-of.ts";
 import type { ClientHairProfile, HairProfileView } from "../api.ts";
 import { clients } from "../content.ts";
+import styles from "./profile.module.css";
 
 const copy = clients.profile;
 
@@ -73,12 +74,12 @@ interface BoxProps {
 }
 
 /** What the client has tried, a tick each, named by the dialog's title, and a transplant's year once one is ticked. */
-function RemediesBox({ draft, setDraft }: BoxProps) {
+function RemediesBox({ control, draft, setDraft }: BoxProps) {
   const history = (next: Partial<HistoryForm>) => {
     setDraft({ ...draft, history: { ...draft.history, ...next } });
   };
   return (
-    <ChoiceGroup legend={copy.rows.remedies} legendLook="hidden" ruled>
+    <ChoiceGroup legend={copy.rows.remedies} legendLook="hidden" ruled className={styles.remedies}>
       {REMEDIES.map((remedy) => (
         <Checkbox
           key={remedy}
@@ -94,6 +95,10 @@ function RemediesBox({ draft, setDraft }: BoxProps) {
           {(own) => (
             <TextInput
               {...own}
+              aria-describedby={
+                [own["aria-describedby"], control["aria-describedby"]].filter(Boolean).join(" ") || undefined
+              }
+              aria-invalid={control["aria-invalid"] ?? own["aria-invalid"]}
               width="figure"
               inputMode="numeric"
               value={draft.history.year}

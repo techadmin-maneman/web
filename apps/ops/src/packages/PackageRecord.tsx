@@ -6,6 +6,7 @@ import { EditableRow } from "@maneman/ui/EditableRow";
 import { NumberInput, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { ReadRow } from "@maneman/ui/RecordRows";
+import { RowGroupTitle } from "@maneman/ui/RowGroupTitle";
 import { errorText } from "@maneman/web-kit/refusal";
 import type { ReactNode } from "react";
 import { PriceRow, priceText } from "../prices/index.ts";
@@ -104,7 +105,7 @@ function WordsRow(props: {
 function Section(props: { readonly title: string; readonly children: ReactNode }) {
   return (
     <section className={styles.section}>
-      <h3 className={styles.sectionTitle}>{props.title}</h3>
+      <RowGroupTitle>{props.title}</RowGroupTitle>
       {props.children}
     </section>
   );

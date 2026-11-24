@@ -13,7 +13,8 @@
     grid-template-columns: var(--setting-label-width) minmax(0, 1fr);
     column-gap: var(--sp-16);
     align-items: center;
-    min-height: var(--control-height);
+    /* As high as a row with its Change, so a record's rows read alike whether or not each may be changed. */
+    min-height: calc(var(--tap) + 2 * var(--sp-8));
     padding: var(--sp-8) var(--sp-20);
     border-bottom: var(--hairline) solid var(--ui-line);
   }
@@ -45,9 +46,10 @@
     color: var(--ui-text);
   }
 
+  /* The value and its Change on one line: the value's own words wrap, never Change beneath it. */
   .reading {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: var(--sp-12);
     min-width: 0;

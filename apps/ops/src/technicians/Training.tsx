@@ -13,7 +13,7 @@ const copy = technicians.training;
 /** The day a new technician's training is expected to end; left blank, they are not in training. */
 export function TrainingField({ value, onChange }: { value: string; onChange: (day: string) => void }) {
   return (
-    <Field label={copy.until}>
+    <Field label={copy.optional}>
       {(control) => (
         <DateInput
           {...control}

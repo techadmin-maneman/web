@@ -9,6 +9,7 @@ import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
 import { EditableRow } from "@maneman/ui/EditableRow";
+import { RowGroupTitle } from "@maneman/ui/RowGroupTitle";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate, yearInIndia } from "@maneman/web-kit/dates";
 import { bodyOf, fitOf, historyOf, type FigureName } from "@maneman/web-kit/hair-profile";
@@ -152,9 +153,9 @@ function Group(props: { name: GroupName; children: ReactNode }) {
   const id = useId();
   return (
     <div className={styles.group} role="group" aria-labelledby={id}>
-      <h4 className={styles.groupTitle} id={id}>
+      <RowGroupTitle level={4} id={id}>
         {copy.groups[props.name]}
-      </h4>
+      </RowGroupTitle>
       {props.children}
     </div>
   );

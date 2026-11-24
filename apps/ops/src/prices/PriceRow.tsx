@@ -46,9 +46,10 @@ interface PriceRowProps {
 }
 
 export function PriceRow(props: PriceRowProps) {
+  const followed = props.mayChange && props.prices.some((price) => price.valid_from > props.today);
   return (
     <>
-      <PriceEditor {...props} />
+      <PriceEditor {...props} className={followed ? styles.followed : undefined} />
       {props.mayChange && (
         <PricesToCome
           prices={props.prices}
@@ -63,7 +64,7 @@ export function PriceRow(props: PriceRowProps) {
 }
 
 /** The price in force, and, for a person who may only look, each still to come. */
-function PriceEditor(props: PriceRowProps) {
+function PriceEditor(props: PriceRowProps & { readonly className?: string | undefined }) {
   const { prices, today } = props;
   const inForce = prices.find((price) => price.in_force);
   const toCome = prices.filter((price) => price.valid_from > today).reverse();
@@ -85,6 +86,7 @@ function PriceEditor(props: PriceRowProps) {
 
   return (
     <EditableRow<Typed>
+      className={props.className}
       label={props.label}
       words={EDITING}
       mayChange={props.mayChange}

@@ -77,16 +77,15 @@
   min-width: 0;
 }
 
-.groupTitle {
-  margin: var(--sp-12) var(--sp-20) var(--sp-4);
-  font-size: var(--fs-13);
-  font-weight: var(--weight-medium);
-  color: var(--ui-text-muted);
-}
-
 /* What a field was in the version before, after what it is now. */
 .was {
   margin-left: var(--sp-8);
   font-size: var(--fs-13);
   color: var(--ui-text-muted);
+}
+
+/* What the client has tried, in a row's dialog: the ticks the dialog's whole width, as any list of reasons. */
+.remedies {
+  flex: 1 1 100%;
+  min-width: 0;
 }

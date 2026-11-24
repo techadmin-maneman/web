@@ -123,6 +123,7 @@
     "./ListTools": "./ListTools.tsx",
     "./RecordRows": "./RecordRows.tsx",
     "./Refusal": "./Refusal.tsx",
+    "./RowGroupTitle": "./RowGroupTitle.tsx",
     "./RowHead": "./RowHead.tsx",
     "./TableTools": "./TableTools.tsx",
     "./useRowSelection": "./useRowSelection.ts",
