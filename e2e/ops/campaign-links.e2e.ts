@@ -57,8 +57,8 @@ test("says beside its title how many links are live", async ({ page }) => {
   };
   await answer(page, { "GET /api/campaign-links": json({ ...LINKS, links: [...LINKS.links, retired] }) });
   await page.goto("/campaign-links");
-  const live = LINKS.links.filter((link) => link.retired_at === null).length;
-  await expect(page.getByRole("main").getByText(copy.live(live), { exact: true })).toBeVisible();
+  // The fixture's own links are all live; the one added here is retired.
+  await expect(page.getByRole("main").getByText(copy.live(LINKS.links.length), { exact: true })).toBeVisible();
 });
 
 test("draws a link's buttons on a phone as a line of its card, with no edge of their own", async ({ page }) => {
