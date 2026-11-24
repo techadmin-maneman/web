@@ -4,3 +4,17 @@
 .narrow {
   margin-inline: 0;
 }
+
+/* The page: who waits where, and the pincodes to open next beside it on a wide desk, as the redesign draws them. */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--sp-24);
+}
+
+@media (max-width: 1279px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
