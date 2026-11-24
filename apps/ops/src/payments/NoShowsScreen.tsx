@@ -3,6 +3,8 @@
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). A ruling needs a reason and a charge is asked about once
 // more; the server never charges by itself (src/policy/no-show.ts).
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { typeLook } from "@maneman/ui/type";
 import { BackButton } from "@maneman/ui/CancelButton";
@@ -15,7 +17,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { type Loaded, useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, minutesBetween, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import { useHeaderSub } from "../frame/PageHead.tsx";
 import { type ChargePreview, type NoShowCase } from "../api.ts";
 import { DecisionQueue } from "@maneman/ui/DecisionQueue";
@@ -31,6 +33,7 @@ import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./no-shows.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import { paymentsApi } from "./payments-api.ts";
+import { ChargeButton, keepsNothing } from "./ChargeButton.tsx";
 import { DoorPhoto } from "./DoorPhoto.tsx";
 import { DecidedToday } from "./Decided.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -212,16 +215,6 @@ function questionOf(preview: Loaded<ChargePreview>): string {
   return chargeQuestion(preview.value);
 }
 
-/** Nothing paid and no free visit used: the rule charges nothing, so the case is closed as a no-show, not charged. */
-const keepsNothing = (preview: Loaded<ChargePreview>): boolean =>
-  preview.state === "loaded" && preview.value.paid === 0 && !preview.value.credit_kept;
-
-/** The case's action, in words that fit what a charge would keep: Close as no-show where it keeps nothing. */
-function ChargeWords({ caseId }: { caseId: string }) {
-  const [preview] = useLoad(useCallback(() => paymentsApi.chargePreview(caseId), [caseId]));
-  return <>{keepsNothing(preview) ? copy.closeNoShow : copy.charge}</>;
-}
-
 /** A charge on a visit paid for in money and with a credit keeps both, and the question names only the money. */
 const keepsCreditToo = (preview: Loaded<ChargePreview>): boolean =>
   preview.state === "loaded" && preview.value.paid > 0 && preview.value.credit_kept;
@@ -313,6 +306,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
     else setRuling({ step: "failed", code: answer.code });
   };
 
+  const waitsId = useId();
   if (!may.charge) return <CaseFacts each={each} now={now} />;
 
   const sending = ruling.step === "sending";
@@ -347,24 +341,23 @@ function Case({ each, now, may, onDecided }: CaseProps) {
         />
       ) : (
         <div className={styles.actions}>
-          <Button
-            icon={ACTION_ICONS.handCoins}
-            variant="primary"
-            size="small"
-            ref={chargeButton}
+          <ChargeButton
+            caseId={each.id}
+            sending={sending}
             disabled={sending || noReason}
+            waits={describedBy(waitsId, noReason)}
+            buttonRef={chargeButton}
             onClick={() => {
               setRuling({ step: "confirming" });
             }}
-          >
-            {sending ? copy.deciding : <ChargeWords caseId={each.id} />}
-          </Button>
+          />
           {may.waive && (
             <Button
               icon={ACTION_ICONS.ban}
               variant="outline"
               size="small"
               disabled={sending || noReason}
+              aria-describedby={describedBy(waitsId, noReason)}
               onClick={() => void decide("waived")}
             >
               {copy.waive}
@@ -372,6 +365,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
           )}
         </div>
       )}
+      <Missing id={waitsId} what={noReason && ruling.step !== "confirming" ? WAITING_FOR.reason : null} />
       {ruling.step === "failed" && (
         <Refusal className={styles.error} said={errorText(copy.errors, { code: ruling.code })} />
       )}

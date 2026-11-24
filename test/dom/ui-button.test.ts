@@ -148,6 +148,23 @@ describe("a button that names an icon", () => {
     expect(button.textContent).toBe("Take · a call to make");
   });
 
+  it("that cannot act yet stays reachable in the console, said unavailable, and does nothing on a tap", () => {
+    let taps = 0;
+    const waiting = createElement(
+      Button,
+      { variant: "primary", size: "small", icon: ACTION_ICONS.check, disabled: true, onClick: () => (taps += 1) },
+      "Save",
+    );
+    const button = drawn(true, waiting);
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+    act(() => {
+      button.click();
+    });
+    expect(taps).toBe(0);
+    expect(drawn(false, waiting).disabled).toBe(true);
+  });
+
   it("as a text button, does the same", () => {
     const more = createElement(TextButton, { icon: ACTION_ICONS.chevronDown }, "Show 4 more");
     const button = drawn(true, more);

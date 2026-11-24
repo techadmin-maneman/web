@@ -2,6 +2,8 @@
 // far from its door (src/routes/ops/visit-changes.ts). Ops say why; the reason stays with the visit and is shown with a
 // no-show's evidence. No board draws it.
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
@@ -52,10 +54,16 @@ function LetInForm({ visitId, onLetIn }: { visitId: string; onLetIn: () => void 
         )}
       </Field>
       <div className={styles.actions}>
-        <SubmitButton className={styles.primary} busy={busy} disabled={reason.trim() === ""}>
+        <SubmitButton
+          className={styles.primary}
+          busy={busy}
+          disabled={reason.trim() === ""}
+          aria-describedby={describedBy("let-in-waits", reason.trim() === "")}
+        >
           {busy ? copy.sending : copy.confirm}
         </SubmitButton>
       </div>
+      <Missing id="let-in-waits" what={reason.trim() === "" ? WAITING_FOR.reason : null} />
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );

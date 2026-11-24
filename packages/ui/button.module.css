@@ -87,6 +87,16 @@
     width: var(--compact-height);
   }
 
+  /* Under a finger, every icon is at least a finger's square, and a long press shows its words (./ActionTips.tsx)
+     without selecting anything. A phone's sizes are already a finger's (the console's global.css). */
+  @media (pointer: coarse) {
+    .button.iconOnly {
+      min-width: var(--tap);
+      min-height: var(--tap);
+      user-select: none;
+    }
+  }
+
   /* Among a row's words, so it sits in the line as they do. */
   .compact {
     display: inline-flex;

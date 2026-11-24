@@ -27,4 +27,9 @@
     pointer-events: none;
     overflow-wrap: anywhere;
   }
+
+  /* An action's name, then what it waits for while it cannot act, each on its own line. */
+  .tip > span {
+    display: block;
+  }
 }

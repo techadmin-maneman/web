@@ -2,6 +2,8 @@
 // is sent. Erasing cannot be undone, so it is confirmed against what it destroys and the client's own number; a
 // rejection needs its reason.
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Button } from "@maneman/ui/Button";
@@ -67,12 +69,14 @@ export function ConfirmDelete({
           variant="destructive"
           size="small"
           disabled={sending || !checked || !chatDeleted}
+          aria-describedby={describedBy("erase-waits", !checked || !chatDeleted)}
           onClick={onDelete}
         >
           {sending ? copy.deleting : copy.confirm(request.name)}
         </Button>
         <CancelButton disabled={sending} onClick={onCancel} />
       </div>
+      <Missing id="erase-waits" what={!checked || !chatDeleted ? WAITING_FOR.ticks : null} />
     </div>
   );
 }

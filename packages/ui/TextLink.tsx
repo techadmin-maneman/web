@@ -79,8 +79,10 @@ export function TextButton({
   readonly icon?: string;
 }) {
   const iconOnly = useContext(IconActions) && icon !== undefined;
+  // As ./Button.tsx's: one drawn as its icon that cannot act yet stays reachable, so its name can be read.
+  const waiting = iconOnly && rest.disabled === true;
   const click = (event: MouseEvent<HTMLButtonElement>) => {
-    if (busy) {
+    if (busy || waiting) {
       event.preventDefault();
       return;
     }
@@ -90,6 +92,8 @@ export function TextButton({
     <button
       {...rest}
       type={type}
+      disabled={waiting ? undefined : rest.disabled}
+      {...(waiting ? { "aria-disabled": true } : {})}
       className={textLinkLook({
         tone,
         compact,

@@ -1,6 +1,8 @@
 // Remedies (docs/decisions/0143-remedies.md): free service visits Care give a client from their chat, with why, and
 // the panel on the Messages page where a Customer Care manager approves or declines those above the limit.
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -132,11 +134,17 @@ function RemedyFields(props: { personId: string; onGiven: (said: string) => void
       </div>
       <Refused failed={failure} errors={copy.errors} boxes={["visits", "reason", "note"]} />
       <FormActions>
-        <SubmitButton icon={ACTION_ICONS.gift} busy={busy} disabled={note.trim() === ""}>
+        <SubmitButton
+          icon={ACTION_ICONS.gift}
+          busy={busy}
+          disabled={note.trim() === ""}
+          aria-describedby={describedBy("remedy-waits", note.trim() === "")}
+        >
           {copy.give}
         </SubmitButton>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
+      <Missing id="remedy-waits" what={note.trim() === "" ? WAITING_FOR.note : null} />
     </form>
   );
 }

@@ -1,6 +1,8 @@
 // Sending a matter from a chat to the client's city (docs/decisions/0135-city-matters.md): what the city team need to
 // know, which waits on their Tasks as a City matter until they close it.
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Toast } from "@maneman/ui/Toast";
@@ -59,11 +61,17 @@ function MatterFields(props: { conversationId: string; onSent: (city: string) =>
       </div>
       <Refused failed={failure} errors={copy.errors} boxes={["note"]} />
       <FormActions>
-        <SubmitButton icon={ACTION_ICONS.send} busy={busy} disabled={note.trim() === ""}>
+        <SubmitButton
+          icon={ACTION_ICONS.send}
+          busy={busy}
+          disabled={note.trim() === ""}
+          aria-describedby={describedBy("city-matter-waits", note.trim() === "")}
+        >
           {copy.send}
         </SubmitButton>
         <CancelButton disabled={busy} onClick={props.onCancel} />
       </FormActions>
+      <Missing id="city-matter-waits" what={note.trim() === "" ? WAITING_FOR.note : null} />
     </form>
   );
 }

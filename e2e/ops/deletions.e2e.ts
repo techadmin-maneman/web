@@ -13,6 +13,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, DELETION_REQUESTS, fails, json, TASKS_READ_ON, type Call, type OpsReply } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { WAITING_FOR } from "../../apps/ops/src/content/common.ts";
 import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 import { DISMISS, states } from "../../packages/ui/words.ts";
 
@@ -141,11 +142,16 @@ test("keeps the erase unusable until ops say they have checked the request", asy
   await ask(page);
   const send = drawer(page).getByRole("button", { name: ERASE });
   await expect(send).toBeDisabled();
+  // Drawn as its icon, it still says what it is and what it waits for: on the page, and above it on a pointer's rest.
+  await expect(drawer(page).getByText(WAITING_FOR.ticks)).toBeVisible();
+  await send.hover();
+  await expect(page.locator("[popover]")).toHaveText(`${ERASE}${WAITING_FOR.ticks}`);
   await drawer(page).getByRole("checkbox", { name: CHECKED }).check();
   // The number is blanked by the erasure, so the chat on the phone goes first.
   await expect(send).toBeDisabled();
   await drawer(page).getByRole("checkbox", { name: CHAT_DELETED }).check();
   await expect(send).toBeEnabled();
+  await expect(drawer(page).getByText(WAITING_FOR.ticks)).toHaveCount(0);
 });
 
 /** Ticks both checks and sends the erasure. */

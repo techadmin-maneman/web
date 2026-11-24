@@ -119,7 +119,10 @@ function BookingRefusal({
   useEffect(() => {
     if (refused !== "taken") return;
     const held = document.activeElement;
-    if (held instanceof HTMLButtonElement && held.disabled) held.blur();
+    // Waiting, an icon's button stays focusable (aria-disabled), so it is let go of too.
+    const waiting =
+      held instanceof HTMLButtonElement && (held.disabled || held.getAttribute("aria-disabled") === "true");
+    if (waiting) held.blur();
     focusIfLost(document.getElementById(TITLE_ID));
   }, [refused]);
   return (

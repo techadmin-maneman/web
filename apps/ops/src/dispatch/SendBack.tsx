@@ -2,6 +2,8 @@
 // (docs/decisions/0246-closed-and-sent-back.md). Their phone opens the step again and shows the reason. No board
 // draws it.
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { CancelButton } from "@maneman/ui/CancelButton";
@@ -63,11 +65,17 @@ export function SendBackForm({
         )}
       </Field>
       <div className={styles.actions}>
-        <SubmitButton className={styles.primary} busy={busy} disabled={reason.trim() === ""}>
+        <SubmitButton
+          className={styles.primary}
+          busy={busy}
+          disabled={reason.trim() === ""}
+          aria-describedby={describedBy("send-back-waits", reason.trim() === "")}
+        >
           {busy ? copy.sending : copy.confirm}
         </SubmitButton>
         <CancelButton onClick={onCancel} />
       </div>
+      <Missing id="send-back-waits" what={reason.trim() === "" ? WAITING_FOR.reason : null} />
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );

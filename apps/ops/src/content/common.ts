@@ -39,6 +39,14 @@ export const UNCONFIRMED = "We couldn’t confirm that went through. Check befor
 /** A refusal with no words of its own. */
 export const FAILED = "That didn’t work. Try again.";
 
+/** What a disabled action waits for, said beneath it (@maneman/ui/Missing) and with its name on hover. */
+export const WAITING_FOR = {
+  reason: "Write a reason.",
+  note: "Write a note.",
+  ticks: "Tick both boxes.",
+  pincode: "Type a six-digit pincode, its area and its city.",
+} as const;
+
 /** A length of time as the console writes it: "1 h 30 min", "45 min", "3 h", "1,250 h". */
 export function hoursAndMinutes(total: number): string {
   const hours = Math.floor(total / 60);

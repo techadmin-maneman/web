@@ -2,6 +2,8 @@
 // what the cancel gives back before anything changes: free to the client, unless ops tick the client's own late terms.
 // It goes only with a reason, which is kept with the cancel (src/routes/ops/visit-changes.ts). No board draws it.
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { SubmitButton } from "@maneman/ui/SubmitButton";
 import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
@@ -72,15 +74,9 @@ function CancelForm({
     once(async () => {
       setFailed(null);
       const answer = await clientsApi.cancelVisit(terms.visit_id, terms.notice, onClientTerms, reason.trim());
-      if (answer.ok) {
-        onCancelled(gives);
-        return;
-      }
-      if (answer.code === "terms_changed") {
-        onTermsChanged();
-        return;
-      }
-      setFailed(errorText(copy.errors, { code: answer.code }));
+      if (answer.ok) onCancelled(gives);
+      else if (answer.code === "terms_changed") onTermsChanged();
+      else setFailed(errorText(copy.errors, { code: answer.code }));
     });
 
   return (
@@ -119,10 +115,17 @@ function CancelForm({
         )}
       </Field>
       <div className={styles.actions}>
-        <SubmitButton variant="danger" busy={busy} disabled={reason.trim() === ""}>
+        <SubmitButton
+          variant="danger"
+          icon={ACTION_ICONS.calendarX}
+          busy={busy}
+          disabled={reason.trim() === ""}
+          aria-describedby={describedBy("cancel-visit-waits", reason.trim() === "")}
+        >
           {busy ? copy.cancelling : copy.confirm}
         </SubmitButton>
       </div>
+      <Missing id="cancel-visit-waits" what={reason.trim() === "" ? WAITING_FOR.reason : null} />
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );

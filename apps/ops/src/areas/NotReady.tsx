@@ -1,6 +1,8 @@
 // A launch refused because its city is not ready (no one trained to fit, or no stockroom): an Admin may serve it all
 // the same, with why (docs/decisions/0221-launches-scheduled-paused-and-checked.md).
 
+import { WAITING_FOR } from "../content/common.ts";
+import { describedBy, Missing } from "@maneman/ui/Missing";
 import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -49,6 +51,7 @@ export function NotReady({
           variant="outline"
           size="small"
           disabled={reason.trim() === ""}
+          aria-describedby={describedBy("launch-waits", reason.trim() === "")}
           onClick={() => {
             onLaunch(changes, reason.trim());
           }}
@@ -56,6 +59,7 @@ export function NotReady({
           {copy.launch}
         </Button>
       </FormActions>
+      <Missing id="launch-waits" what={reason.trim() === "" ? WAITING_FOR.reason : null} />
     </>
   );
 }

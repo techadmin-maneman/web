@@ -101,16 +101,19 @@ export function Button({
   settling = false,
   type = "button",
   icon,
-  iconSize = "xs",
+  iconSize,
   onClick,
   children,
   ...rest
 }: ButtonProps) {
   // In the console every action is its icon: its words its name, and shown on hover or focus (./ActionTips.tsx).
   const iconOnly = useContext(IconActions) && icon !== undefined;
+  // One that cannot act yet stays where the pointer and the keyboard reach it, so its name, and what it waits for,
+  // can be read: unavailable to a screen reader, and doing nothing on a tap.
+  const waiting = iconOnly && rest.disabled === true;
   const click = (event: MouseEvent<HTMLButtonElement>) => {
     // Cancelled, a busy submit button does not send its form again.
-    if (busy || settling) {
+    if (busy || settling || waiting) {
       event.preventDefault();
       return;
     }
@@ -120,13 +123,15 @@ export function Button({
     <button
       {...rest}
       type={type}
+      disabled={waiting ? undefined : rest.disabled}
       className={buttonLook({ variant, size, narrow, iconOnly, className })}
       aria-busy={busy ? true : undefined}
       data-tip={iconOnly ? (rest["aria-label"] ?? textOf(children)) : undefined}
+      {...(waiting ? { "aria-disabled": true } : {})}
       {...(settling ? { "aria-disabled": true, "data-settling": true } : {})}
       onClick={click}
     >
-      {icon !== undefined && <Icon d={icon} size={iconOnly ? "sm" : iconSize} />}
+      {icon !== undefined && <Icon d={icon} size={iconSize ?? (iconOnly ? "sm" : "xs")} />}
       {iconOnly ? <VisuallyHidden>{children}</VisuallyHidden> : children}
     </button>
   );
@@ -149,16 +154,7 @@ type ButtonLinkProps = Look &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "className"> & { readonly ref?: Ref<HTMLAnchorElement> };
 
 /** A link that looks like a button: somewhere to go, such as WhatsApp or a document, rather than something to do. */
-export function ButtonLink({
-  variant,
-  size,
-  narrow,
-  className,
-  icon,
-  iconSize = "xs",
-  children,
-  ...rest
-}: ButtonLinkProps) {
+export function ButtonLink({ variant, size, narrow, className, icon, iconSize, children, ...rest }: ButtonLinkProps) {
   const iconOnly = useContext(IconActions) && icon !== undefined;
   return (
     <a
@@ -166,7 +162,7 @@ export function ButtonLink({
       className={buttonLook({ variant, size, narrow, iconOnly, className })}
       data-tip={iconOnly ? (rest["aria-label"] ?? textOf(children)) : undefined}
     >
-      {icon !== undefined && <Icon d={icon} size={iconOnly ? "sm" : iconSize} />}
+      {icon !== undefined && <Icon d={icon} size={iconSize ?? (iconOnly ? "sm" : "xs")} />}
       {iconOnly ? <VisuallyHidden>{children}</VisuallyHidden> : children}
     </a>
   );

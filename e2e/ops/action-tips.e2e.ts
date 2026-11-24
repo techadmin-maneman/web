@@ -67,3 +67,19 @@ test("shows an action's words as the keyboard comes to it", async ({ page }) => 
   await expect(tip(page)).toHaveText(copy.publish.openCount(1));
   await expect(tip(page)).toBeVisible();
 });
+
+test.describe("under a finger", () => {
+  test.use({ hasTouch: true });
+
+  test("shows an action's words on a long press, and the press does not act", async ({ page }) => {
+    await open(page);
+    const box = await publish(page).boundingBox();
+    if (box === null) throw new Error("Publish is not drawn");
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const touch = await page.context().newCDPSession(page);
+    await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [at] });
+    await expect(tip(page)).toHaveText(copy.publish.openCount(1));
+    await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await expect(page.getByRole("heading", { name: copy.publish.title })).toHaveCount(0);
+  });
+});

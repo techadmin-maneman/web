@@ -35,12 +35,24 @@
     min-width: var(--sp-24);
   }
 
-  .iconOnly:hover:not(:disabled),
+  /* On a phone, or under a finger, every icon is a finger's square however compact its row, and a long press shows
+     its words (./ActionTips.tsx) without selecting anything. */
+  @media (max-width: 760px), (pointer: coarse) {
+    .iconOnly,
+    .iconOnly.compact {
+      min-width: var(--tap);
+      min-height: var(--tap);
+      user-select: none;
+    }
+  }
+
+  .iconOnly:hover:not(:disabled, [aria-disabled="true"]),
   .iconOnly:focus-visible {
     background: var(--ui-box-off);
   }
 
-  .words:disabled {
+  .words:disabled,
+  .words[aria-disabled="true"] {
     color: var(--ui-text-quiet);
     text-decoration-color: currentcolor;
     cursor: default;
