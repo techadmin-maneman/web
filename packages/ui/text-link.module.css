@@ -49,17 +49,17 @@
     }
   }
 
-  /* Lit under a pointer that rests, so a tap leaves no mark behind; lit while pressed, and for the keyboard,
-     everywhere. */
+  /* Lit as an icon button is (./button.module.css), on white and on the canvas alike: under a pointer that rests, so a
+     tap leaves no mark behind; while pressed, and for the keyboard, everywhere. */
   @media (hover: hover) {
     .iconOnly:hover:not(:disabled, [aria-disabled="true"]) {
-      background: var(--ui-box-off);
+      background: var(--ui-shade);
     }
   }
 
   .iconOnly:focus-visible,
   .iconOnly:active:not(:disabled, [aria-disabled="true"]) {
-    background: var(--ui-box-off);
+    background: var(--ui-shade);
   }
 
   .words:disabled,
