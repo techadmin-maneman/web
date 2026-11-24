@@ -34,3 +34,9 @@
   align-items: flex-end;
   gap: var(--sp-8);
 }
+
+/* Go and Stop, kept on one line however the list wraps. */
+.pair {
+  display: inline-flex;
+  gap: var(--sp-8);
+}

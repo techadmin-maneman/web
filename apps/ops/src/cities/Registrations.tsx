@@ -143,6 +143,7 @@ function RegistrationTable({ cities, onRemoved }: { cities: Cities; onRemoved: (
               <td className={ACTIONS}>
                 {mayRemove && (
                   <DeleteAction
+                    beside
                     name={registration.state_code}
                     words={copy.removing}
                     send={() => citiesApi.removeGstRegistration(registration.state_code)}

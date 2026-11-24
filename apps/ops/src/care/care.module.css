@@ -74,20 +74,17 @@
   margin: 0;
 }
 
-/* What Care do for them, a button a line across the column, one gap between: the parts of their page, free service
-   visits and a matter for their city. */
+/* What Care do for them, a row of icons that wraps, one gap between: the parts of their page, free service visits and
+   a matter for their city. */
 .panelLinks {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: var(--sp-8);
 }
 
-.panelLinks > * {
-  width: 100%;
-}
-
-/* The photographs the client sent with their reports: the button across the column, then two to a row, each over
-   the report it came with. */
+/* The photographs the client sent with their reports: their button at the start, then two to a row across the column,
+   each over the report it came with. */
 .reportPhotos {
   display: flex;
   flex-direction: column;
@@ -95,7 +92,7 @@
 }
 
 .reportPhotos > button {
-  width: 100%;
+  align-self: flex-start;
 }
 
 .photoList {
@@ -120,10 +117,10 @@
   border: var(--hairline) solid var(--ui-line);
 }
 
-/* One of Care's own actions in that stack, its button across the column as the links above it are. */
+/* One of Care's own actions in that row, its icon beside the links. */
 .action {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
 }
 
 .quick {

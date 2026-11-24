@@ -28,11 +28,13 @@
   .iconOnly {
     justify-content: center;
     min-width: var(--tap);
+    max-width: var(--tap);
     text-decoration: none;
   }
 
   .iconOnly.compact {
     min-width: var(--sp-24);
+    max-width: var(--sp-24);
   }
 
   /* On a phone, or under a finger, every icon is a finger's square however compact its row, and a long press shows
@@ -41,12 +43,19 @@
     .iconOnly,
     .iconOnly.compact {
       min-width: var(--tap);
+      max-width: var(--tap);
       min-height: var(--tap);
       user-select: none;
     }
   }
 
-  .iconOnly:hover:not(:disabled, [aria-disabled="true"]),
+  /* Lit under a pointer that rests, so a tap leaves no mark behind; lit for the keyboard everywhere. */
+  @media (hover: hover) {
+    .iconOnly:hover:not(:disabled, [aria-disabled="true"]) {
+      background: var(--ui-box-off);
+    }
+  }
+
   .iconOnly:focus-visible {
     background: var(--ui-box-off);
   }

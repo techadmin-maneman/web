@@ -6,6 +6,7 @@
 import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { useOneAtATime } from "./useOneAtATime.ts";
 import { Button } from "./Button.tsx";
+import { classes } from "./classes.ts";
 import { CancelButton } from "./CancelButton.tsx";
 import { Field, TextInput } from "./Field.tsx";
 import { useState } from "react";
@@ -77,11 +78,36 @@ function Asking(props: {
   );
 }
 
+/** Closed: its button on a line of its own, or in a table row's line of buttons, sized as theirs are. */
+function Opener(props: {
+  readonly tone: Tone;
+  readonly icon: string;
+  readonly label: string;
+  readonly open: string;
+  readonly beside: boolean;
+  readonly onOpen: () => void;
+}) {
+  const button = (
+    <Button
+      variant={props.tone === "primary" ? "outline" : "danger"}
+      size={props.beside ? "compact" : "small"}
+      className={classes(styles.quiet, props.beside && styles.beside)}
+      icon={props.icon}
+      aria-label={props.label}
+      onClick={props.onOpen}
+    >
+      {props.open}
+    </Button>
+  );
+  return props.beside ? button : <div className={styles.actions}>{button}</div>;
+}
+
 export function DeleteAction<Body>({
   name,
   tone = "destructive",
   words: copy = deleting,
   icon = ACTION_ICONS.trash,
+  beside = false,
   typed,
   send,
   refusal,
@@ -96,6 +122,8 @@ export function DeleteAction<Body>({
   readonly words?: DeleteWords;
   /** Its icon where it is not a deletion: a retirement's archive, a switch's power. */
   readonly icon?: string;
+  /** In a table row's actions, its button beside the row's others rather than on a line of its own. */
+  readonly beside?: boolean;
   /** A word to type before the second press goes, for a switch that reaches everyone. */
   readonly typed?: string;
   readonly send: () => Promise<Answer<Body>>;
@@ -139,21 +167,17 @@ export function DeleteAction<Body>({
           }}
         />
       ) : (
-        <div className={styles.actions}>
-          <Button
-            variant={tone === "primary" ? "outline" : "danger"}
-            size="small"
-            className={styles.quiet}
-            icon={icon}
-            aria-label={copy.label(name)}
-            onClick={() => {
-              setFailed(null);
-              setAsking(true);
-            }}
-          >
-            {copy.open}
-          </Button>
-        </div>
+        <Opener
+          tone={tone}
+          icon={icon}
+          label={copy.label(name)}
+          open={copy.open}
+          beside={beside}
+          onOpen={() => {
+            setFailed(null);
+            setAsking(true);
+          }}
+        />
       )}
       {failed !== null && <Refusal className={styles.error} said={failed} />}
     </>

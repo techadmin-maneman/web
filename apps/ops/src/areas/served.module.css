@@ -21,3 +21,9 @@
   align-items: center;
   gap: var(--sp-8);
 }
+
+/* What can be done to those chosen, kept on one line as a group. */
+.chosenButtons {
+  display: inline-flex;
+  gap: var(--sp-8);
+}

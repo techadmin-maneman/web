@@ -46,7 +46,7 @@ function ChosenButtons(props: {
   ] as const;
   const may = { schedule: "POST /api/pincode-launches", pause: "POST /api/service-area/pause" } as const;
   return (
-    <>
+    <span className={styles.chosenButtons}>
       <Button icon={ACTION_ICONS.mapPinPlus} variant="outline" size="small" narrow onClick={props.onServe}>
         {copy.serve}
       </Button>
@@ -76,7 +76,7 @@ function ChosenButtons(props: {
             {each.words}
           </Button>
         ))}
-    </>
+    </span>
   );
 }
 

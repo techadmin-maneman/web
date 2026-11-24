@@ -33,6 +33,7 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => Promise<v
   const item = copy.items[price.item];
   return (
     <DeleteAction
+      beside
       icon={ACTION_ICONS.undo2}
       name={price.city}
       words={{

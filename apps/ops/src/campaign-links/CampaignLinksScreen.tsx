@@ -100,6 +100,7 @@ function LinkActions(props: {
       </RowButton>
       {props.mayRetire && link.retired_at === null && (
         <DeleteAction
+          beside
           icon={ACTION_ICONS.archive}
           name={link.name}
           tone="danger"

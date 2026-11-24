@@ -79,18 +79,22 @@
 
   .iconOnly.action {
     min-width: var(--action-height);
+    max-width: var(--action-height);
   }
 
   .iconOnly.control {
     min-width: var(--control-height);
+    max-width: var(--control-height);
   }
 
   .iconOnly.small {
     min-width: var(--small-height);
+    max-width: var(--small-height);
   }
 
   .iconOnly.compact {
     min-width: var(--compact-height);
+    max-width: var(--compact-height);
   }
 
   /* Under a finger, every icon is at least a finger's square, and a long press shows its words (./ActionTips.tsx)
