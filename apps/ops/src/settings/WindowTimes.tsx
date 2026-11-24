@@ -50,7 +50,6 @@ function startLabel(unit: number): string {
   return copy.start(copy.window[window], WINDOW_SLOT_MAP[window].indexOf(unit) + 1);
 }
 
-/** The windows in force, each with its hours. */
 /** The times in force, a window a row, under "In force since" their first day, as the redesign titles them. */
 function InForce({ times }: { times: SlotTimes }) {
   const hours = hoursOf({ unitStarts: times.in_force.unit_starts, dayEnd: times.in_force.day_end });

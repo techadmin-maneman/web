@@ -4,25 +4,17 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
+import { appFor, captureLogs, fakeDependencies, markDatabase, request } from "../helpers.ts";
 import { person } from "./ops-clients-fixtures.ts";
-import { aPackage } from "../fixtures/index.ts";
+import { aPackage, aVisit } from "../fixtures/index.ts";
 
 const ROHIT = "11111111-1111-4111-8111-111111111111";
 const ARJUN = "11111111-1111-4111-8111-111111111115";
 
 let ops: App;
 
-async function fitted(personId: string, start: string): Promise<void> {
-  const id = crypto.randomUUID();
-  const end = new Date(Date.parse(start) + 60 * 60_000).toISOString();
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, service_pincode, synced_at)
-     VALUES (?1, ?1, ?2, 'first_fit', 'completed', ?3, ?4, '122018', ?5)`,
-  )
-    .bind(id, personId, start, end, NOW.toISOString())
-    .run();
-}
+const fitted = (personId: string, start: string) =>
+  aVisit({ person_id: personId, type: "first_fit", status: "completed", window_start: start });
 
 beforeEach(async () => {
   captureLogs();

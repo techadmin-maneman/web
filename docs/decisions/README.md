@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0313. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0314. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -345,6 +345,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0308](0308-the-inventory-screens-to-the-22-november-redesign.md) The Inventory screens, to the 22 November redesign
 - [0309](0309-the-requests-and-money-screens-to-the-22-november-redesign.md) The Requests and Money screens, to the 22 November redesign
 - [0310](0310-the-growth-and-reports-screens-to-the-22-november-redesign.md) The Growth and Reports screens, to the 22 November redesign
+- [0313](0313-the-settings-screens-to-the-22-november-redesign.md) The Settings screens, to the 22 November redesign
 
 ## Every decision, oldest first
 
@@ -559,7 +560,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0209](0209-paid-at-the-visit-by-upi.md) | Paid at the visit by UPI, while online payment is off | 2026-10-15 | accepted | [0257](0257-razorpay-only.md) |
 | [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted | [0223](0223-reach-from-home.md), [0287](0287-a-start-googles-drive-refused-is-not-offered.md), [0289](0289-who-takes-a-visit.md), [0290](0290-allotted-the-evening-before.md) |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
-| [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |
+| [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted | [0313](0313-the-settings-screens-to-the-22-november-redesign.md) |
 | [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted | [0263](0263-the-home-pages-order-and-bands.md), [0279](0279-one-rule-for-paying-and-the-tagline-as-written.md) |
 | [0214](0214-from-the-site-into-the-app.md) | From the site into the app, and the look on the page | 2026-10-19 | accepted | [0217](0217-the-try-ons-photo-taken-and-looked-at.md), [0285](0285-every-site-booking-is-a-sign-in.md) |
 | [0215](0215-the-range-as-a-table.md) | The range as a table | 2026-10-19 | accepted |  |
@@ -660,3 +661,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0310](0310-the-growth-and-reports-screens-to-the-22-november-redesign.md) | The Growth and Reports screens, to the 22 November redesign | 2026-11-24 | accepted |  |
 | [0311](0311-dated-technician-grades.md) | Dated technician grades | 2026-11-24 | accepted |  |
 | [0312](0312-the-consoles-favicon-everywhere.md) | The console's favicon, everywhere | 2026-11-24 | accepted, on the owner's ruling of 24 November 2026 |  |
+| [0313](0313-the-settings-screens-to-the-22-november-redesign.md) | The Settings screens, to the 22 November redesign | 2026-11-24 | accepted |  |
