@@ -11,10 +11,11 @@
   .segment {
     flex: 1;
     height: var(--progress-line);
+    border-radius: var(--progress-radius);
   }
 
   .done {
-    background: var(--ui-strong);
+    background: var(--progress-done, var(--ui-strong));
   }
 
   .current {
@@ -22,7 +23,30 @@
   }
 
   .todo {
-    background: var(--ui-tint);
+    background: var(--progress-todo, var(--ui-tint));
+  }
+
+  .named {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--sp-4) + var(--sp-2));
+  }
+
+  .names {
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    gap: var(--sp-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--ui-text-muted);
+    font-size: var(--progress-name-size);
+  }
+
+  .reached {
+    color: var(--ui-text);
+    font-weight: var(--weight-medium);
   }
 
   .track {

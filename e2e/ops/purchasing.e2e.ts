@@ -101,6 +101,7 @@ test("names the client a custom order's purchase order is for, and opens it from
         group: "custom_order_to_send",
         count: 1,
         closable: false,
+        snoozable: true,
         tasks: [
           {
             id: "7c000000-0000-4000-8000-000000000001",

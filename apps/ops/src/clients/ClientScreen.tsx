@@ -8,6 +8,7 @@ import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { GLYPHS, ICONS } from "@maneman/brand/icons";
 import { PageTitle } from "@maneman/ui/PageHeader";
+import { NamedSteps } from "@maneman/ui/Progress";
 import { Stack } from "@maneman/ui/Layout";
 import { Tabs, TAB, TAB_COUNT } from "@maneman/ui/Tabs";
 import { PanelLoading, PanelFailed } from "@maneman/ui/States";
@@ -38,7 +39,7 @@ import { Payments } from "./Payments.tsx";
 import { Photos, usePhotos } from "./Photos.tsx";
 import { Pieces } from "./Pieces.tsx";
 import { Visits } from "./Visits.tsx";
-import { STATE_TONES } from "./client-states.ts";
+import { STAGES, STAGE_TONES } from "./client-states.ts";
 
 type Credits = ClientRecord["credits"];
 type Address = ClientRecord["address"];
@@ -58,7 +59,7 @@ function headOf(record: ClientRecord, care: string | null): RecordHead {
   const late = due !== null && due.on < todayInIndia(apiNow());
   return {
     badges: [
-      { words: clients.states[record.state], tone: STATE_TONES[record.state] },
+      { words: clients.stages[record.stage], tone: STAGE_TONES[record.stage] },
       ...(late ? [{ words: clients.head.replacementLate, tone: "error" as const }] : []),
     ],
     facts: [
@@ -234,6 +235,11 @@ function ClientPage({
   return (
     <div className={shared.client}>
       <Head record={record} booking={booking} />
+      <NamedSteps
+        names={STAGES.map((stage) => clients.journey.steps[stage])}
+        reached={STAGES.indexOf(record.stage)}
+        label={clients.journey.label}
+      />
       {booking.panel}
       <OpenTasks clientId={clientId} name={record.name} />
       <TabBody
@@ -274,11 +280,11 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   // Offered again on the Clients page, for the rest of the session.
   const opened = loaded.state === "loaded" && !isErased(loaded.value) ? loaded.value : null;
   const openedName = opened?.name ?? null;
-  const openedState = opened?.state ?? null;
+  const openedStage = opened?.stage ?? null;
   useEffect(() => {
-    if (openedName !== null && openedState !== null)
-      rememberClient({ id: clientId, name: openedName, state: openedState });
-  }, [clientId, openedName, openedState]);
+    if (openedName !== null && openedStage !== null)
+      rememberClient({ id: clientId, name: openedName, stage: openedStage });
+  }, [clientId, openedName, openedStage]);
 
   if (erasedId === clientId) return <Erased />;
   return whenLoaded(loaded, {

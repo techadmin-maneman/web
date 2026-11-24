@@ -20,7 +20,7 @@ import { PageActions } from "../frame/PageHead.tsx";
 import { CallLead, CallTakenLine, type CallTaken } from "./CallLead.tsx";
 import { ClientList } from "./ClientList.tsx";
 import styles from "./clients.module.css";
-import { STATE_TONES } from "./client-states.ts";
+import { STAGE_TONES } from "./client-states.ts";
 import { Refusal } from "@maneman/ui/Refusal";
 
 const copy = clients.find;
@@ -49,7 +49,7 @@ function standing(client: ClientsFound["clients"][number]): string {
   const next = client.next_visit;
   const when = next === null ? copy.noVisit : copy.nextVisit(`${shortDate(indiaDate(next))}, ${indiaClock(next)}`);
   const visit = client.under_way ? copy.underWay : when;
-  return `${clients.states[client.state]} · ${visit}`;
+  return `${clients.stages[client.stage]} · ${visit}`;
 }
 
 function Found({ text, found }: { text: string; found: ClientsFound }) {
@@ -103,8 +103,8 @@ function Recent() {
                     </Fragment>
                   ))}
                 </span>
-                {client.state !== undefined && (
-                  <Badge tone={STATE_TONES[client.state]}>{clients.states[client.state]}</Badge>
+                {client.stage !== undefined && (
+                  <Badge tone={STAGE_TONES[client.stage]}>{clients.stages[client.stage]}</Badge>
                 )}
               </span>
             </OpsLink>

@@ -14,6 +14,8 @@ export interface CallLead {
   readonly name: string;
   readonly mobileE164: string;
   readonly channel: DeclaredChannel;
+  /** Where they are, as they said; a known number keeps the record it has. */
+  readonly pincode?: string | undefined;
   readonly testRecord: boolean;
   readonly actor: AuditActor;
   readonly requestId: string;
@@ -81,6 +83,7 @@ export async function leadFromCall(
       testRecord: call.testRecord,
       contactable: "as_before",
       at,
+      pincode: call.pincode,
     }),
     db
       .prepare("INSERT INTO leads (id, person_id, created_at, source, request_id) VALUES (?1, ?2, ?3, 'phone', ?4)")

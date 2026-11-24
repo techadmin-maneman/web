@@ -234,6 +234,14 @@ export const technicians = {
     until: "In training until",
     none: "Not in training",
   },
+  /** Their pay grade, which only Finance give (docs/decisions/0307-the-people-rulings.md). */
+  payGrade: {
+    label: "Pay grade",
+    optional: "Pay grade (optional)",
+    none: "No grade, so not paid",
+    reading: "Loading grades…",
+    failed: "Couldn’t load the pay grades.",
+  },
   /** The day they started with us (docs/decisions/0305-a-technicians-start-date.md). */
   started: {
     label: "Start date",
@@ -252,6 +260,8 @@ export const technicians = {
     save: "Add technician",
     saving: "Adding…",
     added: (name: string) => `${name} added. They can sign in now.`,
+    /** Added, but the grade chosen did not save, so it is given on their details. */
+    addedNoGrade: (name: string) => `${name} added. Their pay grade did not save: give it in their details.`,
   },
   details: {
     title: "Details",

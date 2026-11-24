@@ -1080,6 +1080,7 @@ export interface Rows {
     readonly crm_contact_erased_at: string | null;
     readonly crm_contact_erasure_attempts: number;
     readonly package: string | null;
+    readonly pincode: string | null;
   };
   readonly person_attribution: {
     readonly person_id: string;

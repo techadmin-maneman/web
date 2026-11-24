@@ -6,6 +6,13 @@ import { expect } from "../support.ts";
 import { answer, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
 import { tasks } from "../../apps/ops/src/content.ts";
 
+/** A group as most are: closed only by doing its thing, and snoozed till the morning. */
+export const PLAIN = { closable: false, snoozable: true } as const;
+/** A group ops may close without doing its thing, with a reason. */
+export const CLOSABLE = { closable: true, snoozable: true } as const;
+/** A request about a client's own data: closed only by doing it, and never snoozed. */
+export const STATUTORY = { closable: false, snoozable: false } as const;
+
 /** No alert open: the Alerts tab is not drawn. */
 export const NO_ALERTS: OpsReply<"/api/alerts"> = { count: 0, alerts: [] };
 

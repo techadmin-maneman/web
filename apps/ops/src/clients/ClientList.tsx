@@ -1,7 +1,7 @@
 // Every client in the caller's cities, or the city chosen in the header (ADR 0225), beneath the search: the soonest
 // next visit first, then those with none, newest first (GET /api/clients), each with what waits for them on Tasks.
-// Where they stand and the page are kept in the address, so a list narrowed one way can be kept as a bookmark and sent
-// to a colleague: "/clients?state=lead".
+// Its view (docs/decisions/0307-the-people-rulings.md) and the page are kept in the address, so a list narrowed one way
+// can be kept as a bookmark and sent to a colleague: "/clients?view=lead".
 
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { Badge } from "@maneman/ui/Badge";
@@ -33,22 +33,22 @@ import { PanelLoading, PanelFailed } from "@maneman/ui/States";
 import styles from "./client-list.module.css";
 import { RowHead } from "@maneman/ui/RowHead";
 import { clientsApi } from "./clients-api.ts";
-import { STATE_TONES } from "./client-states.ts";
+import { STAGE_TONES } from "./client-states.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 
 const copy = clients.list;
 
 /** How many the API lists a page (src/domain/clients/client-list.ts). */
 const CLIENTS_PER_PAGE = 50;
-const STATES = ["lead", "fitted", "nothing_booked"] as const;
+const VIEWS = ["lead", "booked", "fitted", "nothing_booked", "needs"] as const;
 
 /** The list as the address narrows it, from its first page or the page it names; anything it would refuse is left out. */
 function queryOf(search: string, paged = true): ClientListQuery {
   const asked = new URLSearchParams(search);
-  const state = STATES.find((each) => each === asked.get("state"));
+  const view = VIEWS.find((each) => each === asked.get("view"));
   const cursor = asked.get("cursor") ?? "";
   return {
-    ...(state === undefined ? {} : { state }),
+    ...(view === undefined ? {} : { view }),
     ...(paged && /^[\w-]{1,200}$/.test(cursor) ? { cursor } : {}),
   };
 }
@@ -74,22 +74,22 @@ function Narrow({
 }) {
   // A narrowing changed starts the list again from its first page.
   const choose = (value: string) => {
-    onQuery(queryOf(value === "" ? "" : `?${new URLSearchParams({ state: value }).toString()}`));
+    onQuery(queryOf(value === "" ? "" : `?${new URLSearchParams({ view: value }).toString()}`));
   };
   return (
-    <div className={styles.listStates} role="radiogroup" aria-label={copy.state}>
-      {(["", ...STATES] as const).map((state) => (
+    <div className={styles.listStates} role="radiogroup" aria-label={copy.view}>
+      {(["", ...VIEWS] as const).map((view) => (
         <ToggleButton
-          key={state}
+          key={view}
           asRadio
           filled
-          pressed={(query.state ?? "") === state}
-          count={counts?.[state === "" ? "all" : state]}
+          pressed={(query.view ?? "") === view}
+          count={counts?.[view === "" ? "all" : view] ?? undefined}
           onClick={() => {
-            choose(state);
+            choose(view);
           }}
         >
-          {state === "" ? tasks.filters.views.all : clients.states[state]}
+          {view === "" ? tasks.filters.views.all : copy.views[view]}
         </ToggleButton>
       ))}
     </div>
@@ -125,15 +125,15 @@ function needsOf(board: Tasks | null): Needs {
   return needs;
 }
 
-/** Where they stand, and the package they are on beside it: "Fitted · Natural hair system". */
+/** Their stage, and the package they are on beside it: "Active · Natural hair system". */
 const stageOf = (client: Listed["clients"][number]): string =>
-  client.package === null ? clients.states[client.state] : `${clients.states[client.state]} · ${client.package}`;
+  client.package === null ? clients.stages[client.stage] : `${clients.stages[client.stage]} · ${client.package}`;
 
-/** Where they stand as a pill, and the package they are on beneath it. */
+/** Their stage as a pill, and the package they are on beneath it. */
 function Stage({ client }: { client: Listed["clients"][number] }) {
   return (
     <>
-      <Badge tone={STATE_TONES[client.state]}>{clients.states[client.state]}</Badge>
+      <Badge tone={STAGE_TONES[client.stage]}>{clients.stages[client.stage]}</Badge>
       {client.package !== null && <span className={styles.listPackage}>{client.package}</span>}
     </>
   );
@@ -248,7 +248,7 @@ function pageWords(page: number, listed: Listed, total: number | undefined): str
   return copy.range(first, first + listed.clients.length - 1, total);
 }
 
-/** The list asked for in a city: its status, the city, then its page, as the address once had them. */
+/** The list asked for in a city: its view, the city, then its page, as the address once had them. */
 function inCity(query: ClientListQuery, city: string | null): ClientListQuery {
   if (city === null) return query;
   const { cursor, ...narrowed } = query;
@@ -284,11 +284,7 @@ function CityList({ search, instead, city, paged }: ListProps & { city: string |
   const counts = useCounts(loaded.state === "loaded" ? loaded.value.counts : null);
   const board = useTaskBoard(useAccess().mayCall("GET /api/tasks"));
   const needs = useMemo(() => needsOf(board), [board]);
-  useHeaderSub(
-    counts === null
-      ? undefined
-      : copy.sub(counts.all, counts.fitted, board === null || board.truncated ? null : needs.size),
-  );
+  useHeaderSub(counts === null ? undefined : copy.sub(counts.all, counts.fitted));
   const change = (next: ClientListQuery, earlier: readonly (string | undefined)[] = []) => {
     keep(next);
     setQuery(next);
@@ -327,7 +323,7 @@ function CityList({ search, instead, city, paged }: ListProps & { city: string |
                 </Button>
                 {page !== null && (
                   <span className={styles.listPage}>
-                    {pageWords(page, loaded.value, counts?.[query.state ?? "all"])}
+                    {pageWords(page, loaded.value, counts?.[query.view ?? "all"] ?? undefined)}
                   </span>
                 )}
                 <Button

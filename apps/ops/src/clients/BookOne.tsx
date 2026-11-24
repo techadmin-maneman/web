@@ -7,6 +7,7 @@ import type { ClientRecord } from "../api.ts";
 import { useAccess } from "../lib/access.ts";
 import { BookVisit } from "./BookVisit.tsx";
 import type { Choice } from "./book-slot.ts";
+import { isFittedStage } from "./client-states.ts";
 
 /**
  * What Book a visit opens on: what the client app offers them next, a replacement where the piece falls due first;
@@ -14,7 +15,7 @@ import type { Choice } from "./book-slot.ts";
  */
 function firstChoiceOf(record: ClientRecord): Choice {
   if (record.next_visit !== null) return record.next_visit.type;
-  if (record.state === "fitted") return "service";
+  if (isFittedStage(record.stage)) return "service";
   const consulted = record.visits.past.some((visit) => visit.type === "consultation" && visit.status === "completed");
   return consulted ? "first_fit" : "consultation";
 }

@@ -15,7 +15,7 @@ const VISIT_ID = "33000000-0000-4000-8000-000000000001";
 
 export const RECORD = {
   ...CLIENT,
-  state: "fitted",
+  stage: "active",
   known_since: "2026-11-01T06:00:00.000Z",
   address: {
     line1: "House 1204",
@@ -196,7 +196,7 @@ export const RECORD = {
 /** The same client before any of it: no visit done, no piece in wear, nothing paid. */
 export const NEW_RECORD = {
   ...RECORD,
-  state: "lead",
+  stage: "lead",
   address: null,
   visits: { upcoming: [], past: [] },
   payments: [],

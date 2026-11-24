@@ -13,8 +13,8 @@ export interface KeptSearch {
 interface RecentClient {
   readonly id: string;
   readonly name: string;
-  /** Where they stood when opened; none for one kept before it was. */
-  readonly state?: ClientRecord["state"];
+  /** Their stage when opened; none for one kept before it was. */
+  readonly stage?: ClientRecord["stage"];
 }
 
 const SEARCH = "clientSearch";
@@ -38,7 +38,7 @@ export function keepSearch(search: KeptSearch): void {
   window.history.replaceState({ ...others, [SEARCH]: search }, "");
 }
 
-const STATES: readonly unknown[] = ["fitted", "lead", "nothing_booked"] satisfies ClientRecord["state"][];
+const STAGES: readonly unknown[] = ["lead", "consulted", "fitted", "active"] satisfies ClientRecord["stage"][];
 
 const isRecent = (each: unknown): each is RecentClient =>
   typeof each === "object" &&
@@ -47,7 +47,7 @@ const isRecent = (each: unknown): each is RecentClient =>
   typeof each.id === "string" &&
   "name" in each &&
   typeof each.name === "string" &&
-  (!("state" in each) || STATES.includes(each.state));
+  (!("stage" in each) || STAGES.includes(each.stage));
 
 /** The clients opened this session, the latest first. Empty where the browser keeps nothing for a page. */
 export function recentClients(): RecentClient[] {

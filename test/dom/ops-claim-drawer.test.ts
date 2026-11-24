@@ -92,6 +92,7 @@ async function open() {
           staff: [],
           mayOwn: false,
           closable: true,
+          snoozable: true,
           owner: null,
           onOwner: () => undefined,
           onClosed: () => undefined,

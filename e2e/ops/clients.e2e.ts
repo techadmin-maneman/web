@@ -39,7 +39,7 @@ import { phoneWords } from "../../apps/ops/src/lib/phone.ts";
 
 const MOBILE = "+91 98100 04417";
 
-const STANDING = "Fitted · Next visit Sat 25 Sep, 10:30 am";
+const STANDING = "Active · Next visit Sat 25 Sep, 10:30 am";
 
 /** What waits on Tasks for Rohit: a replacement to order, three days overdue, and a number change, due tomorrow. */
 const OPEN_FOR_ROHIT = {
@@ -53,6 +53,7 @@ const OPEN_FOR_ROHIT = {
       group: "replacement_order",
       count: 1,
       closable: false,
+      snoozable: true,
       tasks: [
         {
           id: "91000000-0000-4000-8000-000000000002",
@@ -69,6 +70,7 @@ const OPEN_FOR_ROHIT = {
       group: "number_change",
       count: 1,
       closable: false,
+      snoozable: false,
       tasks: [
         {
           id: "94000000-0000-4000-8000-000000000009",
@@ -159,10 +161,10 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   await page.goto("/clients");
   const recent = page.getByRole("region", { name: opsCopy.clients.find.recent });
-  // A card each: their name, and where they stood when opened.
+  // A card each: their name, and their stage when opened.
   const card = recent.getByRole("link", { name: new RegExp(`^${CLIENT.name}`) });
   await expect(card).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
-  await expect(card).toContainText(opsCopy.clients.states[RECORD.state]);
+  await expect(card).toContainText(opsCopy.clients.stages[RECORD.stage]);
 
   await page.route("**/cdn-cgi/access/logout", (route) => route.fulfill({ contentType: "text/html", body: "" }));
   await page.getByRole("button", { name: opsCopy.shell.account.named("") }).click();
@@ -194,14 +196,14 @@ test("asks for two letters or four digits when given fewer", async ({ page }) =>
 /** The head's line beneath the client's name. */
 const headLine = (page: Page) => page.getByRole("heading", NAME).locator("xpath=..");
 
-test("heads the page with the client’s standing and the number to reach them on, their figures at the right", async ({
+test("heads the page with the client’s stage and the number to reach them on, their figures at the right", async ({
   page,
 }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   await expect(headLine(page)).toContainText(
     [
-      opsCopy.clients.states.fitted,
+      opsCopy.clients.stages.active,
       MOBILE,
       "Gurgaon",
       opsCopy.clients.head.since("Nov 2026"),
@@ -276,7 +278,7 @@ test("opens a WhatsApp chat with the client from beside their name, as the board
 
 test("says in words that a client wearing no piece falls due on no date", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(headLine(page)).toContainText(opsCopy.clients.states.lead);
+  await expect(headLine(page)).toContainText(opsCopy.clients.stages.lead);
   await expect(glanceFigure(page, opsCopy.clients.glance.replaceBy)).toHaveText(opsCopy.clients.noPiece);
 });
 

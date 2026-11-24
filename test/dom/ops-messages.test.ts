@@ -71,7 +71,7 @@ beforeEach(() => {
             id: ARJUN.person?.id,
             name: "Arjun Mehta",
             mobile: "+919810000001",
-            state: "fitted",
+            stage: "active",
             next_visit: null,
             under_way: false,
           };

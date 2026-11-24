@@ -45,3 +45,8 @@
     white-space: nowrap;
   }
 }
+
+/* A technician added whose grade did not save, inset as the roster's toolbar is. */
+.notice {
+  margin: var(--sp-16) var(--sp-20) 0;
+}

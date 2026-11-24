@@ -14,6 +14,8 @@ interface TypedPerson {
    */
   readonly contactable: "becomes" | "as_before";
   readonly at: string;
+  /** The pincode they told ops on a call, which a person already held keeps none of. */
+  readonly pincode?: string | undefined;
 }
 
 export function personByMobile(db: D1Database, person: TypedPerson): D1PreparedStatement {
@@ -27,6 +29,7 @@ export function personByMobile(db: D1Database, person: TypedPerson): D1PreparedS
       name: person.name,
       contactable: person.contactable === "becomes" ? 1 : 0,
       test_record: person.testRecord ? 1 : 0,
+      pincode: person.pincode ?? null,
     },
     person.contactable === "becomes"
       ? "ON CONFLICT (mobile_e164) DO UPDATE SET contactable = 1"

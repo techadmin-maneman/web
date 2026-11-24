@@ -201,6 +201,7 @@ export const TASKS = {
       group: "replacement_order",
       count: 2,
       closable: false,
+      snoozable: true,
       tasks: [
         {
           id: "91000000-0000-4000-8000-000000000001",
@@ -226,6 +227,7 @@ export const TASKS = {
       group: "referral_review",
       count: 2,
       closable: false,
+      snoozable: true,
       tasks: [
         {
           id: "92000000-0000-4000-8000-000000000001",
@@ -251,6 +253,7 @@ export const TASKS = {
       group: "no_show_decision",
       count: 2,
       closable: false,
+      snoozable: true,
       tasks: [
         {
           id: "66000000-0000-4000-8000-000000000001",
@@ -276,6 +279,7 @@ export const TASKS = {
       group: "number_change",
       count: 1,
       closable: false,
+      snoozable: false,
       tasks: [
         {
           id: "94000000-0000-4000-8000-000000000001",
@@ -292,6 +296,7 @@ export const TASKS = {
       group: "erasure_request",
       count: 1,
       closable: false,
+      snoozable: false,
       tasks: [
         {
           id: "95000000-0000-4000-8000-000000000001",

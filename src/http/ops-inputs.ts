@@ -8,7 +8,15 @@
 import type { Context } from "hono";
 import type { AppEnv } from "./context.ts";
 import type { OpsInputs } from "../domain/platform/ops-settings.ts";
+import type { StageDays } from "../domain/clients/client-stage.ts";
+import { indiaDate } from "../lib/india-time.ts";
 
 export function opsInputs(c: Context<AppEnv>): Promise<OpsInputs> {
   return c.var.readOpsInputs(c.env.DB, c.var.deps.now(), c.var.log);
+}
+
+/** What a client's stage is read against today: the At-risk client task's grace (src/policy/next-visit.ts). */
+export async function stageDays(c: Context<AppEnv>): Promise<StageDays> {
+  const inputs = await opsInputs(c);
+  return { grace: inputs.nextVisitDays.at_risk_after_due, today: indiaDate(c.var.deps.now()) };
 }

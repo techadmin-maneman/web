@@ -25,6 +25,7 @@ export const MY_DATA = {
         mobile: text("Mobile"),
         email: text("E-mail"),
         contactable: yesNo("We may contact you"),
+        pincode: text("Pincode you gave us"),
         created_at: time("With us since"),
         package_name: text("Your package"),
       },

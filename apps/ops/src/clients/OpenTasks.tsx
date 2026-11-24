@@ -60,6 +60,7 @@ function List({ board, name }: { board: Tasks; name: string }) {
     staff: board.staff,
     mayOwn: access.reaches(taskNeed(each.group, "act")),
     closable: false,
+    snoozable: board.groups.find((group) => group.group === each.group)?.snoozable ?? false,
     owner: owners.has(keyOf(each)) ? (owners.get(keyOf(each)) ?? null) : each.task.owner,
     onOwner: (owner) => {
       setOwners((was) => new Map(was).set(keyOf(each), owner));

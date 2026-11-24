@@ -64,7 +64,7 @@ describe("POST /api/clients/find", () => {
           id: OTHER,
           name: "Vikram Sethi",
           mobile: "+919810000002",
-          state: "nothing_booked",
+          stage: "lead",
           next_visit: null,
           under_way: false,
         },
@@ -74,11 +74,11 @@ describe("POST /api/clients/find", () => {
   });
 
   // Two clients of one name could be told apart only by their number.
-  it("says where each client stands, and when their next visit is", async () => {
+  it("says each client's stage, and when their next visit is", async () => {
     await record();
     await upcomingVisit();
     const [rohit] = (await (await find("rohit")).json<{ clients: unknown[] }>()).clients;
-    expect(rohit).toMatchObject({ id: PERSON, state: "fitted", next_visit: "2026-09-25T04:30:00.000Z" });
+    expect(rohit).toMatchObject({ id: PERSON, stage: "active", next_visit: "2026-09-25T04:30:00.000Z" });
     expect(rohit).toMatchObject({ under_way: false });
 
     await env.DB.prepare("UPDATE appointments SET status = 'in_progress' WHERE person_id = ?1 AND status = 'scheduled'")

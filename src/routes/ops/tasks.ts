@@ -23,7 +23,7 @@ import { staffMemberOf } from "../../http/audit.ts";
 import { closeTask } from "../../domain/ops/task-closures.ts";
 import { failClaimedPiece } from "../../domain/inventory/piece-failures.ts";
 import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../../domain/ops/task-owners.ts";
-import { outstandingTasks, overdueCount, READ_CAP, type Task } from "../../domain/ops/tasks.ts";
+import { overdueCount, READ_CAP, type Task } from "../../domain/ops/tasks.ts";
 import { lowStockPlaces } from "../../domain/inventory/low-stock.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -33,23 +33,20 @@ import { DAY_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import {
   CLOSABLE_TASK_GROUPS,
-  hasLapsed,
   isClosable,
-  lapsesFrom,
+  isSnoozable,
   mayOwnTasks,
   STAFF_SEEN_WITHIN_DAYS,
   TASK_GROUPS,
   TASK_SLA_HOURS,
-  type TaskGroup,
 } from "../../policy/tasks.ts";
-import { callerAccess, permits, reachOf } from "../../http/staff-access.ts";
+import { permits, reachOf } from "../../http/staff-access.ts";
 import { placesWithin } from "../../domain/inventory/stock-places.ts";
-import { narrowedTo, placesReached, type Level } from "../../policy/access.ts";
+import { narrowedTo } from "../../policy/access.ts";
 import { CityAsked } from "../schemas/city.ts";
-import { callerMeetsNeed, TASK_DEPARTMENTS, taskNeed } from "../../policy/console-routes.ts";
+import { groupsSeenBy, readTheBoard, splitLapsed } from "../../http/task-board.ts";
+import { taskNeed } from "../../policy/console-routes.ts";
 import { TaskFactsSchema } from "./tasks.schemas.ts";
-import { boardDays } from "../../policy/next-visit.ts";
-import { selfServeKinds } from "../../policy/self-serve.ts";
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;
@@ -149,6 +146,9 @@ const TasksSchema = z
           closable: z
             .boolean()
             .openapi({ description: "Ops may close a task of the group without doing its thing, with a reason." }),
+          snoozable: z
+            .boolean()
+            .openapi({ description: "Its tasks may be snoozed: all but the requests about a client's own data." }),
           tasks: z
             .array(TaskSchema)
             .openapi({ description: `The longest wait first, at most ${String(TASKS_SHOWN)}.` }),
@@ -273,25 +273,6 @@ const closeRoute = opsRoute({
   },
 });
 
-/**
- * Every task on the board in the caller's cities, or one client's, as a look at it reads them now: each group's where
- * their grants in its department reach at the level asked.
- */
-async function readTheBoard(c: Context<AppEnv>, level: Level, person?: string, city?: string) {
-  const [inputs, access] = await Promise.all([opsInputs(c), callerAccess(c)]);
-  const fitsSelfBooked = selfServeKinds(c.var.config.settings).includes("first_fit");
-  return outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, {
-    days: boardDays(inputs.nextVisitDays, fitsSelfBooked),
-    hours: inputs.careHours,
-    lostAfter: inputs.lostAfterDays,
-    arrival: inputs.bookingRules.arrival,
-    lapseDays: inputs.taskLapseDays,
-    reach: (group: TaskGroup) => narrowedTo(placesReached(access, TASK_DEPARTMENTS[group], level), city),
-    person,
-    awake: true,
-  });
-}
-
 /** A task as the board answers it: the visit and the client's mobile only where its group carries them. */
 function taskBody(task: Task) {
   const { id, facts, detail, since, due, owner, visit } = task;
@@ -316,23 +297,6 @@ export const noMemberOfStaff = (c: Context<AppEnv>) => refuse(c, "access_require
 export async function taskOnTheBoard(c: Context<AppEnv>, key: TaskKey): Promise<Task | null> {
   const { tasks } = await readTheBoard(c, "act");
   return tasks.find((task) => task.group === key.group && task.id === key.id) ?? null;
-}
-
-/** The groups of the caller's own departments; every group while the Staff list is not enforced. */
-async function groupsSeenBy(c: Context<AppEnv>): Promise<TaskGroup[]> {
-  const access = await callerAccess(c);
-  if (!access.enforced) return [...TASK_GROUPS];
-  return TASK_GROUPS.filter((group) => callerMeetsNeed(access.caller, taskNeed(group, "view"), access.zoneOf));
-}
-
-/** The tasks of the groups seen, less those past the lapse days unless they are asked for, and those apart. */
-function splitLapsed(
-  all: readonly Task[],
-  look: { seen: readonly TaskGroup[]; asked: "include" | undefined; now: Date; lapseDays: number },
-) {
-  const lapsedOf = (task: Task) => look.asked !== "include" && hasLapsed(lapsesFrom(task), look.now, look.lapseDays);
-  const seen = all.filter((task) => look.seen.includes(task.group));
-  return { tasks: seen.filter((task) => !lapsedOf(task)), lapsed: seen.filter(lapsedOf) };
 }
 
 /** Stock's badge: the low places within the caller's reach, as Stock itself, an Operations page, reaches them. */
@@ -363,6 +327,7 @@ export function registerOpsTasks(app: App): void {
           group,
           count: (board.counts.get(group) ?? 0) - lapsed.filter((task) => task.group === group).length,
           closable: isClosable(group),
+          snoozable: isSnoozable(group),
           tasks: shown.map(taskBody),
         };
       })

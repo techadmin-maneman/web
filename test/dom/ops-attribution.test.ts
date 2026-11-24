@@ -314,6 +314,28 @@ describe("A lead from a call", () => {
     expect(taken).toEqual([{ personId: PERSON, known: false }]);
   });
 
+  // The pincode is their city until they give an address (docs/decisions/0307-the-people-rulings.md).
+  it("sends the pincode given, and waits for one it can read before it sends anything", async () => {
+    answers.set("POST /api/leads/call", () => Response.json({ person_id: PERSON, known: false }));
+    await show(createElement(CallLead, { onTaken: () => undefined }));
+
+    await click(copy.call.open);
+    fill(copy.call.name, "Vikram Rao");
+    fill(copy.call.mobile, "9811113333");
+    fill(copy.call.channel, "society");
+    fill(copy.call.pincode, "0122");
+    expect(document.body.textContent).toContain(copy.call.missing.pincode);
+    fill(copy.call.pincode, "122018");
+    await click(copy.call.save);
+
+    expect(sent).toEqual([
+      {
+        path: "/api/leads/call",
+        body: { name: "Vikram Rao", mobile: "9811113333", channel: "society", pincode: "122018" },
+      },
+    ]);
+  });
+
   it("says on the page what it took, with the way to their record, until the next", async () => {
     await show(createElement(CallTakenLine, { taken: { personId: PERSON, known: true } }));
 
