@@ -1,9 +1,15 @@
 // A side navigation on the ink: its head (the mark and the name), its entries, each an icon and a name with how many
-// wait there, and its foot. Folded, it keeps the icons alone, and each entry is named by its title and its label.
+// wait there, the current one's own pages beneath it, and its foot. Folded, it keeps the icons alone, and each entry
+// is named by its title and its label.
 //
 //   <SideNav label={copy.title} folded={folded} head={…} foot={…}>
 //     <NavGroup label={copy.work}>
 //       <NavItem to="/tasks" icon={GLYPHS.tasks} name="Tasks" count={8} urgent current />
+//       <NavItem to="/stock" icon={GLYPHS.box} name="Inventory" current>
+//         <NavSubItems label="Inventory">
+//           <NavSubItem to="/stock" name="Stock" current />
+//         </NavSubItems>
+//       </NavItem>
 //     </NavGroup>
 //   </SideNav>
 
@@ -75,11 +81,14 @@ export function NavItem({
   count,
   urgent = false,
   label,
+  children,
 }: {
   readonly to: string;
   readonly icon: string;
   readonly name: string;
   readonly current: boolean;
+  /** Its own pages beneath it (NavSubItems), while it is the current entry. */
+  readonly children?: ReactNode;
   /** How many wait there; none for an entry nothing waits in. */
   readonly count?: number | undefined;
   /** Some of them are overdue. */
@@ -93,6 +102,34 @@ export function NavItem({
         <Icon className={styles.icon} d={icon} size="sm" />
         <span className={styles.name}>{name}</span>
         {count !== undefined && count > 0 && <span className={urgent ? styles.urgent : styles.count}>{count}</span>}
+      </Link>
+      {children}
+    </li>
+  );
+}
+
+/** An entry's own pages, beneath it: folded away with the names, since a page's name is all it has. */
+export function NavSubItems({ label, children }: { readonly label: string; readonly children: ReactNode }) {
+  return (
+    <ul className={styles.sub} aria-label={label}>
+      {children}
+    </ul>
+  );
+}
+
+export function NavSubItem({
+  to,
+  name,
+  current,
+}: {
+  readonly to: string;
+  readonly name: string;
+  readonly current: boolean;
+}) {
+  return (
+    <li>
+      <Link className={styles.subItem} to={to} current={current}>
+        {name}
       </Link>
     </li>
   );

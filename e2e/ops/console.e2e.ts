@@ -338,17 +338,27 @@ for (const path of ["/", "/waitlist", "/settings/field", "/activity"]) {
   });
 }
 
-// Inventory's eight pages were eight entries of the navigation; the job is one entry now, its pages a page's tabs.
-test("heads each page of an entry with the entry's pages as tabs, and marks the one open", async ({ page }) => {
+// Inventory's eight pages are one entry of the navigation, listed beneath it while it is open; a phone, which has no
+// side navigation, has them as tabs at the head of each.
+test("lists an entry's pages beneath it, marks the one open, and has them as tabs on a phone", async ({ page }) => {
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/counts");
-  const tabs = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.nav.inventory });
-  await expect(tabs.getByRole("link", { name: opsCopy.shell.sections.counts })).toHaveAttribute("aria-current", "page");
-  await expect(tabs.getByRole("link", { name: opsCopy.shell.sections.items })).toBeVisible();
+  const pages = navigation(page).getByRole("list", { name: opsCopy.shell.nav.inventory });
+  await expect(pages.getByRole("link", { name: opsCopy.shell.sections.counts })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(pages.getByRole("link", { name: opsCopy.shell.sections.items })).toBeVisible();
   await expect(navigation(page).getByRole("link", { name: opsCopy.shell.nav.inventory })).toHaveAttribute(
     "aria-current",
     "page",
   );
+  const tabs = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.nav.inventory });
+  await expect(tabs).toHaveCount(0);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(tabs.getByRole("link", { name: opsCopy.shell.sections.counts })).toHaveAttribute("aria-current", "page");
+  await expect(tabs.getByRole("link", { name: opsCopy.shell.sections.items })).toBeVisible();
 });
 
 test("goes to a page by its name from anywhere, with / or the header's search", async ({ page }) => {

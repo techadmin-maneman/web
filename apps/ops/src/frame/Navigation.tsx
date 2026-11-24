@@ -7,7 +7,7 @@ import { GLYPHS, TAB_ICONS } from "@maneman/brand/icons";
 import { classes } from "@maneman/ui/classes";
 import { Mark, Wordmark } from "@maneman/ui/Mark";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { FOLDS, NavButton, NavGroup, NavItem, SideNav } from "@maneman/ui/SideNav";
+import { FOLDS, NavButton, NavGroup, NavItem, NavSubItem, NavSubItems, SideNav } from "@maneman/ui/SideNav";
 import { useState } from "react";
 import { shell } from "../content.ts";
 import { useMayCall } from "../lib/access.ts";
@@ -100,7 +100,15 @@ function Entry({ line }: { readonly line: NavLine }) {
       count={line.waiting?.count}
       urgent={line.waiting?.overdue === true}
       label={line.waiting === undefined ? undefined : waitingLabel(line.name, line.waiting)}
-    />
+    >
+      {line.current && line.pages.length > 0 && (
+        <NavSubItems label={line.name}>
+          {line.pages.map((each) => (
+            <NavSubItem key={each.page} to={each.to} name={each.name} current={each.current} />
+          ))}
+        </NavSubItems>
+      )}
+    </NavItem>
   );
 }
 

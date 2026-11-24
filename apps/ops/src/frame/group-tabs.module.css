@@ -1,0 +1,17 @@
+/*
+ * An entry's pages at the head of each (./SectionGroups.tsx): tabs on a phone, which has no side navigation; wider,
+ * the navigation lists them beneath the entry, and only Stock's views are tabs.
+ */
+.everyPage {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .everyPage {
+    display: flex;
+  }
+
+  .views {
+    display: none;
+  }
+}
