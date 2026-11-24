@@ -130,7 +130,7 @@ function PeopleTable({ numbers }: { numbers: CareNumbers }) {
           {view.shown.map((row) => (
             <tr key={row.email}>
               <th scope="row" className={shared.who}>
-                {row.email}
+                <span className={styles.address}>{row.email}</span>
               </th>
               <td className={shared.figure}>{quantity(row.chats)}</td>
               <td className={shared.figure}>{minutes(row.median_minutes)}</td>

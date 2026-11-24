@@ -10,3 +10,8 @@
     min-width: var(--ops-table-min);
   }
 }
+
+/* A Care person's address, broken where it must be so the table keeps to its half of a desk. */
+.address {
+  overflow-wrap: anywhere;
+}
