@@ -5,10 +5,12 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { CLIENTS_PER_PAGE } from "../../../src/domain/clients/client-list.ts";
+import { READ_CAP } from "../../../src/domain/ops/tasks.ts";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
 import { person } from "./ops-clients-fixtures.ts";
-import { aPackage, aPayment, aRefund } from "../fixtures/index.ts";
+import { anAddress, aPackage, aPayment, aRefund } from "../fixtures/index.ts";
+import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
 
 const ROHIT = "11111111-1111-4111-8111-111111111111";
 const VIKRAM = "11111111-1111-4111-8111-111111111112";
@@ -24,8 +26,9 @@ interface Listed {
   cities: string[];
 }
 
-const list = async (query = ""): Promise<Listed> => (await request(ops, `/api/clients${query}`)).json<Listed>();
-const names = async (query = "") => (await list(query)).clients.map((client) => client.name);
+const list = async (query = "", as: App = ops): Promise<Listed> =>
+  (await request(as, `/api/clients${query}`)).json<Listed>();
+const names = async (query = "", as: App = ops) => (await list(query, as)).clients.map((client) => client.name);
 /** The clients the caller's board names, by name, in the list's order. */
 async function onTheBoard(): Promise<string[]> {
   const board = await (
@@ -48,6 +51,15 @@ async function visit(personId: string, type: string, status: string, start: stri
     .bind(id, personId, type, status, start, end, NOW.toISOString())
     .run();
 }
+
+/** A task written by hand for a department, about the client given. */
+const staffTask = (department: string, personId: string) =>
+  env.DB.prepare(
+    `INSERT INTO staff_tasks (id, department, what, person_id, due_at, created_by, created_at)
+     VALUES (?1, ?2, 'Call back', ?3, ?4, 'priya@maneman.in', ?4)`,
+  )
+    .bind(crypto.randomUUID(), department, personId, NOW.toISOString())
+    .run();
 
 /** Rohit's first fit moved to the day given. */
 const fittedOn = (start: string) =>
@@ -124,16 +136,46 @@ describe("GET /api/clients", () => {
   });
 
   it("lists those a task on the caller's board waits on, and counts them", async () => {
-    await env.DB.prepare(
-      `INSERT INTO staff_tasks (id, department, what, person_id, due_at, created_by, created_at)
-       VALUES (?1, 'customer_care', 'Call back', ?2, ?3, 'priya@maneman.in', ?3)`,
-    )
-      .bind(crypto.randomUUID(), KABIR, NOW.toISOString())
-      .run();
+    await staffTask("customer_care", KABIR);
     const waited = await onTheBoard();
     expect(waited).toContain("Kabir Suri");
     expect(await names("?view=needs")).toEqual(waited);
     expect(await counted("")).toMatchObject({ all: 5, needs: waited.length });
+  });
+
+  // Needs something reads the caller's own board: a task in a department they may not see names nobody to them.
+  it("lists only those a task the caller may see waits on", async () => {
+    await staffTask("finance", KABIR);
+    await enforce();
+    await listStaff("farah.khan@maneman.in", ["customer_care:view:national"]);
+    await listStaff("dev.malik@maneman.in", ["customer_care:view:national", "finance:view:national"]);
+    expect(await names("?view=needs", opsAs(staffPerson("farah.khan@maneman.in")))).not.toContain("Kabir Suri");
+    expect(await names("?view=needs", opsAs(staffPerson("dev.malik@maneman.in")))).toContain("Kabir Suri");
+  });
+
+  it("leaves out the count of those a task waits on where the board was read only in part", async () => {
+    await env.DB.prepare(
+      `WITH RECURSIVE n(i) AS (SELECT 0 UNION ALL SELECT i + 1 FROM n WHERE i < ?2)
+       INSERT INTO grievances (id, person_id, text, state, created_at)
+       SELECT printf('55555555-5555-4555-8555-%012d', i), ?1, 'Words', 'open',
+              strftime('%Y-%m-%dT%H:%M:%fZ', '2026-09-01T06:00:00.000Z', '+' || i || ' minutes')
+         FROM n`,
+    )
+      .bind(KABIR, READ_CAP)
+      .run();
+    expect(await counted("")).toMatchObject({ all: 5, needs: null });
+  });
+
+  // The pincode told on Add a client places a client until anything else does (docs/decisions/0307-the-people-rulings.md).
+  it("places a client by the pincode told on Add a client, until an address says another city", async () => {
+    await env.DB.prepare("UPDATE people SET pincode = '122018' WHERE id = ?1").bind(ANIL).run();
+    expect(await names("?city=Gurgaon")).toContain("Anil Kapoor");
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('400050', 'Bandra West', 'Mumbai', 1)",
+    ).run();
+    await anAddress(ANIL, { pincode: "400050" });
+    expect(await names("?city=Gurgaon")).not.toContain("Anil Kapoor");
+    expect(await names("?city=Mumbai")).toEqual(["Anil Kapoor"]);
   });
 
   it("gives each one's package by name and what they have paid, less refunds, as their page does", async () => {

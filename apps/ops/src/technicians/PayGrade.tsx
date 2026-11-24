@@ -3,7 +3,9 @@
 
 import { Field, Select } from "@maneman/ui/Field";
 import { ChoiceRow } from "@maneman/ui/RecordRows";
+import { Failed } from "@maneman/ui/States";
 import { useLoad } from "@maneman/ui/useLoad";
+import { states } from "@maneman/ui/words";
 import { useState } from "react";
 import type { TechnicianPay } from "../api.ts";
 import { technicians } from "../content.ts";
@@ -25,21 +27,30 @@ const choicesOf = (pay: TechnicianPay): (readonly [string, string])[] => [
   ...pay.grades.map((grade) => [grade.id, grade.name] as const),
 ];
 
+/** While the grades are read, the one choice says so. */
+const READING: (readonly [string, string])[] = [["", copy.reading]];
+
+/** The grades did not come: said where the field stands, with a way to read them again. */
+function Unread({ onRetry }: { onRetry: () => void }) {
+  return <Failed message={copy.failed} retry={states.retry} onRetry={onRetry} className={styles.gradesUnread} />;
+}
+
 function GradeSelect({ value, onChange }: { value: string; onChange: (grade: string) => void }) {
-  const [loaded] = useLoad(technicianPayApi.technicianPay);
-  if (loaded.state !== "loaded") return null;
+  const [loaded, retry] = useLoad(technicianPayApi.technicianPay);
+  if (loaded.state === "failed") return <Unread onRetry={retry} />;
   return (
     <Field label={copy.optional} className={styles.formField}>
       {(control) => (
         <Select
           {...control}
           className={styles.select}
+          disabled={loaded.state !== "loaded"}
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
           }}
         >
-          {choicesOf(loaded.value).map(([id, name]) => (
+          {(loaded.state === "loaded" ? choicesOf(loaded.value) : READING).map(([id, name]) => (
             <option key={id} value={id}>
               {name}
             </option>
@@ -56,11 +67,18 @@ export function PayGradeField({ value, onChange }: { value: string; onChange: (g
 }
 
 function GradeRow({ technicianId }: { technicianId: string }) {
-  const [loaded] = useLoad(technicianPayApi.technicianPay);
+  const [loaded, retry] = useLoad(technicianPayApi.technicianPay);
   const [saved, setSaved] = useState<TechnicianPay | null>(null);
   const pay = saved ?? (loaded.state === "loaded" ? loaded.value : null);
-  const technician = pay?.technicians.find((each) => each.id === technicianId);
-  if (pay === null || technician === undefined) return null;
+  if (pay === null && loaded.state === "failed") return <Unread onRetry={retry} />;
+  if (pay === null) {
+    return (
+      <ChoiceRow label={copy.label} value="" choices={READING} mayChange={false} save={() => Promise.resolve(null)} />
+    );
+  }
+  // A technician switched off is not on pay's list, and has no grade to change.
+  const technician = pay.technicians.find((each) => each.id === technicianId);
+  if (technician === undefined) return null;
   return (
     <ChoiceRow
       label={copy.label}

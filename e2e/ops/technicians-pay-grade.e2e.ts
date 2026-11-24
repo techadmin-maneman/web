@@ -19,6 +19,7 @@ import {
 } from "./fixtures.ts";
 import { IMRAN, READ_ROSTER, READ_WORK, pageOf } from "./technicians-fixtures.ts";
 import { EDITING } from "../../apps/ops/src/content/common.ts";
+import { states } from "../../packages/ui/words.ts";
 import { ROUTE_NEEDS } from "../../src/policy/console-routes.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
@@ -85,7 +86,8 @@ test("gives a new technician the grade chosen, once they are added", async ({ pa
   await expect(page.getByRole("status")).toContainText(add.added("Naveen Rao"));
 });
 
-test("says a grade that did not save, the technician added all the same", async ({ page }) => {
+// Not a toast, which goes: until the grade is given the technician is not paid, so it stays on the roster.
+test("says in the page a grade that did not save, the technician added all the same", async ({ page }) => {
   await openWith(page, {
     [ADD]: json(TECHNICIAN_ADDED, 201),
     [gradeOf(TECHNICIAN_ADDED.id)]: fails(400, "invalid_request"),
@@ -94,7 +96,22 @@ test("says a grade that did not save, the technician added all the same", async 
   await form.getByRole("combobox", { name: words.optional }).selectOption({ label: "Senior" });
   await form.getByRole("button", { name: add.save }).click();
   await expect(form).toBeHidden();
-  await expect(page.getByRole("status")).toContainText(add.addedNoGrade("Naveen Rao"));
+  // An alert in the page, where a toast would be a status that goes.
+  await expect(page.getByRole("alert")).toHaveText(add.addedNoGrade("Naveen Rao"));
+  await expect(page.getByRole("status").filter({ hasText: add.addedNoGrade("Naveen Rao") })).toHaveCount(0);
+});
+
+test("says where the grades did not load, and reads them again on Try again", async ({ page }) => {
+  // Every read fails until the test says otherwise, whatever the console tries again by itself.
+  let failing = true;
+  await openWith(page, {
+    "GET /api/technician-pay": (route) => (failing ? route.abort() : json(PAY)(route)),
+  });
+  const form = await addNaveen(page);
+  await expect(form.getByText(words.failed)).toBeVisible();
+  failing = false;
+  await form.getByRole("button", { name: states.retry }).click();
+  await expect(form.getByRole("combobox", { name: words.optional })).toBeEnabled();
 });
 
 test("changes a technician's grade on their details", async ({ page }) => {

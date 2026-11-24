@@ -8,6 +8,7 @@ import { textLinkLook } from "@maneman/ui/TextLink";
 import { Panel } from "@maneman/ui/Panel";
 import { Apart } from "@maneman/ui/Apart";
 import { Toast } from "@maneman/ui/Toast";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { FIGURE, Table } from "@maneman/ui/Table";
@@ -314,6 +315,18 @@ function Period({ from, to }: { from: string; to: string }) {
   return null;
 }
 
+/** What adding a technician says: a toast, or, where their grade did not save, a line that stays. */
+function AddedNews({ added }: { added: { name: string; graded: boolean } | null }) {
+  if (added === null) return null;
+  if (added.graded) return <Toast>{technicians.add.added(added.name)}</Toast>;
+  // Not a toast, which goes: until the grade is given, the technician is not paid.
+  return (
+    <InlineMessage tone="error" className={styles.notice}>
+      {technicians.add.addedNoGrade(added.name)}
+    </InlineMessage>
+  );
+}
+
 /** The figures, over ops's own period until another is chosen; a choice keeps the last shown until it answers. */
 function useWork() {
   const [from, setFrom] = useState<string | null>(null);
@@ -376,9 +389,7 @@ function Roster() {
           </PageActions>
         )}
         <Period from={work.value.from} to={work.value.to} />
-        {added !== null && (
-          <Toast>{added.graded ? technicians.add.added(added.name) : technicians.add.addedNoGrade(added.name)}</Toast>
-        )}
+        <AddedNews added={added} />
         {roster.technicians.length === 0 ? (
           <EmptyState look="panel" line={technicians.empty} />
         ) : (

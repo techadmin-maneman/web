@@ -58,13 +58,9 @@ export const clients = {
     nextVisit: "Next visit",
     stage: "Stage",
     needs: "Needs",
-    /** Beside the title: "4,603 clients · 312 fitted · 38 with a task open"; the last only where the board is whole. */
-    sub: (all: number, fitted: number, open: number | null) =>
-      [
-        `${quantity(all)} ${all === 1 ? "client" : "clients"}`,
-        `${quantity(fitted)} fitted`,
-        ...(open === null ? [] : [`${quantity(open)} with a task open`]),
-      ].join(" · "),
+    /** Beside the title, as the prototype writes it: "4,603 clients · 312 fitted". Needs something counts the rest. */
+    sub: (all: number, fitted: number) =>
+      `${quantity(all)} ${all === 1 ? "client" : "clients"} · ${quantity(fitted)} fitted`,
     /** "51–100 of 4,603". */
     range: (first: number, last: number, total: number) => `${quantity(first)}–${quantity(last)} of ${quantity(total)}`,
     underWay: "Under way",

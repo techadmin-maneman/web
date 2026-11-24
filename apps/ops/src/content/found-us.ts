@@ -55,7 +55,7 @@ export const foundUs = {
     missing: {
       name: "Type their name.",
       mobile: "Type their ten-digit mobile.",
-      pincode: "Type a six-digit pincode, or leave it blank.",
+      pincode: "Check the pincode, or leave it blank.",
       channel: "Pick how they heard of us.",
     },
     saved: "Client added.",
@@ -66,7 +66,7 @@ export const foundUs = {
     heard_from_other: "Type what they said.",
     name: "Type their name.",
     mobile: "Type a ten-digit Indian mobile number.",
-    pincode: "Type a six-digit pincode.",
+    pincode: "Check the pincode.",
     invalid_request: "Check the fields marked.",
     not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,

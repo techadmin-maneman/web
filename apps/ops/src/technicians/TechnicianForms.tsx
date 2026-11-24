@@ -191,8 +191,8 @@ export function AddTechnician({
     >
       <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
       <StartedField value={startDate} onChange={setStartDate} />
-      <PayGradeField value={grade} onChange={setGrade} />
       <TrainingField value={trainingEndDate} onChange={setTrainingEndsOn} />
+      <PayGradeField value={grade} onChange={setGrade} />
       <div className={styles.actions}>
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}

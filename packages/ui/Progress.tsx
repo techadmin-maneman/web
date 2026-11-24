@@ -56,7 +56,8 @@ export function NamedSteps({
   return (
     <div className={classes(styles.named, className)}>
       <StepProgress steps={steps} />
-      <ol className={styles.names} aria-label={label}>
+      {/* eslint-disable-next-line jsx-a11y-x/no-redundant-roles -- a list drawn without markers is no list to Safari's VoiceOver unless it says so */}
+      <ol className={styles.names} aria-label={label} role="list">
         {names.map((name, index) => (
           <li
             key={name}

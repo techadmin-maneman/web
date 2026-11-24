@@ -284,7 +284,7 @@ function CityList({ search, instead, city, paged }: ListProps & { city: string |
   const counts = useCounts(loaded.state === "loaded" ? loaded.value.counts : null);
   const board = useTaskBoard(useAccess().mayCall("GET /api/tasks"));
   const needs = useMemo(() => needsOf(board), [board]);
-  useHeaderSub(counts === null ? undefined : copy.sub(counts.all, counts.fitted, counts.needs));
+  useHeaderSub(counts === null ? undefined : copy.sub(counts.all, counts.fitted));
   const change = (next: ClientListQuery, earlier: readonly (string | undefined)[] = []) => {
     keep(next);
     setQuery(next);
