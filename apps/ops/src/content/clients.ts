@@ -44,8 +44,15 @@ export const clients = {
     narrow: "Find and narrow clients",
     name: "Name",
     mobile: "Mobile",
-    state: "Status",
-    anyState: "Status: All",
+    view: "Show",
+    /** The list's views, as the prototype writes them. */
+    views: {
+      lead: "Leads",
+      booked: "Visit booked",
+      fitted: "Fitted",
+      nothing_booked: "Nothing booked",
+      needs: "Needs something",
+    },
     city: "City",
     noCity: "Not known",
     nextVisit: "Next visit",
@@ -95,8 +102,13 @@ export const clients = {
   whatsappLabel: (name: string) => `WhatsApp ${name}`,
   /** The number as a way to call, since a client who never agreed to WhatsApp is called. */
   callLabel: (name: string, mobile: string) => `Call ${name} on ${mobile}`,
-  // The board writes "Active"; the API's three states are these.
-  states: { fitted: "Fitted", lead: "Booked", nothing_booked: "Nothing booked" },
+  /** How far along a client is, as the prototype writes it (docs/decisions/0307-the-people-rulings.md). */
+  stages: { lead: "Lead", consulted: "Consulted", fitted: "Fitted", active: "Active" },
+  /** The line beneath a client's head, each stage by the visit that reaches it. */
+  journey: {
+    label: "Stage",
+    steps: { lead: "Lead", consulted: "Consultation", fitted: "First fit", active: "Active" },
+  },
   /** The head's free service visits, as the client's Home writes them: "2 · use by 3 Jan 2028". */
   creditLine: (visits: number, expiry: string | null) =>
     expiry === null ? String(visits) : `${String(visits)} · use by ${expiry}`,

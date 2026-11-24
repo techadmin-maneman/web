@@ -21,7 +21,9 @@ import { phoneWords } from "../lib/phone.ts";
 import styles from "./technicians.module.css";
 import { Refusal } from "@maneman/ui/Refusal";
 import { techniciansApi } from "./technicians-api.ts";
+import { technicianPayApi } from "../technician-pay/index.ts";
 import { SwitchOff, SwitchOn } from "./TechnicianSwitch.tsx";
+import { PayGradeField, PayGradeRow } from "./PayGrade.tsx";
 import { StartedField, StartedRow } from "./Started.tsx";
 import { TrainingField, TrainingRow } from "./Training.tsx";
 import { refusal } from "./refusal.ts";
@@ -136,7 +138,8 @@ export function AddTechnician({
   onClose,
 }: {
   cities: readonly string[];
-  onAdded: (name: string) => Promise<void>;
+  /** Added, and whether a grade chosen with them was saved; none chosen is saved. */
+  onAdded: (name: string, graded: boolean) => Promise<void>;
   onClose: () => void;
 }) {
   const copy = technicians.add;
@@ -145,6 +148,7 @@ export function AddTechnician({
   const [typed, setTyped] = useState<Typed>({ name: "", mobile: "", zone: "", city: firstCity, fitsTrained: false });
   const [trainingEndDate, setTrainingEndsOn] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [grade, setGrade] = useState("");
   const [sending, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -170,7 +174,8 @@ export function AddTechnician({
         setFailed(refusal(answer.code));
         return;
       }
-      await onAdded(name);
+      const graded = grade === "" || (await technicianPayApi.setPayGradeOf(answer.body.id, grade)).ok;
+      await onAdded(name, graded);
     });
 
   return (
@@ -186,6 +191,7 @@ export function AddTechnician({
     >
       <Fields typed={typed} cities={cities} onType={setTyped} focusFirst={false} />
       <StartedField value={startDate} onChange={setStartDate} />
+      <PayGradeField value={grade} onChange={setGrade} />
       <TrainingField value={trainingEndDate} onChange={setTrainingEndsOn} />
       <div className={styles.actions}>
         <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
@@ -279,6 +285,7 @@ function DetailRows({
         mayChange={mayChange}
         save={(endsOn) => save({ training_end_date: endsOn })}
       />
+      <PayGradeRow technicianId={technician.id} />
     </div>
   );
 }

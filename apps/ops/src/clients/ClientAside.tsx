@@ -15,6 +15,7 @@ import { paidToDate } from "./Payments.tsx";
 import { StaffNotes } from "./StaffNotes.tsx";
 import { ClientAlerts } from "./ClientAlerts.tsx";
 import { VisitAddress } from "./VisitAddress.tsx";
+import { isFittedStage } from "./client-states.ts";
 
 const copy = clients.glance;
 
@@ -34,7 +35,7 @@ function Glance({ record, credits }: { record: ClientRecord; credits: ClientReco
           { label: copy.visits, value: quantity(record.history.visits) },
           {
             label: copy.replaceBy,
-            value: replacementDueOf(record.history, record.state === "fitted"),
+            value: replacementDueOf(record.history, isFittedStage(record.stage)),
             tone: replaceTone(record.history),
             words: record.history.replacement_due === null,
           },

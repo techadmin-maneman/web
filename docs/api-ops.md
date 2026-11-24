@@ -21400,7 +21400,7 @@ Snooze a task until 10 am tomorrow in India; it leaves the board and its counts 
 }
 ```
 
-**400**: invalid_request
+**400**: invalid_request: a request about a client's own data, which cannot be snoozed (group)
 
 ```json
 {
@@ -39368,13 +39368,15 @@ Request body:
           "mobile": {
             "type": "string"
           },
-          "state": {
+          "stage": {
             "type": "string",
             "enum": [
-              "fitted",
               "lead",
-              "nothing_booked"
-            ]
+              "consulted",
+              "fitted",
+              "active"
+            ],
+            "description": "How far along they are: a lead, consulted, fitted, or active while within their service cadence and its grace."
           },
           "city": {
             "anyOf": [
@@ -39422,7 +39424,7 @@ Request body:
           "id",
           "name",
           "mobile",
-          "state",
+          "stage",
           "city",
           "next_visit",
           "under_way",
@@ -39445,6 +39447,10 @@ Request body:
               "type": "integer",
               "minimum": 0
             },
+            "booked": {
+              "type": "integer",
+              "minimum": 0
+            },
             "fitted": {
               "type": "integer",
               "minimum": 0
@@ -39452,13 +39458,27 @@ Request body:
             "nothing_booked": {
               "type": "integer",
               "minimum": 0
+            },
+            "needs": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Those a task waits on; null where the board was read only in part."
             }
           },
           "required": [
             "all",
             "lead",
+            "booked",
             "fitted",
-            "nothing_booked"
+            "nothing_booked",
+            "needs"
           ],
           "additionalProperties": false
         },
@@ -39466,7 +39486,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "How many in the city asked for stand where; on the first page, else null."
+      "description": "How many in the city asked for each view holds; on the first page, else null."
     },
     "next_cursor": {
       "anyOf": [
@@ -39536,13 +39556,15 @@ Request body:
           "mobile": {
             "type": "string"
           },
-          "state": {
+          "stage": {
             "type": "string",
             "enum": [
-              "fitted",
               "lead",
-              "nothing_booked"
-            ]
+              "consulted",
+              "fitted",
+              "active"
+            ],
+            "description": "How far along they are: a lead, consulted, fitted, or active while within their service cadence and its grace."
           },
           "next_visit": {
             "anyOf": [
@@ -39565,7 +39587,7 @@ Request body:
           "id",
           "name",
           "mobile",
-          "state",
+          "stage",
           "next_visit",
           "under_way"
         ],
@@ -39621,13 +39643,15 @@ Request body:
       "type": "string",
       "description": "E.164, as ops need it to call or message."
     },
-    "state": {
+    "stage": {
       "type": "string",
       "enum": [
-        "fitted",
         "lead",
-        "nothing_booked"
-      ]
+        "consulted",
+        "fitted",
+        "active"
+      ],
+      "description": "How far along they are: a lead, consulted, fitted, or active while within their service cadence."
     },
     "known_since": {
       "type": "string",
@@ -39862,7 +39886,7 @@ Request body:
     "id",
     "name",
     "mobile",
-    "state",
+    "stage",
     "known_since",
     "address",
     "credits",
@@ -49999,6 +50023,11 @@ Request body:
         "direct"
       ],
       "description": "Where the caller came from, as ops picked it."
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^[1-8]\\d{5}$",
+      "description": "Where they are, as they said: their city until they give an address."
     }
   },
   "required": [
@@ -55507,6 +55536,10 @@ Request body:
             "type": "boolean",
             "description": "Ops may close a task of the group without doing its thing, with a reason."
           },
+          "snoozable": {
+            "type": "boolean",
+            "description": "Its tasks may be snoozed: all but the requests about a client's own data."
+          },
           "tasks": {
             "type": "array",
             "items": {
@@ -55519,6 +55552,7 @@ Request body:
           "group",
           "count",
           "closable",
+          "snoozable",
           "tasks"
         ],
         "additionalProperties": false

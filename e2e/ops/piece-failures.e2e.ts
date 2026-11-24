@@ -67,6 +67,7 @@ test("closes a guarantee claim with its hair system at fault, why from the job s
         group: "fit_guarantee_claim",
         count: 1,
         closable: true,
+        snoozable: true,
         tasks: [
           {
             id: claim,

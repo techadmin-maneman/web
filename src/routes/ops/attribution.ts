@@ -39,6 +39,11 @@ const callRoute = opsRoute({
             channel: z
               .enum(DECLARED_CHANNELS)
               .openapi({ description: "Where the caller came from, as ops picked it." }),
+            pincode: z
+              .string()
+              .regex(/^[1-8]\d{5}$/)
+              .optional()
+              .openapi({ description: "Where they are, as they said: their city until they give an address." }),
           })
           .strict()
           .openapi("CallLead"),
@@ -167,6 +172,7 @@ export function registerOpsAttribution(app: App): void {
       name: body.name,
       mobileE164,
       channel: body.channel,
+      pincode: body.pincode,
       testRecord: testRecordAtCreation(c.var.config.environment, body.name),
     });
     if (taken.leadId !== null) {

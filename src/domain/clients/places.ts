@@ -46,9 +46,13 @@ const latestWaitlistPincode = (personId: string): string =>
   `(SELECT place_wait.pincode FROM waitlist_entries place_wait
     WHERE place_wait.person_id = ${personId} ORDER BY place_wait.created_at DESC LIMIT 1)`;
 
+const givenPincode = (personId: string): string =>
+  `(SELECT place_given.pincode FROM people place_given WHERE place_given.id = ${personId})`;
+
 /**
  * A client's city: their current address's; before they have one, their latest visit's, then the pincode they last
- * booked at, asked for a consultation at, or joined the waitlist with. The first of these in one of our cities wins.
+ * booked at, asked for a consultation at, or joined the waitlist with, then the one they told ops on Add a client.
+ * The first of these in one of our cities wins.
  */
 function clientCity(personId: string): string {
   const pincodes = [
@@ -57,6 +61,7 @@ function clientCity(personId: string): string {
     latestHoldPincode(personId),
     latestConsultationPincode(personId),
     latestWaitlistPincode(personId),
+    givenPincode(personId),
   ];
   return `COALESCE(${pincodes.map(pincodeCity).join(", ")})`;
 }

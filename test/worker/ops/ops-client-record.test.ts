@@ -43,7 +43,7 @@ describe("GET /api/clients/{id}", () => {
       id: PERSON,
       name: "Rohit Malhotra",
       mobile: MOBILE,
-      state: "fitted",
+      stage: "active",
       known_since: "2026-08-01T06:00:00.000Z",
       address: {
         line1: "House 7",
@@ -130,7 +130,7 @@ describe("GET /api/clients/{id}", () => {
   it("reads nothing booked and no address for a client with only a record", async () => {
     const body = await (await request(ops, `/api/clients/${PERSON}`)).json();
     expect(body).toMatchObject({
-      state: "nothing_booked",
+      stage: "lead",
       address: null,
       credits: null,
       visits: { upcoming: [], past: [] },
@@ -146,16 +146,17 @@ describe("GET /api/clients/{id}", () => {
     expect(body).toMatchObject({ next_visit: { type: "service", due_on: "2026-10-01" } });
   });
 
-  // A live test, 4 October 2026: a client whose booking was refunded read "Booked" with nothing booked.
-  it("reads booked only while a visit is to come, not for a booking the site's form left that booked nothing", async () => {
+  // A lead stays one while their consultation is to come, and is consulted once it is done
+  // (docs/decisions/0307-the-people-rulings.md); a booking the site's form left that booked nothing moves nothing.
+  it("reads a lead until their consultation is done, and consulted after", async () => {
     await env.DB.prepare(
       `INSERT INTO leads (id, person_id, created_at, source, city, proposed_visit_date, request_id)
        VALUES ('l-1', ?1, ?2, 'form', 'Gurgaon', '2026-09-24', 'r')`,
     )
       .bind(PERSON, NOW.toISOString())
       .run();
-    const stateNow = async () => (await (await request(ops, `/api/clients/${PERSON}`)).json<{ state: string }>()).state;
-    expect(await stateNow()).toBe("nothing_booked");
+    const stageNow = async () => (await (await request(ops, `/api/clients/${PERSON}`)).json<{ stage: string }>()).stage;
+    expect(await stageNow()).toBe("lead");
 
     await env.DB.prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
@@ -165,7 +166,9 @@ describe("GET /api/clients/{id}", () => {
     )
       .bind(VISIT, PERSON, NOW.toISOString())
       .run();
-    expect(await stateNow()).toBe("lead");
+    expect(await stageNow()).toBe("lead");
+    await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = ?1").bind(VISIT).run();
+    expect(await stageNow()).toBe("consulted");
   });
 
   it("answers 404 for a client we do not have", async () => {

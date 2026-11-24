@@ -19,6 +19,7 @@ export const ERASURE_BOARD: OpsReply<"/api/tasks"> = {
       group: "erasure_follow_up",
       count: 2,
       closable: true,
+      snoozable: false,
       tasks: [
         {
           id: "99000000-0000-4000-8000-000000000001",
@@ -76,4 +77,14 @@ test("lists an erasure's leftovers in Zoho, naming the lead, and closes one once
         body: { reason: opsCopy.tasks.close.erasureFollowUp.open },
       },
     ]);
+});
+
+// A request about a client's own data runs on a time the law sets (docs/decisions/0307-the-people-rulings.md).
+test("offers no Snooze on an erasure's leftovers, whose group the board says cannot be snoozed", async ({ page }) => {
+  await open(page, ERASURE_BOARD, NO_ALERTS);
+  const lead = opsCopy.tasks.subs.erasure_follow_up("610500000001", "11000000-0000-4000-8000-000000000001");
+  await page.getByRole("button", { name: lead }).click();
+  const drawer = page.getByRole("dialog", { name: ERASURE_BOARD.groups[0]?.tasks[0]?.person?.name ?? "" });
+  await expect(drawer.getByRole("button", { name: opsCopy.tasks.close.erasureFollowUp.open })).toBeVisible();
+  await expect(drawer.getByRole("button", { name: opsCopy.tasks.snooze.button })).toHaveCount(0);
 });

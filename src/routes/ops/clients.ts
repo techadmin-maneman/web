@@ -13,11 +13,18 @@
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
-import { CLIENTS_PER_PAGE, listClients, NEXT_VISIT_COLUMNS } from "../../domain/clients/client-list.ts";
-import { fittedSql } from "../../domain/clients/fitted.ts";
+import {
+  CLIENT_VIEWS,
+  CLIENTS_PER_PAGE,
+  listClients,
+  NEXT_VISIT_COLUMNS,
+  type ListedClient,
+} from "../../domain/clients/client-list.ts";
+import { CLIENT_STAGES, stageSql, type ClientStage } from "../../domain/clients/client-stage.ts";
 import { reachBinding, withinReach } from "../../domain/clients/places.ts";
-import { CLIENT_STATES, clientStateOf } from "../../domain/visits/client-visits.ts";
 import type { App } from "../../http/context.ts";
+import { stageDays } from "../../http/ops-inputs.ts";
+import { clientsWaitedOn } from "../../http/task-board.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { countOf, CursorQuery, cursorOf, NextCursor } from "../../http/paging.ts";
@@ -27,6 +34,10 @@ import { unknownClient } from "../schemas/clients.ts";
 import { clientCities } from "../../domain/cities/cities.ts";
 
 const UnderWay = z.boolean().openapi({ description: "Whether a visit of theirs has begun and is not yet closed." });
+const Stage = z.enum(CLIENT_STAGES).openapi({
+  description:
+    "How far along they are: a lead, consulted, fitted, or active while within their service cadence and its grace.",
+});
 const searchRoute = opsRoute({
   method: "post",
   path: "/api/clients/search",
@@ -93,7 +104,7 @@ const findRoute = opsRoute({
                   id: z.uuid(),
                   name: z.string(),
                   mobile: z.string(),
-                  state: z.enum(CLIENT_STATES),
+                  stage: Stage,
                   next_visit: z.union([z.iso.datetime(), z.null()]).openapi({
                     description: "When the client's next visit not yet closed starts; null for none.",
                   }),
@@ -117,7 +128,14 @@ const listRoute = opsRoute({
   summary: "Every client in the caller's cities, the soonest next visit first, then those with none, newest first",
   request: {
     query: z.object({
-      state: z.enum(CLIENT_STATES).optional().openapi({ description: "Where they stand; any, left out." }),
+      view: z
+        .enum(CLIENT_VIEWS)
+        .optional()
+        .openapi({
+          description:
+            "The leads, those with a visit to come, those fitted, those with none to come, or those a task on the " +
+            "caller's board waits on; everyone, left out.",
+        }),
       city: z.string().trim().min(1).max(60).optional(),
       cursor: CursorQuery,
     }),
@@ -134,7 +152,7 @@ const listRoute = opsRoute({
                   id: z.uuid(),
                   name: z.string(),
                   mobile: z.string(),
-                  state: z.enum(CLIENT_STATES),
+                  stage: Stage,
                   city: z.union([z.string(), z.null()]).openapi({
                     description: "Their address's city, else where they last booked or asked to be told.",
                   }),
@@ -157,13 +175,19 @@ const listRoute = opsRoute({
                   .object({
                     all: z.number().int().nonnegative(),
                     lead: z.number().int().nonnegative(),
+                    booked: z.number().int().nonnegative(),
                     fitted: z.number().int().nonnegative(),
                     nothing_booked: z.number().int().nonnegative(),
+                    needs: z.union([z.number().int().nonnegative(), z.null()]).openapi({
+                      description: "Those a task waits on; null where the board was read only in part.",
+                    }),
                   })
                   .strict(),
                 z.null(),
               ])
-              .openapi({ description: "How many in the city asked for stand where; on the first page, else null." }),
+              .openapi({
+                description: "How many in the city asked for each view holds; on the first page, else null.",
+              }),
             next_cursor: NextCursor.openapi({
               description: `The next page of ${String(CLIENTS_PER_PAGE)}; null on the last.`,
             }),
@@ -189,30 +213,42 @@ function searchOf(typed: string): Search | null {
 /** A LIKE pattern for text anywhere in the column, with LIKE's own wildcards taken as themselves. */
 const containing = (text: string): string => `%${text.replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
 
+/** A client as the list answers them. */
+const listedBody = (client: ListedClient) => ({
+  id: client.id,
+  name: client.name,
+  mobile: client.mobile,
+  stage: client.stage,
+  city: client.city,
+  next_visit: client.nextVisit,
+  under_way: client.underWay,
+  package: client.packageName,
+  paid: client.paid,
+});
+
 export function registerOpsClients(app: App): void {
   app.openapi(listRoute, async (c) => {
-    const { state, city, cursor } = c.req.valid("query");
+    const { view, city, cursor } = c.req.valid("query");
     const page = countOf(cursor);
     if (page === null) return refuse(c, "invalid_request");
     const reach = reachBinding(await routeReach(c));
+    // The board is read for the first page's count of those a task waits on, and for every page of that view.
+    const [days, waited] = await Promise.all([
+      stageDays(c),
+      page === 0 || view === "needs" ? clientsWaitedOn(c, city) : null,
+    ]);
     const [listed, served] = await Promise.all([
-      listClients(c.env.DB, { state, city, page, reach }),
+      listClients(c.env.DB, { view, needs: waited?.ids, city, page, reach, days }),
       clientCities(c.env.DB, reach),
     ]);
     return c.json(
       {
-        clients: listed.clients.map((client) => ({
-          id: client.id,
-          name: client.name,
-          mobile: client.mobile,
-          state: client.state,
-          city: client.city,
-          next_visit: client.nextVisit,
-          under_way: client.underWay,
-          package: client.packageName,
-          paid: client.paid,
-        })),
-        counts: listed.counts,
+        clients: listed.clients.map(listedBody),
+        // Those a task waits on are not counted where the board was read only in part.
+        counts:
+          listed.counts === null
+            ? null
+            : { ...listed.counts, needs: waited?.truncated === false ? listed.counts.needs : null },
         next_cursor: listed.more ? cursorOf(String(page + 1)) : null,
         cities: served,
       },
@@ -236,21 +272,21 @@ export function registerOpsClients(app: App): void {
     const search = searchOf(c.req.valid("json").text);
     if (search === null) return refuse(c, "invalid_request", ["text"]);
     const column = search.by === "number" ? "mobile_e164" : "name";
-    const reached = await routeReach(c);
+    const [reached, days] = await Promise.all([routeReach(c), stageDays(c)]);
     const { results } = await c.env.DB.prepare(
-      `SELECT client.id, client.name, client.mobile_e164, ${fittedSql("client.id")} AS fitted,
+      `SELECT client.id, client.name, client.mobile_e164, ${stageSql("client", "?4", "?5")} AS stage,
          ${NEXT_VISIT_COLUMNS("client")}
        FROM people client
        WHERE client.erased_at IS NULL AND client.${column} LIKE ?1 ESCAPE '\\'
          AND ${withinReach("client", "client", "?3")}
        ORDER BY client.name, client.id LIMIT ?2`,
     )
-      .bind(containing(search.text), CLIENTS_FOUND + 1, reachBinding(reached))
+      .bind(containing(search.text), CLIENTS_FOUND + 1, reachBinding(reached), days.grace, days.today)
       .all<{
         id: string;
         name: string;
         mobile_e164: string;
-        fitted: number;
+        stage: ClientStage;
         next_visit: string | null;
         under_way: number;
       }>();
@@ -261,7 +297,7 @@ export function registerOpsClients(app: App): void {
           id: row.id,
           name: row.name,
           mobile: row.mobile_e164,
-          state: clientStateOf(row.fitted === 1, row.next_visit !== null),
+          stage: row.stage,
           next_visit: row.next_visit,
           under_way: row.under_way === 1,
         })),

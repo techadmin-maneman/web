@@ -330,7 +330,7 @@ function Roster() {
   // The roster as read again after a technician is added.
   const [fresh, setFresh] = useState<RosterBook | null>(null);
   const [adding, setAdding] = useState(false);
-  const [added, setAdded] = useState<string | null>(null);
+  const [added, setAdded] = useState<{ name: string; graded: boolean } | null>(null);
   const mayAdd = useAccess().mayCall("POST /api/technicians");
   const { city } = useCity();
 
@@ -376,7 +376,9 @@ function Roster() {
           </PageActions>
         )}
         <Period from={work.value.from} to={work.value.to} />
-        {added !== null && <Toast>{technicians.add.added(added)}</Toast>}
+        {added !== null && (
+          <Toast>{added.graded ? technicians.add.added(added.name) : technicians.add.addedNoGrade(added.name)}</Toast>
+        )}
         {roster.technicians.length === 0 ? (
           <EmptyState look="panel" line={technicians.empty} />
         ) : (
@@ -389,10 +391,10 @@ function Roster() {
         {adding && (
           <AddTechnician
             cities={roster.cities}
-            onAdded={async (name) => {
+            onAdded={async (name, graded) => {
               await readAgain();
               setAdding(false);
-              setAdded(name);
+              setAdded({ name, graded });
             }}
             onClose={() => {
               setAdding(false);

@@ -35,6 +35,42 @@ export function stepStates(total: number, current: number): StepState[] {
   });
 }
 
+/**
+ * Steps named beneath their line, a client's way from lead to active: each step up to the one reached in the done
+ * colour, that one named in the ink and heard as the current step, the rest to come.
+ */
+export function NamedSteps({
+  names,
+  reached,
+  label,
+  className,
+}: {
+  readonly names: readonly string[];
+  /** The step reached, from 0. */
+  readonly reached: number;
+  /** What the steps are, as a screen reader names the list. */
+  readonly label: string;
+  readonly className?: string | undefined;
+}) {
+  const steps = names.map((_, index): StepState => (index <= reached ? "done" : "todo"));
+  return (
+    <div className={classes(styles.named, className)}>
+      <StepProgress steps={steps} />
+      <ol className={styles.names} aria-label={label}>
+        {names.map((name, index) => (
+          <li
+            key={name}
+            className={index === reached ? styles.reached : undefined}
+            aria-current={index === reached ? "step" : undefined}
+          >
+            {name}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 /** A line filling to `value`, a share from 0 to 1: the strong ink, or the metal for the one thing a screen marks. */
 export function ProgressLine({
   value,

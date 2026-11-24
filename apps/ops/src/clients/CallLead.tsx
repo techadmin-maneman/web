@@ -40,16 +40,21 @@ function ChannelPick(props: { value: DeclaredChannel | ""; onChange: (channel: D
   );
 }
 
-/** What Save lead waits for, the first thing missing; null once it can save. */
-function missingOf(name: string, mobile: string, channel: DeclaredChannel | ""): string | null {
-  if (name.trim() === "") return copy.missing.name;
-  if (mobile.replace(/\D/g, "").length < 10) return copy.missing.mobile;
-  return channel === "" ? copy.missing.channel : null;
+/** A pincode as India writes one: six digits, the first not 0 or 9. */
+const PINCODE = /^[1-8]\d{5}$/;
+
+/** What Save lead waits for, the first thing missing; null once it can save. A pincode may be left out. */
+function missingOf(typed: { name: string; mobile: string; pincode: string; channel: DeclaredChannel | "" }) {
+  if (typed.name.trim() === "") return copy.missing.name;
+  if (typed.mobile.replace(/\D/g, "").length < 10) return copy.missing.mobile;
+  if (typed.pincode.trim() !== "" && !PINCODE.test(typed.pincode.trim())) return copy.missing.pincode;
+  return typed.channel === "" ? copy.missing.channel : null;
 }
 
 function CallForm(props: { onTaken: (taken: { personId: string; known: boolean }) => void; onCancel: () => void }) {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [pincode, setPincode] = useState("");
   const [channel, setChannel] = useState<DeclaredChannel | "">("");
   const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
@@ -57,12 +62,18 @@ function CallForm(props: { onTaken: (taken: { personId: string; known: boolean }
     once(async () => {
       if (channel === "") return;
       setFailure(null);
-      const answer = await clientsApi.leadFromCall({ name: name.trim(), mobile, channel });
+      const where = pincode.trim();
+      const answer = await clientsApi.leadFromCall({
+        name: name.trim(),
+        mobile,
+        channel,
+        ...(where === "" ? {} : { pincode: where }),
+      });
       if (answer.ok) props.onTaken({ personId: answer.body.person_id, known: answer.body.known });
       else setFailure({ code: answer.code, fields: answer.fields });
     });
   const refused = (box: string) => boxError(foundUs.errors, failure, box);
-  const missing = missingOf(name, mobile, channel);
+  const missing = missingOf({ name, mobile, pincode, channel });
   return (
     <form
       onSubmit={(event) => {
@@ -91,9 +102,18 @@ function CallForm(props: { onTaken: (taken: { personId: string; known: boolean }
             />
           )}
         </Field>
+        <TextField
+          label={copy.pincode}
+          className={form.field}
+          error={refused("pincode")}
+          maxLength={6}
+          numeric
+          value={pincode}
+          onChange={setPincode}
+        />
         <ChannelPick value={channel} onChange={setChannel} />
       </div>
-      <Refused failed={failure} errors={foundUs.errors} boxes={["name", "mobile"]} />
+      <Refused failed={failure} errors={foundUs.errors} boxes={["name", "mobile", "pincode"]} />
       <FormActions>
         <Button
           variant="primary"

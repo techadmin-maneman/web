@@ -14,7 +14,7 @@ const WRITTEN = "aa000000-0000-4000-8000-000000000001";
 const ROHIT = { id: "22000000-0000-4000-8000-000000000007", name: "Rohit Malhotra", mobile: "+91 98100 04417" };
 
 const FOUND = {
-  clients: [{ ...ROHIT, state: "fitted", next_visit: null, under_way: false }],
+  clients: [{ ...ROHIT, stage: "active", next_visit: null, under_way: false }],
   more: false,
 } satisfies OpsReply<"/api/clients/find", "post">;
 
@@ -27,6 +27,7 @@ const WITH_WRITTEN = {
       group: "staff_task_customer_care",
       count: 1,
       closable: false,
+      snoozable: true,
       tasks: [
         {
           id: WRITTEN,

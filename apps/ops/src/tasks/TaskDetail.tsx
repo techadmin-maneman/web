@@ -49,6 +49,8 @@ export interface Acting {
   readonly mayOwn: boolean;
   /** Whether they may close it without a follow-up: a group that allows it, and access that reaches it. */
   readonly closable: boolean;
+  /** Whether its group may be snoozed: all but the requests about a client's own data. */
+  readonly snoozable: boolean;
   readonly owner: string | null;
   readonly onOwner: (owner: string | null) => void;
   readonly onClosed: () => void;
@@ -111,7 +113,7 @@ export function TaskDrawer({ group, task, subject, now, acting, onDismiss }: Pro
             <SnoozeButton
               group={group}
               task={task}
-              mayAct={acting.mayOwn}
+              mayAct={acting.mayOwn && acting.snoozable}
               onSnoozed={(until) => {
                 onDismiss();
                 requestAnimationFrame(() => {

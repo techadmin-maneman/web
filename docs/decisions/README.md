@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0307. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0308. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -339,6 +339,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0304](0304-the-work-screens-to-the-22-november-redesign.md) The Work screens, to the 22 November redesign
 - [0305](0305-a-technicians-start-date.md) A technician's start date
 - [0306](0306-the-people-screens-to-the-22-november-redesign.md) The People screens, to the 22 November redesign
+- [0307](0307-the-people-rulings.md) The People rulings
 
 ## Every decision, oldest first
 
@@ -644,7 +645,8 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0300](0300-payment-links-on-whatsapp.md) | Payment links on WhatsApp, through our own address | 2026-11-23 | accepted |  |
 | [0301](0301-the-console-look-to-the-22-november-redesign.md) | The console's look, to the 22 November redesign | 2026-11-23 | accepted | [0304](0304-the-work-screens-to-the-22-november-redesign.md) |
 | [0302](0302-tasks-written-by-hand.md) | Tasks written by hand | 2026-11-23 | accepted |  |
-| [0303](0303-snoozing-a-task.md) | Snoozing a task | 2026-11-23 | accepted |  |
+| [0303](0303-snoozing-a-task.md) | Snoozing a task | 2026-11-23 | accepted | [0307](0307-the-people-rulings.md) |
 | [0304](0304-the-work-screens-to-the-22-november-redesign.md) | The Work screens, to the 22 November redesign | 2026-11-23 | accepted | [0306](0306-the-people-screens-to-the-22-november-redesign.md) |
 | [0305](0305-a-technicians-start-date.md) | A technician's start date | 2026-11-24 | accepted |  |
-| [0306](0306-the-people-screens-to-the-22-november-redesign.md) | The People screens, to the 22 November redesign | 2026-11-24 | accepted |  |
+| [0306](0306-the-people-screens-to-the-22-november-redesign.md) | The People screens, to the 22 November redesign | 2026-11-24 | accepted | [0307](0307-the-people-rulings.md) |
+| [0307](0307-the-people-rulings.md) | The People rulings | 2026-11-24 | accepted |  |

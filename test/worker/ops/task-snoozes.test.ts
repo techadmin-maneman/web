@@ -76,6 +76,18 @@ describe("a task snoozed", () => {
     expect(tasks.filter((task) => task.group === GROUP).map((task) => task.id)).toEqual([id]);
   });
 
+  // A request about a client's own data runs on a time the law or our promise sets (docs/decisions/0307-the-people-rulings.md).
+  it("refuses a request about a client's own data, and the board says its group cannot be snoozed", async () => {
+    const answer = await post(as(CARE), "/api/tasks/erasure_request/aa000000-0000-4000-8000-0000000000ff/snooze", {});
+    expect(answer.status).toBe(400);
+    expect(await answer.json<unknown>()).toMatchObject({ error: { code: "invalid_request", fields: ["group"] } });
+    await written();
+    const board = await (
+      await request(as(CARE), "/api/tasks")
+    ).json<{ groups: { group: string; snoozable: boolean }[] }>();
+    expect(board.groups.find((each) => each.group === GROUP)?.snoozable).toBe(true);
+  });
+
   it("finds nothing to snooze where there is no such task on the board", async () => {
     expect((await snooze(CARE, "aa000000-0000-4000-8000-0000000000ff")).status).toBe(404);
   });
