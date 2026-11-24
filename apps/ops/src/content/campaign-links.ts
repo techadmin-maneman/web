@@ -5,6 +5,8 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const campaignLinks = {
   title: "Campaign links",
+  /** Beside the page's title: the links not retired. */
+  live: (count: number) => `${String(count)} live`,
   newSociety: "New society activation",
   newOffer: "New offer link",
   kinds: { society: "Society", offer: "Offer" },

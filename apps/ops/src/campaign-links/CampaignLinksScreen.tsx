@@ -25,7 +25,7 @@ import { useState } from "react";
 import { renderSVG } from "uqr";
 import form from "@maneman/ui/forms.module.css";
 import { campaignLinks as copy } from "../content/campaign-links.ts";
-import { PageActions } from "../frame/PageHead.tsx";
+import { PageActions, useHeaderSub } from "../frame/PageHead.tsx";
 import { useAccess } from "../lib/access.ts";
 import { saveFile, saveSvgAsPng } from "../lib/save-file.ts";
 import { campaignLinksApi, type CampaignLink, type CampaignLinks } from "./campaign-links-api.ts";
@@ -196,6 +196,8 @@ function Making({ list, onMade }: { list: CampaignLinks; onMade: () => void }) {
 export function CampaignLinksScreen() {
   const [loaded, retry] = useLoad(campaignLinksApi.list);
   const access = useAccess();
+  const live = loaded.state === "loaded" ? loaded.value.links.filter((link) => link.retired_at === null).length : 0;
+  useHeaderSub(live === 0 ? undefined : copy.live(live));
   return (
     <div className={form.screen}>
       {loaded.state === "loaded" && access.mayCall("POST /api/campaign-links") && (
