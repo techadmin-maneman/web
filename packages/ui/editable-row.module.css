@@ -141,7 +141,12 @@
     }
   }
 
-  /* A setting as the redesign draws it: the value, then Change, at the row's end. */
+  /* A setting as the redesign draws it: its name in the text's own colour, then the value and Change at the row's end. */
+  .setting .label {
+    font-weight: var(--weight-medium);
+    color: var(--ui-text);
+  }
+
   .setting .reading {
     justify-content: flex-end;
   }

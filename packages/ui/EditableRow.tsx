@@ -281,7 +281,7 @@ function DialogRow<Draft>(props: OpenProps<Draft> & { readonly id?: string; read
         <span className={styles.settingValue}>{props.value}</span>
         <Button
           ref={row.valueButton}
-          variant="outline"
+          variant="quiet"
           size="small"
           aria-label={`${words.change} ${props.label}`}
           onClick={row.open}

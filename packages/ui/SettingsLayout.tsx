@@ -8,7 +8,7 @@ import { ChangeInDialog } from "./change-in-dialog.ts";
 import { capsLook } from "./Caps.tsx";
 import { classes } from "./classes.ts";
 import { GLYPHS } from "@maneman/brand/icons";
-import { useId, useState, type ReactNode } from "react";
+import { useContext, useId, useState, type ReactNode } from "react";
 import { Icon } from "./Icon.tsx";
 import { Link } from "./router.tsx";
 import styles from "./settings-layout.module.css";
@@ -125,7 +125,10 @@ export function SubNav({
   );
 }
 
-/** A rule's rows two to a row at a desk, one beneath another short of it; each row's name stands above its value. */
+/**
+ * A rule's rows two to a row at a desk, one beneath another short of it; each row's name stands above its value. Where
+ * each setting changes in its own dialog, one to a line, as every other row stands.
+ */
 export function SettingPairs({
   label,
   className,
@@ -135,13 +138,14 @@ export function SettingPairs({
   readonly className?: string | undefined;
   readonly children: ReactNode;
 }) {
+  const oneToALine = useContext(ChangeInDialog);
   return (
     <div
-      className={classes(styles.pairs, className)}
+      className={classes(!oneToALine && styles.pairs, className)}
       role={label === undefined ? undefined : "group"}
       aria-label={label}
     >
-      <StackedRows.Provider value>{children}</StackedRows.Provider>
+      <StackedRows.Provider value={!oneToALine}>{children}</StackedRows.Provider>
     </div>
   );
 }
