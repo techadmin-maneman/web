@@ -9,12 +9,16 @@ export const stockViews = {
   },
   demand: {
     title: "Next 4 weeks",
-    columns: ["Item", "City", "Booked visits use", "Held there"] as const,
+    columns: ["Item", "City", "Booked visits use", "Held there", "Status"] as const,
     find: "Find an item",
     none: "Nothing booked in the next four weeks uses stock.",
     noCity: "No city",
     noProfile: "No hair profile to match",
     short: (by: number) => `${String(by)} short`,
+    /** The city holds what its booked visits use, and no kit is short for those allotted. */
+    enough: "Enough",
+    /** A kit short for its technician's visits already allotted: "Send 1 piece to Sandeep". */
+    send: (amount: string, name: string) => `Send ${amount} to ${name}`,
     atRisk: "Fits at risk",
     /** "Thu 24 Sep, Gurgaon: Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density not in the city" */
     fit: (date: string, city: string, what: string) => `${date}, ${city}: ${what}`,

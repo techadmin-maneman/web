@@ -31,7 +31,10 @@ export interface AtRisk {
 
 const CITY = visitCity("a");
 
-interface FitRow {
+/** A fit's columns as each read of the fits booked ahead takes them, the appointment as `a`. */
+export const FIT_COLUMNS = `a.id, a.person_id, a.type, a.tier, a.window_start, ${CITY} AS city`;
+
+export interface FitRow {
   readonly id: string;
   readonly person_id: string;
   readonly type: string;
@@ -77,16 +80,16 @@ async function heldByCity(db: D1Database, codes: readonly string[] | null): Prom
 const fitsStatement = (db: D1Database, from: string, to: string) =>
   db
     .prepare(
-      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, ${CITY} AS city FROM appointments a WHERE ${bookedAhead("a")}
+      `SELECT ${FIT_COLUMNS} FROM appointments a WHERE ${bookedAhead("a")}
          AND a.type IN ('first_fit', 'replacement') ORDER BY a.window_start`,
     )
     .bind(from, to);
 
 /** Each fit with the stock code its client's profile matches; null where it matches none. */
-async function codedFits(
+export async function codedFits<Fit extends FitRow>(
   db: D1Database,
-  fits: readonly FitRow[],
-): Promise<{ readonly fit: FitRow; readonly code: string | null }[]> {
+  fits: readonly Fit[],
+): Promise<{ readonly fit: Fit; readonly code: string | null }[]> {
   if (fits.length === 0) return [];
   const profiles = await latestFits(
     db,
@@ -114,7 +117,7 @@ function risksOf(coded: readonly { fit: FitRow; code: string | null }[], held: R
 }
 
 /** The days ahead from `today` that ops read demand over (`stock_watch`), as the bounds of its booked visits. */
-const weeksAhead = (today: string, days: number) => ({
+export const weeksAhead = (today: string, days: number) => ({
   from: indiaInstant(today, "00:00").toISOString(),
   to: indiaInstant(addDays(today, days), "00:00").toISOString(),
 });

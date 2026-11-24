@@ -75,6 +75,24 @@ describe("the weeks ahead", () => {
     expect(rows).toContainEqual({ consumable_code: "solvent", city: "Gurgaon", expected: 10, held: 4 });
   });
 
+  // The redesign's C10, as the owner ruled on 24 November (docs/decisions/0308-the-inventory-screens-to-the-22-november-redesign.md).
+  it("names a kit short for its technician's visits already allotted, and not for a draft the plan may still move", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "solvent", quantity: 100 });
+    await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 4, from: "central", to: IMRAN });
+    const short = async () => (await request(job.ops, "/api/stock/demand")).json<{ kits_short: unknown[] }>();
+    expect((await short()).kits_short).toEqual([
+      expect.objectContaining({
+        technician_id: IMRAN,
+        city: "Gurgaon",
+        consumable_code: "solvent",
+        expected: 10,
+        held: 4,
+      }),
+    ]);
+    await env.DB.prepare("UPDATE appointments SET technician_draft = 1 WHERE technician_id = ?1").bind(IMRAN).run();
+    expect((await short()).kits_short).toEqual([]);
+  });
+
   it("expects the hair system made to each fit's profile, and marks a fit at risk where its city holds too few", async () => {
     const added = await job.opsPost("/api/hair-systems", { ...SPEC, unit_cost: 1_200_000 });
     expect(added.status).toBe(200);

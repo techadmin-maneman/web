@@ -21,7 +21,7 @@ import { activity } from "../../apps/ops/src/content/activity.ts";
 const WAREHOUSE = "National warehouse";
 
 /** Nothing booked ahead uses stock. */
-const NO_DEMAND = { days: 28, demand: [], at_risk: [] };
+const NO_DEMAND = { days: 28, demand: [], at_risk: [], kits_short: [] };
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/stock": json(STOCK), "GET /api/stock/demand": json(NO_DEMAND), ...extra });
@@ -505,11 +505,43 @@ test("shows what the next four weeks will use beside what each city holds, and t
     at_risk: [
       { appointment_id: "ap-9", window_start: "2027-09-24T05:30:00.000Z", city: "Gurgaon", consumable_code: null },
     ],
+    kits_short: [],
   } satisfies OpsReply<"/api/stock/demand">;
   await open(page, { "GET /api/stock/demand": json(ahead) });
   const panel = page.getByRole("region", { name: stockViews.demand.title });
   await expect(panel.getByRole("row").filter({ hasText: "Solvent" })).toContainText(stockViews.demand.short(6));
   await expect(panel).toContainText(stockViews.demand.fit("Fri 24 Sep", "Gurgaon", stockViews.demand.noProfile));
+});
+
+// The redesign's C10, as the owner ruled on 24 November: a kit short for its technician's visits already allotted is
+// named with what to send it; the rest of the weeks ahead stays the city's.
+test("names a kit short for its technician's allotted visits, and says Enough where the city holds what it uses", async ({
+  page,
+}) => {
+  const ahead = {
+    days: 28,
+    demand: [
+      { consumable_code: "solvent", city: "Gurgaon", expected: 156, held: 150 },
+      { consumable_code: "tape_strips", city: "Gurgaon", expected: 20, held: 120 },
+    ],
+    at_risk: [],
+    kits_short: [
+      {
+        technician_id: IMRAN,
+        technician: "Imran Qureshi",
+        city: "Gurgaon",
+        consumable_code: "solvent",
+        expected: 40,
+        held: 25,
+      },
+    ],
+  } satisfies OpsReply<"/api/stock/demand">;
+  await open(page, { "GET /api/stock/demand": json(ahead) });
+  const panel = page.getByRole("region", { name: stockViews.demand.title });
+  const solvent = panel.getByRole("row").filter({ hasText: "Solvent" });
+  await expect(solvent).toContainText(stockViews.demand.send("15 ml", "Imran"));
+  await expect(solvent).not.toContainText(stockViews.demand.short(6));
+  await expect(panel.getByRole("row").filter({ hasText: "Tape strips" })).toContainText(stockViews.demand.enough);
 });
 
 const HAIR = {
