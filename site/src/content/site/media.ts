@@ -50,7 +50,7 @@ export const gurgaonHeroFootage = {
   tag: "Placeholder footage",
 } satisfies HeroFootage;
 
-/** A film that plays when it is tapped, with its sound; what is said in it is written into the picture. */
+/** A film that plays when it is tapped; what is said in it is written into the picture. */
 export interface Film {
   readonly video: string;
   /** A frame of it, 4:5. */
@@ -111,9 +111,11 @@ export const resultPairs = {
       caption: "Life-changing.",
     },
     {
-      before: { file: "result-1-before.jpg", alt: "A man with thinning hair on top, before the fit" },
-      after: { file: "result-1-after.jpg", alt: "The same man smiling, with a full head of hair" },
-      caption: "Ten years younger.",
+      // Nitin, framed alike from two clips of the shoot: facing the camera before, and in the technician's mirror
+      // after, turned back the right way round.
+      before: { file: "result-1-before.jpg", alt: "A man thinning on top, facing the camera, before the fit" },
+      after: { file: "result-1-after.jpg", alt: "The same man after the fit, a full head of hair, smiling" },
+      caption: "It looks very natural.",
     },
     {
       before: { file: "result-3-before.jpg", alt: "The back of the head before the fit, bald at the crown" },
@@ -181,7 +183,7 @@ export const founderNote = {
     "That’s why I started Mane Man. A more private, straightforward way to get your hair back, on your terms.",
   ],
   name: "Rishabh Gupta",
-  signature: "Founder, Mane Man",
+  signature: "Co-founder, Mane Man",
   /** Unfolds the note past its first paragraph (ADR 0263); every word stays in the page. */
   more: "Read the full note",
 };

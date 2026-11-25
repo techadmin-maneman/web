@@ -33,7 +33,7 @@ each shown once it is in.
      and the film sits beside the note. His note keeps every word.
    - **A film plays only when it is tapped.** Its poster loads as it nears the screen, whole, with Play beneath it,
      and the film's file not before the tap, so a 4G phone's first paint is the hero's alone. The tap puts the film in
-     the poster's place with the browser's own controls, plays it with its sound, pauses any other, and moves focus to
+     the poster's place with the browser's own controls, plays it, pauses any other, and moves focus to
      it. The words said are written into each film, so there is no caption track to switch on beside them.
 3. **Attribution goes with the visitor,** as on every page (ADR 0288): the landing is recorded on arrival, the links stay
    on the site under the visitor's cookie, and WhatsApp's message carries the visitor's reference.
