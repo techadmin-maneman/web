@@ -57,7 +57,7 @@ const phoneRoute = opsRoute({
   method: "post",
   path: "/api/leads/alerts-phone",
   summary: "This phone takes the caller's unanswered-lead pushes, by its push service's address",
-  request: { body: json(z.object({ endpoint: z.string().max(2048) }).strict()) },
+  request: { body: { required: true, ...json(z.object({ endpoint: z.string().max(2048) }).strict()) } },
   responses: {
     204: { description: "Kept" },
     400: errorResponse("invalid_request: endpoint is not a push service's address"),
