@@ -64,6 +64,7 @@ const ActivityScreen = lazyScreen(() =>
 const DrivingScreen = lazyScreen(() => import("./driving/DrivingScreen.tsx").then((module) => module.DrivingScreen));
 const WaitlistScreen = lazyScreen(() => import("./areas/Waiting.tsx").then((module) => module.WaitlistPage));
 const MessagesScreen = lazyScreen(() => import("./care/MessagesScreen.tsx").then((module) => module.MessagesScreen));
+const CareTeamScreen = lazyScreen(() => import("./care/MessagesScreen.tsx").then((module) => module.CareTeamScreen));
 const ItemsScreen = lazyScreen(() => import("./items/ItemsScreen.tsx").then((module) => module.ItemsScreen));
 const SuppliersScreen = lazyScreen(() =>
   import("./suppliers/SuppliersScreen.tsx").then((module) => module.SuppliersScreen),
@@ -97,6 +98,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   tasks: TasksScreen,
   dispatch: DispatchScreen,
   messages: MessagesScreen,
+  "care-team": CareTeamScreen,
   counts: CountsScreen,
   purchasing: PurchasingScreen,
   "supply-plan": SupplyPlanScreen,

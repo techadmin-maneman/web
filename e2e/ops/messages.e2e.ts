@@ -155,6 +155,42 @@ test("keeps each of the client panel's icons a square, at a desk and on a phone"
   }
 });
 
+// Going on shift is a Care member's first act of the day, so it is under Messages, not only in Settings.
+test("opens the Care team beside the chats, where a member goes on shift without Settings", async ({ page }) => {
+  let sent: unknown = null;
+  await answer(page, {
+    "GET /api/conversations": json({ conversations: [ARJUN], next_cursor: null }),
+    "GET /api/care-team": json({
+      team: [
+        {
+          email: "asha@maneman.test",
+          on_team: true,
+          name: "Asha",
+          clients: 12,
+          weekly_off: [0],
+          leave: [],
+          off_today: false,
+          covered_by: null,
+          on_shift_since: null,
+          day_off: false,
+          open_chats: 1,
+        },
+      ],
+      me: "asha@maneman.test",
+    }),
+    "POST /api/care-team/shift": (route) => {
+      sent = route.request().postDataJSON();
+      return json({ ok: true })(route);
+    },
+  });
+  await page.goto("/messages");
+  await page.getByRole("link", { name: copy.team.title, exact: true }).click();
+  await expect(page).toHaveURL(/\/care-team$/);
+  await expect(page.getByRole("heading", { level: 1, name: copy.team.title })).toBeVisible();
+  await page.getByRole("button", { name: copy.team.goOn }).click();
+  await expect.poll(() => sent).toEqual({ on: true });
+});
+
 // Four ways to search: Messages took a box and a Find; it now finds as it is typed.
 test("finds a chat by the client's name as it is typed, with no Find to press", async ({ page }) => {
   await answer(page, {
