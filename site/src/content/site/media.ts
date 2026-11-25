@@ -53,7 +53,7 @@ export const gurgaonHeroFootage = {
 /** A film that plays when it is tapped; what is said in it is written into the picture. */
 export interface Film {
   readonly video: string;
-  /** A frame of it, 4:5. */
+  /** A frame of it, or a still from the same shoot, 4:5. */
   readonly poster: string;
   /** What it shows, as the film is named to a screen reader. */
   readonly name: string;
@@ -175,7 +175,7 @@ export const stepPhotos = {
 
 export const founderNote = {
   publish: true,
-  label: "A note from the founder",
+  label: "A note from our co-founder",
   paragraphs: [
     "I started losing my hair at twenty-four. By thirty, I’d had a transplant and spent years on medication, trying to hold on to what I was losing. Over time, I realised these came with trade-offs I didn’t like. I was fighting a losing battle.",
     "Hair loss is hard enough. Navigating an industry that can make you feel worse about yourself shouldn’t be part of it.",

@@ -20,7 +20,7 @@ const poster = await getImage({ src: image, format: "webp", widths: [360, 720] }
 ---
 
 <figure class="film" data-film={designMedia(film.video)} data-name={film.name}>
-  <div class="frame">
+  <div class="screen">
     <img
       class="poster"
       src={poster.src}
@@ -46,7 +46,7 @@ const poster = await getImage({ src: image, format: "webp", widths: [360, 720] }
       "click",
       () => {
         const film = start.closest<HTMLElement>("[data-film]");
-        const frame = film?.querySelector(".frame");
+        const frame = film?.querySelector(".screen");
         if (film === null || frame === null || frame === undefined) return;
         const video = document.createElement("video");
         video.src = film.dataset.film ?? "";
@@ -75,13 +75,14 @@ const poster = await getImage({ src: image, format: "webp", widths: [360, 720] }
     position: relative;
     margin: 0;
   }
-  .frame {
+  /* Not the site's .frame, whose hidden overflow would clip the film's focus ring. */
+  .screen {
     display: grid;
     aspect-ratio: 4 / 5;
     background: var(--site-scrim);
   }
-  .frame img,
-  .frame :global(video) {
+  .screen img,
+  .screen :global(video) {
     grid-area: 1 / 1;
     width: 100%;
     height: 100%;

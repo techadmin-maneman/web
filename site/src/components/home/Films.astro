@@ -6,7 +6,8 @@ import FilmCard from "../FilmCard.astro";
 import { gurgaonFilms } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
 
-const sizes = "(min-width: 761px) 440px, 100vw";
+/** Half the page's column on a laptop, about 512 px at its widest; the whole width on a phone. */
+const sizes = "(min-width: 761px) 50vw, 100vw";
 ---
 
 {isShown(gurgaonFilms) && (

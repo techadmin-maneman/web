@@ -29,8 +29,8 @@ each shown once it is in.
      its own blurred ground, its edges feathered. The home page keeps its fit film.
    - **Nitin's fit** follows the hero on navy: the before and after, then his story in his own words. There is one
      client's story, so the second waits for its material.
-   - **The founder's own fit** sits with his note: after it on a phone; on a laptop the guarantee runs across the top
-     and the film sits beside the note. His note keeps every word.
+   - **The founder's own fit** sits with his note: after it on a phone; on a laptop the guarantee runs across the top,
+     and the note, centred, sits beside the film. His note keeps every word.
    - **A film plays only when it is tapped.** Its poster loads as it nears the screen, whole, with Play beneath it,
      and the film's file not before the tap, so a 4G phone's first paint is the hero's alone. The tap puts the film in
      the poster's place with the browser's own controls, plays it, pauses any other, and moves focus to

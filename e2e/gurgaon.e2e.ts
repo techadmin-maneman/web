@@ -23,10 +23,15 @@ test("leads with its own clients' footage, and fetches a film only once it is ta
   await expect(film).toHaveAttribute("controls", "");
   await expect(play).toHaveCount(0);
   await expect.poll(() => fetched.some((url) => url.includes("gurgaon-story-nitin"))).toBe(true);
+  await expect.poll(() => film.evaluate((video: HTMLVideoElement) => !video.paused)).toBe(true);
 
-  // One voice at a time: starting the founder's film pauses Nitin's.
-  await page.getByRole("button", { name: founderFilm.play, exact: true }).click();
-  await expect(page.locator(`video[aria-label="${founderFilm.name}"]`)).toBeFocused();
+  // One voice at a time: starting the founder's film, from the keyboard, pauses Nitin's. The film takes focus, and
+  // nothing around it clips the ring that shows it.
+  await page.getByRole("button", { name: founderFilm.play, exact: true }).focus();
+  await page.keyboard.press("Enter");
+  const founder = page.locator(`video[aria-label="${founderFilm.name}"]`);
+  await expect(founder).toBeFocused();
+  expect(await founder.evaluate((video) => getComputedStyle(video.parentElement ?? video).overflow)).toBe("visible");
   expect(await film.evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
 });
 
