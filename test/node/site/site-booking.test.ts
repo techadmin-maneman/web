@@ -67,6 +67,13 @@ describe("attribution", () => {
     expect(attributionFrom(url, "https://maneman.in/try", "")).toEqual({ landing_path: "/" });
   });
 
+  it("takes a society's code from a try-on link's s, as the society's own link gives it", () => {
+    const url = new URL("https://maneman.in/try?s=K7M2QP&utm_source=society&utm_medium=offline&utm_campaign=K7M2QP");
+    expect(attributionFrom(url, "", "")).toMatchObject({ soc: "K7M2QP", utm_source: "society", landing_path: "/try" });
+    expect(attributionFrom(new URL("https://maneman.in/try?soc=AB1234&s=K7M2QP"), "", "").soc).toBe("AB1234");
+    expect(attributionFrom(new URL("https://maneman.in/try?s=x"), "", "").soc).toBeUndefined();
+  });
+
   it("caps each value at the API’s limits", () => {
     const url = new URL(`https://maneman.in/?utm_source=${"a".repeat(300)}`);
     expect(attributionFrom(url, "", "").utm_source).toHaveLength(200);
