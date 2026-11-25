@@ -40,5 +40,6 @@ behind Cloudflare Access, with nothing about a client on a laptop's disk.
 - New tables: `staff_push_subscriptions`, each device's push address and whose it is, and `lead_alert_pushes`, the
   waits already pushed, kept a week by the sweeper.
 - The VAPID keys the apps' pushes use sign the console's too.
+- The Funnel's first reply (ADR 0324) counts from a lead's first message too.
 - Tests: `test/node/policy/care-hours.test.ts`, `test/worker/leads/waiting-leads.test.ts`,
   `test/worker/leads/lead-alert-pushes.test.ts`, `test/dom/ops-lead-banner.test.ts`, `test/dom/ops-phone-alerts.test.ts`.

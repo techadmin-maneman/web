@@ -9,7 +9,27 @@ import { funnel as copy } from "../../apps/ops/src/content/funnel.ts";
 import { roundRupees, rupees } from "../../packages/web-kit/money.ts";
 import { channelNamed } from "../../src/policy/channels.ts";
 
-const NONE = { spend: 0, leads: 0, consults_booked: 0, consults_done: 0, first_fits: 0, first_fit_revenue: 0 };
+const NO_STEPS = { fitted: 0, no_shows: 0, leads_fitted: 0, first_reply_minutes: null, tiers: [], lost: [] };
+const NONE = {
+  spend: 0,
+  leads: 0,
+  consults_booked: 0,
+  consults_done: 0,
+  first_fits: 0,
+  first_fit_revenue: 0,
+  steps: NO_STEPS,
+};
+const GOOGLE_STEPS = {
+  fitted: 2,
+  no_shows: 1,
+  leads_fitted: 1,
+  first_reply_minutes: 7,
+  tiers: [
+    { tier: "standard", clients: 1 },
+    { tier: "premium", clients: 1 },
+  ],
+  lost: [{ reason: "The price", clients: 2 }],
+};
 
 const FIGURES = {
   period: "week",
@@ -25,6 +45,7 @@ const FIGURES = {
       consults_done: 3,
       first_fits: 2,
       first_fit_revenue: 6_000_000,
+      steps: GOOGLE_STEPS,
     },
     { channel: "referral", ...NONE, leads: 4, consults_booked: 2, consults_done: 1 },
     { channel: "society", ...NONE, spend: 1_200_000 },
@@ -36,6 +57,7 @@ const FIGURES = {
     consults_done: 4,
     first_fits: 2,
     first_fit_revenue: 6_000_000,
+    steps: GOOGLE_STEPS,
   },
   cohorts: [{ channel: "google_ads", clients: 2, d30: 6_000_000, d90: 6_000_000, d180: 6_000_000 }],
   cohort_complete: { d30: false, d90: false, d180: false },

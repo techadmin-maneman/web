@@ -48,6 +48,7 @@ export const foundUs = {
       partner: "A salon or partner",
       society: "A society event",
       organic_search: "Searched online",
+      business_profile: "Found us on Google Maps",
       organic_social: "Social media",
       direct: "Already knew us",
     },

@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0324. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0325. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -52,6 +52,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0288](0288-attribution-and-conversions.md) Attribution and conversions
 - [0295](0295-the-consoles-first-load.md) The console's first load is held to 175 KB
 - [0312](0312-the-consoles-favicon-everywhere.md) The console's favicon, everywhere
+- [0324](0324-the-weekly-dashboard.md) The weekly dashboard
 
 ### Booking and visits
 
@@ -646,7 +647,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0285](0285-every-site-booking-is-a-sign-in.md) | Every booking on the site asks the WhatsApp code, and signs the client in | 2026-11-19 | accepted, on the owner's rulings of 19 November 2026 |  |
 | [0286](0286-the-icons-are-the-mark.md) | The browser's and the home screen's icons are the mark | 2026-11-19 | accepted, on the owner's ruling of 19 November 2026 | [0312](0312-the-consoles-favicon-everywhere.md) |
 | [0287](0287-a-start-googles-drive-refused-is-not-offered.md) | A start Google's drive leaves no room for is not offered again | 2026-11-19 | accepted, on the owner's go-ahead of 19 November 2026 | [0294](0294-learned-drive-times.md) |
-| [0288](0288-attribution-and-conversions.md) | Attribution and conversions | 2026-11-20 | accepted, on the owner's brief and rulings of 20 November 2026 |  |
+| [0288](0288-attribution-and-conversions.md) | Attribution and conversions | 2026-11-20 | accepted, on the owner's brief and rulings of 20 November 2026 | [0324](0324-the-weekly-dashboard.md) |
 | [0289](0289-who-takes-a-visit.md) | Who takes a visit: a radius in km, an overflow ring, and the least cost | 2026-11-22 | accepted | [0290](0290-allotted-the-evening-before.md), [0293](0293-steering-booking-times.md) |
 | [0290](0290-allotted-the-evening-before.md) | A visit's technician is fixed the evening before | 2026-11-22 | accepted | [0292](0292-room-made-at-booking.md), [0297](0297-drafts-off-a-day-that-no-longer-fits.md) |
 | [0291](0291-pieces-without-labels.md) | A piece without a label never stops the fit | 2026-11-22 | accepted |  |
@@ -682,3 +683,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0321](0321-the-gurgaon-page.md) | The Gurgaon page paid ads land on | 2026-11-25 | accepted |  |
 | [0322](0322-care-times.md) | Customer Care's times, to the minute | 2026-11-25 | accepted |  |
 | [0323](0323-the-unanswered-lead-alert.md) | The unanswered-lead alert | 2026-11-25 | accepted |  |
+| [0324](0324-the-weekly-dashboard.md) | The weekly dashboard | 2026-11-25 | accepted |  |

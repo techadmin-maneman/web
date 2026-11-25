@@ -9880,7 +9880,7 @@ export interface paths {
                     starting?: string;
                     /** @description The client's channel, or their last touch's when each thing happened. */
                     by?: "first" | "last";
-                    channel?: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                    channel?: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
                 };
                 header?: never;
                 path?: never;
@@ -31285,7 +31285,7 @@ export interface components {
         SpendList: {
             entries: components["schemas"]["SpendEntry"][];
             cities: string[];
-            channels: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone")[];
+            channels: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone")[];
             /**
              * Format: date
              * @description The earliest day an entry may be put on.
@@ -31307,7 +31307,7 @@ export interface components {
             /** @description Null for spend not aimed at one city. */
             city: string | null;
             /** @enum {string} */
-            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
             campaign: string | null;
             /** @description Paise, before GST. */
             amount: number;
@@ -31331,7 +31331,7 @@ export interface components {
             day: string;
             city: string | null;
             /** @enum {string} */
-            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
             /** @description As the campaign is named, starting with its city or with national. */
             campaign?: string;
             /** @description Paise, before GST. */
@@ -31369,7 +31369,7 @@ export interface components {
             by: "first" | "last";
             rows: {
                 /** @enum {string} */
-                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
                 /** @description Paise, before GST. */
                 spend: number;
                 /** @description Clients whose first lead came in the period. */
@@ -31380,6 +31380,25 @@ export interface components {
                 first_fits: number;
                 /** @description Paise, before GST, less refunds. */
                 first_fit_revenue: number;
+                steps: {
+                    /** @description Clients whose first fit was done in the period. */
+                    fitted: number;
+                    /** @description Consultations in the period closed as a no-show. */
+                    no_shows: number;
+                    /** @description Of the clients whose first lead came in the period, those fitted since. */
+                    leads_fitted: number;
+                    /** @description The middle first reply to those clients, in minutes counted in Care hours; null with none. */
+                    first_reply_minutes: number | null;
+                    tiers: {
+                        tier: string;
+                        clients: number;
+                    }[];
+                    /** @description Why the leads lost in the period were lost, the commonest three. */
+                    lost: {
+                        reason: string;
+                        clients: number;
+                    }[];
+                };
             }[];
             totals: {
                 /** @description Paise, before GST. */
@@ -31392,10 +31411,29 @@ export interface components {
                 first_fits: number;
                 /** @description Paise, before GST, less refunds. */
                 first_fit_revenue: number;
+                steps: {
+                    /** @description Clients whose first fit was done in the period. */
+                    fitted: number;
+                    /** @description Consultations in the period closed as a no-show. */
+                    no_shows: number;
+                    /** @description Of the clients whose first lead came in the period, those fitted since. */
+                    leads_fitted: number;
+                    /** @description The middle first reply to those clients, in minutes counted in Care hours; null with none. */
+                    first_reply_minutes: number | null;
+                    tiers: {
+                        tier: string;
+                        clients: number;
+                    }[];
+                    /** @description Why the leads lost in the period were lost, the commonest three. */
+                    lost: {
+                        reason: string;
+                        clients: number;
+                    }[];
+                };
             };
             cohorts: {
                 /** @enum {string} */
-                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
                 clients: number;
                 d30: number;
                 d90: number;
@@ -31410,7 +31448,7 @@ export interface components {
                 /** @enum {string} */
                 heard_from: "google" | "instagram_facebook" | "youtube" | "friend" | "society" | "salon_partner" | "whatsapp" | "flyer" | "other" | "not_asked";
                 /** @enum {string} */
-                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+                channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
                 clients: number;
             }[];
             /** @description First looks at the try-on in the period. */
@@ -31430,13 +31468,13 @@ export interface components {
              * @description Where the caller came from, as ops picked it.
              * @enum {string}
              */
-            channel: "google_ads" | "meta_ads" | "referral" | "partner" | "society" | "organic_search" | "organic_social" | "direct";
+            channel: "google_ads" | "meta_ads" | "referral" | "partner" | "society" | "organic_search" | "business_profile" | "organic_social" | "direct";
             /** @description Where they are, as they said: their city until they give an address. */
             pincode?: string;
         };
         ClientAttribution: {
-            attributed_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
-            last_touch_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
+            attributed_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
+            last_touch_channel: ("google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone") | null;
             first_touch: components["schemas"]["TouchShown"] | null;
             last_touch: components["schemas"]["TouchShown"] | null;
             touches: number;
@@ -31464,7 +31502,7 @@ export interface components {
             /** @enum {string} */
             via: "site" | "whatsapp" | "call";
             /** @enum {string} */
-            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
+            channel: "google_ads" | "meta_ads" | "referral" | "organic_search" | "business_profile" | "direct" | "partner" | "society" | "organic_social" | "referral_site" | "whatsapp" | "phone";
             utm_source: string | null;
             utm_medium: string | null;
             utm_campaign: string | null;

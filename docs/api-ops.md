@@ -49866,6 +49866,7 @@ Request body:
           "meta_ads",
           "referral",
           "organic_search",
+          "business_profile",
           "direct",
           "partner",
           "society",
@@ -49943,6 +49944,7 @@ Request body:
         "meta_ads",
         "referral",
         "organic_search",
+        "business_profile",
         "direct",
         "partner",
         "society",
@@ -50070,6 +50072,7 @@ Request body:
         "meta_ads",
         "referral",
         "organic_search",
+        "business_profile",
         "direct",
         "partner",
         "society",
@@ -50219,6 +50222,7 @@ Request body:
               "meta_ads",
               "referral",
               "organic_search",
+              "business_profile",
               "direct",
               "partner",
               "society",
@@ -50249,6 +50253,82 @@ Request body:
           "first_fit_revenue": {
             "type": "integer",
             "description": "Paise, before GST, less refunds."
+          },
+          "steps": {
+            "type": "object",
+            "properties": {
+              "fitted": {
+                "type": "integer",
+                "description": "Clients whose first fit was done in the period."
+              },
+              "no_shows": {
+                "type": "integer",
+                "description": "Consultations in the period closed as a no-show."
+              },
+              "leads_fitted": {
+                "type": "integer",
+                "description": "Of the clients whose first lead came in the period, those fitted since."
+              },
+              "first_reply_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The middle first reply to those clients, in minutes counted in Care hours; null with none."
+              },
+              "tiers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tier": {
+                      "type": "string"
+                    },
+                    "clients": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "tier",
+                    "clients"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "lost": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "reason": {
+                      "type": "string"
+                    },
+                    "clients": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "reason",
+                    "clients"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Why the leads lost in the period were lost, the commonest three."
+              }
+            },
+            "required": [
+              "fitted",
+              "no_shows",
+              "leads_fitted",
+              "first_reply_minutes",
+              "tiers",
+              "lost"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -50258,7 +50338,8 @@ Request body:
           "consults_booked",
           "consults_done",
           "first_fits",
-          "first_fit_revenue"
+          "first_fit_revenue",
+          "steps"
         ],
         "additionalProperties": false
       }
@@ -50287,6 +50368,82 @@ Request body:
         "first_fit_revenue": {
           "type": "integer",
           "description": "Paise, before GST, less refunds."
+        },
+        "steps": {
+          "type": "object",
+          "properties": {
+            "fitted": {
+              "type": "integer",
+              "description": "Clients whose first fit was done in the period."
+            },
+            "no_shows": {
+              "type": "integer",
+              "description": "Consultations in the period closed as a no-show."
+            },
+            "leads_fitted": {
+              "type": "integer",
+              "description": "Of the clients whose first lead came in the period, those fitted since."
+            },
+            "first_reply_minutes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The middle first reply to those clients, in minutes counted in Care hours; null with none."
+            },
+            "tiers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tier": {
+                    "type": "string"
+                  },
+                  "clients": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "tier",
+                  "clients"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "lost": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "clients": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "reason",
+                  "clients"
+                ],
+                "additionalProperties": false
+              },
+              "description": "Why the leads lost in the period were lost, the commonest three."
+            }
+          },
+          "required": [
+            "fitted",
+            "no_shows",
+            "leads_fitted",
+            "first_reply_minutes",
+            "tiers",
+            "lost"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -50295,7 +50452,8 @@ Request body:
         "consults_booked",
         "consults_done",
         "first_fits",
-        "first_fit_revenue"
+        "first_fit_revenue",
+        "steps"
       ],
       "additionalProperties": false
     },
@@ -50311,6 +50469,7 @@ Request body:
               "meta_ads",
               "referral",
               "organic_search",
+              "business_profile",
               "direct",
               "partner",
               "society",
@@ -50390,6 +50549,7 @@ Request body:
               "meta_ads",
               "referral",
               "organic_search",
+              "business_profile",
               "direct",
               "partner",
               "society",
@@ -50480,6 +50640,7 @@ Request body:
         "partner",
         "society",
         "organic_search",
+        "business_profile",
         "organic_social",
         "direct"
       ],
@@ -50515,6 +50676,7 @@ Request body:
             "meta_ads",
             "referral",
             "organic_search",
+            "business_profile",
             "direct",
             "partner",
             "society",
@@ -50538,6 +50700,7 @@ Request body:
             "meta_ads",
             "referral",
             "organic_search",
+            "business_profile",
             "direct",
             "partner",
             "society",
@@ -50778,6 +50941,7 @@ Request body:
         "meta_ads",
         "referral",
         "organic_search",
+        "business_profile",
         "direct",
         "partner",
         "society",

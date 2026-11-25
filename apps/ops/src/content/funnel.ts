@@ -51,6 +51,53 @@ export const funnel = {
     roas: "Return on spend",
     none: "—",
   },
+  /** Each channel's steps from lead to fitted (docs/decisions/0324-the-weekly-dashboard.md). */
+  toFitted: {
+    title: "To fitted",
+    columns: [
+      "Channel",
+      "Fitted",
+      "Close rate",
+      "No-show rate",
+      "First reply",
+      "New clients fitted",
+      "Per client fitted",
+      "Tier mix",
+      "Lost because",
+    ] as const,
+    /** "62%": a part of its whole; nothing where the whole is none. */
+    share: (part: number, whole: number) => (whole === 0 ? "" : `${String(Math.round((part / whole) * 100))}%`),
+    /** "standard 3 · premium 1"; "The price 2 · Not ready 1" */
+    counts: (each: readonly { readonly name: string; readonly clients: number }[]) =>
+      each.map((one) => `${one.name} ${String(one.clients)}`).join(" · "),
+    none: "Nothing in this period.",
+  },
+  /** The period's two tables as a file. */
+  csv: {
+    download: "Download CSV",
+    /** "funnel-week-2026-11-23.csv" */
+    fileName: (period: string, from: string) => `funnel-${period}-${from}.csv`,
+    columns: [
+      "Channel",
+      "Spend (Rs.)",
+      "Enquiries",
+      "Qualified (consultation booked)",
+      "Attended",
+      "Fitted",
+      "Cost per enquiry (Rs.)",
+      "Cost per attended (Rs.)",
+      "Close rate",
+      "New clients fitted",
+      "Cost per new client fitted (Rs.)",
+      "Tier mix",
+      "First reply (min, Care hours)",
+      "No-shows",
+      "No-show rate",
+      "Lost because",
+      "First fits paid",
+      "Fit revenue (Rs.)",
+    ] as const,
+  },
   cohorts: {
     title: "Revenue after the first fit",
     columns: ["Channel", "Clients fitted", "30 days", "90 days", "180 days"] as const,
