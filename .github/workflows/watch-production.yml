@@ -1,7 +1,8 @@
 # Every hour, production as a visitor and its apps find it: mm-api's health, with the cron's last run, the site's pages,
 # each app host serving its app (scripts/release/smoke.ts), every Worker's triggers attached, and no Worker left part-way
-# through a release, its new version on only some of the traffic. It changes nothing, and checks nothing until the
-# launch release has put the site live: the coming-soon page has no /book. A failure opens an issue, or adds
+# through a release, its new version on only some of the traffic. It changes nothing. It stands down only while
+# production plainly serves a placeholder, before the launch release, or while a release runs, which splits mm-api on
+# purpose and smokes itself; any other answer from the site, an error included, is checked. A failure opens an issue, or adds
 # to the open one, so whoever watches the repository hears of it; the next pass closes nothing by itself.
 name: watch production
 
@@ -23,15 +24,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Whether production is live yet
+      - name: Whether to watch now
         id: live
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          book=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 https://maneman.in/book)
-          if [ "$book" = "200" ]; then echo "live=true" >> "$GITHUB_OUTPUT"; else echo "live=false" >> "$GITHUB_OUTPUT"; fi
+          releasing=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy-production.yml --status in_progress --json databaseId --jq length)
+          page=$(curl -s --max-time 30 https://maneman.in/)
+          if [ "$releasing" != "0" ]; then
+            echo "a production release is running"
+            echo "live=false" >> "$GITHUB_OUTPUT"
+          elif grep -q -e "Placeholder for the production site" -e 'name="robots" content="noindex' <<< "$page"; then
+            echo "production serves its placeholder"
+            echo "live=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "live=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: ./.github/actions/setup
         if: steps.live.outputs.live == 'true'
       - name: The API, the cron and the site

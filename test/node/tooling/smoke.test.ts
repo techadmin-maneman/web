@@ -101,6 +101,15 @@ describe("smoke suite", () => {
     expect(await failures(smokeOptions(environment))).toEqual([]);
   });
 
+  // Before a release ships mm-site the site is the one serving before it, the bare placeholder of September at launch,
+  // which carries none of the site's headers: so those smokes judge mm-api alone.
+  it("checks mm-api alone when asked to, and passes a site that would fail the rest", async () => {
+    const placeholder = await failures(smokeOptions("production", {}, { siteLive: false, apiOnly: true }));
+    expect(placeholder).toEqual([]);
+    const names = (await runSmoke(smokeOptions("production", {}, { apiOnly: true }))).map((result) => result.name);
+    expect(names).toEqual(["mm-api /api/health", "mm-api error shape", "mm-api pincode check"]);
+  });
+
   it("fails when health reports another environment or a mismatched database", async () => {
     expect(
       await failures(smokeOptions("staging", { health: { body: { environment: "production", d1: "ok" } } })),

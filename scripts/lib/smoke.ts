@@ -25,6 +25,11 @@ export interface SmokeOptions {
   readonly linkPreview?: string;
   /** Whether production serves the site, not its coming-soon page: PRODUCTION_LIVE unless a test says. */
   readonly siteLive?: boolean;
+  /**
+   * mm-api's checks alone, as a release runs them before it ships mm-site: the site then is whatever served before
+   * the release, which is not the release's to judge.
+   */
+  readonly apiOnly?: boolean;
   readonly fetch?: typeof fetch;
   /** How many times a check that waits for a deploy to reach every edge tries. */
   readonly attempts?: number;
@@ -330,10 +335,15 @@ const linkPreview: Check = async ({ options, crawl }) => {
   return `${path} names ${image}, a JPEG of ${String(Math.ceil(bytes / 1024))} KB`;
 };
 
-export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
+/** mm-api's own checks on the public host. */
+const API_CHECKS: readonly (readonly [name: string, check: Check])[] = [
   ["mm-api /api/health", health],
   ["mm-api error shape", errorShape],
   ["mm-api pincode check", pincodeCheck],
+];
+
+export const CHECKS: readonly (readonly [name: string, check: Check])[] = [
+  ...API_CHECKS,
   ["mm-site routing", siteRouting],
   ["indexing", indexing],
   ["site security headers", siteSecurityHeaders],
@@ -354,7 +364,8 @@ const LINK_PREVIEW_CHECKS: readonly (readonly [name: string, check: Check])[] = 
 /** What a run checks: an invite's link preview alone when one is asked for, else the host's own checks. */
 function checksFor(options: SmokeOptions): readonly (readonly [name: string, check: Check])[] {
   if (options.linkPreview !== undefined) return LINK_PREVIEW_CHECKS;
-  return (options.surface ?? "public") === "public" ? CHECKS : SURFACE_CHECKS;
+  if ((options.surface ?? "public") !== "public") return SURFACE_CHECKS;
+  return options.apiOnly === true ? API_CHECKS : CHECKS;
 }
 
 export async function runSmoke(options: SmokeOptions): Promise<SmokeResult[]> {

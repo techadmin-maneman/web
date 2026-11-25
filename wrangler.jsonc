@@ -428,7 +428,7 @@
         "CRM_PROVIDER": "zoho",
         "MESSAGING_PROVIDER": "msg91",
         "ACCESS_PROVIDER": "cloudflare",
-        // The ops Access application's audience tag; unused until ops is switched on in production.
+        // The ops Access application's audience tag.
         "ACCESS_OPS_AUD": "aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773",
         "SMS_PROVIDER": "none",
         // Books is in the real org (ADR 0025, item 26). Secrets ZOHO_BOOKS_CLIENT_ID, _SECRET and _REFRESH_TOKEN: the
