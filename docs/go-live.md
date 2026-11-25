@@ -169,14 +169,17 @@ With self-serve booking off, a consultation booked on the site is a request: the
 
 **The release**, once the owner says go, in this order:
 
-1. **The apps' routes, first:** `npm run apply-triggers -- --env production` once the pull request has merged (never `W deploy`, provisioning, step 11, point 5). It points `app.`, `ops.` and `tech.maneman.in` at the Workers serving now, all behind Access, so the release's own smoke of those hosts reaches mm-api; without them it fails and rolls everything back.
+1. **The apps' routes, first,** once the pull request has merged, so the release's own smoke of those hosts reaches mm-api; without them it fails and rolls everything back. The routes alone: mm-api's cron, consumers and Workflows wait for step 3, since the code serving now has no handler for them (ADR 0010).
+   - `npm run apply-triggers -- --env production --worker mm-app --worker mm-ops --worker mm-tech` (never `W deploy`, provisioning, step 11, point 5).
+   - mm-api's three, by hand: Cloudflare dashboard, Workers & Pages, `mm-api-production`, Settings, Domains & Routes, Add, Route: `app.maneman.in/api/*`, `ops.maneman.in/api/*` and `tech.maneman.in/api/*`, zone `maneman.in`.
+   - Until the release, the code serving now answers there, behind Access.
 2. **The release** as the site's. Its smokes before mm-site ships check mm-api alone (`--api-only`): the site then is still the placeholder.
 3. `npm run apply-triggers -- --env production` again, then `node --env-file=.env.cf-read scripts/release/check-triggers.ts production --strict`.
 4. **MSG91's two webhooks** moved to `https://maneman.in/api/hooks/msg91` once it answers 401 without the token: one number feeds one host, so until then STOP, Care's replies and the delivery ticks reach staging.
-5. **Open the doors** (below) straight after: `/book`'s sign-in sends the client to `app.maneman.in`.
+5. **The owner's live proof, behind Access** (below), once the business is set up in the production console (Gurgaon's pincodes, prices, a trained technician and stock: the tracker's L3), then **open the doors** (below) straight after: `/book`'s sign-in sends the client to `app.maneman.in`.
 6. **Staging's Zoho secrets deleted** (`ZOHO_*` and `ZOHO_BOOKS_*`), so a pull request switching staging back to `"zoho"` cannot write into the live org with them.
 
-**The owner's live proof, behind Access:** sign in with a real code on the dedicated number; pay a real service visit; see it booked on the dispatch board and its receipt in the app; cancel it more than 24 hours out, and see the refund reach Razorpay, the app and Books. Stop before an invoice is issued, which only a credit note undoes. Then set a price in the console and see no `books_item` alert an hour later.
+**The owner's live proof, behind Access:** book a free consultation on `maneman.in/book` from your own phone, with the WhatsApp code and the confirmation from the business number; see it on the console's dispatch board and the technician's schedule; sign in to the app with it. Then set a price in the console and see no `books_item` alert an hour later. The first real payment and refund are proved when Razorpay is switched on (the tracker's PR8), as this proof was before payments stayed off at launch.
 
 **Open the doors:** delete the Access applications for `app.maneman.in` and `tech.maneman.in`; the ops console stays behind Access. Read the open alerts after the first day (RB, "Alerts and the cron").
 

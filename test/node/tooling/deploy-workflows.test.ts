@@ -227,10 +227,16 @@ describe("watch-production.yml", () => {
     expect(decide("")).toBe("true");
   });
 
-  it("stands down while production serves a placeholder, or while a release splits mm-api on purpose", () => {
+  it("stands down while production serves the placeholder of September, or while a release splits mm-api", () => {
     expect(decide("<p>Mane Man. Placeholder for the production site.</p>")).toBe("false");
-    expect(decide('<meta name="robots" content="noindex, nofollow" />')).toBe("false");
     expect(decide(LIVE, "1")).toBe("false");
+  });
+
+  // A live site wrongly marked noindex is a fault to be told of, never a reason to check nothing.
+  it("checks a live site marked noindex", () => {
+    expect(
+      decide('<meta name="robots" content="noindex, nofollow" /><meta name="mm-worker" content="mm-site" />'),
+    ).toBe("true");
   });
 
   it("runs every check only when it watches, and tells someone when one fails", () => {

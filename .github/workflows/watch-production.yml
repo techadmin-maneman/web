@@ -41,7 +41,7 @@ jobs:
           if [ "$releasing" != "0" ]; then
             echo "a production release is running"
             echo "live=false" >> "$GITHUB_OUTPUT"
-          elif grep -q -e "Placeholder for the production site" -e 'name="robots" content="noindex' <<< "$page"; then
+          elif grep -q "Placeholder for the production site" <<< "$page"; then
             echo "production serves its placeholder"
             echo "live=false" >> "$GITHUB_OUTPUT"
           else
