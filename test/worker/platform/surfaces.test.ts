@@ -41,11 +41,11 @@ describe("surfaceOf", () => {
     expect(surfaceOf("tech-staging.maneman.in", "staging")).toBe("tech");
   });
 
-  it("in production, serves the public host alone until the other surfaces are switched on", () => {
+  it("in production, serves each surface on its own host", () => {
     expect(surfaceOf("maneman.in", "production")).toBe("public");
-    expect(surfaceOf("app.maneman.in", "production")).toBeNull();
-    expect(surfaceOf("ops.maneman.in", "production")).toBeNull();
-    expect(surfaceOf("tech.maneman.in", "production")).toBeNull();
+    expect(surfaceOf("app.maneman.in", "production")).toBe("client");
+    expect(surfaceOf("ops.maneman.in", "production")).toBe("ops");
+    expect(surfaceOf("tech.maneman.in", "production")).toBe("tech");
   });
 
   it("never answers for the other environment's host, or a host that is not ours", () => {

@@ -20,14 +20,13 @@
       "routes": [{ "pattern": "ops-staging.maneman.in/*", "zone_name": "maneman.in" }],
       "assets": { "directory": "./dist/staging", "not_found_handling": "single-page-application" }
     },
-    // No route until the ops surface is switched on in production, with the go-ahead.
     "production": {
       "name": "mm-ops-production",
       "account_id": "a2e185075b1b8eef3bee24b72f45ace3",
       "workers_dev": false,
       "preview_urls": false,
       "observability": { "enabled": true, "logs": { "invocation_logs": false } },
-      "routes": [],
+      "routes": [{ "pattern": "ops.maneman.in/*", "zone_name": "maneman.in" }],
       "assets": { "directory": "./dist/production", "not_found_handling": "single-page-application" }
     }
   }

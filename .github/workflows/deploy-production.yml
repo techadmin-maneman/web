@@ -118,10 +118,14 @@ jobs:
           npm run check:config -- --require-provisioned
 
       # "" only for an app not yet deployed in production (docs/provisioning.md, step 11). Anything else Cloudflare
-      # cannot answer, and a Worker that must be there and is not, stops the release here.
+      # cannot answer, and a Worker that must be there and is not, stops the release here. site_live: whether the site
+      # serving now is the live one, as the smoke must expect until this release ships mm-site; the coming-soon page
+      # has no /book.
       - name: Record the versions serving now
         id: before
         run: |
+          book=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 https://maneman.in/book)
+          if [ "$book" = "200" ]; then site_live=true; else site_live=false; fi
           api=$(node scripts/release/release.ts current --worker mm-api --env production)
           site=$(node scripts/release/release.ts current --worker mm-site --env production)
           app=$(node scripts/release/release.ts current --worker mm-app --env production)
@@ -133,6 +137,7 @@ jobs:
             echo "app=$app"
             echo "ops=$ops"
             echo "tech=$tech"
+            echo "site_live=$site_live"
           } >> "$GITHUB_OUTPUT"
 
       - name: Check the database is production's, before anything touches it
@@ -183,7 +188,7 @@ jobs:
       - name: Smoke the new version
         run: >-
           npm run smoke -- --base https://maneman.in --environment production
-          --override "mm-api-production=${{ steps.api.outputs.version }}"
+          --site-live "${{ steps.before.outputs.site_live }}" --override "mm-api-production=${{ steps.api.outputs.version }}"
           --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
       # Real visitors' requests, not only the smoke's: the soak fails if the new version errors or answers 5xx
@@ -198,7 +203,7 @@ jobs:
       - name: Smoke the new version again
         run: >-
           npm run smoke -- --base https://maneman.in --environment production
-          --override "mm-api-production=${{ steps.api.outputs.version }}"
+          --site-live "${{ steps.before.outputs.site_live }}" --override "mm-api-production=${{ steps.api.outputs.version }}"
           --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
       - name: Send the new version all traffic
@@ -209,7 +214,7 @@ jobs:
       - name: Smoke mm-api at 100%
         run: >-
           npm run smoke -- --base https://maneman.in --environment production
-          --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
+          --site-live "${{ steps.before.outputs.site_live }}" --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
       # The coming-soon page until the site goes live in production (PRODUCTION_LIVE, site/src/lib/flags.ts); then the
       # site, with the words the Words page published for production.
@@ -307,11 +312,12 @@ jobs:
           APP: ${{ steps.before.outputs.app }}
           OPS: ${{ steps.before.outputs.ops }}
           TECH: ${{ steps.before.outputs.tech }}
+          SITE_LIVE: ${{ steps.before.outputs.site_live }}
         run: |
           echo "::error::Release $SHA failed. Restoring the versions that were serving before it."
           node scripts/release/release.ts restore --env production --message "rollback of $SHA" \
             --to "mm-api=$API" --to "mm-site=$SITE" --to "mm-app=$APP" --to "mm-ops=$OPS" --to "mm-tech=$TECH"
-          npm run smoke -- --base https://maneman.in --environment production --version-id "$API"
+          npm run smoke -- --base https://maneman.in --environment production --version-id "$API" --site-live "$SITE_LIVE"
 
       # Read-only, and a warning at most: CI cannot apply triggers (docs/decisions/0010-applying-triggers.md).
       - name: The cron schedules and queue consumers live match every Worker's config

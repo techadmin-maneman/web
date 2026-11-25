@@ -1,7 +1,7 @@
 // A payment link sent on WhatsApp (src/domain/money/pay-links.ts; docs/decisions/0300-payment-links-on-whatsapp.md):
 // kept under a random token, its message naming what it pays for with our address for it; that address answers
 // Razorpay's while the link is open, and nothing for a token closed or guessed, which counts against the address;
-// MSG91 is not asked to send it until WhatsApp approves the template.
+// MSG91 sends it, WhatsApp having approved its template.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -112,14 +112,11 @@ describe("a payment link's message", () => {
     expect(await send(messageId)).toEqual([]);
   });
 
-  it("is not asked of MSG91 until WhatsApp approves the template, and is skipped, not failed", async () => {
+  it("is asked of MSG91, WhatsApp having approved its template", async () => {
     const { messageId } = await linkMade();
     const msg91 = { authKey: "test-key", integratedNumber: "919800000000", webhookToken: null };
-    expect(await send(messageId, config({ msg91 }))).toEqual([]);
-    const row = await env.DB.prepare("SELECT state FROM outbound_messages WHERE id = ?1")
-      .bind(messageId)
-      .first<{ state: string }>();
-    expect(row?.state).toBe("skipped");
+    const sent = await send(messageId, config({ msg91 }));
+    expect(sent.map((message) => message.template)).toEqual(["payment_link_v1"]);
   });
 
   it("goes again under the same token when the link is sent again, and not for a link never sent so", async () => {

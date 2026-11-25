@@ -29,6 +29,9 @@ const { values } = parseArgs({
     override: { type: "string", multiple: true },
     surfaces: { type: "boolean", default: false },
     "link-preview": { type: "string" },
+    // Whether production's site is the live one, for a smoke run before a release ships mm-site: the site then is
+    // the one already serving, whatever PRODUCTION_LIVE says.
+    "site-live": { type: "string" },
   },
 });
 
@@ -36,6 +39,12 @@ const environment = values.environment;
 const apiBase = values["api-base"] ?? values.base;
 const siteBase = values["site-base"] ?? values.base;
 const linkPreview = values["link-preview"];
+const siteLiveArg = values["site-live"];
+if (siteLiveArg !== undefined && siteLiveArg !== "true" && siteLiveArg !== "false") {
+  console.error("--site-live takes true or false");
+  process.exit(2);
+}
+const siteLive = siteLiveArg === undefined ? undefined : siteLiveArg === "true";
 const surfacesOnly = values.surfaces && (environment === "staging" || environment === "production");
 if (
   !isEnvironmentName(environment) ||
@@ -85,6 +94,7 @@ if (surfacesOnly) {
     apiBase: apiBase.replace(/\/$/, ""),
     siteBase: siteBase.replace(/\/$/, ""),
     linkPreview,
+    siteLive,
   });
   runs.push({ base: apiBase, results });
 }

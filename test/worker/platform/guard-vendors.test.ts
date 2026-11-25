@@ -8,10 +8,13 @@ function without(env: Record<string, unknown>, names: readonly string[]): Record
 }
 
 describe("validateStaticConfig: Cloudflare Access", () => {
-  it("reads the team domain, and needs no ops audience where the ops surface is switched off", () => {
+  it("reads the team domain, and needs the ops audience where the ops surface is on", () => {
+    expect(validateStaticConfig(production).settings.access).toEqual({
+      teamDomain: "summer-math-0275.cloudflareaccess.com",
+      opsAudience: "ops-audience-tag",
+    });
     const { ACCESS_OPS_AUD: _omitted, ...withoutAudience } = production;
-    const config = validateStaticConfig(withoutAudience);
-    expect(config.settings.access).toEqual({ teamDomain: "summer-math-0275.cloudflareaccess.com", opsAudience: null });
+    expect(problemsOf(withoutAudience)).toEqual(["ACCESS_OPS_AUD is not set"]);
   });
 
   it("refuses the stub in staging as well as production, since staff identity is always verified there", () => {
@@ -130,14 +133,16 @@ describe("validateStaticConfig: Zoho Books", () => {
     expect(config.settings.zohoBooks?.clientId).toBe("1000.BOOKSCLIENT");
   });
 
-  it("needs nothing from Zoho for the stubs or for none", () => {
+  it("needs nothing from Zoho for the stubs", () => {
     const local = validateStaticConfig({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS });
     expect(local.settings.zohoBooks).toBeNull();
-    expect(validateStaticConfig(production).settings.zohoBooks).toBeNull();
   });
 
-  it("refuses Books off where the client surface is on, and allows it where the surface is off", () => {
+  it("refuses Books off where the client surface is on", () => {
     expect(problemsOf({ ...stagingBase, BOOKS_PROVIDER: "none" })).toEqual([
+      'BOOKS_PROVIDER is "none" while the client surface is on: invoices and receipts come from Zoho Books',
+    ]);
+    expect(problemsOf({ ...production, BOOKS_PROVIDER: "none" })).toEqual([
       'BOOKS_PROVIDER is "none" while the client surface is on: invoices and receipts come from Zoho Books',
     ]);
     expect(problemsOf(production)).toEqual([]);

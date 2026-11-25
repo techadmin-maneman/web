@@ -77,9 +77,8 @@ export const TURNSTILE_HOSTS: Readonly<Record<RemoteEnvironmentName, readonly st
  */
 export const ENABLED_SURFACES: Readonly<Record<EnvironmentName, readonly Surface[]>> = {
   local: SURFACES,
-  // Each host needs its DNS record and Access application first.
   staging: SURFACES,
-  production: ["public"],
+  production: SURFACES,
 };
 
 /** The public site's hostname per remote environment. */

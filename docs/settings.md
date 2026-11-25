@@ -19,20 +19,20 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `BOOKS_GATEWAY_GST_STATE` | — | — | `KA` |
 | `BOOKS_GSTIN` | — | `07AAVCM6347C1Z5` | `07AAVCM6347C1Z5` |
 | `BOOKS_GST_STATE` | — | `DL` | `DL` |
-| `BOOKS_ITEM_PUSH` | `false` | `true` | `false` |
-| `BOOKS_PROVIDER` | `stub` | `zoho` | `none` |
+| `BOOKS_ITEM_PUSH` | `false` | `false` | `true` |
+| `BOOKS_PROVIDER` | `stub` | `stub` | `zoho` |
 | `BOOKS_REFUND_ACCOUNT_ID` | — | `4242595000001556003` | `4242595000001556003` |
 | `BOOKS_SAC` | — | — | — |
 | `CLIENT_SIGN_OFF` | `true` | `true` | `true` |
-| `CONVERSIONS_FROM` | — | `2026-11-21` | — |
+| `CONVERSIONS_FROM` | — | `2026-11-21` | `2026-11-26` |
 | `CONVERSIONS_TEST_MODE` | `true` | `true` | `false` |
-| `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |
+| `CRM_PROVIDER` | `stub` | `stub` | `zoho` |
 | `ENVIRONMENT` | `local` | `staging` | `production` |
 | `GEOCODE_PROVIDER` | `stub` | `google` | `google` |
 | `GOOGLE_ADS_PROVIDER` | `stub` | `google` | `google` |
 | `IMAGE_PROVIDER` | `stub` | `youcam` | `youcam` |
-| `MESSAGING_ENABLED` | `true` | `true` | `false` |
-| `MESSAGING_PROVIDER` | `stub` | `msg91` | `evolution` |
+| `MESSAGING_ENABLED` | `true` | `true` | `true` |
+| `MESSAGING_PROVIDER` | `stub` | `msg91` | `msg91` |
 | `META_CAPI_PROVIDER` | `stub` | `meta` | `meta` |
 | `PAYMENTS_PROVIDER` | `stub` | `razorpay` | `none` |
 | `RAZORPAY_KEY_ID` | — | `rzp_test_Tz0U9jnWcW6ZYU` | — |
@@ -49,9 +49,9 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `TRYON_REFS_URL` | `http://localhost:4321/refs/v1` | `https://maneman.in/refs/v1` | `https://maneman.in/refs/v1` |
 | `TURNSTILE_ACCEPT_TEST_TOKEN` | `true` | `true` | `false` |
 | `UPLOAD_DAILY_CEILING` | `40` | `40` | `80` |
-| `ZOHO_BOOKS_ACCOUNTS_HOST` | — | `accounts.zoho.in` | — |
-| `ZOHO_BOOKS_API_HOST` | — | `www.zohoapis.in` | — |
-| `ZOHO_BOOKS_ORG_ID` | — | `60088931635` | — |
+| `ZOHO_BOOKS_ACCOUNTS_HOST` | — | `accounts.zoho.in` | `accounts.zoho.in` |
+| `ZOHO_BOOKS_API_HOST` | — | `www.zohoapis.in` | `www.zohoapis.in` |
+| `ZOHO_BOOKS_ORG_ID` | — | `60088931635` | `60088931635` |
 
 ## Secrets
 
@@ -130,7 +130,7 @@ In `src/config/environments.ts`: hosts, origins and resource names, which change
 | --- | --- |
 | `ACCESS_TEAM_DOMAIN` | `summer-math-0275.cloudflareaccess.com` |
 | `CLIENT_ORIGIN` | `{"local":"http://app.localhost:4322","staging":"https://app-staging.maneman.in","production":"https://app.maneman.in"}` |
-| `ENABLED_SURFACES` | `{"local":["public","client","ops","tech"],"staging":["public","client","ops","tech"],"production":["public"]}` |
+| `ENABLED_SURFACES` | `{"local":["public","client","ops","tech"],"staging":["public","client","ops","tech"],"production":["public","client","ops","tech"]}` |
 | `ENVIRONMENTS` | `["local","staging","production"]` |
 | `EXPECTED_DATABASE_NAME` | `{"local":"maneman-local","staging":"maneman-staging","production":"maneman-prod"}` |
 | `HOSTNAME` | `{"staging":"staging.maneman.in","production":"maneman.in"}` |

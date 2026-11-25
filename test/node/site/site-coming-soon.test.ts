@@ -52,8 +52,8 @@ describe("production’s coming-soon page", () => {
 });
 
 describe("going live in production", () => {
-  it("is not yet switched on", () => {
-    expect(PRODUCTION_LIVE).toBe(false);
+  it("is switched on", () => {
+    expect(PRODUCTION_LIVE).toBe(true);
   });
 
   // Going live was two hand edits: the assets folder here, and a build step in the release.
