@@ -12,7 +12,10 @@ export const INVITE_PATH = new RegExp(`^/r/(${INVITE_CODE})/?$`);
 /** An invite's landing within a whole address, so the code can be taken out of what is reported. */
 export const INVITE_PATH_IN_URL = new RegExp(`/r/${INVITE_CODE}/?(?=[?#]|$)`);
 
-/** The house card, with its version, which the API's preview redirects to as well (src/config/house-card.ts). */
+/**
+ * The house card with its version: the JPEG previews show and the API's preview redirects to, and the WebP the
+ * invite's page draws (src/config/house-card.ts).
+ */
 export { HOUSE_CARD, HOUSE_CARD_PAGE, HOUSE_CARD_VERSION };
 
 /** Every state the API can answer. Listing them as keys makes a new state in the contract a type error here. */

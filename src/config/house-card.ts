@@ -1,12 +1,13 @@
 // The house referral card: the card an invite shows until its referrer makes
-// their own, and once they take it down. It is a static file of the site's
-// (site/public/images/invite-house.jpg), replaced at the same path when the real
-// card is supplied.
+// their own, and once they take it down. It is two static files of the site's,
+// both written by scripts/build/make-house-card.ts and replaced together when the
+// real card is supplied: site/public/images/invite-house.jpg, which previews and
+// the API's redirect show, and invite-house.webp, which the invite's page draws.
 //
-// Chats cache a link's preview by its address, so every address of the card
-// carries its version, the API's redirect to it as well as the site's pages: a
-// new card needs a new version here. test/node/site/site-content.test.ts fails if
-// the file changes and this does not.
+// Chats and browsers cache the card by its address, so every address of it
+// carries its version: a new card needs a new version here.
+// test/node/site/site-content.test.ts fails if either file changes and this does
+// not.
 
 export const HOUSE_CARD_VERSION = 3;
 export const HOUSE_CARD = `/images/invite-house.jpg?v=${String(HOUSE_CARD_VERSION)}`;

@@ -22,6 +22,12 @@ export function usePincode() {
   // Where focus goes once the pincode's answer has drawn, or gone again.
   const focusNext = useRef<"answer" | "field" | null>(null);
 
+  // Digits typed before the island woke, which it does once the page is idle, are kept rather than cleared.
+  useEffect(() => {
+    const typed = field.current?.value.replace(/\D/g, "").slice(0, 6) ?? "";
+    if (typed !== "") setPincode(typed);
+  }, []);
+
   // The answer is read out by moving focus to it, and the page brings it, with the form beneath, into view.
   useEffect(() => {
     if (focusNext.current === "answer") {
