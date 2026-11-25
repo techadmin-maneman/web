@@ -48973,7 +48973,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "When our reply is due, by the Care hours ops set (care_hours); null when nothing waits on us."
+      "description": "When our reply is due, by the Care hours ops set (care_times); null when nothing waits on us."
     }
   },
   "required": [
@@ -59322,7 +59322,7 @@ Request body:
         "technician_work",
         "booking_days",
         "referral_reward",
-        "care_hours",
+        "care_times",
         "remedy_limit",
         "lost_after_days",
         "booking_rules",
@@ -59528,7 +59528,7 @@ Request body:
         "technician_work",
         "booking_days",
         "referral_reward",
-        "care_hours",
+        "care_times",
         "remedy_limit",
         "lost_after_days",
         "booking_rules",

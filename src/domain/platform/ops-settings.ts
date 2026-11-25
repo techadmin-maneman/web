@@ -205,7 +205,7 @@ function shape(values: OpsValues): OpsInputs {
     kitCheck: values.kit_check,
     scorecardDays: values.scorecard_days,
     forecastAssumptions: values.forecast_assumptions,
-    careHours: values.care_hours,
+    careHours: values.care_times,
     remedyLimit: values.remedy_limit,
     lostAfterDays: values.lost_after_days,
     taskLapseDays: values.task_lapse_days,

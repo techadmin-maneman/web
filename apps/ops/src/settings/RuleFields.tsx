@@ -14,7 +14,18 @@ import type { ChoiceRule, NumberRule, OpsSetting, SettingValue } from "../api.ts
 import { Refusal } from "@maneman/ui/Refusal";
 import { EDITING } from "../content/common.ts";
 import { settings } from "../content/settings.ts";
-import { boundsOf, choiceLabel, keyLabel, rangeWords, READ_AS, ruleRefusal, whole } from "./rule-drafts.ts";
+import { MINUTE_OF_DAY } from "@rules/config/setting-units.ts";
+import {
+  boundsOf,
+  choiceLabel,
+  clockText,
+  keyLabel,
+  minuteOf,
+  rangeWords,
+  READ_AS,
+  ruleRefusal,
+  whole,
+} from "./rule-drafts.ts";
 import { settingsApi } from "./settings-api.ts";
 import styles from "./rules.module.css";
 
@@ -60,6 +71,34 @@ function FigureRow({ rule, figureKey, mayChange, onSaved }: RowProps & { readonl
   const current = typeof rule.value === "number" ? rule.value : (rule.value[figureKey] ?? 0);
   const valueWith = (figure: number): SettingValue =>
     typeof rule.value === "number" ? figure : { ...rule.value, [figureKey]: figure };
+  if (bounds.unit === MINUTE_OF_DAY) {
+    return (
+      <EditableRow<string>
+        stacked
+        id={single ? rule.name : undefined}
+        label={single ? rule.title : keyLabel(rule, figureKey)}
+        words={EDITING}
+        mayChange={mayChange}
+        value={valueWords(current, bounds.unit)}
+        start={() => clockText(current)}
+        save={(typed) => {
+          const minute = minuteOf(typed, bounds.min, bounds.max);
+          return minute === null ? Promise.resolve(rangeWords(bounds)) : saveRule(rule, valueWith(minute), onSaved);
+        }}
+      >
+        {(control, typed, type) => (
+          <TextInput
+            {...control}
+            type="time"
+            value={typed}
+            onChange={(event) => {
+              type(event.target.value);
+            }}
+          />
+        )}
+      </EditableRow>
+    );
+  }
   return (
     <EditableRow<string>
       stacked

@@ -78,7 +78,7 @@ describe("GET /api/profile", () => {
       name: "Rohit Malhotra",
       mobile: "+91 98xxx x0001",
       care_person: null,
-      care_hours: { opens: 9, closes: 21, first_reply: 60 },
+      care_hours: { opens: 9, closes: 19, opens_minute: 570, closes_minute: 1140, first_reply: 60 },
       address: null,
       address_given_to_ops: null,
       address_pinned: false,

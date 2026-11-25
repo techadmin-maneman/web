@@ -53,7 +53,7 @@ function IssueBody({ issue, onChanged }: { issue: Issue; onChanged: () => void }
       ? null
       : support.hint(
           support.within(hours.first_reply),
-          support.hours(support.hour(hours.opens), support.hour(hours.closes)),
+          support.hours(support.time(hours.opens_minute), support.time(hours.closes_minute)),
         );
   const photosFailed = new URLSearchParams(window.location.search).get("photos") === "failed";
   return (

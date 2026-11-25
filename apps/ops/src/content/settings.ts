@@ -194,6 +194,16 @@ export const settings = {
       if (hour === 12) return "noon";
       return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
     },
+    /** A time of the day, chosen on a clock and read as "9:30 am". */
+    allowedTimes: "as a time of day",
+    time: (minute: number) => {
+      const [hour, past] = [Math.floor(minute / 60), minute % 60];
+      if (minute === 0) return "midnight";
+      if (minute === 720) return "noon";
+      const clock = hour % 12 === 0 ? 12 : hour % 12;
+      const at = past === 0 ? String(clock) : `${String(clock)}:${String(past).padStart(2, "0")}`;
+      return hour < 12 ? `${at} am` : `${at} pm`;
+    },
     /** A day of the week, typed 0 for Sunday to 6 for Saturday and read by its name. */
     allowedDays: "0 for Sunday",
     weekday: (day: number) =>
@@ -364,8 +374,8 @@ export const settings = {
         consultation_fit_percent: "Consultations that fit",
         consultation_to_fit_days: "Consultation to fit",
       },
-      // The reply clock (docs/decisions/0132-the-reply-clock.md).
-      care_hours: {
+      // The reply clock (docs/decisions/0132-the-reply-clock.md), its times to the minute (docs/decisions/0322-care-times.md).
+      care_times: {
         opens: "Care opens",
         closes: "Care closes",
         first_reply: "First reply within",

@@ -51,7 +51,7 @@ const ConversationSchema = z
       description: "When the client last wrote, unanswered since; null when nothing waits on us.",
     }),
     reply_by: z.union([z.iso.datetime(), z.null()]).openapi({
-      description: "When our reply is due, by the Care hours ops set (care_hours); null when nothing waits on us.",
+      description: "When our reply is due, by the Care hours ops set (care_times); null when nothing waits on us.",
     }),
   })
   .strict()

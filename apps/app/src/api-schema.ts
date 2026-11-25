@@ -6179,10 +6179,14 @@ export interface components {
             };
             /** @description Care's hours and their reply promise, as ops set them (care_hours). */
             care_hours: {
-                /** @description The hour Care open, in India, 0 to 23. */
+                /** @description The hour Care open, rounded down, for app copies older than opens_minute. */
                 opens: number;
-                /** @description The hour Care close. */
+                /** @description The hour Care close, rounded down, for app copies older than closes_minute. */
                 closes: number;
+                /** @description When Care open, in minutes past midnight in India. */
+                opens_minute: number;
+                /** @description When Care close, in minutes past midnight in India. */
+                closes_minute: number;
                 /** @description Minutes within which Care first reply in hours. */
                 first_reply: number;
             };
@@ -6448,8 +6452,14 @@ export interface components {
             care_person: string | null;
             /** @description The hours Customer Care are on every day, India's clock, as ops set them (ADR 0132). */
             care_hours: {
+                /** @description The hour Care open, rounded down, for app copies older than opens_minute. */
                 opens: number;
+                /** @description The hour Care close, rounded down, for app copies older than closes_minute. */
                 closes: number;
+                /** @description When Care open, in minutes past midnight in India. */
+                opens_minute: number;
+                /** @description When Care close, in minutes past midnight in India. */
+                closes_minute: number;
                 /** @description Minutes a message in those hours is answered within. */
                 first_reply: number;
             };

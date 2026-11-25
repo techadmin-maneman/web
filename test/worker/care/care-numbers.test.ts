@@ -50,9 +50,10 @@ beforeEach(async () => {
   // Answered in 30 minutes, closed the same day about a fit problem.
   await chat("cv-01", "p1", at("10:00"), { at: at("11:00"), reason: "fit_problem" });
   await reply("cv-01", at("10:30"));
-  // Written at 8:50 pm, answered at 9:20 am: 30 minutes in Care hours, and before its reply-by time of 10 am.
-  await chat("cv-02", "p2", at("20:50", "2026-09-20"), { at: at("09:30"), reason: "booking" });
-  await reply("cv-02", at("09:20"));
+  // Written at 8:50 pm, answered at 10 am: 30 minutes in Care hours, which open at 9:30, and by its reply-by time of
+  // 10 am.
+  await chat("cv-02", "p2", at("20:50", "2026-09-20"), { at: at("10:05"), reason: "booking" });
+  await reply("cv-02", at("10:00"));
   // Not answered yet, and past its reply-by time.
   await chat("cv-03", "p3", at("09:30"), null);
 });
