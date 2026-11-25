@@ -27,10 +27,15 @@ interface Reason {
 const dayOf = (instant: string | null) =>
   instant === null ? copy.notYet : listDate(indiaDate(instant), yearInIndia(apiNow()));
 
-/** Not lost, then the job sheet's reasons, and the one kept should ops have taken it off the list since. */
-function choicesFor(reasons: readonly Reason[], kept: string | null): readonly (readonly [string, string])[] {
+/** Not lost, then the job sheet's reasons, and the one kept, in its own words, should ops have taken it off since. */
+function choicesFor(
+  reasons: readonly Reason[],
+  kept: string | null,
+  keptLabel: string | null,
+): readonly (readonly [string, string])[] {
   const listed = reasons.map((reason) => [reason.code, reason.label] as const);
-  const gone = kept !== null && !reasons.some((reason) => reason.code === kept) ? [[kept, kept] as const] : [];
+  const gone =
+    kept !== null && !reasons.some((reason) => reason.code === kept) ? [[kept, keptLabel ?? kept] as const] : [];
   return [["", copy.notLost] as const, ...listed, ...gone];
 }
 
@@ -57,7 +62,7 @@ function Rows(props: { clientId: string; reasons: readonly Reason[]; lead: Clien
         label={copy.rows.lost}
         mayChange={mayChange}
         value={lead.lost_reason ?? ""}
-        choices={choicesFor(props.reasons, lead.lost_reason)}
+        choices={choicesFor(props.reasons, lead.lost_reason, lead.lost_reason_label)}
         save={(chosen) => save(chosen, lead.lost_objection)}
       />
       {lead.lost_reason !== null && (

@@ -50522,6 +50522,17 @@ Request body:
       ],
       "description": "One of the job sheet's lost_reasons, by its code."
     },
+    "lost_reason_label": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The reason's words on the job sheet, a reason ops have since taken off the list included."
+    },
     "lost_objection": {
       "anyOf": [
         {
@@ -50560,6 +50571,7 @@ Request body:
     "attended_at",
     "fitted_at",
     "lost_reason",
+    "lost_reason_label",
     "lost_objection",
     "lost_at"
   ],

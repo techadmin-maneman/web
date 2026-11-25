@@ -55,7 +55,7 @@ export const CONSOLE_CALLS: Readonly<Record<string, string>> = {
   "POST /api/clients/{id}/erasure": "erased the record of {name}",
   "POST /api/clients/{id}/hair-profile": "changed the hair profile of {name}",
   "POST /api/clients/{id}/heard-from": "recorded how {name} heard of us",
-  "POST /api/clients/{id}/lost": "recorded {name}'s lead as lost, or as no longer lost",
+  "POST /api/clients/{id}/lost": "recorded whether {name}'s lead was lost",
   "POST /api/clients/{id}/notes": "wrote a note on {name}",
   "POST /api/clients/{id}/notes/{note_id}/take-off": "took a note off {name}",
   "POST /api/clients/{id}/package": "changed the package of {name}",

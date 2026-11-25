@@ -89,6 +89,7 @@ const FOUND = {
   attended_at: null,
   fitted_at: null,
   lost_reason: null,
+  lost_reason_label: null,
   lost_objection: null,
   lost_at: null,
 };
@@ -280,6 +281,19 @@ describe("A client's lead", () => {
     fill(leadCopy.rows.lost, "not_ready");
     await click("Save");
     expect(sent.at(-1)).toEqual({ path: `/api/clients/${PERSON}/lost`, body: { lost_reason: "not_ready" } });
+  });
+
+  it("names a reason ops have taken off the list in its own words, never its code", async () => {
+    const lost = {
+      ...FOUND,
+      lost_reason: "chose_another_option",
+      lost_reason_label: "Chose another option",
+      lost_at: FOUND.became_lead_at,
+    };
+    answers.set(`GET /api/clients/${PERSON}/attribution`, () => Response.json(lost));
+    await show(createElement(LeadStages, { clientId: PERSON, reasons: REASONS }));
+    expect(page.textContent).toContain("Chose another option");
+    expect(page.textContent).not.toContain("chose_another_option");
   });
 
   it("marks an objection not given as a gap, never a blank", async () => {

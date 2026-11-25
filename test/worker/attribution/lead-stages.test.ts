@@ -132,6 +132,7 @@ describe("a lead lost", () => {
     expect(lost.status).toBe(204);
     expect(await read()).toMatchObject({
       lost_reason: "price",
+      lost_reason_label: "The price",
       lost_objection: "Wants to wait for the replacement price",
       lost_at: expect.any(String) as string,
     });

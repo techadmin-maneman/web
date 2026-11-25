@@ -31317,6 +31317,8 @@ export interface components {
             fitted_at: string | null;
             /** @description One of the job sheet's lost_reasons, by its code. */
             lost_reason: string | null;
+            /** @description The reason's words on the job sheet, a reason ops have since taken off the list included. */
+            lost_reason_label: string | null;
             lost_objection: string | null;
             lost_at: string | null;
         };

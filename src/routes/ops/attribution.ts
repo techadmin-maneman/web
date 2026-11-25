@@ -10,6 +10,7 @@ import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { clientAttribution, setHeardFrom, stopSharing } from "../../domain/attribution/attribution.ts";
+import { jobSheet } from "../../domain/field/job-sheet-settings.ts";
 import { leadStages, setLost } from "../../domain/leads/lead-stages.ts";
 import { leadFromCall } from "../../domain/attribution/call-lead.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
@@ -119,6 +120,9 @@ const readRoute = opsRoute({
             lost_reason: z
               .union([z.string(), z.null()])
               .openapi({ description: "One of the job sheet's lost_reasons, by its code." }),
+            lost_reason_label: z.union([z.string(), z.null()]).openapi({
+              description: "The reason's words on the job sheet, a reason ops have since taken off the list included.",
+            }),
             lost_objection: z.union([z.string(), z.null()]),
             lost_at: z.union([z.iso.datetime(), z.null()]),
           })
@@ -235,8 +239,17 @@ export function registerOpsAttribution(app: App): void {
   app.openapi(readRoute, async (c) => {
     const { id } = c.req.valid("param");
     if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
-    const [found, stages] = await Promise.all([clientAttribution(c.env.DB, id), leadStages(c.env.DB, id)]);
-    return c.json({ ...(found ?? EMPTY), ...stages }, 200);
+    const [found, stages, sheet] = await Promise.all([
+      clientAttribution(c.env.DB, id),
+      leadStages(c.env.DB, id),
+      jobSheet(c.env.DB),
+    ]);
+    const attribution = found ?? EMPTY;
+    const { items, retired } = sheet.lostReasons;
+    const words = new Map([...retired, ...items].map((item) => [item.id, item.label]));
+    const reason = attribution.lost_reason;
+    const label = reason === null ? null : (words.get(reason) ?? reason);
+    return c.json({ ...attribution, ...stages, lost_reason_label: label }, 200);
   });
 
   app.openapi(heardRoute, async (c) => {
