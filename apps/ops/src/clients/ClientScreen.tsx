@@ -5,6 +5,7 @@
 
 import { ACTION_ICONS } from "@maneman/brand/action-icons";
 import { FoundUs } from "./FoundUs.tsx";
+import { LeadStages } from "./LeadStages.tsx";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { PageTitle } from "@maneman/ui/PageHeader";
@@ -166,6 +167,7 @@ function Tab(props: TabProps) {
     return (
       <>
         <FoundUs clientId={clientId} name={record.name} />
+        <LeadStages clientId={clientId} reasons={record.lost_reasons} />
         <Invite
           clientId={clientId}
           invite={props.attached?.invite ?? record.invite}

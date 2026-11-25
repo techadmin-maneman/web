@@ -13549,7 +13549,7 @@ Request body:
 
 ### GET /api/clients/{id}/attribution
 
-How a client found us: their channel by the rule, their first and last touch, and what they told ops
+How a client found us: their channel by the rule, their first and last touch, and what they told ops; and their lead's stages, each when first reached, and whether it was lost
 
 **200**: Their attribution; every field empty for a client we hold nothing of
 
@@ -13683,6 +13683,129 @@ Request body:
 **204**: Kept
 
 **400**: invalid_request: fields names heard_from for an answer not on the list
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such client within the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+### POST /api/clients/{id}/lost
+
+The lead lost, with why and the client's objection; a null reason takes it back
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/LeadLost"
+}
+```
+
+**204**: Kept
+
+**400**: invalid_request: fields names lost_reason for a code the job sheet never listed
 
 ```json
 {
@@ -50330,6 +50453,95 @@ Request body:
           "type": "null"
         }
       ]
+    },
+    "became_lead_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "first_reply_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Care's first written reply; an automatic message is none."
+    },
+    "qualified_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When their first consultation was booked."
+    },
+    "attended_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fitted_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lost_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "One of the job sheet's lost_reasons, by its code."
+    },
+    "lost_objection": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lost_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [
@@ -50341,7 +50553,15 @@ Request body:
     "heard_from",
     "heard_from_other",
     "heard_from_at",
-    "sharing_stopped_at"
+    "sharing_stopped_at",
+    "became_lead_at",
+    "first_reply_at",
+    "qualified_at",
+    "attended_at",
+    "fitted_at",
+    "lost_reason",
+    "lost_objection",
+    "lost_at"
   ],
   "additionalProperties": false
 }
@@ -50486,6 +50706,38 @@ Request body:
   },
   "required": [
     "heard_from"
+  ],
+  "additionalProperties": false
+}
+```
+
+### LeadLost
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lost_reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "One of the job sheet's lost_reasons, by its code; null takes a lead lost back."
+    },
+    "lost_objection": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "lost_reason"
   ],
   "additionalProperties": false
 }
@@ -52483,6 +52735,8 @@ Request body:
         "lead.call",
         "client.heard_from",
         "client.sharing_stop",
+        "client.lost",
+        "client.lost_taken_back",
         "photo.view",
         "pincode.launch",
         "data.export",

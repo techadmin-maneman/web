@@ -193,7 +193,9 @@ function appPersonalData(db: D1Database, personId: string): D1PreparedStatement[
       )
       .bind(personId),
     db.prepare("UPDATE visitors SET person_id = NULL WHERE person_id = ?1").bind(personId),
-    db.prepare("UPDATE person_attribution SET heard_from_other = NULL WHERE person_id = ?1").bind(personId),
+    db
+      .prepare("UPDATE person_attribution SET heard_from_other = NULL, lost_objection = NULL WHERE person_id = ?1")
+      .bind(personId),
   ];
 }
 

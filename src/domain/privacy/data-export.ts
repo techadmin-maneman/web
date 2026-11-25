@@ -117,7 +117,7 @@ export const EXPORT_QUERIES = {
       declared_channel, declared_by, ad_consent, ad_notice, user_agent, client_ip, visitor_id
     FROM touches WHERE person_id = ?1 ORDER BY at`,
   attribution: `SELECT attributed_channel, last_touch_channel, settled_at, heard_from, heard_from_other, heard_from_at,
-      sharing_stopped_at
+      sharing_stopped_at, lost_reason, lost_objection, lost_at
     FROM person_attribution WHERE person_id = ?1`,
   ad_sends: `SELECT event, occurred_at, value_paise, attributed_channel, last_touch_channel, source_url, meta_state,
       meta_sent_at, google_state, google_sent_at, created_at

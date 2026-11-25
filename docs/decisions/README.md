@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0320. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0321. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -352,6 +352,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0317](0317-targets-progress.md) Targets progress
 - [0318](0318-care-team-beside-messages.md) Care team beside Messages
 - [0319](0319-rules-that-hold-together.md) Rules that hold together
+- [0320](0320-lead-stages.md) A lead's stages, and a lead lost
 
 ## Every decision, oldest first
 
@@ -503,7 +504,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0146](0146-the-nightly-analytics-copy.md) | The nightly analytics copy | 2026-10-12 | accepted | [0196](0196-long-work-in-workflows.md) |
 | [0147](0147-task-spans.md) | Task spans | 2026-10-12 | accepted |  |
 | [0148](0148-the-channel-rule.md) | The channel rule | 2026-10-12 | accepted | [0288](0288-attribution-and-conversions.md) |
-| [0149](0149-lost-reasons.md) | Lost reasons | 2026-10-12 | accepted | [0268](0268-the-visits-design-check.md) |
+| [0149](0149-lost-reasons.md) | Lost reasons | 2026-10-12 | accepted | [0268](0268-the-visits-design-check.md), [0320](0320-lead-stages.md) |
 | [0150](0150-spend.md) | Spend | 2026-10-12 | accepted | [0288](0288-attribution-and-conversions.md) |
 | [0151](0151-retention-figures.md) | Retention figures | 2026-10-12 | accepted |  |
 | [0152](0152-standard-costs.md) | Standard costs | 2026-10-12 | accepted |  |
@@ -674,3 +675,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0317](0317-targets-progress.md) | Targets progress | 2026-11-25 | accepted |  |
 | [0318](0318-care-team-beside-messages.md) | Care team beside Messages | 2026-11-25 | accepted |  |
 | [0319](0319-rules-that-hold-together.md) | Rules that hold together | 2026-11-25 | accepted |  |
+| [0320](0320-lead-stages.md) | A lead's stages, and a lead lost | 2026-11-25 | accepted |  |

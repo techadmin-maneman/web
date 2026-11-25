@@ -69,6 +69,9 @@ const ATTRIBUTION_PART: Part = {
     heard_from_other: text("In your words"),
     heard_from_at: time("Told us"),
     sharing_stopped_at: time("Stopped sharing with Google and Meta"),
+    lost_reason: words("Why you held back"),
+    lost_objection: text("Why you held back, as we noted it"),
+    lost_at: time("Noted"),
   },
 };
 

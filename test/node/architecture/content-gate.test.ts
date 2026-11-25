@@ -94,6 +94,7 @@ describe("the production gate on the apps' copy", () => {
         "apps/ops/src/content/found-us.ts",
         "apps/ops/src/content/funnel.ts",
         "apps/ops/src/content/kit.ts",
+        "apps/ops/src/content/lead-stages.ts",
         "apps/ops/src/content/ledger.ts",
         "apps/ops/src/content/no-shows.ts",
         "apps/ops/src/content/packages.ts",

@@ -3,12 +3,14 @@
 // - POST /api/leads/call: a lead taken on a call, its channel picked (Customer Care · Act).
 // - GET /api/clients/{id}/attribution: how a client found us, and what they told ops (Customer Care · View).
 // - POST /api/clients/{id}/heard-from: what they told ops, asked at the consultation (Customer Care · Act).
+// - POST /api/clients/{id}/lost: the lead lost, why and in what words, or taken back (Customer Care · Act).
 // - POST /api/clients/{id}/stop-sharing: nothing more of theirs to Google or Meta, as they asked (Customer Care · Manage).
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { clientAttribution, setHeardFrom, stopSharing } from "../../domain/attribution/attribution.ts";
+import { leadStages, setLost } from "../../domain/leads/lead-stages.ts";
 import { leadFromCall } from "../../domain/attribution/call-lead.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
 import { actorOf } from "../../http/audit.ts";
@@ -19,6 +21,7 @@ import { clientInReach } from "../../http/staff-access.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { CHANNEL_CODES, DECLARED_CHANNELS } from "../../policy/channels.ts";
 import { HEARD_FROM_CODES, HEARD_FROM_OTHER_MAX } from "../../policy/heard-from.ts";
+import { LOST_OBJECTION_MAX } from "../../policy/lost-leads.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 
 const Id = z.object({ id: z.uuid() });
@@ -85,7 +88,9 @@ const TouchShownSchema = z
 const readRoute = opsRoute({
   method: "get",
   path: "/api/clients/{id}/attribution",
-  summary: "How a client found us: their channel by the rule, their first and last touch, and what they told ops",
+  summary:
+    "How a client found us: their channel by the rule, their first and last touch, and what they told ops; and their " +
+    "lead's stages, each when first reached, and whether it was lost",
   request: { params: Id },
   responses: {
     200: {
@@ -102,6 +107,20 @@ const readRoute = opsRoute({
             heard_from_other: z.union([z.string(), z.null()]),
             heard_from_at: z.union([z.iso.datetime(), z.null()]),
             sharing_stopped_at: z.union([z.iso.datetime(), z.null()]),
+            became_lead_at: z.union([z.iso.datetime(), z.null()]),
+            first_reply_at: z
+              .union([z.iso.datetime(), z.null()])
+              .openapi({ description: "Care's first written reply; an automatic message is none." }),
+            qualified_at: z
+              .union([z.iso.datetime(), z.null()])
+              .openapi({ description: "When their first consultation was booked." }),
+            attended_at: z.union([z.iso.datetime(), z.null()]),
+            fitted_at: z.union([z.iso.datetime(), z.null()]),
+            lost_reason: z
+              .union([z.string(), z.null()])
+              .openapi({ description: "One of the job sheet's lost_reasons, by its code." }),
+            lost_objection: z.union([z.string(), z.null()]),
+            lost_at: z.union([z.iso.datetime(), z.null()]),
           })
           .strict()
           .openapi("ClientAttribution"),
@@ -137,6 +156,34 @@ const heardRoute = opsRoute({
   },
 });
 
+const lostRoute = opsRoute({
+  method: "post",
+  path: "/api/clients/{id}/lost",
+  summary: "The lead lost, with why and the client's objection; a null reason takes it back",
+  request: {
+    params: Id,
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            lost_reason: z.union([z.string().min(1).max(64), z.null()]).openapi({
+              description: "One of the job sheet's lost_reasons, by its code; null takes a lead lost back.",
+            }),
+            lost_objection: z.string().trim().min(1).max(LOST_OBJECTION_MAX).optional(),
+          })
+          .strict()
+          .openapi("LeadLost"),
+      ),
+    },
+  },
+  responses: {
+    204: { description: "Kept" },
+    400: errorResponse("invalid_request: fields names lost_reason for a code the job sheet never listed"),
+    404: NotFound,
+  },
+});
+
 const stopRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/stop-sharing",
@@ -160,6 +207,9 @@ const EMPTY = {
   heard_from_other: null,
   heard_from_at: null,
   sharing_stopped_at: null,
+  lost_reason: null,
+  lost_objection: null,
+  lost_at: null,
 };
 
 export function registerOpsAttribution(app: App): void {
@@ -185,7 +235,8 @@ export function registerOpsAttribution(app: App): void {
   app.openapi(readRoute, async (c) => {
     const { id } = c.req.valid("param");
     if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
-    return c.json((await clientAttribution(c.env.DB, id)) ?? EMPTY, 200);
+    const [found, stages] = await Promise.all([clientAttribution(c.env.DB, id), leadStages(c.env.DB, id)]);
+    return c.json({ ...(found ?? EMPTY), ...stages }, 200);
   });
 
   app.openapi(heardRoute, async (c) => {
@@ -198,6 +249,20 @@ export function registerOpsAttribution(app: App): void {
       heardFrom: body.heard_from,
       other: body.heard_from_other ?? null,
     });
+    return c.body(null, 204);
+  });
+
+  app.openapi(lostRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
+    const body = c.req.valid("json");
+    const set = await setLost(c.env.DB, {
+      ...changeOf(c),
+      personId: id,
+      reason: body.lost_reason,
+      objection: body.lost_objection ?? null,
+    });
+    if (set === "unknown_reason") return refuse(c, "invalid_request", ["lost_reason"]);
     return c.body(null, 204);
   });
 

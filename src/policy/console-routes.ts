@@ -258,6 +258,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/leads/call": need("customer_care", "act"),
   "GET /api/clients/{id}/attribution": inOwnPlaces("customer_care", "view"),
   "POST /api/clients/{id}/heard-from": inOwnPlaces("customer_care", "act"),
+  "POST /api/clients/{id}/lost": inOwnPlaces("customer_care", "act"),
   "POST /api/clients/{id}/stop-sharing": inOwnPlaces("customer_care", "manage"),
   "POST /api/spend/{id}/remove": need("growth", "manage"),
   "GET /api/words": need("growth", "view"),
