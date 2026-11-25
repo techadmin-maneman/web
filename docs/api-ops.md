@@ -26411,6 +26411,42 @@ Request body:
 }
 ```
 
+**422**: figures_conflict: fields names the city's figure, then the national rule it must keep within
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "figures_conflict"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### DELETE /api/cities/{name}/rules/{rule}
 
 The national rule back in the city
@@ -46784,10 +46820,40 @@ Request body:
           "po_number"
         ]
       }
+    },
+    "past_horizon": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lead_time_days": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "lead_time_days"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Each stock code whose supplier's lead time, and a period, runs past the forecast"
+    },
+    "forecast_days": {
+      "type": "integer",
+      "description": "How many days ahead the forecast looks"
     }
   },
   "required": [
-    "lines"
+    "lines",
+    "past_horizon",
+    "forecast_days"
   ]
 }
 ```

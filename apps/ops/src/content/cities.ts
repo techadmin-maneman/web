@@ -79,6 +79,11 @@ export const cities = {
       value: "A whole number the national rule takes, or blank for the national rule.",
       not_found: changed("That city has gone."),
     },
+    /** A city's figure refused against the national rule it keeps within. */
+    conflicts: {
+      checkin_radius_m: "A city’s check-in radius can’t be wider than the national radius at a rough pin.",
+      reminder_hour: "A city’s reminders can’t go out after the address unlocks.",
+    },
   },
   prices: {
     panel: "City prices",

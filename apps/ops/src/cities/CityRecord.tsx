@@ -72,7 +72,8 @@ function OwnRule({
           figure === null
             ? await citiesApi.removeRule(city.name, rule)
             : await citiesApi.setRule(city.name, rule, { value: figure });
-        if (!answer.ok) return errorText(rules.errors, answer);
+        if (!answer.ok)
+          return answer.code === "figures_conflict" ? rules.conflicts[rule] : errorText(rules.errors, answer);
         await reread();
         return null;
       }}

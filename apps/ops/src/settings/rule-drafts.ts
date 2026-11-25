@@ -20,9 +20,15 @@ function fieldLabel(rule: OpsSetting, field: string): string {
   return key === undefined ? rule.title : keyLabel(rule, key);
 }
 
+/** The rule a refused box belongs to: "booking_rules.break_from" is booking_rules's. */
+const ruleOf = (field: string): string => field.split(".")[0] ?? field;
+
 export function ruleRefusal(rule: OpsSetting, code: string, fields: readonly string[]): string | undefined {
   const [field, reached] = fields;
   if (code === "figures_conflict" && field !== undefined && reached !== undefined) {
+    // Held against another rule, the two named together as the console reads them.
+    const across = copy.crossConflicts[`${ruleOf(field)}|${ruleOf(reached)}`];
+    if (ruleOf(reached) !== rule.name && across !== undefined) return across;
     return copy.figures_conflict(fieldLabel(rule, field), fieldLabel(rule, reached));
   }
   if (code !== "invalid_request") return errorText(copy.errors, { code });

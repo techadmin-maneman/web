@@ -205,6 +205,26 @@ describe("the next visit's days", () => {
     expect((await auditFor("setting.change")).results).toHaveLength(0);
   });
 
+  // A rule may hold against another: here the address unlocking before a city's reminders, which fix tomorrow.
+  it("refuses a rule that would break another, naming its box and the other rule's, and keeps the one in force", async () => {
+    await env.DB.prepare(
+      "INSERT INTO city_settings (city, key, value, updated_by, updated_at) VALUES ('Delhi', 'reminder_hour', '20', 'ops@localhost', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    const early = await post("/api/settings/address_unlock_hour", { value: 19 });
+    expect(early.status).toBe(422);
+    expect(await early.json()).toMatchObject({
+      error: { code: "figures_conflict", fields: ["address_unlock_hour", "reminder_hour"] },
+    });
+    expect((await named("address_unlock_hour")).set_by).toBeNull();
+    expect((await post("/api/settings/address_unlock_hour", { value: 20 })).status).toBe(200);
+    // And the other way: deadlines may not outrun the lapse.
+    const lapse = await post("/api/settings/task_lapse_days", { value: 14 });
+    expect(lapse.status).toBe(422);
+    expect(await lapse.json()).toMatchObject({ error: { code: "figures_conflict" } });
+  });
+
   // With services every 60 days and a horizon of 45, Home offered a day the sheet could not show.
   it("refuses figures that fit their own bounds but not each other, naming the box and the one it must reach", async () => {
     await env.DB.prepare("UPDATE packages SET service_every_days = 60 WHERE code = 'standard'").run();

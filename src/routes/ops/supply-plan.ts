@@ -7,6 +7,7 @@ import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { draftPlan } from "../../domain/purchasing/supply-plan.ts";
+import { leadsPastHorizon } from "../../domain/purchasing/lead-horizon.ts";
 import { approvePlanLine, planLines, rejectPlanLine, type Decided } from "../../domain/purchasing/supply-plan-lines.ts";
 import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -36,7 +37,17 @@ const LineSchema = z.object({
 
 const PLAN = {
   description: "The supply plan",
-  ...json(z.object({ lines: z.array(LineSchema) }).openapi("SupplyPlan")),
+  ...json(
+    z
+      .object({
+        lines: z.array(LineSchema),
+        past_horizon: z
+          .array(z.object({ code: z.string(), name: z.string(), lead_time_days: z.number().int() }).strict())
+          .openapi({ description: "Each stock code whose supplier's lead time, and a period, runs past the forecast" }),
+        forecast_days: z.number().int().openapi({ description: "How many days ahead the forecast looks" }),
+      })
+      .openapi("SupplyPlan"),
+  ),
 };
 const ACCESS = errorResponse("access_required");
 const linePath = { params: z.object({ id: z.string().min(1).max(64) }) };
@@ -101,8 +112,14 @@ const rejectRoute = opsRoute({
 });
 
 async function planAnswer(c: Context<AppEnv>) {
-  const lines = await planLines(c.env.DB, c.var.deps.now());
+  const { planningPeriodDays, planningHorizonPeriods } = await opsInputs(c);
+  const [lines, pastHorizon] = await Promise.all([
+    planLines(c.env.DB, c.var.deps.now()),
+    leadsPastHorizon(c.env.DB, { periodDays: planningPeriodDays, horizonPeriods: planningHorizonPeriods }),
+  ]);
   return {
+    past_horizon: pastHorizon,
+    forecast_days: planningPeriodDays * planningHorizonPeriods,
     lines: lines.map((line) => ({
       id: line.id,
       kind: line.kind,

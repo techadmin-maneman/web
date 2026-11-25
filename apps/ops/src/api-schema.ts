@@ -19507,6 +19507,24 @@ export interface paths {
                         });
                     };
                 };
+                /** @description figures_conflict: fields names the city's figure, then the national rule it must keep within */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "figures_conflict";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
             };
         };
         trace?: never;
@@ -30454,6 +30472,14 @@ export interface components {
                 reject_reason: string | null;
                 po_number: number | null;
             }[];
+            /** @description Each stock code whose supplier's lead time, and a period, runs past the forecast */
+            past_horizon: {
+                code: string;
+                name: string;
+                lead_time_days: number;
+            }[];
+            /** @description How many days ahead the forecast looks */
+            forecast_days: number;
         };
         PlanLineApproval: {
             quantity: number;

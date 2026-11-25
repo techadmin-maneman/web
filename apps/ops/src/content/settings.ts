@@ -391,6 +391,23 @@ export const settings = {
     /** A choice refused: where the field is one of a list. */
     chooseOne: "Choose one of its options.",
     figures_conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”.`,
+    /** A rule refused against another rule, by the rule saved, then the rule it is held to. */
+    crossConflicts: {
+      "checkin_radius_m|checkin_radius_approximate_m": "The check-in radius can’t be wider than at a rough pin.",
+      "checkin_radius_approximate_m|checkin_radius_m":
+        "The radius at a rough pin can’t be narrower than the check-in radius, nationally or in any city.",
+      "address_unlock_hour|reminder_hour":
+        "The address can’t unlock before reminders go out, nationally or in any city.",
+      "reminder_hour|address_unlock_hour": "Reminders can’t go out after the address unlocks.",
+      "booking_rules|working_hours": "The break must fall within the working day.",
+      "working_hours|booking_rules": "The working day must hold the break.",
+      "task_lapse_days|task_sla_hours": "Tasks can’t lapse before their longest deadline.",
+      "task_sla_hours|task_lapse_days": "A deadline can’t run longer than tasks wait before they lapse.",
+      "planning_horizon_periods|supplier_items":
+        "The forecast must look past the longest supplier lead time and one period.",
+      "planning_period_days|supplier_items":
+        "With periods this short, the forecast no longer looks past the longest supplier lead time.",
+    } as Partial<Readonly<Record<string, string>>>,
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "Out of range.",

@@ -11,6 +11,8 @@
 // src/routes/ops/services.ts's (docs/decisions/0085-services-ops-can-edit.md).
 
 import { packagesPastHorizon } from "../../domain/booking/packages.ts";
+import { leadTimeConflict, settingStanding } from "../../http/setting-standing.ts";
+import { HELD_TOGETHER, nationalConflict } from "../../policy/setting-relations.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { forgetOpsInputs, setOpsSetting, settingStates } from "../../domain/platform/ops-settings.ts";
@@ -196,7 +198,12 @@ export function registerOpsSettings(app: App): void {
         return refuse(c, "invalid_request", fields);
       }
       const conflict =
-        conflictOf(setting, checked.value) ?? (await packagesPastHorizon(c.env.DB, setting.name, checked.value));
+        conflictOf(setting, checked.value) ??
+        (await packagesPastHorizon(c.env.DB, setting.name, checked.value)) ??
+        (HELD_TOGETHER.has(setting.name)
+          ? nationalConflict(setting.name, checked.value, await settingStanding(c.env.DB))
+          : null) ??
+        (await leadTimeConflict(c.env.DB, setting.name, checked.value));
       if (conflict !== null) return refuse(c, "figures_conflict", conflict);
       await setOpsSetting(c.env.DB, {
         setting,

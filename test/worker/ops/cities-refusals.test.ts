@@ -59,6 +59,18 @@ describe("a city's own rule or price, refused", () => {
     expect(national).toEqual({ kind: "national_only" });
   });
 
+  it("refuses a city's own figure that would break the national rule it keeps within", async () => {
+    const wide = await send("PATCH", "/api/cities/Mumbai/rules/checkin_radius_m", { value: 1000 });
+    expect(wide.status).toBe(200);
+    expect((await send("POST", "/api/settings/checkin_radius_approximate_m", { value: 900 })).status).toBe(422);
+    const late = await send("PATCH", "/api/cities/Mumbai/rules/reminder_hour", { value: 21 });
+    expect(late.status).toBe(422);
+    expect(await late.json<unknown>()).toMatchObject({
+      error: { code: "figures_conflict", fields: ["reminder_hour", "address_unlock_hour"] },
+    });
+    expect((await cityRules(env.DB)).get("Mumbai")?.reminder_hour).toBeUndefined();
+  });
+
   it("refuses a city's price for a service retired by its day", async () => {
     await env.DB.prepare(
       "UPDATE services SET retired_date = '2026-09-25' WHERE kind = 'service' AND tier = 'standard'",

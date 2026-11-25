@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0318. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0320. 0090 and 0091 and 0318 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -350,6 +350,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0314](0314-change-everywhere-and-forms-in-a-grid.md) Change everywhere, and forms in a grid
 - [0316](0316-every-console-action-an-icon.md) Every console action an icon
 - [0317](0317-targets-progress.md) Targets progress
+- [0319](0319-rules-that-hold-together.md) Rules that hold together
 
 ## Every decision, oldest first
 
@@ -670,3 +671,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0315](0315-a-remedy-past-the-limit-given-by-one-who-may-approve-it.md) | A remedy past the limit, given by one who may approve it | 2026-11-24 | accepted |  |
 | [0316](0316-every-console-action-an-icon.md) | Every console action an icon | 2026-11-25 | accepted, on the owner's ruling of 24 November 2026 |  |
 | [0317](0317-targets-progress.md) | Targets progress | 2026-11-25 | accepted |  |
+| [0319](0319-rules-that-hold-together.md) | Rules that hold together | 2026-11-25 | accepted |  |

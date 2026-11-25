@@ -41,7 +41,7 @@ const ORDER = {
   proposed: 24,
 };
 
-const PLAN = { lines: [LOAN, ORDER] } satisfies OpsReply<"/api/supply-plan">;
+const PLAN = { lines: [LOAN, ORDER], past_horizon: [], forecast_days: 56 } satisfies OpsReply<"/api/supply-plan">;
 
 const WEDDINGS = {
   id: "ev-1",
@@ -103,17 +103,17 @@ const posted = (page: Page, path: string) =>
 
 test("says beside its title how many lines await approval, one approved not among them", async ({ page }) => {
   const approved = { ...ORDER, id: "pl-3", state: "approved" as const };
-  await open(page, { "GET /api/supply-plan": json({ lines: [LOAN, ORDER, approved] }) });
+  await open(page, { "GET /api/supply-plan": json({ ...PLAN, lines: [LOAN, ORDER, approved] }) });
   await expect(page.getByRole("main").getByText(copy.linesToApprove(2), { exact: true })).toBeVisible();
   // With none waiting, the panel says so and the head says nothing.
-  await answer(page, { "GET /api/supply-plan": json({ lines: [] }) });
+  await answer(page, { "GET /api/supply-plan": json({ ...PLAN, lines: [] }) });
   await page.reload();
   await expect(page.getByRole("main").getByText(copy.none, { exact: true })).toBeVisible();
   await expect(page.getByRole("main").getByText(copy.linesToApprove(0), { exact: true })).toHaveCount(0);
 });
 
 test("lists each transfer and order with why, and approves one at a changed quantity", async ({ page }) => {
-  const approved = { lines: [{ ...LOAN, state: "approved" as const, quantity: 4 }, ORDER] };
+  const approved = { ...PLAN, lines: [{ ...LOAN, state: "approved" as const, quantity: 4 }, ORDER] };
   await open(page, { "POST /api/supply-plan/lines/{id}/approve": json(approved) });
   const transfers = page.getByRole("region", { name: copy.transfers });
   const row = transfers.getByRole("row").filter({ hasText: "Solvent" });
@@ -140,10 +140,12 @@ test("puts the lines for one place together, and approves them all at the quanti
   const TAPE = { ...LOAN, id: "pl-3", consumable_code: "tape_strips", name: "Tape strips", proposed: 12 };
   const approving: string[] = [];
   await open(page, {
-    "GET /api/supply-plan": json({ lines: [LOAN, TAPE, ORDER] }),
+    "GET /api/supply-plan": json({ ...PLAN, lines: [LOAN, TAPE, ORDER] }),
     "POST /api/supply-plan/lines/{id}/approve": (route: Route) => {
       approving.push(new URL(route.request().url()).pathname);
-      return json({ lines: [LOAN, TAPE, ORDER].map((line) => ({ ...line, state: "approved" as const })) })(route);
+      return json({ ...PLAN, lines: [LOAN, TAPE, ORDER].map((line) => ({ ...line, state: "approved" as const })) })(
+        route,
+      );
     },
   });
   const transfers = page.getByRole("region", { name: copy.transfers });
@@ -157,6 +159,17 @@ test("puts the lines for one place together, and approves them all at the quanti
   expect(approving).toEqual(["/api/supply-plan/lines/pl-1/approve", "/api/supply-plan/lines/pl-3/approve"]);
 });
 
+// A supplier whose lead time runs past the forecast is one the plan orders for blind, so the plan says which.
+test("names each item whose lead time runs past the forecast", async ({ page }) => {
+  await open(page, {
+    "GET /api/supply-plan": json({
+      ...PLAN,
+      past_horizon: [{ code: "LACE", name: "Lace base", lead_time_days: 70 }],
+    }),
+  });
+  await expect(page.getByRole("main")).toContainText(copy.pastHorizon([{ name: "Lace base", days: 70 }], 56));
+});
+
 test("says a forecast every period of which is over is out of date", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-10-15T06:00:00.000Z"));
   await open(page);
@@ -165,7 +178,10 @@ test("says a forecast every period of which is over is out of date", async ({ pa
 });
 
 test("rejects a line with why", async ({ page }) => {
-  const rejected = { lines: [LOAN, { ...ORDER, state: "rejected" as const, reject_reason: "Bought last week" }] };
+  const rejected = {
+    ...PLAN,
+    lines: [LOAN, { ...ORDER, state: "rejected" as const, reject_reason: "Bought last week" }],
+  };
   await open(page, { "POST /api/supply-plan/lines/{id}/reject": json(rejected) });
   const orders = page.getByRole("region", { name: copy.orders });
   await orders.getByRole("button", { name: copy.openLine("Solvent") }).click();
