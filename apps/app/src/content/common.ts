@@ -138,8 +138,11 @@ export const ONE_VISIT = "Consultation and fit";
 /** How long a visit takes, or took, word for word as the site says it: "90 minutes", "3 hours". */
 export const visitLength = lengthWords;
 
-/** A price as the app gives it, GST in it (owner, 25 November 2026): "Rs. 1,180 including GST". */
+/** A price in a sentence, GST in it: "Pay Rs. 1,180 including GST at the visit". */
 export const withGst = (amount: string) => `${amount} including GST`;
+
+/** Beneath a price that stands as a figure of its own, saying GST is in it. */
+export const includingGst = "Including GST";
 
 /** A price's GST, beneath the amount charged once GST applies: "Rs. 1,000 + Rs. 180 GST". */
 export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;

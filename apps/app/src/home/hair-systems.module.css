@@ -9,7 +9,11 @@
 }
 
 .lede,
-.description,
+.description {
+  margin: 0;
+  color: var(--ink-500);
+}
+
 .lede {
   font-size: var(--fs-15);
 }

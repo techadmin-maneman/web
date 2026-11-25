@@ -17,7 +17,7 @@ import { fullMonth, listDate, yearInIndia } from "@maneman/web-kit/dates";
 import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type OwedPayment } from "../api.ts";
-import { empty, payments, profile, withGst } from "../content.ts";
+import { empty, includingGst, payments, profile } from "../content.ts";
 import { Shell } from "../frame/Shell.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { oneVisitOf } from "../lib/visit.ts";
@@ -108,7 +108,8 @@ function OwedRow({ owed, thisYear }: { owed: OwedPayment; thisYear: number }) {
         <span className={styles.status}>{owed.url === null ? copy.onItsWay : copy.pay}</span>
       </span>
       <span className={styles.money}>
-        <span className={styles.amount}>{withGst(rupees(owed.amount))}</span>
+        <span className={styles.amount}>{rupees(owed.amount)}</span>
+        <span className={styles.meta}>{includingGst}</span>
       </span>
     </>
   );

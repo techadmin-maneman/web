@@ -6,7 +6,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import type { OfferedService } from "../../api.ts";
 import { describedBy, Missing } from "@maneman/ui/Missing";
-import { booking, missing, VISIT_TYPES } from "../../content.ts";
+import { booking, includingGst, missing, VISIT_TYPES } from "../../content.ts";
 import { priceFigures } from "../../lib/money.ts";
 import bookingSheet from "../booking.module.css";
 import styles from "./service-step.module.css";
@@ -16,6 +16,25 @@ import { Frame, type StepAt } from "./shared.tsx";
 export interface Recommended {
   readonly tier: string;
   readonly by: string | null;
+}
+
+/** A service's price: free, or its figure with GST said to be in it, and the GST split beneath once GST applies. */
+function ServicePrice({ price }: { price: OfferedService["price"] }) {
+  if (price.amount === 0) {
+    return (
+      <span className={styles.serviceMoney}>
+        <span className={bookingSheet.windowName}>{booking.service.free}</span>
+      </span>
+    );
+  }
+  const { amount, split } = priceFigures(price);
+  return (
+    <span className={styles.serviceMoney}>
+      <span className={bookingSheet.windowName}>{amount}</span>
+      <span className={classes(bookingSheet.serviceTime, CARD_NOTE)}>{includingGst}</span>
+      {split !== null && <span className={classes(bookingSheet.serviceTime, CARD_NOTE)}>{split}</span>}
+    </span>
+  );
 }
 
 /**
@@ -67,7 +86,6 @@ export function ServiceStep(props: {
             {props.services
               .filter((service) => service.type === kind)
               .map((service) => {
-                const { amount, split } = priceFigures(service.price);
                 return (
                   <ChoiceCard
                     key={service.tier}
@@ -92,10 +110,7 @@ export function ServiceStep(props: {
                         {booking.length(service.minutes)}
                       </span>
                     </span>
-                    <span className={styles.serviceMoney}>
-                      <span className={bookingSheet.windowName}>{service.price.amount === 0 ? copy.free : amount}</span>
-                      {split !== null && <span className={classes(bookingSheet.serviceTime, CARD_NOTE)}>{split}</span>}
-                    </span>
+                    <ServicePrice price={service.price} />
                   </ChoiceCard>
                 );
               })}

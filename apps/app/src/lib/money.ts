@@ -2,7 +2,7 @@
 // figure, and once GST applies its split sits beneath it.
 
 import { rupees } from "@maneman/web-kit/money";
-import { gstSplit, withGst } from "../content.ts";
+import { gstSplit } from "../content.ts";
 
 /** A price, or a payment, whose split before GST may be unknown. */
 interface Amount {
@@ -15,7 +15,7 @@ interface Amount {
  * The split is null while GST is nothing, and where no rate was recorded.
  */
 export function priceFigures(price: Amount): { amount: string; split: string | null } {
-  return { amount: withGst(rupees(price.amount)), split: splitOf(price) };
+  return { amount: rupees(price.amount), split: splitOf(price) };
 }
 
 function splitOf(price: Amount): string | null {

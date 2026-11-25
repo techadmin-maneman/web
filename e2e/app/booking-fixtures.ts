@@ -9,7 +9,7 @@ import { axeViolations } from "../a11y.ts";
 import { bookerClient } from "./booker.ts";
 import { continueToPayment, OPEN_DAYS } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
-import { titles, home, booking } from "../../apps/app/src/content.ts";
+import { titles, home, booking, withGst } from "../../apps/app/src/content.ts";
 import { priceFigures } from "../../apps/app/src/lib/money.ts";
 import { LOCAL_PRICES, PRICE } from "../prices.ts";
 
@@ -26,10 +26,10 @@ export const AGREE_TERMS = Object.values(booking.pay.agree).join("");
 const LATE_FEE_FIGURES = priceFigures(LATE_FEE);
 
 /** The late fee's line, as the pay step writes it, under the notice the hold is sold with. */
-export const LATE_FEE_LINE = `${booking.lateFee.costs(LATE_FEE_FIGURES.amount, 24)}${booking.lateFee.split(LATE_FEE_FIGURES.split ?? "")}${booking.lateFee.rest}`;
+export const LATE_FEE_LINE = `${booking.lateFee.costs(withGst(LATE_FEE_FIGURES.amount), 24)}${booking.lateFee.split(LATE_FEE_FIGURES.split ?? "")}${booking.lateFee.rest}`;
 
 /** What the pay step says a change costs once the visit is already inside its notice, and the fee applies. */
-export const INSIDE_NOTICE_LATE_FEE = `${booking.pay.insideNotice.lateFee(24, LATE_FEE_FIGURES.amount)}${booking.lateFee.split(LATE_FEE_FIGURES.split ?? "")}.`;
+export const INSIDE_NOTICE_LATE_FEE = `${booking.pay.insideNotice.lateFee(24, withGst(LATE_FEE_FIGURES.amount))}${booking.lateFee.split(LATE_FEE_FIGURES.split ?? "")}.`;
 
 /** The pay step's promise for a visit ahead of its notice, and for one already inside it, whose payment is kept. */
 export const FREE_UNTIL = /^Free to move or cancel until .+\. After that, changes are charged\.$/;

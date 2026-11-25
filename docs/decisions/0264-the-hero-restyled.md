@@ -20,5 +20,6 @@ The owner's ruling 6 of 17 November 2026: the hero is the live hero, restyled to
 
 ## Consequences
 
-- One new string, `hero.area`, built from `serviceArea`.
+- One new string, `hero.area`, built from `serviceArea`; since 25 November 2026 it names the one city served, Gurgaon
+  (the owner's ruling), while the footer and the questions keep the service area.
 - The hero's browser tests keep every motion and refusal case; a new one plays the film and pauses it with Pause.

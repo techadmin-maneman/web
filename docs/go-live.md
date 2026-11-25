@@ -146,9 +146,9 @@ With self-serve booking off, a consultation booked on the site is a request: the
 
 **Before it:**
 
-- [ ] The payment run of section 2 passed (item 8).
+- [ ] The payment run of section 2 passed (item 8): for the switch-on of payments after the launch, not the launch release itself.
 - [x] **The console's permissions in production** (ADRs 0109 and 0189): Access control switched on 25 October 2026, before the console had any staff or calls; `STAFF_BOOTSTRAP_ADMINS` keep you in while the list is empty. Add each person's grants at Admin › Staff as they join.
-- [ ] Razorpay live: KYC, live keys, and the live webhook to `https://maneman.in/api/hooks/razorpay` with the ten events of "The dashboards" below, `settlement.processed` among them (items 5, 6 and 154; provisioning, step 11c).
+- [ ] Razorpay live, for the switch-on of payments a couple of hours after the launch release: KYC, live keys, and the live webhook to `https://maneman.in/api/hooks/razorpay` with the ten events of "The dashboards" below, `settlement.processed` among them (items 5, 6 and 154; provisioning, step 11c).
 - [ ] The Razorpay and Zoho tables of "The dashboards" below walked on staging and production, each result recorded.
 - [ ] The CA's answers, and GST on in Books with the real GSTIN, Books synced again (items 2, 3, 9, 14, 16, 17 and 26).
 - [ ] Counsel's answers (items 22, 23, 40, 41, 55, 63, 69 and 148).
@@ -179,7 +179,7 @@ With self-serve booking off, a consultation booked on the site is a request: the
 5. **The owner's live proof, behind Access** (below), once the business is set up in the production console (Gurgaon's pincodes, prices, a trained technician and stock: the tracker's L3), then **open the doors** (below) straight after: `/book`'s sign-in sends the client to `app.maneman.in`.
 6. **Staging's Zoho secrets deleted** (`ZOHO_*` and `ZOHO_BOOKS_*`), so a pull request switching staging back to `"zoho"` cannot write into the live org with them.
 
-**The owner's live proof, behind Access:** book a free consultation on `maneman.in/book` from your own phone, with the WhatsApp code and the confirmation from the business number; see it on the console's dispatch board, and on the technician's schedule once it is allotted: for today, at once; for a later day, at the city's evening lock (6 pm the day before, ADR 0290), so book it for tomorrow after 6 pm to see it the same day; sign in to the app with it. Then set a price in the console and see no `books_item` alert an hour later. The first real payment and refund are proved when Razorpay is switched on (the tracker's PR8), as this proof was before payments stayed off at launch.
+**The owner's live proof, behind Access:** book a free consultation on `maneman.in/book` from your own phone, with the WhatsApp code and the confirmation from the business number; see it on the console's dispatch board, and on the technician's schedule once it is allotted: for today, at once; for a later day, at the city's evening lock (6 pm the day before, ADR 0290), so after 6 pm, book it for tomorrow to see it the same day; sign in to the app with it. Then set a price in the console and see no `books_item` alert an hour later. The first real payment and refund are proved when Razorpay is switched on (the tracker's PR8), as this proof was before payments stayed off at launch.
 
 **Open the doors:** delete the Access applications for `app.maneman.in` and `tech.maneman.in`; the ops console stays behind Access. Read the open alerts after the first day (RB, "Alerts and the cron").
 

@@ -11,7 +11,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import type { ReactNode } from "react";
 import { rupees } from "@maneman/web-kit/money";
 import type { Hold, MoveTerms, Price } from "../../api.ts";
-import { booking, change, states } from "../../content.ts";
+import { booking, change, states, withGst } from "../../content.ts";
 import { priceFigures } from "../../lib/money.ts";
 import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import styles from "../booking.module.css";
@@ -120,7 +120,7 @@ export function LateFee({ fee, noticeHours }: { fee: Price; noticeHours: number 
   const copy = booking.lateFee;
   return (
     <>
-      {copy.costs(amount, noticeHours)}
+      {copy.costs(withGst(amount), noticeHours)}
       {split !== null && <span className={styles.inclusive}>{copy.split(split)}</span>}
       {copy.rest}
     </>

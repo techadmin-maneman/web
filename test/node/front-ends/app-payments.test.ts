@@ -79,7 +79,7 @@ describe("a payment in the list", () => {
   it("leads with what was paid, marked paid", () => {
     const entry = payment({});
     expect(entryTitle(entry)).toBe("Service visit");
-    expect(entryAmount(entry)).toBe("Rs. 30,000 including GST");
+    expect(entryAmount(entry)).toBe("Rs. 30,000");
     expect(entryTone(entry)).toBe("done");
   });
 

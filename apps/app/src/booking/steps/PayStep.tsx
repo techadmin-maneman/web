@@ -15,7 +15,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Address, Hold, MoveTerms } from "../../api.ts";
 import { ActionWithMissing } from "../../frame/ActionWithMissing.tsx";
-import { arrivalHours, booking, change, LEGAL_URLS, missing, ONE_VISIT } from "../../content.ts";
+import { arrivalHours, booking, change, LEGAL_URLS, missing, ONE_VISIT, withGst } from "../../content.ts";
 import { priceFigures } from "../../lib/money.ts";
 import { noticeUrl } from "../../lib/notices.ts";
 import { CodeBox } from "../CodeBox.tsx";
@@ -62,7 +62,7 @@ function InsideNotice({ stake, hours }: { stake: Charged; hours: number }) {
   const { amount, split } = priceFigures(stake.fee);
   return (
     <>
-      {copy.lateFee(hours, amount)}
+      {copy.lateFee(hours, withGst(amount))}
       {split !== null && <span className={styles.inclusive}>{booking.lateFee.split(split)}</span>}.
     </>
   );

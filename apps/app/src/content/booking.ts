@@ -172,7 +172,7 @@ export const booking = {
     address: "Address",
     changeAddress: "Change",
     total: "Total",
-    /** Once GST applies, the total says it is in it. */
+    /** Whatever is to pay, the total says GST is in it. */
     totalWithGst: "Total, including GST",
     payment: "Payment",
     razorpay: "Pay by UPI, card, netbanking or wallet on Razorpay’s secure checkout. Saved methods appear there.",

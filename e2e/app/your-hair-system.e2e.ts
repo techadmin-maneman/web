@@ -51,7 +51,7 @@ test("Home shows the hair system worn, its own page every one worn, and the four
   await expect(page.getByRole("heading", { level: 1, name: appCopy.titles.hairSystems })).toBeVisible();
   const essential = page.getByRole("article", { name: "Mane Man Essential" });
   await expect(essential.getByText(copy.wearing)).toBeVisible();
-  await expect(essential.getByText(/^Rs\. [\d,]+ including GST$/).first()).toBeVisible();
+  await expect(essential.getByText(appCopy.includingGst, { exact: true })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });
 

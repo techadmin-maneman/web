@@ -18,7 +18,7 @@ import { fullDate, indiaDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
-import { messages, payments } from "../content.ts";
+import { includingGst, messages, payments } from "../content.ts";
 import { Shell } from "../frame/Shell.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../lib/money.ts";
@@ -132,6 +132,7 @@ function Detail({ entry }: { entry: EntryDetail }) {
   return (
     <div className={styles.detail}>
       <p className={styles.bigAmount}>{entryAmount(entry)}</p>
+      {entry.kind === "payment" && <p className={styles.including}>{includingGst}</p>}
       {split !== null && <p className={styles.including}>{split}</p>}
       <dl className={styles.facts}>
         <Fact name={rows.date} value={fullDate(entry.date)} />

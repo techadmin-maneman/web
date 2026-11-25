@@ -18,7 +18,7 @@ import { dayMonth, fullDate, indiaClock, indiaDate, shortDate, todayInIndia } fr
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { api, documentUrl, receiptUrl, type VisitDetail } from "../api.ts";
-import { issues, messages, ONE_VISIT, payments, visitLength, visits, withGst } from "../content.ts";
+import { issues, messages, ONE_VISIT, payments, visitLength, visits } from "../content.ts";
 import { AddToCalendar } from "./AddToCalendar.tsx";
 import { RateVisit } from "./RateVisit.tsx";
 import { OpenDocument } from "../payments/index.ts";
@@ -269,7 +269,7 @@ function Paid({ paid }: { paid: NonNullable<VisitDetail["paid"]> }) {
   return (
     <div className={shared.fact}>
       <dt>{visits.detail.paid}</dt>
-      <dd className={shared.numeric}>{withGst(rupees(paid.amount))}</dd>
+      <dd className={shared.numeric}>{rupees(paid.amount)}</dd>
     </div>
   );
 }
