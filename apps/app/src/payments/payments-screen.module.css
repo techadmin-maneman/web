@@ -13,11 +13,6 @@
   font-weight: var(--weight-semibold);
 }
 
-.rows {
-  border-top: var(--hairline) solid var(--line-200);
-  border-bottom: var(--hairline) solid var(--line-200);
-}
-
 /* The amount over its state, at the row's right. */
 .figure {
   display: flex;

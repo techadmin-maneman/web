@@ -34,7 +34,7 @@ import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "./phone-clock.ts";
 import { MAX_REWARD_VISITS, REFERRAL_REWARD, REFERRAL_REWARD_KEYS } from "./referral-reward.ts";
 import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "./technician-work.ts";
 import { TASK_GROUPS, TASK_LAPSE_DAYS, TASK_SLA_HOURS } from "./tasks.ts";
-import { HOUR_OF_DAY } from "../config/setting-units.ts";
+import { HOUR_OF_DAY, MINUTE_OF_DAY } from "../config/setting-units.ts";
 import { PAYMENT_HOLD, PAYMENT_HOLD_KEYS } from "../config/scheduling.ts";
 import { VISIT_TYPES } from "../config/visit-types.ts";
 
@@ -298,18 +298,21 @@ export const OPS_SETTINGS = [
   },
   {
     // The reply clock (docs/decisions/0132-the-reply-clock.md).
-    name: "care_hours",
+    // In minutes past midnight, so Care may open at 9:30 (docs/decisions/0322-care-times.md); care_hours, in hours,
+    // stays for the release before this one.
+    name: "care_times",
     title: "Customer Care hours",
-    note: "When Care are on, how soon they reply, and when a message sent after hours is answered by.",
-    unit: HOUR_OF_DAY,
+    note: "When Care are on, how soon they reply, when an after-hours message is answered by, and when Care hear of a new lead.",
+    unit: MINUTE_OF_DAY,
     min: 0,
-    max: 720,
+    max: 1439,
     keys: CARE_HOURS_KEYS,
     bounds: {
-      opens: { min: 0, max: 23 },
-      closes: { min: 1, max: 23 },
+      opens: { min: 0, max: 1439 },
+      closes: { min: 1, max: 1439 },
       first_reply: { min: 5, max: 720, unit: "minutes" },
-      answered_by: { min: 0, max: 23 },
+      answered_by: { min: 0, max: 1439 },
+      lead_alert: { min: 1, max: 60, unit: "minutes" },
     },
     fallback: CARE_HOURS,
     conflicts: (value) => careHoursConflicts(value),

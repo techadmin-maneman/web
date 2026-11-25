@@ -154,6 +154,21 @@ describe("sweeper: leads", () => {
     ]);
   });
 
+  it("lets go of the leads pushed to Care's phones once a week old, and keeps the newer", async () => {
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO lead_alert_pushes (lead, pushed_at) VALUES ('cv-old:a', ?1)").bind(
+        minutesAgo(8 * 24 * 60),
+      ),
+      env.DB.prepare("INSERT INTO lead_alert_pushes (lead, pushed_at) VALUES ('cv-new:b', ?1)").bind(
+        minutesAgo(6 * 24 * 60),
+      ),
+    ]);
+
+    await sweep(sweepEnv().bindings, fakeDependencies(), createLogger(), OPTIONS);
+
+    expect((await env.DB.prepare("SELECT lead FROM lead_alert_pushes").all()).results).toEqual([{ lead: "cv-new:b" }]);
+  });
+
   // A revoked phone keeps pointing at its last session; deleting that session
   // under it failed the whole batch, and the cron with it.
   it("frees a phone from a technician session before deleting the session", async () => {

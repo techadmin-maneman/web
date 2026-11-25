@@ -49,6 +49,9 @@ const EVENING = new Date(NOW.getTime() + 6.5 * 60 * 60 * 1000);
 /** A visit 25 days ago, whose next service falls due within the reminder's week (ADR 0086), and an hour later. */
 const DUE_SOON = new Date(NOW.getTime() - 25 * DAY_MS).toISOString();
 
+/** A day before the runs measured. */
+const YESTERDAY = new Date(NOW.getTime() - DAY_MS).toISOString();
+
 const DUE_SOON_PLUS_HOUR = new Date(NOW.getTime() - 25 * DAY_MS + 60 * 60 * 1000).toISOString();
 
 /** Every tenth person was erased, everywhere, long ago. */
@@ -117,6 +120,9 @@ const HISTORY = [
    SELECT 'a-' || i, 't-history', 28.4, 77.07, 12, '${NOW.toISOString()}', '${NOW.toISOString()}' FROM n`,
   `INSERT INTO sos_alerts (id, technician_id, appointment_id, sent_at, safe_at, handled_at, handled_by)
    SELECT 'sos-' || i, 't-history', 'a-' || i, '${AGO}', '${AGO}', '${AGO}', 'ops@maneman.in' FROM n`,
+  // Each person's chat, pushed to Care on shift yesterday, within the week the sweeper keeps
+  // (docs/decisions/0323-the-unanswered-lead-alert.md).
+  `INSERT INTO lead_alert_pushes (lead, pushed_at) SELECT 'cv-' || i || ':${YESTERDAY}', '${YESTERDAY}' FROM n`,
   // Each client's last visit, as a visit's write keeps it (src/domain/visits/visit-upkeep.ts).
   `INSERT OR REPLACE INTO last_visits (person_id, visit_id, visit_start, consulted_start)
    SELECT 'p-' || i, 'a-' || i, '${AGO}', NULL FROM n`,

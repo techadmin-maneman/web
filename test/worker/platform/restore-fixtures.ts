@@ -325,6 +325,9 @@ export const ROWS_AT_T: readonly string[] = [
      VALUES (1, 'ops@example.com', 'operations', 'act', 'national', 'owner@example.com', '${AT}')`,
   `INSERT INTO staff_service_tokens (client_id, label, added_by, added_at)
      VALUES ('ci.access', 'CI', 'owner@example.com', '${AT}')`,
+  `INSERT INTO staff_push_subscriptions (endpoint, email, subscribed_at)
+     VALUES ('https://fcm.googleapis.com/fcm/send/ops-laptop', 'ops@example.com', '${AT}')`,
+  `INSERT INTO lead_alert_pushes (lead, pushed_at) VALUES ('cv1:${AT}', '${AT}')`,
   `INSERT INTO stock_risks (appointment_id, consumable_code, city, found_at) VALUES ('ap1', 'hs1', 'Gurgaon', '${AT}')`,
   `INSERT INTO forecast_runs (id, run_on, period_days, horizon_periods, due_rate, fit_rate, ran_at)
      VALUES ('fr1', '2026-09-21', 7, 12, 0.8, 0.5, '${AT}')`,

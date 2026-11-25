@@ -8960,11 +8960,19 @@ Request body:
       "properties": {
         "opens": {
           "type": "integer",
-          "description": "The hour Care open, in India, 0 to 23."
+          "description": "The hour Care open, rounded down, for app copies older than opens_minute."
         },
         "closes": {
           "type": "integer",
-          "description": "The hour Care close."
+          "description": "The hour Care close, rounded down, for app copies older than closes_minute."
+        },
+        "opens_minute": {
+          "type": "integer",
+          "description": "When Care open, in minutes past midnight in India."
+        },
+        "closes_minute": {
+          "type": "integer",
+          "description": "When Care close, in minutes past midnight in India."
         },
         "first_reply": {
           "type": "integer",
@@ -8974,6 +8982,8 @@ Request body:
       "required": [
         "opens",
         "closes",
+        "opens_minute",
+        "closes_minute",
         "first_reply"
       ],
       "additionalProperties": false,
@@ -9978,10 +9988,20 @@ Request body:
       "type": "object",
       "properties": {
         "opens": {
-          "type": "integer"
+          "type": "integer",
+          "description": "The hour Care open, rounded down, for app copies older than opens_minute."
         },
         "closes": {
-          "type": "integer"
+          "type": "integer",
+          "description": "The hour Care close, rounded down, for app copies older than closes_minute."
+        },
+        "opens_minute": {
+          "type": "integer",
+          "description": "When Care open, in minutes past midnight in India."
+        },
+        "closes_minute": {
+          "type": "integer",
+          "description": "When Care close, in minutes past midnight in India."
         },
         "first_reply": {
           "type": "integer",
@@ -9991,6 +10011,8 @@ Request body:
       "required": [
         "opens",
         "closes",
+        "opens_minute",
+        "closes_minute",
         "first_reply"
       ],
       "additionalProperties": false,

@@ -29,6 +29,11 @@ export interface SpaBuild {
    * loads it as it opens: counted in the first load with every module it imports.
    */
   readonly landing?: string;
+  /**
+   * Whether its service worker keeps the build; the console's only shows a push
+   * (docs/decisions/0323-the-unanswered-lead-alert.md), so it has no precache to hold to a budget.
+   */
+  readonly precache?: false;
 }
 
 export interface BuildOptions {
@@ -172,6 +177,6 @@ export function buildSpa(build: SpaBuild, { environment, allowPlaceholders }: Bu
 
   const budget = build.app === "tech" || build.app === "app" ? PHONE_BUDGET_BYTES : BUDGET_BYTES;
   heldTo(build.label, `${build.app} JavaScript`, gzipped(firstLoadScripts(dist, build.landing)), budget);
-  const kept = precachedScripts(dist);
+  const kept = build.precache === false ? [] : precachedScripts(dist);
   if (kept.length > 0) heldTo(build.label, `${build.app} precache`, gzipped(kept), PRECACHE_BUDGET_BYTES);
 }

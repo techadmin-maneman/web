@@ -16,7 +16,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { CARD_HEIGHT, CARD_WIDTH } from "@rules/config/referral-cards.ts";
 import { inviteReward, referral } from "../../content/referral.ts";
 import type { Invite } from "../../lib/api.ts";
-import { cardPath, HOUSE_CARD } from "../../lib/invite.ts";
+import { cardPath, HOUSE_CARD, HOUSE_CARD_PAGE } from "../../lib/invite.ts";
 import { fill } from "../../lib/text.ts";
 import { IslandBoundary } from "../IslandBoundary.tsx";
 import styles from "./Invite.module.css";
@@ -45,9 +45,13 @@ function inviteHeading(invite: Invite | null): string {
   return referral.arrival.title;
 }
 
-/** The invite's card, the referrer's own where they have one, and the house card where it will not load. */
+/**
+ * The invite's card, the referrer's own where they have one, and the house card where it will not load: the house
+ * card's WebP, the lighter of its two files.
+ */
 function InviteCard(props: { invite: Invite | null }) {
-  const src = props.invite === null ? HOUSE_CARD : cardPath(props.invite, codeInPath());
+  const card = props.invite === null ? HOUSE_CARD : cardPath(props.invite, codeInPath());
+  const src = card === HOUSE_CARD ? HOUSE_CARD_PAGE : card;
   const name = props.invite?.referrer_first_name ?? null;
   const { personal, house } = referral.arrival.card;
   return (
@@ -58,9 +62,9 @@ function InviteCard(props: { invite: Invite | null }) {
       height={CARD_HEIGHT}
       // The page's largest first paint on a wide screen.
       fetchpriority="high"
-      alt={src === HOUSE_CARD || name === null ? house : fill(personal, { name })}
+      alt={src === HOUSE_CARD_PAGE || name === null ? house : fill(personal, { name })}
       onError={(event) => {
-        event.currentTarget.src = HOUSE_CARD;
+        event.currentTarget.src = HOUSE_CARD_PAGE;
         event.currentTarget.alt = house;
       }}
     />

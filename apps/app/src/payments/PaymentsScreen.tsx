@@ -188,7 +188,7 @@ export function PaymentsScreen() {
               <h2 className={styles.month} id={`month-${month}`}>
                 {fullMonth(month)}
               </h2>
-              <ListRows className={styles.rows}>
+              <ListRows>
                 {each.map((row) => (
                   <Row key={row.kind === "entry" ? row.entry.id : row.line.id} row={row} thisYear={thisYear} />
                 ))}

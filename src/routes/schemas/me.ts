@@ -174,8 +174,16 @@ export const MeSchema = z
     booking: BookingOfferSchema,
     care_hours: z
       .object({
-        opens: z.number().int().openapi({ description: "The hour Care open, in India, 0 to 23." }),
-        closes: z.number().int().openapi({ description: "The hour Care close." }),
+        opens: z
+          .number()
+          .int()
+          .openapi({ description: "The hour Care open, rounded down, for app copies older than opens_minute." }),
+        closes: z
+          .number()
+          .int()
+          .openapi({ description: "The hour Care close, rounded down, for app copies older than closes_minute." }),
+        opens_minute: z.number().int().openapi({ description: "When Care open, in minutes past midnight in India." }),
+        closes_minute: z.number().int().openapi({ description: "When Care close, in minutes past midnight in India." }),
         first_reply: z.number().int().openapi({ description: "Minutes within which Care first reply in hours." }),
       })
       .strict()

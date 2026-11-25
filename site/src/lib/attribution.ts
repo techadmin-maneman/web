@@ -48,6 +48,11 @@ export function attributionFrom(url: URL, referrer: string, cookies: string): At
     const value = url.searchParams.get(code);
     if (value !== null && /^[A-Za-z0-9]{3,16}$/.test(value)) found[code] = value.slice(0, MAX.code);
   }
+  // A society's code as a link to the try-on may carry it, /try?s=<code>, where its own link carries none.
+  const society = url.searchParams.get("s");
+  if (found.soc === undefined && society !== null && /^[A-Za-z0-9]{3,16}$/.test(society)) {
+    found.soc = society.slice(0, MAX.code);
+  }
   const fbp = cookie(cookies, "_fbp");
   const fbc = cookie(cookies, "_fbc");
   if (fbp !== undefined) found.fbp = fbp.slice(0, MAX.clickId);

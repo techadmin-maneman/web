@@ -24,12 +24,14 @@ interface AppBuild {
   readonly output?: NonNullable<NonNullable<UserConfig["build"]>["rolldownOptions"]>["output"];
 }
 
-/** The page, and the service worker beside it where the app has one; or the chunks as the app draws them. */
+/** The page, and the service worker beside it where the app has one; and the chunks as the app draws them. */
 function entriesOf(app: AppBuild) {
   if (app.serviceWorker) {
     return {
       input: { index: `${app.root}/index.html`, sw: `${app.root}/sw/sw.ts` },
       output: {
+        // One set of output options, as every app gives, never a list of them.
+        ...(Array.isArray(app.output) ? {} : app.output),
         entryFileNames: (chunk: { name: string }) => (chunk.name === "sw" ? "sw.js" : "assets/[name]-[hash].js"),
       },
     };

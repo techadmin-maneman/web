@@ -2,11 +2,21 @@
    side, ours on the other, our automatic messages as quiet lines between. */
 
 .tools {
+  /* Its notes start at the strip's own edge, as the search and the rows under it do. */
+  --note-inset: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: end;
   gap: var(--sp-12) var(--sp-24);
   margin: var(--sp-16) var(--sp-20) var(--sp-8);
+}
+
+/* The lead alerts beside the shift switch (./PhoneAlerts.tsx): what was answered, where the button was. */
+.alerts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--sp-12) var(--sp-24);
 }
 
 .table {

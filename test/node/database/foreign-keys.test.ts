@@ -178,6 +178,7 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/money/discount-codes.ts refuses to delete a code a campaign link names",
   // A member of staff taken off the list.
   "staff_grants.email -> staff": "src/domain/ops/staff.ts deletes their grants first",
+  "staff_push_subscriptions.email -> staff": "src/domain/ops/staff.ts deletes their phones first",
 };
 
 function sourceFiles(folder: string): string[] {

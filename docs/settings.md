@@ -167,7 +167,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `technician_work` | Technician figures | days | `{"period":90,"over_by":15}` |
 | `booking_days` | Booking and next visits | days | `{"first_fit_lead":0,"reminder_before_due":7,"at_risk_after_due":7,"first_fit_to_book":7,"horizon":45,"invoice_prompt":14,"replacement_order_lead":30}` |
 | `referral_reward` | Referral reward | service visits | `{"referrer_visits":3,"friend_visits":3,"valid_days":365}` |
-| `care_hours` | Customer Care hours | hour of the day, in India | `{"opens":9,"closes":21,"first_reply":60,"answered_by":10}` |
+| `care_times` | Customer Care hours | time of the day, in India | `{"opens":570,"closes":1140,"first_reply":60,"answered_by":600,"lead_alert":5}` |
 | `remedy_limit` | Remedies without approval | service visits | `{"visits":1,"days":90}` |
 | `lost_after_days` | Count a client lost after | days | `90` |
 | `booking_rules` | Start times | minutes | `{"step":30,"arrival":30,"wrap_up":10,"lead":3,"break":30,"break_from":12,"break_to":16,"visits":5,"fits":2}` |

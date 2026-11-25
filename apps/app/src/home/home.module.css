@@ -251,12 +251,6 @@
   border-top: var(--hairline) solid var(--line-200);
 }
 
-/* A prompt as a row: the address to add, an invoice to open. */
-.promptRows {
-  border-top: var(--hairline) solid var(--line-200);
-  border-bottom: var(--hairline) solid var(--line-200);
-}
-
 /* Home's one prompt: a line, and a quiet way on. */
 .promptLine {
   font-size: var(--fs-16);

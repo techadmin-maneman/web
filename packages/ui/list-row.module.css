@@ -8,6 +8,9 @@
     margin: 0;
     padding: 0;
     border: var(--list-edge);
+    /* Its rules above the first row and below the last, which a look with no box may draw on their own: read on the
+       list itself, so a look set on a screen rather than the page is the one that counts. */
+    border-block: var(--list-edge-block, var(--list-edge));
     background: var(--ui-raised);
     list-style: none;
   }

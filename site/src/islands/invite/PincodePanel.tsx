@@ -77,7 +77,14 @@ export function PincodePanel(props: { check: PincodeCheck; past: boolean }) {
       ) : (
         <>
           <h2 class={styles.panelTitle}>{referral.pincode.title}</h2>
-          <form class={styles.pincodeForm} onSubmit={(event) => void props.check.check(event)} noValidate>
+          {/* The island wakes once the page is idle; until then a dialog's method sends the form nowhere, so a tap on
+              Check neither reloads the page nor loses what was typed. */}
+          <form
+            class={styles.pincodeForm}
+            method="dialog"
+            onSubmit={(event) => void props.check.check(event)}
+            noValidate
+          >
             <div class={styles.pincodeField}>
               <Label htmlFor="invite-pincode">{referral.pincode.label}</Label>
               <TextInput

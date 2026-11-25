@@ -13,7 +13,7 @@ test("offers support on WhatsApp, with the design’s line", async ({ page }) =>
     "href",
     "https://wa.me/919034572990",
   );
-  await expect(page.getByText("We reply within an hour, 9 am–9 pm daily.")).toBeVisible();
+  await expect(page.getByText("We reply within an hour, 9:30 am–7 pm daily.")).toBeVisible();
 });
 
 test("Your data: a download of everything held, and a concern sent to ops", async ({ page }) => {
@@ -46,7 +46,7 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
         deletion_rejected: null,
         address: null,
         care_person: null,
-        care_hours: { opens: 9, closes: 21, first_reply: 60 },
+        care_hours: { opens: 9, closes: 21, opens_minute: 540, closes_minute: 1260, first_reply: 60 },
         address_given_to_ops: null,
         address_pinned: true,
         grievances: [
@@ -100,7 +100,7 @@ test("says when ops kept the account, and why, and still lets the client ask aga
         deletion_rejected: { decided_at: "2026-10-02T06:30:00.000Z", reason: "You still have a consultation booked" },
         address: null,
         care_person: null,
-        care_hours: { opens: 9, closes: 21, first_reply: 60 },
+        care_hours: { opens: 9, closes: 21, opens_minute: 540, closes_minute: 1260, first_reply: 60 },
         address_given_to_ops: null,
         address_pinned: true,
         grievances: [],

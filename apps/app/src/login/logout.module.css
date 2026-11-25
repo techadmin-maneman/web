@@ -7,14 +7,15 @@
   color: var(--error-on-paper);
 }
 
-/* A row as the profile's list draws its rows: the icon, then the words, between hairlines. */
+/* A row as the profile's list draws its rows: the icon, then the words, over a hairline, as the design ends the
+   profile with it. */
 .row {
   justify-content: flex-start;
   gap: var(--sp-12);
   width: 100%;
   min-height: var(--tap-row);
   padding: 0;
-  border-width: var(--hairline) 0;
+  border-width: 0 0 var(--hairline);
   font-size: var(--fs-16);
   font-weight: var(--weight-medium);
 }

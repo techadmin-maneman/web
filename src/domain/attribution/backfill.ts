@@ -23,6 +23,7 @@ const BATCH = 100;
 const HEARD_OF_FOUND: Readonly<Record<string, string>> = {
   google_ads: "google",
   organic_search: "google",
+  business_profile: "google",
   meta_ads: "instagram_facebook",
   organic_social: "instagram_facebook",
   referral: "friend",

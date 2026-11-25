@@ -24,8 +24,6 @@
 .upcoming,
 .past {
   margin: 0 var(--screen-gutter);
-  border-top: var(--hairline) solid var(--line-200);
-  border-bottom: var(--hairline) solid var(--line-200);
 }
 
 .past {

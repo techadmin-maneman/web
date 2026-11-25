@@ -30,6 +30,7 @@ import { careApi, type CareMember } from "./care-api.ts";
 import form from "@maneman/ui/forms.module.css";
 import styles from "./care.module.css";
 import { FormDrawer } from "@maneman/ui/FormDrawer";
+import { PhoneAlerts } from "./PhoneAlerts.tsx";
 
 const copy = care.team;
 
@@ -181,6 +182,7 @@ function ShiftSwitch(props: { me: CareMember; onDone: () => void }) {
       >
         {since === null ? copy.goOn : copy.goOff}
       </Button>
+      <PhoneAlerts />
       <Refused failed={failure} errors={copy.errors} />
     </div>
   );

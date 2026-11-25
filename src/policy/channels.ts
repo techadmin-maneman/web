@@ -13,6 +13,8 @@ export const CHANNELS = [
   { code: "meta_ads", channel: "Meta Ads", group: "Paid" },
   { code: "referral", channel: "Referral", group: "Referral" },
   { code: "organic_search", channel: "Organic search", group: "Organic" },
+  // The Google Business Profile's link, tagged utm_campaign=gbp (docs/decisions/0324-the-weekly-dashboard.md).
+  { code: "business_profile", channel: "Business Profile", group: "Organic" },
   { code: "direct", channel: "Direct", group: "Direct" },
   { code: "partner", channel: "Offline and partners", group: "Offline" },
   { code: "society", channel: "Society activations", group: "Offline" },
@@ -45,6 +47,7 @@ export const DECLARED_CHANNELS = [
   "partner",
   "society",
   "organic_search",
+  "business_profile",
   "organic_social",
   "direct",
 ] as const satisfies readonly ChannelCode[];
@@ -55,6 +58,7 @@ export type DeclaredChannel = (typeof DECLARED_CHANNELS)[number];
 export interface Touch {
   readonly utmSource: string | null;
   readonly utmMedium: string | null;
+  readonly utmCampaign: string | null;
   readonly gclid: string | null;
   readonly gbraid: string | null;
   readonly wbraid: string | null;
@@ -102,11 +106,12 @@ const isWithin = (hosts: readonly string[], value: string) =>
 const CODE_CHANNEL = { friend: "referral", partner: "partner", society: "society" } as const;
 
 /** What the campaign tags say, or null where they say nothing we read. */
-function tagged(source: string, medium: string): ChannelCode | null {
+function tagged(source: string, medium: string, campaign: string): ChannelCode | null {
   const paid = PAID.includes(medium);
   if (paid && source === "google") return "google_ads";
   if (paid && META.includes(source)) return "meta_ads";
   if (medium === "offline") return source === "society" ? "society" : "partner";
+  if (!paid && campaign === "gbp") return "business_profile";
   if (SEARCH.includes(source)) return "organic_search";
   if (SOCIAL.includes(source)) return "organic_social";
   return null;
@@ -126,7 +131,7 @@ export function touchChannel(touch: Touch): ChannelCode {
   if (touch.code !== null) return CODE_CHANNEL[touch.code];
   if (touch.gclid !== null || touch.gbraid !== null || touch.wbraid !== null) return "google_ads";
   if (touch.ctwaClid !== null) return "meta_ads";
-  const fromTags = tagged(lower(touch.utmSource), lower(touch.utmMedium));
+  const fromTags = tagged(lower(touch.utmSource), lower(touch.utmMedium), lower(touch.utmCampaign));
   if (fromTags !== null) return fromTags;
   // Meta adds its click ID to unpaid links too, so on its own it says only that a social site sent them.
   if (touch.fbclid !== null) return "organic_social";
@@ -139,7 +144,7 @@ export function touchChannel(touch: Touch): ChannelCode {
 }
 
 /** Whether a touch carried anything a campaign put there: the last touch moves only for one that did. */
-export function carriesCampaign(touch: Touch & { readonly utmCampaign: string | null }): boolean {
+export function carriesCampaign(touch: Touch): boolean {
   return [
     touch.code,
     touch.gclid,

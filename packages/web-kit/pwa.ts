@@ -118,7 +118,11 @@ export function themeColor(): Plugin {
   };
 }
 
-export function pwa(app: PwaApp): Plugin {
+/**
+ * The manifest and the icons, and the service worker's list of files to keep. The console keeps none
+ * (docs/decisions/0323-the-unanswered-lead-alert.md): its worker only shows a push, so `precache: false` writes no list.
+ */
+export function pwa(app: PwaApp, { precache = true }: { readonly precache?: boolean } = {}): Plugin {
   return {
     name: "mm-pwa",
     apply: "build",
@@ -142,6 +146,7 @@ export function pwa(app: PwaApp): Plugin {
         { name: "manifest.webmanifest", content: `${JSON.stringify(manifest(app, ground), null, 2)}\n` },
       ];
       for (const file of added) this.emitFile({ type: "asset", fileName: file.name, source: file.content });
+      if (!precache) return;
 
       const worker = bundle["sw.js"];
       if (worker?.type !== "chunk" || !/\bMM_PRECACHE\b/.test(worker.code) || !/\bMM_VERSION\b/.test(worker.code)) {

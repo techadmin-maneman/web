@@ -7,6 +7,7 @@ import { registerOpsActivity } from "./activity.ts";
 import { registerOpsAlerts } from "./alerts.ts";
 import { registerOpsBlackouts } from "./blackouts.ts";
 import { registerOpsCareNumbers } from "./care-numbers.ts";
+import { registerOpsWaitingLeads } from "./waiting-leads.ts";
 import { registerOpsCarePeople } from "./care-people.ts";
 import { registerOpsCareRota } from "./care-rota.ts";
 import { registerOpsCities } from "./cities.ts";
@@ -181,6 +182,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsSos,
   registerOpsRemedies,
   registerOpsCareNumbers,
+  registerOpsWaitingLeads,
   registerOpsReferralChannels,
   registerOpsWords,
   registerOpsGrievances,

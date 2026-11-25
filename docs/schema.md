@@ -25,7 +25,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | A client's ask for a hair system made to order | `made_to_order_asks` | An ask made since is gone from the Tasks board, and one closed since is open on it again | The client's next look at the made-to-order step asks again; close again any ask ordered since `<T>`, and ask Care to message any client who asked since |
 | A client's rating of a visit | `visit_ratings` | A rating given since is lost: the visit asks for one again, and a low one since is gone from the Tasks board | Nothing to redo: a client who rated since may rate again; ask Care to call any client whose low rating they saw since `<T>` |
 | A technician's asks of ops: kit, and a visit to move | `kit_requests`, `reschedule_requests` | An ask made since is lost, and one ops settled since is open again on the Tasks board | Closing again on the Tasks board what was settled since `<T>`; the technician asks again for anything lost |
-| A client's alerts in their app, and the sessions that take their pushes | `client_app_alerts`, `client_push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a browser that allowed pushes since takes none | Nothing: the messages since stay in WhatsApp, and the app subscribes again when it next opens |
+| A client's alerts in their app, Care's lead alerts, and the browsers that take their pushes | `client_app_alerts`, `client_push_subscriptions`, `staff_push_subscriptions`, `lead_alert_pushes` | An alert written since is gone from the inbox, and one read since is new again; a browser that allowed pushes since takes none | Nothing: the messages since stay in WhatsApp, and each app or console subscribes on opening |
 | A technician's alerts, the kinds they turned off, and the phones that take their pushes | `tech_alerts`, `tech_alert_kinds_off`, `push_subscriptions` | An alert written since is gone from the inbox, and one read since is new again; a kind turned off since is on, and a phone that allowed pushes since takes none | Nothing: the cron writes the day's alerts again as they fall due, a kind is turned off again in Alerts, and the phone subscribes again when the app next opens |
 | Number changes, deletion requests, grievances | `number_change_requests`, `people`, `deletion_requests`, `grievances` | A client's new number stops working; a request, or its answer, is lost | Deciding each again in the console |
 | Payments and refunds | `payments`, `refunds`, `razorpay_events`, `payment_links`, `razorpay_settlements` | Money Razorpay took or gave back is unrecorded, and Razorpay does not send it again. A settlement since is read again from Razorpay within the week; one older is not. A payment link sent since has no row, though a payment on it still finds its visit | Adding the rows since `<T>`, checked against Razorpay's dashboard |
@@ -125,6 +125,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
 - [kit_requests](#kit_requests): A technician's ask of ops for what their kit is short of over the next seven days, by the job sheet's counts, open until ops settle it (ADR 0249).
 - [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
+- [lead_alert_pushes](#lead_alert_pushes): Each lead's wait already pushed to Care on shift, kept a week, so a lead is pushed once (ADR 0323).
 - [leads](#leads): Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
 - [leave_requests](#leave_requests): A technician's ask for leave from their phone, which Operations approve or decline on Tasks; an approval records the leave and names it.
 - [lost_reasons](#lost_reasons): Why a client is not going ahead with a fit after their consultation, as ops set them, one they took off kept as retired; none means the committed list (ADR 0149).
@@ -191,6 +192,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [staff_access_mode](#staff_access_mode): One row: whether the console enforces the Staff list yet, and who last switched it (ADR 0109).
 - [staff_grants](#staff_grants): What each member of staff may do: a department, at a level, over a place, national, a zone or a city (ADR 0109).
 - [staff_notes](#staff_notes): Staff's short notes on a client, at the top of their page: a change writes a new note in the place of the one before, and one taken off is marked so, never deleted, until an erasure.
+- [staff_push_subscriptions](#staff_push_subscriptions): The phones that take a Care person's unanswered-lead pushes, one subscription a phone, by the push service's address (ADR 0323).
 - [staff_service_tokens](#staff_service_tokens): The Access service tokens let in as every caller was before the Staff list, such as CI's (ADR 0109).
 - [staff_tasks](#staff_tasks): A task ops wrote themselves on Tasks: what needs doing, the department it is for, the client it is about if any, its city, when it is due, who wrote it and who marked it done (ADR 0302).
 - [standard_costs](#standard_costs): What each first fit and replacement product costs us, from its date, for the margin figures until stock lots carry what was paid; an old row stays for the visits under it (ADR 0152).
@@ -1749,6 +1751,21 @@ Indexes:
 - `last_visits_unfitted`: on (`consulted_start`), where `visit_start IS NULL OR visit_start < consulted_start`
 
 Triggers: `last_visits_fitted_added`, `last_visits_fitted_changed`.
+
+## lead_alert_pushes
+
+Each lead's wait already pushed to Care on shift, kept a week, so a lead is pushed once (ADR 0323).
+
+Made by `0241_lead_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `lead` | TEXT | no |  | primary key |  |
+| `pushed_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `lead_alert_pushes_by_time`: on (`pushed_at`)
 
 ## leads
 
@@ -3368,6 +3385,22 @@ Indexes:
 
 - `staff_notes_person`: on (`person_id`, `written_at`)
 - `staff_notes_replaces`: on (`replaces`)
+
+## staff_push_subscriptions
+
+The phones that take a Care person's unanswered-lead pushes, one subscription a phone, by the push service's address (ADR 0323).
+
+Made by `0241_lead_alerts.sql`.
+
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `endpoint` | TEXT | no |  | primary key |  |
+| `email` | TEXT | no |  | → `staff.email` |  |
+| `subscribed_at` | TEXT | no |  |  |  |
+
+Indexes:
+
+- `staff_push_subscriptions_by_email`: on (`email`, `subscribed_at`)
 
 ## staff_service_tokens
 

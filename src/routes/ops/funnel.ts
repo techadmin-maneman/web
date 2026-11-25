@@ -1,13 +1,16 @@
 // The acquisition figures, behind Access (Growth · View; docs/decisions/0288-attribution-and-conversions.md): for a week
-// (Monday to Sunday) or a month in India, by channel, from our own rows (../../domain/analytics/acquisition.ts).
+// (Monday to Sunday) or a month in India, by channel, from our own rows (../../domain/analytics/acquisition.ts), with
+// each channel's steps from lead to fitted (../../domain/analytics/funnel-steps.ts; docs/decisions/0324-the-weekly-dashboard.md).
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { acquisition } from "../../domain/analytics/acquisition.ts";
+import { funnelSteps, type Steps } from "../../domain/analytics/funnel-steps.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App } from "../../http/context.ts";
 import { json } from "../../http/openapi.ts";
 import { addDays, addMonths, indiaDate, indiaInstant, monthOf, weekdayOf } from "../../lib/india-time.ts";
-import { CHANNEL_CODES } from "../../policy/channels.ts";
+import { CHANNEL_CODES, CHANNELS } from "../../policy/channels.ts";
 import { HEARD_FROM_CODES } from "../../policy/heard-from.ts";
 
 const FIGURES = {
@@ -19,14 +22,35 @@ const FIGURES = {
   first_fit_revenue: z.number().int().openapi({ description: "Paise, before GST, less refunds." }),
 };
 
+const StepsSchema = z
+  .object({
+    fitted: z.number().int().openapi({ description: "Clients whose first fit was done in the period." }),
+    no_shows: z.number().int().openapi({ description: "Consultations in the period closed as a no-show." }),
+    leads_fitted: z.number().int().openapi({
+      description: "Of the clients whose first lead came in the period, those fitted since.",
+    }),
+    first_reply_minutes: z.union([z.number().int(), z.null()]).openapi({
+      description: "The middle first reply to those clients, in minutes counted in Care hours; null with none.",
+    }),
+    tiers: z.array(z.object({ tier: z.string(), clients: z.number().int() }).strict()),
+    lost: z
+      .array(z.object({ reason: z.string(), clients: z.number().int() }).strict())
+      .openapi({ description: "Why the leads lost in the period were lost, the commonest three." }),
+  })
+  .strict();
+
+const NO_STEPS: Steps = { fitted: 0, no_shows: 0, leads_fitted: 0, first_reply_minutes: null, tiers: [], lost: [] };
+
+const NO_FIGURES = { spend: 0, leads: 0, consults_booked: 0, consults_done: 0, first_fits: 0, first_fit_revenue: 0 };
+
 const AcquisitionSchema = z
   .object({
     period: z.enum(["week", "month"]),
     from: z.iso.date(),
     to: z.iso.date().openapi({ description: "The period's last day." }),
     by: z.enum(["first", "last"]),
-    rows: z.array(z.object({ channel: z.enum(CHANNEL_CODES), ...FIGURES }).strict()),
-    totals: z.object(FIGURES).strict(),
+    rows: z.array(z.object({ channel: z.enum(CHANNEL_CODES), ...FIGURES, steps: StepsSchema }).strict()),
+    totals: z.object({ ...FIGURES, steps: StepsSchema }).strict(),
     cohorts: z.array(
       z
         .object({
@@ -84,16 +108,20 @@ export function registerOpsFunnel(app: App): void {
     const { period, starting, by, channel } = c.req.valid("query");
     const now = c.var.deps.now();
     const { from, next } = periodOf(period, starting ?? indiaDate(now));
-    const figures = await acquisition(
-      c.env.DB,
-      {
-        from: indiaInstant(from, "00:00").toISOString(),
-        to: indiaInstant(next, "00:00").toISOString(),
-        fromDate: from,
-        toDate: next,
-      },
-      { by, channel: channel ?? null, now },
-    );
+    const range = { from: indiaInstant(from, "00:00").toISOString(), to: indiaInstant(next, "00:00").toISOString() };
+    const { careHours } = await opsInputs(c);
+    const [figures, steps] = await Promise.all([
+      acquisition(c.env.DB, { ...range, fromDate: from, toDate: next }, { by, channel: channel ?? null, now }),
+      funnelSteps(c.env.DB, range, { by, hours: careHours }),
+    ]);
+    // A channel with steps and no money in the period has its row too.
+    const rows = CHANNELS.flatMap(({ code }) => {
+      const money = figures.rows.find((row) => row.channel === code);
+      const stepped = steps.byChannel.get(code);
+      if ((channel !== undefined && code !== channel) || (money === undefined && stepped === undefined)) return [];
+      return [{ ...(money ?? { channel: code, ...NO_FIGURES }), steps: stepped ?? NO_STEPS }];
+    });
+    const totalSteps = channel === undefined ? steps.total : (steps.byChannel.get(channel) ?? NO_STEPS);
     return c.json(
       {
         period,
@@ -101,7 +129,14 @@ export function registerOpsFunnel(app: App): void {
         to: addDays(next, -1),
         by,
         ...figures,
-        rows: [...figures.rows],
+        rows: rows.map((row) => ({
+          ...row,
+          steps: { ...row.steps, tiers: [...row.steps.tiers], lost: [...row.steps.lost] },
+        })),
+        totals: {
+          ...figures.totals,
+          steps: { ...totalSteps, tiers: [...totalSteps.tiers], lost: [...totalSteps.lost] },
+        },
         cohorts: [...figures.cohorts],
         heard: figures.heard.map((row) => ({
           ...row,

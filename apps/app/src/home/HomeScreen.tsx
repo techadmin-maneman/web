@@ -279,7 +279,7 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
   switch (prompt.kind) {
     case "address":
       return (
-        <ListRows className={styles.promptRows}>
+        <ListRows>
           <ListRow
             icon={GLYPHS.pin}
             title={home.prompt.addAddress}
@@ -367,7 +367,7 @@ function InvoiceLine({ invoice }: { invoice: NonNullable<Me["invoice"]> }) {
   const copy = home.prompt;
   const meta = copy.invoiceFor(visitName(invoice.type), shortDate(invoice.date));
   return (
-    <ListRows className={styles.promptRows}>
+    <ListRows>
       <ListRow
         icon={CLIENT_ICONS.receipt}
         title={copy.invoiceReady}

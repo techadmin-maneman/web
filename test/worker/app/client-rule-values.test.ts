@@ -58,7 +58,7 @@ describe("Home's figures", () => {
   it("are the committed ones until ops set others", async () => {
     const rohit = await client();
     expect(await get(rohit, "/api/me")).toMatchObject({
-      care_hours: { opens: 9, closes: 21, first_reply: 60 },
+      care_hours: { opens: 9, closes: 19, opens_minute: 570, closes_minute: 1140, first_reply: 60 },
       guarantee_days: 14,
       answers_within: { grievance_days: 30, deletion_days: 30, invoices_kept_years: 8 },
     });
@@ -67,9 +67,9 @@ describe("Home's figures", () => {
   it("follow the console without a release", async () => {
     const rohit = await client();
     await setRule("guarantee_days", 21);
-    await setRule("care_hours", { opens: 10, closes: 20, first_reply: 30, answered_by: 11 });
+    await setRule("care_times", { opens: 630, closes: 1200, first_reply: 30, answered_by: 660 });
     expect(await get(rohit, "/api/me")).toMatchObject({
-      care_hours: { opens: 10, closes: 20, first_reply: 30 },
+      care_hours: { opens: 10, closes: 20, opens_minute: 630, closes_minute: 1200, first_reply: 30 },
       guarantee_days: 21,
     });
   });

@@ -3,6 +3,7 @@
 
 export const FOLDER_EDGES: readonly string[] = [
   "analytics -> booking",
+  "analytics -> care",
   "analytics -> clients",
   "analytics -> dispatch",
   "analytics -> field",

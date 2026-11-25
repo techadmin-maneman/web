@@ -14,10 +14,12 @@
 //               any other photo's small copy goes with the photo or the look (docs/decisions/0084)
 //   kept looks  a client's kept look once their first fit is photographed
 //   cleanup     idempotency keys after a day, login codes a day past expiry, rate counters after 3 days,
-//               try-on sessions once expired, app sessions 30 days after they ended, and holds nobody is paying for
+//               try-on sessions once expired, app sessions 30 days after they ended, holds nobody is paying for, and
+//               the leads pushed to Care's phones after a week
 
 import { CRM_ORG_HAS_CARE_FIELDS } from "../config/crm.ts";
 import { sweepPositionsStatement } from "../domain/field/safety.ts";
+import { forgetOldLeadPushes } from "../domain/leads/lead-alerts.ts";
 import { releaseDeadHolds } from "../domain/booking/hold-slot.ts";
 import { DOWNLOAD_QUEUE_RETRIES, RENDER_GIVE_UP_MS } from "../config/pipeline.ts";
 import { PHOTO_RETENTION_MS } from "../config/tryon.ts";
@@ -301,6 +303,8 @@ export async function deleteExpiredRecords(context: SweepContext): Promise<void>
     db.prepare("DELETE FROM tryon_sessions WHERE expires_at < ?1").bind(now.toISOString()),
     db.prepare("DELETE FROM otp_challenges WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
     db.prepare("DELETE FROM number_codes WHERE expires_at < ?1").bind(before(CHALLENGE_RETENTION_MS)),
+    // The leads pushed to Care's phones, kept a week (docs/decisions/0323-the-unanswered-lead-alert.md).
+    forgetOldLeadPushes(db, now),
     // A technician's phone keeps pointing at the last session it logged in with,
     // so it lets go of that session before the session is deleted.
     db

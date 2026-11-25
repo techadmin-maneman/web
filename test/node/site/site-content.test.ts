@@ -11,7 +11,7 @@ import { guides } from "../../../site/src/content/guides.ts";
 import { referral } from "../../../site/src/content/referral.ts";
 import * as site from "../../../site/src/content/site.ts";
 import { siteEnvironment } from "../../../site/src/lib/environment.ts";
-import { HOUSE_CARD, HOUSE_CARD_VERSION } from "../../../site/src/lib/invite.ts";
+import { HOUSE_CARD, HOUSE_CARD_PAGE, HOUSE_CARD_VERSION } from "../../../site/src/lib/invite.ts";
 import { publishProblems } from "../../../site/src/lib/publish-gate.ts";
 import { headersFile, robotsFile } from "../../../site/src/lib/static-files.ts";
 import { fill } from "../../../site/src/lib/text.ts";
@@ -485,7 +485,7 @@ describe("site helpers", () => {
   });
 
   // REQ-S8-03: chats cache a preview by its address, so the house card replaced at the same path needs a new version.
-  it("gives the house card a new version whenever its file changes", () => {
+  it("gives the house card a new version whenever either of its files changes", () => {
     const CARDS: Record<number, string> = {
       1: "3becedf10d96f13d6bb0c144ed904f4d81b5ffb835523e5c9e7f43609a2d6302",
       // The referral card's gilt rule and lockup (scripts/build/make-house-card.ts).
@@ -498,5 +498,20 @@ describe("site helpers", () => {
       CARDS[HOUSE_CARD_VERSION],
     );
     expect(HOUSE_CARD).toBe(`/images/invite-house.jpg?v=${String(HOUSE_CARD_VERSION)}`);
+  });
+
+  // The card is the invite page's largest paint on a phone; previews keep the JPEG every chat reads. The WebP is made
+  // with the JPEG (scripts/build/make-house-card.ts), so a new card changes both, under one new version.
+  it("draws the house card on the invite's page from its WebP, the lighter file, under the same version", () => {
+    const PAGE_CARDS: Record<number, string> = {
+      3: "5b915b7e5fa58f24838a53d61f926d00ef963ce4ae927f96973b821cdbe62bb7",
+    };
+    const file = createHash("sha256").update(readFileSync("site/public/images/invite-house.webp")).digest("hex");
+    expect(file, "invite-house.webp changed: make both files again, raise HOUSE_CARD_VERSION and record them").toBe(
+      PAGE_CARDS[HOUSE_CARD_VERSION],
+    );
+    expect(HOUSE_CARD_PAGE).toBe(`/images/invite-house.webp?v=${String(HOUSE_CARD_VERSION)}`);
+    const webp = statSync("site/public/images/invite-house.webp").size;
+    expect(webp).toBeLessThan(statSync("site/public/images/invite-house.jpg").size / 2);
   });
 });

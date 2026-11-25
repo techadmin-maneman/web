@@ -198,6 +198,15 @@ export async function setOnShift(db: D1Database, email: string, on: boolean, now
     .run();
 }
 
+/** Whether the person is on Care shift now, as they marked it. */
+export async function isOnShift(db: D1Database, email: string): Promise<boolean> {
+  const since = await db
+    .prepare("SELECT on_shift_since FROM staff WHERE email = ?1")
+    .bind(email)
+    .first<string | null>("on_shift_since");
+  return since !== null;
+}
+
 /** Leave taken back; false for leave we do not have. */
 export async function deleteLeave(db: D1Database, change: Change & { readonly id: string }): Promise<boolean> {
   const leave = await db

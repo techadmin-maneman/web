@@ -101,8 +101,10 @@
   --segmented-on-count: var(--gilt);
   --sheet-ground: var(--white-000);
   --sheet-text: var(--ink-900);
-  /* Rows run the column's width under hairlines, with no box: a row's title 16/500, its meta 14. */
+  /* Rows run the column's width under hairlines, with no box, ruled above the first and below the last as the design
+     draws every list: a row's title 16/500, its meta 14. */
   --list-edge: 0;
+  --list-edge-block: var(--hairline) solid var(--ui-line);
   --row-pad-x: 0;
   --row-lead-text: var(--fs-15);
   --row-lead-colour: var(--ink-900);

@@ -171,8 +171,12 @@ export const profile = {
     named: (person: string, hint: string) => `${person}, your Care person · ${hint}`,
     /** "9 am–9 pm" */
     hours: (opens: string, closes: string) => `${opens}–${closes}`,
-    /** An hour of the day as the card says it: "9 am", "12 noon", "9 pm". */
-    hour: (hour: number) => timeOfDay(`${String(hour).padStart(2, "0")}:00`, UNBROKEN),
+    /** A time of the day, minutes past midnight, as the card says it: "9:30 am", "12 noon", "7 pm". */
+    time: (minute: number) =>
+      timeOfDay(
+        `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`,
+        UNBROKEN,
+      ),
   },
   // The client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {
