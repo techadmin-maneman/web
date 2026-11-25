@@ -7,6 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { care as copy } from "../../apps/ops/src/content/care.ts";
+import { shell } from "../../apps/ops/src/content/shell.ts";
 
 type Conversation = OpsReply<"/api/conversations">["conversations"][number];
 
@@ -185,12 +186,12 @@ test("opens the Care team beside the chats, where a member goes on shift without
   });
   await page.goto("/messages");
   // The trail names Messages once, with nothing to follow back to the page it is on.
-  const trail = page.getByRole("navigation", { name: "Breadcrumb" });
-  await expect(trail).toHaveText("Messages");
+  const trail = page.getByRole("navigation", { name: shell.crumbs });
+  await expect(trail).toHaveText(shell.nav.messages);
   await expect(trail.getByRole("link")).toHaveCount(0);
   await page.getByRole("link", { name: copy.team.title, exact: true }).click();
   await expect(page).toHaveURL(/\/care-team$/);
-  await expect(trail.getByRole("link", { name: "Messages" })).toHaveAttribute("href", "/messages");
+  await expect(trail.getByRole("link", { name: shell.nav.messages })).toHaveAttribute("href", "/messages");
   await expect(page.getByRole("heading", { level: 1, name: copy.team.title })).toBeVisible();
   await page.getByRole("button", { name: copy.team.goOn }).click();
   await expect.poll(() => sent).toEqual({ on: true });
