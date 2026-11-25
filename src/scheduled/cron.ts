@@ -77,6 +77,7 @@ import { placePincodeCentres } from "../domain/cities/pincode-centres.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { techAlertsJob } from "./tech-alerts.ts";
+import { leadAlertsJob } from "./lead-alerts.ts";
 import {
   cycleCountsJob,
   expiringStockJob,
@@ -414,6 +415,8 @@ const booksCallsJob = ({ env, deps }: CronContext) => tellOfBooksCalls(env.DB, d
  * The jobs a minute calls run in this order.
  */
 export const CRON_JOBS: readonly CronJob[] = [
+  // Every minute: a lead's alert reaches Care's phones within the minute it is due.
+  { name: "lead_alerts", needs: "nothing", every: 1, at: 0, run: leadAlertsJob },
   // Every five minutes. Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
   { name: "whatsapp_bridge", needs: "nothing", every: 5, at: 1, run: whatsAppBridgeJob },
   { name: "requeue_tryons", needs: "nothing", every: 5, at: 2, run: requeueTryons },

@@ -135,6 +135,8 @@ const SMALL_TABLES = new Set([
   // The Staff list and its grants, and the names the Care team go by: a row a member of staff, not a client.
   "staff",
   "staff_grants",
+  // The phones that take a Care person's lead pushes: a few for each of the Care team.
+  "staff_push_subscriptions",
   "care_names",
   // What a city sets apart (docs/decisions/0198-cities-as-data.md): a row a city and rule, a city's price as it
   // changes, and a GST registration a state.

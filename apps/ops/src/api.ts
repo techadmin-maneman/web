@@ -193,6 +193,7 @@ export type BookingWindow = NonNullable<MoveRequest["window"]>;
 export type VisitType = NonNullable<Block["type"]>;
 /** A technician's SOS not yet handled, as every console screen's banner shows it (docs/decisions/0248-safety.md). */
 export type OpenSos = components["schemas"]["OpenSos"];
+export type WaitingLead = components["schemas"]["WaitingLead"];
 
 /**
  * A failed call carries the API's error code, and for invalid_request the
@@ -291,6 +292,10 @@ export const api = {
   openSos: () => client.get("/api/sos"),
   /** An SOS handled: its banner goes, and where the technician was is blanked. */
   sosHandled: (id: string) => client.post("/api/sos/{id}/handled", { path: { id } }),
+  /** The leads past their alert time, whether the caller is on Care shift, and the key a phone subscribes with. */
+  waitingLeads: () => client.get("/api/leads/waiting"),
+  /** This phone takes the caller's unanswered-lead pushes, by the address its browser gave. */
+  leadAlertsPhone: (endpoint: string) => client.post("/api/leads/alerts-phone", { body: { endpoint } }),
   /** Ops called a client who had not heard of a move; its task leaves the Tasks board. */
   toldByPhone: (moveId: string) => client.post("/api/dispatch/moves/{id}/told", { path: { id: moveId } }),
   /**

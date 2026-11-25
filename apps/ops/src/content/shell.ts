@@ -10,6 +10,16 @@ export const DEPARTMENT_NAMES = {
 } as const;
 
 export const shell = {
+  /** A lead who wrote, past their alert time, on every screen of a Care person on shift until Care reply (ADR 0323). */
+  leads: {
+    /** "New lead waiting since 11:02 am"; "3 new leads waiting, the first since 24 Nov, 10:02 pm" */
+    title: (count: number, since: string) =>
+      count === 1 ? `New lead waiting since ${since}` : `${String(count)} new leads waiting, the first since ${since}`,
+    /** "Rohit Malhotra wrote on WhatsApp"; "+91 98111 12222 wrote on WhatsApp" for a number we don't know */
+    wrote: (name: string | null, number: string) => `${name ?? number} wrote on WhatsApp`,
+    openChat: "Open chat",
+  },
+
   /** A technician's SOS, on every screen until someone marks it handled (docs/decisions/0248-safety.md). */
   sos: {
     /** "SOS from Imran Qureshi, 9:41 am" */

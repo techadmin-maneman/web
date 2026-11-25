@@ -39,6 +39,7 @@ import {
 import { stock } from "../content/stock.ts";
 import { Account } from "./Account.tsx";
 import { SosBanner } from "./SosBanner.tsx";
+import { LeadBanner } from "./LeadBanner.tsx";
 import { CityChips, CityPicker } from "./City.tsx";
 import { Mine } from "./Mine.tsx";
 import { Navigation, NAV_ID } from "./Navigation.tsx";
@@ -274,6 +275,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
         <Bar menu={menu} crumbs={[...crumbs, { label: lastCrumbOf(route, title) }]} />
         {lapsed && <Lapsed />}
         <SosBanner />
+        <LeadBanner />
         <NotListed />
         <main id="content" ref={main} tabIndex={-1} className={flush ? styles.flushPage : styles.page}>
           {/* Two columns only where a record sets its facts beside its head (PageAside); otherwise neither is drawn. */}

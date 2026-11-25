@@ -11898,6 +11898,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/leads/waiting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The leads past their alert time, the longest waiting first, and whether the caller is on Care shift */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The leads */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description Whether the caller is on Care shift, whom the banner is for. */
+                            on_shift: boolean;
+                            leads: components["schemas"]["WaitingLead"][];
+                            /** @description The key a phone subscribes to pushes with; null where pushes are not set up. */
+                            push_key: string | null;
+                        };
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "access_required" | "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/leads/alerts-phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** This phone takes the caller's unanswered-lead pushes, by its push service's address */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        endpoint: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Kept */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description invalid_request: endpoint is not a push service's address */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "invalid_request";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+                /** @description not_permitted: the caller is not on the Staff list */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"] & ({
+                            error: {
+                                /** @enum {string} */
+                                code: "not_permitted";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        } & {
+                            [key: string]: unknown;
+                        });
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/referral-channels": {
         parameters: {
             query?: never;
@@ -31609,6 +31745,25 @@ export interface components {
                 /** @description The share of chats answered by their reply-by time, 0 to 1; null with none. */
                 within_target: number | null;
             }[];
+        };
+        WaitingLead: {
+            /** @description The chat waiting on Care's first reply. */
+            conversation_id: string;
+            /** @description Null for a number we don't know. */
+            person_id: string | null;
+            name: string | null;
+            /** @description The number the chat came from. */
+            mobile: string;
+            /**
+             * Format: date-time
+             * @description Their first message since the chat last opened.
+             */
+            since: string;
+            /**
+             * Format: date-time
+             * @description When it had waited the alert minutes in Care hours.
+             */
+            alert_at: string;
         };
         ReferralChannels: {
             channels: {

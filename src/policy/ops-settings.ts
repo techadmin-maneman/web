@@ -302,7 +302,7 @@ export const OPS_SETTINGS = [
     // stays for the release before this one.
     name: "care_times",
     title: "Customer Care hours",
-    note: "When Care are on, how soon they reply, and when a message sent after hours is answered by.",
+    note: "When Care are on, how soon they reply, when an after-hours message is answered by, and when Care hear of a new lead.",
     unit: MINUTE_OF_DAY,
     min: 0,
     max: 1439,
@@ -312,6 +312,7 @@ export const OPS_SETTINGS = [
       closes: { min: 1, max: 1439 },
       first_reply: { min: 5, max: 720, unit: "minutes" },
       answered_by: { min: 0, max: 1439 },
+      lead_alert: { min: 1, max: 60, unit: "minutes" },
     },
     fallback: CARE_HOURS,
     conflicts: (value) => careHoursConflicts(value),

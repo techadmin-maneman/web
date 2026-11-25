@@ -12,7 +12,7 @@ Care answer in their own words, from our number, and every reply is kept in the 
 
 Each client has a named Care person, given at their first chat to the one with the fewest (`src/domain/care/care-people.ts`). Each member goes on and off shift, and a Customer Care manager sets days off and leave and moves every client of one member to another, on Care team beside Messages, also in Settings · Care; who covers whom follows from them, worked out as it is read (`src/domain/care/cover.ts`).
 
-The reply clock counts in Care's hours, set in Settings · Rules (`care_times`): a chat past its reply-by time becomes a task on the Tasks board (`src/domain/care/chat-tasks.ts`). A message outside Care's hours gets, once a night, a word on when Care are back (`src/domain/care/after-hours.ts`). The Care numbers say whether the same-day promise held over a period (`src/domain/care/care-numbers.ts`).
+The reply clock counts in Care's hours, set in Settings · Rules (`care_times`): a chat past its reply-by time becomes a task on the Tasks board (`src/domain/care/chat-tasks.ts`). A lead who wrote and waits on Care's first reply, once it has waited the alert minutes in Care hours, puts a banner on every screen of whoever is on Care shift and a push on their phones (`src/domain/leads/waiting-leads.ts`, `src/domain/leads/lead-alerts.ts`). A message outside Care's hours gets, once a night, a word on when Care are back (`src/domain/care/after-hours.ts`). The Care numbers say whether the same-day promise held over a period (`src/domain/care/care-numbers.ts`).
 
 ## What Care can do
 

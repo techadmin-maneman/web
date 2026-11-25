@@ -11,6 +11,7 @@ import {
   careIsOn,
   careMinutesBetween,
   lastClosed,
+  leadAlertAt,
   replyBy,
 } from "../../../src/policy/care-hours.ts";
 import { indiaInstant } from "../../../src/lib/india-time.ts";
@@ -41,7 +42,7 @@ describe("the reply clock", () => {
   });
 
   it("follows the times ops set", () => {
-    const hours = { opens: 8 * 60, closes: 22 * 60, first_reply: 30, answered_by: 9 * 60 };
+    const hours = { opens: 8 * 60, closes: 22 * 60, first_reply: 30, answered_by: 9 * 60, lead_alert: 5 };
     expect(replyBy(india("2026-10-12", "21:15"), hours)).toEqual(india("2026-10-12", "21:45"));
     expect(replyBy(india("2026-10-12", "07:00"), hours)).toEqual(india("2026-10-12", "09:00"));
     expect(careIsOn(india("2026-10-12", "08:00"), hours)).toBe(true);
@@ -83,5 +84,24 @@ describe("Care's times for the client app", () => {
       first_reply: 60,
     });
     expect(clockOf(570)).toBe("09:30");
+  });
+});
+
+describe("a new lead's alert", () => {
+  it("comes once it has waited the alert minutes while Care are on", () => {
+    expect(leadAlertAt(india("2026-11-26", "11:00"))).toEqual(india("2026-11-26", "11:05"));
+    expect(leadAlertAt(india("2026-11-26", "18:55"))).toEqual(india("2026-11-26", "19:00"));
+  });
+
+  it("counts a wait over closing from the next opening", () => {
+    expect(leadAlertAt(india("2026-11-26", "18:58"))).toEqual(india("2026-11-27", "09:33"));
+    expect(leadAlertAt(india("2026-11-26", "23:10"))).toEqual(india("2026-11-27", "09:35"));
+    expect(leadAlertAt(india("2026-11-27", "07:00"))).toEqual(india("2026-11-27", "09:35"));
+  });
+
+  it("follows the minutes ops set", () => {
+    expect(leadAlertAt(india("2026-11-26", "11:00"), { ...CARE_HOURS, lead_alert: 15 })).toEqual(
+      india("2026-11-26", "11:15"),
+    );
   });
 });

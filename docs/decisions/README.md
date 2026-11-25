@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0323. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0324. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -251,6 +251,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0276](0276-a-message-whatsapp-refuses.md) A message WhatsApp refuses
 - [0315](0315-a-remedy-past-the-limit-given-by-one-who-may-approve-it.md) A remedy past the limit, given by one who may approve it
 - [0322](0322-care-times.md) Customer Care's times, to the minute
+- [0323](0323-the-unanswered-lead-alert.md) The unanswered-lead alert
 
 ### Referrals
 
@@ -680,3 +681,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0320](0320-lead-stages.md) | A lead's stages, and a lead lost | 2026-11-25 | accepted |  |
 | [0321](0321-the-gurgaon-page.md) | The Gurgaon page paid ads land on | 2026-11-25 | accepted |  |
 | [0322](0322-care-times.md) | Customer Care's times, to the minute | 2026-11-25 | accepted |  |
+| [0323](0323-the-unanswered-lead-alert.md) | The unanswered-lead alert | 2026-11-25 | accepted |  |

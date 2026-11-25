@@ -380,6 +380,7 @@ export const settings = {
         closes: "Care closes",
         first_reply: "First reply within",
         answered_by: "After-hours messages answered by",
+        lead_alert: "New lead alert after",
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
     /** Each choice a rule of choices offers, by the rule's name. */

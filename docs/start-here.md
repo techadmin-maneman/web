@@ -196,7 +196,7 @@ this map, or when the map names something that no longer exists.
 
 ### Leads and the CRM
 
-- **Database work** (`src/domain/leads/`): `leads`, `lead-notice`, `lead-stages`
+- **Database work** (`src/domain/leads/`): `leads`, `lead-notice`, `lead-stages`, `waiting-leads`, `lead-alerts`
 - **Data** (`src/config/`): `crm`, `pipeline`
 - **Vendor** (`src/providers/`): `crm/`
 - **Jobs** (`src/queues/`): `crm-sync`

@@ -1,16 +1,21 @@
 // When Customer Care answer (docs/decisions/0132-the-reply-clock.md): the times the team is on, the same every day,
-// public holidays too; how soon a message written in them is answered; and the time a message written outside them is
-// answered by the next morning. Ops set all four in the console (docs/decisions/0088-every-policy-in-the-console.md);
-// the times are minutes past midnight in India, so Care may open at 9:30 (docs/decisions/0322-care-times.md).
+// public holidays too; how soon a message written in them is answered; the time a message written outside them is
+// answered by the next morning; and how long a new lead waits before Care are alerted
+// (docs/decisions/0323-the-unanswered-lead-alert.md). Ops set all five in the console
+// (docs/decisions/0088-every-policy-in-the-console.md); the times are minutes past midnight in India, so Care may open at
+// 9:30 (docs/decisions/0322-care-times.md).
 
 import { MINUTE_MS } from "../lib/durations.ts";
 import { addDays, indiaDate, indiaInstant } from "../lib/india-time.ts";
 
-export const CARE_HOURS_KEYS = ["opens", "closes", "first_reply", "answered_by"] as const;
+export const CARE_HOURS_KEYS = ["opens", "closes", "first_reply", "answered_by", "lead_alert"] as const;
 export type CareHours = Readonly<Record<(typeof CARE_HOURS_KEYS)[number], number>>;
 
-/** 9:30 am to 7 pm, a first reply within the hour, and a message written after hours answered by 10 am. */
-export const CARE_HOURS: CareHours = { opens: 570, closes: 1140, first_reply: 60, answered_by: 600 };
+/**
+ * 9:30 am to 7 pm, a first reply within the hour, a message written after hours answered by 10 am, and a new lead's
+ * alert after five minutes.
+ */
+export const CARE_HOURS: CareHours = { opens: 570, closes: 1140, first_reply: 60, answered_by: 600, lead_alert: 5 };
 
 /** Hours whose figures each fit their bounds but not each other: Care close after they open, and answer in hours. */
 export function careHoursConflicts(hours: CareHours): (readonly [string, string])[] {
@@ -77,4 +82,20 @@ export function careMinutesBetween(from: Date, to: Date, hours: CareHours = CARE
     if (closes > opens) minutes += (closes - opens) / MINUTE_MS;
   }
   return Math.round(minutes);
+}
+
+/**
+ * When a lead that came in at `since` has waited the alert minutes inside Care's times: five minutes after it came in
+ * while Care are on, and a lead at 6:58 pm, with Care closing at 7, at 9:33 the next morning.
+ */
+export function leadAlertAt(since: Date, hours: CareHours = CARE_HOURS): Date {
+  let left = hours.lead_alert * MINUTE_MS;
+  // Hours that never open, which the setting refuses, would never be reached.
+  if (hours.closes <= hours.opens) return new Date(since.getTime() + left);
+  for (let date = indiaDate(since); ; date = addDays(date, 1)) {
+    const opens = Math.max(onTheHour(date, hours.opens).getTime(), since.getTime());
+    const closes = onTheHour(date, hours.closes).getTime();
+    if (closes - opens >= left) return new Date(opens + left);
+    left -= Math.max(0, closes - opens);
+  }
 }

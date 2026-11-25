@@ -104,6 +104,7 @@ export const CONSOLE_CALLS: Readonly<Record<string, string>> = {
   "POST /api/job-sheet/lost-reasons": "changed the lost reasons",
   "POST /api/job-sheet/not-fitted-reasons": "changed the not-fitted reasons",
   "POST /api/job-sheet/partial-reasons": "changed the partial-visit reasons",
+  "POST /api/leads/alerts-phone": "turned on lead alerts on a device",
   "POST /api/leads/call": "recorded a call to a lead",
   "POST /api/leave-requests/{id}/decision": "decided a leave request",
   "POST /api/no-shows/disputes/{id}/ruling": "ruled on a disputed charge",

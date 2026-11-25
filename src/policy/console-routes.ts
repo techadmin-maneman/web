@@ -241,6 +241,9 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/clients/{id}/remedies": need("customer_care", "act"),
   "GET /api/remedies": need("customer_care", "view"),
   "GET /api/care-numbers": need("customer_care", "view"),
+  // The unanswered-lead alert: the banner on every screen, and the phone that takes the pushes (ADR 0323).
+  "GET /api/leads/waiting": need("customer_care", "view"),
+  "POST /api/leads/alerts-phone": need("customer_care", "act"),
   "POST /api/remedies/{id}/approve": need("customer_care", "manage"),
   "POST /api/remedies/{id}/decline": need("customer_care", "manage"),
   "POST /api/quick-replies": need("customer_care", "manage"),
