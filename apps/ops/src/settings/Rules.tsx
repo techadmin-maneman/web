@@ -206,7 +206,7 @@ export function Rules({ groups }: { readonly groups: readonly RuleGroupId[] }) {
     <Stack>
       {sections.map((section) => (
         <Group key={section.id} section={section} allowed={allowed} onSaved={keep}>
-          {section.id === CONSOLE_GROUP && <Storage />}
+          {section.id === CONSOLE_GROUP ? <Storage /> : undefined}
         </Group>
       ))}
       {groups.includes(PURCHASING_GROUP) && <QcPoints />}
