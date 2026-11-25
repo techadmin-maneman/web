@@ -1,0 +1,110 @@
+---
+// A film that plays when it is tapped (docs/decisions/0321-the-gurgaon-page.md): its poster, fetched as it nears the
+// screen, and a Play button whose tap covers the whole poster, and nothing of the film until the tap. The tap puts the
+// film in the poster's place with the browser's own controls, and plays it with its sound. What is said in each film
+// is written into it.
+import { getImage } from "astro:assets";
+import { buttonLook } from "@maneman/ui/Button";
+import type { Film } from "../content/site.ts";
+import { designImage, designMedia } from "../lib/images.ts";
+
+interface Props {
+  film: Film;
+  /** How wide the frame is drawn, for the poster's sizes. */
+  sizes: string;
+}
+
+const { film, sizes } = Astro.props;
+const image = designImage(film.poster);
+const poster = await getImage({ src: image, format: "webp", widths: [360, 720] });
+---
+
+<figure class="film">
+  <div class="frame" data-film={designMedia(film.video)} data-name={film.name}>
+    <img
+      class="poster"
+      src={poster.src}
+      srcset={poster.srcSet.attribute}
+      sizes={sizes}
+      alt=""
+      width={image.width}
+      height={image.height}
+      loading="lazy"
+      decoding="async"
+    />
+    <button
+      type="button"
+      class={buttonLook({ variant: "goldOnNavy", size: "small", className: "play" })}
+      data-film-start
+    >
+      {film.play}
+    </button>
+  </div>
+  {film.caption !== undefined && <figcaption>{film.caption}</figcaption>}
+</figure>
+
+<script>
+  // The tap swaps the poster for the film and plays it; focus moves to the film, whose controls take over.
+  for (const start of document.querySelectorAll<HTMLButtonElement>("[data-film-start]")) {
+    start.addEventListener(
+      "click",
+      () => {
+        const frame = start.parentElement;
+        if (frame === null) return;
+        const video = document.createElement("video");
+        video.src = frame.dataset.film ?? "";
+        video.poster = frame.querySelector("img")?.currentSrc ?? "";
+        video.controls = true;
+        video.playsInline = true;
+        video.setAttribute("aria-label", frame.dataset.name ?? "");
+        frame.replaceChildren(video);
+        video.focus();
+        video.play().catch(() => undefined);
+      },
+      { once: true },
+    );
+  }
+</script>
+
+<style>
+  .film {
+    margin: 0;
+    max-width: var(--site-film-w);
+  }
+  /* One cell: the poster, or the film once tapped, with the Play button over its foot. */
+  .frame {
+    position: relative;
+    display: grid;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background: var(--site-scrim);
+  }
+  .poster,
+  .frame :global(video) {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    display: block;
+  }
+  .play {
+    grid-area: 1 / 1;
+    align-self: end;
+    justify-self: start;
+    margin: var(--sp-16);
+  }
+  /* The whole poster plays it. */
+  .play::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+  figcaption {
+    margin-top: var(--sp-12);
+    font-size: var(--site-fs-body);
+    line-height: var(--lh-155);
+    /* Muted on white, mist on navy, as the ground sets it. */
+    color: var(--on-surface-muted);
+  }
+</style>

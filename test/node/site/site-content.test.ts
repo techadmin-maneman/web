@@ -78,10 +78,12 @@ describe("content", () => {
   });
 
   // Every phone downloaded the 2.3 MB film.
-  it("gives phones a film under 800 KB", () => {
-    const path = assetPath(site.heroFootage.phoneVideo);
-    expect(path).not.toBeNull();
-    expect(statSync(path ?? "").size).toBeLessThan(800 * 1024);
+  it("gives phones a film under 800 KB, on the home page and the Gurgaon page", () => {
+    for (const footage of [site.heroFootage, site.gurgaonHeroFootage]) {
+      const path = assetPath(footage.phoneVideo);
+      expect(path).not.toBeNull();
+      expect(statSync(path ?? "").size).toBeLessThan(800 * 1024);
+    }
   });
 
   it("offers the backend’s six looks in its order, each split at its first dot", () => {

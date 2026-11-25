@@ -5,9 +5,23 @@ export interface Picture {
   readonly alt: string;
 }
 
+/** The hero's footage: a wide film, a phone's upright cut, and the frame each opens on. */
+export interface HeroFootage {
+  readonly publish: boolean;
+  readonly video: string;
+  readonly phoneVideo: string;
+  readonly poster: string;
+  /** The phone cut's own frame; without one, a phone shows the wide poster's upright centre. */
+  readonly phonePoster?: string;
+  /** Drawn mirrored, so its subject faces the words. */
+  readonly mirrored?: boolean;
+  readonly tag: string;
+}
+
 /** A fit filmed at a client's home: the hair system trimmed, its lace cut at the hairline, the hair styled. */
 export const heroFootage = {
   publish: true,
+  mirrored: true,
   video: "fit-film.mp4",
   /**
    * The same film for phones: upright, without sound, under 800 KB. Both are cut from one montage of the fit's
@@ -19,7 +33,64 @@ export const heroFootage = {
   /** The montage's first frame, upright: a phone shows it whole and a wide screen its middle. */
   poster: "fit-film-poster.jpg",
   tag: "Placeholder footage",
+} satisfies HeroFootage;
+
+/**
+ * The Gurgaon page's hero (docs/decisions/0321-the-gurgaon-page.md): clients and the founder before and after, from
+ * the launch films. The wide film is the upright one on its own blurred ground; the phone's is 406 x 720, without
+ * sound, under 800 KB, as the home page's is.
+ */
+export const gurgaonHeroFootage = {
+  publish: true,
+  video: "gurgaon-hero.mp4",
+  phoneVideo: "gurgaon-hero-phone.mp4",
+  poster: "gurgaon-hero-poster.jpg",
+  phonePoster: "gurgaon-hero-phone-poster.jpg",
+  tag: "Placeholder footage",
+} satisfies HeroFootage;
+
+/** A film that plays when it is tapped, with its sound; what is said in it is written into the picture. */
+export interface Film {
+  readonly video: string;
+  /** A frame of it, 4:5, with no words over its foot, where the Play button sits. */
+  readonly poster: string;
+  /** What it shows, as the film is named to a screen reader. */
+  readonly name: string;
+  /** A line beneath it, where the film's own words do not say who it is. */
+  readonly caption?: string;
+  readonly play: string;
+}
+
+/** Nitin's fit at home, on the Gurgaon page: before and after, then in his own words. */
+export const gurgaonFilms = {
+  publish: true,
+  eyebrow: "Nitin’s fit",
+  title: "Before and after, at home.",
+  films: [
+    {
+      video: "gurgaon-transformation.mp4",
+      poster: "gurgaon-transformation-poster.jpg",
+      name: "Nitin, before and after a fit at home",
+      play: "Play the before and after",
+    },
+    {
+      video: "gurgaon-story-nitin.mp4",
+      poster: "gurgaon-story-nitin-poster.jpg",
+      name: "A fit at home, in Nitin’s own words",
+      play: "Play Nitin’s story",
+    },
+  ] satisfies Film[],
 };
+
+/** The founder's own fit, step by step, beside his note on the Gurgaon page. */
+export const founderFilm = {
+  publish: true,
+  video: "gurgaon-founder-film.mp4",
+  poster: "gurgaon-founder-film-poster.jpg",
+  name: "Rishabh’s own hair system fitted, step by step",
+  caption: "Rishabh wears one too.",
+  play: "Play Rishabh’s fit",
+} satisfies Film & { readonly publish: boolean };
 
 export interface ResultPair {
   readonly before: Picture;

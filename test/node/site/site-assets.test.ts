@@ -1,5 +1,6 @@
-// The redesign reuses every asset the site has (docs/prompts/site-redesign.md, the brief's ruling 2): a picture or film
-// added to site/src/assets, or taken from it, fails here until the brief changes the list.
+// The redesign reuses every asset the site has (docs/prompts/site-redesign.md, the brief's ruling 2), and the Gurgaon
+// page adds its clients' films (docs/decisions/0321-the-gurgaon-page.md): a picture or film added to site/src/assets,
+// or taken from it, fails here until the list changes with the material.
 
 import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -13,6 +14,16 @@ const ASSETS = [
   "guide-lasts.jpg",
   "guide-materials.jpg",
   "guide-what-is-a-hair-system.jpg",
+  "gurgaon-founder-film-poster.jpg",
+  "gurgaon-founder-film.mp4",
+  "gurgaon-hero-phone-poster.jpg",
+  "gurgaon-hero-phone.mp4",
+  "gurgaon-hero-poster.jpg",
+  "gurgaon-hero.mp4",
+  "gurgaon-story-nitin-poster.jpg",
+  "gurgaon-story-nitin.mp4",
+  "gurgaon-transformation-poster.jpg",
+  "gurgaon-transformation.mp4",
   "look-crew-cut.jpg",
   "look-french-crop.jpg",
   "look-quiff.jpg",
